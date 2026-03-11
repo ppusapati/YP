@@ -1,0 +1,282 @@
+syntax = "proto3";
+
+package agriculture.diagnosis.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/plant-diagnosis-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ImageType {
+  IMAGE_TYPE_UNSPECIFIED = 0;
+  IMAGE_TYPE_LEAF        = 1;
+  IMAGE_TYPE_STEM        = 2;
+  IMAGE_TYPE_FRUIT       = 3;
+  IMAGE_TYPE_WHOLE_PLANT = 4;
+  IMAGE_TYPE_ROOT        = 5;
+}
+
+enum DiagnosisStatus {
+  DIAGNOSIS_STATUS_UNSPECIFIED = 0;
+  DIAGNOSIS_STATUS_PENDING     = 1;
+  DIAGNOSIS_STATUS_ANALYZING   = 2;
+  DIAGNOSIS_STATUS_COMPLETED   = 3;
+  DIAGNOSIS_STATUS_FAILED      = 4;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_MILD       = 1;
+  SEVERITY_MODERATE   = 2;
+  SEVERITY_SEVERE     = 3;
+  SEVERITY_CRITICAL   = 4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message DiagnosisImage {
+  string    id         = 1;
+  string    image_url  = 2;
+  ImageType image_type = 3;
+  int64     size_bytes = 4;
+  string    mime_type  = 5;
+  string    checksum   = 6;
+  google.protobuf.Timestamp uploaded_at = 7;
+}
+
+message DiseaseInfo {
+  string   disease_id       = 1;
+  string   disease_name     = 2;
+  string   scientific_name  = 3;
+  double   confidence_score = 4;
+  Severity severity         = 5;
+  string   description      = 6;
+  string   symptoms         = 7;
+  repeated string treatment_options = 8;
+  string   prevention       = 9;
+}
+
+message NutrientDeficiency {
+  string   nutrient         = 1;
+  double   confidence_score = 2;
+  Severity severity         = 3;
+  string   description      = 4;
+  string   visual_symptoms  = 5;
+  repeated string recommended_fertilizers = 6;
+  string   application_method = 7;
+}
+
+message PestDamage {
+  string   pest_id          = 1;
+  string   pest_name        = 2;
+  string   scientific_name  = 3;
+  double   confidence_score = 4;
+  Severity damage_level     = 5;
+  string   description      = 6;
+  string   damage_pattern   = 7;
+  repeated string control_methods = 8;
+}
+
+message PlantSpecies {
+  string id              = 1;
+  string common_name     = 2;
+  string scientific_name = 3;
+  string family          = 4;
+  double confidence      = 5;
+}
+
+message TreatmentPlan {
+  string   id              = 1;
+  string   diagnosis_id    = 2;
+  string   title           = 3;
+  string   description     = 4;
+  Severity priority        = 5;
+  repeated TreatmentStep steps          = 6;
+  string   estimated_cost  = 7;
+  int32    estimated_days   = 8;
+  google.protobuf.Timestamp created_at  = 9;
+}
+
+message TreatmentStep {
+  int32  step_number  = 1;
+  string action       = 2;
+  string product      = 3;
+  string dosage       = 4;
+  string frequency    = 5;
+  string notes        = 6;
+  int32  duration_days = 7;
+}
+
+message DiagnosisResult {
+  string                    id                      = 1;
+  string                    diagnosis_request_id    = 2;
+  PlantSpecies              identified_species      = 3;
+  repeated DiseaseInfo      detected_diseases       = 4;
+  repeated NutrientDeficiency nutrient_deficiencies = 5;
+  repeated PestDamage       pest_damage             = 6;
+  repeated string           treatment_recommendations = 7;
+  string                    ai_model_version        = 8;
+  int64                     processing_time_ms      = 9;
+  double                    overall_health_score    = 10;
+  string                    summary                 = 11;
+  google.protobuf.Timestamp created_at              = 12;
+}
+
+message DiagnosisRequest {
+  string                    id               = 1;
+  string                    tenant_id        = 2;
+  string                    farm_id          = 3;
+  string                    field_id         = 4;
+  string                    plant_species_id = 5;
+  repeated DiagnosisImage   images           = 6;
+  DiagnosisStatus           status           = 7;
+  DiagnosisResult           result           = 8;
+  string                    notes            = 9;
+  string                    created_by       = 10;
+  google.protobuf.Timestamp created_at       = 11;
+  google.protobuf.Timestamp updated_at       = 12;
+  int32                     version          = 13;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Request / Response Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message SubmitDiagnosisRequest {
+  string              farm_id          = 1;
+  string              field_id         = 2;
+  string              plant_species_id = 3;
+  repeated ImageInput images           = 4;
+  string              notes            = 5;
+}
+
+message ImageInput {
+  string    image_url  = 1;
+  ImageType image_type = 2;
+  string    mime_type  = 3;
+}
+
+message SubmitDiagnosisResponse {
+  DiagnosisRequest diagnosis = 1;
+}
+
+message GetDiagnosisRequest {
+  string id = 1;
+}
+
+message GetDiagnosisResponse {
+  DiagnosisRequest diagnosis = 1;
+}
+
+message ListDiagnosesRequest {
+  string farm_id   = 1;
+  string field_id  = 2;
+  DiagnosisStatus status = 3;
+  int32  page_size   = 4;
+  int32  page_offset = 5;
+  string sort_by     = 6;
+  bool   sort_desc   = 7;
+}
+
+message ListDiagnosesResponse {
+  repeated DiagnosisRequest diagnoses   = 1;
+  int32                     total_count = 2;
+}
+
+message GetDiseaseInfoRequest {
+  string disease_id = 1;
+}
+
+message GetDiseaseInfoResponse {
+  DiseaseInfo disease = 1;
+}
+
+message ListDiseasesRequest {
+  string search_term = 1;
+  int32  page_size   = 2;
+  int32  page_offset = 3;
+}
+
+message ListDiseasesResponse {
+  repeated DiseaseInfo diseases    = 1;
+  int32                total_count = 2;
+}
+
+message GetTreatmentPlanRequest {
+  string diagnosis_id = 1;
+}
+
+message GetTreatmentPlanResponse {
+  TreatmentPlan treatment_plan = 1;
+}
+
+message IdentifySpeciesRequest {
+  repeated ImageInput images = 1;
+}
+
+message IdentifySpeciesResponse {
+  repeated PlantSpecies species          = 1;
+  string                ai_model_version = 2;
+  int64                 processing_time_ms = 3;
+}
+
+message DetectNutrientDeficiencyRequest {
+  string              plant_species_id = 1;
+  repeated ImageInput images           = 2;
+}
+
+message DetectNutrientDeficiencyResponse {
+  repeated NutrientDeficiency deficiencies      = 1;
+  string                      ai_model_version  = 2;
+  int64                       processing_time_ms = 3;
+}
+
+message DetectPestDamageRequest {
+  string              plant_species_id = 1;
+  repeated ImageInput images           = 2;
+}
+
+message DetectPestDamageResponse {
+  repeated PestDamage pests              = 1;
+  string              ai_model_version   = 2;
+  int64               processing_time_ms = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────────────────────
+
+service PlantDiagnosisService {
+  // Submit a new plant diagnosis request with images
+  rpc SubmitDiagnosis(SubmitDiagnosisRequest) returns (SubmitDiagnosisResponse);
+
+  // Get a diagnosis by ID
+  rpc GetDiagnosis(GetDiagnosisRequest) returns (GetDiagnosisResponse);
+
+  // List diagnoses with filtering
+  rpc ListDiagnoses(ListDiagnosesRequest) returns (ListDiagnosesResponse);
+
+  // Get disease information by ID
+  rpc GetDiseaseInfo(GetDiseaseInfoRequest) returns (GetDiseaseInfoResponse);
+
+  // Get treatment plan for a diagnosis
+  rpc GetTreatmentPlan(GetTreatmentPlanRequest) returns (GetTreatmentPlanResponse);
+
+  // List all known diseases
+  rpc ListDiseases(ListDiseasesRequest) returns (ListDiseasesResponse);
+
+  // Identify plant species from images
+  rpc IdentifySpecies(IdentifySpeciesRequest) returns (IdentifySpeciesResponse);
+
+  // Detect nutrient deficiencies from images
+  rpc DetectNutrientDeficiency(DetectNutrientDeficiencyRequest) returns (DetectNutrientDeficiencyResponse);
+
+  // Detect pest damage from images
+  rpc DetectPestDamage(DetectPestDamageRequest) returns (DetectPestDamageResponse);
+}

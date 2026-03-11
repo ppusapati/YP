@@ -1,0 +1,310 @@
+syntax = "proto3";
+package agriculture.yield.v1;
+option go_package = "p9e.in/samavaya/agriculture/yield-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// HarvestQualityGrade represents the quality classification of a harvest.
+enum HarvestQualityGrade {
+  HARVEST_QUALITY_GRADE_UNSPECIFIED = 0;
+  HARVEST_QUALITY_GRADE_A = 1;
+  HARVEST_QUALITY_GRADE_B = 2;
+  HARVEST_QUALITY_GRADE_C = 3;
+  HARVEST_QUALITY_GRADE_D = 4;
+}
+
+// PredictionStatus represents the status of a yield prediction.
+enum PredictionStatus {
+  PREDICTION_STATUS_UNSPECIFIED = 0;
+  PREDICTION_STATUS_PENDING = 1;
+  PREDICTION_STATUS_COMPLETED = 2;
+  PREDICTION_STATUS_FAILED = 3;
+  PREDICTION_STATUS_SUPERSEDED = 4;
+}
+
+// HarvestPlanStatus represents the status of a harvest plan.
+enum HarvestPlanStatus {
+  HARVEST_PLAN_STATUS_UNSPECIFIED = 0;
+  HARVEST_PLAN_STATUS_DRAFT = 1;
+  HARVEST_PLAN_STATUS_SCHEDULED = 2;
+  HARVEST_PLAN_STATUS_IN_PROGRESS = 3;
+  HARVEST_PLAN_STATUS_COMPLETED = 4;
+  HARVEST_PLAN_STATUS_CANCELLED = 5;
+}
+
+// YieldFactors represents the individual contributing factors to yield prediction.
+message YieldFactors {
+  double soil_quality_score = 1;
+  double weather_score = 2;
+  double irrigation_score = 3;
+  double pest_pressure_score = 4;
+  double nutrient_score = 5;
+  double management_score = 6;
+}
+
+// YieldPrediction represents a yield forecast for a specific field and crop.
+message YieldPrediction {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string season = 6;
+  int32 year = 7;
+  double predicted_yield_kg_per_hectare = 8;
+  double prediction_confidence_pct = 9;
+  string prediction_model_version = 10;
+  YieldFactors yield_factors = 11;
+  PredictionStatus status = 12;
+  string created_by = 13;
+  string updated_by = 14;
+  int64 version = 15;
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp updated_at = 17;
+}
+
+// YieldRecord represents an actual recorded yield after harvest.
+message YieldRecord {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string season = 6;
+  int32 year = 7;
+  double actual_yield_kg_per_hectare = 8;
+  double total_area_harvested_hectares = 9;
+  double total_yield_kg = 10;
+  HarvestQualityGrade harvest_quality_grade = 11;
+  double moisture_content_pct = 12;
+  google.protobuf.Timestamp harvest_date = 13;
+  double revenue_per_hectare = 14;
+  double cost_per_hectare = 15;
+  double profit_per_hectare = 16;
+  string prediction_id = 17;
+  string created_by = 18;
+  string updated_by = 19;
+  int64 version = 20;
+  google.protobuf.Timestamp created_at = 21;
+  google.protobuf.Timestamp updated_at = 22;
+}
+
+// HarvestPlan represents a planned harvest operation.
+message HarvestPlan {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string season = 6;
+  int32 year = 7;
+  google.protobuf.Timestamp planned_start_date = 8;
+  google.protobuf.Timestamp planned_end_date = 9;
+  double estimated_yield_kg = 10;
+  double total_area_hectares = 11;
+  HarvestPlanStatus status = 12;
+  string notes = 13;
+  string created_by = 14;
+  string updated_by = 15;
+  int64 version = 16;
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+}
+
+// CropPerformance represents analytics for a specific crop's performance.
+message CropPerformance {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string season = 6;
+  int32 year = 7;
+  double actual_yield_kg_per_hectare = 8;
+  double predicted_yield_kg_per_hectare = 9;
+  double yield_variance_pct = 10;
+  double comparison_to_regional_avg_pct = 11;
+  double comparison_to_historical_avg_pct = 12;
+  double revenue_per_hectare = 13;
+  double cost_per_hectare = 14;
+  double profit_per_hectare = 15;
+  YieldFactors yield_factors = 16;
+  int64 version = 17;
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+}
+
+// ----- Request/Response messages -----
+
+message PredictYieldRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  string season = 4;
+  int32 year = 5;
+  YieldFactors yield_factors = 6;
+}
+
+message PredictYieldResponse {
+  YieldPrediction prediction = 1;
+}
+
+message GetPredictionRequest {
+  string id = 1;
+}
+
+message GetPredictionResponse {
+  YieldPrediction prediction = 1;
+}
+
+message ListPredictionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string season = 6;
+  int32 year = 7;
+  PredictionStatus status = 8;
+  string order_by = 9;
+}
+
+message ListPredictionsResponse {
+  repeated YieldPrediction predictions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message RecordYieldRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  string season = 4;
+  int32 year = 5;
+  double actual_yield_kg_per_hectare = 6;
+  double total_area_harvested_hectares = 7;
+  double total_yield_kg = 8;
+  HarvestQualityGrade harvest_quality_grade = 9;
+  double moisture_content_pct = 10;
+  google.protobuf.Timestamp harvest_date = 11;
+  double revenue_per_hectare = 12;
+  double cost_per_hectare = 13;
+  string prediction_id = 14;
+}
+
+message RecordYieldResponse {
+  YieldRecord record = 1;
+}
+
+message GetYieldHistoryRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  int32 from_year = 4;
+  int32 to_year = 5;
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message GetYieldHistoryResponse {
+  repeated YieldRecord records = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateHarvestPlanRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  string season = 4;
+  int32 year = 5;
+  google.protobuf.Timestamp planned_start_date = 6;
+  google.protobuf.Timestamp planned_end_date = 7;
+  double estimated_yield_kg = 8;
+  double total_area_hectares = 9;
+  string notes = 10;
+}
+
+message CreateHarvestPlanResponse {
+  HarvestPlan plan = 1;
+}
+
+message GetHarvestPlanRequest {
+  string id = 1;
+}
+
+message GetHarvestPlanResponse {
+  HarvestPlan plan = 1;
+}
+
+message ListHarvestPlansRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string season = 6;
+  int32 year = 7;
+  HarvestPlanStatus status = 8;
+  string order_by = 9;
+}
+
+message ListHarvestPlansResponse {
+  repeated HarvestPlan plans = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetCropPerformanceRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  string season = 4;
+  int32 year = 5;
+}
+
+message GetCropPerformanceResponse {
+  CropPerformance performance = 1;
+}
+
+message CompareYieldsRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  int32 year_a = 4;
+  string season_a = 5;
+  int32 year_b = 6;
+  string season_b = 7;
+}
+
+message CompareYieldsResponse {
+  CropPerformance performance_a = 1;
+  CropPerformance performance_b = 2;
+  double yield_difference_kg_per_hectare = 3;
+  double yield_difference_pct = 4;
+  double profit_difference_per_hectare = 5;
+}
+
+// YieldService provides yield management and analytics operations.
+service YieldService {
+  // PredictYield generates a yield prediction using multi-factor analysis.
+  rpc PredictYield(PredictYieldRequest) returns (PredictYieldResponse);
+  // GetPrediction retrieves a yield prediction by ID.
+  rpc GetPrediction(GetPredictionRequest) returns (GetPredictionResponse);
+  // ListPredictions lists yield predictions with filtering and pagination.
+  rpc ListPredictions(ListPredictionsRequest) returns (ListPredictionsResponse);
+  // RecordYield records an actual harvest yield.
+  rpc RecordYield(RecordYieldRequest) returns (RecordYieldResponse);
+  // GetYieldHistory retrieves historical yield records.
+  rpc GetYieldHistory(GetYieldHistoryRequest) returns (GetYieldHistoryResponse);
+  // CreateHarvestPlan creates a new harvest plan.
+  rpc CreateHarvestPlan(CreateHarvestPlanRequest) returns (CreateHarvestPlanResponse);
+  // GetHarvestPlan retrieves a harvest plan by ID.
+  rpc GetHarvestPlan(GetHarvestPlanRequest) returns (GetHarvestPlanResponse);
+  // ListHarvestPlans lists harvest plans with filtering and pagination.
+  rpc ListHarvestPlans(ListHarvestPlansRequest) returns (ListHarvestPlansResponse);
+  // GetCropPerformance retrieves crop performance analytics.
+  rpc GetCropPerformance(GetCropPerformanceRequest) returns (GetCropPerformanceResponse);
+  // CompareYields compares yield performance between two seasons or years.
+  rpc CompareYields(CompareYieldsRequest) returns (CompareYieldsResponse);
+}

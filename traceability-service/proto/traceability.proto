@@ -1,0 +1,372 @@
+syntax = "proto3";
+package agriculture.traceability.v1;
+option go_package = "p9e.in/samavaya/agriculture/traceability-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// SupplyChainEventType represents the type of supply chain event.
+enum SupplyChainEventType {
+  SUPPLY_CHAIN_EVENT_TYPE_UNSPECIFIED = 0;
+  SUPPLY_CHAIN_EVENT_TYPE_PLANTED = 1;
+  SUPPLY_CHAIN_EVENT_TYPE_FERTILIZED = 2;
+  SUPPLY_CHAIN_EVENT_TYPE_IRRIGATED = 3;
+  SUPPLY_CHAIN_EVENT_TYPE_SPRAYED = 4;
+  SUPPLY_CHAIN_EVENT_TYPE_HARVESTED = 5;
+  SUPPLY_CHAIN_EVENT_TYPE_PROCESSED = 6;
+  SUPPLY_CHAIN_EVENT_TYPE_PACKAGED = 7;
+  SUPPLY_CHAIN_EVENT_TYPE_SHIPPED = 8;
+  SUPPLY_CHAIN_EVENT_TYPE_RECEIVED = 9;
+  SUPPLY_CHAIN_EVENT_TYPE_SOLD = 10;
+}
+
+// CertificationType represents the type of certification.
+enum CertificationType {
+  CERTIFICATION_TYPE_UNSPECIFIED = 0;
+  CERTIFICATION_TYPE_ORGANIC = 1;
+  CERTIFICATION_TYPE_GAP = 2;
+  CERTIFICATION_TYPE_FAIRTRADE = 3;
+  CERTIFICATION_TYPE_RAINFOREST_ALLIANCE = 4;
+  CERTIFICATION_TYPE_USDA_ORGANIC = 5;
+  CERTIFICATION_TYPE_EU_ORGANIC = 6;
+}
+
+// CertificationStatus represents the status of a certification.
+enum CertificationStatus {
+  CERTIFICATION_STATUS_UNSPECIFIED = 0;
+  CERTIFICATION_STATUS_ACTIVE = 1;
+  CERTIFICATION_STATUS_EXPIRED = 2;
+  CERTIFICATION_STATUS_REVOKED = 3;
+  CERTIFICATION_STATUS_PENDING = 4;
+}
+
+// ComplianceStatus represents the compliance status of a traceability record.
+enum ComplianceStatus {
+  COMPLIANCE_STATUS_UNSPECIFIED = 0;
+  COMPLIANCE_STATUS_COMPLIANT = 1;
+  COMPLIANCE_STATUS_NON_COMPLIANT = 2;
+  COMPLIANCE_STATUS_PENDING_REVIEW = 3;
+}
+
+// SupplyChainEvent represents a single event in the supply chain.
+message SupplyChainEvent {
+  string id = 1;
+  string record_id = 2;
+  SupplyChainEventType event_type = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  string location = 5;
+  string actor = 6;
+  string details = 7;
+  string verification_hash = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+// Certification represents a certification associated with a record.
+message Certification {
+  string id = 1;
+  string tenant_id = 2;
+  string record_id = 3;
+  CertificationType cert_type = 4;
+  string cert_number = 5;
+  string issued_by = 6;
+  google.protobuf.Timestamp issued_date = 7;
+  google.protobuf.Timestamp expiry_date = 8;
+  CertificationStatus status = 9;
+  string verified_by = 10;
+  google.protobuf.Timestamp verified_at = 11;
+  map<string, string> metadata = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  int64 version = 15;
+}
+
+// BatchRecord represents a batch of products.
+message BatchRecord {
+  string id = 1;
+  string tenant_id = 2;
+  string record_id = 3;
+  string batch_number = 4;
+  int32 quantity = 5;
+  string unit = 6;
+  google.protobuf.Timestamp production_date = 7;
+  google.protobuf.Timestamp expiry_date = 8;
+  string storage_conditions = 9;
+  string quality_grade = 10;
+  map<string, string> metadata = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  int64 version = 14;
+}
+
+// QRCode represents a generated QR code for traceability.
+message QRCode {
+  string id = 1;
+  string record_id = 2;
+  string batch_id = 3;
+  string qr_data = 4;
+  string qr_image_url = 5;
+  string scan_url = 6;
+  google.protobuf.Timestamp generated_at = 7;
+  google.protobuf.Timestamp expires_at = 8;
+  bool is_active = 9;
+}
+
+// ComplianceReport represents a compliance report.
+message ComplianceReport {
+  string id = 1;
+  string tenant_id = 2;
+  string record_id = 3;
+  ComplianceStatus status = 4;
+  string report_type = 5;
+  repeated string findings = 6;
+  repeated string recommendations = 7;
+  string auditor = 8;
+  google.protobuf.Timestamp audit_date = 9;
+  google.protobuf.Timestamp next_audit_date = 10;
+  double compliance_score = 11;
+  map<string, string> metadata = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+// TraceabilityRecord represents the main traceability record from seed to shelf.
+message TraceabilityRecord {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string crop_id = 5;
+  string batch_number = 6;
+  string product_type = 7;
+  string origin_country = 8;
+  string origin_region = 9;
+  string seed_source = 10;
+  google.protobuf.Timestamp planting_date = 11;
+  google.protobuf.Timestamp harvest_date = 12;
+  google.protobuf.Timestamp processing_date = 13;
+  google.protobuf.Timestamp packaging_date = 14;
+  repeated SupplyChainEvent supply_chain_events = 15;
+  repeated Certification certifications = 16;
+  string qr_code_data = 17;
+  string blockchain_hash = 18;
+  repeated string chain_of_custody = 19;
+  ComplianceStatus compliance_status = 20;
+  map<string, string> metadata = 21;
+  int64 version = 22;
+  string created_by = 23;
+  string updated_by = 24;
+  google.protobuf.Timestamp created_at = 25;
+  google.protobuf.Timestamp updated_at = 26;
+}
+
+// ----- Request/Response messages -----
+
+message CreateRecordRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_id = 3;
+  string batch_number = 4;
+  string product_type = 5;
+  string origin_country = 6;
+  string origin_region = 7;
+  string seed_source = 8;
+  google.protobuf.Timestamp planting_date = 9;
+  google.protobuf.Timestamp harvest_date = 10;
+  google.protobuf.Timestamp processing_date = 11;
+  google.protobuf.Timestamp packaging_date = 12;
+  map<string, string> metadata = 13;
+}
+
+message CreateRecordResponse {
+  TraceabilityRecord record = 1;
+}
+
+message GetRecordRequest {
+  string id = 1;
+}
+
+message GetRecordResponse {
+  TraceabilityRecord record = 1;
+}
+
+message ListRecordsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  string crop_id = 4;
+  string product_type = 5;
+  string origin_country = 6;
+  ComplianceStatus compliance_status = 7;
+  string search = 8;
+  string order_by = 9;
+}
+
+message ListRecordsResponse {
+  repeated TraceabilityRecord records = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message AddSupplyChainEventRequest {
+  string record_id = 1;
+  SupplyChainEventType event_type = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string location = 4;
+  string actor = 5;
+  string details = 6;
+}
+
+message AddSupplyChainEventResponse {
+  SupplyChainEvent event = 1;
+}
+
+message GetSupplyChainRequest {
+  string record_id = 1;
+}
+
+message GetSupplyChainResponse {
+  repeated SupplyChainEvent events = 1;
+}
+
+message CreateCertificationRequest {
+  string record_id = 1;
+  CertificationType cert_type = 2;
+  string cert_number = 3;
+  string issued_by = 4;
+  google.protobuf.Timestamp issued_date = 5;
+  google.protobuf.Timestamp expiry_date = 6;
+  map<string, string> metadata = 7;
+}
+
+message CreateCertificationResponse {
+  Certification certification = 1;
+}
+
+message GetCertificationRequest {
+  string id = 1;
+}
+
+message GetCertificationResponse {
+  Certification certification = 1;
+}
+
+message ListCertificationsRequest {
+  string record_id = 1;
+  CertificationType cert_type = 2;
+  CertificationStatus status = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListCertificationsResponse {
+  repeated Certification certifications = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message VerifyCertificationRequest {
+  string id = 1;
+  string verified_by = 2;
+}
+
+message VerifyCertificationResponse {
+  Certification certification = 1;
+}
+
+message CreateBatchRequest {
+  string record_id = 1;
+  string batch_number = 2;
+  int32 quantity = 3;
+  string unit = 4;
+  google.protobuf.Timestamp production_date = 5;
+  google.protobuf.Timestamp expiry_date = 6;
+  string storage_conditions = 7;
+  string quality_grade = 8;
+  map<string, string> metadata = 9;
+}
+
+message CreateBatchResponse {
+  BatchRecord batch = 1;
+}
+
+message GetBatchRequest {
+  string id = 1;
+}
+
+message GetBatchResponse {
+  BatchRecord batch = 1;
+}
+
+message ListBatchesRequest {
+  string record_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListBatchesResponse {
+  repeated BatchRecord batches = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GenerateQRCodeRequest {
+  string record_id = 1;
+  string batch_id = 2;
+  string base_url = 3;
+}
+
+message GenerateQRCodeResponse {
+  QRCode qr_code = 1;
+}
+
+message VerifyQRCodeRequest {
+  string qr_data = 1;
+}
+
+message VerifyQRCodeResponse {
+  bool valid = 1;
+  TraceabilityRecord record = 2;
+  BatchRecord batch = 3;
+}
+
+message GenerateComplianceReportRequest {
+  string record_id = 1;
+  string report_type = 2;
+  string auditor = 3;
+}
+
+message GenerateComplianceReportResponse {
+  ComplianceReport report = 1;
+}
+
+// TraceabilityService provides end-to-end organic traceability from seed to shelf.
+service TraceabilityService {
+  // CreateRecord creates a new traceability record.
+  rpc CreateRecord(CreateRecordRequest) returns (CreateRecordResponse);
+  // GetRecord retrieves a traceability record by ID.
+  rpc GetRecord(GetRecordRequest) returns (GetRecordResponse);
+  // ListRecords lists traceability records with filtering and pagination.
+  rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
+  // AddSupplyChainEvent adds a new event to the supply chain.
+  rpc AddSupplyChainEvent(AddSupplyChainEventRequest) returns (AddSupplyChainEventResponse);
+  // GetSupplyChain retrieves the full supply chain for a record.
+  rpc GetSupplyChain(GetSupplyChainRequest) returns (GetSupplyChainResponse);
+  // CreateCertification creates a new certification for a record.
+  rpc CreateCertification(CreateCertificationRequest) returns (CreateCertificationResponse);
+  // GetCertification retrieves a certification by ID.
+  rpc GetCertification(GetCertificationRequest) returns (GetCertificationResponse);
+  // ListCertifications lists certifications with filtering and pagination.
+  rpc ListCertifications(ListCertificationsRequest) returns (ListCertificationsResponse);
+  // VerifyCertification verifies a certification.
+  rpc VerifyCertification(VerifyCertificationRequest) returns (VerifyCertificationResponse);
+  // CreateBatch creates a new batch record.
+  rpc CreateBatch(CreateBatchRequest) returns (CreateBatchResponse);
+  // GetBatch retrieves a batch record by ID.
+  rpc GetBatch(GetBatchRequest) returns (GetBatchResponse);
+  // ListBatches lists batch records with filtering and pagination.
+  rpc ListBatches(ListBatchesRequest) returns (ListBatchesResponse);
+  // GenerateQRCode generates a QR code for a record or batch.
+  rpc GenerateQRCode(GenerateQRCodeRequest) returns (GenerateQRCodeResponse);
+  // VerifyQRCode verifies a QR code and returns the associated record.
+  rpc VerifyQRCode(VerifyQRCodeRequest) returns (VerifyQRCodeResponse);
+  // GenerateComplianceReport generates a compliance report for a record.
+  rpc GenerateComplianceReport(GenerateComplianceReportRequest) returns (GenerateComplianceReportResponse);
+}

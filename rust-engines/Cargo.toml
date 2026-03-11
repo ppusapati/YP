@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "satellite-ndvi-engine",
+    "terrain-analysis-engine",
+    "crop-recommendation-engine",
+    "water-flow-simulation-engine",
+    "plant-ai-inference-engine",
+    "yield-prediction-engine",
+]
+resolver = "2"

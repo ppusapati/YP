@@ -1,0 +1,365 @@
+syntax = "proto3";
+
+package agriculture.pest.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/pest-prediction-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0;
+  RISK_LEVEL_NONE        = 1;
+  RISK_LEVEL_LOW         = 2;
+  RISK_LEVEL_MODERATE    = 3;
+  RISK_LEVEL_HIGH        = 4;
+  RISK_LEVEL_CRITICAL    = 5;
+}
+
+enum TreatmentType {
+  TREATMENT_TYPE_UNSPECIFIED = 0;
+  TREATMENT_TYPE_CHEMICAL    = 1;
+  TREATMENT_TYPE_BIOLOGICAL  = 2;
+  TREATMENT_TYPE_CULTURAL    = 3;
+  TREATMENT_TYPE_MECHANICAL  = 4;
+}
+
+enum AlertStatus {
+  ALERT_STATUS_UNSPECIFIED    = 0;
+  ALERT_STATUS_ACTIVE         = 1;
+  ALERT_STATUS_ACKNOWLEDGED   = 2;
+  ALERT_STATUS_RESOLVED       = 3;
+  ALERT_STATUS_EXPIRED        = 4;
+}
+
+enum DamageLevel {
+  DAMAGE_LEVEL_UNSPECIFIED = 0;
+  DAMAGE_LEVEL_NONE        = 1;
+  DAMAGE_LEVEL_LIGHT       = 2;
+  DAMAGE_LEVEL_MODERATE    = 3;
+  DAMAGE_LEVEL_SEVERE      = 4;
+  DAMAGE_LEVEL_DEVASTATING = 5;
+}
+
+enum GrowthStage {
+  GROWTH_STAGE_UNSPECIFIED   = 0;
+  GROWTH_STAGE_GERMINATION   = 1;
+  GROWTH_STAGE_SEEDLING      = 2;
+  GROWTH_STAGE_VEGETATIVE    = 3;
+  GROWTH_STAGE_FLOWERING     = 4;
+  GROWTH_STAGE_FRUITING      = 5;
+  GROWTH_STAGE_MATURATION    = 6;
+  GROWTH_STAGE_HARVEST       = 7;
+}
+
+// ---------------------------------------------------------------------------
+// Core Messages
+// ---------------------------------------------------------------------------
+
+// WeatherFactors describes weather conditions relevant to pest prediction.
+message WeatherFactors {
+  double temperature_celsius = 1;
+  double humidity_pct        = 2;
+  double rainfall_mm         = 3;
+  double wind_speed_kmh      = 4;
+}
+
+// RecommendedTreatment is a single recommended treatment action.
+message RecommendedTreatment {
+  TreatmentType treatment_type    = 1;
+  string        product_name      = 2;
+  string        application_rate  = 3;
+  string        application_method = 4;
+  string        timing            = 5;
+  string        safety_interval   = 6;
+}
+
+// PestSpecies describes a known pest species in the catalogue.
+message PestSpecies {
+  string id                        = 1;
+  string tenant_id                 = 2;
+  string common_name               = 3;
+  string scientific_name           = 4;
+  string family                    = 5;
+  string description               = 6;
+  repeated string affected_crops   = 7;
+  repeated string favorable_conditions = 8;
+  string image_url                 = 9;
+  int64  version                   = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+// PestPrediction is the main prediction entity.
+message PestPrediction {
+  string id                              = 1;
+  string tenant_id                       = 2;
+  string farm_id                         = 3;
+  string field_id                        = 4;
+  string pest_species_id                 = 5;
+  google.protobuf.Timestamp prediction_date = 6;
+  RiskLevel risk_level                   = 7;
+  int32 risk_score                       = 8;  // 0-100
+  double confidence_pct                  = 9;
+  WeatherFactors weather_factors         = 10;
+  string crop_type                       = 11;
+  GrowthStage growth_stage               = 12;
+  double geographic_risk_factor          = 13;
+  int32 historical_occurrence_count      = 14;
+  google.protobuf.Timestamp predicted_onset_date = 15;
+  google.protobuf.Timestamp predicted_peak_date  = 16;
+  google.protobuf.Timestamp treatment_window_start = 17;
+  google.protobuf.Timestamp treatment_window_end   = 18;
+  repeated RecommendedTreatment recommended_treatments = 19;
+  int64 version                          = 20;
+  string created_by                      = 21;
+  google.protobuf.Timestamp created_at   = 22;
+  google.protobuf.Timestamp updated_at   = 23;
+}
+
+// PestAlert represents an early warning alert for pest risk.
+message PestAlert {
+  string id                              = 1;
+  string tenant_id                       = 2;
+  string prediction_id                   = 3;
+  string farm_id                         = 4;
+  string field_id                        = 5;
+  string pest_species_id                 = 6;
+  RiskLevel risk_level                   = 7;
+  AlertStatus status                     = 8;
+  string title                           = 9;
+  string message                         = 10;
+  google.protobuf.Timestamp acknowledged_at = 11;
+  string acknowledged_by                 = 12;
+  int64 version                          = 13;
+  google.protobuf.Timestamp created_at   = 14;
+  google.protobuf.Timestamp updated_at   = 15;
+}
+
+// PestObservation records a field observation of pest activity.
+message PestObservation {
+  string id                              = 1;
+  string tenant_id                       = 2;
+  string farm_id                         = 3;
+  string field_id                        = 4;
+  string pest_species_id                 = 5;
+  int32 pest_count                       = 6;
+  DamageLevel damage_level               = 7;
+  string trap_type                       = 8;
+  string image_url                       = 9;
+  double latitude                        = 10;
+  double longitude                       = 11;
+  string notes                           = 12;
+  string observed_by                     = 13;
+  google.protobuf.Timestamp observed_at  = 14;
+  int64 version                          = 15;
+  google.protobuf.Timestamp created_at   = 16;
+  google.protobuf.Timestamp updated_at   = 17;
+}
+
+// PestTreatment records an applied treatment.
+message PestTreatment {
+  string id                              = 1;
+  string tenant_id                       = 2;
+  string farm_id                         = 3;
+  string field_id                        = 4;
+  string pest_species_id                 = 5;
+  string prediction_id                   = 6;
+  TreatmentType treatment_type           = 7;
+  string product_name                    = 8;
+  string application_rate                = 9;
+  string application_method              = 10;
+  double cost                            = 11;
+  string effectiveness_rating            = 12;
+  string applied_by                      = 13;
+  google.protobuf.Timestamp applied_at   = 14;
+  string notes                           = 15;
+  int64 version                          = 16;
+  google.protobuf.Timestamp created_at   = 17;
+  google.protobuf.Timestamp updated_at   = 18;
+}
+
+// PestRiskMap represents a geographic risk map for a region.
+message PestRiskMap {
+  string id                              = 1;
+  string tenant_id                       = 2;
+  string pest_species_id                 = 3;
+  string region                          = 4;
+  RiskLevel overall_risk_level           = 5;
+  string geojson                         = 6;
+  google.protobuf.Timestamp valid_from   = 7;
+  google.protobuf.Timestamp valid_until  = 8;
+  int64 version                          = 9;
+  google.protobuf.Timestamp created_at   = 10;
+  google.protobuf.Timestamp updated_at   = 11;
+}
+
+// ---------------------------------------------------------------------------
+// Request / Response Messages
+// ---------------------------------------------------------------------------
+
+message PredictPestRiskRequest {
+  string farm_id             = 1;
+  string field_id            = 2;
+  string pest_species_id     = 3;
+  string crop_type           = 4;
+  GrowthStage growth_stage   = 5;
+  WeatherFactors weather     = 6;
+  double latitude            = 7;
+  double longitude           = 8;
+}
+
+message PredictPestRiskResponse {
+  PestPrediction prediction = 1;
+}
+
+message GetPredictionRequest {
+  string id = 1;
+}
+
+message GetPredictionResponse {
+  PestPrediction prediction = 1;
+}
+
+message ListPredictionsRequest {
+  string farm_id             = 1;
+  string field_id            = 2;
+  string pest_species_id     = 3;
+  RiskLevel min_risk_level   = 4;
+  int32 page_size            = 5;
+  string page_token          = 6;
+  string order_by            = 7;
+}
+
+message ListPredictionsResponse {
+  repeated PestPrediction predictions = 1;
+  string next_page_token              = 2;
+  int32 total_count                   = 3;
+}
+
+message ReportObservationRequest {
+  string farm_id             = 1;
+  string field_id            = 2;
+  string pest_species_id     = 3;
+  int32 pest_count           = 4;
+  DamageLevel damage_level   = 5;
+  string trap_type           = 6;
+  string image_url           = 7;
+  double latitude            = 8;
+  double longitude           = 9;
+  string notes               = 10;
+}
+
+message ReportObservationResponse {
+  PestObservation observation = 1;
+}
+
+message ListObservationsRequest {
+  string farm_id             = 1;
+  string field_id            = 2;
+  string pest_species_id     = 3;
+  int32 page_size            = 4;
+  string page_token          = 5;
+}
+
+message ListObservationsResponse {
+  repeated PestObservation observations = 1;
+  string next_page_token                = 2;
+  int32 total_count                     = 3;
+}
+
+message GetPestSpeciesRequest {
+  string id = 1;
+}
+
+message GetPestSpeciesResponse {
+  PestSpecies species = 1;
+}
+
+message ListPestSpeciesRequest {
+  string search    = 1;
+  string crop_type = 2;
+  int32 page_size  = 3;
+  string page_token = 4;
+}
+
+message ListPestSpeciesResponse {
+  repeated PestSpecies species = 1;
+  string next_page_token       = 2;
+  int32 total_count            = 3;
+}
+
+message GetTreatmentPlanRequest {
+  string prediction_id = 1;
+}
+
+message GetTreatmentPlanResponse {
+  PestPrediction prediction                      = 1;
+  repeated RecommendedTreatment treatments       = 2;
+}
+
+message GetRiskMapRequest {
+  string pest_species_id = 1;
+  string region          = 2;
+}
+
+message GetRiskMapResponse {
+  PestRiskMap risk_map = 1;
+}
+
+message ListAlertsRequest {
+  string farm_id             = 1;
+  string field_id            = 2;
+  AlertStatus status         = 3;
+  RiskLevel min_risk_level   = 4;
+  int32 page_size            = 5;
+  string page_token          = 6;
+}
+
+message ListAlertsResponse {
+  repeated PestAlert alerts  = 1;
+  string next_page_token     = 2;
+  int32 total_count          = 3;
+}
+
+message AcknowledgeAlertRequest {
+  string id = 1;
+}
+
+message AcknowledgeAlertResponse {
+  PestAlert alert = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+// PestPredictionService provides pest outbreak prediction and management.
+service PestPredictionService {
+  // PredictPestRisk generates a pest risk prediction for a field.
+  rpc PredictPestRisk(PredictPestRiskRequest) returns (PredictPestRiskResponse);
+  // GetPrediction retrieves a prediction by ID.
+  rpc GetPrediction(GetPredictionRequest) returns (GetPredictionResponse);
+  // ListPredictions lists predictions with filtering and pagination.
+  rpc ListPredictions(ListPredictionsRequest) returns (ListPredictionsResponse);
+  // ReportObservation records a field pest observation.
+  rpc ReportObservation(ReportObservationRequest) returns (ReportObservationResponse);
+  // ListObservations lists pest observations with filtering and pagination.
+  rpc ListObservations(ListObservationsRequest) returns (ListObservationsResponse);
+  // GetPestSpecies retrieves a pest species by ID.
+  rpc GetPestSpecies(GetPestSpeciesRequest) returns (GetPestSpeciesResponse);
+  // ListPestSpecies lists pest species with filtering and pagination.
+  rpc ListPestSpecies(ListPestSpeciesRequest) returns (ListPestSpeciesResponse);
+  // GetTreatmentPlan retrieves recommended treatments for a prediction.
+  rpc GetTreatmentPlan(GetTreatmentPlanRequest) returns (GetTreatmentPlanResponse);
+  // GetRiskMap retrieves a geographic risk map for a pest species in a region.
+  rpc GetRiskMap(GetRiskMapRequest) returns (GetRiskMapResponse);
+  // ListAlerts lists pest alerts with filtering and pagination.
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  // AcknowledgeAlert marks an alert as acknowledged.
+  rpc AcknowledgeAlert(AcknowledgeAlertRequest) returns (AcknowledgeAlertResponse);
+}

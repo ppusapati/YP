@@ -1,0 +1,367 @@
+syntax = "proto3";
+
+package agriculture.irrigation.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/irrigation-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum ScheduleType {
+  SCHEDULE_TYPE_UNSPECIFIED = 0;
+  SCHEDULE_TYPE_FIXED = 1;
+  SCHEDULE_TYPE_ADAPTIVE = 2;
+  SCHEDULE_TYPE_AI_DRIVEN = 3;
+}
+
+enum Frequency {
+  FREQUENCY_UNSPECIFIED = 0;
+  FREQUENCY_DAILY = 1;
+  FREQUENCY_EVERY_OTHER_DAY = 2;
+  FREQUENCY_WEEKLY = 3;
+  FREQUENCY_CUSTOM = 4;
+}
+
+enum ControllerType {
+  CONTROLLER_TYPE_UNSPECIFIED = 0;
+  CONTROLLER_TYPE_DRIP = 1;
+  CONTROLLER_TYPE_VALVE = 2;
+  CONTROLLER_TYPE_PUMP = 3;
+  CONTROLLER_TYPE_SPRINKLER = 4;
+}
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_MQTT = 1;
+  PROTOCOL_LORAWAN = 2;
+  PROTOCOL_MODBUS = 3;
+}
+
+enum ControllerStatus {
+  CONTROLLER_STATUS_UNSPECIFIED = 0;
+  CONTROLLER_STATUS_ONLINE = 1;
+  CONTROLLER_STATUS_OFFLINE = 2;
+  CONTROLLER_STATUS_ERROR = 3;
+}
+
+enum IrrigationStatus {
+  IRRIGATION_STATUS_UNSPECIFIED = 0;
+  IRRIGATION_STATUS_SCHEDULED = 1;
+  IRRIGATION_STATUS_ACTIVE = 2;
+  IRRIGATION_STATUS_COMPLETED = 3;
+  IRRIGATION_STATUS_CANCELLED = 4;
+  IRRIGATION_STATUS_FAILED = 5;
+}
+
+// ============================================================================
+// Messages
+// ============================================================================
+
+message IrrigationSchedule {
+  string id = 1;
+  string tenant_id = 2;
+  string field_id = 3;
+  string farm_id = 4;
+  string zone_id = 5;
+  ScheduleType schedule_type = 6;
+  google.protobuf.Timestamp start_time = 7;
+  google.protobuf.Timestamp end_time = 8;
+  int32 duration_minutes = 9;
+  double water_quantity_liters = 10;
+  double flow_rate_liters_per_hour = 11;
+  Frequency frequency = 12;
+  double soil_moisture_threshold_pct = 13;
+  bool weather_adjusted = 14;
+  string crop_growth_stage = 15;
+  string controller_id = 16;
+  IrrigationStatus status = 17;
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+  int64 version = 20;
+  string created_by = 21;
+  string name = 22;
+  string description = 23;
+}
+
+message IrrigationZone {
+  string id = 1;
+  string tenant_id = 2;
+  string field_id = 3;
+  string farm_id = 4;
+  string name = 5;
+  string description = 6;
+  double area_hectares = 7;
+  string soil_type = 8;
+  string crop_type = 9;
+  string crop_growth_stage = 10;
+  double latitude = 11;
+  double longitude = 12;
+  bool is_active = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message WaterController {
+  string id = 1;
+  string tenant_id = 2;
+  string zone_id = 3;
+  string field_id = 4;
+  string farm_id = 5;
+  string name = 6;
+  string model = 7;
+  string firmware_version = 8;
+  ControllerType controller_type = 9;
+  Protocol protocol = 10;
+  ControllerStatus status = 11;
+  string endpoint = 12;
+  double max_flow_rate_liters_per_hour = 13;
+  google.protobuf.Timestamp last_heartbeat = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+message IrrigationEvent {
+  string id = 1;
+  string tenant_id = 2;
+  string schedule_id = 3;
+  string zone_id = 4;
+  string controller_id = 5;
+  IrrigationStatus status = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp ended_at = 8;
+  int32 actual_duration_minutes = 9;
+  double actual_water_liters = 10;
+  double soil_moisture_before_pct = 11;
+  double soil_moisture_after_pct = 12;
+  string failure_reason = 13;
+  google.protobuf.Timestamp created_at = 14;
+}
+
+message DecisionInputs {
+  double soil_moisture = 1;
+  double temperature = 2;
+  double humidity = 3;
+  double rainfall_forecast_mm = 4;
+  double wind_speed = 5;
+  string crop_type = 6;
+  string growth_stage = 7;
+  double evapotranspiration_mm = 8;
+}
+
+message DecisionOutput {
+  bool should_irrigate = 1;
+  double water_quantity_liters = 2;
+  int32 duration_minutes = 3;
+  google.protobuf.Timestamp optimal_time = 4;
+  string reasoning = 5;
+  double confidence_score = 6;
+}
+
+message IrrigationDecision {
+  string id = 1;
+  string tenant_id = 2;
+  string zone_id = 3;
+  string field_id = 4;
+  string schedule_id = 5;
+  DecisionInputs inputs = 6;
+  DecisionOutput output = 7;
+  google.protobuf.Timestamp decided_at = 8;
+  bool applied = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message WaterUsageLog {
+  string id = 1;
+  string tenant_id = 2;
+  string zone_id = 3;
+  string controller_id = 4;
+  double water_liters = 5;
+  google.protobuf.Timestamp recorded_at = 6;
+  google.protobuf.Timestamp period_start = 7;
+  google.protobuf.Timestamp period_end = 8;
+}
+
+// ============================================================================
+// Request / Response Messages
+// ============================================================================
+
+message CreateScheduleRequest {
+  IrrigationSchedule schedule = 1;
+}
+
+message CreateScheduleResponse {
+  IrrigationSchedule schedule = 1;
+}
+
+message GetScheduleRequest {
+  string id = 1;
+}
+
+message GetScheduleResponse {
+  IrrigationSchedule schedule = 1;
+}
+
+message ListSchedulesRequest {
+  string field_id = 1;
+  string farm_id = 2;
+  string zone_id = 3;
+  IrrigationStatus status = 4;
+  int32 page_size = 5;
+  int32 page_offset = 6;
+}
+
+message ListSchedulesResponse {
+  repeated IrrigationSchedule schedules = 1;
+  int32 total_count = 2;
+}
+
+message UpdateScheduleRequest {
+  IrrigationSchedule schedule = 1;
+}
+
+message UpdateScheduleResponse {
+  IrrigationSchedule schedule = 1;
+}
+
+message DeleteScheduleRequest {
+  string id = 1;
+}
+
+message DeleteScheduleResponse {
+  bool success = 1;
+}
+
+message GenerateIrrigationDecisionRequest {
+  string zone_id = 1;
+  string field_id = 2;
+  DecisionInputs inputs = 3;
+}
+
+message GenerateIrrigationDecisionResponse {
+  IrrigationDecision decision = 1;
+}
+
+message CreateZoneRequest {
+  IrrigationZone zone = 1;
+}
+
+message CreateZoneResponse {
+  IrrigationZone zone = 1;
+}
+
+message ListZonesRequest {
+  string field_id = 1;
+  string farm_id = 2;
+  int32 page_size = 3;
+  int32 page_offset = 4;
+}
+
+message ListZonesResponse {
+  repeated IrrigationZone zones = 1;
+  int32 total_count = 2;
+}
+
+message RegisterControllerRequest {
+  WaterController controller = 1;
+}
+
+message RegisterControllerResponse {
+  WaterController controller = 1;
+}
+
+message ListControllersRequest {
+  string zone_id = 1;
+  string field_id = 2;
+  ControllerStatus status = 3;
+  int32 page_size = 4;
+  int32 page_offset = 5;
+}
+
+message ListControllersResponse {
+  repeated WaterController controllers = 1;
+  int32 total_count = 2;
+}
+
+message TriggerIrrigationRequest {
+  string schedule_id = 1;
+  string controller_id = 2;
+  string zone_id = 3;
+  int32 duration_minutes = 4;
+  double water_quantity_liters = 5;
+}
+
+message TriggerIrrigationResponse {
+  IrrigationEvent event = 1;
+}
+
+message StopIrrigationRequest {
+  string event_id = 1;
+  string controller_id = 2;
+}
+
+message StopIrrigationResponse {
+  IrrigationEvent event = 1;
+}
+
+message GetWaterUsageRequest {
+  string zone_id = 1;
+  string field_id = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+}
+
+message GetWaterUsageResponse {
+  repeated WaterUsageLog logs = 1;
+  double total_liters = 2;
+}
+
+message GetIrrigationHistoryRequest {
+  string zone_id = 1;
+  string field_id = 2;
+  string schedule_id = 3;
+  google.protobuf.Timestamp from = 4;
+  google.protobuf.Timestamp to = 5;
+  int32 page_size = 6;
+  int32 page_offset = 7;
+}
+
+message GetIrrigationHistoryResponse {
+  repeated IrrigationEvent events = 1;
+  int32 total_count = 2;
+}
+
+// ============================================================================
+// Service
+// ============================================================================
+
+service IrrigationService {
+  // Schedule management
+  rpc CreateSchedule(CreateScheduleRequest) returns (CreateScheduleResponse);
+  rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
+  rpc ListSchedules(ListSchedulesRequest) returns (ListSchedulesResponse);
+  rpc UpdateSchedule(UpdateScheduleRequest) returns (UpdateScheduleResponse);
+  rpc DeleteSchedule(DeleteScheduleRequest) returns (DeleteScheduleResponse);
+
+  // AI-driven irrigation decisions
+  rpc GenerateIrrigationDecision(GenerateIrrigationDecisionRequest) returns (GenerateIrrigationDecisionResponse);
+
+  // Zone management
+  rpc CreateZone(CreateZoneRequest) returns (CreateZoneResponse);
+  rpc ListZones(ListZonesRequest) returns (ListZonesResponse);
+
+  // Controller management
+  rpc RegisterController(RegisterControllerRequest) returns (RegisterControllerResponse);
+  rpc ListControllers(ListControllersRequest) returns (ListControllersResponse);
+
+  // Irrigation control
+  rpc TriggerIrrigation(TriggerIrrigationRequest) returns (TriggerIrrigationResponse);
+  rpc StopIrrigation(StopIrrigationRequest) returns (StopIrrigationResponse);
+
+  // Reporting
+  rpc GetWaterUsage(GetWaterUsageRequest) returns (GetWaterUsageResponse);
+  rpc GetIrrigationHistory(GetIrrigationHistoryRequest) returns (GetIrrigationHistoryResponse);
+}

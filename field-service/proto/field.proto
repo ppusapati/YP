@@ -1,0 +1,316 @@
+syntax = "proto3";
+package agriculture.field.v1;
+option go_package = "p9e.in/samavaya/agriculture/field-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum FieldStatus {
+  FIELD_STATUS_UNSPECIFIED = 0;
+  FIELD_STATUS_ACTIVE      = 1;
+  FIELD_STATUS_FALLOW      = 2;
+  FIELD_STATUS_PREPARATION = 3;
+  FIELD_STATUS_PLANTED     = 4;
+  FIELD_STATUS_HARVESTING  = 5;
+  FIELD_STATUS_RETIRED     = 6;
+}
+
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  FIELD_TYPE_CROPLAND    = 1;
+  FIELD_TYPE_PASTURE     = 2;
+  FIELD_TYPE_ORCHARD     = 3;
+  FIELD_TYPE_VINEYARD    = 4;
+  FIELD_TYPE_GREENHOUSE  = 5;
+  FIELD_TYPE_NURSERY     = 6;
+  FIELD_TYPE_AGROFOREST  = 7;
+}
+
+enum SoilType {
+  SOIL_TYPE_UNSPECIFIED = 0;
+  SOIL_TYPE_CLAY        = 1;
+  SOIL_TYPE_SANDY       = 2;
+  SOIL_TYPE_LOAMY       = 3;
+  SOIL_TYPE_SILT        = 4;
+  SOIL_TYPE_PEAT        = 5;
+  SOIL_TYPE_CHALK       = 6;
+  SOIL_TYPE_CLAY_LOAM   = 7;
+  SOIL_TYPE_SANDY_LOAM  = 8;
+}
+
+enum IrrigationType {
+  IRRIGATION_TYPE_UNSPECIFIED = 0;
+  IRRIGATION_TYPE_RAINFED     = 1;
+  IRRIGATION_TYPE_DRIP        = 2;
+  IRRIGATION_TYPE_SPRINKLER   = 3;
+  IRRIGATION_TYPE_FLOOD       = 4;
+  IRRIGATION_TYPE_CENTER_PIVOT = 5;
+  IRRIGATION_TYPE_FURROW      = 6;
+  IRRIGATION_TYPE_SUBSURFACE  = 7;
+}
+
+enum GrowthStage {
+  GROWTH_STAGE_UNSPECIFIED   = 0;
+  GROWTH_STAGE_GERMINATION   = 1;
+  GROWTH_STAGE_SEEDLING      = 2;
+  GROWTH_STAGE_VEGETATIVE    = 3;
+  GROWTH_STAGE_BUDDING       = 4;
+  GROWTH_STAGE_FLOWERING     = 5;
+  GROWTH_STAGE_FRUIT_SET     = 6;
+  GROWTH_STAGE_RIPENING      = 7;
+  GROWTH_STAGE_MATURITY      = 8;
+  GROWTH_STAGE_SENESCENCE    = 9;
+}
+
+enum AspectDirection {
+  ASPECT_DIRECTION_UNSPECIFIED = 0;
+  ASPECT_DIRECTION_NORTH       = 1;
+  ASPECT_DIRECTION_NORTHEAST   = 2;
+  ASPECT_DIRECTION_EAST        = 3;
+  ASPECT_DIRECTION_SOUTHEAST   = 4;
+  ASPECT_DIRECTION_SOUTH       = 5;
+  ASPECT_DIRECTION_SOUTHWEST   = 6;
+  ASPECT_DIRECTION_WEST        = 7;
+  ASPECT_DIRECTION_NORTHWEST   = 8;
+  ASPECT_DIRECTION_FLAT         = 9;
+}
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+message GeoPoint {
+  double longitude = 1;
+  double latitude  = 2;
+}
+
+message GeoPolygon {
+  repeated GeoPoint points = 1;
+}
+
+message Field {
+  string                     id                    = 1;
+  string                     tenant_id             = 2;
+  string                     farm_id               = 3;
+  string                     name                  = 4;
+  double                     area_hectares         = 5;
+  GeoPolygon                 boundary              = 6;
+  string                     current_crop_id       = 7;
+  google.protobuf.Timestamp  planting_date         = 8;
+  google.protobuf.Timestamp  expected_harvest_date = 9;
+  GrowthStage                growth_stage          = 10;
+  SoilType                   soil_type             = 11;
+  IrrigationType             irrigation_type       = 12;
+  FieldType                  field_type            = 13;
+  FieldStatus                status                = 14;
+  double                     elevation_meters      = 15;
+  double                     slope_degrees         = 16;
+  AspectDirection            aspect_direction      = 17;
+  string                     created_by            = 18;
+  string                     updated_by            = 19;
+  google.protobuf.Timestamp  created_at            = 20;
+  google.protobuf.Timestamp  updated_at            = 21;
+  int64                      version               = 22;
+}
+
+message FieldBoundary {
+  string                     id         = 1;
+  string                     field_id   = 2;
+  GeoPolygon                 polygon    = 3;
+  double                     area_hectares = 4;
+  double                     perimeter_meters = 5;
+  string                     source     = 6;
+  google.protobuf.Timestamp  recorded_at = 7;
+  google.protobuf.Timestamp  created_at = 8;
+}
+
+message FieldCropAssignment {
+  string                     id                    = 1;
+  string                     field_id              = 2;
+  string                     crop_id               = 3;
+  string                     crop_variety          = 4;
+  google.protobuf.Timestamp  planting_date         = 5;
+  google.protobuf.Timestamp  expected_harvest_date = 6;
+  google.protobuf.Timestamp  actual_harvest_date   = 7;
+  GrowthStage                growth_stage          = 8;
+  double                     yield_per_hectare     = 9;
+  string                     notes                 = 10;
+  string                     season                = 11;
+  google.protobuf.Timestamp  created_at            = 12;
+  google.protobuf.Timestamp  updated_at            = 13;
+}
+
+message FieldSegment {
+  string                     id             = 1;
+  string                     field_id       = 2;
+  string                     name           = 3;
+  GeoPolygon                 boundary       = 4;
+  double                     area_hectares  = 5;
+  SoilType                   soil_type      = 6;
+  string                     current_crop_id = 7;
+  string                     notes          = 8;
+  int32                      segment_index  = 9;
+  google.protobuf.Timestamp  created_at     = 10;
+  google.protobuf.Timestamp  updated_at     = 11;
+}
+
+// -----------------------------------------------------------------------------
+// Requests / Responses
+// -----------------------------------------------------------------------------
+
+message CreateFieldRequest {
+  string                     farm_id               = 1;
+  string                     name                  = 2;
+  double                     area_hectares         = 3;
+  GeoPolygon                 boundary              = 4;
+  FieldType                  field_type            = 5;
+  SoilType                   soil_type             = 6;
+  IrrigationType             irrigation_type       = 7;
+  double                     elevation_meters      = 8;
+  double                     slope_degrees         = 9;
+  AspectDirection            aspect_direction      = 10;
+}
+
+message CreateFieldResponse {
+  Field field = 1;
+}
+
+message GetFieldRequest {
+  string id = 1;
+}
+
+message GetFieldResponse {
+  Field field = 1;
+}
+
+message ListFieldsRequest {
+  int32  page_size   = 1;
+  int32  page_offset = 2;
+  string farm_id     = 3;
+  FieldStatus status = 4;
+  FieldType field_type = 5;
+  string search      = 6;
+}
+
+message ListFieldsResponse {
+  repeated Field fields     = 1;
+  int32          total_count = 2;
+}
+
+message UpdateFieldRequest {
+  string                     id                    = 1;
+  string                     name                  = 2;
+  double                     area_hectares         = 3;
+  FieldType                  field_type            = 4;
+  SoilType                   soil_type             = 5;
+  IrrigationType             irrigation_type       = 6;
+  FieldStatus                status                = 7;
+  double                     elevation_meters      = 8;
+  double                     slope_degrees         = 9;
+  AspectDirection            aspect_direction      = 10;
+  GrowthStage                growth_stage          = 11;
+  google.protobuf.FieldMask  update_mask           = 12;
+}
+
+message UpdateFieldResponse {
+  Field field = 1;
+}
+
+message DeleteFieldRequest {
+  string id = 1;
+}
+
+message DeleteFieldResponse {}
+
+message SetFieldBoundaryRequest {
+  string     field_id         = 1;
+  GeoPolygon polygon          = 2;
+  string     source           = 3;
+}
+
+message SetFieldBoundaryResponse {
+  FieldBoundary boundary = 1;
+}
+
+message AssignCropRequest {
+  string                     field_id              = 1;
+  string                     crop_id               = 2;
+  string                     crop_variety          = 3;
+  google.protobuf.Timestamp  planting_date         = 4;
+  google.protobuf.Timestamp  expected_harvest_date = 5;
+  string                     season                = 6;
+  string                     notes                 = 7;
+}
+
+message AssignCropResponse {
+  FieldCropAssignment assignment = 1;
+}
+
+message ListFieldsByFarmRequest {
+  string farm_id     = 1;
+  int32  page_size   = 2;
+  int32  page_offset = 3;
+}
+
+message ListFieldsByFarmResponse {
+  repeated Field fields      = 1;
+  int32          total_count = 2;
+}
+
+message SegmentFieldRequest {
+  string                   field_id = 1;
+  repeated FieldSegmentInput segments = 2;
+}
+
+message FieldSegmentInput {
+  string     name           = 1;
+  GeoPolygon boundary       = 2;
+  double     area_hectares  = 3;
+  SoilType   soil_type      = 4;
+  string     notes          = 5;
+}
+
+message SegmentFieldResponse {
+  repeated FieldSegment segments = 1;
+}
+
+message GetFieldSegmentsRequest {
+  string field_id = 1;
+}
+
+message GetFieldSegmentsResponse {
+  repeated FieldSegment segments = 1;
+}
+
+message GetCropHistoryRequest {
+  string field_id    = 1;
+  int32  page_size   = 2;
+  int32  page_offset = 3;
+}
+
+message GetCropHistoryResponse {
+  repeated FieldCropAssignment assignments = 1;
+  int32                        total_count = 2;
+}
+
+// -----------------------------------------------------------------------------
+// Service
+// -----------------------------------------------------------------------------
+
+service FieldService {
+  rpc CreateField       (CreateFieldRequest)       returns (CreateFieldResponse);
+  rpc GetField          (GetFieldRequest)          returns (GetFieldResponse);
+  rpc ListFields        (ListFieldsRequest)        returns (ListFieldsResponse);
+  rpc UpdateField       (UpdateFieldRequest)       returns (UpdateFieldResponse);
+  rpc DeleteField       (DeleteFieldRequest)       returns (DeleteFieldResponse);
+  rpc SetFieldBoundary  (SetFieldBoundaryRequest)  returns (SetFieldBoundaryResponse);
+  rpc AssignCrop        (AssignCropRequest)         returns (AssignCropResponse);
+  rpc ListFieldsByFarm  (ListFieldsByFarmRequest)   returns (ListFieldsByFarmResponse);
+  rpc SegmentField      (SegmentFieldRequest)       returns (SegmentFieldResponse);
+  rpc GetFieldSegments  (GetFieldSegmentsRequest)   returns (GetFieldSegmentsResponse);
+  rpc GetCropHistory    (GetCropHistoryRequest)     returns (GetCropHistoryResponse);
+}
