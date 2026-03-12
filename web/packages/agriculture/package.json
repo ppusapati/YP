@@ -1,0 +1,26 @@
+{
+  "name": "@samavāya/agriculture",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared agriculture module: types, form schemas, services, and components",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./services": "./src/services/index.ts",
+    "./api": "./src/api/transport.ts",
+    "./components": "./src/components/index.ts"
+  },
+  "dependencies": {
+    "@connectrpc/connect-web": "^2.0.0",
+    "@samavāya/core": "workspace:*",
+    "@samavāya/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "svelte": "^5.0.0",
+    "typescript": "^5.7.0"
+  }
+}
