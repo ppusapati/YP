@@ -183,7 +183,7 @@ class DiseaseDataset(Dataset):
         if mask is not None:
             result["mask"] = mask
         else:
-            # Return zero mask as placeholder
+            # Zero mask for samples without mask annotations (contributes zero to segmentation loss)
             import torch
             result["mask"] = torch.zeros(1, self.mask_size, self.mask_size)
 

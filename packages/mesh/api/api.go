@@ -1,13 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/loadbalancer"
 	"p9e.in/samavaya/packages/mesh"
+	"p9e.in/samavaya/packages/p9log"
 )
 
 // PolicyServer implements HTTP API for mesh policy management
@@ -182,10 +183,33 @@ func (s *PolicyServer) handleSetPolicy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *PolicyServer) handleListPolicies(w http.ResponseWriter, r *http.Request) {
-	// Placeholder for listing all policies
-	// Would need to add method to ServiceMesh to return all policies
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	policies, err := s.mesh.ListPolicies(ctx)
+	if err != nil {
+		s.logger.Error("failed to list policies", "error", err)
+		s.writeError(w, http.StatusInternalServerError, "query_failed", err.Error())
+		return
+	}
+
+	result := make([]PolicyResponse, 0, len(policies))
+	for _, policy := range policies {
+		result = append(result, PolicyResponse{
+			ServiceName:            policy.ServiceName,
+			VersionConstraint:      policy.VersionConstraint,
+			Region:                 policy.Region,
+			LoadBalancingAlgorithm: policy.LoadBalancingAlgorithm,
+			CircuitBreakerConfig:   policy.CircuitBreakerConfig,
+			RetryPolicy:            policy.RetryPolicy,
+			TimeoutPolicy:          policy.TimeoutPolicy,
+			CanaryConfig:           policy.CanaryConfig,
+			Metadata:               policy.Metadata,
+		})
+	}
+
 	s.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"policies": []interface{}{},
+		"policies": result,
 	})
 }
 
@@ -205,5 +229,3 @@ func (s *PolicyServer) writeError(w http.ResponseWriter, status int, code string
 	}
 	s.writeJSON(w, status, resp)
 }
-
-import "context"
