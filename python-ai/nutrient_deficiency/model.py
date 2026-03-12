@@ -42,6 +42,7 @@ SUPPLEMENTATION_MAP = {
     "Sulfur": "Apply gypsum (CaSO4) at 100-200 kg/ha or elemental sulfur at 20-40 kg/ha. Ammonium sulfate provides both N and S.",
     "Iron": "Apply iron chelate (Fe-EDDHA) at 5-10 kg/ha. Foliar spray with 0.5% FeSO4 + 0.25% citric acid.",
     "Zinc": "Apply zinc sulfate (ZnSO4) at 10-25 kg/ha. Foliar spray with 0.5% ZnSO4 for rapid correction.",
+    "Manganese": "Apply manganese sulfate (MnSO4) at 5-15 kg/ha. Foliar spray with 0.5% MnSO4. Maintain soil pH below 6.5 for Mn availability.",
     "Boron": "Apply borax at 1-2 kg/ha (caution: narrow range between deficiency and toxicity). Foliar spray with 0.1% borax.",
 }
 

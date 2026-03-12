@@ -196,6 +196,189 @@ impl MultiBandRaster {
     }
 }
 
+/// Resample a raster band to new dimensions using bilinear interpolation.
+pub fn resample_bilinear(band: &RasterBand, target_rows: usize, target_cols: usize) -> RasterBand {
+    let src_rows = band.rows() as f64;
+    let src_cols = band.cols() as f64;
+    let dst_rows = target_rows as f64;
+    let dst_cols = target_cols as f64;
+
+    let result_rows: Vec<Vec<f64>> = (0..target_rows)
+        .into_par_iter()
+        .map(|r| {
+            let mut row_vals = Vec::with_capacity(target_cols);
+            let src_r = (r as f64 + 0.5) * src_rows / dst_rows - 0.5;
+            let r0 = (src_r.floor() as isize).clamp(0, band.rows() as isize - 1) as usize;
+            let r1 = (r0 + 1).min(band.rows() - 1);
+            let fr = src_r - src_r.floor();
+
+            for c in 0..target_cols {
+                let src_c = (c as f64 + 0.5) * src_cols / dst_cols - 0.5;
+                let c0 = (src_c.floor() as isize).clamp(0, band.cols() as isize - 1) as usize;
+                let c1 = (c0 + 1).min(band.cols() - 1);
+                let fc = src_c - src_c.floor();
+
+                // Check for nodata
+                if band.is_nodata(r0, c0) || band.is_nodata(r0, c1)
+                    || band.is_nodata(r1, c0) || band.is_nodata(r1, c1)
+                {
+                    row_vals.push(band.nodata_value.unwrap_or(f64::NAN));
+                    continue;
+                }
+
+                let v00 = band.data[[r0, c0]];
+                let v01 = band.data[[r0, c1]];
+                let v10 = band.data[[r1, c0]];
+                let v11 = band.data[[r1, c1]];
+
+                let val = v00 * (1.0 - fr) * (1.0 - fc)
+                    + v01 * (1.0 - fr) * fc
+                    + v10 * fr * (1.0 - fc)
+                    + v11 * fr * fc;
+                row_vals.push(val);
+            }
+            row_vals
+        })
+        .collect();
+
+    let flat: Vec<f64> = result_rows.into_iter().flatten().collect();
+    let data = ndarray::Array2::from_shape_vec((target_rows, target_cols), flat).unwrap();
+    RasterBand::new(data, band.nodata_value)
+}
+
+/// Resample using nearest-neighbor interpolation.
+pub fn resample_nearest(band: &RasterBand, target_rows: usize, target_cols: usize) -> RasterBand {
+    let src_rows = band.rows() as f64;
+    let src_cols = band.cols() as f64;
+    let dst_rows = target_rows as f64;
+    let dst_cols = target_cols as f64;
+
+    let result_rows: Vec<Vec<f64>> = (0..target_rows)
+        .into_par_iter()
+        .map(|r| {
+            let src_r = ((r as f64 + 0.5) * src_rows / dst_rows) as usize;
+            let src_r = src_r.min(band.rows() - 1);
+            (0..target_cols)
+                .map(|c| {
+                    let src_c = ((c as f64 + 0.5) * src_cols / dst_cols) as usize;
+                    let src_c = src_c.min(band.cols() - 1);
+                    band.data[[src_r, src_c]]
+                })
+                .collect()
+        })
+        .collect();
+
+    let flat: Vec<f64> = result_rows.into_iter().flatten().collect();
+    let data = ndarray::Array2::from_shape_vec((target_rows, target_cols), flat).unwrap();
+    RasterBand::new(data, band.nodata_value)
+}
+
+/// Clip a raster band to a rectangular extent, returning the clipped sub-region.
+///
+/// `row_start`, `col_start` are the top-left corner of the clip window.
+/// `clip_rows`, `clip_cols` define the size.
+pub fn clip_to_window(
+    band: &RasterBand,
+    row_start: usize,
+    col_start: usize,
+    clip_rows: usize,
+    clip_cols: usize,
+) -> Result<RasterBand, RasterError> {
+    if row_start + clip_rows > band.rows() || col_start + clip_cols > band.cols() {
+        return Err(RasterError::DimensionMismatch {
+            expected_rows: clip_rows,
+            expected_cols: clip_cols,
+            actual_rows: band.rows().saturating_sub(row_start),
+            actual_cols: band.cols().saturating_sub(col_start),
+        });
+    }
+
+    let slice = band.data.slice(ndarray::s![
+        row_start..row_start + clip_rows,
+        col_start..col_start + clip_cols
+    ]);
+    Ok(RasterBand::new(slice.to_owned(), band.nodata_value))
+}
+
+/// Clip a raster band using a polygon mask.
+/// Pixels outside the polygon are set to nodata.
+///
+/// The polygon is specified as a list of (row, col) vertices.
+/// Uses ray-casting for point-in-polygon testing.
+pub fn clip_to_polygon(
+    band: &RasterBand,
+    polygon: &[(f64, f64)],
+    nodata: f64,
+) -> RasterBand {
+    let rows = band.rows();
+    let cols = band.cols();
+
+    let result_rows: Vec<Vec<f64>> = (0..rows)
+        .into_par_iter()
+        .map(|r| {
+            (0..cols)
+                .map(|c| {
+                    if point_in_polygon(r as f64 + 0.5, c as f64 + 0.5, polygon) {
+                        band.data[[r, c]]
+                    } else {
+                        nodata
+                    }
+                })
+                .collect()
+        })
+        .collect();
+
+    let flat: Vec<f64> = result_rows.into_iter().flatten().collect();
+    let data = ndarray::Array2::from_shape_vec((rows, cols), flat).unwrap();
+    RasterBand::new(data, Some(nodata))
+}
+
+/// Ray-casting point-in-polygon test.
+fn point_in_polygon(row: f64, col: f64, polygon: &[(f64, f64)]) -> bool {
+    let n = polygon.len();
+    if n < 3 {
+        return false;
+    }
+    let mut inside = false;
+    let mut j = n - 1;
+    for i in 0..n {
+        let (ri, ci) = polygon[i];
+        let (rj, cj) = polygon[j];
+        if ((ri > row) != (rj > row))
+            && (col < (cj - ci) * (row - ri) / (rj - ri) + ci)
+        {
+            inside = !inside;
+        }
+        j = i;
+    }
+    inside
+}
+
+/// Apply a mathematical operation to every valid pixel in a band.
+pub fn apply_operation(band: &RasterBand, f: impl Fn(f64) -> f64 + Sync) -> RasterBand {
+    let rows = band.rows();
+    let cols = band.cols();
+
+    let result_rows: Vec<Vec<f64>> = (0..rows)
+        .into_par_iter()
+        .map(|r| {
+            (0..cols)
+                .map(|c| {
+                    if band.is_nodata(r, c) {
+                        band.nodata_value.unwrap_or(f64::NAN)
+                    } else {
+                        f(band.data[[r, c]])
+                    }
+                })
+                .collect()
+        })
+        .collect();
+
+    let flat: Vec<f64> = result_rows.into_iter().flatten().collect();
+    let data = ndarray::Array2::from_shape_vec((rows, cols), flat).unwrap();
+    RasterBand::new(data, band.nodata_value)
+}
+
 /// Metadata for raster datasets.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RasterMetadata {
