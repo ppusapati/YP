@@ -198,10 +198,15 @@ class DiseaseDetector:
 
         # Build disease results
         diseases = []
-        healthy_idx = self.class_names.index("Healthy") if "Healthy" in self.class_names else -1
+        # Identify all "healthy" class indices (PlantVillage uses "___healthy" suffix)
+        healthy_indices = set()
+        for idx, name in enumerate(self.class_names):
+            if name.lower().endswith("healthy") or name == "Healthy":
+                healthy_indices.add(idx)
+        healthy_idx = min(healthy_indices) if healthy_indices else -1
 
         for idx, prob in enumerate(cls_probs):
-            if idx == healthy_idx:
+            if idx in healthy_indices:
                 continue
             if prob >= self.confidence_threshold:
                 # Use segmentation-based severity if available, otherwise confidence-based
@@ -326,7 +331,11 @@ class DiseaseDetector:
             cls_probs = torch.sigmoid(outputs["classification"]).cpu().numpy()
             seg_maps = torch.sigmoid(outputs["segmentation"]).cpu().numpy()
 
-            healthy_idx = self.class_names.index("Healthy") if "Healthy" in self.class_names else -1
+            healthy_indices_batch = set()
+            for idx_c, name in enumerate(self.class_names):
+                if name.lower().endswith("healthy") or name == "Healthy":
+                    healthy_indices_batch.add(idx_c)
+            healthy_idx = min(healthy_indices_batch) if healthy_indices_batch else -1
 
             for i in range(len(batch_images)):
                 heatmap = seg_maps[i, 0]
@@ -336,7 +345,7 @@ class DiseaseDetector:
 
                 diseases = []
                 for idx, prob in enumerate(cls_probs[i]):
-                    if idx == healthy_idx:
+                    if idx in healthy_indices_batch:
                         continue
                     if prob >= self.confidence_threshold:
                         if affected_area_pct > 0:
