@@ -1,0 +1,263 @@
+syntax = "proto3";
+
+package agriculture.satellite.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/satellite-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum SatelliteProvider {
+  SATELLITE_PROVIDER_UNSPECIFIED = 0;
+  SATELLITE_PROVIDER_SENTINEL2  = 1;
+  SATELLITE_PROVIDER_LANDSAT8   = 2;
+  SATELLITE_PROVIDER_PLANET     = 3;
+  SATELLITE_PROVIDER_CUSTOM     = 4;
+}
+
+enum SpectralBand {
+  SPECTRAL_BAND_UNSPECIFIED = 0;
+  SPECTRAL_BAND_RED         = 1;
+  SPECTRAL_BAND_GREEN       = 2;
+  SPECTRAL_BAND_BLUE        = 3;
+  SPECTRAL_BAND_NIR         = 4;
+  SPECTRAL_BAND_SWIR        = 5;
+  SPECTRAL_BAND_REDEDGE     = 6;
+}
+
+enum ProcessingStatus {
+  PROCESSING_STATUS_UNSPECIFIED = 0;
+  PROCESSING_STATUS_PENDING     = 1;
+  PROCESSING_STATUS_PROCESSING  = 2;
+  PROCESSING_STATUS_COMPLETED   = 3;
+  PROCESSING_STATUS_FAILED      = 4;
+}
+
+enum StressType {
+  STRESS_TYPE_UNSPECIFIED = 0;
+  STRESS_TYPE_WATER      = 1;
+  STRESS_TYPE_NUTRIENT   = 2;
+  STRESS_TYPE_DISEASE    = 3;
+  STRESS_TYPE_PEST       = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Messages
+// ---------------------------------------------------------------------------
+
+message BoundingBox {
+  double min_lat = 1;
+  double min_lon = 2;
+  double max_lat = 3;
+  double max_lon = 4;
+}
+
+message SatelliteImage {
+  string                    id                 = 1;
+  string                    tenant_id          = 2;
+  string                    field_id           = 3;
+  string                    farm_id            = 4;
+  SatelliteProvider         satellite_provider = 5;
+  google.protobuf.Timestamp acquisition_date   = 6;
+  double                    cloud_cover_pct    = 7;
+  double                    resolution_meters  = 8;
+  repeated SpectralBand     bands              = 9;
+  BoundingBox               bbox               = 10;
+  string                    image_url          = 11;
+  ProcessingStatus          processing_status  = 12;
+  int32                     version            = 13;
+  google.protobuf.Timestamp created_at         = 14;
+  google.protobuf.Timestamp updated_at         = 15;
+}
+
+message VegetationIndex {
+  string                    id                = 1;
+  string                    tenant_id         = 2;
+  string                    image_id          = 3;
+  string                    field_id          = 4;
+  string                    index_type        = 5; // NDVI, NDWI, EVI
+  double                    min_value         = 6;
+  double                    max_value         = 7;
+  double                    mean_value        = 8;
+  double                    std_dev           = 9;
+  string                    raster_url        = 10;
+  google.protobuf.Timestamp computed_at       = 11;
+  int32                     version           = 12;
+  google.protobuf.Timestamp created_at        = 13;
+  google.protobuf.Timestamp updated_at        = 14;
+}
+
+message CropStressAlert {
+  string                    id              = 1;
+  string                    tenant_id       = 2;
+  string                    field_id        = 3;
+  string                    image_id        = 4;
+  bool                      stress_detected = 5;
+  StressType                stress_type     = 6;
+  double                    stress_severity = 7;
+  double                    affected_area_pct = 8;
+  string                    description     = 9;
+  string                    recommendation  = 10;
+  BoundingBox               affected_bbox   = 11;
+  int32                     version         = 12;
+  google.protobuf.Timestamp detected_at     = 13;
+  google.protobuf.Timestamp created_at      = 14;
+  google.protobuf.Timestamp updated_at      = 15;
+}
+
+message TemporalAnalysis {
+  string                    id              = 1;
+  string                    tenant_id       = 2;
+  string                    field_id        = 3;
+  string                    index_type      = 4;
+  google.protobuf.Timestamp start_date      = 5;
+  google.protobuf.Timestamp end_date        = 6;
+  repeated TemporalDataPoint data_points    = 7;
+  double                    trend_slope     = 8;
+  string                    trend_direction = 9;  // increasing, decreasing, stable
+  double                    change_pct      = 10;
+  int32                     version         = 11;
+  google.protobuf.Timestamp created_at      = 12;
+  google.protobuf.Timestamp updated_at      = 13;
+}
+
+message TemporalDataPoint {
+  google.protobuf.Timestamp date       = 1;
+  double                    mean_value = 2;
+  double                    min_value  = 3;
+  double                    max_value  = 4;
+}
+
+message SatelliteTask {
+  string                    id               = 1;
+  string                    tenant_id        = 2;
+  string                    field_id         = 3;
+  string                    task_type        = 4;  // acquisition, ndvi, ndwi, evi, stress_detection, temporal
+  ProcessingStatus          status           = 5;
+  string                    input_image_id   = 6;
+  string                    result_id        = 7;
+  string                    error_message    = 8;
+  int32                     retry_count      = 9;
+  int32                     version          = 10;
+  google.protobuf.Timestamp created_at       = 11;
+  google.protobuf.Timestamp updated_at       = 12;
+}
+
+// ---------------------------------------------------------------------------
+// Request / Response Messages
+// ---------------------------------------------------------------------------
+
+message RequestImageryRequest {
+  string            tenant_id          = 1;
+  string            field_id           = 2;
+  string            farm_id            = 3;
+  SatelliteProvider satellite_provider = 4;
+  BoundingBox       bbox               = 5;
+  double            max_cloud_cover_pct = 6;
+  double            resolution_meters  = 7;
+  repeated SpectralBand bands          = 8;
+}
+
+message RequestImageryResponse {
+  SatelliteTask task  = 1;
+  string        message = 2;
+}
+
+message GetImageRequest {
+  string id        = 1;
+  string tenant_id = 2;
+}
+
+message GetImageResponse {
+  SatelliteImage image = 1;
+}
+
+message ListImagesRequest {
+  string tenant_id = 1;
+  string field_id  = 2;
+  string farm_id   = 3;
+  int32  page_size = 4;
+  int32  page_offset = 5;
+}
+
+message ListImagesResponse {
+  repeated SatelliteImage images      = 1;
+  int32                   total_count = 2;
+}
+
+message ComputeIndexRequest {
+  string tenant_id = 1;
+  string image_id  = 2;
+  string field_id  = 3;
+}
+
+message ComputeIndexResponse {
+  VegetationIndex index   = 1;
+  string          message = 2;
+}
+
+message GetVegetationIndicesRequest {
+  string tenant_id  = 1;
+  string image_id   = 2;
+  string field_id   = 3;
+  string index_type = 4;
+}
+
+message GetVegetationIndicesResponse {
+  repeated VegetationIndex indices = 1;
+}
+
+message DetectCropStressRequest {
+  string tenant_id = 1;
+  string image_id  = 2;
+  string field_id  = 3;
+}
+
+message DetectCropStressResponse {
+  CropStressAlert alert   = 1;
+  string          message = 2;
+}
+
+message GetTemporalAnalysisRequest {
+  string                    tenant_id  = 1;
+  string                    field_id   = 2;
+  string                    index_type = 3;
+  google.protobuf.Timestamp start_date = 4;
+  google.protobuf.Timestamp end_date   = 5;
+}
+
+message GetTemporalAnalysisResponse {
+  TemporalAnalysis analysis = 1;
+}
+
+message ListAlertsRequest {
+  string tenant_id   = 1;
+  string field_id    = 2;
+  int32  page_size   = 3;
+  int32  page_offset = 4;
+}
+
+message ListAlertsResponse {
+  repeated CropStressAlert alerts      = 1;
+  int32                    total_count = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service SatelliteService {
+  rpc RequestImagery(RequestImageryRequest)             returns (RequestImageryResponse);
+  rpc GetImage(GetImageRequest)                         returns (GetImageResponse);
+  rpc ListImages(ListImagesRequest)                     returns (ListImagesResponse);
+  rpc ComputeNDVI(ComputeIndexRequest)                  returns (ComputeIndexResponse);
+  rpc ComputeNDWI(ComputeIndexRequest)                  returns (ComputeIndexResponse);
+  rpc ComputeEVI(ComputeIndexRequest)                   returns (ComputeIndexResponse);
+  rpc GetVegetationIndices(GetVegetationIndicesRequest) returns (GetVegetationIndicesResponse);
+  rpc DetectCropStress(DetectCropStressRequest)         returns (DetectCropStressResponse);
+  rpc GetTemporalAnalysis(GetTemporalAnalysisRequest)   returns (GetTemporalAnalysisResponse);
+  rpc ListAlerts(ListAlertsRequest)                     returns (ListAlertsResponse);
+}

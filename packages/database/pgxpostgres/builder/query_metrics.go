@@ -2,6 +2,7 @@ package builder
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"p9e.in/samavaya/packages/metrics"
@@ -55,6 +56,9 @@ func (qm *QueryMetrics) RecordQuery(ctx context.Context, table string, operation
 	// Create operation label with table and query type
 	operationLabel := table + "." + operation
 	qm.provider.RecordDBOperation(operationLabel, duration, success)
+
+	// Track local in-memory stats for GetStats() aggregation
+	recordStats(table, operation, duration, success)
 }
 
 // RecordRetry records a query retry with table and operation dimensions.
@@ -149,13 +153,55 @@ type QueryStats struct {
 	AvgDuration   time.Duration
 }
 
+// inMemoryStats tracks per-table/operation counts for local aggregation.
+type inMemoryStats struct {
+	mu    sync.RWMutex
+	stats map[string]*QueryStats
+}
+
+var localStats = &inMemoryStats{
+	stats: make(map[string]*QueryStats),
+}
+
+func statsKey(table, operation string) string {
+	return table + "." + operation
+}
+
+// recordStats updates local in-memory stats for a query execution.
+func recordStats(table, operation string, duration time.Duration, success bool) {
+	key := statsKey(table, operation)
+	localStats.mu.Lock()
+	defer localStats.mu.Unlock()
+
+	s, exists := localStats.stats[key]
+	if !exists {
+		s = &QueryStats{Table: table, Operation: operation}
+		localStats.stats[key] = s
+	}
+	s.TotalCount++
+	s.TotalDuration += duration
+	if success {
+		s.SuccessCount++
+	} else {
+		s.FailureCount++
+	}
+	if s.TotalCount > 0 {
+		s.AvgDuration = s.TotalDuration / time.Duration(s.TotalCount)
+	}
+}
+
 // GetStats returns aggregated statistics for the given table and operation.
-// Note: This requires the metrics provider to support query-based aggregation.
-// For now, this is a placeholder for future implementation.
+// Statistics are tracked in-memory alongside being pushed to metrics backends.
 func (qm *QueryMetrics) GetStats(table string, operation string) *QueryStats {
-	// Stats aggregation queries the metrics provider.
-	// For now, metrics are pushed to backends (Prometheus/Datadog/OpenTelemetry)
-	// and queried from there.
+	key := statsKey(table, operation)
+	localStats.mu.RLock()
+	defer localStats.mu.RUnlock()
+
+	if s, exists := localStats.stats[key]; exists {
+		// Return a copy to avoid data races
+		result := *s
+		return &result
+	}
 	return &QueryStats{
 		Table:     table,
 		Operation: operation,

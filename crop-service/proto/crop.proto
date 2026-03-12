@@ -1,0 +1,269 @@
+syntax = "proto3";
+
+package agriculture.crop.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/crop-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// CropCategory represents the classification of a crop.
+enum CropCategory {
+  CROP_CATEGORY_UNSPECIFIED = 0;
+  CROP_CATEGORY_CEREAL = 1;
+  CROP_CATEGORY_LEGUME = 2;
+  CROP_CATEGORY_VEGETABLE = 3;
+  CROP_CATEGORY_FRUIT = 4;
+  CROP_CATEGORY_OILSEED = 5;
+  CROP_CATEGORY_FIBER = 6;
+  CROP_CATEGORY_SPICE = 7;
+}
+
+// GrowthStage represents a single growth stage of a crop's lifecycle.
+message GrowthStage {
+  string id = 1;
+  string crop_id = 2;
+  string name = 3;
+  int32 stage_order = 4;
+  int32 duration_days = 5;
+  double water_requirement_mm = 6;
+  string nutrient_requirements = 7;
+  string description = 8;
+  double optimal_temp_min = 9;
+  double optimal_temp_max = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+// CropVariety represents a specific variety of a crop.
+message CropVariety {
+  string id = 1;
+  string crop_id = 2;
+  string name = 3;
+  string description = 4;
+  int32 maturity_days = 5;
+  double yield_potential_kg_per_hectare = 6;
+  bool is_hybrid = 7;
+  string disease_resistance = 8;
+  string suitable_regions = 9;
+  string seed_rate_kg_per_hectare = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+// CropRequirements captures the optimal growing conditions for a crop.
+message CropRequirements {
+  string id = 1;
+  string crop_id = 2;
+  double optimal_temp_min = 3;
+  double optimal_temp_max = 4;
+  double optimal_humidity_min = 5;
+  double optimal_humidity_max = 6;
+  double optimal_soil_ph_min = 7;
+  double optimal_soil_ph_max = 8;
+  double water_requirement_mm_per_day = 9;
+  double sunlight_hours = 10;
+  bool frost_tolerant = 11;
+  bool drought_tolerant = 12;
+  string soil_type_preference = 13;
+  string nutrient_requirements = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+// CropRecommendation represents an AI-generated recommendation for a crop.
+message CropRecommendation {
+  string id = 1;
+  string crop_id = 2;
+  string tenant_id = 3;
+  string recommendation_type = 4;
+  string title = 5;
+  string description = 6;
+  string severity = 7;
+  double confidence_score = 8;
+  string parameters = 9;
+  string applicable_growth_stage = 10;
+  google.protobuf.Timestamp valid_from = 11;
+  google.protobuf.Timestamp valid_until = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+// Crop is the main entity representing a crop in the catalog.
+message Crop {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string scientific_name = 4;
+  string family = 5;
+  CropCategory category = 6;
+  string description = 7;
+  string image_url = 8;
+  repeated string disease_susceptibilities = 9;
+  repeated string companion_plants = 10;
+  string rotation_group = 11;
+  int32 version = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  // Nested relations (optionally populated)
+  repeated CropVariety varieties = 15;
+  repeated GrowthStage growth_stages = 16;
+  CropRequirements requirements = 17;
+}
+
+// --- Request / Response Messages ---
+
+message CreateCropRequest {
+  string tenant_id = 1;
+  string name = 2;
+  string scientific_name = 3;
+  string family = 4;
+  CropCategory category = 5;
+  string description = 6;
+  string image_url = 7;
+  repeated string disease_susceptibilities = 8;
+  repeated string companion_plants = 9;
+  string rotation_group = 10;
+}
+
+message CreateCropResponse {
+  Crop crop = 1;
+}
+
+message GetCropRequest {
+  string id = 1;
+  string tenant_id = 2;
+}
+
+message GetCropResponse {
+  Crop crop = 1;
+}
+
+message ListCropsRequest {
+  string tenant_id = 1;
+  CropCategory category = 2;
+  string search_term = 3;
+  int32 page_size = 4;
+  int32 page_offset = 5;
+  repeated string sort = 6;
+  google.protobuf.FieldMask field_mask = 7;
+}
+
+message ListCropsResponse {
+  repeated Crop crops = 1;
+  int32 total_count = 2;
+}
+
+message UpdateCropRequest {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string scientific_name = 4;
+  string family = 5;
+  CropCategory category = 6;
+  string description = 7;
+  string image_url = 8;
+  repeated string disease_susceptibilities = 9;
+  repeated string companion_plants = 10;
+  string rotation_group = 11;
+  int32 version = 12;
+  google.protobuf.FieldMask update_mask = 13;
+}
+
+message UpdateCropResponse {
+  Crop crop = 1;
+}
+
+message DeleteCropRequest {
+  string id = 1;
+  string tenant_id = 2;
+}
+
+message DeleteCropResponse {
+  bool success = 1;
+}
+
+message AddVarietyRequest {
+  string crop_id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string description = 4;
+  int32 maturity_days = 5;
+  double yield_potential_kg_per_hectare = 6;
+  bool is_hybrid = 7;
+  string disease_resistance = 8;
+  string suitable_regions = 9;
+  string seed_rate_kg_per_hectare = 10;
+}
+
+message AddVarietyResponse {
+  CropVariety variety = 1;
+}
+
+message ListVarietiesRequest {
+  string crop_id = 1;
+  string tenant_id = 2;
+  int32 page_size = 3;
+  int32 page_offset = 4;
+}
+
+message ListVarietiesResponse {
+  repeated CropVariety varieties = 1;
+  int32 total_count = 2;
+}
+
+message GetGrowthStagesRequest {
+  string crop_id = 1;
+  string tenant_id = 2;
+}
+
+message GetGrowthStagesResponse {
+  repeated GrowthStage growth_stages = 1;
+}
+
+message GetCropRequirementsRequest {
+  string crop_id = 1;
+  string tenant_id = 2;
+}
+
+message GetCropRequirementsResponse {
+  CropRequirements requirements = 1;
+}
+
+message GenerateRecommendationRequest {
+  string crop_id = 1;
+  string tenant_id = 2;
+  string recommendation_type = 3;
+  string current_growth_stage = 4;
+  double current_temperature = 5;
+  double current_humidity = 6;
+  double current_soil_ph = 7;
+  double current_soil_moisture = 8;
+}
+
+message GenerateRecommendationResponse {
+  CropRecommendation recommendation = 1;
+}
+
+// --- Service Definition ---
+
+service CropService {
+  // Crop CRUD
+  rpc CreateCrop(CreateCropRequest) returns (CreateCropResponse);
+  rpc GetCrop(GetCropRequest) returns (GetCropResponse);
+  rpc ListCrops(ListCropsRequest) returns (ListCropsResponse);
+  rpc UpdateCrop(UpdateCropRequest) returns (UpdateCropResponse);
+  rpc DeleteCrop(DeleteCropRequest) returns (DeleteCropResponse);
+
+  // Varieties
+  rpc AddVariety(AddVarietyRequest) returns (AddVarietyResponse);
+  rpc ListVarieties(ListVarietiesRequest) returns (ListVarietiesResponse);
+
+  // Growth Stages
+  rpc GetGrowthStages(GetGrowthStagesRequest) returns (GetGrowthStagesResponse);
+
+  // Requirements
+  rpc GetCropRequirements(GetCropRequirementsRequest) returns (GetCropRequirementsResponse);
+
+  // Intelligence
+  rpc GenerateRecommendation(GenerateRecommendationRequest) returns (GenerateRecommendationResponse);
+}

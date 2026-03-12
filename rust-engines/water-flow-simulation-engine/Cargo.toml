@@ -1,0 +1,15 @@
+[package]
+name = "water-flow-simulation-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Hydrological modeling for irrigation planning"
+
+[dependencies]
+ndarray = { version = "0.16", features = ["rayon"] }
+rayon = "1.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+approx = "0.5"

@@ -203,6 +203,18 @@ func (m *ServiceMesh) SetPolicy(ctx context.Context, policy *RoutingPolicy) erro
 	return nil
 }
 
+// ListPolicies returns all configured routing policies
+func (m *ServiceMesh) ListPolicies(ctx context.Context) ([]*RoutingPolicy, error) {
+	m.policiesMu.RLock()
+	defer m.policiesMu.RUnlock()
+
+	policies := make([]*RoutingPolicy, 0, len(m.policies))
+	for _, policy := range m.policies {
+		policies = append(policies, policy)
+	}
+	return policies, nil
+}
+
 // Close closes the mesh and releases resources
 func (m *ServiceMesh) Close() error {
 	close(m.stopChan)

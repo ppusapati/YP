@@ -2,11 +2,14 @@
 package executor
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"sync"
-
-	"p9e.in/samavaya/packages/saga"
+	"time"
 )
 
 // RpcConnectorImpl implements RPC connector for service communication
@@ -107,11 +110,8 @@ func (r *RpcConnectorImpl) getOrCreateClient(endpoint string) (interface{}, erro
 		return cachedClient, nil
 	}
 
-	// Create new client (simplified - in real implementation this would create
-	// a proper ConnectRPC client to the endpoint)
-	client := &rpcClient{
-		endpoint: endpoint,
-	}
+	// Create new HTTP/JSON-RPC client for the endpoint
+	client := newRPCClient(endpoint)
 
 	// Cache the client
 	r.clientCache[endpoint] = client
@@ -119,32 +119,71 @@ func (r *RpcConnectorImpl) getOrCreateClient(endpoint string) (interface{}, erro
 	return client, nil
 }
 
-// rpcClient is a simple wrapper for RPC client communication
+// rpcClient wraps an HTTP client for JSON-RPC communication to a service endpoint
 type rpcClient struct {
-	endpoint string
+	endpoint   string
+	httpClient *http.Client
 }
 
-// invokeRPCMethod invokes an RPC method on a client
-// This is a simplified version - real implementation would use ConnectRPC
+// newRPCClient creates a new RPC client for the given endpoint
+func newRPCClient(endpoint string) *rpcClient {
+	return &rpcClient{
+		endpoint: endpoint,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
+}
+
+// invokeRPCMethod invokes an RPC method on a client via HTTP/JSON
 func invokeRPCMethod(
 	ctx context.Context,
 	client interface{},
 	methodName string,
 	request interface{},
 ) (interface{}, error) {
-	// In real implementation, this would:
-	// 1. Use reflection or code generation to find the method
-	// 2. Marshal the request
-	// 3. Make the HTTP/2 call
-	// 4. Unmarshal the response
-	// 5. Return the response or error
+	rc, ok := client.(*rpcClient)
+	if !ok {
+		return nil, fmt.Errorf("invalid client type: expected *rpcClient")
+	}
 
-	// For now, return a placeholder response
-	return map[string]interface{}{
-		"status":  "success",
-		"method":  methodName,
-		"request": request,
-	}, nil
+	// 1. Marshal the request to JSON
+	reqBody, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// 2. Build the HTTP request URL: endpoint/methodName
+	url := fmt.Sprintf("%s/%s", rc.endpoint, methodName)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	// 3. Make the HTTP call
+	resp, err := rc.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request to %s failed: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	// 4. Read and unmarshal the response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("RPC call to %s returned status %d: %s", url, resp.StatusCode, string(respBody))
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return result, nil
 }
 
 // GetRegisteredServices returns all registered services (for debugging/testing)

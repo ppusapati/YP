@@ -1,0 +1,319 @@
+syntax = "proto3";
+
+package agriculture.soil.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/soil-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum SoilTexture {
+  SOIL_TEXTURE_UNSPECIFIED = 0;
+  SOIL_TEXTURE_SANDY       = 1;
+  SOIL_TEXTURE_LOAMY       = 2;
+  SOIL_TEXTURE_CLAY        = 3;
+  SOIL_TEXTURE_SILT        = 4;
+  SOIL_TEXTURE_PEAT        = 5;
+  SOIL_TEXTURE_CHALK       = 6;
+}
+
+enum AnalysisStatus {
+  ANALYSIS_STATUS_UNSPECIFIED = 0;
+  ANALYSIS_STATUS_PENDING     = 1;
+  ANALYSIS_STATUS_IN_PROGRESS = 2;
+  ANALYSIS_STATUS_COMPLETED   = 3;
+  ANALYSIS_STATUS_FAILED      = 4;
+}
+
+enum NutrientLevel {
+  NUTRIENT_LEVEL_UNSPECIFIED  = 0;
+  NUTRIENT_LEVEL_DEFICIENT    = 1;
+  NUTRIENT_LEVEL_LOW          = 2;
+  NUTRIENT_LEVEL_ADEQUATE     = 3;
+  NUTRIENT_LEVEL_HIGH         = 4;
+  NUTRIENT_LEVEL_EXCESSIVE    = 5;
+}
+
+enum HealthCategory {
+  HEALTH_CATEGORY_UNSPECIFIED = 0;
+  HEALTH_CATEGORY_CRITICAL    = 1;
+  HEALTH_CATEGORY_POOR        = 2;
+  HEALTH_CATEGORY_FAIR        = 3;
+  HEALTH_CATEGORY_GOOD        = 4;
+  HEALTH_CATEGORY_EXCELLENT   = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Core Messages
+// ---------------------------------------------------------------------------
+
+message Location {
+  double latitude  = 1;
+  double longitude = 2;
+}
+
+message SoilSample {
+  string                    id               = 1;
+  string                    tenant_id        = 2;
+  string                    field_id         = 3;
+  string                    farm_id          = 4;
+  Location                  sample_location  = 5;
+  double                    sample_depth_cm  = 6;
+  google.protobuf.Timestamp collection_date  = 7;
+  double                    pH               = 8;
+  double                    organic_matter_pct = 9;
+  double                    nitrogen_ppm     = 10;
+  double                    phosphorus_ppm   = 11;
+  double                    potassium_ppm    = 12;
+  double                    calcium_ppm      = 13;
+  double                    magnesium_ppm    = 14;
+  double                    sulfur_ppm       = 15;
+  double                    iron_ppm         = 16;
+  double                    manganese_ppm    = 17;
+  double                    zinc_ppm         = 18;
+  double                    copper_ppm       = 19;
+  double                    boron_ppm        = 20;
+  double                    moisture_pct     = 21;
+  SoilTexture               texture          = 22;
+  double                    bulk_density     = 23;
+  double                    cation_exchange_capacity = 24;
+  double                    electrical_conductivity  = 25;
+  string                    collected_by     = 26;
+  string                    notes            = 27;
+  google.protobuf.Timestamp created_at       = 28;
+  google.protobuf.Timestamp updated_at       = 29;
+  int64                     version          = 30;
+}
+
+message SoilAnalysis {
+  string                    id               = 1;
+  string                    tenant_id        = 2;
+  string                    sample_id        = 3;
+  string                    field_id         = 4;
+  string                    farm_id          = 5;
+  AnalysisStatus            status           = 6;
+  string                    analysis_type    = 7;
+  double                    soil_health_score = 8;
+  HealthCategory            health_category  = 9;
+  repeated string           recommendations  = 10;
+  string                    analyzed_by      = 11;
+  google.protobuf.Timestamp analyzed_at      = 12;
+  string                    summary          = 13;
+  google.protobuf.Timestamp created_at       = 14;
+  google.protobuf.Timestamp updated_at       = 15;
+  int64                     version          = 16;
+}
+
+message SoilMap {
+  string                    id          = 1;
+  string                    tenant_id   = 2;
+  string                    field_id    = 3;
+  string                    farm_id     = 4;
+  string                    map_type    = 5;
+  bytes                     raster_data = 6;
+  string                    crs         = 7;
+  double                    resolution  = 8;
+  Location                  bbox_min    = 9;
+  Location                  bbox_max    = 10;
+  string                    generated_by = 11;
+  google.protobuf.Timestamp generated_at = 12;
+  google.protobuf.Timestamp created_at  = 13;
+  google.protobuf.Timestamp updated_at  = 14;
+  int64                     version     = 15;
+}
+
+message SoilNutrient {
+  string        id            = 1;
+  string        tenant_id     = 2;
+  string        sample_id     = 3;
+  string        nutrient_name = 4;
+  double        value_ppm     = 5;
+  NutrientLevel level         = 6;
+  double        optimal_min   = 7;
+  double        optimal_max   = 8;
+  string        unit          = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message SoilHealthScore {
+  string                    id              = 1;
+  string                    tenant_id       = 2;
+  string                    field_id        = 3;
+  string                    farm_id         = 4;
+  double                    overall_score   = 5;
+  HealthCategory            category        = 6;
+  double                    physical_score  = 7;
+  double                    chemical_score  = 8;
+  double                    biological_score = 9;
+  repeated string           recommendations = 10;
+  repeated NutrientDeficiency deficiencies  = 11;
+  google.protobuf.Timestamp assessed_at    = 12;
+  google.protobuf.Timestamp created_at     = 13;
+  google.protobuf.Timestamp updated_at     = 14;
+  int64                     version         = 15;
+}
+
+message NutrientDeficiency {
+  string        nutrient_name = 1;
+  double        current_value = 2;
+  double        optimal_value = 3;
+  NutrientLevel level         = 4;
+  string        recommendation = 5;
+}
+
+message SoilReport {
+  string                    id              = 1;
+  string                    tenant_id       = 2;
+  string                    field_id        = 3;
+  string                    farm_id         = 4;
+  SoilSample                sample          = 5;
+  SoilAnalysis              analysis        = 6;
+  SoilHealthScore           health_score    = 7;
+  repeated SoilNutrient     nutrients       = 8;
+  repeated string           recommendations = 9;
+  google.protobuf.Timestamp generated_at    = 10;
+}
+
+// ---------------------------------------------------------------------------
+// Request / Response Messages
+// ---------------------------------------------------------------------------
+
+message CreateSoilSampleRequest {
+  string   tenant_id        = 1;
+  string   field_id         = 2;
+  string   farm_id          = 3;
+  Location sample_location  = 4;
+  double   sample_depth_cm  = 5;
+  google.protobuf.Timestamp collection_date = 6;
+  double   pH               = 7;
+  double   organic_matter_pct = 8;
+  double   nitrogen_ppm     = 9;
+  double   phosphorus_ppm   = 10;
+  double   potassium_ppm    = 11;
+  double   calcium_ppm      = 12;
+  double   magnesium_ppm    = 13;
+  double   sulfur_ppm       = 14;
+  double   iron_ppm         = 15;
+  double   manganese_ppm    = 16;
+  double   zinc_ppm         = 17;
+  double   copper_ppm       = 18;
+  double   boron_ppm        = 19;
+  double   moisture_pct     = 20;
+  SoilTexture texture       = 21;
+  double   bulk_density     = 22;
+  double   cation_exchange_capacity = 23;
+  double   electrical_conductivity  = 24;
+  string   notes            = 25;
+}
+
+message CreateSoilSampleResponse {
+  SoilSample sample = 1;
+}
+
+message GetSoilSampleRequest {
+  string id        = 1;
+  string tenant_id = 2;
+}
+
+message GetSoilSampleResponse {
+  SoilSample sample = 1;
+}
+
+message ListSoilSamplesRequest {
+  string tenant_id  = 1;
+  string field_id   = 2;
+  string farm_id    = 3;
+  int32  page_size  = 4;
+  int32  page_offset = 5;
+  repeated string sort = 6;
+  google.protobuf.FieldMask fields = 7;
+}
+
+message ListSoilSamplesResponse {
+  repeated SoilSample samples     = 1;
+  int32               total_count = 2;
+  bool                has_next    = 3;
+}
+
+message AnalyzeSoilRequest {
+  string sample_id     = 1;
+  string tenant_id     = 2;
+  string analysis_type = 3;
+}
+
+message AnalyzeSoilResponse {
+  SoilAnalysis analysis = 1;
+}
+
+message ListSoilAnalysesRequest {
+  string tenant_id  = 1;
+  string field_id   = 2;
+  string farm_id    = 3;
+  string sample_id  = 4;
+  int32  page_size  = 5;
+  int32  page_offset = 6;
+}
+
+message ListSoilAnalysesResponse {
+  repeated SoilAnalysis analyses    = 1;
+  int32                 total_count = 2;
+  bool                  has_next    = 3;
+}
+
+message GetSoilMapRequest {
+  string field_id  = 1;
+  string tenant_id = 2;
+  string map_type  = 3;
+}
+
+message GetSoilMapResponse {
+  SoilMap soil_map = 1;
+}
+
+message GetSoilHealthRequest {
+  string field_id  = 1;
+  string tenant_id = 2;
+}
+
+message GetSoilHealthResponse {
+  SoilHealthScore health_score = 1;
+}
+
+message GetNutrientLevelsRequest {
+  string sample_id = 1;
+  string tenant_id = 2;
+}
+
+message GetNutrientLevelsResponse {
+  repeated SoilNutrient nutrients = 1;
+}
+
+message GenerateSoilReportRequest {
+  string field_id  = 1;
+  string tenant_id = 2;
+  string farm_id   = 3;
+}
+
+message GenerateSoilReportResponse {
+  SoilReport report = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service SoilService {
+  rpc CreateSoilSample(CreateSoilSampleRequest)   returns (CreateSoilSampleResponse);
+  rpc GetSoilSample(GetSoilSampleRequest)         returns (GetSoilSampleResponse);
+  rpc ListSoilSamples(ListSoilSamplesRequest)      returns (ListSoilSamplesResponse);
+  rpc AnalyzeSoil(AnalyzeSoilRequest)              returns (AnalyzeSoilResponse);
+  rpc ListSoilAnalyses(ListSoilAnalysesRequest)    returns (ListSoilAnalysesResponse);
+  rpc GetSoilMap(GetSoilMapRequest)                returns (GetSoilMapResponse);
+  rpc GetSoilHealth(GetSoilHealthRequest)          returns (GetSoilHealthResponse);
+  rpc GetNutrientLevels(GetNutrientLevelsRequest)  returns (GetNutrientLevelsResponse);
+  rpc GenerateSoilReport(GenerateSoilReportRequest) returns (GenerateSoilReportResponse);
+}

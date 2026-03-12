@@ -375,5 +375,5 @@ func (c *Coordinator) emitEvent(event *healthcheck.Event) {
 	}
 }
 
-// Stub for proper type alias
+// healthHealth is a local alias for healthcheck.ServiceHealth for brevity
 type healthHealth = healthcheck.ServiceHealth

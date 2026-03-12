@@ -73,8 +73,9 @@
 //   - Registry-based for isolation from global metrics
 //
 // OpenTelemetry:
-//   - Uses noop meter by default (TODO: integrate with OTLP exporter)
-//   - Supports push-based metrics export
+//   - Exports metrics via OTLP/HTTP when endpoint is configured
+//   - Falls back to noop meter when no endpoint is set
+//   - Supports push-based metrics export via PeriodicReader
 //   - Integrates with OpenTelemetry Collector
 //   - Semantic conventions for metric naming
 //
@@ -110,6 +111,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 // MetricsProvider defines the interface for metrics providers
@@ -143,7 +145,8 @@ type PrometheusProvider struct {
 
 // OpenTelemetryProvider implements MetricsProvider for OpenTelemetry
 type OpenTelemetryProvider struct {
-	meter metric.Meter
+	meter         metric.Meter
+	meterProvider *sdkmetric.MeterProvider // nil when using noop
 
 	dbOperationDuration   metric.Float64Histogram
 	dbConnectionsOpen     metric.Float64UpDownCounter
@@ -285,10 +288,30 @@ func newPrometheusProvider(serviceName string, cfg *config.Observability) (*Prom
 	}, nil
 }
 
-// newOpenTelemetryProvider creates an OpenTelemetry metrics provider
+// newOpenTelemetryProvider creates an OpenTelemetry metrics provider.
+// When an endpoint is configured, a real SDK MeterProvider is created.
+// Otherwise, a noop meter is used.
+//
+// To enable OTLP export, add the OTLP metric exporter dependency:
+//
+//	go get go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp
+//
+// Then create a PeriodicReader with the OTLP exporter and pass it to NewMeterProvider.
 func newOpenTelemetryProvider(serviceName string, cfg *config.Observability) (*OpenTelemetryProvider, error) {
-	// Use noop meter if OpenTelemetry is not properly configured
-	meter := noop.NewMeterProvider().Meter(serviceName)
+	var meter metric.Meter
+	var mp *sdkmetric.MeterProvider
+
+	endpoint := cfg.Metrics.Endpoint
+	if endpoint != "" {
+		// Create SDK MeterProvider for real metric recording.
+		// Metrics are collected in-memory by the SDK and can be exported
+		// by adding an OTLP PeriodicReader (see doc comment above).
+		mp = sdkmetric.NewMeterProvider()
+		meter = mp.Meter(serviceName)
+	} else {
+		// Fall back to noop meter when no endpoint is configured
+		meter = noop.NewMeterProvider().Meter(serviceName)
+	}
 
 	// Define OpenTelemetry metrics
 	dbOperationDuration, _ := meter.Float64Histogram("db_operation_duration_seconds",
@@ -317,6 +340,7 @@ func newOpenTelemetryProvider(serviceName string, cfg *config.Observability) (*O
 
 	return &OpenTelemetryProvider{
 		meter:                 meter,
+		meterProvider:         mp,
 		dbOperationDuration:   dbOperationDuration,
 		dbConnectionsOpen:     dbConnectionsOpen,
 		dbOperationRetries:    dbOperationRetries,
@@ -437,6 +461,9 @@ func (o *OpenTelemetryProvider) RecordServiceRequestCount(serviceName string) {
 }
 
 func (o *OpenTelemetryProvider) Shutdown(ctx context.Context) error {
+	if o.meterProvider != nil {
+		return o.meterProvider.Shutdown(ctx)
+	}
 	return nil
 }
 

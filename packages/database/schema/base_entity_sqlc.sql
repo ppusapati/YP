@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS public.base_entity (
 
 -- ============================================================================
 -- STUB FUNCTIONS (for SQLC parsing only)
+-- Real implementations live in database migration scripts.
+-- These stubs exist so sqlc can parse references to these functions.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.apply_base_entity_triggers(
@@ -51,7 +53,7 @@ CREATE OR REPLACE FUNCTION public.apply_base_entity_triggers(
     p_table_name TEXT
 ) RETURNS VOID AS $$
 BEGIN
-    -- Stub for sqlc
+    -- Stub for SQLC parsing; see migration scripts for real implementation
 END;
 $$ LANGUAGE plpgsql;
 
@@ -60,7 +62,7 @@ CREATE OR REPLACE FUNCTION public.apply_rls_policies(
     p_table_name TEXT
 ) RETURNS VOID AS $$
 BEGIN
-    -- Stub for sqlc
+    -- Stub for SQLC parsing; see migration scripts for real implementation
 END;
 $$ LANGUAGE plpgsql;
 
@@ -69,7 +71,7 @@ CREATE OR REPLACE FUNCTION public.setup_base_entity_child(
     p_table_name TEXT
 ) RETURNS VOID AS $$
 BEGIN
-    -- Stub for sqlc
+    -- Stub for SQLC parsing; see migration scripts for real implementation
 END;
 $$ LANGUAGE plpgsql;
 

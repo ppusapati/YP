@@ -1,0 +1,243 @@
+syntax = "proto3";
+package agriculture.farm.v1;
+option go_package = "p9e.in/samavaya/agriculture/farm-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// FarmType represents the type of farming operation.
+enum FarmType {
+  FARM_TYPE_UNSPECIFIED = 0;
+  FARM_TYPE_CROP = 1;
+  FARM_TYPE_LIVESTOCK = 2;
+  FARM_TYPE_MIXED = 3;
+  FARM_TYPE_AQUACULTURE = 4;
+}
+
+// FarmStatus represents the operational status of a farm.
+enum FarmStatus {
+  FARM_STATUS_UNSPECIFIED = 0;
+  FARM_STATUS_ACTIVE = 1;
+  FARM_STATUS_INACTIVE = 2;
+  FARM_STATUS_PENDING = 3;
+  FARM_STATUS_SUSPENDED = 4;
+  FARM_STATUS_ARCHIVED = 5;
+}
+
+// SoilType represents the soil classification of a farm.
+enum SoilType {
+  SOIL_TYPE_UNSPECIFIED = 0;
+  SOIL_TYPE_CLAY = 1;
+  SOIL_TYPE_SANDY = 2;
+  SOIL_TYPE_LOAMY = 3;
+  SOIL_TYPE_SILT = 4;
+  SOIL_TYPE_PEAT = 5;
+  SOIL_TYPE_CHALKY = 6;
+  SOIL_TYPE_LATERITE = 7;
+  SOIL_TYPE_BLACK = 8;
+  SOIL_TYPE_RED = 9;
+  SOIL_TYPE_ALLUVIAL = 10;
+}
+
+// ClimateZone represents the climate zone of a farm.
+enum ClimateZone {
+  CLIMATE_ZONE_UNSPECIFIED = 0;
+  CLIMATE_ZONE_TROPICAL = 1;
+  CLIMATE_ZONE_SUBTROPICAL = 2;
+  CLIMATE_ZONE_ARID = 3;
+  CLIMATE_ZONE_SEMIARID = 4;
+  CLIMATE_ZONE_TEMPERATE = 5;
+  CLIMATE_ZONE_CONTINENTAL = 6;
+  CLIMATE_ZONE_POLAR = 7;
+  CLIMATE_ZONE_MEDITERRANEAN = 8;
+  CLIMATE_ZONE_MONSOON = 9;
+}
+
+// FarmLocation represents the geographic coordinates of a farm.
+message FarmLocation {
+  double latitude = 1;
+  double longitude = 2;
+  double elevation_meters = 3;
+}
+
+// FarmBoundary represents the geographic boundary of a farm as a GeoJSON polygon.
+message FarmBoundary {
+  string id = 1;
+  string farm_id = 2;
+  // GeoJSON polygon representation of the farm boundary.
+  string geojson = 3;
+  double area_hectares = 4;
+  double perimeter_meters = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// FarmOwner represents the owner of a farm.
+message FarmOwner {
+  string id = 1;
+  string farm_id = 2;
+  string user_id = 3;
+  string owner_name = 4;
+  string email = 5;
+  string phone = 6;
+  bool is_primary = 7;
+  double ownership_percentage = 8;
+  google.protobuf.Timestamp acquired_at = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// Farm represents a registered farm.
+message Farm {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string description = 4;
+  double total_area_hectares = 5;
+  FarmLocation location = 6;
+  FarmType farm_type = 7;
+  FarmStatus status = 8;
+  SoilType soil_type = 9;
+  ClimateZone climate_zone = 10;
+  double elevation_meters = 11;
+  string address = 12;
+  string region = 13;
+  string country = 14;
+  FarmBoundary boundary = 15;
+  repeated FarmOwner owners = 16;
+  map<string, string> metadata = 17;
+  int64 version = 18;
+  string created_by = 19;
+  string updated_by = 20;
+  google.protobuf.Timestamp created_at = 21;
+  google.protobuf.Timestamp updated_at = 22;
+}
+
+// ----- Request/Response messages -----
+
+message CreateFarmRequest {
+  string name = 1;
+  string description = 2;
+  double total_area_hectares = 3;
+  FarmLocation location = 4;
+  FarmType farm_type = 5;
+  SoilType soil_type = 6;
+  ClimateZone climate_zone = 7;
+  double elevation_meters = 8;
+  string address = 9;
+  string region = 10;
+  string country = 11;
+  map<string, string> metadata = 12;
+  FarmOwner owner = 13;
+}
+
+message CreateFarmResponse {
+  Farm farm = 1;
+}
+
+message GetFarmRequest {
+  string id = 1;
+}
+
+message GetFarmResponse {
+  Farm farm = 1;
+}
+
+message ListFarmsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  FarmType farm_type = 3;
+  FarmStatus status = 4;
+  string region = 5;
+  string country = 6;
+  ClimateZone climate_zone = 7;
+  string search = 8;
+  string order_by = 9;
+}
+
+message ListFarmsResponse {
+  repeated Farm farms = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message UpdateFarmRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double total_area_hectares = 4;
+  FarmLocation location = 5;
+  FarmType farm_type = 6;
+  FarmStatus status = 7;
+  SoilType soil_type = 8;
+  ClimateZone climate_zone = 9;
+  double elevation_meters = 10;
+  string address = 11;
+  string region = 12;
+  string country = 13;
+  map<string, string> metadata = 14;
+  google.protobuf.FieldMask update_mask = 15;
+}
+
+message UpdateFarmResponse {
+  Farm farm = 1;
+}
+
+message DeleteFarmRequest {
+  string id = 1;
+}
+
+message DeleteFarmResponse {
+  bool success = 1;
+}
+
+message SetFarmBoundaryRequest {
+  string farm_id = 1;
+  string geojson = 2;
+}
+
+message SetFarmBoundaryResponse {
+  FarmBoundary boundary = 1;
+}
+
+message GetFarmBoundaryRequest {
+  string farm_id = 1;
+}
+
+message GetFarmBoundaryResponse {
+  FarmBoundary boundary = 1;
+}
+
+message TransferOwnershipRequest {
+  string farm_id = 1;
+  string from_user_id = 2;
+  string to_user_id = 3;
+  string to_owner_name = 4;
+  string to_email = 5;
+  string to_phone = 6;
+  double ownership_percentage = 7;
+}
+
+message TransferOwnershipResponse {
+  Farm farm = 1;
+}
+
+// FarmService provides farm management operations.
+service FarmService {
+  // CreateFarm registers a new farm.
+  rpc CreateFarm(CreateFarmRequest) returns (CreateFarmResponse);
+  // GetFarm retrieves a farm by ID.
+  rpc GetFarm(GetFarmRequest) returns (GetFarmResponse);
+  // ListFarms lists farms with filtering and pagination.
+  rpc ListFarms(ListFarmsRequest) returns (ListFarmsResponse);
+  // UpdateFarm updates an existing farm.
+  rpc UpdateFarm(UpdateFarmRequest) returns (UpdateFarmResponse);
+  // DeleteFarm soft-deletes a farm.
+  rpc DeleteFarm(DeleteFarmRequest) returns (DeleteFarmResponse);
+  // SetFarmBoundary sets or updates the geographic boundary of a farm.
+  rpc SetFarmBoundary(SetFarmBoundaryRequest) returns (SetFarmBoundaryResponse);
+  // GetFarmBoundary retrieves the geographic boundary of a farm.
+  rpc GetFarmBoundary(GetFarmBoundaryRequest) returns (GetFarmBoundaryResponse);
+  // TransferOwnership transfers ownership of a farm between users.
+  rpc TransferOwnership(TransferOwnershipRequest) returns (TransferOwnershipResponse);
+}

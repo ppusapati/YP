@@ -1,0 +1,366 @@
+syntax = "proto3";
+
+package agriculture.sensor.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/sensor-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum SensorType {
+  SENSOR_TYPE_UNSPECIFIED = 0;
+  SENSOR_TYPE_SOIL_MOISTURE = 1;
+  SENSOR_TYPE_SOIL_PH = 2;
+  SENSOR_TYPE_TEMPERATURE = 3;
+  SENSOR_TYPE_HUMIDITY = 4;
+  SENSOR_TYPE_RAINFALL = 5;
+  SENSOR_TYPE_WIND_SPEED = 6;
+  SENSOR_TYPE_WIND_DIRECTION = 7;
+  SENSOR_TYPE_LIGHT_INTENSITY = 8;
+  SENSOR_TYPE_LEAF_WETNESS = 9;
+}
+
+enum SensorStatus {
+  SENSOR_STATUS_UNSPECIFIED = 0;
+  SENSOR_STATUS_ACTIVE = 1;
+  SENSOR_STATUS_INACTIVE = 2;
+  SENSOR_STATUS_MAINTENANCE = 3;
+  SENSOR_STATUS_DECOMMISSIONED = 4;
+}
+
+enum SensorProtocol {
+  SENSOR_PROTOCOL_UNSPECIFIED = 0;
+  SENSOR_PROTOCOL_MQTT = 1;
+  SENSOR_PROTOCOL_LORAWAN = 2;
+  SENSOR_PROTOCOL_ZIGBEE = 3;
+  SENSOR_PROTOCOL_WIFI = 4;
+  SENSOR_PROTOCOL_CELLULAR = 5;
+}
+
+enum ReadingQuality {
+  READING_QUALITY_UNSPECIFIED = 0;
+  READING_QUALITY_GOOD = 1;
+  READING_QUALITY_SUSPECT = 2;
+  READING_QUALITY_BAD = 3;
+}
+
+enum AlertCondition {
+  ALERT_CONDITION_UNSPECIFIED = 0;
+  ALERT_CONDITION_GT = 1;
+  ALERT_CONDITION_LT = 2;
+  ALERT_CONDITION_EQ = 3;
+  ALERT_CONDITION_GTE = 4;
+  ALERT_CONDITION_LTE = 5;
+}
+
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_LOW = 1;
+  ALERT_SEVERITY_MEDIUM = 2;
+  ALERT_SEVERITY_HIGH = 3;
+  ALERT_SEVERITY_CRITICAL = 4;
+}
+
+// =============================================================================
+// Messages
+// =============================================================================
+
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+  double elevation_m = 3;
+}
+
+message Sensor {
+  string id = 1;
+  string tenant_id = 2;
+  string field_id = 3;
+  string farm_id = 4;
+  SensorType sensor_type = 5;
+  string device_id = 6;
+  string manufacturer = 7;
+  string model = 8;
+  string firmware_version = 9;
+  GeoLocation location = 10;
+  google.protobuf.Timestamp installation_date = 11;
+  google.protobuf.Timestamp last_reading_at = 12;
+  double battery_level_pct = 13;
+  double signal_strength_dbm = 14;
+  SensorStatus status = 15;
+  SensorProtocol protocol = 16;
+  int32 reading_interval_seconds = 17;
+  map<string, string> metadata = 18;
+  google.protobuf.Timestamp created_at = 19;
+  google.protobuf.Timestamp updated_at = 20;
+  int64 version = 21;
+}
+
+message SensorReading {
+  string id = 1;
+  string sensor_id = 2;
+  string tenant_id = 3;
+  double value = 4;
+  string unit = 5;
+  google.protobuf.Timestamp timestamp = 6;
+  ReadingQuality quality = 7;
+  double battery_level_pct = 8;
+  double signal_strength_dbm = 9;
+  map<string, string> metadata = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message SensorAlert {
+  string id = 1;
+  string sensor_id = 2;
+  string tenant_id = 3;
+  string field_id = 4;
+  SensorType sensor_type = 5;
+  double threshold = 6;
+  double actual_value = 7;
+  AlertCondition condition = 8;
+  AlertSeverity severity = 9;
+  string message = 10;
+  bool acknowledged = 11;
+  string acknowledged_by = 12;
+  google.protobuf.Timestamp acknowledged_at = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message SensorNetwork {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string name = 4;
+  string description = 5;
+  SensorProtocol protocol = 6;
+  string gateway_id = 7;
+  repeated string sensor_ids = 8;
+  int32 total_sensors = 9;
+  int32 active_sensors = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message SensorCalibration {
+  string id = 1;
+  string sensor_id = 2;
+  string tenant_id = 3;
+  double offset = 4;
+  double scale_factor = 5;
+  google.protobuf.Timestamp calibration_date = 6;
+  google.protobuf.Timestamp next_calibration_date = 7;
+  string calibrated_by = 8;
+  string notes = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+// =============================================================================
+// Request / Response Messages
+// =============================================================================
+
+message RegisterSensorRequest {
+  string field_id = 1;
+  string farm_id = 2;
+  SensorType sensor_type = 3;
+  string device_id = 4;
+  string manufacturer = 5;
+  string model = 6;
+  string firmware_version = 7;
+  GeoLocation location = 8;
+  google.protobuf.Timestamp installation_date = 9;
+  SensorProtocol protocol = 10;
+  int32 reading_interval_seconds = 11;
+  map<string, string> metadata = 12;
+}
+
+message RegisterSensorResponse {
+  Sensor sensor = 1;
+}
+
+message GetSensorRequest {
+  string id = 1;
+}
+
+message GetSensorResponse {
+  Sensor sensor = 1;
+}
+
+message ListSensorsRequest {
+  string field_id = 1;
+  string farm_id = 2;
+  SensorType sensor_type = 3;
+  SensorStatus status = 4;
+  SensorProtocol protocol = 5;
+  int32 page_size = 6;
+  int32 page_offset = 7;
+  repeated string sort = 8;
+}
+
+message ListSensorsResponse {
+  repeated Sensor sensors = 1;
+  int32 total_count = 2;
+}
+
+message UpdateSensorRequest {
+  string id = 1;
+  google.protobuf.FieldMask update_mask = 2;
+  string firmware_version = 3;
+  GeoLocation location = 4;
+  SensorStatus status = 5;
+  SensorProtocol protocol = 6;
+  int32 reading_interval_seconds = 7;
+  map<string, string> metadata = 8;
+}
+
+message UpdateSensorResponse {
+  Sensor sensor = 1;
+}
+
+message DecommissionSensorRequest {
+  string id = 1;
+  string reason = 2;
+}
+
+message DecommissionSensorResponse {
+  Sensor sensor = 1;
+}
+
+message IngestReadingRequest {
+  string sensor_id = 1;
+  double value = 2;
+  string unit = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  ReadingQuality quality = 5;
+  double battery_level_pct = 6;
+  double signal_strength_dbm = 7;
+  map<string, string> metadata = 8;
+}
+
+message IngestReadingResponse {
+  SensorReading reading = 1;
+  bool alert_triggered = 2;
+  SensorAlert alert = 3;
+}
+
+message BatchIngestReadingsRequest {
+  repeated IngestReadingRequest readings = 1;
+}
+
+message BatchIngestReadingsResponse {
+  int32 ingested_count = 1;
+  int32 failed_count = 2;
+  repeated string errors = 3;
+  repeated SensorAlert alerts = 4;
+}
+
+message GetLatestReadingRequest {
+  string sensor_id = 1;
+}
+
+message GetLatestReadingResponse {
+  SensorReading reading = 1;
+}
+
+message GetReadingHistoryRequest {
+  string sensor_id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+  int32 page_size = 4;
+  int32 page_offset = 5;
+  ReadingQuality min_quality = 6;
+}
+
+message GetReadingHistoryResponse {
+  repeated SensorReading readings = 1;
+  int32 total_count = 2;
+}
+
+message CreateAlertRequest {
+  string sensor_id = 1;
+  SensorType sensor_type = 2;
+  double threshold = 3;
+  AlertCondition condition = 4;
+  AlertSeverity severity = 5;
+  string message = 6;
+}
+
+message CreateAlertResponse {
+  SensorAlert alert = 1;
+}
+
+message ListAlertsRequest {
+  string sensor_id = 1;
+  string field_id = 2;
+  AlertSeverity severity = 3;
+  bool unacknowledged_only = 4;
+  int32 page_size = 5;
+  int32 page_offset = 6;
+}
+
+message ListAlertsResponse {
+  repeated SensorAlert alerts = 1;
+  int32 total_count = 2;
+}
+
+message AcknowledgeAlertRequest {
+  string id = 1;
+  string acknowledged_by = 2;
+}
+
+message AcknowledgeAlertResponse {
+  SensorAlert alert = 1;
+}
+
+message GetSensorNetworkRequest {
+  string id = 1;
+  string farm_id = 2;
+}
+
+message GetSensorNetworkResponse {
+  SensorNetwork network = 1;
+}
+
+message CalibrateSensorRequest {
+  string sensor_id = 1;
+  double offset = 2;
+  double scale_factor = 3;
+  string notes = 4;
+  google.protobuf.Timestamp next_calibration_date = 5;
+}
+
+message CalibrateSensorResponse {
+  SensorCalibration calibration = 1;
+}
+
+// =============================================================================
+// Service Definition
+// =============================================================================
+
+service SensorService {
+  // Sensor lifecycle management
+  rpc RegisterSensor(RegisterSensorRequest) returns (RegisterSensorResponse);
+  rpc GetSensor(GetSensorRequest) returns (GetSensorResponse);
+  rpc ListSensors(ListSensorsRequest) returns (ListSensorsResponse);
+  rpc UpdateSensor(UpdateSensorRequest) returns (UpdateSensorResponse);
+  rpc DecommissionSensor(DecommissionSensorRequest) returns (DecommissionSensorResponse);
+
+  // Data ingestion
+  rpc IngestReading(IngestReadingRequest) returns (IngestReadingResponse);
+  rpc BatchIngestReadings(BatchIngestReadingsRequest) returns (BatchIngestReadingsResponse);
+  rpc GetLatestReading(GetLatestReadingRequest) returns (GetLatestReadingResponse);
+  rpc GetReadingHistory(GetReadingHistoryRequest) returns (GetReadingHistoryResponse);
+
+  // Alerting
+  rpc CreateAlert(CreateAlertRequest) returns (CreateAlertResponse);
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  rpc AcknowledgeAlert(AcknowledgeAlertRequest) returns (AcknowledgeAlertResponse);
+
+  // Network and calibration
+  rpc GetSensorNetwork(GetSensorNetworkRequest) returns (GetSensorNetworkResponse);
+  rpc CalibrateSensor(CalibrateSensorRequest) returns (CalibrateSensorResponse);
+}

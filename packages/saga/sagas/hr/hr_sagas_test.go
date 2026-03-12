@@ -626,9 +626,8 @@ func TestAllHRSagasImplementInterface(t *testing.T) {
 	var _ saga.SagaHandler = NewExpenseReimbursementSaga()
 	var _ saga.SagaHandler = NewAppraisalSalaryRevisionSaga()
 	var _ saga.SagaHandler = NewLeaveApplicationSaga()
-	// Phase 4C sagas: TODO
-	// var _ saga.SagaHandler = NewPayrollProcessingSaga()
-	// var _ saga.SagaHandler = NewEmployeeExitSaga()
+	var _ saga.SagaHandler = NewPayrollProcessingSaga()
+	var _ saga.SagaHandler = NewEmployeeExitSaga()
 }
 
 func TestUniqueHRSagaTypes(t *testing.T) {
@@ -637,7 +636,8 @@ func TestUniqueHRSagaTypes(t *testing.T) {
 		NewExpenseReimbursementSaga(),
 		NewAppraisalSalaryRevisionSaga(),
 		NewLeaveApplicationSaga(),
-		// Phase 4C: TODO add H01, H03
+		NewPayrollProcessingSaga(),
+		NewEmployeeExitSaga(),
 	}
 
 	sagaTypes := make(map[string]bool)
@@ -650,7 +650,9 @@ func TestUniqueHRSagaTypes(t *testing.T) {
 	}
 
 	expectedTypes := map[string]bool{
+		"SAGA-H01": true,
 		"SAGA-H02": true,
+		"SAGA-H03": true,
 		"SAGA-H04": true,
 		"SAGA-H05": true,
 		"SAGA-H06": true,
@@ -665,7 +667,9 @@ func TestUniqueHRSagaTypes(t *testing.T) {
 
 func TestHRSagasHaveSteps(t *testing.T) {
 	sagas := map[string]saga.SagaHandler{
+		"SAGA-H01": NewPayrollProcessingSaga(),
 		"SAGA-H02": NewEmployeeOnboardingSaga(),
+		"SAGA-H03": NewEmployeeExitSaga(),
 		"SAGA-H04": NewExpenseReimbursementSaga(),
 		"SAGA-H05": NewLeaveApplicationSaga(),
 		"SAGA-H06": NewAppraisalSalaryRevisionSaga(),
@@ -686,7 +690,9 @@ func TestHRSagasHaveSteps(t *testing.T) {
 
 func TestHRSagasHaveServiceNames(t *testing.T) {
 	sagas := map[string]saga.SagaHandler{
+		"SAGA-H01": NewPayrollProcessingSaga(),
 		"SAGA-H02": NewEmployeeOnboardingSaga(),
+		"SAGA-H03": NewEmployeeExitSaga(),
 		"SAGA-H04": NewExpenseReimbursementSaga(),
 		"SAGA-H05": NewLeaveApplicationSaga(),
 		"SAGA-H06": NewAppraisalSalaryRevisionSaga(),
@@ -704,7 +710,9 @@ func TestHRSagasHaveServiceNames(t *testing.T) {
 
 func TestHRSagasHaveHandlerMethods(t *testing.T) {
 	sagas := map[string]saga.SagaHandler{
+		"SAGA-H01": NewPayrollProcessingSaga(),
 		"SAGA-H02": NewEmployeeOnboardingSaga(),
+		"SAGA-H03": NewEmployeeExitSaga(),
 		"SAGA-H04": NewExpenseReimbursementSaga(),
 		"SAGA-H05": NewLeaveApplicationSaga(),
 		"SAGA-H06": NewAppraisalSalaryRevisionSaga(),
@@ -722,7 +730,9 @@ func TestHRSagasHaveHandlerMethods(t *testing.T) {
 
 func TestHRSagasTimeoutValues(t *testing.T) {
 	sagas := map[string]saga.SagaHandler{
+		"SAGA-H01": NewPayrollProcessingSaga(),
 		"SAGA-H02": NewEmployeeOnboardingSaga(),
+		"SAGA-H03": NewEmployeeExitSaga(),
 		"SAGA-H04": NewExpenseReimbursementSaga(),
 		"SAGA-H05": NewLeaveApplicationSaga(),
 		"SAGA-H06": NewAppraisalSalaryRevisionSaga(),
@@ -768,6 +778,271 @@ func TestAppraisalSalaryRevisionSagaInputValidationInvalidType(t *testing.T) {
 func TestLeaveApplicationSagaInputValidationInvalidType(t *testing.T) {
 	s := NewLeaveApplicationSaga()
 	err := s.ValidateInput(nil)
+	if err == nil {
+		t.Errorf("expected error for invalid input type, got nil")
+	}
+}
+
+// ===== SAGA-H01: Payroll Processing Saga Tests =====
+
+func TestPayrollProcessingSagaType(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+	if s.SagaType() != "SAGA-H01" {
+		t.Errorf("expected SAGA-H01, got %s", s.SagaType())
+	}
+}
+
+func TestPayrollProcessingSagaStepCount(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+	steps := s.GetStepDefinitions()
+	// Should have 13 forward + 12 compensation = 25 total
+	if len(steps) != 25 {
+		t.Errorf("expected 25 steps, got %d", len(steps))
+	}
+}
+
+func TestPayrollProcessingSagaInputValidation(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+	tests := []struct {
+		name      string
+		input     map[string]interface{}
+		wantError bool
+	}{
+		{
+			"valid input",
+			map[string]interface{}{
+				"payroll_run_id": "PR-001",
+				"payroll_period": "2026-03",
+				"payroll_date":   "2026-03-31",
+				"company_id":     "COMP-001",
+			},
+			false,
+		},
+		{
+			"missing payroll_run_id",
+			map[string]interface{}{
+				"payroll_period": "2026-03",
+				"payroll_date":   "2026-03-31",
+				"company_id":     "COMP-001",
+			},
+			true,
+		},
+		{
+			"missing payroll_period",
+			map[string]interface{}{
+				"payroll_run_id": "PR-001",
+				"payroll_date":   "2026-03-31",
+				"company_id":     "COMP-001",
+			},
+			true,
+		},
+		{
+			"missing payroll_date",
+			map[string]interface{}{
+				"payroll_run_id": "PR-001",
+				"payroll_period": "2026-03",
+				"company_id":     "COMP-001",
+			},
+			true,
+		},
+		{
+			"missing company_id",
+			map[string]interface{}{
+				"payroll_run_id": "PR-001",
+				"payroll_period": "2026-03",
+				"payroll_date":   "2026-03-31",
+			},
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.ValidateInput(tt.input)
+			if (err != nil) != tt.wantError {
+				t.Errorf("ValidateInput() error = %v, wantError %v", err, tt.wantError)
+			}
+		})
+	}
+}
+
+func TestPayrollProcessingSagaGetStepDefinition(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+	step := s.GetStepDefinition(1)
+	if step == nil {
+		t.Errorf("step 1 not found")
+	}
+	if step.ServiceName != "payroll" {
+		t.Errorf("step 1 service mismatch: expected 'payroll', got %s", step.ServiceName)
+	}
+}
+
+func TestPayrollProcessingSagaCriticalSteps(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+	expectedCritical := map[int]bool{1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 10: true, 12: true, 13: true}
+
+	for stepNum, shouldBeCritical := range expectedCritical {
+		step := s.GetStepDefinition(stepNum)
+		if step == nil {
+			t.Errorf("step %d not found", stepNum)
+			continue
+		}
+		if step.IsCritical != shouldBeCritical {
+			t.Errorf("step %d critical status mismatch: expected %v, got %v", stepNum, shouldBeCritical, step.IsCritical)
+		}
+	}
+}
+
+func TestPayrollProcessingSagaCompensationSteps(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+
+	// Step 1 (Lock payroll) should have no compensation
+	step1 := s.GetStepDefinition(1)
+	if step1 != nil && len(step1.CompensationSteps) != 0 {
+		t.Errorf("step 1 should have no compensation steps, got %d", len(step1.CompensationSteps))
+	}
+
+	// Step 13 (Finalize payroll) should have no compensation
+	step13 := s.GetStepDefinition(13)
+	if step13 != nil && len(step13.CompensationSteps) != 0 {
+		t.Errorf("step 13 should have no compensation steps, got %d", len(step13.CompensationSteps))
+	}
+}
+
+func TestPayrollProcessingSagaInputValidationInvalidType(t *testing.T) {
+	s := NewPayrollProcessingSaga()
+	err := s.ValidateInput(42)
+	if err == nil {
+		t.Errorf("expected error for invalid input type, got nil")
+	}
+}
+
+// ===== SAGA-H03: Employee Exit Saga Tests =====
+
+func TestEmployeeExitSagaType(t *testing.T) {
+	s := NewEmployeeExitSaga()
+	if s.SagaType() != "SAGA-H03" {
+		t.Errorf("expected SAGA-H03, got %s", s.SagaType())
+	}
+}
+
+func TestEmployeeExitSagaStepCount(t *testing.T) {
+	s := NewEmployeeExitSaga()
+	steps := s.GetStepDefinitions()
+	// Should have 10 forward + 9 compensation = 19 total
+	if len(steps) != 19 {
+		t.Errorf("expected 19 steps, got %d", len(steps))
+	}
+}
+
+func TestEmployeeExitSagaInputValidation(t *testing.T) {
+	s := NewEmployeeExitSaga()
+	tests := []struct {
+		name      string
+		input     map[string]interface{}
+		wantError bool
+	}{
+		{
+			"valid input",
+			map[string]interface{}{
+				"employee_id":       "EMP-001",
+				"exit_date":         "2026-03-31",
+				"full_and_final_date": "2026-04-15",
+				"reason":            "Resignation",
+			},
+			false,
+		},
+		{
+			"missing employee_id",
+			map[string]interface{}{
+				"exit_date":         "2026-03-31",
+				"full_and_final_date": "2026-04-15",
+				"reason":            "Resignation",
+			},
+			true,
+		},
+		{
+			"missing exit_date",
+			map[string]interface{}{
+				"employee_id":       "EMP-001",
+				"full_and_final_date": "2026-04-15",
+				"reason":            "Resignation",
+			},
+			true,
+		},
+		{
+			"missing full_and_final_date",
+			map[string]interface{}{
+				"employee_id": "EMP-001",
+				"exit_date":   "2026-03-31",
+				"reason":      "Resignation",
+			},
+			true,
+		},
+		{
+			"missing reason",
+			map[string]interface{}{
+				"employee_id":       "EMP-001",
+				"exit_date":         "2026-03-31",
+				"full_and_final_date": "2026-04-15",
+			},
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.ValidateInput(tt.input)
+			if (err != nil) != tt.wantError {
+				t.Errorf("ValidateInput() error = %v, wantError %v", err, tt.wantError)
+			}
+		})
+	}
+}
+
+func TestEmployeeExitSagaGetStepDefinition(t *testing.T) {
+	s := NewEmployeeExitSaga()
+	step := s.GetStepDefinition(1)
+	if step == nil {
+		t.Errorf("step 1 not found")
+	}
+}
+
+func TestEmployeeExitSagaCriticalSteps(t *testing.T) {
+	s := NewEmployeeExitSaga()
+	expectedCritical := map[int]bool{1: true, 2: true, 3: true, 4: true, 5: true, 8: true, 9: true, 10: true}
+
+	for stepNum, shouldBeCritical := range expectedCritical {
+		step := s.GetStepDefinition(stepNum)
+		if step == nil {
+			t.Errorf("step %d not found", stepNum)
+			continue
+		}
+		if step.IsCritical != shouldBeCritical {
+			t.Errorf("step %d critical status mismatch: expected %v, got %v", stepNum, shouldBeCritical, step.IsCritical)
+		}
+	}
+}
+
+func TestEmployeeExitSagaCompensationSteps(t *testing.T) {
+	s := NewEmployeeExitSaga()
+
+	// Step 1 (Initiate exit) should have no compensation
+	step1 := s.GetStepDefinition(1)
+	if step1 != nil && len(step1.CompensationSteps) != 0 {
+		t.Errorf("step 1 should have no compensation steps, got %d", len(step1.CompensationSteps))
+	}
+
+	// Step 10 (Send exit notification) should have no compensation
+	step10 := s.GetStepDefinition(10)
+	if step10 != nil && len(step10.CompensationSteps) != 0 {
+		t.Errorf("step 10 should have no compensation steps, got %d", len(step10.CompensationSteps))
+	}
+}
+
+func TestEmployeeExitSagaInputValidationInvalidType(t *testing.T) {
+	s := NewEmployeeExitSaga()
+	err := s.ValidateInput("not a map")
 	if err == nil {
 		t.Errorf("expected error for invalid input type, got nil")
 	}
