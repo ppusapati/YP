@@ -12,12 +12,22 @@ import (
 
 // Irrigation event type constants matching those in services.
 const (
+	EventTypeZoneCreated         domain.EventType = "agriculture.irrigation.zone.created"
 	EventTypeScheduleCreated     domain.EventType = "agriculture.irrigation.schedule.created"
-	EventTypeScheduleUpdated     domain.EventType = "agriculture.irrigation.schedule.updated"
+	EventTypeScheduleCancelled   domain.EventType = "agriculture.irrigation.schedule.cancelled"
 	EventTypeIrrigationTriggered domain.EventType = "agriculture.irrigation.triggered"
-	EventTypeIrrigationStopped   domain.EventType = "agriculture.irrigation.stopped"
-	EventTypeDecisionGenerated   domain.EventType = "agriculture.irrigation.decision.generated"
+	EventTypeIrrigationCompleted domain.EventType = "agriculture.irrigation.completed"
+	EventTypeIrrigationFailed    domain.EventType = "agriculture.irrigation.failed"
 )
+
+// ZoneEventData represents the data payload for zone-related events.
+type ZoneEventData struct {
+	ZoneID   string `json:"zone_id"`
+	TenantID string `json:"tenant_id"`
+	Name     string `json:"name,omitempty"`
+	FieldID  string `json:"field_id,omitempty"`
+	FarmID   string `json:"farm_id,omitempty"`
+}
 
 // ScheduleEventData represents the data payload for schedule-related events.
 type ScheduleEventData struct {
@@ -27,10 +37,10 @@ type ScheduleEventData struct {
 	ZoneID       string `json:"zone_id,omitempty"`
 	ScheduleType string `json:"schedule_type,omitempty"`
 	Status       string `json:"status,omitempty"`
-	Version      int64  `json:"version,omitempty"`
+	CancelledBy  string `json:"cancelled_by,omitempty"`
 }
 
-// IrrigationTriggerEventData represents the data payload for irrigation trigger/stop events.
+// IrrigationTriggerEventData represents the data payload for irrigation trigger/complete/fail events.
 type IrrigationTriggerEventData struct {
 	EventID      string  `json:"event_id"`
 	TenantID     string  `json:"tenant_id"`
@@ -40,15 +50,7 @@ type IrrigationTriggerEventData struct {
 	ScheduleName string  `json:"schedule_name,omitempty"`
 	WaterLiters  float64 `json:"water_liters,omitempty"`
 	DurationMin  int32   `json:"duration_min,omitempty"`
-}
-
-// DecisionEventData represents the data payload for decision-related events.
-type DecisionEventData struct {
-	DecisionID      string  `json:"decision_id"`
-	TenantID        string  `json:"tenant_id"`
-	ZoneID          string  `json:"zone_id,omitempty"`
-	ShouldIrrigate  bool    `json:"should_irrigate"`
-	ConfidenceScore float64 `json:"confidence_score,omitempty"`
+	Reason       string  `json:"reason,omitempty"`
 }
 
 // IrrigationEventHandler handles incoming irrigation-related domain events (consumer side).
@@ -79,20 +81,47 @@ func (h *IrrigationEventHandler) HandleEvent(ctx context.Context, event *domain.
 	)
 
 	switch event.Type {
+	case EventTypeZoneCreated:
+		return h.handleZoneCreated(ctx, event)
 	case EventTypeScheduleCreated:
 		return h.handleScheduleCreated(ctx, event)
-	case EventTypeScheduleUpdated:
-		return h.handleScheduleUpdated(ctx, event)
+	case EventTypeScheduleCancelled:
+		return h.handleScheduleCancelled(ctx, event)
 	case EventTypeIrrigationTriggered:
 		return h.handleIrrigationTriggered(ctx, event)
-	case EventTypeIrrigationStopped:
-		return h.handleIrrigationStopped(ctx, event)
-	case EventTypeDecisionGenerated:
-		return h.handleDecisionGenerated(ctx, event)
+	case EventTypeIrrigationCompleted:
+		return h.handleIrrigationCompleted(ctx, event)
+	case EventTypeIrrigationFailed:
+		return h.handleIrrigationFailed(ctx, event)
 	default:
 		h.log.Warnf("unhandled irrigation event type: %s", event.Type)
 		return nil
 	}
+}
+
+// handleZoneCreated processes a zone created event.
+func (h *IrrigationEventHandler) handleZoneCreated(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractZoneEventData(event)
+	if err != nil {
+		h.log.Errorw("msg", "failed to extract zone created event data", "error", err, "event_id", event.ID)
+		return err
+	}
+
+	h.log.Infow("msg", "zone created event received",
+		"zone_id", data.ZoneID,
+		"tenant_id", data.TenantID,
+		"name", data.Name,
+		"field_id", data.FieldID,
+		"farm_id", data.FarmID,
+	)
+
+	// Downstream consumers can react here:
+	// - Initialize default controller assignments
+	// - Create default irrigation schedules for the zone
+	// - Notify sensor-service to start soil moisture monitoring
+	// - Update field-service with zone coverage data
+
+	return nil
 }
 
 // handleScheduleCreated processes a schedule created event.
@@ -112,34 +141,33 @@ func (h *IrrigationEventHandler) handleScheduleCreated(ctx context.Context, even
 	)
 
 	// Downstream consumers can react here:
-	// - Notify controller-service to prepare for upcoming irrigation
-	// - Update analytics/reporting indices
-	// - Send notification to farm manager about new schedule
-	// - Initialize weather monitoring for adaptive schedules
+	// - Register schedule with the scheduler/cron service
+	// - Notify weather-service to start forecast tracking for the zone
+	// - Update analytics dashboards with new schedule data
+	// - Send notification to farm operators
 
 	return nil
 }
 
-// handleScheduleUpdated processes a schedule updated event.
-func (h *IrrigationEventHandler) handleScheduleUpdated(ctx context.Context, event *domain.DomainEvent) error {
+// handleScheduleCancelled processes a schedule cancelled event.
+func (h *IrrigationEventHandler) handleScheduleCancelled(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractScheduleEventData(event)
 	if err != nil {
-		h.log.Errorw("msg", "failed to extract schedule updated event data", "error", err, "event_id", event.ID)
+		h.log.Errorw("msg", "failed to extract schedule cancelled event data", "error", err, "event_id", event.ID)
 		return err
 	}
 
-	h.log.Infow("msg", "schedule updated event received",
+	h.log.Infow("msg", "schedule cancelled event received",
 		"schedule_id", data.ScheduleID,
 		"tenant_id", data.TenantID,
-		"status", data.Status,
-		"version", data.Version,
+		"cancelled_by", data.CancelledBy,
 	)
 
 	// Downstream consumers can react here:
-	// - Update cached schedule data in other services
-	// - Recalculate water consumption forecasts
-	// - Adjust controller configurations for updated parameters
-	// - Notify farm-service of schedule changes
+	// - Remove schedule from the scheduler/cron service
+	// - Cancel pending controller commands
+	// - Update analytics dashboards
+	// - Send cancellation notification to farm operators
 
 	return nil
 }
@@ -161,62 +189,77 @@ func (h *IrrigationEventHandler) handleIrrigationTriggered(ctx context.Context, 
 	)
 
 	// Downstream consumers can react here:
-	// - Send real-time notification to farm manager
+	// - Send start command to the physical controller via IoT gateway
+	// - Start real-time monitoring of water flow sensors
 	// - Update dashboard with active irrigation status
-	// - Start monitoring sensor readings during irrigation
-	// - Log water consumption start for billing
+	// - Begin recording water usage telemetry
 
 	return nil
 }
 
-// handleIrrigationStopped processes an irrigation stopped event.
-func (h *IrrigationEventHandler) handleIrrigationStopped(ctx context.Context, event *domain.DomainEvent) error {
+// handleIrrigationCompleted processes an irrigation completed event.
+func (h *IrrigationEventHandler) handleIrrigationCompleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractIrrigationTriggerEventData(event)
 	if err != nil {
-		h.log.Errorw("msg", "failed to extract irrigation stopped event data", "error", err, "event_id", event.ID)
+		h.log.Errorw("msg", "failed to extract irrigation completed event data", "error", err, "event_id", event.ID)
 		return err
 	}
 
-	h.log.Infow("msg", "irrigation stopped event received",
+	h.log.Infow("msg", "irrigation completed event received",
 		"event_id", data.EventID,
 		"tenant_id", data.TenantID,
-		"controller_id", data.ControllerID,
+		"zone_id", data.ZoneID,
 		"water_liters", data.WaterLiters,
 		"duration_min", data.DurationMin,
 	)
 
 	// Downstream consumers can react here:
-	// - Update water usage reports and billing
-	// - Record soil moisture changes for analytics
-	// - Trigger post-irrigation sensor readings
-	// - Update daily water consumption totals
+	// - Send stop command to the physical controller
+	// - Record final water usage summary
+	// - Trigger post-irrigation soil moisture reading
+	// - Update analytics with completion data
+	// - Send completion notification to farm operators
 
 	return nil
 }
 
-// handleDecisionGenerated processes a decision generated event.
-func (h *IrrigationEventHandler) handleDecisionGenerated(ctx context.Context, event *domain.DomainEvent) error {
-	data, err := extractDecisionEventData(event)
+// handleIrrigationFailed processes an irrigation failed event.
+func (h *IrrigationEventHandler) handleIrrigationFailed(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractIrrigationTriggerEventData(event)
 	if err != nil {
-		h.log.Errorw("msg", "failed to extract decision generated event data", "error", err, "event_id", event.ID)
+		h.log.Errorw("msg", "failed to extract irrigation failed event data", "error", err, "event_id", event.ID)
 		return err
 	}
 
-	h.log.Infow("msg", "decision generated event received",
-		"decision_id", data.DecisionID,
+	h.log.Errorw("msg", "irrigation failed event received",
+		"event_id", data.EventID,
 		"tenant_id", data.TenantID,
 		"zone_id", data.ZoneID,
-		"should_irrigate", data.ShouldIrrigate,
-		"confidence_score", data.ConfidenceScore,
+		"controller_id", data.ControllerID,
+		"reason", data.Reason,
 	)
 
 	// Downstream consumers can react here:
-	// - Auto-trigger irrigation if confidence is high enough
-	// - Feed decision data into ML model training pipeline
-	// - Notify farm manager of AI recommendation
-	// - Update decision history for analytics
+	// - Send emergency stop command to the controller
+	// - Update controller status to ERROR
+	// - Send alert notification to farm operators
+	// - Log failure in incident tracking system
+	// - Attempt to reschedule irrigation if appropriate
 
 	return nil
+}
+
+// extractZoneEventData extracts ZoneEventData from a domain event's Data map.
+func extractZoneEventData(event *domain.DomainEvent) (*ZoneEventData, error) {
+	data := &ZoneEventData{}
+	raw, err := json.Marshal(event.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal event data: %w", err)
+	}
+	if err := json.Unmarshal(raw, data); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal event data: %w", err)
+	}
+	return data, nil
 }
 
 // extractScheduleEventData extracts ScheduleEventData from a domain event's Data map.
@@ -235,19 +278,6 @@ func extractScheduleEventData(event *domain.DomainEvent) (*ScheduleEventData, er
 // extractIrrigationTriggerEventData extracts IrrigationTriggerEventData from a domain event's Data map.
 func extractIrrigationTriggerEventData(event *domain.DomainEvent) (*IrrigationTriggerEventData, error) {
 	data := &IrrigationTriggerEventData{}
-	raw, err := json.Marshal(event.Data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal event data: %w", err)
-	}
-	if err := json.Unmarshal(raw, data); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal event data: %w", err)
-	}
-	return data, nil
-}
-
-// extractDecisionEventData extracts DecisionEventData from a domain event's Data map.
-func extractDecisionEventData(event *domain.DomainEvent) (*DecisionEventData, error) {
-	data := &DecisionEventData{}
 	raw, err := json.Marshal(event.Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal event data: %w", err)
@@ -280,11 +310,12 @@ func RegisterIrrigationEventConsumer(d deps.ServiceDeps) (*IrrigationEventHandle
 // IsIrrigationEvent checks if a domain event type belongs to the irrigation domain.
 func IsIrrigationEvent(eventType domain.EventType) bool {
 	switch eventType {
-	case EventTypeScheduleCreated,
-		EventTypeScheduleUpdated,
+	case EventTypeZoneCreated,
+		EventTypeScheduleCreated,
+		EventTypeScheduleCancelled,
 		EventTypeIrrigationTriggered,
-		EventTypeIrrigationStopped,
-		EventTypeDecisionGenerated:
+		EventTypeIrrigationCompleted,
+		EventTypeIrrigationFailed:
 		return true
 	default:
 		return false
