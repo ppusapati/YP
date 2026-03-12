@@ -1,14 +1,39 @@
 /**
- * @generated — DO NOT EDIT
+ * Agriculture Form Schemas — All services
  */
-export { farmFormSchema } from './farm.schema';
-export { fieldFormSchema } from './field.schema';
-export { cropFormSchema, cropVarietyFormSchema } from './crop.schema';
-export { soilSampleFormSchema } from './soil.schema';
-export { sensorFormSchema } from './sensor.schema';
-export { irrigationScheduleFormSchema, irrigationZoneFormSchema } from './irrigation.schema';
+
+// Farm Service
+export { createFarmSchema, farmBoundarySchema, farmOwnerSchema, ownershipTransferSchema } from './farm.schema';
+
+// Field Service
+export { createFieldSchema, assignCropSchema, fieldSegmentSchema } from './field.schema';
+
+// Crop Service
+export { createCropSchema, cropVarietySchema, cropRequirementsSchema } from './crop.schema';
+
+// Soil Service
+export { createSoilSampleSchema, analyzeSoilSchema } from './soil.schema';
+
+// Sensor Service
+export { registerSensorSchema, alertRuleSchema, calibrateSensorSchema } from './sensor.schema';
+
+// Irrigation Service
+export { irrigationScheduleSchema, irrigationZoneSchema, irrigationControllerSchema } from './irrigation.schema';
+
+// Satellite Service
 export { satelliteImageFormSchema } from './satellite.schema';
-export { pestPredictionFormSchema, pestObservationFormSchema } from './pest.schema';
+
+// Pest Prediction Service
+export { pestPredictionRequestSchema, treatmentPlanSchema } from './pest.schema';
+
+// Plant Diagnosis Service
 export { diagnosisRequestFormSchema } from './diagnosis.schema';
-export { yieldPredictionFormSchema, yieldRecordFormSchema, harvestPlanFormSchema } from './yield.schema';
-export { traceabilityRecordFormSchema, certificationFormSchema, batchRecordFormSchema } from './traceability.schema';
+
+// Yield Service
+export { yieldRecordSchema, yieldForecastRequestSchema } from './yield.schema';
+
+// Traceability Service
+export { traceabilityRecordSchema, certificationSchema, supplyEventSchema } from './traceability.schema';
+
+// Report schemas
+export * from './reports/index';

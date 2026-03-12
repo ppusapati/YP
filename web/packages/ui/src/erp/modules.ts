@@ -484,9 +484,47 @@ export const MODULE_REGISTRY: ModuleDef[] = [
         title: 'Farm Operations',
         items: [
           { label: 'Farms', path: '/farm-management/farms' },
+          { label: 'Farm Boundaries', path: '/farm-management/farm-boundaries' },
+          { label: 'Farm Owners', path: '/farm-management/farm-owners' },
+          { label: 'Ownership Transfer', path: '/farm-management/ownership-transfer' },
+        ],
+      },
+      {
+        title: 'Field Management',
+        items: [
           { label: 'Fields', path: '/farm-management/fields' },
+          { label: 'Field Boundaries', path: '/farm-management/field-boundaries' },
+          { label: 'Crop Assignment', path: '/farm-management/crop-assignment' },
+          { label: 'Field Segments', path: '/farm-management/field-segments' },
+          { label: 'Crop History', path: '/farm-management/crop-history' },
+        ],
+      },
+      {
+        title: 'Crop Catalog',
+        items: [
           { label: 'Crops', path: '/farm-management/crops' },
-          { label: 'Soil', path: '/farm-management/soil' },
+          { label: 'Crop Varieties', path: '/farm-management/crop-varieties' },
+          { label: 'Growth Stages', path: '/farm-management/growth-stages' },
+          { label: 'Crop Requirements', path: '/farm-management/crop-requirements' },
+        ],
+      },
+      {
+        title: 'Soil Management',
+        items: [
+          { label: 'Soil Samples', path: '/farm-management/soil-samples' },
+          { label: 'Soil Analysis', path: '/farm-management/soil-analysis' },
+          { label: 'Soil Health', path: '/farm-management/soil-health' },
+          { label: 'Nutrient Levels', path: '/farm-management/nutrient-levels' },
+          { label: 'Soil Maps', path: '/farm-management/soil-maps' },
+        ],
+      },
+      {
+        title: 'Reports',
+        items: [
+          { label: 'Farm Summary', path: '/farm-management/reports/farm-summary' },
+          { label: 'Field Utilization', path: '/farm-management/reports/field-utilization' },
+          { label: 'Soil Report', path: '/farm-management/reports/soil-report' },
+          { label: 'Crop Rotation', path: '/farm-management/reports/crop-rotation' },
         ],
       },
     ],
@@ -499,11 +537,41 @@ export const MODULE_REGISTRY: ModuleDef[] = [
     order: 23,
     sections: [
       {
-        title: 'IoT & Monitoring',
+        title: 'Sensor Management',
         items: [
           { label: 'Sensors', path: '/smart-agriculture/sensors' },
-          { label: 'Satellite Imagery', path: '/smart-agriculture/satellite' },
-          { label: 'Irrigation', path: '/smart-agriculture/irrigation' },
+          { label: 'Sensor Readings', path: '/smart-agriculture/sensor-readings' },
+          { label: 'Sensor Alerts', path: '/smart-agriculture/sensor-alerts' },
+          { label: 'Alert Rules', path: '/smart-agriculture/alert-rules' },
+          { label: 'Sensor Calibration', path: '/smart-agriculture/sensor-calibration' },
+        ],
+      },
+      {
+        title: 'Satellite & Remote Sensing',
+        items: [
+          { label: 'Satellite Imagery', path: '/smart-agriculture/satellite-imagery' },
+          { label: 'Vegetation Indices', path: '/smart-agriculture/vegetation-indices' },
+          { label: 'Change Detection', path: '/smart-agriculture/change-detection' },
+          { label: 'Stress Detection', path: '/smart-agriculture/stress-detection' },
+        ],
+      },
+      {
+        title: 'Irrigation Control',
+        items: [
+          { label: 'Irrigation Schedules', path: '/smart-agriculture/irrigation-schedules' },
+          { label: 'Irrigation Zones', path: '/smart-agriculture/irrigation-zones' },
+          { label: 'Controllers', path: '/smart-agriculture/controllers' },
+          { label: 'Water Usage', path: '/smart-agriculture/water-usage' },
+          { label: 'Moisture Thresholds', path: '/smart-agriculture/moisture-thresholds' },
+        ],
+      },
+      {
+        title: 'Reports',
+        items: [
+          { label: 'Sensor Analytics', path: '/smart-agriculture/reports/sensor-analytics' },
+          { label: 'NDVI Trends', path: '/smart-agriculture/reports/ndvi-trends' },
+          { label: 'Water Consumption', path: '/smart-agriculture/reports/water-consumption' },
+          { label: 'Field Health', path: '/smart-agriculture/reports/field-health' },
         ],
       },
     ],
@@ -516,11 +584,43 @@ export const MODULE_REGISTRY: ModuleDef[] = [
     order: 24,
     sections: [
       {
-        title: 'AI & Predictions',
+        title: 'Pest & Disease',
         items: [
-          { label: 'Pest Prediction', path: '/crop-intelligence/pest' },
-          { label: 'Plant Diagnosis', path: '/crop-intelligence/diagnosis' },
-          { label: 'Yield Forecast', path: '/crop-intelligence/yield' },
+          { label: 'Pest Predictions', path: '/crop-intelligence/pest-predictions' },
+          { label: 'Risk Assessments', path: '/crop-intelligence/risk-assessments' },
+          { label: 'Treatment Plans', path: '/crop-intelligence/treatment-plans' },
+          { label: 'Pest Alerts', path: '/crop-intelligence/pest-alerts' },
+        ],
+      },
+      {
+        title: 'Plant Diagnosis',
+        items: [
+          { label: 'Diagnose Plant', path: '/crop-intelligence/diagnose' },
+          { label: 'Diagnosis History', path: '/crop-intelligence/diagnosis-history' },
+          { label: 'Disease Library', path: '/crop-intelligence/disease-library' },
+        ],
+      },
+      {
+        title: 'Yield Intelligence',
+        items: [
+          { label: 'Yield Forecasts', path: '/crop-intelligence/yield-forecasts' },
+          { label: 'Historical Yields', path: '/crop-intelligence/historical-yields' },
+          { label: 'Optimization Plans', path: '/crop-intelligence/optimization' },
+        ],
+      },
+      {
+        title: 'AI Recommendations',
+        items: [
+          { label: 'Crop Recommendations', path: '/crop-intelligence/recommendations' },
+          { label: 'Planting Calendar', path: '/crop-intelligence/planting-calendar' },
+        ],
+      },
+      {
+        title: 'Reports',
+        items: [
+          { label: 'Pest Risk Report', path: '/crop-intelligence/reports/pest-risk' },
+          { label: 'Yield Analysis', path: '/crop-intelligence/reports/yield-analysis' },
+          { label: 'Diagnosis Summary', path: '/crop-intelligence/reports/diagnosis-summary' },
         ],
       },
     ],
@@ -536,8 +636,26 @@ export const MODULE_REGISTRY: ModuleDef[] = [
         title: 'Traceability',
         items: [
           { label: 'Traceability Records', path: '/supply-chain/traceability' },
-          { label: 'Certifications', path: '/supply-chain/traceability/certifications' },
-          { label: 'Batch Records', path: '/supply-chain/traceability/batches' },
+          { label: 'Batch Records', path: '/supply-chain/batches' },
+          { label: 'Certifications', path: '/supply-chain/certifications' },
+          { label: 'Quality Checks', path: '/supply-chain/quality-checks' },
+        ],
+      },
+      {
+        title: 'Supply Events',
+        items: [
+          { label: 'Harvest Events', path: '/supply-chain/harvest-events' },
+          { label: 'Processing Events', path: '/supply-chain/processing-events' },
+          { label: 'Transport Events', path: '/supply-chain/transport-events' },
+          { label: 'Storage Events', path: '/supply-chain/storage-events' },
+        ],
+      },
+      {
+        title: 'Reports',
+        items: [
+          { label: 'Traceability Report', path: '/supply-chain/reports/traceability' },
+          { label: 'Certification Status', path: '/supply-chain/reports/certification-status' },
+          { label: 'Batch Genealogy', path: '/supply-chain/reports/batch-genealogy' },
         ],
       },
     ],

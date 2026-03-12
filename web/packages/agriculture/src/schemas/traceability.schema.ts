@@ -1,33 +1,19 @@
 /**
- * @generated from proto — DO NOT EDIT
- * Run: node scripts/generate-schemas.mjs
+ * Traceability Service Form Schemas
+ * Based on agriculture.traceability.v1 protobuf definitions
  */
 import type { FormSchema } from '@samavāya/core';
-import { cropClient, farmClient, fieldClient } from '../services';
 
-export const traceabilityRecordFormSchema: FormSchema<Record<string, unknown>> = {
+/** Form for creating a traceability record (CreateTraceabilityRecordRequest) */
+export const traceabilityRecordSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
-        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
-        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
-        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
-        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'autocomplete', name: 'cropId', label: 'Crop', loadOptions: async (query: string) => {
-        const res = await cropClient.listCrops({ search: query, pageSize: 50 });
-        return (res.crops || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'text', name: 'batchNumber', label: 'Batch Number', required: true },
-    { type: 'text', name: 'productType', label: 'Product Type' },
-    { type: 'text', name: 'originCountry', label: 'Origin Country' },
-    { type: 'text', name: 'originRegion', label: 'Origin Region' },
-    { type: 'text', name: 'seedSource', label: 'Seed Source' },
-    { type: 'date', name: 'plantingDate', label: 'Planting Date' },
-    { type: 'date', name: 'harvestDate', label: 'Harvest Date' },
-    { type: 'date', name: 'processingDate', label: 'Processing Date' },
-    { type: 'date', name: 'packagingDate', label: 'Packaging Date' },
+    { type: 'text', name: 'batch_id', label: 'Batch ID', required: true, placeholder: 'Unique batch identifier' },
+    { type: 'text', name: 'product_name', label: 'Product Name', required: true, placeholder: 'Name of the product' },
+    { type: 'select', name: 'farm_id', label: 'Farm', required: true, options: [], searchable: true }, // RPC: FarmService.ListFarms
+    { type: 'select', name: 'field_id', label: 'Field', options: [], searchable: true }, // RPC: FieldService.ListFields
+    { type: 'select', name: 'crop_id', label: 'Crop', options: [], searchable: true }, // RPC: CropService.ListCrops
+    { type: 'date', name: 'harvest_date', label: 'Harvest Date' },
+    { type: 'date', name: 'processing_date', label: 'Processing Date' },
   ],
   layout: {
     type: 'grid',
@@ -35,36 +21,37 @@ export const traceabilityRecordFormSchema: FormSchema<Record<string, unknown>> =
     gap: 'md',
     sections: [
       {
-        id: 'basic',
-        title: 'Traceability Record Details',
-        fields: ['farmId', 'fieldId', 'cropId', 'batchNumber', 'productType', 'originCountry', 'originRegion', 'seedSource'],
+        id: 'product',
+        title: 'Product Details',
+        fields: ['batch_id', 'product_name', 'farm_id', 'field_id', 'crop_id'],
         columns: 2,
       },
       {
         id: 'dates',
-        title: 'Dates',
-        fields: ['plantingDate', 'harvestDate', 'processingDate', 'packagingDate'],
+        title: 'Key Dates',
+        fields: ['harvest_date', 'processing_date'],
         columns: 2,
       },
     ],
   },
 };
 
-export const certificationFormSchema: FormSchema<Record<string, unknown>> = {
+/** Form for adding a certification (AddCertificationRequest) */
+export const certificationSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'recordId', label: 'Record Id' },
-    { type: 'select', name: 'certType', label: 'Cert Type', options: [
-        { label: 'Organic', value: '1' },
-        { label: 'Gap', value: '2' },
-        { label: 'Fairtrade', value: '3' },
-        { label: 'Rainforest Alliance', value: '4' },
-        { label: 'Usda Organic', value: '5' },
-        { label: 'Eu Organic', value: '6' },
-      ] },
-    { type: 'text', name: 'certNumber', label: 'Cert Number' },
-    { type: 'text', name: 'issuedBy', label: 'Issued By' },
-    { type: 'date', name: 'issuedDate', label: 'Issued Date' },
-    { type: 'date', name: 'expiryDate', label: 'Expiry Date' },
+    { type: 'text', name: 'record_id', label: 'Traceability Record ID', required: true, placeholder: 'Linked record ID' },
+    { type: 'select', name: 'cert_type', label: 'Certification Type', required: true, options: [
+      { label: 'Organic', value: 'CERT_TYPE_ORGANIC' },
+      { label: 'GAP (Good Agricultural Practice)', value: 'CERT_TYPE_GAP' },
+      { label: 'Fairtrade', value: 'CERT_TYPE_FAIRTRADE' },
+      { label: 'Rainforest Alliance', value: 'CERT_TYPE_RAINFOREST_ALLIANCE' },
+      { label: 'USDA Organic', value: 'CERT_TYPE_USDA_ORGANIC' },
+      { label: 'EU Organic', value: 'CERT_TYPE_EU_ORGANIC' },
+    ] },
+    { type: 'text', name: 'cert_body', label: 'Certifying Body', required: true, placeholder: 'Name of certifying organization' },
+    { type: 'text', name: 'cert_number', label: 'Certificate Number', required: true, placeholder: 'Certificate reference number' },
+    { type: 'date', name: 'issue_date', label: 'Issue Date', required: true },
+    { type: 'date', name: 'expiry_date', label: 'Expiry Date', required: true },
   ],
   layout: {
     type: 'grid',
@@ -72,31 +59,35 @@ export const certificationFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'basic',
+        id: 'certification',
         title: 'Certification Details',
-        fields: ['certType', 'recordId', 'certNumber', 'issuedBy'],
+        fields: ['record_id', 'cert_type', 'cert_body', 'cert_number'],
         columns: 2,
       },
       {
-        id: 'dates',
-        title: 'Dates',
-        fields: ['issuedDate', 'expiryDate'],
+        id: 'validity',
+        title: 'Validity Period',
+        fields: ['issue_date', 'expiry_date'],
         columns: 2,
       },
     ],
   },
 };
 
-export const batchRecordFormSchema: FormSchema<Record<string, unknown>> = {
+/** Form for recording a supply chain event (RecordSupplyEventRequest) */
+export const supplyEventSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'recordId', label: 'Record Id' },
-    { type: 'text', name: 'batchNumber', label: 'Batch Number', required: true },
-    { type: 'number', name: 'quantity', label: 'Quantity', step: 1 },
-    { type: 'text', name: 'unit', label: 'Unit' },
-    { type: 'date', name: 'productionDate', label: 'Production Date' },
-    { type: 'date', name: 'expiryDate', label: 'Expiry Date' },
-    { type: 'textarea', name: 'storageConditions', label: 'Storage Conditions', rows: 3 },
-    { type: 'text', name: 'qualityGrade', label: 'Quality Grade' },
+    { type: 'text', name: 'record_id', label: 'Traceability Record ID', required: true, placeholder: 'Linked record ID' },
+    { type: 'select', name: 'event_type', label: 'Event Type', required: true, options: [
+      { label: 'Harvest', value: 'EVENT_TYPE_HARVEST' },
+      { label: 'Processing', value: 'EVENT_TYPE_PROCESSING' },
+      { label: 'Transport', value: 'EVENT_TYPE_TRANSPORT' },
+      { label: 'Storage', value: 'EVENT_TYPE_STORAGE' },
+    ] },
+    { type: 'text', name: 'location', label: 'Location', placeholder: 'Where the event occurred' },
+    { type: 'datetime', name: 'timestamp', label: 'Timestamp', required: true },
+    { type: 'text', name: 'handler', label: 'Handler', placeholder: 'Person or organization handling the product' },
+    { type: 'textarea', name: 'notes', label: 'Notes', rows: 3, placeholder: 'Additional event details' },
   ],
   layout: {
     type: 'grid',
@@ -104,22 +95,16 @@ export const batchRecordFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'basic',
-        title: 'Batch Record Details',
-        fields: ['recordId', 'batchNumber', 'unit', 'storageConditions', 'qualityGrade'],
+        id: 'event',
+        title: 'Event Details',
+        fields: ['record_id', 'event_type', 'location', 'timestamp', 'handler'],
         columns: 2,
       },
       {
-        id: 'metrics',
-        title: 'Measurements & Metrics',
-        fields: ['quantity'],
-        columns: 2,
-      },
-      {
-        id: 'dates',
-        title: 'Dates',
-        fields: ['productionDate', 'expiryDate'],
-        columns: 2,
+        id: 'notes',
+        title: 'Notes',
+        fields: ['notes'],
+        columns: 1,
       },
     ],
   },

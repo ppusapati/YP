@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@p9e.in/samavaya": "workspace:*",
+    "@samavāya/agriculture": "workspace:*",
     "@samavāya/core": "workspace:*",
-    "@samavāya/formrenderer": "workspace:*",
     "@samavāya/stores": "workspace:*",
     "@samavāya/ui": "workspace:*"
   },

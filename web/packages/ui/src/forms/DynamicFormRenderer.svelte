@@ -40,6 +40,22 @@
   import YearPicker from './YearPicker.svelte';
   import DateTimeRangeField from './DateTimeRangeField.svelte';
 
+  /**
+   * RPC Loader function type — fetches dropdown options from backend.
+   * @param dependsOnValue - value of the field this loader depends on (for cascading dropdowns)
+   */
+  type RpcLoaderFn = (dependsOnValue?: string) => Promise<Array<{ label: string; value: unknown }>>;
+
+  /**
+   * RPC loader config per field — maps to a loader function and optional dependency.
+   */
+  interface RpcFieldLoader {
+    /** The loader function to call */
+    loader: RpcLoaderFn;
+    /** Form field name this loader depends on (cascading) */
+    dependsOn?: string;
+  }
+
   // Props
   export let schema: FormSchema<Record<string, unknown>>;
   export let values: Record<string, unknown> = {};
@@ -53,6 +69,10 @@
   export let showReset: boolean = true;
   export let onSubmit: ((values: Record<string, unknown>) => void | Promise<void>) | null = null;
   export let onReset: (() => void) | null = null;
+  /** RPC loaders keyed by field name — dynamically loads dropdown options from backend RPCs */
+  export let rpcLoaders: Record<string, RpcFieldLoader> = {};
+  /** Callback after successful form save — used for form-to-form navigation */
+  export let onAfterSave: ((savedValues: Record<string, unknown>) => void) | null = null;
 
   let className: string = '';
   export { className as class };
@@ -63,10 +83,79 @@
   const formTouched = writable<Record<string, boolean>>(touched);
   let isSubmitting = false;
 
+  /** RPC-loaded options per field, keyed by field name */
+  let rpcOptions: Record<string, Array<{ label: string; value: unknown }>> = {};
+  /** Loading states per field */
+  let rpcLoading: Record<string, boolean> = {};
+
+  /**
+   * Load RPC options for a specific field.
+   * Called on mount for independent fields, or when the dependency value changes for cascading fields.
+   */
+  async function loadRpcOptions(fieldName: string, dependsOnValue?: string) {
+    const config = rpcLoaders[fieldName];
+    if (!config) return;
+
+    rpcLoading[fieldName] = true;
+    rpcLoading = rpcLoading;
+    try {
+      const options = await config.loader(dependsOnValue);
+      rpcOptions[fieldName] = options;
+      rpcOptions = rpcOptions;
+    } catch (err) {
+      console.error(`Failed to load RPC options for ${fieldName}:`, err);
+      rpcOptions[fieldName] = [];
+      rpcOptions = rpcOptions;
+    } finally {
+      rpcLoading[fieldName] = false;
+      rpcLoading = rpcLoading;
+    }
+  }
+
+  /**
+   * Get the effective options for a select field.
+   * Merges static schema options with RPC-loaded options.
+   */
+  function getFieldOptions(field: FormFieldConfig): Array<{ label: string; value: unknown }> {
+    if (rpcOptions[field.name] && rpcOptions[field.name].length > 0) {
+      return rpcOptions[field.name];
+    }
+    return (field as any).options ?? [];
+  }
+
   // Subscribe to external changes
   $: formValues.set(values);
   $: formErrors.set(errors);
   $: formTouched.set(touched);
+
+  // --- RPC Loader Initialization ---
+  // On mount, load all independent RPC loaders (no dependsOn)
+  // and set up reactive watchers for cascading loaders.
+  import { onMount } from 'svelte';
+
+  onMount(() => {
+    for (const [fieldName, config] of Object.entries(rpcLoaders)) {
+      if (!config.dependsOn) {
+        loadRpcOptions(fieldName);
+      }
+    }
+  });
+
+  // Watch for cascading dependency changes
+  $: {
+    for (const [fieldName, config] of Object.entries(rpcLoaders)) {
+      if (config.dependsOn) {
+        const depValue = $formValues[config.dependsOn];
+        if (depValue !== undefined && depValue !== null && depValue !== '') {
+          loadRpcOptions(fieldName, String(depValue));
+        } else {
+          // Clear options when dependency is cleared
+          rpcOptions[fieldName] = [];
+          rpcOptions = rpcOptions;
+        }
+      }
+    }
+  }
 
   /**
    * Map field type to component
@@ -152,6 +241,10 @@
       }
       // Dispatch custom event
       dispatch('submit', { values: $formValues });
+      // Form-to-form navigation callback
+      if (onAfterSave) {
+        onAfterSave($formValues);
+      }
     } catch (err) {
       console.error('Form submission error:', err);
       dispatch('error', { error: err });
@@ -279,7 +372,10 @@
                     required={field.required}
                     size={field.type === 'hidden' ? undefined : size}
                     {...(field.type === 'select' || field.type === 'autocomplete'
-                      ? { options: (field as any).options }
+                      ? {
+                          options: getFieldOptions(field),
+                          loading: rpcLoading[field.name] || false,
+                        }
                       : {})}
                     {...(field.type === 'number'
                       ? {

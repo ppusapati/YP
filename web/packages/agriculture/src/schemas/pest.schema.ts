@@ -1,50 +1,19 @@
 /**
- * @generated from proto — DO NOT EDIT
- * Run: node scripts/generate-schemas.mjs
+ * Pest Prediction Service Form Schemas
+ * Based on agriculture.pest.v1 protobuf definitions
  */
 import type { FormSchema } from '@samavāya/core';
-import { farmClient, fieldClient, pestClient } from '../services';
 
-export const pestPredictionFormSchema: FormSchema<Record<string, unknown>> = {
+/** Form for requesting a pest prediction (PestPredictionRequest) */
+export const pestPredictionRequestSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
-        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
-        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
-        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
-        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'autocomplete', name: 'pestSpeciesId', label: 'Pest Species', loadOptions: async (query: string) => {
-        const res = await pestClient.listPestSpecies({ search: query, pageSize: 50 });
-        return (res.species || []).map((r: any) => ({ label: r.commonName || r.id, value: r.id }));
-      } },
-    { type: 'date', name: 'predictionDate', label: 'Prediction Date' },
-    { type: 'select', name: 'riskLevel', label: 'Risk Level', options: [
-        { label: 'None', value: '1' },
-        { label: 'Low', value: '2' },
-        { label: 'Moderate', value: '3' },
-        { label: 'High', value: '4' },
-        { label: 'Critical', value: '5' },
-      ] },
-    { type: 'number', name: 'riskScore', label: 'Risk Score', step: 1 },
-    { type: 'number', name: 'confidencePct', label: 'Confidence Pct', min: 0, max: 100 },
-    { type: 'text', name: 'cropType', label: 'Crop Type' },
-    { type: 'select', name: 'growthStage', label: 'Growth Stage', options: [
-        { label: 'Germination', value: '1' },
-        { label: 'Seedling', value: '2' },
-        { label: 'Vegetative', value: '3' },
-        { label: 'Flowering', value: '4' },
-        { label: 'Fruiting', value: '5' },
-        { label: 'Maturation', value: '6' },
-        { label: 'Harvest', value: '7' },
-      ] },
-    { type: 'number', name: 'geographicRiskFactor', label: 'Geographic Risk Factor' },
-    { type: 'number', name: 'historicalOccurrenceCount', label: 'Historical Occurrence Count', step: 1 },
-    { type: 'date', name: 'predictedOnsetDate', label: 'Predicted Onset Date' },
-    { type: 'date', name: 'predictedPeakDate', label: 'Predicted Peak Date' },
-    { type: 'date', name: 'treatmentWindowStart', label: 'Treatment Window Start' },
-    { type: 'date', name: 'treatmentWindowEnd', label: 'Treatment Window End' },
+    { type: 'select', name: 'field_id', label: 'Field', required: true, options: [], searchable: true }, // RPC: FieldService.ListFields
+    { type: 'select', name: 'crop_id', label: 'Crop', required: true, options: [], searchable: true }, // RPC: CropService.ListCrops
+    { type: 'number', name: 'temperature', label: 'Current Temperature (\u00B0C)', step: 0.1, suffix: '\u00B0C' },
+    { type: 'number', name: 'humidity', label: 'Current Humidity (%)', min: 0, max: 100, step: 0.1, suffix: '%' },
+    { type: 'number', name: 'rainfall_mm', label: 'Recent Rainfall (mm)', min: 0, step: 0.1, suffix: 'mm' },
+    { type: 'number', name: 'wind_speed', label: 'Wind Speed (km/h)', min: 0, step: 0.1, suffix: 'km/h' },
+    { type: 'number', name: 'soil_moisture', label: 'Soil Moisture (%)', min: 0, max: 100, step: 0.1, suffix: '%' },
   ],
   layout: {
     type: 'grid',
@@ -52,60 +21,44 @@ export const pestPredictionFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'basic',
-        title: 'Pest Prediction Details',
-        fields: ['farmId', 'fieldId', 'pestSpeciesId', 'cropType'],
+        id: 'target',
+        title: 'Prediction Target',
+        fields: ['field_id', 'crop_id'],
         columns: 2,
       },
       {
-        id: 'classification',
-        title: 'Status & Classification',
-        fields: ['riskLevel', 'growthStage'],
-        columns: 2,
-      },
-      {
-        id: 'metrics',
-        title: 'Measurements & Metrics',
-        fields: ['riskScore', 'confidencePct', 'geographicRiskFactor', 'historicalOccurrenceCount'],
-        columns: 2,
-      },
-      {
-        id: 'dates',
-        title: 'Dates',
-        fields: ['predictionDate', 'predictedOnsetDate', 'predictedPeakDate', 'treatmentWindowStart', 'treatmentWindowEnd'],
+        id: 'conditions',
+        title: 'Current Conditions',
+        fields: ['temperature', 'humidity', 'rainfall_mm', 'wind_speed', 'soil_moisture'],
         columns: 2,
       },
     ],
   },
 };
 
-export const pestObservationFormSchema: FormSchema<Record<string, unknown>> = {
+/** Form for creating a treatment plan (CreateTreatmentPlanRequest) */
+export const treatmentPlanSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
-        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
-        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
-        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
-        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-      } },
-    { type: 'autocomplete', name: 'pestSpeciesId', label: 'Pest Species', loadOptions: async (query: string) => {
-        const res = await pestClient.listPestSpecies({ search: query, pageSize: 50 });
-        return (res.species || []).map((r: any) => ({ label: r.commonName || r.id, value: r.id }));
-      } },
-    { type: 'number', name: 'pestCount', label: 'Pest Count', step: 1 },
-    { type: 'select', name: 'damageLevel', label: 'Damage Level', options: [
-        { label: 'None', value: '1' },
-        { label: 'Light', value: '2' },
-        { label: 'Moderate', value: '3' },
-        { label: 'Severe', value: '4' },
-        { label: 'Devastating', value: '5' },
-      ] },
-    { type: 'text', name: 'trapType', label: 'Trap Type' },
-    { type: 'url', name: 'imageUrl', label: 'Image Url', placeholder: 'https://...' },
-    { type: 'number', name: 'latitude', label: 'Latitude', min: -90, max: 90, step: 0.000001 },
-    { type: 'number', name: 'longitude', label: 'Longitude', min: -180, max: 180, step: 0.000001 },
-    { type: 'textarea', name: 'notes', label: 'Notes', rows: 3 },
+    { type: 'text', name: 'prediction_id', label: 'Prediction ID', required: true, placeholder: 'Linked pest prediction ID' },
+    { type: 'select', name: 'treatment_type', label: 'Treatment Type', required: true, options: [
+      { label: 'Chemical', value: 'TREATMENT_TYPE_CHEMICAL' },
+      { label: 'Biological', value: 'TREATMENT_TYPE_BIOLOGICAL' },
+      { label: 'Cultural', value: 'TREATMENT_TYPE_CULTURAL' },
+      { label: 'Mechanical', value: 'TREATMENT_TYPE_MECHANICAL' },
+      { label: 'Integrated', value: 'TREATMENT_TYPE_INTEGRATED' },
+    ] },
+    { type: 'text', name: 'product_name', label: 'Product Name', placeholder: 'Name of treatment product' },
+    { type: 'text', name: 'dosage', label: 'Dosage', placeholder: 'e.g. 2L/ha, 500g/ha' },
+    { type: 'select', name: 'application_method', label: 'Application Method', options: [
+      { label: 'Foliar Spray', value: 'APPLICATION_METHOD_FOLIAR_SPRAY' },
+      { label: 'Soil Drench', value: 'APPLICATION_METHOD_SOIL_DRENCH' },
+      { label: 'Seed Treatment', value: 'APPLICATION_METHOD_SEED_TREATMENT' },
+      { label: 'Fumigation', value: 'APPLICATION_METHOD_FUMIGATION' },
+      { label: 'Trap Placement', value: 'APPLICATION_METHOD_TRAP' },
+      { label: 'Broadcast', value: 'APPLICATION_METHOD_BROADCAST' },
+    ] },
+    { type: 'date', name: 'application_date', label: 'Application Date' },
+    { type: 'textarea', name: 'notes', label: 'Notes', rows: 3, placeholder: 'Treatment instructions, precautions, etc.' },
   ],
   layout: {
     type: 'grid',
@@ -113,21 +66,15 @@ export const pestObservationFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'basic',
-        title: 'Pest Observation Details',
-        fields: ['farmId', 'fieldId', 'pestSpeciesId', 'notes', 'trapType', 'imageUrl'],
+        id: 'treatment',
+        title: 'Treatment Details',
+        fields: ['prediction_id', 'treatment_type', 'product_name', 'dosage'],
         columns: 2,
       },
       {
-        id: 'classification',
-        title: 'Status & Classification',
-        fields: ['damageLevel'],
-        columns: 2,
-      },
-      {
-        id: 'metrics',
-        title: 'Measurements & Metrics',
-        fields: ['pestCount', 'latitude', 'longitude'],
+        id: 'application',
+        title: 'Application',
+        fields: ['application_method', 'application_date', 'notes'],
         columns: 2,
       },
     ],

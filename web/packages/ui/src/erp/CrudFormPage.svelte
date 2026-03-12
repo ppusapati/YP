@@ -27,6 +27,11 @@
   /** Show delete button in edit mode */
   export let showDelete: boolean = false;
 
+  /** RPC loaders for dynamic dropdown fields */
+  export let rpcLoaders: Record<string, { loader: (v?: string) => Promise<Array<{ label: string; value: unknown }>>; dependsOn?: string }> = {};
+  /** Callback after successful save — for form-to-form navigation */
+  export let onAfterSave: ((savedValues: Record<string, unknown>) => void) | null = null;
+
   /** Submit handler */
   export let onSubmit: ((values: Record<string, unknown>) => void | Promise<void>) | null = null;
   /** Cancel handler (alternative to cancelHref) */
@@ -101,6 +106,8 @@
         {schema}
         {values}
         {errors}
+        {rpcLoaders}
+        {onAfterSave}
         readonly={mode === 'view'}
         disabled={isSubmitting}
         submitLabel={submitLabel || defaultSubmitLabel}
