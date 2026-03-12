@@ -1,0 +1,100 @@
+# Samavāya ERP - Reverse Proxy Configuration
+#
+# Each module is a separate SvelteKit app. The reverse proxy routes
+# requests to the correct app based on URL path prefix.
+#
+# Selective deployment: only include handle blocks for deployed modules.
+# Unlicensed modules are simply not deployed — no code ships to customer.
+
+{$DOMAIN:localhost} {
+    # ──────────────────────────────────────────────────
+    # Identity & Access Management
+    # ──────────────────────────────────────────────────
+    handle /identity/* {
+        reverse_proxy {$IDENTITY_HOST:identity-app:3001}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Master Data
+    # ──────────────────────────────────────────────────
+    handle /masters/* {
+        reverse_proxy {$MASTERS_HOST:masters-app:3002}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Finance (GL, AR, AP, Reports)
+    # ──────────────────────────────────────────────────
+    handle /finance/* {
+        reverse_proxy {$FINANCE_HOST:finance-app:3003}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Sales (CRM, Orders, Invoices, Pricing)
+    # ──────────────────────────────────────────────────
+    handle /sales/* {
+        reverse_proxy {$SALES_HOST:sales-app:3004}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Purchase (Procurement, PO, Invoices)
+    # ──────────────────────────────────────────────────
+    handle /purchase/* {
+        reverse_proxy {$PURCHASE_HOST:purchase-app:3005}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Inventory (Core, Lot-Serial, Quality, WMS)
+    # ──────────────────────────────────────────────────
+    handle /inventory/* {
+        reverse_proxy {$INVENTORY_HOST:inventory-app:3006}
+    }
+
+    # ──────────────────────────────────────────────────
+    # HR (Employee, Payroll, Leave, Attendance)
+    # ──────────────────────────────────────────────────
+    handle /hr/* {
+        reverse_proxy {$HR_HOST:hr-app:3007}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Manufacturing (BOM, Production, Job Cards)
+    # ──────────────────────────────────────────────────
+    handle /manufacturing/* {
+        reverse_proxy {$MFG_HOST:manufacturing-app:3008}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Projects (Project, Task, BOQ, Billing)
+    # ──────────────────────────────────────────────────
+    handle /projects/* {
+        reverse_proxy {$PROJECTS_HOST:projects-app:3009}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Assets (Assets, Depreciation, Maintenance)
+    # ──────────────────────────────────────────────────
+    handle /asset/* {
+        reverse_proxy {$ASSET_HOST:asset-app:3010}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Fulfillment (Shipping, Returns)
+    # ──────────────────────────────────────────────────
+    handle /fulfillment/* {
+        reverse_proxy {$FULFILLMENT_HOST:fulfillment-app:3011}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Insights (Dashboards, BI, Reports)
+    # ──────────────────────────────────────────────────
+    handle /insights/* {
+        reverse_proxy {$INSIGHTS_HOST:insights-app:3012}
+    }
+
+    # ──────────────────────────────────────────────────
+    # Shell (Dashboard, Auth, Settings, 404 fallback)
+    # ──────────────────────────────────────────────────
+    handle {
+        reverse_proxy {$SHELL_HOST:shell-app:3000}
+    }
+}

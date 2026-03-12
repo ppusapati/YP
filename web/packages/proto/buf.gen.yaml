@@ -1,0 +1,196 @@
+version: v2
+plugins:
+  # protoc-gen-es v2 generates BOTH message types AND service descriptors
+  # No separate protoc-gen-connect-es needed in Connect-ES v2
+  - local: protoc-gen-es
+    out: src/gen
+    opt:
+      - target=ts
+      - import_extension=.js
+inputs:
+  # ──────────────────────────────────────────────
+  # Phase 0: Shared Packages (required by all)
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/packages/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 1: Core Identity (auth/login)
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/core/identity/auth/proto
+  - directory: ../../backend/core/identity/user/proto
+  - directory: ../../backend/core/identity/tenant/proto
+  - directory: ../../backend/core/identity/access/proto
+  - directory: ../../backend/core/identity/pdp/proto
+  - directory: ../../backend/core/identity/entity/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 2: Core Workflow (forms, approvals)
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/core/workflow/formbuilder/proto
+  - directory: ../../backend/core/workflow/workflow/proto
+  - directory: ../../backend/core/workflow/approval/proto
+  - directory: ../../backend/core/workflow/escalation/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 3: Masters (items, parties, locations)
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/masters/item/proto
+  - directory: ../../backend/business/masters/party/proto
+  - directory: ../../backend/business/masters/location/proto
+  - directory: ../../backend/business/masters/UOM/proto
+  - directory: ../../backend/business/masters/chartofaccounts/proto
+  - directory: ../../backend/business/masters/taxcode/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 4: Finance
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/finance/ledger/proto
+  - directory: ../../backend/business/finance/payable/proto
+  - directory: ../../backend/business/finance/receivable/proto
+  - directory: ../../backend/business/finance/journal/proto
+  - directory: ../../backend/business/finance/billing/proto
+  - directory: ../../backend/business/finance/cashmanagement/proto
+  - directory: ../../backend/business/finance/compliancepostings/proto
+  - directory: ../../backend/business/finance/costcenter/proto
+  - directory: ../../backend/business/finance/financialclose/proto
+  - directory: ../../backend/business/finance/reconciliation/proto
+  - directory: ../../backend/business/finance/reports/proto
+  - directory: ../../backend/business/finance/taxengine/proto
+  - directory: ../../backend/business/finance/transaction/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 5: Inventory
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/inventory/core/proto
+  - directory: ../../backend/business/inventory/barcode/proto
+  - directory: ../../backend/business/inventory/cycle-count/proto
+  - directory: ../../backend/business/inventory/lot-serial/proto
+  - directory: ../../backend/business/inventory/planning/proto
+  - directory: ../../backend/business/inventory/quality/proto
+  - directory: ../../backend/business/inventory/stock-transfer/proto
+  - directory: ../../backend/business/inventory/wms/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 6: Sales
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/sales/commission/proto
+  - directory: ../../backend/business/sales/crm/proto
+  - directory: ../../backend/business/sales/dealer/proto
+  - directory: ../../backend/business/sales/fieldsales/proto
+  - directory: ../../backend/business/sales/pricing/proto
+  - directory: ../../backend/business/sales/routeplanning/proto
+  - directory: ../../backend/business/sales/salesanalytics/proto
+  - directory: ../../backend/business/sales/salesinvoice/proto
+  - directory: ../../backend/business/sales/salesorder/proto
+  - directory: ../../backend/business/sales/territory/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 7: Purchase
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/purchase/procurement/proto
+  - directory: ../../backend/business/purchase/purchaseorder/proto
+  - directory: ../../backend/business/purchase/purchaseinvoice/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 8: HR
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/hr/appraisal/proto
+  - directory: ../../backend/business/hr/attendance/proto
+  - directory: ../../backend/business/hr/employee/proto
+  - directory: ../../backend/business/hr/exit/proto
+  - directory: ../../backend/business/hr/expense/proto
+  - directory: ../../backend/business/hr/leave/proto
+  - directory: ../../backend/business/hr/payroll/proto
+  - directory: ../../backend/business/hr/recruitment/proto
+  - directory: ../../backend/business/hr/salarystructure/proto
+  - directory: ../../backend/business/hr/training/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 9: Manufacturing
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/manufacturing/bom/proto
+  - directory: ../../backend/business/manufacturing/jobcard/proto
+  - directory: ../../backend/business/manufacturing/mfgquality/proto
+  - directory: ../../backend/business/manufacturing/planning/proto
+  - directory: ../../backend/business/manufacturing/productionorder/proto
+  - directory: ../../backend/business/manufacturing/routing/proto
+  - directory: ../../backend/business/manufacturing/shopfloor/proto
+  - directory: ../../backend/business/manufacturing/subcontracting/proto
+  - directory: ../../backend/business/manufacturing/workcenter/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 10: Projects
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/projects/boq/proto
+  - directory: ../../backend/business/projects/progressbilling/proto
+  - directory: ../../backend/business/projects/project/proto
+  - directory: ../../backend/business/projects/projectcosting/proto
+  - directory: ../../backend/business/projects/subcontractor/proto
+  - directory: ../../backend/business/projects/task/proto
+  - directory: ../../backend/business/projects/timesheet/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 11: Asset
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/asset/asset/proto
+  - directory: ../../backend/business/asset/depreciation/proto
+  - directory: ../../backend/business/asset/equipment/proto
+  - directory: ../../backend/business/asset/maintenance/proto
+  - directory: ../../backend/business/asset/vehicle/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 12: Fulfillment
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/fulfillment/fulfillment/proto
+  - directory: ../../backend/business/fulfillment/returns/proto
+  - directory: ../../backend/business/fulfillment/shipping/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 13: Insights
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/business/insights/bianalytics/proto
+  - directory: ../../backend/business/insights/dashboard/proto
+  - directory: ../../backend/business/insights/insighthub/proto
+  - directory: ../../backend/business/insights/insightviewer/proto
+  - directory: ../../backend/business/insights/metasearch/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 14: Core Platform
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/core/platform/filestorage/proto
+  - directory: ../../backend/core/platform/barcodeqr/proto
+  - directory: ../../backend/core/platform/scheduler/proto
+  - directory: ../../backend/core/platform/sla/proto
+  - directory: ../../backend/core/platform/integration/proto
+  - directory: ../../backend/core/platform/apigateway/proto
+  - directory: ../../backend/core/platform/batch/proto
+  - directory: ../../backend/core/platform/print/proto
+  - directory: ../../backend/core/platform/queue/proto
+  - directory: ../../backend/core/platform/systemsettings/proto
+  - directory: ../../backend/core/platform/webhook/proto
+
+  # ──────────────────────────────────────────────
+  # Phase 15: Core Others
+  # ──────────────────────────────────────────────
+  - directory: ../../backend/core/notifications/notification/proto
+  - directory: ../../backend/core/notifications/template/proto
+  - directory: ../../backend/core/communication/chat/proto
+  - directory: ../../backend/core/communication/currency/proto
+  - directory: ../../backend/core/communication/i18n/proto
+  - directory: ../../backend/core/banking/banking/proto
+  - directory: ../../backend/core/banking/einvoice/proto
+  - directory: ../../backend/core/banking/ewaybill/proto
+  - directory: ../../backend/core/banking/gst/proto
+  - directory: ../../backend/core/banking/tds/proto
+  - directory: ../../backend/core/budget/budget/proto
+  - directory: ../../backend/core/budget/budgetvariance/proto
+  - directory: ../../backend/core/budget/capex/proto
+  - directory: ../../backend/core/budget/forecasting/proto
+  - directory: ../../backend/core/data/backupdr/proto
+  - directory: ../../backend/core/data/dataarchive/proto
+  - directory: ../../backend/core/data/databridge/proto
+  - directory: ../../backend/core/audit/audit/proto
+  - directory: ../../backend/core/audit/changelog/proto
+  - directory: ../../backend/core/audit/compliance/proto
+  - directory: ../../backend/core/audit/gdpr/proto
+  - directory: ../../backend/core/audit/retention/proto

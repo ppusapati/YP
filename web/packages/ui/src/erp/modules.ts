@@ -472,8 +472,6 @@ export const MODULE_REGISTRY: ModuleDef[] = [
       },
     ],
   },
-];
-
   // ─── Agriculture Module Groups ──────────────────────────────────────────
   {
     id: 'farm-management',
@@ -545,7 +543,6 @@ export const MODULE_REGISTRY: ModuleDef[] = [
     ],
   },
 ];
-
 /** Get a module definition by ID */
 export function getModule(id: string): ModuleDef | undefined {
   return MODULE_REGISTRY.find((m) => m.id === id);
