@@ -1,29 +1,28 @@
+/**
+ * @generated from proto — DO NOT EDIT
+ * Run: node scripts/generate-schemas.mjs
+ */
 import type { FormSchema } from '@samavāya/core';
+import { farmClient, fieldClient } from '../services';
 
 export const satelliteImageFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'fieldId', label: 'Field', required: true },
-    { type: 'text', name: 'farmId', label: 'Farm' },
-    {
-      type: 'select', name: 'satelliteProvider', label: 'Satellite Provider',
-      options: [
-        { label: 'Sentinel-2', value: '1' },
-        { label: 'Landsat 8', value: '2' },
+    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
+        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
+        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
+        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
+        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'select', name: 'satelliteProvider', label: 'Satellite Provider', options: [
+        { label: 'Sentinel2', value: '1' },
+        { label: 'Landsat8', value: '2' },
         { label: 'Planet', value: '3' },
         { label: 'Custom', value: '4' },
-      ],
-    } as any,
-    { type: 'number', name: 'maxCloudCoverPct', label: 'Max Cloud Cover (%)', min: 0, max: 100 } as any,
-    { type: 'number', name: 'resolutionMeters', label: 'Resolution (m)', min: 0 } as any,
-    {
-      type: 'select', name: 'processingStatus', label: 'Processing Status',
-      options: [
-        { label: 'Pending', value: '1' },
-        { label: 'Processing', value: '2' },
-        { label: 'Completed', value: '3' },
-        { label: 'Failed', value: '4' },
-      ],
-    } as any,
+      ] },
+    { type: 'number', name: 'maxCloudCoverPct', label: 'Max Cloud Cover Pct', min: 0, max: 100 },
+    { type: 'number', name: 'resolutionMeters', label: 'Resolution Meters', min: 0, step: 0.01 },
   ],
   layout: {
     type: 'grid',
@@ -31,9 +30,21 @@ export const satelliteImageFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'imagery_request',
-        title: 'Imagery Request',
-        fields: ['fieldId', 'farmId', 'satelliteProvider', 'maxCloudCoverPct', 'resolutionMeters', 'processingStatus'],
+        id: 'basic',
+        title: 'Satellite Image Details',
+        fields: ['fieldId', 'farmId'],
+        columns: 2,
+      },
+      {
+        id: 'classification',
+        title: 'Status & Classification',
+        fields: ['satelliteProvider'],
+        columns: 2,
+      },
+      {
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['maxCloudCoverPct', 'resolutionMeters'],
         columns: 2,
       },
     ],

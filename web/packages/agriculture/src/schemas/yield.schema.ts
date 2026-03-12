@@ -1,27 +1,26 @@
+/**
+ * @generated from proto — DO NOT EDIT
+ * Run: node scripts/generate-schemas.mjs
+ */
 import type { FormSchema } from '@samavāya/core';
+import { cropClient, farmClient, fieldClient } from '../services';
 
-export const yieldRecordFormSchema: FormSchema<Record<string, unknown>> = {
+export const yieldPredictionFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'farmId', label: 'Farm', required: true },
-    { type: 'text', name: 'fieldId', label: 'Field', required: true },
-    { type: 'text', name: 'cropId', label: 'Crop', required: true },
+    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
+        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
+        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
+        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
+        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'cropId', label: 'Crop', loadOptions: async (query: string) => {
+        const res = await cropClient.listCrops({ search: query, pageSize: 50 });
+        return (res.crops || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
     { type: 'text', name: 'season', label: 'Season' },
-    { type: 'number', name: 'year', label: 'Year', min: 2000, max: 2100 } as any,
-    { type: 'number', name: 'actualYieldKgPerHectare', label: 'Actual Yield (kg/ha)' } as any,
-    {
-      type: 'select', name: 'qualityGrade', label: 'Quality Grade',
-      options: [
-        { label: 'Grade A', value: '1' },
-        { label: 'Grade B', value: '2' },
-        { label: 'Grade C', value: '3' },
-        { label: 'Grade D', value: '4' },
-      ],
-    } as any,
-    { type: 'number', name: 'moistureContentPct', label: 'Moisture Content (%)', min: 0, max: 100 } as any,
-    { type: 'date', name: 'harvestDate', label: 'Harvest Date' } as any,
-    { type: 'text', name: 'harvestMethod', label: 'Harvest Method' },
-    { type: 'number', name: 'laborHours', label: 'Labor Hours' } as any,
-    { type: 'textarea', name: 'notes', label: 'Notes', rows: 3 } as any,
+    { type: 'number', name: 'year', label: 'Year', min: 2000, max: 2100, step: 1 },
   ],
   layout: {
     type: 'grid',
@@ -29,21 +28,79 @@ export const yieldRecordFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'yield_details',
-        title: 'Yield Details',
-        fields: ['farmId', 'fieldId', 'cropId', 'season', 'year'],
+        id: 'basic',
+        title: 'Yield Prediction Details',
+        fields: ['farmId', 'fieldId', 'cropId', 'season'],
         columns: 2,
       },
       {
-        id: 'quality_metrics',
-        title: 'Quality & Metrics',
-        fields: ['actualYieldKgPerHectare', 'qualityGrade', 'moistureContentPct'],
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['year'],
+        columns: 2,
+      },
+    ],
+  },
+};
+
+export const yieldRecordFormSchema: FormSchema<Record<string, unknown>> = {
+  fields: [
+    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
+        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
+        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
+        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
+        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'cropId', label: 'Crop', loadOptions: async (query: string) => {
+        const res = await cropClient.listCrops({ search: query, pageSize: 50 });
+        return (res.crops || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'text', name: 'season', label: 'Season' },
+    { type: 'number', name: 'year', label: 'Year', min: 2000, max: 2100, step: 1 },
+    { type: 'number', name: 'actualYieldKgPerHectare', label: 'Actual Yield Kg Per Hectare', min: 0, step: 0.01 },
+    { type: 'number', name: 'totalAreaHarvestedHectares', label: 'Total Area Harvested Hectares', min: 0, step: 0.01 },
+    { type: 'number', name: 'totalYieldKg', label: 'Total Yield Kg' },
+    { type: 'select', name: 'harvestQualityGrade', label: 'Harvest Quality Grade', options: [
+        { label: 'A', value: '1' },
+        { label: 'B', value: '2' },
+        { label: 'C', value: '3' },
+        { label: 'D', value: '4' },
+      ] },
+    { type: 'number', name: 'moistureContentPct', label: 'Moisture Content Pct', min: 0, max: 100 },
+    { type: 'date', name: 'harvestDate', label: 'Harvest Date' },
+    { type: 'number', name: 'revenuePerHectare', label: 'Revenue Per Hectare', min: 0, step: 0.01 },
+    { type: 'number', name: 'costPerHectare', label: 'Cost Per Hectare', min: 0, step: 0.01 },
+    { type: 'text', name: 'predictionId', label: 'Prediction Id' },
+  ],
+  layout: {
+    type: 'grid',
+    columns: 2,
+    gap: 'md',
+    sections: [
+      {
+        id: 'basic',
+        title: 'Yield Record Details',
+        fields: ['farmId', 'fieldId', 'cropId', 'season', 'predictionId'],
         columns: 2,
       },
       {
-        id: 'harvest_info',
-        title: 'Harvest Info',
-        fields: ['harvestDate', 'harvestMethod', 'laborHours', 'notes'],
+        id: 'classification',
+        title: 'Status & Classification',
+        fields: ['harvestQualityGrade'],
+        columns: 2,
+      },
+      {
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['year', 'actualYieldKgPerHectare', 'totalAreaHarvestedHectares', 'totalYieldKg', 'moistureContentPct', 'revenuePerHectare', 'costPerHectare'],
+        columns: 2,
+      },
+      {
+        id: 'dates',
+        title: 'Dates',
+        fields: ['harvestDate'],
         columns: 2,
       },
     ],
@@ -52,29 +109,25 @@ export const yieldRecordFormSchema: FormSchema<Record<string, unknown>> = {
 
 export const harvestPlanFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'farmId', label: 'Farm', required: true },
-    { type: 'text', name: 'fieldId', label: 'Field', required: true },
-    { type: 'text', name: 'cropId', label: 'Crop', required: true },
+    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
+        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
+        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
+        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
+        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'cropId', label: 'Crop', loadOptions: async (query: string) => {
+        const res = await cropClient.listCrops({ search: query, pageSize: 50 });
+        return (res.crops || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
     { type: 'text', name: 'season', label: 'Season' },
-    { type: 'number', name: 'year', label: 'Year' } as any,
-    { type: 'date', name: 'plannedStartDate', label: 'Planned Start Date' } as any,
-    { type: 'date', name: 'plannedEndDate', label: 'Planned End Date' } as any,
-    { type: 'number', name: 'estimatedYieldKgPerHectare', label: 'Estimated Yield (kg/ha)' } as any,
-    { type: 'text', name: 'harvestMethod', label: 'Harvest Method' },
-    { type: 'number', name: 'laborRequired', label: 'Labor Required' } as any,
-    { type: 'textarea', name: 'storagePlan', label: 'Storage Plan', rows: 2 } as any,
-    { type: 'textarea', name: 'transportationPlan', label: 'Transportation Plan', rows: 2 } as any,
-    { type: 'textarea', name: 'qualityTargets', label: 'Quality Targets', rows: 2 } as any,
-    {
-      type: 'select', name: 'status', label: 'Status',
-      options: [
-        { label: 'Draft', value: '1' },
-        { label: 'Scheduled', value: '2' },
-        { label: 'In Progress', value: '3' },
-        { label: 'Completed', value: '4' },
-        { label: 'Cancelled', value: '5' },
-      ],
-    } as any,
+    { type: 'number', name: 'year', label: 'Year', min: 2000, max: 2100, step: 1 },
+    { type: 'date', name: 'plannedStartDate', label: 'Planned Start Date' },
+    { type: 'date', name: 'plannedEndDate', label: 'Planned End Date' },
+    { type: 'number', name: 'estimatedYieldKg', label: 'Estimated Yield Kg' },
+    { type: 'number', name: 'totalAreaHectares', label: 'Total Area Hectares', min: 0, step: 0.01 },
+    { type: 'textarea', name: 'notes', label: 'Notes', rows: 3 },
   ],
   layout: {
     type: 'grid',
@@ -82,22 +135,22 @@ export const harvestPlanFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'plan_details',
-        title: 'Plan Details',
-        fields: ['farmId', 'fieldId', 'cropId', 'season', 'year', 'status'],
+        id: 'basic',
+        title: 'Harvest Plan Details',
+        fields: ['farmId', 'fieldId', 'cropId', 'notes', 'season'],
         columns: 2,
       },
       {
-        id: 'timeline_yield',
-        title: 'Timeline & Yield',
-        fields: ['plannedStartDate', 'plannedEndDate', 'estimatedYieldKgPerHectare', 'harvestMethod'],
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['year', 'estimatedYieldKg', 'totalAreaHectares'],
         columns: 2,
       },
       {
-        id: 'logistics',
-        title: 'Logistics',
-        fields: ['laborRequired', 'storagePlan', 'transportationPlan', 'qualityTargets'],
-        columns: 1,
+        id: 'dates',
+        title: 'Dates',
+        fields: ['plannedStartDate', 'plannedEndDate'],
+        columns: 2,
       },
     ],
   },

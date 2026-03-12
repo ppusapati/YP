@@ -10,6 +10,7 @@
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
     "./schemas": "./src/schemas/index.ts",
+    "./schemas/reports": "./src/schemas/reports/index.ts",
     "./services": "./src/services/index.ts",
     "./api": "./src/api/transport.ts",
     "./components": "./src/components/index.ts"

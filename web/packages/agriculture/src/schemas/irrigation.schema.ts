@@ -1,45 +1,59 @@
+/**
+ * @generated from proto — DO NOT EDIT
+ * Run: node scripts/generate-schemas.mjs
+ */
 import type { FormSchema } from '@samavāya/core';
+import { farmClient, fieldClient, irrigationClient } from '../services';
 
 export const irrigationScheduleFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'name', label: 'Name', required: true },
-    { type: 'textarea', name: 'description', label: 'Description' } as any,
-    { type: 'text', name: 'fieldId', label: 'Field', required: true },
-    { type: 'text', name: 'zoneId', label: 'Zone' },
-    {
-      type: 'select', name: 'scheduleType', label: 'Schedule Type',
-      options: [
+    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
+        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
+        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
+        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
+        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'zoneId', label: 'Irrigation Zone', loadOptions: async (query: string) => {
+        const res = await irrigationClient.getIrrigationZones({ search: query, pageSize: 50 });
+        return (res.zones || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'select', name: 'scheduleType', label: 'Schedule Type', options: [
         { label: 'Fixed', value: '1' },
         { label: 'Adaptive', value: '2' },
-        { label: 'AI Driven', value: '3' },
-      ],
-    } as any,
-    { type: 'text', name: 'startTime', label: 'Start Time', placeholder: 'HH:MM' },
-    { type: 'text', name: 'endTime', label: 'End Time', placeholder: 'HH:MM' },
-    { type: 'number', name: 'durationMinutes', label: 'Duration (min)', min: 0 } as any,
-    { type: 'number', name: 'waterQuantityLiters', label: 'Water Quantity (L)', min: 0 } as any,
-    { type: 'number', name: 'flowRateLitersPerHour', label: 'Flow Rate (L/h)', min: 0 } as any,
-    {
-      type: 'select', name: 'frequency', label: 'Frequency',
-      options: [
+        { label: 'Ai Driven', value: '3' },
+      ] },
+    { type: 'date', name: 'startTime', label: 'Start Time' },
+    { type: 'date', name: 'endTime', label: 'End Time' },
+    { type: 'number', name: 'durationMinutes', label: 'Duration Minutes', min: 0, step: 1 },
+    { type: 'number', name: 'waterQuantityLiters', label: 'Water Quantity Liters', min: 0, step: 0.01 },
+    { type: 'number', name: 'flowRateLitersPerHour', label: 'Flow Rate Liters Per Hour', min: 0, step: 0.01 },
+    { type: 'select', name: 'frequency', label: 'Frequency', options: [
         { label: 'Daily', value: '1' },
-        { label: 'Every Other Day', value: '2' },
-        { label: 'Weekly', value: '3' },
-        { label: 'Custom', value: '4' },
-      ],
-    } as any,
-    { type: 'number', name: 'soilMoistureThresholdPct', label: 'Soil Moisture Threshold (%)', min: 0, max: 100 } as any,
-    { type: 'checkbox', name: 'weatherAdjusted', label: 'Weather Adjusted' } as any,
-    {
-      type: 'select', name: 'status', label: 'Status',
-      options: [
+        { label: 'Weekly', value: '2' },
+        { label: 'Bi Weekly', value: '3' },
+        { label: 'Monthly', value: '4' },
+        { label: 'Quarterly', value: '5' },
+        { label: 'Semi Annual', value: '6' },
+        { label: 'Annual', value: '7' },
+      ] },
+    { type: 'number', name: 'soilMoistureThresholdPct', label: 'Soil Moisture Threshold Pct', min: 0, max: 100 },
+    { type: 'checkbox', name: 'weatherAdjusted', label: 'Weather Adjusted' },
+    { type: 'text', name: 'cropGrowthStage', label: 'Crop Growth Stage' },
+    { type: 'autocomplete', name: 'controllerId', label: 'Controller', loadOptions: async (query: string) => {
+        const res = await irrigationClient.getWaterControllers({ search: query, pageSize: 50 });
+        return (res.controllers || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'select', name: 'status', label: 'Status', options: [
         { label: 'Scheduled', value: '1' },
         { label: 'Active', value: '2' },
         { label: 'Completed', value: '3' },
         { label: 'Cancelled', value: '4' },
         { label: 'Failed', value: '5' },
-      ],
-    } as any,
+      ] },
+    { type: 'text', name: 'name', label: 'Name', required: true },
+    { type: 'textarea', name: 'description', label: 'Description', rows: 3 },
   ],
   layout: {
     type: 'grid',
@@ -47,21 +61,33 @@ export const irrigationScheduleFormSchema: FormSchema<Record<string, unknown>> =
     gap: 'md',
     sections: [
       {
-        id: 'schedule_details',
-        title: 'Schedule Details',
-        fields: ['name', 'description', 'fieldId', 'zoneId', 'scheduleType', 'startTime', 'endTime', 'durationMinutes', 'frequency', 'status'],
+        id: 'basic',
+        title: 'Irrigation Schedule Details',
+        fields: ['fieldId', 'farmId', 'zoneId', 'controllerId', 'name', 'description', 'scheduleType', 'cropGrowthStage'],
         columns: 2,
       },
       {
-        id: 'water_parameters',
-        title: 'Water Parameters',
-        fields: ['waterQuantityLiters', 'flowRateLitersPerHour'],
+        id: 'classification',
+        title: 'Status & Classification',
+        fields: ['frequency', 'status'],
         columns: 2,
       },
       {
-        id: 'smart_triggers',
-        title: 'Smart Triggers',
-        fields: ['soilMoistureThresholdPct', 'weatherAdjusted'],
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['durationMinutes', 'waterQuantityLiters', 'flowRateLitersPerHour', 'soilMoistureThresholdPct'],
+        columns: 2,
+      },
+      {
+        id: 'dates',
+        title: 'Dates',
+        fields: ['startTime', 'endTime'],
+        columns: 2,
+      },
+      {
+        id: 'options',
+        title: 'Options',
+        fields: ['weatherAdjusted'],
         columns: 2,
       },
     ],
@@ -70,17 +96,22 @@ export const irrigationScheduleFormSchema: FormSchema<Record<string, unknown>> =
 
 export const irrigationZoneFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'name', label: 'Zone Name', required: true },
-    { type: 'text', name: 'fieldId', label: 'Field', required: true },
-    { type: 'text', name: 'farmId', label: 'Farm' },
-    { type: 'textarea', name: 'description', label: 'Description' } as any,
-    { type: 'number', name: 'areaHectares', label: 'Area (ha)', min: 0, step: 0.01 } as any,
+    { type: 'autocomplete', name: 'fieldId', label: 'Field', loadOptions: async (query: string) => {
+        const res = await fieldClient.listFields({ search: query, pageSize: 50 });
+        return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'autocomplete', name: 'farmId', label: 'Farm', required: true, loadOptions: async (query: string) => {
+        const res = await farmClient.listFarms({ search: query, pageSize: 50 });
+        return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'text', name: 'name', label: 'Name', required: true },
+    { type: 'textarea', name: 'description', label: 'Description', rows: 3 },
+    { type: 'number', name: 'areaHectares', label: 'Area Hectares', min: 0, step: 0.01 },
     { type: 'text', name: 'soilType', label: 'Soil Type' },
     { type: 'text', name: 'cropType', label: 'Crop Type' },
     { type: 'text', name: 'cropGrowthStage', label: 'Crop Growth Stage' },
-    { type: 'number', name: 'latitude', label: 'Latitude', step: 0.000001, min: -90, max: 90 } as any,
-    { type: 'number', name: 'longitude', label: 'Longitude', step: 0.000001, min: -180, max: 180 } as any,
-    { type: 'checkbox', name: 'isActive', label: 'Active' } as any,
+    { type: 'number', name: 'latitude', label: 'Latitude', min: -90, max: 90, step: 0.000001 },
+    { type: 'number', name: 'longitude', label: 'Longitude', min: -180, max: 180, step: 0.000001 },
   ],
   layout: {
     type: 'grid',
@@ -88,15 +119,15 @@ export const irrigationZoneFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'zone_details',
-        title: 'Zone Details',
-        fields: ['name', 'fieldId', 'farmId', 'description', 'areaHectares', 'soilType', 'cropType', 'cropGrowthStage', 'isActive'],
+        id: 'basic',
+        title: 'Irrigation Zone Details',
+        fields: ['fieldId', 'farmId', 'name', 'description', 'soilType', 'cropType', 'cropGrowthStage'],
         columns: 2,
       },
       {
-        id: 'location',
-        title: 'Location',
-        fields: ['latitude', 'longitude'],
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['areaHectares', 'latitude', 'longitude'],
         columns: 2,
       },
     ],

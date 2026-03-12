@@ -1,16 +1,16 @@
 /**
- * Crop Form Schema — derived from agriculture.crop.v1 proto
+ * @generated from proto — DO NOT EDIT
+ * Run: node scripts/generate-schemas.mjs
  */
 import type { FormSchema } from '@samavāya/core';
+import { cropClient } from '../services';
 
 export const cropFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'name', label: 'Crop Name', placeholder: 'e.g. Rice, Wheat', required: true },
-    { type: 'text', name: 'scientificName', label: 'Scientific Name', placeholder: 'e.g. Oryza sativa' },
-    { type: 'text', name: 'family', label: 'Family', placeholder: 'e.g. Poaceae' },
-    {
-      type: 'select', name: 'category', label: 'Category', required: true,
-      options: [
+    { type: 'text', name: 'name', label: 'Name', required: true },
+    { type: 'text', name: 'scientificName', label: 'Scientific Name' },
+    { type: 'text', name: 'family', label: 'Family' },
+    { type: 'select', name: 'category', label: 'Category', options: [
         { label: 'Cereal', value: '1' },
         { label: 'Legume', value: '2' },
         { label: 'Vegetable', value: '3' },
@@ -18,11 +18,12 @@ export const cropFormSchema: FormSchema<Record<string, unknown>> = {
         { label: 'Oilseed', value: '5' },
         { label: 'Fiber', value: '6' },
         { label: 'Spice', value: '7' },
-      ],
-    } as any,
-    { type: 'textarea', name: 'description', label: 'Description', rows: 3 } as any,
-    { type: 'url', name: 'imageUrl', label: 'Image URL', placeholder: 'https://...' },
-    { type: 'text', name: 'rotationGroup', label: 'Rotation Group', placeholder: 'e.g. Grain, Legume' },
+      ] },
+    { type: 'textarea', name: 'description', label: 'Description', rows: 3 },
+    { type: 'url', name: 'imageUrl', label: 'Image Url', placeholder: 'https://...' },
+    { type: 'text', name: 'diseaseSusceptibilities', label: 'Disease Susceptibilities' },
+    { type: 'textarea', name: 'companionPlants', label: 'Companion Plants', rows: 3 },
+    { type: 'text', name: 'rotationGroup', label: 'Rotation Group' },
   ],
   layout: {
     type: 'grid',
@@ -32,7 +33,7 @@ export const cropFormSchema: FormSchema<Record<string, unknown>> = {
       {
         id: 'basic',
         title: 'Crop Details',
-        fields: ['name', 'scientificName', 'family', 'category', 'description', 'imageUrl', 'rotationGroup'],
+        fields: ['name', 'scientificName', 'description', 'category', 'family', 'imageUrl', 'diseaseSusceptibilities', 'companionPlants', 'rotationGroup'],
         columns: 2,
       },
     ],
@@ -41,14 +42,18 @@ export const cropFormSchema: FormSchema<Record<string, unknown>> = {
 
 export const cropVarietyFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'name', label: 'Variety Name', required: true },
-    { type: 'textarea', name: 'description', label: 'Description', rows: 3 } as any,
-    { type: 'number', name: 'maturityDays', label: 'Maturity (days)', min: 1 } as any,
-    { type: 'number', name: 'yieldPotentialKgPerHectare', label: 'Yield Potential (kg/ha)', min: 0, step: 0.1 } as any,
-    { type: 'checkbox', name: 'isHybrid', label: 'Is Hybrid' } as any,
+    { type: 'autocomplete', name: 'cropId', label: 'Crop', loadOptions: async (query: string) => {
+        const res = await cropClient.listCrops({ search: query, pageSize: 50 });
+        return (res.crops || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
+      } },
+    { type: 'text', name: 'name', label: 'Name', required: true },
+    { type: 'textarea', name: 'description', label: 'Description', rows: 3 },
+    { type: 'number', name: 'maturityDays', label: 'Maturity Days', min: 0, step: 1 },
+    { type: 'number', name: 'yieldPotentialKgPerHectare', label: 'Yield Potential Kg Per Hectare', min: 0, step: 0.01 },
+    { type: 'checkbox', name: 'isHybrid', label: 'Is Hybrid' },
     { type: 'text', name: 'diseaseResistance', label: 'Disease Resistance' },
     { type: 'text', name: 'suitableRegions', label: 'Suitable Regions' },
-    { type: 'text', name: 'seedRateKgPerHectare', label: 'Seed Rate (kg/ha)' },
+    { type: 'text', name: 'seedRateKgPerHectare', label: 'Seed Rate Kg Per Hectare' },
   ],
   layout: {
     type: 'grid',
@@ -56,9 +61,21 @@ export const cropVarietyFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'details',
-        title: 'Variety Details',
-        fields: ['name', 'description', 'maturityDays', 'yieldPotentialKgPerHectare', 'isHybrid', 'diseaseResistance', 'suitableRegions', 'seedRateKgPerHectare'],
+        id: 'basic',
+        title: 'Crop Variety Details',
+        fields: ['cropId', 'name', 'description', 'diseaseResistance', 'suitableRegions', 'seedRateKgPerHectare'],
+        columns: 2,
+      },
+      {
+        id: 'metrics',
+        title: 'Measurements & Metrics',
+        fields: ['maturityDays', 'yieldPotentialKgPerHectare'],
+        columns: 2,
+      },
+      {
+        id: 'options',
+        title: 'Options',
+        fields: ['isHybrid'],
         columns: 2,
       },
     ],
