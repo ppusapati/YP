@@ -23,7 +23,7 @@ from .inference import (
 )
 from .dataset import NutrientDataset, create_nutrient_train_val
 from .trainer import NutrientDeficiencyTrainer, NutrientTrainConfig
-from .transforms import get_train_transforms, get_val_transforms
+from .transforms import get_train_transforms, get_val_transforms, get_inference_transforms
 
 __all__ = [
     "NutrientDeficiencyModel",
@@ -43,4 +43,5 @@ __all__ = [
     "NutrientTrainConfig",
     "get_train_transforms",
     "get_val_transforms",
+    "get_inference_transforms",
 ]

@@ -19,8 +19,10 @@ NUTRIENT_DEFICIENCIES = [
     "Potassium",
     "Calcium",
     "Magnesium",
+    "Sulfur",
     "Iron",
     "Zinc",
+    "Manganese",
     "Boron",
 ]
 
@@ -37,6 +39,7 @@ SUPPLEMENTATION_MAP = {
     "Potassium": "Apply potassium chloride (0-0-60) at 50-100 kg K2O/ha or potassium sulfate for chloride-sensitive crops.",
     "Calcium": "Apply gypsum (CaSO4) at 1-2 t/ha or lime if pH adjustment needed. Foliar CaCl2 at 0.5% for acute deficiency.",
     "Magnesium": "Apply Epsom salt (MgSO4) at 20-50 kg/ha. Foliar spray with 2% MgSO4 for quick correction.",
+    "Sulfur": "Apply gypsum (CaSO4) at 100-200 kg/ha or elemental sulfur at 20-40 kg/ha. Ammonium sulfate provides both N and S.",
     "Iron": "Apply iron chelate (Fe-EDDHA) at 5-10 kg/ha. Foliar spray with 0.5% FeSO4 + 0.25% citric acid.",
     "Zinc": "Apply zinc sulfate (ZnSO4) at 10-25 kg/ha. Foliar spray with 0.5% ZnSO4 for rapid correction.",
     "Boron": "Apply borax at 1-2 kg/ha (caution: narrow range between deficiency and toxicity). Foliar spray with 0.1% borax.",

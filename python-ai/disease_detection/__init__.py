@@ -22,7 +22,7 @@ from .inference import (
 )
 from .dataset import DiseaseDataset, create_disease_train_val
 from .trainer import DiseaseDetectionTrainer, DiseaseTrainConfig
-from .transforms import get_train_transforms, get_val_transforms
+from .transforms import get_train_transforms, get_val_transforms, get_inference_transforms
 
 __all__ = [
     "DiseaseDetectionModel",
@@ -42,4 +42,5 @@ __all__ = [
     "DiseaseTrainConfig",
     "get_train_transforms",
     "get_val_transforms",
+    "get_inference_transforms",
 ]
