@@ -1,0 +1,124 @@
+syntax = "proto3";
+package agriculture.satellite.ingestion.v1;
+option go_package = "p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum SatelliteProvider {
+  SATELLITE_PROVIDER_UNSPECIFIED = 0;
+  SATELLITE_PROVIDER_SENTINEL2 = 1;
+  SATELLITE_PROVIDER_LANDSAT = 2;
+  SATELLITE_PROVIDER_PLANETSCOPE = 3;
+}
+
+enum IngestionStatus {
+  INGESTION_STATUS_UNSPECIFIED = 0;
+  INGESTION_STATUS_QUEUED = 1;
+  INGESTION_STATUS_DOWNLOADING = 2;
+  INGESTION_STATUS_VALIDATING = 3;
+  INGESTION_STATUS_STORED = 4;
+  INGESTION_STATUS_FAILED = 5;
+}
+
+enum SpectralBand {
+  SPECTRAL_BAND_UNSPECIFIED = 0;
+  SPECTRAL_BAND_BLUE = 1;
+  SPECTRAL_BAND_GREEN = 2;
+  SPECTRAL_BAND_RED = 3;
+  SPECTRAL_BAND_NIR = 4;
+  SPECTRAL_BAND_SWIR1 = 5;
+  SPECTRAL_BAND_SWIR2 = 6;
+  SPECTRAL_BAND_RED_EDGE1 = 7;
+  SPECTRAL_BAND_RED_EDGE2 = 8;
+  SPECTRAL_BAND_RED_EDGE3 = 9;
+}
+
+message IngestionTask {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  SatelliteProvider provider = 4;
+  string scene_id = 5;
+  IngestionStatus status = 6;
+  string s3_bucket = 7;
+  string s3_key = 8;
+  double cloud_cover_percent = 9;
+  double resolution_meters = 10;
+  repeated SpectralBand bands = 11;
+  string bbox_geojson = 12;
+  int64 file_size_bytes = 13;
+  string checksum_sha256 = 14;
+  string error_message = 15;
+  int32 retry_count = 16;
+  google.protobuf.Timestamp acquisition_date = 17;
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+  google.protobuf.Timestamp completed_at = 20;
+}
+
+message RequestIngestionRequest {
+  string farm_id = 1;
+  SatelliteProvider provider = 2;
+  google.protobuf.Timestamp date_from = 3;
+  google.protobuf.Timestamp date_to = 4;
+  double max_cloud_cover = 5;
+  repeated SpectralBand bands = 6;
+}
+message RequestIngestionResponse {
+  IngestionTask task = 1;
+}
+
+message GetIngestionTaskRequest {
+  string id = 1;
+}
+message GetIngestionTaskResponse {
+  IngestionTask task = 1;
+}
+
+message ListIngestionTasksRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  SatelliteProvider provider = 4;
+  IngestionStatus status = 5;
+}
+message ListIngestionTasksResponse {
+  repeated IngestionTask tasks = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CancelIngestionRequest {
+  string id = 1;
+}
+message CancelIngestionResponse {
+  bool success = 1;
+}
+
+message RetryIngestionRequest {
+  string id = 1;
+}
+message RetryIngestionResponse {
+  IngestionTask task = 1;
+}
+
+message GetIngestionStatsRequest {
+  string farm_id = 1;
+  SatelliteProvider provider = 2;
+}
+message GetIngestionStatsResponse {
+  int64 total_tasks = 1;
+  int64 completed_tasks = 2;
+  int64 failed_tasks = 3;
+  int64 pending_tasks = 4;
+  int64 total_bytes_stored = 5;
+}
+
+service SatelliteIngestionService {
+  rpc RequestIngestion(RequestIngestionRequest) returns (RequestIngestionResponse);
+  rpc GetIngestionTask(GetIngestionTaskRequest) returns (GetIngestionTaskResponse);
+  rpc ListIngestionTasks(ListIngestionTasksRequest) returns (ListIngestionTasksResponse);
+  rpc CancelIngestion(CancelIngestionRequest) returns (CancelIngestionResponse);
+  rpc RetryIngestion(RetryIngestionRequest) returns (RetryIngestionResponse);
+  rpc GetIngestionStats(GetIngestionStatsRequest) returns (GetIngestionStatsResponse);
+}
