@@ -1,64 +1,28 @@
 /**
- * Crop Form Schema
+ * Crop Form Schema — derived from agriculture.crop.v1 proto
  */
 import type { FormSchema } from '@samavāya/core';
 
 export const cropFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
     { type: 'text', name: 'name', label: 'Crop Name', placeholder: 'e.g. Rice, Wheat', required: true },
-    { type: 'text', name: 'scientific_name', label: 'Scientific Name', placeholder: 'e.g. Oryza sativa' },
-    { type: 'text', name: 'code', label: 'Crop Code', placeholder: 'e.g. CROP-001', required: true },
+    { type: 'text', name: 'scientificName', label: 'Scientific Name', placeholder: 'e.g. Oryza sativa' },
+    { type: 'text', name: 'family', label: 'Family', placeholder: 'e.g. Poaceae' },
     {
       type: 'select', name: 'category', label: 'Category', required: true,
       options: [
-        { label: 'Cereals', value: 'cereals' },
-        { label: 'Pulses', value: 'pulses' },
-        { label: 'Oilseeds', value: 'oilseeds' },
-        { label: 'Vegetables', value: 'vegetables' },
-        { label: 'Fruits', value: 'fruits' },
-        { label: 'Spices', value: 'spices' },
-        { label: 'Fiber Crops', value: 'fiber' },
-        { label: 'Sugar Crops', value: 'sugar' },
-        { label: 'Fodder', value: 'fodder' },
-        { label: 'Plantation', value: 'plantation' },
+        { label: 'Cereal', value: '1' },
+        { label: 'Legume', value: '2' },
+        { label: 'Vegetable', value: '3' },
+        { label: 'Fruit', value: '4' },
+        { label: 'Oilseed', value: '5' },
+        { label: 'Fiber', value: '6' },
+        { label: 'Spice', value: '7' },
       ],
     } as any,
-    {
-      type: 'select', name: 'crop_type', label: 'Crop Type',
-      options: [
-        { label: 'Kharif', value: 'kharif' },
-        { label: 'Rabi', value: 'rabi' },
-        { label: 'Zaid', value: 'zaid' },
-        { label: 'Perennial', value: 'perennial' },
-      ],
-    } as any,
-    {
-      type: 'select', name: 'season', label: 'Growing Season',
-      options: [
-        { label: 'Monsoon (Jun-Oct)', value: 'monsoon' },
-        { label: 'Winter (Oct-Mar)', value: 'winter' },
-        { label: 'Summer (Mar-Jun)', value: 'summer' },
-        { label: 'Year-round', value: 'year_round' },
-      ],
-    } as any,
-    { type: 'number', name: 'growth_duration_days', label: 'Growth Duration (days)', min: 1, max: 730 } as any,
-    { type: 'number', name: 'optimal_temp_min', label: 'Min Temperature (°C)', min: -10, max: 50, step: 0.1 } as any,
-    { type: 'number', name: 'optimal_temp_max', label: 'Max Temperature (°C)', min: -10, max: 60, step: 0.1 } as any,
-    { type: 'number', name: 'optimal_humidity_min', label: 'Min Humidity (%)', min: 0, max: 100 } as any,
-    { type: 'number', name: 'optimal_humidity_max', label: 'Max Humidity (%)', min: 0, max: 100 } as any,
-    { type: 'number', name: 'water_requirement_mm', label: 'Water Requirement (mm)', min: 0 } as any,
-    { type: 'number', name: 'soil_ph_min', label: 'Soil pH Min', min: 0, max: 14, step: 0.1 } as any,
-    { type: 'number', name: 'soil_ph_max', label: 'Soil pH Max', min: 0, max: 14, step: 0.1 } as any,
     { type: 'textarea', name: 'description', label: 'Description', rows: 3 } as any,
-    { type: 'url', name: 'image_url', label: 'Image URL', placeholder: 'https://...' },
-    {
-      type: 'select', name: 'status', label: 'Status',
-      options: [
-        { label: 'Active', value: 'active' },
-        { label: 'Inactive', value: 'inactive' },
-        { label: 'Experimental', value: 'experimental' },
-      ],
-    } as any,
+    { type: 'url', name: 'imageUrl', label: 'Image URL', placeholder: 'https://...' },
+    { type: 'text', name: 'rotationGroup', label: 'Rotation Group', placeholder: 'e.g. Grain, Legume' },
   ],
   layout: {
     type: 'grid',
@@ -68,20 +32,8 @@ export const cropFormSchema: FormSchema<Record<string, unknown>> = {
       {
         id: 'basic',
         title: 'Crop Details',
-        fields: ['name', 'scientific_name', 'code', 'category', 'crop_type', 'season', 'growth_duration_days', 'status'],
+        fields: ['name', 'scientificName', 'family', 'category', 'description', 'imageUrl', 'rotationGroup'],
         columns: 2,
-      },
-      {
-        id: 'conditions',
-        title: 'Optimal Growing Conditions',
-        fields: ['optimal_temp_min', 'optimal_temp_max', 'optimal_humidity_min', 'optimal_humidity_max', 'water_requirement_mm', 'soil_ph_min', 'soil_ph_max'],
-        columns: 2,
-      },
-      {
-        id: 'other',
-        title: 'Additional Details',
-        fields: ['description', 'image_url'],
-        columns: 1,
       },
     ],
   },
@@ -90,26 +42,13 @@ export const cropFormSchema: FormSchema<Record<string, unknown>> = {
 export const cropVarietyFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
     { type: 'text', name: 'name', label: 'Variety Name', required: true },
-    { type: 'text', name: 'code', label: 'Variety Code', required: true },
     { type: 'textarea', name: 'description', label: 'Description', rows: 3 } as any,
-    { type: 'number', name: 'maturity_days', label: 'Maturity (days)', min: 1 } as any,
-    { type: 'number', name: 'yield_potential', label: 'Yield Potential', min: 0, step: 0.1 } as any,
-    {
-      type: 'select', name: 'yield_unit', label: 'Yield Unit',
-      options: [
-        { label: 'Tonnes/Hectare', value: 'tonnes_ha' },
-        { label: 'Quintals/Hectare', value: 'quintals_ha' },
-        { label: 'Kg/Hectare', value: 'kg_ha' },
-      ],
-    } as any,
-    {
-      type: 'select', name: 'status', label: 'Status',
-      options: [
-        { label: 'Active', value: 'active' },
-        { label: 'Inactive', value: 'inactive' },
-        { label: 'Trial', value: 'trial' },
-      ],
-    } as any,
+    { type: 'number', name: 'maturityDays', label: 'Maturity (days)', min: 1 } as any,
+    { type: 'number', name: 'yieldPotentialKgPerHectare', label: 'Yield Potential (kg/ha)', min: 0, step: 0.1 } as any,
+    { type: 'checkbox', name: 'isHybrid', label: 'Is Hybrid' } as any,
+    { type: 'text', name: 'diseaseResistance', label: 'Disease Resistance' },
+    { type: 'text', name: 'suitableRegions', label: 'Suitable Regions' },
+    { type: 'text', name: 'seedRateKgPerHectare', label: 'Seed Rate (kg/ha)' },
   ],
   layout: {
     type: 'grid',
@@ -119,7 +58,7 @@ export const cropVarietyFormSchema: FormSchema<Record<string, unknown>> = {
       {
         id: 'details',
         title: 'Variety Details',
-        fields: ['name', 'code', 'description', 'maturity_days', 'yield_potential', 'yield_unit', 'status'],
+        fields: ['name', 'description', 'maturityDays', 'yieldPotentialKgPerHectare', 'isHybrid', 'diseaseResistance', 'suitableRegions', 'seedRateKgPerHectare'],
         columns: 2,
       },
     ],

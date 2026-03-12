@@ -15,11 +15,17 @@
   export let error: string | null = null;
   /** Row click handler - receives item ID */
   export let onRowClick: ((id: string) => void) | null = null;
-  /** Fetch function */
-  export let fetchData: (() => Promise<void>) | null = null;
+  /** Fetch function — receives page offset and page size, returns total count */
+  export let fetchData: ((pageOffset?: number, pageSize?: number) => Promise<number | void>) | null = null;
+  /** Total count from server (for pagination) */
+  export let totalCount: number = 0;
+  /** Page size */
+  export let pageSize: number = 25;
 
-  /** Search query */
   let searchQuery = '';
+  let currentPage = 0;
+
+  $: totalPages = totalCount > 0 ? Math.ceil(totalCount / pageSize) : 1;
 
   $: filteredRows = searchQuery
     ? rows.filter((row) =>
@@ -30,8 +36,24 @@
       )
     : rows;
 
+  async function loadPage(page: number) {
+    currentPage = page;
+    if (fetchData) {
+      const count = await fetchData(page * pageSize, pageSize);
+      if (typeof count === 'number') totalCount = count;
+    }
+  }
+
+  function goNext() {
+    if (currentPage < totalPages - 1) loadPage(currentPage + 1);
+  }
+
+  function goPrev() {
+    if (currentPage > 0) loadPage(currentPage - 1);
+  }
+
   onMount(() => {
-    if (fetchData) fetchData();
+    loadPage(0);
   });
 </script>
 
@@ -113,10 +135,43 @@
     {/if}
   </div>
 
-  <div class="mt-3 text-sm text-gray-500">
-    {filteredRows.length} record{filteredRows.length !== 1 ? 's' : ''}
-    {#if searchQuery && filteredRows.length !== rows.length}
-      (filtered from {rows.length})
+  <!-- Pagination & count -->
+  <div class="mt-3 flex items-center justify-between text-sm text-gray-500">
+    <div>
+      {#if totalCount > 0}
+        Showing {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, totalCount)} of {totalCount}
+      {:else}
+        {filteredRows.length} record{filteredRows.length !== 1 ? 's' : ''}
+      {/if}
+      {#if searchQuery && filteredRows.length !== rows.length}
+        (filtered from {rows.length})
+      {/if}
+    </div>
+
+    {#if totalPages > 1}
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={currentPage === 0}
+          on:click={goPrev}
+          class="rounded-md border border-gray-300 px-3 py-1 text-sm
+                 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <span class="text-sm">
+          Page {currentPage + 1} of {totalPages}
+        </span>
+        <button
+          type="button"
+          disabled={currentPage >= totalPages - 1}
+          on:click={goNext}
+          class="rounded-md border border-gray-300 px-3 py-1 text-sm
+                 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
     {/if}
   </div>
 </div>

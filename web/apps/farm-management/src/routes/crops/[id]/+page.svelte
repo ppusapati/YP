@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { cropFormSchema } from '@samavāya/agriculture/schemas';
-  import { cropService } from '@samavāya/agriculture/services';
+  import { cropClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const crop = await cropService.get(id);
-      values = { ...crop };
+      const res = await cropClient.getCrop({ id });
+      values = { ...res.crop };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load crop';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await cropService.update(id, formValues as any);
+      await cropClient.updateCrop({ id, ...formValues } as any);
       goto('/crops');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update crop';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await cropService.remove(id);
+      await cropClient.deleteCrop({ id });
       goto('/crops');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete crop';

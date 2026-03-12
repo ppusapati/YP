@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { irrigationScheduleFormSchema } from '@samavāya/agriculture/schemas';
-  import { irrigationScheduleService } from '@samavāya/agriculture/services';
+  import { irrigationClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const schedule = await irrigationScheduleService.get(id);
-      values = { ...schedule };
+      const res = await irrigationClient.getSchedule({ id });
+      values = { ...res.schedule };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load irrigation schedule';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await irrigationScheduleService.update(id, formValues as any);
+      await irrigationClient.updateSchedule({ id, ...formValues } as any);
       goto('/irrigation');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update irrigation schedule';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await irrigationScheduleService.remove(id);
+      await irrigationClient.deleteSchedule({ id });
       goto('/irrigation');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete irrigation schedule';

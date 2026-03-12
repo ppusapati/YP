@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { yieldRecordFormSchema } from '@samavāya/agriculture/schemas';
-  import { yieldRecordService } from '@samavāya/agriculture/services';
+  import { yieldClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const record = await yieldRecordService.get(id);
-      values = { ...record };
+      const res = await yieldClient.getPrediction({ id });
+      values = { ...res.prediction };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load yield record';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await yieldRecordService.update(id, formValues as any);
+      await yieldClient.updateRecord({ id, ...formValues } as any);
       goto('/yield');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update yield record';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await yieldRecordService.remove(id);
+      await yieldClient.deleteRecord({ id } as any);
       goto('/yield');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete yield record';

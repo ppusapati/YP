@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { soilSampleFormSchema } from '@samavāya/agriculture/schemas';
-  import { soilService } from '@samavāya/agriculture/services';
+  import { soilClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const sample = await soilService.get(id);
-      values = { ...sample };
+      const res = await soilClient.getSoilSample({ id });
+      values = { ...res.sample };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load soil sample';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await soilService.update(id, formValues as any);
+      await soilClient.updateSoilSample({ id, ...formValues } as any);
       goto('/soil');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update soil sample';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await soilService.remove(id);
+      await soilClient.deleteSoilSample({ id });
       goto('/soil');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete soil sample';

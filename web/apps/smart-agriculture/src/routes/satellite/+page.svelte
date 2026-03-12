@@ -1,32 +1,36 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
-  import { satelliteService } from '@samavāya/agriculture/services';
+  import { satelliteClient } from '@samavāya/agriculture/services';
   import type { SatelliteImage } from '@samavāya/agriculture/types';
 
   let rows: SatelliteImage[] = [];
+  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
   const columns = [
     { key: 'field_id', label: 'Field' },
-    { key: 'capture_date', label: 'Capture Date' },
-    { key: 'satellite_name', label: 'Satellite' },
-    { key: 'image_type', label: 'Type' },
-    { key: 'cloud_cover_pct', label: 'Cloud %' },
+    { key: 'acquisitionDate', label: 'Capture Date' },
+    { key: 'satelliteProvider', label: 'Satellite' },
+    { key: 'processingStatus', label: 'Type' },
+    { key: 'cloudCoverPct', label: 'Cloud %' },
     { key: 'ndvi_mean', label: 'NDVI' },
     { key: 'status', label: 'Status' },
   ];
 
-  async function fetchData() {
+  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
     loading = true;
     error = null;
     try {
-      const res = await satelliteService.list({ page: 1, page_size: 50 });
-      rows = res.items;
+      const res = await satelliteClient.listImages({ pageSize, pageOffset });
+      rows = res.images;
+      totalCount = res.totalCount;
+      return res.totalCount;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load satellite images';
       rows = [];
+      return 0;
     } finally {
       loading = false;
     }
@@ -41,5 +45,6 @@
   {loading}
   {error}
   onRowClick={(id) => goto(`/satellite/${id}`)}
+  {totalCount}
   {fetchData}
 />

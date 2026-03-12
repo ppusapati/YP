@@ -11,7 +11,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file packages/proto/geo.proto.
  */
 export const file_packages_proto_geo: GenFile = /*@__PURE__*/
-  fileDesc("ChhwYWNrYWdlcy9wcm90by9nZW8ucHJvdG8SE3BhY2thZ2VzLmFwaS52MS5nZW8iqAEKA0dlbxIPCgdjb3VudHJ5GAEgASgJEg4KBnJlZ2lvbhgCIAEoCRINCgVzdGF0ZRgDIAEoCRIMCgRjaXR5GAQgASgJEhAKCHppcF9jb2RlGAUgASgJEg0KBWxpbmUxGAYgASgJEg0KBWxpbmUyGAcgASgJEg0KBWxpbmUzGAggASgJEiQKA2dlbxhkIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3RCFloUa29zaGEvYXBpL3YxL2dlbztnZW9iBnByb3RvMw", [file_google_protobuf_struct]);
+  fileDesc("ChhwYWNrYWdlcy9wcm90by9nZW8ucHJvdG8SE3BhY2thZ2VzLmFwaS52MS5nZW8iqAEKA0dlbxIPCgdjb3VudHJ5GAEgASgJEg4KBnJlZ2lvbhgCIAEoCRINCgVzdGF0ZRgDIAEoCRIMCgRjaXR5GAQgASgJEhAKCHppcF9jb2RlGAUgASgJEg0KBWxpbmUxGAYgASgJEg0KBWxpbmUyGAcgASgJEg0KBWxpbmUzGAggASgJEiQKA2dlbxhkIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3RCKVoncDllLmluL3NhbWF2YXlhL3BhY2thZ2VzL2FwaS92MS9nZW87Z2VvYgZwcm90bzM", [file_google_protobuf_struct]);
 
 /**
  * @generated from message packages.api.v1.geo.Geo

@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { sensorFormSchema } from '@samavāya/agriculture/schemas';
-  import { sensorService } from '@samavāya/agriculture/services';
+  import { sensorClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const sensor = await sensorService.get(id);
-      values = { ...sensor };
+      const res = await sensorClient.getSensor({ id });
+      values = { ...res.sensor };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load sensor';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await sensorService.update(id, formValues as any);
+      await sensorClient.updateSensor({ id, ...formValues } as any);
       goto('/sensors');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update sensor';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await sensorService.remove(id);
+      await sensorClient.decommissionSensor({ id });
       goto('/sensors');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete sensor';

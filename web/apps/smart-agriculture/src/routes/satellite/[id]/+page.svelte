@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { satelliteImageFormSchema } from '@samavāya/agriculture/schemas';
-  import { satelliteService } from '@samavāya/agriculture/services';
+  import { satelliteClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const image = await satelliteService.get(id);
-      values = { ...image };
+      const res = await satelliteClient.getImage({ id });
+      values = { ...res.image };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load satellite image';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await satelliteService.update(id, formValues as any);
+      await satelliteClient.updateImage({ id, ...formValues } as any);
       goto('/satellite');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update satellite image';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await satelliteService.remove(id);
+      await satelliteClient.deleteImage({ id });
       goto('/satellite');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete satellite image';

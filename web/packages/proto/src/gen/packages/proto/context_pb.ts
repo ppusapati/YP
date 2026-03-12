@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file packages/proto/context.proto.
  */
 export const file_packages_proto_context: GenFile = /*@__PURE__*/
-  fileDesc("ChxwYWNrYWdlcy9wcm90by9jb250ZXh0LnByb3RvEhdwYWNrYWdlcy5hcGkudjEuY29udGV4dCJrCg1UZW5hbnRDb250ZXh0EhEKCXRlbmFudF9pZBgBIAEoCRISCgpjb21wYW55X2lkGAIgASgJEhEKCWJyYW5jaF9pZBgDIAEoCRIPCgd1c2VyX2lkGAQgASgJEg8KB3JvbGVfaWQYBSABKAlCJFoia29zaGEvYXBpL3YxL3BhZ2luYXRpb247cGFnaW5hdGlvbmIGcHJvdG8z");
+  fileDesc("ChxwYWNrYWdlcy9wcm90by9jb250ZXh0LnByb3RvEhdwYWNrYWdlcy5hcGkudjEuY29udGV4dCJrCg1UZW5hbnRDb250ZXh0EhEKCXRlbmFudF9pZBgBIAEoCRISCgpjb21wYW55X2lkGAIgASgJEhEKCWJyYW5jaF9pZBgDIAEoCRIPCgd1c2VyX2lkGAQgASgJEg8KB3JvbGVfaWQYBSABKAlCN1o1cDllLmluL3NhbWF2YXlhL3BhY2thZ2VzL2FwaS92MS9wYWdpbmF0aW9uO3BhZ2luYXRpb25iBnByb3RvMw");
 
 /**
  * @generated from message packages.api.v1.context.TenantContext

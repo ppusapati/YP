@@ -1,16 +1,17 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
-  import { cropService } from '@samavāya/agriculture/services';
+  import { cropClient } from '@samavāya/agriculture/services';
   import type { Crop } from '@samavāya/agriculture/types';
 
   let rows: Crop[] = [];
+  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
   const columns = [
     { key: 'name', label: 'Crop Name' },
-    { key: 'scientific_name', label: 'Scientific Name' },
+    { key: 'scientificName', label: 'Scientific Name' },
     { key: 'code', label: 'Code' },
     { key: 'category', label: 'Category' },
     { key: 'crop_type', label: 'Type' },
@@ -18,15 +19,18 @@
     { key: 'status', label: 'Status' },
   ];
 
-  async function fetchData() {
+  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
     loading = true;
     error = null;
     try {
-      const res = await cropService.list({ page: 1, page_size: 50 });
-      rows = res.items;
+      const res = await cropClient.listCrops({ pageSize, pageOffset });
+      rows = res.crops;
+      totalCount = res.totalCount;
+      return res.totalCount;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load crops';
       rows = [];
+      return 0;
     } finally {
       loading = false;
     }
@@ -41,5 +45,6 @@
   {loading}
   {error}
   onRowClick={(id) => goto(`/crops/${id}`)}
+  {totalCount}
   {fetchData}
 />

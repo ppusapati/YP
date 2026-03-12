@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { pestPredictionFormSchema } from '@samavāya/agriculture/schemas';
-  import { pestPredictionService } from '@samavāya/agriculture/services';
+  import { pestClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const prediction = await pestPredictionService.get(id);
-      values = { ...prediction };
+      const res = await pestClient.getPrediction({ id });
+      values = { ...res.prediction };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load prediction';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await pestPredictionService.update(id, formValues as any);
+      await pestClient.updatePrediction({ id, ...formValues } as any);
       goto('/pest');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update prediction';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await pestPredictionService.remove(id);
+      await pestClient.deletePrediction({ id } as any);
       goto('/pest');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete prediction';

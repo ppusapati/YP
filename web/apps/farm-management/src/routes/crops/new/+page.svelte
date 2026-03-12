@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
   import { cropFormSchema } from '@samavāya/agriculture/schemas';
-  import { cropService } from '@samavāya/agriculture/services';
+  import { cropClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active' };
   let errors: Record<string, string> = {};
@@ -13,7 +13,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await cropService.create(formValues as any);
+      await cropClient.createCrop(formValues as any);
       goto('/crops');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create crop';

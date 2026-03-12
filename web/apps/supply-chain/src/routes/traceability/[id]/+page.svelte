@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { traceabilityRecordFormSchema } from '@samavāya/agriculture/schemas';
-  import { traceabilityService } from '@samavāya/agriculture/services';
+  import { traceabilityClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const record = await traceabilityService.get(id);
-      values = { ...record };
+      const res = await traceabilityClient.getRecord({ id });
+      values = { ...res.record };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load traceability record';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await traceabilityService.update(id, formValues as any);
+      await traceabilityClient.updateRecord({ id, ...formValues } as any);
       goto('/traceability');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update traceability record';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await traceabilityService.remove(id);
+      await traceabilityClient.deleteRecord({ id } as any);
       goto('/traceability');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete traceability record';

@@ -1,96 +1,68 @@
 /**
- * Agriculture Service Layer
+ * Agriculture Service Layer — ConnectRPC Clients
  *
- * Typed service interfaces for communicating with the Go backend
- * microservices via ConnectRPC. Each service wraps the ConnectRPC
- * client with typed methods matching the proto definitions.
+ * Typed service clients generated from proto definitions, using ConnectRPC
+ * transport to communicate with Go backend microservices.
  */
+import { createClient, type Client } from '@connectrpc/connect';
 import { createServiceTransport } from '../api/transport';
-import type {
-  Farm, Crop, CropVariety, Field, SoilSample,
-  IrrigationSchedule, IrrigationZone, Sensor, SensorReading, SensorAlert,
-  SatelliteImage, VegetationIndex,
-  PestPrediction, PestObservation,
-  DiagnosisRequest, DiagnosisResult,
-  YieldPrediction, YieldRecord, HarvestPlan,
-  TraceabilityRecord, Certification, BatchRecord,
-  PaginatedResponse, ListParams,
-} from '../types/index';
 
-// ─── Generic CRUD helper ─────────────────────────────────────────────────────
+import {
+  CropService,
+  FarmService,
+  FieldService,
+  SoilService,
+  SensorService,
+  IrrigationService,
+  SatelliteService,
+  PestPredictionService,
+  PlantDiagnosisService,
+  YieldService,
+  TraceabilityService,
+} from '@samavāya/proto';
 
-async function fetchApi<T>(
-  baseUrl: string,
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`API error ${res.status}: ${body}`);
-  }
-  return res.json();
-}
+// ─── ConnectRPC Service Clients ──────────────────────────────────────────────
 
-function createCrudService<T extends { id: string }>(baseUrl: string, resource: string) {
-  const base = `${baseUrl}/${resource}`;
+/** Crop CRUD + varieties, growth stages, requirements, recommendations */
+export const cropClient: Client<typeof CropService> =
+  createClient(CropService, createServiceTransport('crop'));
 
-  return {
-    list(params?: ListParams): Promise<PaginatedResponse<T>> {
-      const qs = new URLSearchParams();
-      if (params?.page) qs.set('page', String(params.page));
-      if (params?.page_size) qs.set('page_size', String(params.page_size));
-      if (params?.sort_by) qs.set('sort_by', params.sort_by);
-      if (params?.sort_order) qs.set('sort_order', params.sort_order);
-      if (params?.search) qs.set('search', params.search);
-      const query = qs.toString();
-      return fetchApi<PaginatedResponse<T>>(base, query ? `?${query}` : '');
-    },
+/** Farm CRUD + boundaries, ownership */
+export const farmClient: Client<typeof FarmService> =
+  createClient(FarmService, createServiceTransport('farm'));
 
-    get(id: string): Promise<T> {
-      return fetchApi<T>(base, `/${id}`);
-    },
+/** Field CRUD + boundaries, crop assignment, segmentation, crop history */
+export const fieldClient: Client<typeof FieldService> =
+  createClient(FieldService, createServiceTransport('field'));
 
-    create(data: Partial<T>): Promise<T> {
-      return fetchApi<T>(base, '', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    },
+/** Soil sample CRUD + analysis, health scores, nutrient levels, reports */
+export const soilClient: Client<typeof SoilService> =
+  createClient(SoilService, createServiceTransport('soil'));
 
-    update(id: string, data: Partial<T>): Promise<T> {
-      return fetchApi<T>(base, `/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-    },
+/** Sensor registration, readings, alerts, networks, calibration */
+export const sensorClient: Client<typeof SensorService> =
+  createClient(SensorService, createServiceTransport('sensor'));
 
-    remove(id: string): Promise<void> {
-      return fetchApi<void>(base, `/${id}`, { method: 'DELETE' });
-    },
-  };
-}
+/** Irrigation schedules, zones, controllers, decisions, water usage */
+export const irrigationClient: Client<typeof IrrigationService> =
+  createClient(IrrigationService, createServiceTransport('irrigation'));
 
-// ─── Service Instances ───────────────────────────────────────────────────────
+/** Satellite imagery, vegetation indices, crop stress, temporal analysis */
+export const satelliteClient: Client<typeof SatelliteService> =
+  createClient(SatelliteService, createServiceTransport('satellite'));
 
-export const farmService = createCrudService<Farm>('/api/farm', 'farms');
-export const cropService = createCrudService<Crop>('/api/crop', 'crops');
-export const cropVarietyService = createCrudService<CropVariety>('/api/crop', 'varieties');
-export const fieldService = createCrudService<Field>('/api/field', 'fields');
-export const soilService = createCrudService<SoilSample>('/api/soil', 'samples');
-export const irrigationScheduleService = createCrudService<IrrigationSchedule>('/api/irrigation', 'schedules');
-export const irrigationZoneService = createCrudService<IrrigationZone>('/api/irrigation', 'zones');
-export const sensorService = createCrudService<Sensor>('/api/sensor', 'sensors');
-export const satelliteService = createCrudService<SatelliteImage>('/api/satellite', 'images');
-export const pestPredictionService = createCrudService<PestPrediction>('/api/pest', 'predictions');
-export const pestObservationService = createCrudService<PestObservation>('/api/pest', 'observations');
-export const diagnosisService = createCrudService<DiagnosisRequest>('/api/diagnosis', 'requests');
-export const yieldPredictionService = createCrudService<YieldPrediction>('/api/yield', 'predictions');
-export const yieldRecordService = createCrudService<YieldRecord>('/api/yield', 'records');
-export const harvestPlanService = createCrudService<HarvestPlan>('/api/yield', 'harvest-plans');
-export const traceabilityService = createCrudService<TraceabilityRecord>('/api/traceability', 'records');
-export const certificationService = createCrudService<Certification>('/api/traceability', 'certifications');
-export const batchRecordService = createCrudService<BatchRecord>('/api/traceability', 'batches');
+/** Pest risk prediction, observations, species, treatment plans, alerts */
+export const pestClient: Client<typeof PestPredictionService> =
+  createClient(PestPredictionService, createServiceTransport('pest'));
+
+/** Plant diagnosis, disease info, nutrient deficiency, pest damage detection */
+export const diagnosisClient: Client<typeof PlantDiagnosisService> =
+  createClient(PlantDiagnosisService, createServiceTransport('diagnosis'));
+
+/** Yield prediction, records, harvest plans, crop performance */
+export const yieldClient: Client<typeof YieldService> =
+  createClient(YieldService, createServiceTransport('yield'));
+
+/** Traceability records, certifications, batches, QR codes, compliance */
+export const traceabilityClient: Client<typeof TraceabilityService> =
+  createClient(TraceabilityService, createServiceTransport('traceability'));

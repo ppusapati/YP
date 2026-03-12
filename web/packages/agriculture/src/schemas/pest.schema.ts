@@ -1,39 +1,25 @@
-/**
- * Pest Prediction & Observation Form Schemas
- */
 import type { FormSchema } from '@samavāya/core';
 
 export const pestPredictionFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'field_id', label: 'Field', required: true },
-    { type: 'text', name: 'crop_id', label: 'Crop', required: true },
-    { type: 'text', name: 'pest_name', label: 'Pest Name', required: true },
-    { type: 'date', name: 'prediction_date', label: 'Prediction Date', required: true } as any,
+    { type: 'text', name: 'farmId', label: 'Farm', required: true },
+    { type: 'text', name: 'fieldId', label: 'Field', required: true },
+    { type: 'text', name: 'pestSpeciesId', label: 'Pest Species' },
+    { type: 'text', name: 'cropType', label: 'Crop Type' },
     {
-      type: 'select', name: 'risk_level', label: 'Risk Level', required: true,
+      type: 'select', name: 'growthStage', label: 'Growth Stage',
       options: [
-        { label: 'Low', value: 'low' },
-        { label: 'Medium', value: 'medium' },
-        { label: 'High', value: 'high' },
-        { label: 'Critical', value: 'critical' },
+        { label: 'Germination', value: '1' },
+        { label: 'Seedling', value: '2' },
+        { label: 'Vegetative', value: '3' },
+        { label: 'Flowering', value: '4' },
+        { label: 'Fruiting', value: '5' },
+        { label: 'Maturation', value: '6' },
+        { label: 'Harvest', value: '7' },
       ],
     } as any,
-    { type: 'number', name: 'probability', label: 'Probability (%)', min: 0, max: 100, step: 0.1 } as any,
-    { type: 'number', name: 'confidence', label: 'Confidence (%)', min: 0, max: 100, step: 0.1 } as any,
-    { type: 'date', name: 'predicted_onset_date', label: 'Predicted Onset' } as any,
-    { type: 'date', name: 'predicted_peak_date', label: 'Predicted Peak' } as any,
-    { type: 'number', name: 'affected_area_pct', label: 'Affected Area (%)', min: 0, max: 100, step: 0.1 } as any,
-    { type: 'textarea', name: 'weather_factors', label: 'Weather Factors', rows: 2 } as any,
-    { type: 'text', name: 'model_version', label: 'Model Version' },
-    {
-      type: 'select', name: 'status', label: 'Status',
-      options: [
-        { label: 'Active', value: 'active' },
-        { label: 'Expired', value: 'expired' },
-        { label: 'Verified', value: 'verified' },
-        { label: 'False Alarm', value: 'false_alarm' },
-      ],
-    } as any,
+    { type: 'number', name: 'latitude', label: 'Latitude', step: 0.000001, min: -90, max: 90 } as any,
+    { type: 'number', name: 'longitude', label: 'Longitude', step: 0.000001, min: -180, max: 180 } as any,
   ],
   layout: {
     type: 'grid',
@@ -41,22 +27,10 @@ export const pestPredictionFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'prediction',
-        title: 'Prediction Details',
-        fields: ['field_id', 'crop_id', 'pest_name', 'prediction_date', 'risk_level', 'status'],
+        id: 'prediction_request',
+        title: 'Prediction Request',
+        fields: ['farmId', 'fieldId', 'pestSpeciesId', 'cropType', 'growthStage', 'latitude', 'longitude'],
         columns: 2,
-      },
-      {
-        id: 'analysis',
-        title: 'Analysis',
-        fields: ['probability', 'confidence', 'predicted_onset_date', 'predicted_peak_date', 'affected_area_pct'],
-        columns: 2,
-      },
-      {
-        id: 'context',
-        title: 'Context',
-        fields: ['weather_factors', 'model_version'],
-        columns: 1,
       },
     ],
   },
@@ -64,56 +38,24 @@ export const pestPredictionFormSchema: FormSchema<Record<string, unknown>> = {
 
 export const pestObservationFormSchema: FormSchema<Record<string, unknown>> = {
   fields: [
-    { type: 'text', name: 'field_id', label: 'Field', required: true },
-    { type: 'text', name: 'pest_name', label: 'Pest Name', required: true },
-    { type: 'date', name: 'observation_date', label: 'Observation Date', required: true } as any,
+    { type: 'text', name: 'farmId', label: 'Farm', required: true },
+    { type: 'text', name: 'fieldId', label: 'Field', required: true },
+    { type: 'text', name: 'pestSpeciesId', label: 'Pest Species' },
+    { type: 'number', name: 'pestCount', label: 'Pest Count', min: 0 } as any,
     {
-      type: 'select', name: 'severity', label: 'Severity', required: true,
+      type: 'select', name: 'damageLevel', label: 'Damage Level',
       options: [
-        { label: 'Trace', value: 'trace' },
-        { label: 'Light', value: 'light' },
-        { label: 'Moderate', value: 'moderate' },
-        { label: 'Severe', value: 'severe' },
-        { label: 'Devastating', value: 'devastating' },
+        { label: 'None', value: '1' },
+        { label: 'Light', value: '2' },
+        { label: 'Moderate', value: '3' },
+        { label: 'Severe', value: '4' },
+        { label: 'Devastating', value: '5' },
       ],
     } as any,
-    { type: 'number', name: 'affected_area_pct', label: 'Affected Area (%)', min: 0, max: 100, step: 0.1 } as any,
-    {
-      type: 'select', name: 'lifecycle_stage', label: 'Lifecycle Stage',
-      options: [
-        { label: 'Egg', value: 'egg' },
-        { label: 'Larva', value: 'larva' },
-        { label: 'Pupa', value: 'pupa' },
-        { label: 'Adult', value: 'adult' },
-        { label: 'Nymph', value: 'nymph' },
-        { label: 'Multiple', value: 'multiple' },
-      ],
-    } as any,
-    { type: 'number', name: 'population_density', label: 'Population Density (per sq m)', min: 0 } as any,
-    {
-      type: 'select', name: 'damage_type', label: 'Damage Type',
-      options: [
-        { label: 'Chewing', value: 'chewing' },
-        { label: 'Sucking', value: 'sucking' },
-        { label: 'Boring', value: 'boring' },
-        { label: 'Mining', value: 'mining' },
-        { label: 'Galling', value: 'galling' },
-        { label: 'Root Damage', value: 'root_damage' },
-      ],
-    } as any,
+    { type: 'text', name: 'trapType', label: 'Trap Type' },
     { type: 'number', name: 'latitude', label: 'Latitude', step: 0.000001, min: -90, max: 90 } as any,
     { type: 'number', name: 'longitude', label: 'Longitude', step: 0.000001, min: -180, max: 180 } as any,
-    { type: 'text', name: 'observer_name', label: 'Observer Name' },
-    { type: 'textarea', name: 'notes', label: 'Notes', rows: 3 } as any,
-    {
-      type: 'select', name: 'status', label: 'Status',
-      options: [
-        { label: 'Reported', value: 'reported' },
-        { label: 'Confirmed', value: 'confirmed' },
-        { label: 'Under Treatment', value: 'under_treatment' },
-        { label: 'Resolved', value: 'resolved' },
-      ],
-    } as any,
+    { type: 'textarea', name: 'notes', label: 'Notes' } as any,
   ],
   layout: {
     type: 'grid',
@@ -121,28 +63,16 @@ export const pestObservationFormSchema: FormSchema<Record<string, unknown>> = {
     gap: 'md',
     sections: [
       {
-        id: 'observation',
+        id: 'observation_details',
         title: 'Observation Details',
-        fields: ['field_id', 'pest_name', 'observation_date', 'severity', 'status'],
-        columns: 2,
-      },
-      {
-        id: 'pest_details',
-        title: 'Pest Details',
-        fields: ['affected_area_pct', 'lifecycle_stage', 'population_density', 'damage_type'],
+        fields: ['farmId', 'fieldId', 'pestSpeciesId', 'pestCount', 'damageLevel', 'trapType', 'notes'],
         columns: 2,
       },
       {
         id: 'location',
         title: 'Location',
-        fields: ['latitude', 'longitude', 'observer_name'],
-        columns: 3,
-      },
-      {
-        id: 'notes_section',
-        title: 'Notes',
-        fields: ['notes'],
-        columns: 1,
+        fields: ['latitude', 'longitude'],
+        columns: 2,
       },
     ],
   },

@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
   import { traceabilityRecordFormSchema } from '@samavāya/agriculture/schemas';
-  import { traceabilityService } from '@samavāya/agriculture/services';
+  import { traceabilityClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'created', unit: 'kg' };
   let errors: Record<string, string> = {};
@@ -13,7 +13,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await traceabilityService.create(formValues as any);
+      await traceabilityClient.createRecord(formValues as any);
       goto('/traceability');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create traceability record';

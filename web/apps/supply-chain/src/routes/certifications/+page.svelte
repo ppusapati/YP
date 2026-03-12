@@ -1,10 +1,11 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
-  import { certificationService } from '@samavāya/agriculture/services';
+  import { traceabilityClient } from '@samavāya/agriculture/services';
   import type { Certification } from '@samavāya/agriculture/types';
 
   let rows: Certification[] = [];
+  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
@@ -18,15 +19,18 @@
     { key: 'status', label: 'Status' },
   ];
 
-  async function fetchData() {
+  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
     loading = true;
     error = null;
     try {
-      const res = await certificationService.list({ page: 1, page_size: 50 });
-      rows = res.items;
+      const res = await traceabilityClient.listCertifications({ pageSize, pageOffset });
+      rows = res.certifications;
+      totalCount = res.totalCount;
+      return res.totalCount;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load certifications';
       rows = [];
+      return 0;
     } finally {
       loading = false;
     }
@@ -41,5 +45,6 @@
   {loading}
   {error}
   onRowClick={(id) => goto(`/certifications/${id}`)}
+  {totalCount}
   {fetchData}
 />

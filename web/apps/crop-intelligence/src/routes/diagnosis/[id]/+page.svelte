@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { diagnosisRequestFormSchema } from '@samavāya/agriculture/schemas';
-  import { diagnosisService } from '@samavāya/agriculture/services';
+  import { diagnosisClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const req = await diagnosisService.get(id);
-      values = { ...req };
+      const res = await diagnosisClient.getDiagnosis({ id });
+      values = { ...res.request };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load diagnosis request';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await diagnosisService.update(id, formValues as any);
+      await diagnosisClient.updateDiagnosis({ id, ...formValues } as any);
       goto('/diagnosis');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update diagnosis request';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await diagnosisService.remove(id);
+      await diagnosisClient.deleteDiagnosis({ id } as any);
       goto('/diagnosis');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete diagnosis request';

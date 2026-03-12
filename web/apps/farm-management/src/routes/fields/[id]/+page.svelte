@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { fieldFormSchema } from '@samavāya/agriculture/schemas';
-  import { fieldService } from '@samavāya/agriculture/services';
+  import { fieldClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const field = await fieldService.get(id);
-      values = { ...field };
+      const res = await fieldClient.getField({ id });
+      values = { ...res.field };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load field';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await fieldService.update(id, formValues as any);
+      await fieldClient.updateField({ id, ...formValues } as any);
       goto('/fields');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update field';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await fieldService.remove(id);
+      await fieldClient.deleteField({ id });
       goto('/fields');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete field';

@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { farmFormSchema } from '@samavāya/agriculture/schemas';
-  import { farmService } from '@samavāya/agriculture/services';
+  import { farmClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -17,8 +17,8 @@
 
   onMount(async () => {
     try {
-      const farm = await farmService.get(id);
-      values = { ...farm };
+      const res = await farmClient.getFarm({ id });
+      values = { ...res.farm };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load farm';
     } finally {
@@ -30,7 +30,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await farmService.update(id, formValues as any);
+      await farmClient.updateFarm({ id, ...formValues } as any);
       goto('/farms');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update farm';
@@ -41,7 +41,7 @@
 
   async function handleDelete() {
     try {
-      await farmService.remove(id);
+      await farmClient.deleteFarm({ id });
       goto('/farms');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete farm';

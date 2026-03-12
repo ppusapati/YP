@@ -4,7 +4,7 @@
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { batchRecordFormSchema } from '@samavāya/agriculture/schemas';
-  import { batchRecordService } from '@samavāya/agriculture/services';
+  import { traceabilityClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
 
@@ -16,8 +16,8 @@
 
   onMount(async () => {
     try {
-      const batch = await batchRecordService.get(id);
-      values = { ...batch };
+      const res = await traceabilityClient.getBatch({ id });
+      values = { ...res.batch };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load batch record';
     } finally {
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await batchRecordService.update(id, formValues as any);
+      await traceabilityClient.updateBatch({ id, ...formValues } as any);
       goto('/batches');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update batch record';
@@ -40,7 +40,7 @@
 
   async function handleDelete() {
     try {
-      await batchRecordService.remove(id);
+      await traceabilityClient.deleteBatch({ id } as any);
       goto('/batches');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to delete batch record';
