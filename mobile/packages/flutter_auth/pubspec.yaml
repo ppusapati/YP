@@ -1,0 +1,25 @@
+name: flutter_auth
+description: Authentication package with JWT token management, secure storage, and auth state for YieldPoint.
+version: 0.1.0
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.7
+  flutter_secure_storage: ^9.2.3
+  http: ^1.2.2
+  logging: ^1.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  mocktail: ^1.0.4

@@ -1,0 +1,20 @@
+name: flutter_proto
+description: Protobuf generated models and ConnectRPC service stubs for the YieldPoint platform.
+version: 0.1.0
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  protobuf: ^21.1.2
+  connectrpc: ^0.3.0
+  http: ^1.2.2
+  fixnum: ^1.1.0
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  test: ^1.25.8
