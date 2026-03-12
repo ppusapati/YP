@@ -1,0 +1,99 @@
+syntax = "proto3";
+package agriculture.satellite.tile.v1;
+option go_package = "p9e.in/samavaya/agriculture/satellite-tile-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum TileFormat {
+  TILE_FORMAT_UNSPECIFIED = 0;
+  TILE_FORMAT_PNG = 1;
+  TILE_FORMAT_JPEG = 2;
+  TILE_FORMAT_WEBP = 3;
+  TILE_FORMAT_MVT = 4;
+}
+
+enum TilesetStatus {
+  TILESET_STATUS_UNSPECIFIED = 0;
+  TILESET_STATUS_QUEUED = 1;
+  TILESET_STATUS_GENERATING = 2;
+  TILESET_STATUS_COMPLETED = 3;
+  TILESET_STATUS_FAILED = 4;
+}
+
+enum TileLayer {
+  TILE_LAYER_UNSPECIFIED = 0;
+  TILE_LAYER_RGB = 1;
+  TILE_LAYER_NDVI = 2;
+  TILE_LAYER_NDWI = 3;
+  TILE_LAYER_EVI = 4;
+  TILE_LAYER_STRESS = 5;
+  TILE_LAYER_FALSE_COLOR = 6;
+  TILE_LAYER_THERMAL = 7;
+}
+
+message Tileset {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string processing_job_id = 4;
+  TileLayer layer = 5;
+  TileFormat format = 6;
+  TilesetStatus status = 7;
+  int32 min_zoom = 8;
+  int32 max_zoom = 9;
+  string s3_prefix = 10;
+  int64 total_tiles = 11;
+  string bbox_geojson = 12;
+  string error_message = 13;
+  google.protobuf.Timestamp acquisition_date = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp completed_at = 16;
+}
+
+message GenerateTilesetRequest {
+  string processing_job_id = 1;
+  string farm_id = 2;
+  TileLayer layer = 3;
+  TileFormat format = 4;
+  int32 min_zoom = 5;
+  int32 max_zoom = 6;
+}
+message GenerateTilesetResponse { Tileset tileset = 1; }
+
+message GetTilesetRequest { string id = 1; }
+message GetTilesetResponse { Tileset tileset = 1; }
+
+message ListTilesetsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  TileLayer layer = 4;
+  TilesetStatus status = 5;
+}
+message ListTilesetsResponse {
+  repeated Tileset tilesets = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetTileRequest {
+  string tileset_id = 1;
+  int32 z = 2;
+  int32 x = 3;
+  int32 y = 4;
+}
+message GetTileResponse {
+  bytes tile_data = 1;
+  string content_type = 2;
+}
+
+message DeleteTilesetRequest { string id = 1; }
+message DeleteTilesetResponse { bool success = 1; }
+
+service SatelliteTileService {
+  rpc GenerateTileset(GenerateTilesetRequest) returns (GenerateTilesetResponse);
+  rpc GetTileset(GetTilesetRequest) returns (GetTilesetResponse);
+  rpc ListTilesets(ListTilesetsRequest) returns (ListTilesetsResponse);
+  rpc GetTile(GetTileRequest) returns (GetTileResponse);
+  rpc DeleteTileset(DeleteTilesetRequest) returns (DeleteTilesetResponse);
+}

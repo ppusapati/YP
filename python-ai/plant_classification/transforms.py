@@ -185,3 +185,18 @@ def get_tta_transforms(image_size: int = DEFAULT_IMAGE_SIZE) -> list[A.Compose]:
         t.albumentations = True
 
     return transforms_list
+
+
+def get_inference_transforms(image_size: int = DEFAULT_IMAGE_SIZE) -> A.Compose:
+    """Get inference transforms for production plant classification.
+
+    Identical to validation transforms, optimized for single-image
+    inference in deployment.
+
+    Args:
+        image_size: Target image size (square).
+
+    Returns:
+        Albumentations Compose transform.
+    """
+    return get_val_transforms(image_size)

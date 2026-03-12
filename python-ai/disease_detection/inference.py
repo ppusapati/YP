@@ -229,9 +229,9 @@ class DiseaseDetector:
 
         # Determine overall health status
         is_healthy = len(diseases) == 0
-        if healthy_idx >= 0:
-            healthy_prob = float(cls_probs[healthy_idx])
-            if healthy_prob > 0.7 and len(diseases) == 0:
+        if healthy_indices:
+            max_healthy_prob = float(max(cls_probs[idx] for idx in healthy_indices))
+            if max_healthy_prob > 0.7 and len(diseases) == 0:
                 is_healthy = True
 
         # Overall severity
@@ -243,7 +243,7 @@ class DiseaseDetector:
             overall_confidence = max(d.confidence for d in diseases)
         else:
             overall_severity = "MILD"
-            overall_confidence = float(cls_probs[healthy_idx]) if healthy_idx >= 0 else 0.0
+            overall_confidence = float(max(cls_probs[idx] for idx in healthy_indices)) if healthy_indices else 0.0
 
         return DiseaseDetectionResult(
             diseases=diseases,
@@ -372,7 +372,7 @@ class DiseaseDetector:
                     overall_confidence = max(d.confidence for d in diseases)
                 else:
                     overall_severity = "MILD"
-                    overall_confidence = float(cls_probs[i][healthy_idx]) if healthy_idx >= 0 else 0.0
+                    overall_confidence = float(max(cls_probs[i][idx] for idx in healthy_indices_batch)) if healthy_indices_batch else 0.0
 
                 results.append(
                     DiseaseDetectionResult(

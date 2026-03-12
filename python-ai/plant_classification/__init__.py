@@ -17,7 +17,7 @@ from .inference import (
 )
 from .dataset import PlantVillageDataset, create_train_val_datasets
 from .trainer import PlantClassificationTrainer, TrainConfig
-from .transforms import get_train_transforms, get_val_transforms, get_tta_transforms
+from .transforms import get_train_transforms, get_val_transforms, get_tta_transforms, get_inference_transforms
 
 __all__ = [
     "PlantClassificationModel",
@@ -33,4 +33,5 @@ __all__ = [
     "get_train_transforms",
     "get_val_transforms",
     "get_tta_transforms",
+    "get_inference_transforms",
 ]
