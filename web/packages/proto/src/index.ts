@@ -59,6 +59,14 @@ export { PlantDiagnosisService } from './gen/plant-diagnosis-service/proto/diagn
 export { YieldService } from './gen/yield-service/proto/yield_pb.js';
 export { TraceabilityService } from './gen/traceability-service/proto/traceability_pb.js';
 
+// ─── Satellite Sub-Service Descriptors ──────────────────────────────────────
+
+export { SatelliteIngestionService } from './gen/satellite-ingestion-service/proto/ingestion_pb.js';
+export { SatelliteProcessingService } from './gen/satellite-processing-service/proto/processing_pb.js';
+export { SatelliteAnalyticsService } from './gen/satellite-analytics-service/proto/analytics_pb.js';
+export { SatelliteTileService } from './gen/satellite-tile-service/proto/tile_pb.js';
+export { VegetationIndexService } from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
+
 // ─── Agriculture Message Types (re-exports for convenience) ──────────────────
 
 export type {
@@ -208,3 +216,58 @@ export type {
   Certification,
   BatchRecord,
 } from './gen/traceability-service/proto/traceability_pb.js';
+
+// ─── Satellite Sub-Service Types ─────────────────────────────────────────────
+
+export type {
+  IngestionTask,
+} from './gen/satellite-ingestion-service/proto/ingestion_pb.js';
+
+export {
+  SatelliteProvider as IngestionSatelliteProvider,
+  IngestionStatus,
+  SpectralBand as IngestionSpectralBand,
+} from './gen/satellite-ingestion-service/proto/ingestion_pb.js';
+
+export type {
+  ProcessingJob,
+} from './gen/satellite-processing-service/proto/processing_pb.js';
+
+export {
+  ProcessingStatus as SatProcessingStatus,
+  ProcessingLevel,
+  CorrectionAlgorithm,
+} from './gen/satellite-processing-service/proto/processing_pb.js';
+
+export type {
+  StressAlert,
+  TemporalAnalysis as SatTemporalAnalysis,
+} from './gen/satellite-analytics-service/proto/analytics_pb.js';
+
+export {
+  StressType,
+  SeverityLevel,
+  AnalysisType,
+} from './gen/satellite-analytics-service/proto/analytics_pb.js';
+
+export type {
+  Tileset,
+} from './gen/satellite-tile-service/proto/tile_pb.js';
+
+export {
+  TileFormat,
+  TilesetStatus,
+  TileLayer,
+} from './gen/satellite-tile-service/proto/tile_pb.js';
+
+export type {
+  VegetationIndex as VegIndex,
+  ComputeTask,
+  NDVITimeSeries,
+  TimeSeriesPoint,
+} from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
+
+export {
+  VegetationIndexType,
+  ComputeStatus,
+} from './gen/vegetation-index-service/proto/vegetation_index_pb.js';

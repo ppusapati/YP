@@ -15,6 +15,11 @@ import {
   SensorService,
   IrrigationService,
   SatelliteService,
+  SatelliteIngestionService,
+  SatelliteProcessingService,
+  SatelliteAnalyticsService,
+  SatelliteTileService,
+  VegetationIndexService,
   PestPredictionService,
   PlantDiagnosisService,
   YieldService,
@@ -50,6 +55,26 @@ export const irrigationClient: Client<typeof IrrigationService> =
 /** Satellite imagery, vegetation indices, crop stress, temporal analysis */
 export const satelliteClient: Client<typeof SatelliteService> =
   createClient(SatelliteService, createServiceTransport('satellite'));
+
+/** Satellite data ingestion — download, validate, store imagery */
+export const ingestionClient: Client<typeof SatelliteIngestionService> =
+  createClient(SatelliteIngestionService, createServiceTransport('satellite-ingestion'));
+
+/** Satellite image processing — atmospheric correction, cloud masking, orthorectification */
+export const processingClient: Client<typeof SatelliteProcessingService> =
+  createClient(SatelliteProcessingService, createServiceTransport('satellite-processing'));
+
+/** Satellite analytics — stress detection, temporal analysis, field summaries */
+export const analyticsClient: Client<typeof SatelliteAnalyticsService> =
+  createClient(SatelliteAnalyticsService, createServiceTransport('satellite-analytics'));
+
+/** Map tile generation and serving for satellite layers */
+export const tileClient: Client<typeof SatelliteTileService> =
+  createClient(SatelliteTileService, createServiceTransport('satellite-tile'));
+
+/** Vegetation index computation — NDVI, NDWI, EVI, SAVI, time series */
+export const vegetationIndexClient: Client<typeof VegetationIndexService> =
+  createClient(VegetationIndexService, createServiceTransport('vegetation-index'));
 
 /** Pest risk prediction, observations, species, treatment plans, alerts */
 export const pestClient: Client<typeof PestPredictionService> =
