@@ -1,7 +1,6 @@
 import Flutter
 import UIKit
-import FirebaseCore
-import FirebaseMessaging
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -9,16 +8,9 @@ import FirebaseMessaging
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FirebaseApp.configure()
-
-    // Register for remote notifications
+    // Register for remote notifications via direct APNs
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { _, _ in }
-      )
     }
     application.registerForRemoteNotifications()
 
@@ -26,11 +18,15 @@ import FirebaseMessaging
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
+  // Forward APNs device token to Flutter for server-side push integration
   override func application(
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
-    Messaging.messaging().apnsToken = deviceToken
+    let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+    let controller = window?.rootViewController as? FlutterViewController
+    let channel = FlutterMethodChannel(name: "com.yieldpoint/apns", binaryMessenger: controller!.binaryMessenger)
+    channel.invokeMethod("onToken", arguments: token)
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
 }

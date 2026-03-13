@@ -1,7 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,11 +27,10 @@ void callbackDispatcher() {
   });
 }
 
-/// Firebase background message handler.
+/// Background notification response handler.
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  Logger('FCM').info('Handling background message: ${message.messageId}');
+void notificationTapBackground(NotificationResponse response) {
+  Logger('Notifications').info('Background notification tapped: ${response.id}');
 }
 
 Future<void> main() async {
@@ -66,17 +64,29 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // ─── Initialize Firebase ─────────────────────────────────────────
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  // Request notification permissions.
-  final messaging = FirebaseMessaging.instance;
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
+  // ─── Initialize push notifications (direct APNs) ─────────────────
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  const initializationSettingsIOS = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
   );
+  const initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const initializationSettings = InitializationSettings(
+    iOS: initializationSettingsIOS,
+    android: initializationSettingsAndroid,
+  );
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+  );
+
+  // Request notification permissions on iOS.
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(alert: true, badge: true, sound: true);
 
   // ─── Initialize SharedPreferences ────────────────────────────────
   final sharedPreferences = await SharedPreferences.getInstance();
