@@ -4,6 +4,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -132,4 +133,104 @@ func scanIrrigation(row pgx.Row) (*domain.Irrigation, error) {
 		&e.IsActive, &e.CreatedBy, &e.CreatedAt, &e.Version,
 	)
 	return e, err
+}
+
+func (r *irrigationRepository) CreateZone(ctx context.Context, zone *domain.IrrigationZone) (*domain.IrrigationZone, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) GetZoneByUUID(ctx context.Context, uuid string) (*domain.IrrigationZone, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListZonesByField(ctx context.Context, fieldID string, pageSize, offset int32) ([]domain.IrrigationZone, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListZonesByFarm(ctx context.Context, farmID string, pageSize, offset int32) ([]domain.IrrigationZone, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) CreateController(ctx context.Context, ctrl *domain.WaterController) (*domain.WaterController, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) GetControllerByUUID(ctx context.Context, uuid string) (*domain.WaterController, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListControllersByZone(ctx context.Context, zoneID string, pageSize, offset int32) ([]domain.WaterController, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) UpdateControllerStatus(ctx context.Context, uuid string, status domain.ControllerStatus) (*domain.WaterController, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) CreateSchedule(ctx context.Context, sched *domain.IrrigationSchedule) (*domain.IrrigationSchedule, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) GetScheduleByUUID(ctx context.Context, uuid string) (*domain.IrrigationSchedule, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListSchedulesByField(ctx context.Context, fieldID string, pageSize, offset int32) ([]domain.IrrigationSchedule, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListSchedulesByZone(ctx context.Context, zoneID string, pageSize, offset int32) ([]domain.IrrigationSchedule, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) UpdateSchedule(ctx context.Context, sched *domain.IrrigationSchedule) (*domain.IrrigationSchedule, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) UpdateScheduleStatus(ctx context.Context, uuid string, status domain.IrrigationStatus) (*domain.IrrigationSchedule, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) DeleteSchedule(ctx context.Context, uuid string) error {
+	return errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) CreateEvent(ctx context.Context, evt *domain.IrrigationEvent) (*domain.IrrigationEvent, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) GetEventByUUID(ctx context.Context, uuid string) (*domain.IrrigationEvent, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListEventsByZone(ctx context.Context, zoneID string, pageSize, offset int32) ([]domain.IrrigationEvent, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListEventsByTimeRange(ctx context.Context, zoneID string, start, end time.Time) ([]domain.IrrigationEvent, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) UpdateEvent(ctx context.Context, evt *domain.IrrigationEvent) (*domain.IrrigationEvent, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) CreateDecision(ctx context.Context, decision *domain.IrrigationDecision) (*domain.IrrigationDecision, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) MarkDecisionApplied(ctx context.Context, uuid string) error {
+	return errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) CreateWaterUsageLog(ctx context.Context, log *domain.WaterUsageLog) (*domain.WaterUsageLog, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) ListWaterUsageLogs(ctx context.Context, zoneID string, start, end time.Time) ([]domain.WaterUsageLog, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *irrigationRepository) SumWaterUsageByZone(ctx context.Context, zoneID string, start, end time.Time) (float64, error) {
+	return 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
 }

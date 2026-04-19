@@ -14,4 +14,10 @@ type CropService interface {
 	ListCrops(ctx context.Context, params domain.ListCropParams) ([]domain.Crop, int32, error)
 	UpdateCrop(ctx context.Context, entity *domain.Crop) (*domain.Crop, error)
 	DeleteCrop(ctx context.Context, uuid string) error
+
+	AddVariety(ctx context.Context, variety *domain.CropVariety) (*domain.CropVariety, error)
+	ListVarieties(ctx context.Context, cropUUID, tenantID string, limit, offset int32) ([]*domain.CropVariety, int32, error)
+	GetGrowthStages(ctx context.Context, cropUUID, tenantID string) ([]*domain.CropGrowthStage, error)
+	GetCropRequirements(ctx context.Context, cropUUID, tenantID string) (*domain.CropRequirements, error)
+	GenerateRecommendation(ctx context.Context, input *domain.RecommendationInput) (*domain.CropRecommendation, error)
 }

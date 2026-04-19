@@ -14,4 +14,19 @@ type SoilService interface {
 	ListSoils(ctx context.Context, params domain.ListSoilParams) ([]domain.Soil, int32, error)
 	UpdateSoil(ctx context.Context, entity *domain.Soil) (*domain.Soil, error)
 	DeleteSoil(ctx context.Context, uuid string) error
+
+	CreateSoilSample(ctx context.Context, sample *domain.SoilSample) (*domain.SoilSample, error)
+	GetSoilSample(ctx context.Context, id, tenantID string) (*domain.SoilSample, error)
+	ListSoilSamples(ctx context.Context, tenantID, fieldID, farmID string, pageSize, pageOffset int32) ([]domain.SoilSample, int64, error)
+
+	AnalyzeSoil(ctx context.Context, sampleID, tenantID, analysisType string) (*domain.SoilAnalysis, error)
+	ListSoilAnalyses(ctx context.Context, tenantID, fieldID, farmID, sampleID string, pageSize, pageOffset int32) ([]domain.SoilAnalysis, int64, error)
+
+	GetSoilMap(ctx context.Context, fieldID, tenantID, mapType string) (*domain.SoilMap, error)
+
+	GetSoilHealth(ctx context.Context, fieldID, tenantID string) (*domain.SoilHealthScore, error)
+
+	GetNutrientLevels(ctx context.Context, sampleID, tenantID string) ([]domain.SoilNutrient, error)
+
+	GenerateSoilReport(ctx context.Context, fieldID, tenantID, farmID string) (*domain.SoilReport, error)
 }

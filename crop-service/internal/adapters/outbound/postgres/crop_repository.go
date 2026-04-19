@@ -133,3 +133,27 @@ func scanCrop(row pgx.Row) (*domain.Crop, error) {
 	)
 	return e, err
 }
+
+func (r *cropRepository) CreateVariety(ctx context.Context, variety *domain.CropVariety) (*domain.CropVariety, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *cropRepository) ListVarietiesByCropID(ctx context.Context, cropID int64, tenantID string, limit, offset int32) ([]*domain.CropVariety, int32, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *cropRepository) GetGrowthStagesByCropID(ctx context.Context, cropID int64, tenantID string) ([]*domain.CropGrowthStage, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *cropRepository) GetCropRequirementsByCropID(ctx context.Context, cropID int64, tenantID string) (*domain.CropRequirements, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *cropRepository) CreateRecommendation(ctx context.Context, rec *domain.CropRecommendation) (*domain.CropRecommendation, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *cropRepository) CropExistsByName(ctx context.Context, tenantID, name string) (bool, error) {
+	return false, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}

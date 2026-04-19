@@ -18,6 +18,12 @@ type CropRepository interface {
 	DeleteCrop(ctx context.Context, uuid, tenantID, deletedBy string) error
 	CheckCropExists(ctx context.Context, uuid, tenantID string) (bool, error)
 	CheckCropNameExists(ctx context.Context, name, tenantID string) (bool, error)
-
 	WithTx(tx pgx.Tx) CropRepository
+
+	CreateVariety(ctx context.Context, variety *domain.CropVariety) (*domain.CropVariety, error)
+	ListVarietiesByCropID(ctx context.Context, cropID int64, tenantID string, limit, offset int32) ([]*domain.CropVariety, int32, error)
+	GetGrowthStagesByCropID(ctx context.Context, cropID int64, tenantID string) ([]*domain.CropGrowthStage, error)
+	GetCropRequirementsByCropID(ctx context.Context, cropID int64, tenantID string) (*domain.CropRequirements, error)
+	CreateRecommendation(ctx context.Context, rec *domain.CropRecommendation) (*domain.CropRecommendation, error)
+	CropExistsByName(ctx context.Context, tenantID, name string) (bool, error)
 }

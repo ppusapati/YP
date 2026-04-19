@@ -133,3 +133,71 @@ func scanSoil(row pgx.Row) (*domain.Soil, error) {
 	)
 	return e, err
 }
+
+func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.SoilSample) (*domain.SoilSample, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) GetSoilSampleByUUID(ctx context.Context, uuid, tenantID string) (*domain.SoilSample, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID, farmID string, pageSize, pageOffset int32) ([]domain.SoilSample, int64, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) DeleteSoilSample(ctx context.Context, uuid, tenantID string) error {
+	return errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domain.SoilAnalysis) (*domain.SoilAnalysis, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) GetSoilAnalysisByUUID(ctx context.Context, uuid, tenantID string) (*domain.SoilAnalysis, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID, farmID, sampleID string, pageSize, pageOffset int32) ([]domain.SoilAnalysis, int64, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) UpdateSoilAnalysisStatus(ctx context.Context, uuid string, status domain.AnalysisStatus) error {
+	return errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.SoilMap) (*domain.SoilMap, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) GetSoilMapByFieldAndType(ctx context.Context, fieldID, tenantID, mapType string) (*domain.SoilMap, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domain.SoilNutrient) (*domain.SoilNutrient, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) ListNutrientsBySample(ctx context.Context, sampleID, tenantID string) ([]domain.SoilNutrient, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) BatchCreateNutrients(ctx context.Context, nutrients []domain.SoilNutrient) ([]domain.SoilNutrient, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domain.SoilHealthScore) (*domain.SoilHealthScore, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) GetLatestSoilHealthScore(ctx context.Context, fieldID, tenantID string) (*domain.SoilHealthScore, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) UpdateSoilHealthScore(ctx context.Context, score *domain.SoilHealthScore) (*domain.SoilHealthScore, error) {
+	return nil, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
+
+func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID, tenantID string, pageSize, pageOffset int32) ([]domain.SoilHealthScore, int64, error) {
+	return nil, 0, errors.InternalServer("NOT_IMPLEMENTED", "not implemented")
+}
