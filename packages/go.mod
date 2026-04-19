@@ -3,6 +3,7 @@ module p9e.in/samavaya/packages
 go 1.25.4
 
 require (
+	connectrpc.com/connect v1.17.0
 	github.com/BurntSushi/toml v1.5.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/IBM/sarama v1.45.1

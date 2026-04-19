@@ -3,6 +3,7 @@ module p9e.in/samavaya/agriculture
 go 1.25.4
 
 require (
+	connectrpc.com/connect v1.17.0
 	p9e.in/samavaya/packages v0.0.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/stretchr/testify v1.10.0
