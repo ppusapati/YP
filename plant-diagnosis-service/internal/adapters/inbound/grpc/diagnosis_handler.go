@@ -55,10 +55,10 @@ func (h *DiagnosisHandler) GetDiagnosis(ctx context.Context, req *pb.GetDiagnosi
 	return &pb.GetDiagnosisResponse{Diagnosis: diagnosisToProto(entity)}, nil
 }
 
-// ListPlantDiagnosiss handles list requests.
-func (h *DiagnosisHandler) ListPlantDiagnosiss(ctx context.Context, req *pb.ListPlantDiagnosissRequest) (*pb.ListPlantDiagnosissResponse, error) {
+// ListPlantDiagnoses handles list requests.
+func (h *DiagnosisHandler) ListPlantDiagnoses(ctx context.Context, req *pb.ListPlantDiagnosesRequest) (*pb.ListPlantDiagnosesResponse, error) {
 	params := domain.ListPlantDiagnosisParams{PageSize: req.GetPageSize()}
-	entities, total, err := h.svc.ListPlantDiagnosiss(ctx, params)
+	entities, total, err := h.svc.ListPlantDiagnoses(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
@@ -66,7 +66,7 @@ func (h *DiagnosisHandler) ListPlantDiagnosiss(ctx context.Context, req *pb.List
 	for i := range entities {
 		protos = append(protos, diagnosisToProto(&entities[i]))
 	}
-	return &pb.ListPlantDiagnosissResponse{PlantDiagnosiss: protos, TotalCount: total}, nil
+	return &pb.ListPlantDiagnosesResponse{PlantDiagnoses: protos, TotalCount: total}, nil
 }
 
 // UpdateDiagnosis handles update requests.

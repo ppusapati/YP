@@ -36,7 +36,7 @@ type Diagnosis struct {
 	Version  int64        `json:"version"`
 }
 
-// ListPlantDiagnosisParams holds filter and pagination parameters for listing diagnosiss.
+// ListPlantDiagnosisParams holds filter and pagination parameters for listing diagnoses.
 type ListPlantDiagnosisParams struct {
 	TenantID string
 	Status   *DiagnosisStatus

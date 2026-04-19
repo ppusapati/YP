@@ -13,7 +13,7 @@ import (
 type DiagnosisRepository interface {
 	CreateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error)
 	GetDiagnosisByUUID(ctx context.Context, uuid, tenantID string) (*domain.Diagnosis, error)
-	ListPlantDiagnosiss(ctx context.Context, params domain.ListPlantDiagnosisParams) ([]domain.Diagnosis, int32, error)
+	ListPlantDiagnoses(ctx context.Context, params domain.ListPlantDiagnosisParams) ([]domain.Diagnosis, int32, error)
 	UpdateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error)
 	DeleteDiagnosis(ctx context.Context, uuid, tenantID, deletedBy string) error
 	CheckDiagnosisExists(ctx context.Context, uuid, tenantID string) (bool, error)

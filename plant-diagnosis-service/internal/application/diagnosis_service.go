@@ -99,7 +99,7 @@ func (s *diagnosisService) GetDiagnosis(ctx context.Context, uuid string) (*doma
 	return s.repo.GetDiagnosisByUUID(ctx, uuid, tenantID)
 }
 
-func (s *diagnosisService) ListPlantDiagnosiss(ctx context.Context, params domain.ListPlantDiagnosisParams) ([]domain.Diagnosis, int32, error) {
+func (s *diagnosisService) ListPlantDiagnoses(ctx context.Context, params domain.ListPlantDiagnosisParams) ([]domain.Diagnosis, int32, error) {
 	tenantID := p9context.TenantID(ctx)
 	if tenantID == "" {
 		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
@@ -111,7 +111,7 @@ func (s *diagnosisService) ListPlantDiagnosiss(ctx context.Context, params domai
 	if params.PageSize > maxPageSize {
 		params.PageSize = maxPageSize
 	}
-	return s.repo.ListPlantDiagnosiss(ctx, params)
+	return s.repo.ListPlantDiagnoses(ctx, params)
 }
 
 func (s *diagnosisService) UpdateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error) {
