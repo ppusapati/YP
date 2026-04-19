@@ -19,18 +19,18 @@ import (
 )
 
 const (
-	serviceName       = "sensor-service"
-	eventTopic        = "samavaya.agriculture.sensor.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "sensor-service"
+	eventTopic            = "samavaya.agriculture.sensor.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type sensorService struct {
-	repo outbound.SensorRepository
-	pub  outbound.EventPublisher
+	repo        outbound.SensorRepository
+	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewSensorService creates a new application-layer SensorService.
@@ -42,11 +42,11 @@ func NewSensorService(
 	log p9log.Logger,
 ) inbound.SensorService {
 	return &sensorService{
-		repo: repo,
-		pub:  pub,
+		repo:        repo,
+		pub:         pub,
 		fieldClient: fieldClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "SensorService")),
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "SensorService")),
 	}
 }
 
@@ -188,12 +188,12 @@ func (s *sensorService) emitEvent(ctx context.Context, eventType, aggregateID st
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

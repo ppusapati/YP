@@ -29,11 +29,11 @@ func (s DiagnosisStatus) IsValid() bool {
 // Diagnosis is the aggregate root for the plant-diagnosis-service.
 type Diagnosis struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string          `json:"tenant_id"`
+	Name     string          `json:"name"`
 	Status   DiagnosisStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string         `json:"notes,omitempty"`
+	Version  int64           `json:"version"`
 }
 
 // ListPlantDiagnosisParams holds filter and pagination parameters for listing diagnoses.

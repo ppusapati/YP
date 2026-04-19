@@ -42,11 +42,15 @@ require (
 require github.com/sqlc-dev/pqtype v0.3.0
 
 require (
-	github.com/oklog/ulid/v2 v2.1.1
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
+	go.uber.org/fx v1.24.0
 )
 
-require github.com/pmezard/go-difflib v1.0.0 // indirect
+require (
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.uber.org/dig v1.19.0 // indirect
+)
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250307204501-0409229c3780.1 // indirect

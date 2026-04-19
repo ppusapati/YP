@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	serviceName       = "crop-service"
-	eventTopic        = "samavaya.agriculture.crop.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "crop-service"
+	eventTopic            = "samavaya.agriculture.crop.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type cropService struct {
@@ -185,12 +185,12 @@ func (s *cropService) emitEvent(ctx context.Context, eventType, aggregateID stri
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

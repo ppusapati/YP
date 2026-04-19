@@ -29,11 +29,11 @@ func (s SoilStatus) IsValid() bool {
 // Soil is the aggregate root for the soil-service.
 type Soil struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string     `json:"tenant_id"`
+	Name     string     `json:"name"`
 	Status   SoilStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string    `json:"notes,omitempty"`
+	Version  int64      `json:"version"`
 }
 
 // ListSoilParams holds filter and pagination parameters for listing soils.

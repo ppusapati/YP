@@ -19,19 +19,19 @@ import (
 )
 
 const (
-	serviceName       = "satellite-service"
-	eventTopic        = "samavaya.agriculture.satellite.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "satellite-service"
+	eventTopic            = "samavaya.agriculture.satellite.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type satelliteService struct {
-	repo outbound.SatelliteRepository
-	pub  outbound.EventPublisher
+	repo        outbound.SatelliteRepository
+	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
-	farmClient outbound.FarmClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	farmClient  outbound.FarmClient
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewSatelliteService creates a new application-layer SatelliteService.
@@ -44,12 +44,12 @@ func NewSatelliteService(
 	log p9log.Logger,
 ) inbound.SatelliteService {
 	return &satelliteService{
-		repo: repo,
-		pub:  pub,
+		repo:        repo,
+		pub:         pub,
 		fieldClient: fieldClient,
-		farmClient: farmClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "SatelliteService")),
+		farmClient:  farmClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "SatelliteService")),
 	}
 }
 
@@ -191,12 +191,12 @@ func (s *satelliteService) emitEvent(ctx context.Context, eventType, aggregateID
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

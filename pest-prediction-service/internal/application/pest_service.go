@@ -19,19 +19,19 @@ import (
 )
 
 const (
-	serviceName       = "pest-prediction-service"
-	eventTopic        = "samavaya.agriculture.pest-prediction.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "pest-prediction-service"
+	eventTopic            = "samavaya.agriculture.pest-prediction.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type pestService struct {
-	repo outbound.PestRepository
-	pub  outbound.EventPublisher
-	fieldClient outbound.FieldClient
+	repo         outbound.PestRepository
+	pub          outbound.EventPublisher
+	fieldClient  outbound.FieldClient
 	sensorClient outbound.SensorClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	pool         *pgxpool.Pool
+	log          *p9log.Helper
 }
 
 // NewPestService creates a new application-layer PestService.
@@ -44,12 +44,12 @@ func NewPestService(
 	log p9log.Logger,
 ) inbound.PestService {
 	return &pestService{
-		repo: repo,
-		pub:  pub,
-		fieldClient: fieldClient,
+		repo:         repo,
+		pub:          pub,
+		fieldClient:  fieldClient,
 		sensorClient: sensorClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "PestService")),
+		pool:         pool,
+		log:          p9log.NewHelper(p9log.With(log, "component", "PestService")),
 	}
 }
 
@@ -191,12 +191,12 @@ func (s *pestService) emitEvent(ctx context.Context, eventType, aggregateID stri
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

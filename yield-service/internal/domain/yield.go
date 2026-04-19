@@ -29,11 +29,11 @@ func (s YieldStatus) IsValid() bool {
 // Yield is the aggregate root for the yield-service.
 type Yield struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string      `json:"tenant_id"`
+	Name     string      `json:"name"`
 	Status   YieldStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string     `json:"notes,omitempty"`
+	Version  int64       `json:"version"`
 }
 
 // ListYieldParams holds filter and pagination parameters for listing yields.

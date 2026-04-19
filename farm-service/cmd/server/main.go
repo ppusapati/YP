@@ -45,7 +45,7 @@ func main() {
 		log.Fatalf("failed to create logger: %v", err)
 	}
 	defer zapLogger.Sync() //nolint:errcheck
-	logger := p9log.NewZapLogger(zapLogger)
+	logger := p9log.NewLogger(zapLogger)
 
 	// ── Config from environment ──────────────────────────────────────────────
 	dsn := mustEnv("DATABASE_URL", "postgres://localhost:5432/farm_service?sslmode=disable")
@@ -105,7 +105,7 @@ func main() {
 	path, farmHandler := farmv1connect.NewFarmServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.NewLoggingInterceptor(logger),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

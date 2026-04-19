@@ -29,11 +29,11 @@ func (s TraceabilityStatus) IsValid() bool {
 // Traceability is the aggregate root for the traceability-service.
 type Traceability struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string             `json:"tenant_id"`
+	Name     string             `json:"name"`
 	Status   TraceabilityStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string            `json:"notes,omitempty"`
+	Version  int64              `json:"version"`
 }
 
 // ListTraceabilityParams holds filter and pagination parameters for listing traceabilitys.

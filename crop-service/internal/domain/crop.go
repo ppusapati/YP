@@ -29,11 +29,11 @@ func (s CropStatus) IsValid() bool {
 // Crop is the aggregate root for the crop-service.
 type Crop struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string     `json:"tenant_id"`
+	Name     string     `json:"name"`
 	Status   CropStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string    `json:"notes,omitempty"`
+	Version  int64      `json:"version"`
 }
 
 // ListCropParams holds filter and pagination parameters for listing crops.

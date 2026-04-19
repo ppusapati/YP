@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("failed to create logger: %v", err)
 	}
 	defer zapLogger.Sync() //nolint:errcheck
-	logger := p9log.NewZapLogger(zapLogger)
+	logger := p9log.NewLogger(zapLogger)
 
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/crop_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
@@ -90,7 +90,7 @@ func main() {
 	path, cropHandler := cropv1connect.NewCropServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.NewLoggingInterceptor(logger),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

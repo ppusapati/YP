@@ -29,11 +29,11 @@ func (s IrrigationStatus) IsValid() bool {
 // Irrigation is the aggregate root for the irrigation-service.
 type Irrigation struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string           `json:"tenant_id"`
+	Name     string           `json:"name"`
 	Status   IrrigationStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string          `json:"notes,omitempty"`
+	Version  int64            `json:"version"`
 }
 
 // ListIrrigationParams holds filter and pagination parameters for listing irrigations.

@@ -5,18 +5,18 @@
 package inbound
 
 import (
-"context"
+	"context"
 
-"p9e.in/samavaya/agriculture/field-service/internal/domain"
+	"p9e.in/samavaya/agriculture/field-service/internal/domain"
 )
 
 // FieldService is the primary port for all field business operations.
 type FieldService interface {
-CreateField(ctx context.Context, field *domain.Field) (*domain.Field, error)
-GetField(ctx context.Context, uuid string) (*domain.Field, error)
-ListFields(ctx context.Context, params domain.ListFieldsParams) ([]domain.Field, int32, error)
-UpdateField(ctx context.Context, field *domain.Field) (*domain.Field, error)
-DeleteField(ctx context.Context, uuid string) error
-AssignCrop(ctx context.Context, params domain.AssignCropParams) (*domain.Field, error)
-GetFieldSummary(ctx context.Context, uuid string) (*domain.FieldSummary, error)
+	CreateField(ctx context.Context, field *domain.Field) (*domain.Field, error)
+	GetField(ctx context.Context, uuid string) (*domain.Field, error)
+	ListFields(ctx context.Context, params domain.ListFieldsParams) ([]domain.Field, int32, error)
+	UpdateField(ctx context.Context, field *domain.Field) (*domain.Field, error)
+	DeleteField(ctx context.Context, uuid string) error
+	AssignCrop(ctx context.Context, params domain.AssignCropParams) (*domain.Field, error)
+	GetFieldSummary(ctx context.Context, uuid string) (*domain.FieldSummary, error)
 }

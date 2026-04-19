@@ -9,12 +9,12 @@ func (e ErrFieldNotFound) Error() string { return fmt.Sprintf("field not found: 
 
 // ErrFieldNameExists is returned when a duplicate field name exists in the same farm.
 type ErrFieldNameExists struct {
-Name   string
-FarmID string
+	Name   string
+	FarmID string
 }
 
 func (e ErrFieldNameExists) Error() string {
-return fmt.Sprintf("field with name %q already exists in farm %s", e.Name, e.FarmID)
+	return fmt.Sprintf("field with name %q already exists in farm %s", e.Name, e.FarmID)
 }
 
 // ErrFarmNotFound is returned when the referenced farm does not exist.

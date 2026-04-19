@@ -19,18 +19,18 @@ import (
 )
 
 const (
-	serviceName       = "plant-diagnosis-service"
-	eventTopic        = "samavaya.agriculture.plant-diagnosis.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "plant-diagnosis-service"
+	eventTopic            = "samavaya.agriculture.plant-diagnosis.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type diagnosisService struct {
-	repo outbound.DiagnosisRepository
-	pub  outbound.EventPublisher
+	repo        outbound.DiagnosisRepository
+	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewDiagnosisService creates a new application-layer DiagnosisService.
@@ -42,11 +42,11 @@ func NewDiagnosisService(
 	log p9log.Logger,
 ) inbound.DiagnosisService {
 	return &diagnosisService{
-		repo: repo,
-		pub:  pub,
+		repo:        repo,
+		pub:         pub,
 		fieldClient: fieldClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "DiagnosisService")),
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "DiagnosisService")),
 	}
 }
 
@@ -188,12 +188,12 @@ func (s *diagnosisService) emitEvent(ctx context.Context, eventType, aggregateID
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

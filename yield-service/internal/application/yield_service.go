@@ -19,21 +19,21 @@ import (
 )
 
 const (
-	serviceName       = "yield-service"
-	eventTopic        = "samavaya.agriculture.yield.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "yield-service"
+	eventTopic            = "samavaya.agriculture.yield.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type yieldService struct {
-	repo outbound.YieldRepository
-	pub  outbound.EventPublisher
-	fieldClient outbound.FieldClient
-	soilClient outbound.SoilClient
+	repo             outbound.YieldRepository
+	pub              outbound.EventPublisher
+	fieldClient      outbound.FieldClient
+	soilClient       outbound.SoilClient
 	irrigationClient outbound.IrrigationClient
-	pestClient outbound.PestClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	pestClient       outbound.PestClient
+	pool             *pgxpool.Pool
+	log              *p9log.Helper
 }
 
 // NewYieldService creates a new application-layer YieldService.
@@ -48,14 +48,14 @@ func NewYieldService(
 	log p9log.Logger,
 ) inbound.YieldService {
 	return &yieldService{
-		repo: repo,
-		pub:  pub,
-		fieldClient: fieldClient,
-		soilClient: soilClient,
+		repo:             repo,
+		pub:              pub,
+		fieldClient:      fieldClient,
+		soilClient:       soilClient,
 		irrigationClient: irrigationClient,
-		pestClient: pestClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "YieldService")),
+		pestClient:       pestClient,
+		pool:             pool,
+		log:              p9log.NewHelper(p9log.With(log, "component", "YieldService")),
 	}
 }
 
@@ -197,12 +197,12 @@ func (s *yieldService) emitEvent(ctx context.Context, eventType, aggregateID str
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

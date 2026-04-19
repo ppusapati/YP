@@ -19,20 +19,20 @@ import (
 )
 
 const (
-	serviceName       = "traceability-service"
-	eventTopic        = "samavaya.agriculture.traceability.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "traceability-service"
+	eventTopic            = "samavaya.agriculture.traceability.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type traceabilityService struct {
-	repo outbound.TraceabilityRepository
-	pub  outbound.EventPublisher
-	farmClient outbound.FarmClient
+	repo        outbound.TraceabilityRepository
+	pub         outbound.EventPublisher
+	farmClient  outbound.FarmClient
 	fieldClient outbound.FieldClient
 	yieldClient outbound.YieldClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewTraceabilityService creates a new application-layer TraceabilityService.
@@ -46,13 +46,13 @@ func NewTraceabilityService(
 	log p9log.Logger,
 ) inbound.TraceabilityService {
 	return &traceabilityService{
-		repo: repo,
-		pub:  pub,
-		farmClient: farmClient,
+		repo:        repo,
+		pub:         pub,
+		farmClient:  farmClient,
 		fieldClient: fieldClient,
 		yieldClient: yieldClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
 	}
 }
 
@@ -194,12 +194,12 @@ func (s *traceabilityService) emitEvent(ctx context.Context, eventType, aggregat
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

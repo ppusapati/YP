@@ -19,18 +19,18 @@ import (
 )
 
 const (
-	serviceName       = "irrigation-service"
-	eventTopic        = "samavaya.agriculture.irrigation.events"
-	maxPageSize int32 = 100
-	defaultPageSize   = int32(20)
+	serviceName           = "irrigation-service"
+	eventTopic            = "samavaya.agriculture.irrigation.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
 )
 
 type irrigationService struct {
-	repo outbound.IrrigationRepository
-	pub  outbound.EventPublisher
+	repo        outbound.IrrigationRepository
+	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewIrrigationService creates a new application-layer IrrigationService.
@@ -42,11 +42,11 @@ func NewIrrigationService(
 	log p9log.Logger,
 ) inbound.IrrigationService {
 	return &irrigationService{
-		repo: repo,
-		pub:  pub,
+		repo:        repo,
+		pub:         pub,
 		fieldClient: fieldClient,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "IrrigationService")),
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "IrrigationService")),
 	}
 }
 
@@ -188,12 +188,12 @@ func (s *irrigationService) emitEvent(ctx context.Context, eventType, aggregateI
 		return
 	}
 	payload := map[string]interface{}{
-		"id":           ulid.NewString(),
-		"type":         eventType,
-		"aggregate_id": aggregateID,
-		"source":       serviceName,
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
 		"correlation_id": p9context.RequestID(ctx),
-		"data":         data,
+		"data":           data,
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {

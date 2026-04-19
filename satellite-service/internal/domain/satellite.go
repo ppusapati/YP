@@ -29,11 +29,11 @@ func (s SatelliteStatus) IsValid() bool {
 // Satellite is the aggregate root for the satellite-service.
 type Satellite struct {
 	models.BaseModel
-	TenantID string       `json:"tenant_id"`
-	Name     string       `json:"name"`
+	TenantID string          `json:"tenant_id"`
+	Name     string          `json:"name"`
 	Status   SatelliteStatus `json:"status"`
-	Notes    *string      `json:"notes,omitempty"`
-	Version  int64        `json:"version"`
+	Notes    *string         `json:"notes,omitempty"`
+	Version  int64           `json:"version"`
 }
 
 // ListSatelliteParams holds filter and pagination parameters for listing satellites.
