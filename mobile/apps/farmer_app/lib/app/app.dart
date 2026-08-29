@@ -7,9 +7,21 @@ import '../core/di/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/app_theme_provider.dart';
 import '../features/alerts/presentation/bloc/alert_bloc.dart';
+import '../features/ai_diagnosis/presentation/bloc/diagnosis_bloc.dart';
 import '../features/crop_recommendation/presentation/bloc/crop_recommendation_bloc.dart';
 import '../features/drone/presentation/bloc/drone_bloc.dart';
+import '../features/farm/presentation/bloc/farm_bloc.dart';
+import '../features/farm/presentation/bloc/field_bloc.dart';
 import '../features/gps_tracking/presentation/bloc/gps_tracking_bloc.dart';
+import '../features/irrigation/presentation/bloc/irrigation_bloc.dart';
+import '../features/observations/presentation/bloc/observation_bloc.dart';
+import '../features/pest_risk/presentation/bloc/pest_bloc.dart';
+import '../features/satellite/presentation/bloc/satellite_bloc.dart';
+import '../features/sensors/presentation/bloc/sensor_bloc.dart';
+import '../features/soil/presentation/bloc/soil_bloc.dart';
+import '../features/tasks/presentation/bloc/task_bloc.dart';
+import '../features/traceability/presentation/bloc/traceability_bloc.dart';
+import '../features/yield_prediction/presentation/bloc/yield_bloc.dart';
 
 /// The root widget of the YieldPoint Farmer app.
 class FarmerApp extends ConsumerWidget {
@@ -45,6 +57,82 @@ class FarmerApp extends ConsumerWidget {
         BlocProvider(
           create: (context) => CropRecommendationBloc(
             getRecommendations: ref.read(getRecommendationsUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => FarmBloc(
+            farmRepository: ref.read(farmRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => FieldBloc(
+            farmRepository: ref.read(farmRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => DiagnosisBloc(
+            repository: ref.read(diagnosisRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => SatelliteBloc(
+            repository: ref.read(satelliteRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => SensorBloc(
+            getSensors: ref.read(getSensorsUseCaseProvider),
+            getSensorReadings: ref.read(getSensorReadingsUseCaseProvider),
+            getSensorDashboard: ref.read(getSensorDashboardUseCaseProvider),
+            repository: ref.read(sensorRepositoryProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => SoilBloc(
+            getSoilAnalysis: ref.read(getSoilAnalysisUseCaseProvider),
+            getSoilHistory: ref.read(getSoilHistoryUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => IrrigationBloc(
+            getZones: ref.read(getIrrigationZonesUseCaseProvider),
+            getSchedule: ref.read(getIrrigationScheduleUseCaseProvider),
+            updateSchedule:
+                ref.read(updateIrrigationScheduleUseCaseProvider),
+            getAlerts: ref.read(getIrrigationAlertsUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => PestBloc(
+            getPestRiskZones: ref.read(getPestRiskZonesUseCaseProvider),
+            getPestAlerts: ref.read(getPestAlertsUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => TaskBloc(
+            getTasks: ref.read(getTasksUseCaseProvider),
+            createTask: ref.read(createTaskUseCaseProvider),
+            updateTask: ref.read(updateTaskUseCaseProvider),
+            completeTask: ref.read(completeTaskUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => ObservationBloc(
+            getObservations: ref.read(getObservationsUseCaseProvider),
+            createObservation: ref.read(createObservationUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => TraceabilityBloc(
+            scanQrCode: ref.read(scanQrCodeUseCaseProvider),
+            getProduceRecord: ref.read(getProduceRecordUseCaseProvider),
+            getFarmHistory: ref.read(getFarmHistoryUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => YieldBloc(
+            getPredictions: ref.read(getYieldPredictionsUseCaseProvider),
+            getHistory: ref.read(getYieldHistoryUseCaseProvider),
           ),
         ),
       ],
