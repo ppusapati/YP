@@ -10,8 +10,13 @@ import '../features/farm/presentation/bloc/farm_bloc.dart';
 import '../features/field_inspection/presentation/bloc/field_inspection_bloc.dart';
 import '../features/crop_advisory/presentation/bloc/crop_advisory_bloc.dart';
 import '../features/soil_analysis/presentation/bloc/soil_analysis_bloc.dart';
-import '../features/satellite/presentation/bloc/satellite_bloc.dart';
-import '../features/diagnosis/presentation/bloc/diagnosis_bloc.dart';
+import '../features/satellite_monitoring/presentation/bloc/satellite_bloc.dart';
+import '../features/plant_diagnosis/presentation/bloc/diagnosis_bloc.dart';
+import '../features/pest_risk/presentation/bloc/pest_risk_bloc.dart';
+import '../features/irrigation/presentation/bloc/irrigation_bloc.dart';
+import '../features/sensors/presentation/bloc/sensor_bloc.dart';
+import '../features/yield_analysis/presentation/bloc/yield_analysis_bloc.dart';
+import '../features/traceability/presentation/bloc/traceability_bloc.dart';
 
 /// The root widget of the YieldPoint Agronomist app.
 class AgronomistApp extends ConsumerWidget {
@@ -52,14 +57,42 @@ class AgronomistApp extends ConsumerWidget {
         ),
         BlocProvider(
           create: (context) => SatelliteBloc(
-            getSatelliteLayers: ref.read(getSatelliteLayersUseCaseProvider),
-            getSatelliteHistory: ref.read(getSatelliteHistoryUseCaseProvider),
+            getSatelliteTiles: ref.read(getSatelliteTilesUseCaseProvider),
+            getStressAlerts: ref.read(getStressAlertsUseCaseProvider),
+            getFieldSummary: ref.read(getFieldSummaryUseCaseProvider),
           ),
         ),
         BlocProvider(
           create: (context) => DiagnosisBloc(
             submitDiagnosis: ref.read(submitDiagnosisUseCaseProvider),
-            getDiagnosisHistory: ref.read(getDiagnosisHistoryUseCaseProvider),
+            getDiagnoses: ref.read(getDiagnosesUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => PestRiskBloc(
+            predictPestRisk: ref.read(predictPestRiskUseCaseProvider),
+            getPestAlerts: ref.read(getPestAlertsUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => IrrigationBloc(
+            getIrrigationPlan: ref.read(getIrrigationPlanUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => SensorBloc(
+            getSensorReadings: ref.read(getSensorReadingsUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => YieldAnalysisBloc(
+            getYieldForecast: ref.read(getYieldForecastUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => TraceabilityBloc(
+            getTraceRecords: ref.read(getTraceRecordsUseCaseProvider),
+            createTraceRecord: ref.read(createTraceRecordUseCaseProvider),
           ),
         ),
       ],

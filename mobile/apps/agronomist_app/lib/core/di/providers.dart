@@ -39,25 +39,27 @@ import '../../features/soil_analysis/domain/usecases/get_soil_analyses_usecase.d
 import '../../features/soil_analysis/domain/usecases/create_soil_analysis_usecase.dart';
 
 // Satellite Monitoring
-import '../../features/satellite/data/datasources/satellite_remote_datasource.dart';
-import '../../features/satellite/data/repositories/satellite_repository_impl.dart';
-import '../../features/satellite/domain/repositories/satellite_repository.dart';
-import '../../features/satellite/domain/usecases/get_satellite_layers_usecase.dart';
-import '../../features/satellite/domain/usecases/get_satellite_history_usecase.dart';
+import '../../features/satellite_monitoring/data/datasources/satellite_remote_datasource.dart';
+import '../../features/satellite_monitoring/data/datasources/satellite_local_datasource.dart';
+import '../../features/satellite_monitoring/data/repositories/satellite_repository_impl.dart';
+import '../../features/satellite_monitoring/domain/repositories/satellite_repository.dart';
+import '../../features/satellite_monitoring/domain/usecases/get_satellite_tiles_usecase.dart';
+import '../../features/satellite_monitoring/domain/usecases/get_stress_alerts_usecase.dart';
+import '../../features/satellite_monitoring/domain/usecases/get_field_summary_usecase.dart';
 
 // Plant Diagnosis
-import '../../features/diagnosis/data/datasources/diagnosis_remote_datasource.dart';
-import '../../features/diagnosis/data/datasources/diagnosis_local_datasource.dart';
-import '../../features/diagnosis/data/repositories/diagnosis_repository_impl.dart';
-import '../../features/diagnosis/domain/repositories/diagnosis_repository.dart';
-import '../../features/diagnosis/domain/usecases/submit_diagnosis_usecase.dart';
-import '../../features/diagnosis/domain/usecases/get_diagnosis_history_usecase.dart';
+import '../../features/plant_diagnosis/data/datasources/diagnosis_remote_datasource.dart';
+import '../../features/plant_diagnosis/data/datasources/diagnosis_local_datasource.dart';
+import '../../features/plant_diagnosis/data/repositories/diagnosis_repository_impl.dart';
+import '../../features/plant_diagnosis/domain/repositories/diagnosis_repository.dart';
+import '../../features/plant_diagnosis/domain/usecases/submit_diagnosis_usecase.dart';
+import '../../features/plant_diagnosis/domain/usecases/get_diagnoses_usecase.dart';
 
 // Pest Risk
 import '../../features/pest_risk/data/datasources/pest_risk_remote_datasource.dart';
 import '../../features/pest_risk/data/repositories/pest_risk_repository_impl.dart';
 import '../../features/pest_risk/domain/repositories/pest_risk_repository.dart';
-import '../../features/pest_risk/domain/usecases/get_pest_risk_usecase.dart';
+import '../../features/pest_risk/domain/usecases/predict_pest_risk_usecase.dart';
 import '../../features/pest_risk/domain/usecases/get_pest_alerts_usecase.dart';
 
 // Irrigation
@@ -67,6 +69,12 @@ import '../../features/irrigation/data/repositories/irrigation_repository_impl.d
 import '../../features/irrigation/domain/repositories/irrigation_repository.dart';
 import '../../features/irrigation/domain/usecases/get_irrigation_plan_usecase.dart';
 import '../../features/irrigation/domain/usecases/update_irrigation_schedule_usecase.dart';
+
+// Sensors
+import '../../features/sensors/data/datasources/sensor_remote_datasource.dart';
+import '../../features/sensors/data/repositories/sensor_repository_impl.dart';
+import '../../features/sensors/domain/repositories/sensor_repository.dart';
+import '../../features/sensors/domain/usecases/get_sensor_readings_usecase.dart';
 
 // Yield Analysis
 import '../../features/yield_analysis/data/datasources/yield_analysis_remote_datasource.dart';
@@ -266,20 +274,32 @@ final satelliteRemoteDataSourceProvider =
   return SatelliteRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
+final satelliteLocalDataSourceProvider =
+    Provider<SatelliteLocalDataSource>((ref) {
+  return SatelliteLocalDataSourceImpl(ref.watch(sharedPreferencesProvider));
+});
+
 final satelliteRepositoryProvider = Provider<SatelliteRepository>((ref) {
   return SatelliteRepositoryImpl(
     remoteDataSource: ref.watch(satelliteRemoteDataSourceProvider),
+    localDataSource: ref.watch(satelliteLocalDataSourceProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
   );
 });
 
-final getSatelliteLayersUseCaseProvider =
-    Provider<GetSatelliteLayersUseCase>((ref) {
-  return GetSatelliteLayersUseCase(ref.watch(satelliteRepositoryProvider));
+final getSatelliteTilesUseCaseProvider =
+    Provider<GetSatelliteTilesUseCase>((ref) {
+  return GetSatelliteTilesUseCase(ref.watch(satelliteRepositoryProvider));
 });
 
-final getSatelliteHistoryUseCaseProvider =
-    Provider<GetSatelliteHistoryUseCase>((ref) {
-  return GetSatelliteHistoryUseCase(ref.watch(satelliteRepositoryProvider));
+final getStressAlertsUseCaseProvider =
+    Provider<GetStressAlertsUseCase>((ref) {
+  return GetStressAlertsUseCase(ref.watch(satelliteRepositoryProvider));
+});
+
+final getFieldSummaryUseCaseProvider =
+    Provider<GetFieldSummaryUseCase>((ref) {
+  return GetFieldSummaryUseCase(ref.watch(satelliteRepositoryProvider));
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -309,9 +329,9 @@ final submitDiagnosisUseCaseProvider =
   return SubmitDiagnosisUseCase(ref.watch(diagnosisRepositoryProvider));
 });
 
-final getDiagnosisHistoryUseCaseProvider =
-    Provider<GetDiagnosisHistoryUseCase>((ref) {
-  return GetDiagnosisHistoryUseCase(ref.watch(diagnosisRepositoryProvider));
+final getDiagnosesUseCaseProvider =
+    Provider<GetDiagnosesUseCase>((ref) {
+  return GetDiagnosesUseCase(ref.watch(diagnosisRepositoryProvider));
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -329,8 +349,9 @@ final pestRiskRepositoryProvider = Provider<PestRiskRepository>((ref) {
   );
 });
 
-final getPestRiskUseCaseProvider = Provider<GetPestRiskUseCase>((ref) {
-  return GetPestRiskUseCase(ref.watch(pestRiskRepositoryProvider));
+final predictPestRiskUseCaseProvider =
+    Provider<PredictPestRiskUseCase>((ref) {
+  return PredictPestRiskUseCase(ref.watch(pestRiskRepositoryProvider));
 });
 
 final getPestAlertsUseCaseProvider =
@@ -369,6 +390,26 @@ final updateIrrigationScheduleUseCaseProvider =
     Provider<UpdateIrrigationScheduleUseCase>((ref) {
   return UpdateIrrigationScheduleUseCase(
       ref.watch(irrigationRepositoryProvider));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Sensors feature
+// ═══════════════════════════════════════════════════════════════════════
+
+final sensorRemoteDataSourceProvider =
+    Provider<SensorRemoteDataSource>((ref) {
+  return SensorRemoteDataSourceImpl(ref.watch(connectClientProvider));
+});
+
+final sensorRepositoryProvider = Provider<SensorRepository>((ref) {
+  return SensorRepositoryImpl(
+    remoteDataSource: ref.watch(sensorRemoteDataSourceProvider),
+  );
+});
+
+final getSensorReadingsUseCaseProvider =
+    Provider<GetSensorReadingsUseCase>((ref) {
+  return GetSensorReadingsUseCase(ref.watch(sensorRepositoryProvider));
 });
 
 // ═══════════════════════════════════════════════════════════════════════

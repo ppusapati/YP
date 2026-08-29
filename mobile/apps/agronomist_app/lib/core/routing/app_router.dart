@@ -4,6 +4,31 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/main_screen.dart';
 
+// Feature screens
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/farm/presentation/screens/farm_list_screen.dart';
+import '../../features/farm/presentation/screens/farm_detail_screen.dart';
+import '../../features/field_inspection/presentation/screens/field_inspection_list_screen.dart';
+import '../../features/field_inspection/presentation/screens/inspection_form_screen.dart';
+import '../../features/crop_advisory/presentation/screens/crop_advisory_screen.dart';
+import '../../features/soil_analysis/presentation/screens/soil_analysis_screen.dart';
+import '../../features/soil_analysis/presentation/screens/soil_sample_form_screen.dart';
+import '../../features/satellite_monitoring/presentation/screens/satellite_monitoring_screen.dart';
+import '../../features/satellite_monitoring/presentation/screens/stress_alerts_screen.dart';
+import '../../features/satellite_monitoring/presentation/screens/analytics_dashboard_screen.dart';
+import '../../features/plant_diagnosis/presentation/screens/diagnosis_screen.dart';
+import '../../features/plant_diagnosis/presentation/screens/diagnosis_result_screen.dart';
+import '../../features/plant_diagnosis/presentation/screens/diagnosis_history_screen.dart';
+import '../../features/pest_risk/presentation/screens/pest_risk_screen.dart';
+import '../../features/pest_risk/presentation/screens/pest_alert_list_screen.dart';
+import '../../features/irrigation/presentation/screens/irrigation_screen.dart';
+import '../../features/sensors/presentation/screens/sensor_list_screen.dart';
+import '../../features/yield_analysis/presentation/screens/yield_forecast_screen.dart';
+import '../../features/yield_analysis/presentation/screens/crop_performance_screen.dart';
+import '../../features/traceability/presentation/screens/traceability_screen.dart';
+import '../../features/traceability/presentation/screens/record_detail_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+
 /// GoRouter configuration provider.
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -18,19 +43,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dashboard',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderScreen(title: 'Dashboard'),
+              child: DashboardScreen(),
             ),
           ),
           GoRoute(
             path: '/fields',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderScreen(title: 'Fields'),
+              child: FarmListScreen(),
             ),
             routes: [
               GoRoute(
                 path: ':id',
-                builder: (context, state) => _PlaceholderScreen(
-                  title: 'Field ${state.pathParameters['id']}',
+                builder: (context, state) => FarmDetailScreen(
+                  farmId: state.pathParameters['id']!,
                 ),
               ),
             ],
@@ -38,19 +63,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/advisory',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderScreen(title: 'Crop Advisory'),
+              child: CropAdvisoryScreen(),
             ),
           ),
           GoRoute(
             path: '/analytics',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderScreen(title: 'Analytics'),
+              child: PestAlertListScreen(),
             ),
           ),
           GoRoute(
             path: '/profile',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderScreen(title: 'Profile'),
+              child: ProfileScreen(),
             ),
           ),
         ],
@@ -61,27 +86,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Farms
       GoRoute(
         path: '/farms',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Farms'),
+        builder: (context, state) => const FarmListScreen(),
         routes: [
           GoRoute(
-            path: 'create',
-            builder: (context, state) =>
-                const _PlaceholderScreen(title: 'Create Farm'),
-          ),
-          GoRoute(
             path: ':id',
-            builder: (context, state) => _PlaceholderScreen(
-              title: 'Farm ${state.pathParameters['id']}',
+            builder: (context, state) => FarmDetailScreen(
+              farmId: state.pathParameters['id']!,
             ),
-            routes: [
-              GoRoute(
-                path: 'edit',
-                builder: (context, state) => _PlaceholderScreen(
-                  title: 'Edit Farm ${state.pathParameters['id']}',
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -89,87 +100,107 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Soil Analysis
       GoRoute(
         path: '/soil-analysis/:fieldId',
-        builder: (context, state) => _PlaceholderScreen(
-          title: 'Soil Analysis ${state.pathParameters['fieldId']}',
-        ),
-      ),
-
-      // Satellite Monitoring
-      GoRoute(
-        path: '/satellite/:fieldId',
-        builder: (context, state) => _PlaceholderScreen(
-          title: 'Satellite ${state.pathParameters['fieldId']}',
+        builder: (context, state) => SoilAnalysisScreen(
+          fieldId: state.pathParameters['fieldId']!,
         ),
         routes: [
           GoRoute(
-            path: 'history',
-            builder: (context, state) => _PlaceholderScreen(
-              title: 'Satellite History ${state.pathParameters['fieldId']}',
+            path: 'new-sample',
+            builder: (context, state) => SoilSampleFormScreen(
+              fieldId: state.pathParameters['fieldId']!,
             ),
           ),
         ],
       ),
 
+      // Satellite Monitoring
+      GoRoute(
+        path: '/satellite/:fieldId',
+        builder: (context, state) => SatelliteMonitoringScreen(
+          fieldId: state.pathParameters['fieldId']!,
+        ),
+        routes: [
+          GoRoute(
+            path: 'alerts',
+            builder: (context, state) => StressAlertsScreen(
+              farmId: state.pathParameters['fieldId']!,
+            ),
+          ),
+          GoRoute(
+            path: 'analytics',
+            builder: (context, state) => AnalyticsDashboardScreen(
+              farmId: state.pathParameters['fieldId']!,
+              fieldId: state.pathParameters['fieldId']!,
+            ),
+          ),
+        ],
+      ),
+
+      // Sensors
+      GoRoute(
+        path: '/sensors/:fieldId',
+        builder: (context, state) => SensorListScreen(
+          fieldId: state.pathParameters['fieldId']!,
+        ),
+      ),
+
       // Plant Diagnosis
       GoRoute(
         path: '/diagnosis/new',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'New Diagnosis'),
+        builder: (context, state) => const DiagnosisScreen(),
       ),
       GoRoute(
         path: '/diagnosis/history',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Diagnosis History'),
+        builder: (context, state) => const DiagnosisHistoryScreen(),
       ),
       GoRoute(
         path: '/diagnosis/:id',
-        builder: (context, state) => _PlaceholderScreen(
-          title: 'Diagnosis ${state.pathParameters['id']}',
+        builder: (context, state) => DiagnosisResultScreen(
+          diagnosisId: state.pathParameters['id']!,
         ),
       ),
 
       // Pest Risk
       GoRoute(
         path: '/pest-risk/:fieldId',
-        builder: (context, state) => _PlaceholderScreen(
-          title: 'Pest Risk ${state.pathParameters['fieldId']}',
+        builder: (context, state) => PestRiskScreen(
+          fieldId: state.pathParameters['fieldId']!,
         ),
       ),
 
       // Irrigation
       GoRoute(
         path: '/irrigation/:fieldId',
-        builder: (context, state) => _PlaceholderScreen(
-          title: 'Irrigation ${state.pathParameters['fieldId']}',
+        builder: (context, state) => IrrigationScreen(
+          fieldId: state.pathParameters['fieldId']!,
         ),
-        routes: [
-          GoRoute(
-            path: 'schedule',
-            builder: (context, state) => _PlaceholderScreen(
-              title: 'Irrigation Schedule ${state.pathParameters['fieldId']}',
-            ),
-          ),
-        ],
       ),
 
       // Yield Forecast
       GoRoute(
         path: '/yield-forecast/:fieldId',
-        builder: (context, state) => _PlaceholderScreen(
-          title: 'Yield Forecast ${state.pathParameters['fieldId']}',
+        builder: (context, state) => YieldForecastScreen(
+          fieldId: state.pathParameters['fieldId']!,
+        ),
+      ),
+
+      // Crop Performance
+      GoRoute(
+        path: '/crop-performance/:fieldId',
+        builder: (context, state) => CropPerformanceScreen(
+          fieldId: state.pathParameters['fieldId']!,
         ),
       ),
 
       // Traceability
       GoRoute(
         path: '/traceability',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Traceability'),
+        builder: (context, state) => const TraceabilityScreen(),
         routes: [
           GoRoute(
             path: ':id',
-            builder: (context, state) => _PlaceholderScreen(
-              title: 'Trace ${state.pathParameters['id']}',
+            builder: (context, state) => RecordDetailScreen(
+              recordId: state.pathParameters['id']!,
             ),
           ),
         ],
@@ -178,19 +209,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Field Inspections
       GoRoute(
         path: '/inspections',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Field Inspections'),
+        builder: (context, state) => const FieldInspectionListScreen(),
         routes: [
           GoRoute(
             path: 'create',
-            builder: (context, state) =>
-                const _PlaceholderScreen(title: 'New Inspection'),
-          ),
-          GoRoute(
-            path: ':id',
-            builder: (context, state) => _PlaceholderScreen(
-              title: 'Inspection ${state.pathParameters['id']}',
-            ),
+            builder: (context, state) => const InspectionFormScreen(),
           ),
         ],
       ),
@@ -198,43 +221,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Notifications
       GoRoute(
         path: '/notifications',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Notifications'),
+        builder: (context, state) => const _NotificationsScreen(),
       ),
     ],
   );
 });
 
-/// Placeholder screen for routes not yet implemented.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-
-  final String title;
+/// Simple notifications screen — kept inline since it has no dedicated feature.
+class _NotificationsScreen extends StatelessWidget {
+  const _NotificationsScreen();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: const Text('Notifications')),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.construction,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Icon(Icons.notifications_none,
+                size: 80,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
+            const SizedBox(height: 24),
+            Text('No notifications', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              'Coming soon',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              'Alerts and updates will appear here.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
