@@ -1,0 +1,377 @@
+syntax = "proto3";
+
+package agriculture.ai.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/ai-gateway/api/v1;aipb";
+
+// AIGatewayService is the central gateway that wraps all Rust AI/ML engines
+// and exposes them over gRPC to Go microservices.
+service AIGatewayService {
+  // ─── Plant Diagnosis ───────────────────────────────────────────────
+  // Diagnose plant diseases from leaf/stem/fruit images.
+  rpc DiagnoseImage(DiagnoseImageRequest) returns (DiagnoseImageResponse);
+
+  // Detect pest damage from plant images.
+  rpc DetectPests(DetectPestsRequest) returns (DetectPestsResponse);
+
+  // Detect nutrient deficiency from visual symptoms in plant images.
+  rpc DetectNutrientDeficiency(DetectNutrientDeficiencyRequest) returns (DetectNutrientDeficiencyResponse);
+
+  // Classify a plant species from images.
+  rpc ClassifyPlant(ClassifyPlantRequest) returns (ClassifyPlantResponse);
+
+  // ─── Yield Prediction ──────────────────────────────────────────────
+  // Predict crop yield from environmental, soil, and management factors.
+  rpc PredictYield(PredictYieldRequest) returns (PredictYieldResponse);
+
+  // Simulate crop growth over time given initial conditions.
+  rpc SimulateCropGrowth(SimulateCropGrowthRequest) returns (SimulateCropGrowthResponse);
+
+  // ─── Satellite / Vegetation ────────────────────────────────────────
+  // Compute NDVI and related vegetation indices from raster bands.
+  rpc ComputeNDVI(ComputeNDVIRequest) returns (ComputeNDVIResponse);
+
+  // Detect vegetation stress from satellite imagery.
+  rpc DetectVegetationStress(DetectVegetationStressRequest) returns (DetectVegetationStressResponse);
+
+  // ─── Recommendations ──────────────────────────────────────────────
+  // Recommend suitable crops based on soil, climate, and economics.
+  rpc RecommendCrops(RecommendCropsRequest) returns (RecommendCropsResponse);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plant Diagnosis Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message DiagnoseImageRequest {
+  string request_id = 1;
+  repeated ImageData images = 2;
+  string plant_species_id = 3; // optional hint
+  repeated string operations = 4; // preprocessing ops: resize, normalize, enhance
+}
+
+message DiagnoseImageResponse {
+  string request_id = 1;
+  repeated DiseaseDetection diseases = 2;
+  double overall_health_score = 3;
+  string summary = 4;
+  string model_version = 5;
+  int64 processing_time_ms = 6;
+}
+
+message DiseaseDetection {
+  string disease_id = 1;
+  string disease_name = 2;
+  string scientific_name = 3;
+  double confidence_score = 4;
+  string severity = 5; // MILD, MODERATE, SEVERE, CRITICAL
+  string description = 6;
+  string symptoms = 7;
+  repeated string treatment_options = 8;
+  string prevention = 9;
+}
+
+message DetectPestsRequest {
+  string request_id = 1;
+  repeated ImageData images = 2;
+  string plant_species_id = 3;
+}
+
+message DetectPestsResponse {
+  string request_id = 1;
+  repeated PestDetection pests = 2;
+  string model_version = 3;
+  int64 processing_time_ms = 4;
+}
+
+message PestDetection {
+  string pest_id = 1;
+  string pest_name = 2;
+  string scientific_name = 3;
+  double confidence_score = 4;
+  string damage_level = 5; // MILD, MODERATE, SEVERE, CRITICAL
+  string description = 6;
+  string damage_pattern = 7;
+  repeated string control_methods = 8;
+}
+
+message DetectNutrientDeficiencyRequest {
+  string request_id = 1;
+  repeated ImageData images = 2;
+  string plant_species_id = 3;
+}
+
+message DetectNutrientDeficiencyResponse {
+  string request_id = 1;
+  repeated NutrientDeficiency deficiencies = 2;
+  string model_version = 3;
+  int64 processing_time_ms = 4;
+}
+
+message NutrientDeficiency {
+  string nutrient = 1;
+  double confidence_score = 2;
+  string severity = 3;
+  string description = 4;
+  string visual_symptoms = 5;
+  repeated string recommended_fertilizers = 6;
+  string application_method = 7;
+}
+
+message ClassifyPlantRequest {
+  string request_id = 1;
+  repeated ImageData images = 2;
+}
+
+message ClassifyPlantResponse {
+  string request_id = 1;
+  PlantClassification species = 2;
+  string model_version = 3;
+  int64 processing_time_ms = 4;
+}
+
+message PlantClassification {
+  string species_id = 1;
+  string common_name = 2;
+  string scientific_name = 3;
+  string family = 4;
+  double confidence = 5;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Yield Prediction Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message PredictYieldRequest {
+  string request_id = 1;
+  string crop_type = 2;
+  EnvironmentFactors environment = 3;
+  SoilFactors soil = 4;
+  ManagementFactors management = 5;
+  double field_area_hectares = 6;
+}
+
+message PredictYieldResponse {
+  string request_id = 1;
+  double predicted_yield_kg_per_hectare = 2;
+  double confidence_pct = 3;
+  double yield_lower_bound = 4;
+  double yield_upper_bound = 5;
+  repeated StressFactor stress_factors = 6;
+  string model_version = 7;
+  int64 processing_time_ms = 8;
+}
+
+message EnvironmentFactors {
+  double temperature_celsius = 1;
+  double humidity_pct = 2;
+  double rainfall_mm = 3;
+  double solar_radiation = 4;
+  double wind_speed_kmh = 5;
+  double growing_degree_days = 6;
+}
+
+message SoilFactors {
+  double ph = 1;
+  double organic_matter_pct = 2;
+  double nitrogen_ppm = 3;
+  double phosphorus_ppm = 4;
+  double potassium_ppm = 5;
+  double moisture_pct = 6;
+  string texture = 7;
+  double compaction_index = 8;
+}
+
+message ManagementFactors {
+  double irrigation_efficiency = 1;
+  double fertilizer_rate_kg_per_ha = 2;
+  string tillage_type = 3;
+  double planting_density = 4;
+  string pest_management_level = 5;
+}
+
+message StressFactor {
+  string factor_name = 1;
+  double severity = 2; // 0.0 to 1.0
+  double yield_impact_pct = 3;
+}
+
+message SimulateCropGrowthRequest {
+  string request_id = 1;
+  string crop_type = 2;
+  int32 simulation_days = 3;
+  EnvironmentFactors initial_environment = 4;
+  SoilFactors initial_soil = 5;
+  double planting_density = 6;
+}
+
+message SimulateCropGrowthResponse {
+  string request_id = 1;
+  repeated GrowthStageResult stages = 2;
+  double final_biomass_kg_per_ha = 3;
+  int32 estimated_days_to_maturity = 4;
+  string model_version = 5;
+  int64 processing_time_ms = 6;
+}
+
+message GrowthStageResult {
+  int32 day = 1;
+  string stage_name = 2;
+  double biomass_kg_per_ha = 3;
+  double leaf_area_index = 4;
+  double canopy_height_cm = 5;
+  double water_demand_mm = 6;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Satellite / Vegetation Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message ComputeNDVIRequest {
+  string request_id = 1;
+  string raster_url = 2; // URL to the GeoTIFF or raster source
+  RasterBands bands = 3; // or supply raw band data inline
+  BoundingBox clip_bounds = 4; // optional clip to field boundary
+}
+
+message RasterBands {
+  repeated double nir_band = 1; // NIR values (row-major flat array)
+  repeated double red_band = 2; // RED values
+  repeated double green_band = 3;
+  repeated double blue_band = 4;
+  repeated double red_edge_band = 5;
+  int32 width = 6;
+  int32 height = 7;
+}
+
+message BoundingBox {
+  double min_lon = 1;
+  double min_lat = 2;
+  double max_lon = 3;
+  double max_lat = 4;
+}
+
+message ComputeNDVIResponse {
+  string request_id = 1;
+  repeated double ndvi_values = 2; // row-major NDVI grid
+  int32 width = 3;
+  int32 height = 4;
+  BandStatistics statistics = 5;
+  repeated NdviZone zones = 6;
+  string model_version = 7;
+  int64 processing_time_ms = 8;
+}
+
+message BandStatistics {
+  double min = 1;
+  double max = 2;
+  double mean = 3;
+  double std_dev = 4;
+  double median = 5;
+  int64 valid_pixel_count = 6;
+}
+
+message NdviZone {
+  string classification = 1; // e.g. "bare_soil", "sparse", "moderate", "dense", "very_dense"
+  double min_value = 2;
+  double max_value = 3;
+  int64 pixel_count = 4;
+  double area_pct = 5;
+}
+
+message DetectVegetationStressRequest {
+  string request_id = 1;
+  string raster_url = 2;
+  RasterBands bands = 3;
+  BoundingBox clip_bounds = 4;
+  double ndvi_stress_threshold = 5; // default 0.3
+  double ndwi_stress_threshold = 6; // default -0.1
+}
+
+message DetectVegetationStressResponse {
+  string request_id = 1;
+  repeated StressZone stress_zones = 2;
+  double overall_stress_pct = 3;
+  double healthy_pct = 4;
+  BandStatistics ndvi_statistics = 5;
+  string model_version = 6;
+  int64 processing_time_ms = 7;
+}
+
+message StressZone {
+  string stress_type = 1; // WATER, NUTRIENT, DISEASE, HEAT
+  string severity = 2;
+  double affected_area_pct = 3;
+  double confidence = 4;
+  BoundingBox bounds = 5;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recommendation Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message RecommendCropsRequest {
+  string request_id = 1;
+  SoilConditions soil = 2;
+  ClimateConditions climate = 3;
+  EconomicFactors economics = 4;
+  int32 max_recommendations = 5; // default 5
+}
+
+message SoilConditions {
+  double ph = 1;
+  double organic_matter_pct = 2;
+  double nitrogen_ppm = 3;
+  double phosphorus_ppm = 4;
+  double potassium_ppm = 5;
+  string texture = 6; // clay, loam, sandy, silt
+  string drainage_class = 7; // poor, moderate, well, excessive
+}
+
+message ClimateConditions {
+  double avg_temperature_celsius = 1;
+  double annual_rainfall_mm = 2;
+  double avg_humidity_pct = 3;
+  double frost_free_days = 4;
+  double solar_radiation_kwh = 5;
+  string climate_zone = 6;
+}
+
+message EconomicFactors {
+  double market_price_per_kg = 1;
+  double input_cost_per_hectare = 2;
+  double labor_cost_per_hectare = 3;
+  double water_cost_per_cubic_meter = 4;
+  bool organic_premium = 5;
+}
+
+message RecommendCropsResponse {
+  string request_id = 1;
+  repeated CropRecommendation recommendations = 2;
+  string model_version = 3;
+  int64 processing_time_ms = 4;
+}
+
+message CropRecommendation {
+  string crop_name = 1;
+  string scientific_name = 2;
+  string category = 3;
+  double suitability_score = 4;
+  double confidence = 5;
+  double expected_yield_kg_per_ha = 6;
+  double expected_profit_per_ha = 7;
+  double water_requirement_mm = 8;
+  string rationale = 9;
+  repeated string risk_factors = 10;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Common Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message ImageData {
+  string image_url = 1; // URL to fetch the image
+  bytes image_bytes = 2; // or inline bytes
+  string image_type = 3; // LEAF, STEM, FRUIT, WHOLE_PLANT, ROOT
+  string mime_type = 4;
+}

@@ -1,0 +1,21 @@
+# AI Gateway Configuration
+# This service wraps all Rust AI/ML engines and exposes them via gRPC
+# to the Go microservices (plant-diagnosis, pest-prediction, yield, satellite, crop).
+
+[server]
+address = "0.0.0.0:50051"
+max_concurrent_requests = 256
+request_timeout_secs = 30
+
+[models]
+# Model artifact directories (mounted volumes in production)
+disease_detection_model = "/models/disease-detection-v1"
+pest_detection_model = "/models/pest-detection-v1"
+nutrient_deficiency_model = "/models/nutrient-deficiency-v1"
+plant_classification_model = "/models/plant-classification-v1"
+
+# Engine version tags
+yield_prediction_version = "v1.0.0"
+crop_growth_version = "v1.0.0"
+satellite_ndvi_version = "v1.0.0"
+crop_recommendation_version = "v1.0.0"
