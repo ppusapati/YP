@@ -8,6 +8,11 @@ import '../../features/alerts/presentation/bloc/alert_bloc.dart';
 import '../../features/alerts/presentation/bloc/alert_event.dart';
 import '../../features/alerts/presentation/screens/alert_detail_screen.dart';
 import '../../features/alerts/presentation/screens/alert_list_screen.dart';
+import '../../features/analytics/presentation/screens/analytics_dashboard_screen.dart';
+import '../../features/analytics/presentation/screens/field_analytics_screen.dart';
+import '../../features/prescriptions/presentation/screens/generate_prescription_screen.dart';
+import '../../features/prescriptions/presentation/screens/prescription_detail_screen.dart';
+import '../../features/prescriptions/presentation/screens/prescription_list_screen.dart';
 import '../../features/ai_diagnosis/presentation/screens/diagnosis_history_screen.dart';
 import '../../features/ai_diagnosis/presentation/screens/diagnosis_result_screen.dart';
 import '../../features/ai_diagnosis/presentation/screens/diagnosis_screen.dart';
@@ -399,6 +404,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: ':id',
             builder: (context, state) => AlertDetailScreen(
               alertId: state.pathParameters['id']!,
+            ),
+          ),
+        ],
+      ),
+
+      // Analytics
+      GoRoute(
+        path: '/analytics',
+        builder: (context, state) => const AnalyticsDashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'field/:id',
+            builder: (context, state) => FieldAnalyticsScreen(
+              fieldId: state.pathParameters['id']!,
+            ),
+          ),
+        ],
+      ),
+
+      // Prescriptions
+      GoRoute(
+        path: '/prescriptions',
+        builder: (context, state) => const PrescriptionListScreen(),
+        routes: [
+          GoRoute(
+            path: 'generate',
+            builder: (context, state) =>
+                const GeneratePrescriptionScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => PrescriptionDetailScreen(
+              prescriptionId: state.pathParameters['id']!,
             ),
           ),
         ],

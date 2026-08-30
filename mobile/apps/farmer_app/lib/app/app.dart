@@ -24,6 +24,8 @@ import '../features/sensors/presentation/bloc/sensor_bloc.dart';
 import '../features/soil/presentation/bloc/soil_bloc.dart';
 import '../features/tasks/presentation/bloc/task_bloc.dart';
 import '../features/traceability/presentation/bloc/traceability_bloc.dart';
+import '../features/analytics/presentation/bloc/analytics_bloc.dart';
+import '../features/prescriptions/presentation/bloc/prescription_bloc.dart';
 import '../features/yield_prediction/presentation/bloc/yield_bloc.dart';
 
 /// The root widget of the unified YieldPoint app.
@@ -137,6 +139,19 @@ class FarmerApp extends ConsumerWidget {
           create: (context) => YieldBloc(
             getPredictions: ref.read(getYieldPredictionsUseCaseProvider),
             getHistory: ref.read(getYieldHistoryUseCaseProvider),
+          ),
+        ),
+        // ── Analytics & Prescriptions blocs ───────────────────────────
+        BlocProvider(
+          create: (context) => AnalyticsBloc(
+            getFieldAnalytics: ref.read(getFieldAnalyticsUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => PrescriptionBloc(
+            getPrescriptions: ref.read(getPrescriptionsUseCaseProvider),
+            generatePrescription:
+                ref.read(generatePrescriptionUseCaseProvider),
           ),
         ),
         // ── Agronomist-specific blocs ────────────────────────────────

@@ -151,6 +151,19 @@ import '../../features/crop_advisory/domain/repositories/crop_advisory_repositor
 import '../../features/crop_advisory/domain/usecases/create_advisory_usecase.dart';
 import '../../features/crop_advisory/domain/usecases/get_advisories_usecase.dart';
 
+// Analytics
+import '../../features/analytics/data/datasources/analytics_remote_datasource.dart';
+import '../../features/analytics/data/repositories/analytics_repository_impl.dart';
+import '../../features/analytics/domain/repositories/analytics_repository.dart';
+import '../../features/analytics/domain/usecases/get_field_analytics_usecase.dart';
+
+// Prescriptions
+import '../../features/prescriptions/data/datasources/prescription_remote_datasource.dart';
+import '../../features/prescriptions/data/repositories/prescription_repository_impl.dart';
+import '../../features/prescriptions/domain/repositories/prescription_repository.dart';
+import '../../features/prescriptions/domain/usecases/generate_prescription_usecase.dart';
+import '../../features/prescriptions/domain/usecases/get_prescriptions_usecase.dart';
+
 // ═══════════════════════════════════════════════════════════════════════
 // Infrastructure providers
 // ═══════════════════════════════════════════════════════════════════════
@@ -832,4 +845,51 @@ final getAdvisoriesUseCaseProvider =
 final createAdvisoryUseCaseProvider =
     Provider<CreateAdvisoryUseCase>((ref) {
   return CreateAdvisoryUseCase(ref.watch(cropAdvisoryRepositoryProvider));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Analytics feature
+// ═══════════════════════════════════════════════════════════════════════
+
+final analyticsRemoteDataSourceProvider =
+    Provider<AnalyticsRemoteDataSource>((ref) {
+  return AnalyticsRemoteDataSourceImpl(ref.watch(connectClientProvider));
+});
+
+final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {
+  return AnalyticsRepositoryImpl(
+    remoteDataSource: ref.watch(analyticsRemoteDataSourceProvider),
+  );
+});
+
+final getFieldAnalyticsUseCaseProvider =
+    Provider<GetFieldAnalyticsUseCase>((ref) {
+  return GetFieldAnalyticsUseCase(ref.watch(analyticsRepositoryProvider));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Prescriptions feature
+// ═══════════════════════════════════════════════════════════════════════
+
+final prescriptionRemoteDataSourceProvider =
+    Provider<PrescriptionRemoteDataSource>((ref) {
+  return PrescriptionRemoteDataSourceImpl(ref.watch(connectClientProvider));
+});
+
+final prescriptionRepositoryProvider =
+    Provider<PrescriptionRepository>((ref) {
+  return PrescriptionRepositoryImpl(
+    remoteDataSource: ref.watch(prescriptionRemoteDataSourceProvider),
+  );
+});
+
+final getPrescriptionsUseCaseProvider =
+    Provider<GetPrescriptionsUseCase>((ref) {
+  return GetPrescriptionsUseCase(ref.watch(prescriptionRepositoryProvider));
+});
+
+final generatePrescriptionUseCaseProvider =
+    Provider<GeneratePrescriptionUseCase>((ref) {
+  return GeneratePrescriptionUseCase(
+      ref.watch(prescriptionRepositoryProvider));
 });
