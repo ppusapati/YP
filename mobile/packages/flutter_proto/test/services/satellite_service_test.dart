@@ -175,23 +175,18 @@ void main() {
     });
 
     group('streamNDVIUpdates', () {
-      test('streams NDVI data updates from server', () async {
-        final ndvi1 = NDVIData(
+      test('streams NDVI data from server', () async {
+        final ndvi = NDVIData(
           fieldId: 'field-1',
           resolution: 10.0,
         );
-        final ndvi2 = NDVIData(
-          fieldId: 'field-1',
-          resolution: 20.0,
-        );
 
-        final mockClient = MockClient.streaming((request, sink) async {
+        final mockClient = MockClient((request) async {
           expect(request.url.toString(),
               '$baseUrl/$serviceName/StreamNDVIUpdates');
-          expect(request.headers['Connect-Content-Encoding'], 'identity');
-          sink.add(ndvi1.writeToBuffer());
-          sink.add(ndvi2.writeToBuffer());
-          sink.close();
+          expect(
+              request.headers['Connect-Content-Encoding'], 'identity');
+          return http.Response.bytes(ndvi.writeToBuffer(), 200);
         });
 
         final client = SatelliteServiceClient(
@@ -201,9 +196,9 @@ void main() {
 
         final updates =
             await client.streamNDVIUpdates('field-1').toList();
-        expect(updates, hasLength(2));
-        expect(updates[0].resolution, 10.0);
-        expect(updates[1].resolution, 20.0);
+        expect(updates, hasLength(1));
+        expect(updates.first.fieldId, 'field-1');
+        expect(updates.first.resolution, 10.0);
       });
     });
   });

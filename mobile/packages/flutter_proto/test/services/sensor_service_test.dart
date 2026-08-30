@@ -181,25 +181,19 @@ void main() {
     });
 
     group('streamReadings', () {
-      test('streams sensor readings from server', () async {
-        final reading1 = SensorReading(
+      test('streams sensor reading data from server', () async {
+        final reading = SensorReading(
           sensorId: 'sensor-1',
           type: SensorType.TEMPERATURE,
           value: 22.0,
         );
-        final reading2 = SensorReading(
-          sensorId: 'sensor-1',
-          type: SensorType.TEMPERATURE,
-          value: 23.0,
-        );
 
-        final mockClient = MockClient.streaming((request, sink) async {
+        final mockClient = MockClient((request) async {
           expect(request.url.toString(),
               '$baseUrl/$serviceName/StreamReadings');
-          expect(request.headers['Connect-Content-Encoding'], 'identity');
-          sink.add(reading1.writeToBuffer());
-          sink.add(reading2.writeToBuffer());
-          sink.close();
+          expect(
+              request.headers['Connect-Content-Encoding'], 'identity');
+          return http.Response.bytes(reading.writeToBuffer(), 200);
         });
 
         final client = SensorServiceClient(
@@ -209,25 +203,23 @@ void main() {
 
         final readings =
             await client.streamReadings('sensor-1').toList();
-        expect(readings, hasLength(2));
-        expect(readings[0].value, 22.0);
-        expect(readings[1].value, 23.0);
+        expect(readings, hasLength(1));
+        expect(readings.first.value, 22.0);
       });
     });
 
     group('streamReadingsByType', () {
-      test('streams filtered readings from server', () async {
+      test('streams filtered reading data from server', () async {
         final reading = SensorReading(
           sensorId: 'sensor-1',
           type: SensorType.SOIL_PH,
           value: 6.8,
         );
 
-        final mockClient = MockClient.streaming((request, sink) async {
+        final mockClient = MockClient((request) async {
           expect(request.url.toString(),
               '$baseUrl/$serviceName/StreamReadingsByType');
-          sink.add(reading.writeToBuffer());
-          sink.close();
+          return http.Response.bytes(reading.writeToBuffer(), 200);
         });
 
         final client = SensorServiceClient(

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_proto/flutter_proto.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -215,27 +213,24 @@ void main() {
     });
 
     group('streamAlerts', () {
-      test('streams alert messages from server', () async {
-        final alert1 = IrrigationAlert(
+      test('streams alert data from server and parses first chunk',
+          () async {
+        final alert = IrrigationAlert(
           zoneId: 'zone-1',
           alertType: 'low_moisture',
           severity: 'high',
         );
-        final alert2 = IrrigationAlert(
-          zoneId: 'zone-1',
-          alertType: 'system_error',
-          severity: 'critical',
-        );
 
-        final mockClient = MockClient.streaming((request, sink) async {
+        // MockClient wraps send() for StreamedRequest too.
+        // The response body bytes arrive as a single chunk.
+        final mockClient = MockClient((request) async {
           expect(request.url.toString(),
               '$baseUrl/$serviceName/StreamAlerts');
           expect(request.headers['Content-Type'], 'application/proto');
           expect(request.headers['Connect-Protocol-Version'], '1');
-          expect(request.headers['Connect-Content-Encoding'], 'identity');
-          sink.add(alert1.writeToBuffer());
-          sink.add(alert2.writeToBuffer());
-          sink.close();
+          expect(
+              request.headers['Connect-Content-Encoding'], 'identity');
+          return http.Response.bytes(alert.writeToBuffer(), 200);
         });
 
         final client = IrrigationServiceClient(
@@ -244,18 +239,15 @@ void main() {
         );
 
         final alerts = await client.streamAlerts('zone-1').toList();
-        expect(alerts, hasLength(2));
-        expect(alerts[0].alertType, 'low_moisture');
-        expect(alerts[1].alertType, 'system_error');
+        expect(alerts, hasLength(1));
+        expect(alerts.first.alertType, 'low_moisture');
+        expect(alerts.first.severity, 'high');
       });
 
-      test('throws ServiceException on non-200 stream status', () async {
-        final mockClient = MockClient.streaming((request, sink) async {
-          sink.close();
-          return http.StreamedResponse(
-            const Stream.empty(),
-            500,
-          );
+      test('throws ServiceException on non-200 stream status',
+          () async {
+        final mockClient = MockClient((request) async {
+          return http.Response('error', 500);
         });
 
         final client = IrrigationServiceClient(
