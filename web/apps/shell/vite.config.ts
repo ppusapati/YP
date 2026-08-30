@@ -15,28 +15,6 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     host: true,
-    proxy: {
-      '/farm-management': {
-        target: 'http://localhost:5174',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/farm-management/, ''),
-      },
-      '/smart-agriculture': {
-        target: 'http://localhost:5175',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/smart-agriculture/, ''),
-      },
-      '/crop-intelligence': {
-        target: 'http://localhost:5176',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/crop-intelligence/, ''),
-      },
-      '/supply-chain': {
-        target: 'http://localhost:5177',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/supply-chain/, ''),
-      },
-    },
   },
 
   preview: {

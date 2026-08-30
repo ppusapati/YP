@@ -1,0 +1,65 @@
+<script lang="ts">
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import { CrudFormPage } from '@samavāya/ui';
+  import { soilSampleFormSchema } from '@samavāya/agriculture/schemas';
+  import { soilClient } from '@samavāya/agriculture/services';
+
+  $: id = $page.params.id;
+
+  let values: Record<string, unknown> = {};
+  let errors: Record<string, string> = {};
+  let isLoading = true;
+  let isSubmitting = false;
+  let error: string | null = null;
+
+  onMount(async () => {
+    try {
+      const res = await soilClient.getSoilSample({ id });
+      values = { ...res.sample };
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to load soil sample';
+    } finally {
+      isLoading = false;
+    }
+  });
+
+  async function handleSubmit(formValues: Record<string, unknown>) {
+    isSubmitting = true;
+    error = null;
+    try {
+      await soilClient.updateSoilSample({ id, ...formValues } as any);
+      goto('/farm-management/soil');
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to update soil sample';
+    } finally {
+      isSubmitting = false;
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      await soilClient.deleteSoilSample({ id });
+      goto('/farm-management/soil');
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to delete soil sample';
+    }
+  }
+</script>
+
+<CrudFormPage
+  title="Edit Soil Sample"
+  subtitle="Update soil sample data"
+  mode="edit"
+  schema={soilSampleFormSchema}
+  {values}
+  {errors}
+  {isLoading}
+  {isSubmitting}
+  {error}
+  cancelHref="/farm-management/soil"
+  showDelete={true}
+  onSubmit={handleSubmit}
+  onDelete={handleDelete}
+/>
