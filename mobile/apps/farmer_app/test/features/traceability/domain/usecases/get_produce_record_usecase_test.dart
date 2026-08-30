@@ -18,7 +18,7 @@ void main() {
     farmName: 'Sunrise Farm',
     cropVariety: 'Hass Avocado',
     harvestDate: DateTime(2024, 5, 20),
-    treatments: const [
+    treatments: [
       Treatment(
         id: 'treat-1',
         name: 'Copper Fungicide',
