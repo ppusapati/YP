@@ -35,6 +35,9 @@ export const SERVICE_URLS = {
   diagnosis: '/api/diagnosis',
   yield: '/api/yield',
   traceability: '/api/traceability',
+  alert: '/api/alert',
+  'field-analytics': '/api/field-analytics',
+  prescription: '/api/prescription',
 } as const;
 
 /** Create a transport for a specific service */

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { alertClient } from '@samavāya/agriculture/services';
 
   let alert: Record<string, unknown> = {};
   let loading = true;
@@ -16,7 +16,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getAlert({ id: alertId });
+      const res = await alertClient.getAlert({ id: alertId });
       alert = res.alert as any || {};
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load alert';
@@ -29,7 +29,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await analyticsClient.acknowledgeAlert({ id });
+      await alertClient.acknowledgeAlert({ id });
       await loadData(id);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to acknowledge alert';
@@ -42,7 +42,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await analyticsClient.resolveAlert({ id });
+      await alertClient.resolveAlert({ id });
       await loadData(id);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to resolve alert';

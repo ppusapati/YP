@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { fieldAnalyticsClient } from '@samavāya/agriculture/services';
 
   let seasons: any[] = [];
   let loading = true;
@@ -27,7 +27,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getSeasonComparisons({ fieldId });
+      const res = await fieldAnalyticsClient.getSeasonComparisons({ fieldId });
       seasons = (res as any).seasons || [];
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load season comparisons';

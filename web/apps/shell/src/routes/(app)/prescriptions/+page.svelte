@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { prescriptionClient } from '@samavāya/agriculture/services';
 
   let prescriptions: any[] = [];
   let totalCount = 0;
@@ -22,7 +22,7 @@
     try {
       const params: Record<string, unknown> = { pageSize, pageOffset };
       if (typeFilter) params.prescriptionType = typeFilter;
-      const res = await analyticsClient.listPrescriptions(params);
+      const res = await prescriptionClient.listPrescriptions(params);
       prescriptions = (res as any).prescriptions || [];
       totalCount = (res as any).totalCount || 0;
     } catch (e) {

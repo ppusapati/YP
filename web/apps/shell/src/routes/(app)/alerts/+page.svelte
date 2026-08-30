@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { alertClient } from '@samavāya/agriculture/services';
 
   let rows: any[] = [];
   let totalCount = 0;
@@ -66,7 +66,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.listAlerts({
+      const res = await alertClient.listAlerts({
         pageSize,
         pageOffset,
         severity: severityFilter ?? undefined,

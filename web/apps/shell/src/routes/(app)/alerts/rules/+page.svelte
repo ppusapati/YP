@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { alertClient } from '@samavāya/agriculture/services';
 
   interface AlertRule {
     id: string;
@@ -25,7 +25,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.listAlertRules({});
+      const res = await alertClient.listAlertRules({});
       rules = res.rules ?? [];
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load alert rules';
@@ -36,7 +36,7 @@
 
   async function toggleRule(rule: AlertRule) {
     try {
-      await analyticsClient.updateAlertRule({
+      await alertClient.updateAlertRule({
         rule: { ...rule, enabled: !rule.enabled },
       });
       rules = rules.map((r) => r.id === rule.id ? { ...r, enabled: !r.enabled } : r);

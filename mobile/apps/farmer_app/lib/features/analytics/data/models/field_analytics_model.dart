@@ -118,13 +118,13 @@ class FieldAnalyticsModel {
 class YieldTrendModel {
   final String season;
   final String crop;
-  final double yield;
+  final double yieldValue;
   final double? ndvi;
 
   const YieldTrendModel({
     required this.season,
     required this.crop,
-    required this.yield,
+    required this.yieldValue,
     this.ndvi,
   });
 
@@ -132,7 +132,7 @@ class YieldTrendModel {
     return YieldTrendModel(
       season: json['season'] as String,
       crop: json['crop'] as String? ?? '',
-      yield: (json['yield'] as num).toDouble(),
+      yieldValue: (json['yield_value'] as num).toDouble(),
       ndvi: (json['ndvi'] as num?)?.toDouble(),
     );
   }
@@ -141,7 +141,7 @@ class YieldTrendModel {
     return {
       'season': season,
       'crop': crop,
-      'yield': yield,
+      'yield_value': yieldValue,
       if (ndvi != null) 'ndvi': ndvi,
     };
   }
@@ -150,7 +150,7 @@ class YieldTrendModel {
     return YieldTrend(
       season: season,
       crop: crop,
-      yield: yield,
+      yieldValue: yieldValue,
       ndvi: ndvi,
     );
   }
@@ -159,7 +159,7 @@ class YieldTrendModel {
     return YieldTrendModel(
       season: entity.season,
       crop: entity.crop,
-      yield: entity.yield,
+      yieldValue: entity.yieldValue,
       ndvi: entity.ndvi,
     );
   }
@@ -168,7 +168,7 @@ class YieldTrendModel {
 class SeasonComparisonModel {
   final String season;
   final String crop;
-  final double yield;
+  final double yieldValue;
   final double yieldVsMeanPct;
   final int stressDays;
   final double stressVsMeanPct;
@@ -179,7 +179,7 @@ class SeasonComparisonModel {
   const SeasonComparisonModel({
     required this.season,
     required this.crop,
-    required this.yield,
+    required this.yieldValue,
     required this.yieldVsMeanPct,
     required this.stressDays,
     required this.stressVsMeanPct,
@@ -192,7 +192,7 @@ class SeasonComparisonModel {
     return SeasonComparisonModel(
       season: json['season'] as String,
       crop: json['crop'] as String? ?? '',
-      yield: (json['yield'] as num).toDouble(),
+      yieldValue: (json['yield_value'] as num).toDouble(),
       yieldVsMeanPct: (json['yield_vs_mean_pct'] as num).toDouble(),
       stressDays: json['stress_days'] as int? ?? 0,
       stressVsMeanPct: (json['stress_vs_mean_pct'] as num?)?.toDouble() ?? 0,
@@ -209,7 +209,7 @@ class SeasonComparisonModel {
     return {
       'season': season,
       'crop': crop,
-      'yield': yield,
+      'yield_value': yieldValue,
       'yield_vs_mean_pct': yieldVsMeanPct,
       'stress_days': stressDays,
       'stress_vs_mean_pct': stressVsMeanPct,
@@ -223,7 +223,7 @@ class SeasonComparisonModel {
     return SeasonComparison(
       season: season,
       crop: crop,
-      yield: yield,
+      yieldValue: yieldValue,
       yieldVsMeanPct: yieldVsMeanPct,
       stressDays: stressDays,
       stressVsMeanPct: stressVsMeanPct,
@@ -237,7 +237,7 @@ class SeasonComparisonModel {
     return SeasonComparisonModel(
       season: entity.season,
       crop: entity.crop,
-      yield: entity.yield,
+      yieldValue: entity.yieldValue,
       yieldVsMeanPct: entity.yieldVsMeanPct,
       stressDays: entity.stressDays,
       stressVsMeanPct: entity.stressVsMeanPct,

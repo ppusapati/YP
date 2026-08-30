@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { alertClient } from '@samavāya/agriculture/services';
 
   interface HistoryAlert {
     id: string;
@@ -32,7 +32,7 @@
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
-      const res = await analyticsClient.listAlertHistory(params);
+      const res = await alertClient.listAlertHistory(params);
       alerts = res.alerts ?? [];
 
       // Compute type distribution.

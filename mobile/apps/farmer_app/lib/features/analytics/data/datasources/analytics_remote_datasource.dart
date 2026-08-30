@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter_network/flutter_network.dart';
 import 'package:logging/logging.dart';
@@ -22,17 +21,20 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
 
   Future<Map<String, dynamic>> _post(
       String method, Map<String, dynamic> body) async {
-    final path = '/yieldpoint.analytics.v1.AnalyticsService/$method';
+    final path = '/agriculture.field.analytics.v1.FieldAnalyticsService/$method';
     _log.fine('POST $path');
 
     final response = await _client.unary(
       path,
-      body: Uint8List.fromList(utf8.encode(jsonEncode(body))),
+      body: utf8.encoder.convert(jsonEncode(body)),
       headers: {'Content-Type': 'application/json'},
     );
 
     if (!response.isSuccess) {
-      throw Exception('RPC call AnalyticsService/$method failed');
+      throw ConnectException(
+        code: 'internal',
+        message: 'AnalyticsService/$method failed',
+      );
     }
 
     return jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;

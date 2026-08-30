@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { analyticsClient } from '@samavāya/agriculture/services';
-  import { fieldClient } from '@samavāya/agriculture/services';
+  import { fieldAnalyticsClient, fieldClient } from '@samavāya/agriculture/services';
 
   let fieldOptions: { label: string; value: string }[] = [];
   let selectedFields: string[] = [];
@@ -32,7 +31,7 @@
     error = null;
     trendData = {};
     try {
-      const res = await analyticsClient.getCrossFieldTrends({
+      const res = await fieldAnalyticsClient.getCrossFieldTrends({
         fieldIds: selectedFields,
         metric,
       });

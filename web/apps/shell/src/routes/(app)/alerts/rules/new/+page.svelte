@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { alertClient, fieldClient } from '@samavāya/agriculture/services';
 
   let fieldId = '';
   let fieldName = '';
@@ -38,7 +38,7 @@
 
   async function loadFields() {
     try {
-      const res = await analyticsClient.listFields({});
+      const res = await fieldClient.listFields({});
       fields = (res.fields ?? []).map((f: any) => ({ id: f.id, name: f.name || f.id }));
     } catch {
       // Fields will show as empty; user can still type an ID.
@@ -61,7 +61,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await analyticsClient.createAlertRule({
+      await alertClient.createAlertRule({
         rule: {
           fieldId,
           fieldName,

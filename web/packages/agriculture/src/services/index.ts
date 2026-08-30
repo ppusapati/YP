@@ -24,6 +24,9 @@ import {
   PlantDiagnosisService,
   YieldService,
   TraceabilityService,
+  AlertService,
+  FieldAnalyticsService,
+  PrescriptionService,
 } from '@samavāya/proto';
 
 // ─── ConnectRPC Service Clients ──────────────────────────────────────────────
@@ -91,3 +94,15 @@ export const yieldClient: Client<typeof YieldService> =
 /** Traceability records, certifications, batches, QR codes, compliance */
 export const traceabilityClient: Client<typeof TraceabilityService> =
   createClient(TraceabilityService, createServiceTransport('traceability'));
+
+/** Alert management, rules, field risk scoring, alert history */
+export const alertClient: Client<typeof AlertService> =
+  createClient(AlertService, createServiceTransport('alert'));
+
+/** Field-level historical analytics, yield trends, season comparisons, rotation analysis */
+export const fieldAnalyticsClient: Client<typeof FieldAnalyticsService> =
+  createClient(FieldAnalyticsService, createServiceTransport('field-analytics'));
+
+/** Prescription maps, variable-rate application, zone management */
+export const prescriptionClient: Client<typeof PrescriptionService> =
+  createClient(PrescriptionService, createServiceTransport('prescription'));

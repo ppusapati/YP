@@ -9,6 +9,7 @@ class PrescriptionBundleModel {
   final double targetYield;
   final DateTime createdAt;
   final double? estimatedCostSavings;
+  final double? estimatedYieldGain;
   final List<PrescriptionMapModel> prescriptions;
 
   const PrescriptionBundleModel({
@@ -19,6 +20,7 @@ class PrescriptionBundleModel {
     required this.targetYield,
     required this.createdAt,
     this.estimatedCostSavings,
+    this.estimatedYieldGain,
     this.prescriptions = const [],
   });
 
@@ -32,6 +34,8 @@ class PrescriptionBundleModel {
       createdAt: DateTime.parse(json['created_at'] as String),
       estimatedCostSavings:
           (json['estimated_cost_savings'] as num?)?.toDouble(),
+      estimatedYieldGain:
+          (json['estimated_yield_gain'] as num?)?.toDouble(),
       prescriptions: (json['prescriptions'] as List<dynamic>?)
               ?.map((e) => PrescriptionMapModel.fromJson(
                   e as Map<String, dynamic>))
@@ -50,6 +54,8 @@ class PrescriptionBundleModel {
       'created_at': createdAt.toIso8601String(),
       if (estimatedCostSavings != null)
         'estimated_cost_savings': estimatedCostSavings,
+      if (estimatedYieldGain != null)
+        'estimated_yield_gain': estimatedYieldGain,
       'prescriptions': prescriptions.map((e) => e.toJson()).toList(),
     };
   }
@@ -63,6 +69,7 @@ class PrescriptionBundleModel {
       targetYield: targetYield,
       createdAt: createdAt,
       estimatedCostSavings: estimatedCostSavings,
+      estimatedYieldGain: estimatedYieldGain,
       prescriptions: prescriptions.map((e) => e.toEntity()).toList(),
     );
   }
@@ -76,6 +83,7 @@ class PrescriptionBundleModel {
       targetYield: entity.targetYield,
       createdAt: entity.createdAt,
       estimatedCostSavings: entity.estimatedCostSavings,
+      estimatedYieldGain: entity.estimatedYieldGain,
       prescriptions: entity.prescriptions
           .map((e) => PrescriptionMapModel.fromEntity(e))
           .toList(),
@@ -89,6 +97,7 @@ class PrescriptionMapModel {
   final String unit;
   final double avgRate;
   final double totalAmount;
+  final List<double> rates;
   final List<ZoneSummaryModel> zones;
 
   const PrescriptionMapModel({
@@ -97,6 +106,7 @@ class PrescriptionMapModel {
     required this.unit,
     required this.avgRate,
     required this.totalAmount,
+    this.rates = const [],
     this.zones = const [],
   });
 
@@ -107,6 +117,10 @@ class PrescriptionMapModel {
       unit: json['unit'] as String? ?? '',
       avgRate: (json['avg_rate'] as num).toDouble(),
       totalAmount: (json['total_amount'] as num).toDouble(),
+      rates: (json['rates'] as List<dynamic>?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          const [],
       zones: (json['zones'] as List<dynamic>?)
               ?.map((e) =>
                   ZoneSummaryModel.fromJson(e as Map<String, dynamic>))
@@ -122,6 +136,7 @@ class PrescriptionMapModel {
       'unit': unit,
       'avg_rate': avgRate,
       'total_amount': totalAmount,
+      'rates': rates,
       'zones': zones.map((e) => e.toJson()).toList(),
     };
   }
@@ -136,6 +151,7 @@ class PrescriptionMapModel {
       unit: unit,
       avgRate: avgRate,
       totalAmount: totalAmount,
+      rates: rates,
       zones: zones.map((e) => e.toEntity()).toList(),
     );
   }
@@ -147,6 +163,7 @@ class PrescriptionMapModel {
       unit: entity.unit,
       avgRate: entity.avgRate,
       totalAmount: entity.totalAmount,
+      rates: entity.rates,
       zones: entity.zones
           .map((e) => ZoneSummaryModel.fromEntity(e))
           .toList(),
@@ -156,6 +173,7 @@ class PrescriptionMapModel {
 
 class ZoneSummaryModel {
   final String zone;
+  final int cellCount;
   final double areaHectares;
   final double minRate;
   final double meanRate;
@@ -164,6 +182,7 @@ class ZoneSummaryModel {
 
   const ZoneSummaryModel({
     required this.zone,
+    this.cellCount = 0,
     required this.areaHectares,
     required this.minRate,
     required this.meanRate,
@@ -174,6 +193,7 @@ class ZoneSummaryModel {
   factory ZoneSummaryModel.fromJson(Map<String, dynamic> json) {
     return ZoneSummaryModel(
       zone: json['zone'] as String,
+      cellCount: json['cell_count'] as int? ?? 0,
       areaHectares: (json['area_hectares'] as num).toDouble(),
       minRate: (json['min_rate'] as num).toDouble(),
       meanRate: (json['mean_rate'] as num).toDouble(),
@@ -185,6 +205,7 @@ class ZoneSummaryModel {
   Map<String, dynamic> toJson() {
     return {
       'zone': zone,
+      'cell_count': cellCount,
       'area_hectares': areaHectares,
       'min_rate': minRate,
       'mean_rate': meanRate,
@@ -196,6 +217,7 @@ class ZoneSummaryModel {
   ZoneSummary toEntity() {
     return ZoneSummary(
       zone: zone,
+      cellCount: cellCount,
       areaHectares: areaHectares,
       minRate: minRate,
       meanRate: meanRate,
@@ -207,6 +229,7 @@ class ZoneSummaryModel {
   factory ZoneSummaryModel.fromEntity(ZoneSummary entity) {
     return ZoneSummaryModel(
       zone: entity.zone,
+      cellCount: entity.cellCount,
       areaHectares: entity.areaHectares,
       minRate: entity.minRate,
       meanRate: entity.meanRate,

@@ -67,6 +67,12 @@ export { SatelliteAnalyticsService } from './gen/satellite-analytics-service/pro
 export { SatelliteTileService } from './gen/satellite-tile-service/proto/tile_pb.js';
 export { VegetationIndexService } from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
 
+// ─── Alert, Analytics & Prescription Service Descriptors ────────────────────
+
+export { AlertService } from './gen/alert-service/proto/alert_pb.js';
+export { FieldAnalyticsService } from './gen/analytics-service/proto/field_analytics_pb.js';
+export { PrescriptionService } from './gen/prescription-service/proto/prescription_pb.js';
+
 // ─── Agriculture Message Types (re-exports for convenience) ──────────────────
 
 export type {
@@ -271,3 +277,39 @@ export {
   VegetationIndexType,
   ComputeStatus,
 } from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
+
+// ─── Alert Service Types ────────────────────────────────────────────────────
+
+export type {
+  Alert,
+  AlertRule,
+  FieldRiskScore,
+} from './gen/alert-service/proto/alert_pb.js';
+
+export {
+  AlertSeverity,
+  AlertStatus,
+} from './gen/alert-service/proto/alert_pb.js';
+
+// ─── Field Analytics Service Types ──────────────────────────────────────────
+
+export type {
+  FieldAnalyticsSummary,
+  YieldTrendPoint,
+  SeasonComparison,
+  RotationAnalysis,
+  HistoricalMetrics,
+  CrossFieldTrendPoint,
+} from './gen/analytics-service/proto/field_analytics_pb.js';
+
+// ─── Prescription Service Types ─────────────────────────────────────────────
+
+export type {
+  PrescriptionBundle,
+  PrescriptionMap,
+  ZoneSummary,
+} from './gen/prescription-service/proto/prescription_pb.js';
+
+export {
+  PrescriptionType,
+} from './gen/prescription-service/proto/prescription_pb.js';

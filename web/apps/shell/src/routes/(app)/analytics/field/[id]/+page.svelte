@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { fieldAnalyticsClient } from '@samavāya/agriculture/services';
 
   let analytics: Record<string, unknown> = {};
   let yieldTrends: any[] = [];
@@ -18,7 +18,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getFieldHistoricalAnalytics({ fieldId });
+      const res = await fieldAnalyticsClient.getFieldAnalytics({ fieldId });
       analytics = res as any || {};
       yieldTrends = (res as any).yieldTrends || [];
       seasonComparisons = (res as any).seasonComparisons || [];

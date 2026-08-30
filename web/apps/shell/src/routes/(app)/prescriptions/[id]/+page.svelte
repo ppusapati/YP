@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { prescriptionClient } from '@samavāya/agriculture/services';
 
   let prescription: Record<string, unknown> = {};
   let zones: any[] = [];
@@ -16,7 +16,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getPrescription({ id: prescriptionId });
+      const res = await prescriptionClient.getPrescription({ id: prescriptionId });
       prescription = res as any || {};
       zones = (res as any).zones || [];
     } catch (e) {

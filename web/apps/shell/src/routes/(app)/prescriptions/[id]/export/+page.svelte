@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { prescriptionClient } from '@samavāya/agriculture/services';
 
   let prescription: Record<string, unknown> = {};
   let exportFormat: 'csv' | 'shapefile' | 'pdf' = 'csv';
@@ -18,7 +18,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getPrescription({ id: prescriptionId });
+      const res = await prescriptionClient.getPrescription({ id: prescriptionId });
       prescription = res as any || {};
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load prescription';
@@ -32,7 +32,7 @@
     error = null;
     exportSuccess = false;
     try {
-      const res = await analyticsClient.exportPrescription({
+      const res = await prescriptionClient.exportPrescription({
         id,
         format: exportFormat,
       });

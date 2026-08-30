@@ -65,9 +65,9 @@ class SeasonComparisonCard extends StatelessWidget {
               children: [
                 _ComparisonMetric(
                   label: 'Yield',
-                  value: '${comparison.yield.toStringAsFixed(1)} t/ha',
-                  pctText: _formatPct(comparison.yieldVsMeanPct),
-                  pctColor: _percentColor(comparison.yieldVsMeanPct),
+                  value: '${comparison.yieldValue.toStringAsFixed(1)} t/ha',
+                  pctText: _formatPct(comparison.yieldValueVsMeanPct),
+                  pctColor: _percentColor(comparison.yieldValueVsMeanPct),
                 ),
                 _ComparisonMetric(
                   label: 'Stress Days',

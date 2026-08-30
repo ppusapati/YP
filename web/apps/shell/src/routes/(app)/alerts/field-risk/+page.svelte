@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { alertClient } from '@samavāya/agriculture/services';
 
   interface FieldRisk {
     fieldId: string;
@@ -23,7 +23,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.listFieldRisks({});
+      const res = await alertClient.listFieldRisks({});
       fieldRisks = res.fieldRisks ?? [];
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load field risk scores';

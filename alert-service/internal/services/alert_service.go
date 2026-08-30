@@ -5,27 +5,60 @@ import (
 	"strings"
 	"time"
 
+	pb "p9e.in/samavaya/agriculture/alert-service/api/v1"
 	"p9e.in/samavaya/agriculture/alert-service/internal/ai"
-	alertmodels "p9e.in/samavaya/agriculture/alert-service/internal/models"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// ListAlertsInput holds the filter parameters for listing alerts.
+type ListAlertsInput struct {
+	FarmID    string
+	FieldID   string
+	Severity  pb.AlertSeverity
+	Status    pb.AlertStatus
+	PageSize  int32
+	PageToken string
+}
+
+// ListAlertHistoryInput holds the filter parameters for listing alert history.
+type ListAlertHistoryInput struct {
+	StartDate string
+	EndDate   string
+	FarmID    string
+	FieldID   string
+	PageSize  int32
+	PageToken string
+}
 
 // AlertService defines the business logic interface for alert operations.
 type AlertService interface {
-	CreateAlert(ctx context.Context, alert *alertmodels.Alert) (*alertmodels.Alert, error)
-	ListAlerts(ctx context.Context, fieldID, farmID string, status *alertmodels.AlertStatus, limit, offset int32) ([]*alertmodels.Alert, int32, error)
-	AcknowledgeAlert(ctx context.Context, alertID, userID string) error
-	ResolveAlert(ctx context.Context, alertID, userID, resolution string) error
-	EvaluateField(ctx context.Context, fieldID string) (*alertmodels.FieldRiskScore, error)
+	// Alert CRUD
+	ListAlerts(ctx context.Context, input ListAlertsInput) ([]*pb.Alert, string, int32, error)
+	GetAlert(ctx context.Context, id string) (*pb.Alert, error)
+	AcknowledgeAlert(ctx context.Context, alertID, userID string) (*pb.Alert, error)
+	ResolveAlert(ctx context.Context, alertID, userID string) (*pb.Alert, error)
 
-	CreateAlertRule(ctx context.Context, rule *alertmodels.AlertRule) (*alertmodels.AlertRule, error)
-	ListAlertRules(ctx context.Context, fieldID string) ([]*alertmodels.AlertRule, error)
-	UpdateAlertRule(ctx context.Context, rule *alertmodels.AlertRule) error
-	DeleteAlertRule(ctx context.Context, ruleID string) error
+	// Read status
+	MarkAlertRead(ctx context.Context, alertID string) (*pb.Alert, error)
+	MarkAllAlertsRead(ctx context.Context, farmID string) (int32, error)
+	GetUnreadCount(ctx context.Context, farmID string) (int32, error)
+
+	// Alert rules
+	ListAlertRules(ctx context.Context, fieldID string) ([]*pb.AlertRule, error)
+	CreateAlertRule(ctx context.Context, rule *pb.AlertRule) (*pb.AlertRule, error)
+	UpdateAlertRule(ctx context.Context, rule *pb.AlertRule) (*pb.AlertRule, error)
+
+	// Field risk
+	GetFieldRisk(ctx context.Context, fieldID string) (*pb.FieldRiskScore, error)
+	ListFieldRisks(ctx context.Context) ([]*pb.FieldRiskScore, error)
+
+	// History
+	ListAlertHistory(ctx context.Context, input ListAlertHistoryInput) ([]*pb.Alert, string, int32, error)
 }
 
 // alertService is the concrete implementation of AlertService.
@@ -46,98 +79,149 @@ func NewAlertService(d deps.ServiceDeps, aiClient *ai.AIClient) AlertService {
 
 // ---------- Alert CRUD ----------
 
-func (s *alertService) CreateAlert(ctx context.Context, alert *alertmodels.Alert) (*alertmodels.Alert, error) {
-	if strings.TrimSpace(alert.FieldID) == "" {
-		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
-	}
-	if strings.TrimSpace(alert.FarmID) == "" {
-		return nil, errors.BadRequest("INVALID_FARM_ID", "farm_id is required")
-	}
-	if !alert.AlertType.IsValid() {
-		return nil, errors.BadRequest("INVALID_ALERT_TYPE", "a valid alert_type is required")
-	}
-	if !alert.Severity.IsValid() {
-		return nil, errors.BadRequest("INVALID_SEVERITY", "a valid severity is required")
-	}
-	if strings.TrimSpace(alert.Title) == "" {
-		return nil, errors.BadRequest("INVALID_TITLE", "title is required")
+func (s *alertService) ListAlerts(ctx context.Context, input ListAlertsInput) ([]*pb.Alert, string, int32, error) {
+	if strings.TrimSpace(input.FarmID) == "" && strings.TrimSpace(input.FieldID) == "" {
+		return nil, "", 0, errors.BadRequest("INVALID_FILTER", "at least one of farm_id or field_id is required")
 	}
 
-	if alert.ID == "" {
-		alert.ID = ulid.NewString()
+	pageSize := input.PageSize
+	if pageSize <= 0 {
+		pageSize = 50
 	}
-	if alert.Status == "" {
-		alert.Status = alertmodels.AlertStatusActive
-	}
-	if alert.CreatedAt.IsZero() {
-		alert.CreatedAt = time.Now()
-	}
-
-	// In a full implementation this would persist to the database via a repository.
-	// For now, the alert is returned as-is after validation and defaults.
-	s.logger.Infof("Alert created: id=%s type=%s severity=%s field=%s",
-		alert.ID, alert.AlertType, alert.Severity, alert.FieldID)
-
-	return alert, nil
-}
-
-func (s *alertService) ListAlerts(ctx context.Context, fieldID, farmID string, status *alertmodels.AlertStatus, limit, offset int32) ([]*alertmodels.Alert, int32, error) {
-	if strings.TrimSpace(fieldID) == "" && strings.TrimSpace(farmID) == "" {
-		return nil, 0, errors.BadRequest("INVALID_FILTER", "at least one of field_id or farm_id is required")
-	}
-
-	if limit <= 0 {
-		limit = 50
-	}
-	if limit > 200 {
-		limit = 200
-	}
-
-	if status != nil && !status.IsValid() {
-		return nil, 0, errors.BadRequest("INVALID_STATUS", "invalid alert status filter")
+	if pageSize > 200 {
+		pageSize = 200
 	}
 
 	// Repository call would go here.
-	s.logger.Infof("ListAlerts: field=%s farm=%s limit=%d offset=%d", fieldID, farmID, limit, offset)
+	s.logger.Infof("ListAlerts: farm=%s field=%s page_size=%d", input.FarmID, input.FieldID, pageSize)
 
-	return nil, 0, nil
+	return nil, "", 0, nil
 }
 
-func (s *alertService) AcknowledgeAlert(ctx context.Context, alertID, userID string) error {
+func (s *alertService) GetAlert(ctx context.Context, id string) (*pb.Alert, error) {
+	if strings.TrimSpace(id) == "" {
+		return nil, errors.BadRequest("INVALID_ID", "id is required")
+	}
+
+	// Repository call would go here.
+	s.logger.Infof("GetAlert: id=%s", id)
+
+	return nil, errors.NotFound("ALERT_NOT_FOUND", "alert not found")
+}
+
+func (s *alertService) AcknowledgeAlert(ctx context.Context, alertID, userID string) (*pb.Alert, error) {
 	if strings.TrimSpace(alertID) == "" {
-		return errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
+		return nil, errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
 	}
 	if strings.TrimSpace(userID) == "" {
 		userID = p9context.UserID(ctx)
 	}
 	if strings.TrimSpace(userID) == "" {
-		return errors.BadRequest("INVALID_USER_ID", "user_id is required to acknowledge an alert")
+		return nil, errors.BadRequest("INVALID_USER_ID", "user_id is required to acknowledge an alert")
 	}
 
 	// Repository call: update status to ACKNOWLEDGED, set acknowledged_at.
 	s.logger.Infof("Alert acknowledged: id=%s by=%s", alertID, userID)
-	return nil
+
+	return &pb.Alert{
+		Id:             alertID,
+		Status:         pb.AlertStatus_ALERT_STATUS_ACKNOWLEDGED,
+		AcknowledgedAt: timestamppb.Now(),
+		AcknowledgedBy: userID,
+	}, nil
 }
 
-func (s *alertService) ResolveAlert(ctx context.Context, alertID, userID, resolution string) error {
+func (s *alertService) ResolveAlert(ctx context.Context, alertID, userID string) (*pb.Alert, error) {
 	if strings.TrimSpace(alertID) == "" {
-		return errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
+		return nil, errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
 	}
 	if strings.TrimSpace(userID) == "" {
 		userID = p9context.UserID(ctx)
 	}
 	if strings.TrimSpace(userID) == "" {
-		return errors.BadRequest("INVALID_USER_ID", "user_id is required to resolve an alert")
+		return nil, errors.BadRequest("INVALID_USER_ID", "user_id is required to resolve an alert")
 	}
 
-	// Repository call: update status to RESOLVED, set resolved_at and resolution note.
-	s.logger.Infof("Alert resolved: id=%s by=%s resolution=%q", alertID, userID, resolution)
-	return nil
+	// Repository call: update status to RESOLVED, set resolved_at.
+	s.logger.Infof("Alert resolved: id=%s by=%s", alertID, userID)
+
+	return &pb.Alert{
+		Id:     alertID,
+		Status: pb.AlertStatus_ALERT_STATUS_RESOLVED,
+	}, nil
 }
 
-// ---------- Field Evaluation ----------
+// ---------- Read Status ----------
 
-func (s *alertService) EvaluateField(ctx context.Context, fieldID string) (*alertmodels.FieldRiskScore, error) {
+func (s *alertService) MarkAlertRead(ctx context.Context, alertID string) (*pb.Alert, error) {
+	if strings.TrimSpace(alertID) == "" {
+		return nil, errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
+	}
+
+	// Repository call: set read = true.
+	s.logger.Infof("Alert marked read: id=%s", alertID)
+
+	return &pb.Alert{
+		Id:   alertID,
+		Read: true,
+	}, nil
+}
+
+func (s *alertService) MarkAllAlertsRead(ctx context.Context, farmID string) (int32, error) {
+	// Repository call: set read = true for all matching alerts.
+	s.logger.Infof("All alerts marked read: farm=%s", farmID)
+
+	return 0, nil
+}
+
+func (s *alertService) GetUnreadCount(ctx context.Context, farmID string) (int32, error) {
+	// Repository call: count where read = false.
+	s.logger.Infof("GetUnreadCount: farm=%s", farmID)
+
+	return 0, nil
+}
+
+// ---------- Alert Rules ----------
+
+func (s *alertService) ListAlertRules(ctx context.Context, fieldID string) ([]*pb.AlertRule, error) {
+	// Repository call would go here.
+	s.logger.Infof("ListAlertRules: field=%s", fieldID)
+
+	return nil, nil
+}
+
+func (s *alertService) CreateAlertRule(ctx context.Context, rule *pb.AlertRule) (*pb.AlertRule, error) {
+	if strings.TrimSpace(rule.GetFieldId()) == "" {
+		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
+	}
+	if strings.TrimSpace(rule.GetMetric()) == "" {
+		return nil, errors.BadRequest("INVALID_METRIC", "metric is required")
+	}
+
+	if rule.Id == "" {
+		rule.Id = ulid.NewString()
+	}
+
+	// Repository call would persist the rule here.
+	s.logger.Infof("AlertRule created: id=%s metric=%s field=%s", rule.Id, rule.Metric, rule.FieldId)
+
+	return rule, nil
+}
+
+func (s *alertService) UpdateAlertRule(ctx context.Context, rule *pb.AlertRule) (*pb.AlertRule, error) {
+	if strings.TrimSpace(rule.GetId()) == "" {
+		return nil, errors.BadRequest("INVALID_RULE_ID", "rule id is required")
+	}
+
+	// Repository call would update the rule here.
+	s.logger.Infof("AlertRule updated: id=%s", rule.Id)
+
+	return rule, nil
+}
+
+// ---------- Field Risk ----------
+
+func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.FieldRiskScore, error) {
 	if strings.TrimSpace(fieldID) == "" {
 		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
 	}
@@ -153,97 +237,50 @@ func (s *alertService) EvaluateField(ctx context.Context, fieldID string) (*aler
 
 	result, err := s.aiClient.EvaluateFieldRisk(ctx, requestID, fieldID)
 	if err != nil {
-		s.logger.Errorf("EvaluateField failed: field=%s err=%v", fieldID, err)
+		s.logger.Errorf("GetFieldRisk failed: field=%s err=%v", fieldID, err)
 		return nil, errors.InternalServer("FIELD_EVALUATION_FAILED", "failed to evaluate field risk")
 	}
 
-	s.logger.Infof("Field evaluated: field=%s overall_risk=%.2f alerts=%d",
-		result.FieldID, result.OverallRisk, len(result.Alerts))
-	return result, nil
+	riskFactors := map[string]float64{
+		"temperature": result.TemperatureRisk,
+		"water":       result.WaterRisk,
+		"pest":        result.PestRisk,
+		"disease":     result.DiseaseRisk,
+		"nutrient":    result.NutrientRisk,
+		"growth":      result.GrowthRisk,
+	}
+
+	s.logger.Infof("Field risk evaluated: field=%s overall=%.2f", result.FieldID, result.OverallRisk)
+
+	return &pb.FieldRiskScore{
+		FieldId:      result.FieldID,
+		OverallScore: result.OverallRisk,
+		RiskFactors:  riskFactors,
+		CalculatedAt: result.EvaluatedAt.Format(time.RFC3339),
+	}, nil
 }
 
-// ---------- Alert Rules ----------
+func (s *alertService) ListFieldRisks(ctx context.Context) ([]*pb.FieldRiskScore, error) {
+	// Repository call would go here to list all field risk scores.
+	s.logger.Infof("ListFieldRisks")
 
-func (s *alertService) CreateAlertRule(ctx context.Context, rule *alertmodels.AlertRule) (*alertmodels.AlertRule, error) {
-	if strings.TrimSpace(rule.FieldID) == "" {
-		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
-	}
-	if strings.TrimSpace(rule.FarmID) == "" {
-		return nil, errors.BadRequest("INVALID_FARM_ID", "farm_id is required")
-	}
-	if !rule.AlertType.IsValid() {
-		return nil, errors.BadRequest("INVALID_ALERT_TYPE", "a valid alert_type is required")
-	}
-
-	if rule.ID == "" {
-		rule.ID = ulid.NewString()
-	}
-	now := time.Now()
-	if rule.CreatedAt.IsZero() {
-		rule.CreatedAt = now
-	}
-	rule.UpdatedAt = now
-
-	if rule.CooldownMinutes <= 0 {
-		rule.CooldownMinutes = 60 // default cooldown: 1 hour
-	}
-
-	// Validate thresholds JSON
-	if rule.ThresholdJSON != "" {
-		if _, err := alertmodels.ParseThresholds(rule.ThresholdJSON); err != nil {
-			return nil, errors.BadRequest("INVALID_THRESHOLDS", "threshold_json is not valid JSON")
-		}
-	} else {
-		defaults := alertmodels.DefaultThresholds()
-		marshaled, err := defaults.Marshal()
-		if err != nil {
-			return nil, errors.InternalServer("MARSHAL_THRESHOLDS_FAILED", "failed to serialize default thresholds")
-		}
-		rule.ThresholdJSON = marshaled
-	}
-
-	// Repository call would persist the rule here.
-	s.logger.Infof("AlertRule created: id=%s type=%s field=%s", rule.ID, rule.AlertType, rule.FieldID)
-	return rule, nil
-}
-
-func (s *alertService) ListAlertRules(ctx context.Context, fieldID string) ([]*alertmodels.AlertRule, error) {
-	if strings.TrimSpace(fieldID) == "" {
-		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
-	}
-
-	// Repository call would go here.
-	s.logger.Infof("ListAlertRules: field=%s", fieldID)
 	return nil, nil
 }
 
-func (s *alertService) UpdateAlertRule(ctx context.Context, rule *alertmodels.AlertRule) error {
-	if strings.TrimSpace(rule.ID) == "" {
-		return errors.BadRequest("INVALID_RULE_ID", "rule id is required")
-	}
-	if !rule.AlertType.IsValid() {
-		return errors.BadRequest("INVALID_ALERT_TYPE", "a valid alert_type is required")
-	}
+// ---------- Alert History ----------
 
-	if rule.ThresholdJSON != "" {
-		if _, err := alertmodels.ParseThresholds(rule.ThresholdJSON); err != nil {
-			return errors.BadRequest("INVALID_THRESHOLDS", "threshold_json is not valid JSON")
-		}
+func (s *alertService) ListAlertHistory(ctx context.Context, input ListAlertHistoryInput) ([]*pb.Alert, string, int32, error) {
+	pageSize := input.PageSize
+	if pageSize <= 0 {
+		pageSize = 50
+	}
+	if pageSize > 200 {
+		pageSize = 200
 	}
 
-	rule.UpdatedAt = time.Now()
+	// Repository call would go here with date range filtering.
+	s.logger.Infof("ListAlertHistory: start=%s end=%s farm=%s field=%s page_size=%d",
+		input.StartDate, input.EndDate, input.FarmID, input.FieldID, pageSize)
 
-	// Repository call would update the rule here.
-	s.logger.Infof("AlertRule updated: id=%s", rule.ID)
-	return nil
-}
-
-func (s *alertService) DeleteAlertRule(ctx context.Context, ruleID string) error {
-	if strings.TrimSpace(ruleID) == "" {
-		return errors.BadRequest("INVALID_RULE_ID", "rule id is required")
-	}
-
-	// Repository call would soft-delete the rule here.
-	s.logger.Infof("AlertRule deleted: id=%s", ruleID)
-	return nil
+	return nil, "", 0, nil
 }

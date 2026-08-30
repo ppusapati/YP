@@ -18,6 +18,7 @@ enum PrescriptionType {
 /// Summary data for a single management zone.
 class ZoneSummary extends Equatable {
   final String zone;
+  final int cellCount;
   final double areaHectares;
   final double minRate;
   final double meanRate;
@@ -26,6 +27,7 @@ class ZoneSummary extends Equatable {
 
   const ZoneSummary({
     required this.zone,
+    this.cellCount = 0,
     required this.areaHectares,
     required this.minRate,
     required this.meanRate,
@@ -35,7 +37,7 @@ class ZoneSummary extends Equatable {
 
   @override
   List<Object?> get props =>
-      [zone, areaHectares, minRate, meanRate, maxRate, totalAmount];
+      [zone, cellCount, areaHectares, minRate, meanRate, maxRate, totalAmount];
 }
 
 /// A single prescription map (e.g. fertilizer rates for a field).
@@ -45,6 +47,7 @@ class PrescriptionMap extends Equatable {
   final String unit;
   final double avgRate;
   final double totalAmount;
+  final List<double> rates;
   final List<ZoneSummary> zones;
 
   const PrescriptionMap({
@@ -53,12 +56,13 @@ class PrescriptionMap extends Equatable {
     required this.unit,
     required this.avgRate,
     required this.totalAmount,
+    this.rates = const [],
     this.zones = const [],
   });
 
   @override
   List<Object?> get props =>
-      [id, prescriptionType, unit, avgRate, totalAmount, zones];
+      [id, prescriptionType, unit, avgRate, totalAmount, rates, zones];
 }
 
 /// A bundle of prescriptions generated for a field.
@@ -70,6 +74,7 @@ class PrescriptionBundle extends Equatable {
   final double targetYield;
   final DateTime createdAt;
   final double? estimatedCostSavings;
+  final double? estimatedYieldGain;
   final List<PrescriptionMap> prescriptions;
 
   const PrescriptionBundle({
@@ -80,6 +85,7 @@ class PrescriptionBundle extends Equatable {
     required this.targetYield,
     required this.createdAt,
     this.estimatedCostSavings,
+    this.estimatedYieldGain,
     this.prescriptions = const [],
   });
 
@@ -92,6 +98,7 @@ class PrescriptionBundle extends Equatable {
         targetYield,
         createdAt,
         estimatedCostSavings,
+        estimatedYieldGain,
         prescriptions,
       ];
 }

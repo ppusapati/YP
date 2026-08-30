@@ -109,45 +109,58 @@ type Alert struct {
 	ID              string        `json:"id" db:"id"`
 	FieldID         string        `json:"field_id" db:"field_id"`
 	FarmID          string        `json:"farm_id" db:"farm_id"`
+	FieldName       string        `json:"field_name" db:"field_name"`
 	AlertType       AlertType     `json:"alert_type" db:"alert_type"`
 	Severity        AlertSeverity `json:"severity" db:"severity"`
 	Status          AlertStatus   `json:"status" db:"status"`
 	Title           string        `json:"title" db:"title"`
 	Message         string        `json:"message" db:"message"`
+	Read            bool          `json:"read" db:"read"`
+	ActionURL       string        `json:"action_url,omitempty" db:"action_url"`
 	Recommendations []string      `json:"recommendations" db:"recommendations"`
+	Metrics         map[string]float64 `json:"metrics,omitempty" db:"metrics"`
 	MetricValue     float64       `json:"metric_value" db:"metric_value"`
 	ThresholdValue  float64       `json:"threshold_value" db:"threshold_value"`
 	CreatedAt       time.Time     `json:"created_at" db:"created_at"`
 	AcknowledgedAt  *time.Time    `json:"acknowledged_at,omitempty" db:"acknowledged_at"`
+	AcknowledgedBy  string        `json:"acknowledged_by,omitempty" db:"acknowledged_by"`
 	ResolvedAt      *time.Time    `json:"resolved_at,omitempty" db:"resolved_at"`
 	ExpiresAt       *time.Time    `json:"expires_at,omitempty" db:"expires_at"`
 }
 
 // AlertRule defines a user-configurable rule that triggers alerts.
 type AlertRule struct {
-	ID              string    `json:"id" db:"id"`
-	FieldID         string    `json:"field_id" db:"field_id"`
-	FarmID          string    `json:"farm_id" db:"farm_id"`
-	AlertType       AlertType `json:"alert_type" db:"alert_type"`
-	Enabled         bool      `json:"enabled" db:"enabled"`
-	ThresholdJSON   string    `json:"threshold_json" db:"threshold_json"`
-	NotifyChannels  []string  `json:"notify_channels" db:"notify_channels"`
-	CooldownMinutes int32     `json:"cooldown_minutes" db:"cooldown_minutes"`
-	CreatedAt       time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+	ID              string        `json:"id" db:"id"`
+	FieldID         string        `json:"field_id" db:"field_id"`
+	FarmID          string        `json:"farm_id" db:"farm_id"`
+	AlertType       AlertType     `json:"alert_type" db:"alert_type"`
+	Metric          string        `json:"metric" db:"metric"`
+	Condition       string        `json:"condition" db:"condition"`
+	Threshold       float64       `json:"threshold" db:"threshold"`
+	Severity        AlertSeverity `json:"severity" db:"severity"`
+	Enabled         bool          `json:"enabled" db:"enabled"`
+	ThresholdJSON   string        `json:"threshold_json" db:"threshold_json"`
+	NotifyChannels  []string      `json:"notify_channels" db:"notify_channels"`
+	CooldownMinutes int32         `json:"cooldown_minutes" db:"cooldown_minutes"`
+	CreatedAt       time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at" db:"updated_at"`
 }
 
 // FieldRiskScore mirrors the Rust alert-engine FieldRiskScore output.
 type FieldRiskScore struct {
-	FieldID         string    `json:"field_id"`
-	FarmID          string    `json:"farm_id"`
-	OverallRisk     float64   `json:"overall_risk"`
-	TemperatureRisk float64   `json:"temperature_risk"`
-	WaterRisk       float64   `json:"water_risk"`
-	PestRisk        float64   `json:"pest_risk"`
-	DiseaseRisk     float64   `json:"disease_risk"`
-	NutrientRisk    float64   `json:"nutrient_risk"`
-	GrowthRisk      float64   `json:"growth_risk"`
-	Alerts          []Alert   `json:"alerts"`
-	EvaluatedAt     time.Time `json:"evaluated_at"`
+	FieldID         string             `json:"field_id"`
+	FieldName       string             `json:"field_name"`
+	FarmID          string             `json:"farm_id"`
+	OverallRisk     float64            `json:"overall_risk"`
+	TemperatureRisk float64            `json:"temperature_risk"`
+	WaterRisk       float64            `json:"water_risk"`
+	PestRisk        float64            `json:"pest_risk"`
+	DiseaseRisk     float64            `json:"disease_risk"`
+	NutrientRisk    float64            `json:"nutrient_risk"`
+	GrowthRisk      float64            `json:"growth_risk"`
+	RiskFactors     map[string]float64 `json:"risk_factors"`
+	Alerts          []Alert            `json:"alerts"`
+	EvaluatedAt     time.Time          `json:"evaluated_at"`
+	CalculatedAt    string             `json:"calculated_at"`
+	Trend           string             `json:"trend"`
 }

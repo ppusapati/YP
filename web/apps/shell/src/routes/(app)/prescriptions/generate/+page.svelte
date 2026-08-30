@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
-  import { fieldClient } from '@samavāya/agriculture/services';
+  import { prescriptionClient, fieldClient } from '@samavāya/agriculture/services';
 
   let fieldId = '';
   let cropType = '';
@@ -48,7 +47,7 @@
         targetYield: parseFloat(targetYield),
       };
       if (soilGrid) params.soilData = soilGrid;
-      const res = await analyticsClient.generatePrescription(params);
+      const res = await prescriptionClient.generatePrescription(params);
       const prescriptionId = (res as any).id || (res as any).prescriptionId;
       if (prescriptionId) {
         goto(`/prescriptions/${prescriptionId}`);

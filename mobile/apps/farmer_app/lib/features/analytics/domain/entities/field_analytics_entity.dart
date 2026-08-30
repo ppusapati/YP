@@ -17,25 +17,25 @@ enum YieldTrendDirection {
 class YieldTrend extends Equatable {
   final String season;
   final String crop;
-  final double yield;
+  final double yieldValue;
   final double? ndvi;
 
   const YieldTrend({
     required this.season,
     required this.crop,
-    required this.yield,
+    required this.yieldValue,
     this.ndvi,
   });
 
   @override
-  List<Object?> get props => [season, crop, yield, ndvi];
+  List<Object?> get props => [season, crop, yieldValue, ndvi];
 }
 
 /// Comparison data for a single season against historical means.
 class SeasonComparison extends Equatable {
   final String season;
   final String crop;
-  final double yield;
+  final double yieldValue;
   final double yieldVsMeanPct;
   final int stressDays;
   final double stressVsMeanPct;
@@ -46,7 +46,7 @@ class SeasonComparison extends Equatable {
   const SeasonComparison({
     required this.season,
     required this.crop,
-    required this.yield,
+    required this.yieldValue,
     required this.yieldVsMeanPct,
     required this.stressDays,
     required this.stressVsMeanPct,
@@ -59,7 +59,7 @@ class SeasonComparison extends Equatable {
   List<Object?> get props => [
         season,
         crop,
-        yield,
+        yieldValue,
         yieldVsMeanPct,
         stressDays,
         stressVsMeanPct,

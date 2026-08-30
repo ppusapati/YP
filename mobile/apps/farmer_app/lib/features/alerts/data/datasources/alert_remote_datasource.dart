@@ -21,7 +21,7 @@ class AlertRemoteDataSourceImpl implements AlertRemoteDataSource {
 
   final ConnectClient _client;
 
-  static const _basePath = '/yieldpoint.alert.v1.AlertService';
+  static const _basePath = '/agriculture.alert.v1.AlertService';
 
   Future<Map<String, dynamic>> _post(
       String method, Map<String, dynamic> body) async {

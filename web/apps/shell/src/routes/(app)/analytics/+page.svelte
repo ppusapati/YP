@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
-  import { farmClient, fieldClient } from '@samavāya/agriculture/services';
+  import { fieldAnalyticsClient, farmClient, fieldClient } from '@samavāya/agriculture/services';
 
   let farmId = '';
   let fieldId = '';
@@ -41,7 +40,7 @@
       const params: Record<string, unknown> = { timePeriod };
       if (farmId) params.farmId = farmId;
       if (fieldId) params.fieldId = fieldId;
-      const res = await analyticsClient.getHistoricalMetrics(params);
+      const res = await fieldAnalyticsClient.getHistoricalMetrics(params);
       metrics = res as any;
       fieldList = (res as any).fields || [];
     } catch (e) {

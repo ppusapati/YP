@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { analyticsClient } from '@samavāya/agriculture/services';
+  import { fieldAnalyticsClient } from '@samavāya/agriculture/services';
 
   let rotation: Record<string, unknown> = {};
   let rotationPattern: any[] = [];
@@ -17,7 +17,7 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getRotationAnalysis({ fieldId });
+      const res = await fieldAnalyticsClient.getRotationAnalysis({ fieldId });
       rotation = res as any || {};
       rotationPattern = (res as any).rotationPattern || [];
       recommendations = (res as any).recommendations || [];

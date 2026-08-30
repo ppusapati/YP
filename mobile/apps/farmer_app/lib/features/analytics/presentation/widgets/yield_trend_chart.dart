@@ -20,7 +20,7 @@ class YieldTrendChart extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final maxYield =
-        trends.map((t) => t.yield).reduce((a, b) => a > b ? a : b);
+        trends.map((t) => t.yieldValue).reduce((a, b) => a > b ? a : b);
     final barColor = colorScheme.primary;
 
     return Card(
@@ -40,7 +40,7 @@ class YieldTrendChart extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: trends.map((trend) {
                   final barHeight = maxYield > 0
-                      ? (trend.yield / maxYield) * (height - 24)
+                      ? (trend.yieldValue / maxYield) * (height - 24)
                       : 0.0;
                   return Expanded(
                     child: Padding(
@@ -49,7 +49,7 @@ class YieldTrendChart extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Text(
-                            trend.yield.toStringAsFixed(1),
+                            trend.yieldValue.toStringAsFixed(1),
                             style: theme.textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 9,
