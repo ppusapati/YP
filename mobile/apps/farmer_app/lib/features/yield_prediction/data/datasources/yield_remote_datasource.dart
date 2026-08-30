@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter_network/flutter_network.dart';
 
 import '../models/yield_prediction_model.dart';
 
@@ -17,36 +17,38 @@ abstract class YieldRemoteDataSource {
 }
 
 class YieldRemoteDataSourceImpl implements YieldRemoteDataSource {
-  YieldRemoteDataSourceImpl({
-    required http.Client client,
-    required String baseUrl,
-  })  : _client = client,
-        _baseUrl = baseUrl;
+  const YieldRemoteDataSourceImpl(this._client);
 
-  final http.Client _client;
-  final String _baseUrl;
+  final ConnectClient _client;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  static const _basePath = '/yieldpoint.yield.v1.YieldService';
 
   @override
   Future<List<YieldPredictionModel>> getPredictions({
     String? fieldId,
     String? cropType,
   }) async {
-    final queryParams = <String, String>{};
-    if (fieldId != null) queryParams['field_id'] = fieldId;
-    if (cropType != null) queryParams['crop_type'] = cropType;
+    final reqBody = <String, dynamic>{};
+    if (fieldId != null) reqBody['field_id'] = fieldId;
+    if (cropType != null) reqBody['crop_type'] = cropType;
 
-    final uri = Uri.parse('$_baseUrl/api/v1/yield/predictions')
-        .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+    final response = await _client.unary(
+      '$_basePath/ListPredictions',
+      body: utf8.encoder.convert(jsonEncode(reqBody)),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-    final response = await _client.get(uri, headers: _headers);
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch yield predictions',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final predictions = data['predictions'] as List<dynamic>? ?? [];
+    return predictions
         .map((e) =>
             YieldPredictionModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -54,12 +56,23 @@ class YieldRemoteDataSourceImpl implements YieldRemoteDataSource {
 
   @override
   Future<YieldPredictionModel> getPredictionById(String predictionId) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/yield/predictions/$predictionId'),
-      headers: _headers,
+    final body = jsonEncode({'prediction_id': predictionId});
+
+    final response = await _client.unary(
+      '$_basePath/GetPrediction',
+      body: utf8.encoder.convert(body),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final data = json.decode(response.body)['data'] as Map<String, dynamic>;
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'not_found',
+        message: 'Yield prediction not found',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
     return YieldPredictionModel.fromJson(data);
   }
 
@@ -68,51 +81,28 @@ class YieldRemoteDataSourceImpl implements YieldRemoteDataSource {
     String fieldId, {
     String? cropType,
   }) async {
-    final queryParams = <String, String>{};
-    if (cropType != null) queryParams['crop_type'] = cropType;
+    final reqBody = <String, dynamic>{'field_id': fieldId};
+    if (cropType != null) reqBody['crop_type'] = cropType;
 
-    final uri =
-        Uri.parse('$_baseUrl/api/v1/yield/fields/$fieldId/history')
-            .replace(
-                queryParameters:
-                    queryParams.isNotEmpty ? queryParams : null);
+    final response = await _client.unary(
+      '$_basePath/GetHistory',
+      body: utf8.encoder.convert(jsonEncode(reqBody)),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-    final response = await _client.get(uri, headers: _headers);
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch yield history',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final predictions = data['predictions'] as List<dynamic>? ?? [];
+    return predictions
         .map((e) =>
             YieldPredictionModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
-
-  void _handleError(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw YieldRemoteException(
-        statusCode: response.statusCode,
-        message: _extractErrorMessage(response.body),
-      );
-    }
-  }
-
-  String _extractErrorMessage(String body) {
-    try {
-      return (json.decode(body)['message'] as String?) ?? 'Unknown error';
-    } catch (_) {
-      return 'Server error';
-    }
-  }
-}
-
-class YieldRemoteException implements Exception {
-  const YieldRemoteException({
-    required this.statusCode,
-    required this.message,
-  });
-
-  final int statusCode;
-  final String message;
-
-  @override
-  String toString() => 'YieldRemoteException($statusCode): $message';
 }

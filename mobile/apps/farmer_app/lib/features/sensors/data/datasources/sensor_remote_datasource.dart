@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter_network/flutter_network.dart';
 
 import '../models/sensor_model.dart';
 import '../models/sensor_reading_model.dart';
@@ -19,54 +19,79 @@ abstract class SensorRemoteDataSource {
 }
 
 class SensorRemoteDataSourceImpl implements SensorRemoteDataSource {
-  SensorRemoteDataSourceImpl({
-    required http.Client client,
-    required String baseUrl,
-  })  : _client = client,
-        _baseUrl = baseUrl;
+  const SensorRemoteDataSourceImpl(this._client);
 
-  final http.Client _client;
-  final String _baseUrl;
+  final ConnectClient _client;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  static const _basePath = '/yieldpoint.sensor.v1.SensorService';
 
   @override
   Future<List<SensorModel>> getSensors() async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/sensors'),
-      headers: _headers,
+    final response = await _client.unary(
+      '$_basePath/ListSensors',
+      body: utf8.encoder.convert(jsonEncode(<String, dynamic>{})),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch sensors',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final sensors = data['sensors'] as List<dynamic>? ?? [];
+    return sensors
         .map((e) => SensorModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
   Future<List<SensorModel>> getSensorsByType(String type) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/sensors?type=$type'),
-      headers: _headers,
+    final body = jsonEncode({'type': type});
+
+    final response = await _client.unary(
+      '$_basePath/ListSensors',
+      body: utf8.encoder.convert(body),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch sensors by type',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final sensors = data['sensors'] as List<dynamic>? ?? [];
+    return sensors
         .map((e) => SensorModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
   Future<SensorModel> getSensorById(String sensorId) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/sensors/$sensorId'),
-      headers: _headers,
+    final body = jsonEncode({'sensor_id': sensorId});
+
+    final response = await _client.unary(
+      '$_basePath/GetSensor',
+      body: utf8.encoder.convert(body),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final data = json.decode(response.body)['data'] as Map<String, dynamic>;
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'not_found',
+        message: 'Sensor not found',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
     return SensorModel.fromJson(data);
   }
 
@@ -76,30 +101,50 @@ class SensorRemoteDataSourceImpl implements SensorRemoteDataSource {
     DateTime? from,
     DateTime? to,
   }) async {
-    final queryParams = <String, String>{};
-    if (from != null) queryParams['from'] = from.toIso8601String();
-    if (to != null) queryParams['to'] = to.toIso8601String();
+    final reqBody = <String, dynamic>{'sensor_id': sensorId};
+    if (from != null) reqBody['from'] = from.toIso8601String();
+    if (to != null) reqBody['to'] = to.toIso8601String();
 
-    final uri = Uri.parse('$_baseUrl/api/v1/sensors/$sensorId/readings')
-        .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+    final response = await _client.unary(
+      '$_basePath/ListReadings',
+      body: utf8.encoder.convert(jsonEncode(reqBody)),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-    final response = await _client.get(uri, headers: _headers);
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch sensor readings',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final readings = data['readings'] as List<dynamic>? ?? [];
+    return readings
         .map((e) => SensorReadingModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
   Future<Map<String, SensorModel>> getSensorDashboard() async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/sensors/dashboard'),
-      headers: _headers,
+    final response = await _client.unary(
+      '$_basePath/GetDashboard',
+      body: utf8.encoder.convert(jsonEncode(<String, dynamic>{})),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final Map<String, dynamic> data = json.decode(response.body)['data'];
-    return data.map(
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch sensor dashboard',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final sensors = data['sensors'] as Map<String, dynamic>? ?? {};
+    return sensors.map(
       (key, value) =>
           MapEntry(key, SensorModel.fromJson(value as Map<String, dynamic>)),
     );
@@ -107,41 +152,19 @@ class SensorRemoteDataSourceImpl implements SensorRemoteDataSource {
 
   @override
   Future<void> refreshSensor(String sensorId) async {
-    final response = await _client.post(
-      Uri.parse('$_baseUrl/api/v1/sensors/$sensorId/refresh'),
-      headers: _headers,
-    );
-    _handleError(response);
-  }
+    final body = jsonEncode({'sensor_id': sensorId});
 
-  void _handleError(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw SensorRemoteException(
-        statusCode: response.statusCode,
-        message: _extractErrorMessage(response.body),
+    final response = await _client.unary(
+      '$_basePath/RefreshSensor',
+      body: utf8.encoder.convert(body),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to refresh sensor',
       );
     }
   }
-
-  String _extractErrorMessage(String body) {
-    try {
-      final decoded = json.decode(body);
-      return decoded['message'] as String? ?? 'Unknown error';
-    } catch (_) {
-      return 'Server error';
-    }
-  }
-}
-
-class SensorRemoteException implements Exception {
-  const SensorRemoteException({
-    required this.statusCode,
-    required this.message,
-  });
-
-  final int statusCode;
-  final String message;
-
-  @override
-  String toString() => 'SensorRemoteException($statusCode): $message';
 }

@@ -448,10 +448,7 @@ final getNdviHistoryUseCaseProvider =
 
 final sensorRemoteDataSourceProvider =
     Provider<SensorRemoteDataSource>((ref) {
-  return SensorRemoteDataSourceImpl(
-    client: ref.watch(httpClientProvider),
-    baseUrl: ref.watch(apiBaseUrlProvider),
-  );
+  return SensorRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 final sensorLocalDataSourceProvider =
@@ -488,10 +485,7 @@ final getSensorDashboardUseCaseProvider =
 
 final soilRemoteDataSourceProvider =
     Provider<SoilRemoteDataSource>((ref) {
-  return SoilRemoteDataSourceImpl(
-    client: ref.watch(httpClientProvider),
-    baseUrl: ref.watch(apiBaseUrlProvider),
-  );
+  return SoilRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 final soilLocalDataSourceProvider = Provider<SoilLocalDataSource>((ref) {
@@ -523,10 +517,7 @@ final getSoilHistoryUseCaseProvider =
 
 final irrigationRemoteDataSourceProvider =
     Provider<IrrigationRemoteDataSource>((ref) {
-  return IrrigationRemoteDataSourceImpl(
-    client: ref.watch(httpClientProvider),
-    baseUrl: ref.watch(apiBaseUrlProvider),
-  );
+  return IrrigationRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 final irrigationLocalDataSourceProvider =
@@ -722,10 +713,7 @@ final getFarmHistoryUseCaseProvider =
 
 final yieldRemoteDataSourceProvider =
     Provider<YieldRemoteDataSource>((ref) {
-  return YieldRemoteDataSourceImpl(
-    client: ref.watch(httpClientProvider),
-    baseUrl: ref.watch(apiBaseUrlProvider),
-  );
+  return YieldRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 final yieldLocalDataSourceProvider =

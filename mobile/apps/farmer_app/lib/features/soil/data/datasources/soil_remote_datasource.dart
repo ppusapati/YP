@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter_network/flutter_network.dart';
 
 import '../models/soil_analysis_model.dart';
 
@@ -15,28 +15,31 @@ abstract class SoilRemoteDataSource {
 }
 
 class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
-  SoilRemoteDataSourceImpl({
-    required http.Client client,
-    required String baseUrl,
-  })  : _client = client,
-        _baseUrl = baseUrl;
+  const SoilRemoteDataSourceImpl(this._client);
 
-  final http.Client _client;
-  final String _baseUrl;
+  final ConnectClient _client;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  static const _basePath = '/yieldpoint.soil.v1.SoilService';
 
   @override
   Future<SoilAnalysisModel> getSoilAnalysis(String fieldId) async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/soil/analysis/$fieldId'),
-      headers: _headers,
+    final body = jsonEncode({'field_id': fieldId});
+
+    final response = await _client.unary(
+      '$_basePath/GetSoilAnalysis',
+      body: utf8.encoder.convert(body),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final data = json.decode(response.body)['data'] as Map<String, dynamic>;
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'not_found',
+        message: 'Soil analysis not found',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
     return SoilAnalysisModel.fromJson(data);
   }
 
@@ -46,61 +49,51 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
     DateTime? from,
     DateTime? to,
   }) async {
-    final queryParams = <String, String>{};
-    if (from != null) queryParams['from'] = from.toIso8601String();
-    if (to != null) queryParams['to'] = to.toIso8601String();
+    final reqBody = <String, dynamic>{'field_id': fieldId};
+    if (from != null) reqBody['from'] = from.toIso8601String();
+    if (to != null) reqBody['to'] = to.toIso8601String();
 
-    final uri = Uri.parse('$_baseUrl/api/v1/soil/analysis/$fieldId/history')
-        .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+    final response = await _client.unary(
+      '$_basePath/GetSoilHistory',
+      body: utf8.encoder.convert(jsonEncode(reqBody)),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-    final response = await _client.get(uri, headers: _headers);
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch soil history',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final analyses = data['analyses'] as List<dynamic>? ?? [];
+    return analyses
         .map((e) => SoilAnalysisModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
   Future<List<SoilAnalysisModel>> getAllFieldAnalyses() async {
-    final response = await _client.get(
-      Uri.parse('$_baseUrl/api/v1/soil/analysis'),
-      headers: _headers,
+    final response = await _client.unary(
+      '$_basePath/ListFieldAnalyses',
+      body: utf8.encoder.convert(jsonEncode(<String, dynamic>{})),
+      headers: {'Content-Type': 'application/json'},
     );
-    _handleError(response);
-    final List<dynamic> data = json.decode(response.body)['data'];
-    return data
+
+    if (!response.isSuccess) {
+      throw const ConnectException(
+        code: 'internal',
+        message: 'Failed to fetch field analyses',
+      );
+    }
+
+    final data =
+        jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    final analyses = data['analyses'] as List<dynamic>? ?? [];
+    return analyses
         .map((e) => SoilAnalysisModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
-
-  void _handleError(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw SoilRemoteException(
-        statusCode: response.statusCode,
-        message: _extractErrorMessage(response.body),
-      );
-    }
-  }
-
-  String _extractErrorMessage(String body) {
-    try {
-      return (json.decode(body)['message'] as String?) ?? 'Unknown error';
-    } catch (_) {
-      return 'Server error';
-    }
-  }
-}
-
-class SoilRemoteException implements Exception {
-  const SoilRemoteException({
-    required this.statusCode,
-    required this.message,
-  });
-
-  final int statusCode;
-  final String message;
-
-  @override
-  String toString() => 'SoilRemoteException($statusCode): $message';
 }
