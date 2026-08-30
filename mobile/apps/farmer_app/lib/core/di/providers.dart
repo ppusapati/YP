@@ -134,6 +134,23 @@ import '../../features/yield_prediction/domain/repositories/yield_repository.dar
 import '../../features/yield_prediction/domain/usecases/get_yield_history_usecase.dart';
 import '../../features/yield_prediction/domain/usecases/get_yield_predictions_usecase.dart';
 
+// Field Inspection
+import '../../features/field_inspection/data/datasources/field_inspection_local_datasource.dart';
+import '../../features/field_inspection/data/datasources/field_inspection_remote_datasource.dart';
+import '../../features/field_inspection/data/repositories/field_inspection_repository_impl.dart';
+import '../../features/field_inspection/domain/repositories/field_inspection_repository.dart';
+import '../../features/field_inspection/domain/usecases/create_inspection_usecase.dart';
+import '../../features/field_inspection/domain/usecases/get_inspections_usecase.dart';
+import '../../features/field_inspection/domain/usecases/submit_inspection_usecase.dart';
+
+// Crop Advisory
+import '../../features/crop_advisory/data/datasources/crop_advisory_local_datasource.dart';
+import '../../features/crop_advisory/data/datasources/crop_advisory_remote_datasource.dart';
+import '../../features/crop_advisory/data/repositories/crop_advisory_repository_impl.dart';
+import '../../features/crop_advisory/domain/repositories/crop_advisory_repository.dart';
+import '../../features/crop_advisory/domain/usecases/create_advisory_usecase.dart';
+import '../../features/crop_advisory/domain/usecases/get_advisories_usecase.dart';
+
 // ═══════════════════════════════════════════════════════════════════════
 // Infrastructure providers
 // ═══════════════════════════════════════════════════════════════════════
@@ -738,4 +755,81 @@ final getYieldPredictionsUseCaseProvider =
 final getYieldHistoryUseCaseProvider =
     Provider<GetYieldHistoryUseCase>((ref) {
   return GetYieldHistoryUseCase(ref.watch(yieldRepositoryProvider));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Field Inspection feature
+// ═══════════════════════════════════════════════════════════════════════
+
+final fieldInspectionRemoteDataSourceProvider =
+    Provider<FieldInspectionRemoteDataSource>((ref) {
+  return FieldInspectionRemoteDataSourceImpl(
+      ref.watch(connectClientProvider));
+});
+
+final fieldInspectionLocalDataSourceProvider =
+    Provider<FieldInspectionLocalDataSource>((ref) {
+  return FieldInspectionLocalDataSourceImpl(
+      ref.watch(sharedPreferencesProvider));
+});
+
+final fieldInspectionRepositoryProvider =
+    Provider<FieldInspectionRepository>((ref) {
+  return FieldInspectionRepositoryImpl(
+    remoteDataSource: ref.watch(fieldInspectionRemoteDataSourceProvider),
+    localDataSource: ref.watch(fieldInspectionLocalDataSourceProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+  );
+});
+
+final getInspectionsUseCaseProvider =
+    Provider<GetInspectionsUseCase>((ref) {
+  return GetInspectionsUseCase(
+      ref.watch(fieldInspectionRepositoryProvider));
+});
+
+final createInspectionUseCaseProvider =
+    Provider<CreateInspectionUseCase>((ref) {
+  return CreateInspectionUseCase(
+      ref.watch(fieldInspectionRepositoryProvider));
+});
+
+final submitInspectionUseCaseProvider =
+    Provider<SubmitInspectionUseCase>((ref) {
+  return SubmitInspectionUseCase(
+      ref.watch(fieldInspectionRepositoryProvider));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Crop Advisory feature
+// ═══════════════════════════════════════════════════════════════════════
+
+final cropAdvisoryRemoteDataSourceProvider =
+    Provider<CropAdvisoryRemoteDataSource>((ref) {
+  return CropAdvisoryRemoteDataSourceImpl(ref.watch(connectClientProvider));
+});
+
+final cropAdvisoryLocalDataSourceProvider =
+    Provider<CropAdvisoryLocalDataSource>((ref) {
+  return CropAdvisoryLocalDataSourceImpl(
+      ref.watch(sharedPreferencesProvider));
+});
+
+final cropAdvisoryRepositoryProvider =
+    Provider<CropAdvisoryRepository>((ref) {
+  return CropAdvisoryRepositoryImpl(
+    remoteDataSource: ref.watch(cropAdvisoryRemoteDataSourceProvider),
+    localDataSource: ref.watch(cropAdvisoryLocalDataSourceProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+  );
+});
+
+final getAdvisoriesUseCaseProvider =
+    Provider<GetAdvisoriesUseCase>((ref) {
+  return GetAdvisoriesUseCase(ref.watch(cropAdvisoryRepositoryProvider));
+});
+
+final createAdvisoryUseCaseProvider =
+    Provider<CreateAdvisoryUseCase>((ref) {
+  return CreateAdvisoryUseCase(ref.watch(cropAdvisoryRepositoryProvider));
 });

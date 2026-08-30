@@ -12,12 +12,18 @@ import '../../features/ai_diagnosis/presentation/screens/diagnosis_history_scree
 import '../../features/ai_diagnosis/presentation/screens/diagnosis_result_screen.dart';
 import '../../features/ai_diagnosis/presentation/screens/diagnosis_screen.dart';
 import '../../features/ai_diagnosis/domain/entities/diagnosis_entity.dart';
+import '../../features/crop_advisory/domain/entities/advisory_entity.dart';
+import '../../features/crop_advisory/presentation/screens/advisory_detail_screen.dart';
+import '../../features/crop_advisory/presentation/screens/crop_advisory_screen.dart';
 import '../../features/crop_recommendation/presentation/screens/crop_recommendation_screen.dart';
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/drone/presentation/screens/drone_viewer_screen.dart';
 import '../../features/farm/domain/entities/farm_entity.dart';
 import '../../features/farm/presentation/screens/farm_detail_screen.dart';
 import '../../features/farm/presentation/screens/farm_editor_screen.dart';
 import '../../features/farm/presentation/screens/farm_list_screen.dart';
+import '../../features/field_inspection/presentation/screens/field_inspection_list_screen.dart';
+import '../../features/field_inspection/presentation/screens/inspection_form_screen.dart';
 import '../../features/gps_tracking/presentation/screens/track_detail_screen.dart';
 import '../../features/gps_tracking/presentation/screens/track_history_screen.dart';
 import '../../features/gps_tracking/presentation/screens/tracking_screen.dart';
@@ -31,6 +37,7 @@ import '../../features/observations/presentation/screens/observation_list_screen
 import '../../features/pest_risk/domain/entities/pest_risk_entity.dart';
 import '../../features/pest_risk/presentation/screens/pest_alert_detail_screen.dart';
 import '../../features/pest_risk/presentation/screens/pest_risk_map_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/satellite/presentation/screens/crop_health_dashboard_screen.dart';
 import '../../features/satellite/presentation/screens/satellite_monitoring_screen.dart';
 import '../../features/sensors/presentation/screens/sensor_dashboard_screen.dart';
@@ -47,11 +54,17 @@ import '../../features/traceability/presentation/screens/traceability_screen.dar
 import '../../features/yield_prediction/domain/entities/yield_prediction_entity.dart';
 import '../../features/yield_prediction/presentation/screens/yield_dashboard_screen.dart';
 import '../../features/yield_prediction/presentation/screens/yield_detail_screen.dart';
+import '../auth/role_provider.dart';
+import '../auth/user_role.dart';
 
 /// GoRouter configuration provider.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final role = ref.watch(userRoleProvider);
+  final initialLocation =
+      role == UserRole.agronomist ? '/dashboard' : '/farms';
+
   return GoRouter(
-    initialLocation: '/farms',
+    initialLocation: initialLocation,
     routes: [
       // ─── Shell route with bottom navigation ──────────────────────
       ShellRoute(
@@ -59,6 +72,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return MainScreen(child: child);
         },
         routes: [
+          // ── Farmer home (also shared) ───────────────────────────
           GoRoute(
             path: '/farms',
             pageBuilder: (context, state) => const NoTransitionPage(
@@ -156,10 +170,51 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+
+          // ── Agronomist tabs ─────────────────────────────────────
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DashboardScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/advisory',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CropAdvisoryScreen(),
+            ),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) {
+                  final advisory = state.extra as AdvisoryEntity;
+                  return AdvisoryDetailScreen(advisory: advisory);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ProfileScreen(),
+            ),
+          ),
         ],
       ),
 
       // ─── Full-screen routes (no bottom nav) ──────────────────────
+
+      // Field Inspections (agronomist)
+      GoRoute(
+        path: '/inspections',
+        builder: (context, state) => const FieldInspectionListScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            builder: (context, state) => const InspectionFormScreen(),
+          ),
+        ],
+      ),
 
       // Sensors
       GoRoute(

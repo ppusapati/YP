@@ -3,15 +3,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_ui_core/src/theme/app_theme.dart';
 
+import '../core/auth/role_provider.dart';
 import '../core/di/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/app_theme_provider.dart';
 import '../features/alerts/presentation/bloc/alert_bloc.dart';
 import '../features/ai_diagnosis/presentation/bloc/diagnosis_bloc.dart';
+import '../features/crop_advisory/presentation/bloc/crop_advisory_bloc.dart';
 import '../features/crop_recommendation/presentation/bloc/crop_recommendation_bloc.dart';
 import '../features/drone/presentation/bloc/drone_bloc.dart';
 import '../features/farm/presentation/bloc/farm_bloc.dart';
 import '../features/farm/presentation/bloc/field_bloc.dart';
+import '../features/field_inspection/presentation/bloc/field_inspection_bloc.dart';
 import '../features/gps_tracking/presentation/bloc/gps_tracking_bloc.dart';
 import '../features/irrigation/presentation/bloc/irrigation_bloc.dart';
 import '../features/observations/presentation/bloc/observation_bloc.dart';
@@ -23,7 +26,7 @@ import '../features/tasks/presentation/bloc/task_bloc.dart';
 import '../features/traceability/presentation/bloc/traceability_bloc.dart';
 import '../features/yield_prediction/presentation/bloc/yield_bloc.dart';
 
-/// The root widget of the YieldPoint Farmer app.
+/// The root widget of the unified YieldPoint app.
 class FarmerApp extends ConsumerWidget {
   const FarmerApp({super.key});
 
@@ -31,6 +34,7 @@ class FarmerApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(appRouterProvider);
+    final role = ref.watch(userRoleProvider);
 
     return MultiBlocProvider(
       providers: [
@@ -135,9 +139,23 @@ class FarmerApp extends ConsumerWidget {
             getHistory: ref.read(getYieldHistoryUseCaseProvider),
           ),
         ),
+        // ── Agronomist-specific blocs ────────────────────────────────
+        BlocProvider(
+          create: (context) => FieldInspectionBloc(
+            getInspections: ref.read(getInspectionsUseCaseProvider),
+            createInspection: ref.read(createInspectionUseCaseProvider),
+            submitInspection: ref.read(submitInspectionUseCaseProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => CropAdvisoryBloc(
+            getAdvisories: ref.read(getAdvisoriesUseCaseProvider),
+            createAdvisory: ref.read(createAdvisoryUseCaseProvider),
+          ),
+        ),
       ],
       child: MaterialApp.router(
-        title: 'YieldPoint Farmer',
+        title: role.appTitle,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,

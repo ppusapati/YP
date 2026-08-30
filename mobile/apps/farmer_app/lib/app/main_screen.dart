@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/auth/role_provider.dart';
+import '../core/auth/user_role.dart';
 import '../features/alerts/presentation/widgets/alert_badge.dart';
 
 /// Main scaffold with bottom navigation bar.
 ///
 /// This is the shell that wraps all top-level tab routes. The [child]
 /// parameter comes from [ShellRoute] and represents the current tab content.
-class MainScreen extends StatelessWidget {
+/// The navigation layout adapts based on the current user role.
+class MainScreen extends ConsumerWidget {
   const MainScreen({
     super.key,
     required this.child,
@@ -17,10 +20,12 @@ class MainScreen extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(userRoleProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('YieldPoint'),
+        title: Text(role.appTitle),
         actions: [
           AlertBadge(
             child: IconButton(
@@ -33,41 +38,56 @@ class MainScreen extends StatelessWidget {
         ],
       ),
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex(context),
-        onDestinationSelected: (index) => _onTabSelected(context, index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.satellite_alt_outlined),
-            selectedIcon: Icon(Icons.satellite_alt),
-            label: 'Map',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.photo_camera_outlined),
-            selectedIcon: Icon(Icons.photo_camera),
-            label: 'Diagnosis',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.task_alt_outlined),
-            selectedIcon: Icon(Icons.task_alt),
-            label: 'Tasks',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.more_horiz),
-            label: 'More',
-          ),
-        ],
-      ),
+      bottomNavigationBar: role == UserRole.farmer
+          ? _FarmerNavigationBar(context: context)
+          : _AgronomistNavigationBar(context: context),
+    );
+  }
+}
+
+// ─── Farmer navigation ──────────────────────────────────────────────────
+
+class _FarmerNavigationBar extends StatelessWidget {
+  const _FarmerNavigationBar({required this.context});
+
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext outerContext) {
+    return NavigationBar(
+      selectedIndex: _selectedIndex(),
+      onDestinationSelected: (index) => _onTabSelected(index),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.satellite_alt_outlined),
+          selectedIcon: Icon(Icons.satellite_alt),
+          label: 'Map',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.photo_camera_outlined),
+          selectedIcon: Icon(Icons.photo_camera),
+          label: 'Diagnosis',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.task_alt_outlined),
+          selectedIcon: Icon(Icons.task_alt),
+          label: 'Tasks',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.more_horiz),
+          selectedIcon: Icon(Icons.more_horiz),
+          label: 'More',
+        ),
+      ],
     );
   }
 
-  int _selectedIndex(BuildContext context) {
+  int _selectedIndex() {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/farms')) return 0;
     if (location.startsWith('/satellite')) return 1;
@@ -76,7 +96,7 @@ class MainScreen extends StatelessWidget {
     return 4;
   }
 
-  void _onTabSelected(BuildContext context, int index) {
+  void _onTabSelected(int index) {
     switch (index) {
       case 0:
         context.go('/farms');
@@ -201,6 +221,78 @@ class MainScreen extends StatelessWidget {
     );
   }
 }
+
+// ─── Agronomist navigation ──────────────────────────────────────────────
+
+class _AgronomistNavigationBar extends StatelessWidget {
+  const _AgronomistNavigationBar({required this.context});
+
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext outerContext) {
+    return NavigationBar(
+      selectedIndex: _selectedIndex(),
+      onDestinationSelected: (index) => _onTabSelected(index),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.grass_outlined),
+          selectedIcon: Icon(Icons.grass),
+          label: 'Fields',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.agriculture_outlined),
+          selectedIcon: Icon(Icons.agriculture),
+          label: 'Advisory',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.analytics_outlined),
+          selectedIcon: Icon(Icons.analytics),
+          label: 'Analytics',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outline),
+          selectedIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
+  int _selectedIndex() {
+    final location = GoRouterState.of(context).uri.toString();
+    if (location.startsWith('/dashboard')) return 0;
+    if (location.startsWith('/farms')) return 1;
+    if (location.startsWith('/advisory')) return 2;
+    if (location.startsWith('/satellite') ||
+        location.startsWith('/diagnosis') ||
+        location.startsWith('/tasks')) return 3;
+    if (location.startsWith('/profile')) return 4;
+    return 0;
+  }
+
+  void _onTabSelected(int index) {
+    switch (index) {
+      case 0:
+        context.go('/dashboard');
+      case 1:
+        context.go('/farms');
+      case 2:
+        context.go('/advisory');
+      case 3:
+        context.go('/satellite');
+      case 4:
+        context.go('/profile');
+    }
+  }
+}
+
+// ─── Shared widgets ─────────────────────────────────────────────────────
 
 class _MoreMenuItem extends StatelessWidget {
   const _MoreMenuItem({
