@@ -49,3 +49,11 @@ final class RefreshAlerts extends AlertEvent {
   @override
   List<Object?> get props => [farmId];
 }
+
+final class AcknowledgeAlert extends AlertEvent {
+  const AcknowledgeAlert({required this.alertId});
+  final String alertId;
+
+  @override
+  List<Object?> get props => [alertId];
+}

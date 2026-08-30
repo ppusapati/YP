@@ -7,4 +7,8 @@ abstract class AlertRepository {
   Future<void> markAllAlertsRead({String? farmId});
   Future<int> getUnreadCount({String? farmId});
   Future<List<Alert>> refreshAlerts({String? farmId});
+  Future<Alert> acknowledgeAlert(String alertId);
+  Future<FieldRiskScore> getFieldRisk(String fieldId);
+  Future<List<AlertRule>> getAlertRules({String? fieldId});
+  Future<AlertRule> updateAlertRule(AlertRule rule);
 }

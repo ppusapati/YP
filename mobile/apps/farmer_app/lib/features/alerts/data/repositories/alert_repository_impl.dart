@@ -21,12 +21,15 @@ class AlertRepositoryImpl implements AlertRepository {
   final ConnectivityService _connectivityService;
   static final _log = Logger('AlertRepository');
 
+  bool get _isOnline =>
+      _connectivityService.currentStatus == ConnectivityStatus.online;
+
   @override
   Future<List<Alert>> getAlerts({
     String? farmId,
     AlertSeverity? severity,
   }) async {
-    if (_connectivityService.currentStatus == ConnectivityStatus.online) {
+    if (_isOnline) {
       try {
         final remoteAlerts = await _remoteDataSource.getAlerts(
           farmId: farmId,
@@ -58,7 +61,7 @@ class AlertRepositoryImpl implements AlertRepository {
 
   @override
   Future<Alert> getAlertById(String alertId) async {
-    if (_connectivityService.currentStatus == ConnectivityStatus.online) {
+    if (_isOnline) {
       try {
         return await _remoteDataSource.getAlertById(alertId);
       } on ConnectException catch (e) {
@@ -75,7 +78,7 @@ class AlertRepositoryImpl implements AlertRepository {
   @override
   Future<void> markAlertRead(String alertId) async {
     await _localDataSource.markAlertRead(alertId);
-    if (_connectivityService.currentStatus == ConnectivityStatus.online) {
+    if (_isOnline) {
       try {
         await _remoteDataSource.markAlertRead(alertId);
       } on ConnectException catch (e) {
@@ -87,7 +90,7 @@ class AlertRepositoryImpl implements AlertRepository {
   @override
   Future<void> markAllAlertsRead({String? farmId}) async {
     await _localDataSource.markAllAlertsRead();
-    if (_connectivityService.currentStatus == ConnectivityStatus.online) {
+    if (_isOnline) {
       try {
         await _remoteDataSource.markAllAlertsRead(farmId: farmId);
       } on ConnectException catch (e) {
@@ -98,7 +101,7 @@ class AlertRepositoryImpl implements AlertRepository {
 
   @override
   Future<int> getUnreadCount({String? farmId}) async {
-    if (_connectivityService.currentStatus == ConnectivityStatus.online) {
+    if (_isOnline) {
       try {
         return await _remoteDataSource.getUnreadCount(farmId: farmId);
       } on ConnectException catch (e) {
@@ -116,5 +119,29 @@ class AlertRepositoryImpl implements AlertRepository {
         .toList();
     await _localDataSource.cacheAlerts(models);
     return remoteAlerts;
+  }
+
+  @override
+  Future<Alert> acknowledgeAlert(String alertId) async {
+    return await _remoteDataSource.acknowledgeAlert(alertId);
+  }
+
+  @override
+  Future<FieldRiskScore> getFieldRisk(String fieldId) async {
+    final model = await _remoteDataSource.getFieldRisk(fieldId);
+    return model.toEntity();
+  }
+
+  @override
+  Future<List<AlertRule>> getAlertRules({String? fieldId}) async {
+    final models = await _remoteDataSource.getAlertRules(fieldId: fieldId);
+    return models.map((m) => m.toEntity()).toList();
+  }
+
+  @override
+  Future<AlertRule> updateAlertRule(AlertRule rule) async {
+    final model = AlertRuleModel.fromEntity(rule);
+    final updated = await _remoteDataSource.updateAlertRule(model);
+    return updated.toEntity();
   }
 }

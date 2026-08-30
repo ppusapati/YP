@@ -9,8 +9,11 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
+use crate::alerting::AlertingEngine;
+use crate::analytics::AnalyticsEngine;
 use crate::config::Config;
 use crate::diagnosis::DiagnosisEngine;
+use crate::prescription::PrescriptionEngine;
 use crate::recommend::RecommendEngine;
 use crate::satellite::SatelliteEngine;
 use crate::yield_predict::YieldEngine;
@@ -26,6 +29,9 @@ pub struct AiGatewayServiceImpl {
     yield_engine: Arc<YieldEngine>,
     satellite: Arc<SatelliteEngine>,
     recommend: Arc<RecommendEngine>,
+    alerting: Arc<AlertingEngine>,
+    analytics: Arc<AnalyticsEngine>,
+    prescription: Arc<PrescriptionEngine>,
 }
 
 impl AiGatewayServiceImpl {
@@ -38,6 +44,9 @@ impl AiGatewayServiceImpl {
             yield_engine: Arc::new(YieldEngine::new(model_paths.clone())),
             satellite: Arc::new(SatelliteEngine::new(model_paths.clone())),
             recommend: Arc::new(RecommendEngine::new(model_paths)),
+            alerting: Arc::new(AlertingEngine::new()),
+            analytics: Arc::new(AnalyticsEngine::new()),
+            prescription: Arc::new(PrescriptionEngine::new()),
         }
     }
 }
@@ -206,6 +215,70 @@ impl AiGatewayService for AiGatewayServiceImpl {
         let result = tokio::task::spawn_blocking(move || engine.recommend_crops(&req))
             .await
             .map_err(|e| Status::internal(format!("crop recommendation panicked: {e}")))?;
+
+        Ok(Response::new(result))
+    }
+
+    // ─── Alerting ────────────────────────────────────────────────────
+
+    async fn evaluate_field_risk(
+        &self,
+        request: Request<proto::EvaluateFieldRiskRequest>,
+    ) -> Result<Response<proto::EvaluateFieldRiskResponse>, Status> {
+        let mut req = request.into_inner();
+        req.request_id = ensure_request_id(&req.request_id);
+        tracing::info!(request_id = %req.request_id, field = %req.field_id, "EvaluateFieldRisk");
+
+        let engine = self.alerting.clone();
+        let result = tokio::task::spawn_blocking(move || engine.evaluate_field_risk(&req))
+            .await
+            .map_err(|e| Status::internal(format!("field risk evaluation panicked: {e}")))?;
+
+        Ok(Response::new(result))
+    }
+
+    // ─── Analytics ───────────────────────────────────────────────────
+
+    async fn compute_field_analytics(
+        &self,
+        request: Request<proto::ComputeFieldAnalyticsRequest>,
+    ) -> Result<Response<proto::ComputeFieldAnalyticsResponse>, Status> {
+        let mut req = request.into_inner();
+        req.request_id = ensure_request_id(&req.request_id);
+        tracing::info!(
+            request_id = %req.request_id,
+            field = %req.field_id,
+            seasons = req.seasons.len(),
+            "ComputeFieldAnalytics"
+        );
+
+        let engine = self.analytics.clone();
+        let result = tokio::task::spawn_blocking(move || engine.compute_field_analytics(&req))
+            .await
+            .map_err(|e| Status::internal(format!("field analytics computation panicked: {e}")))?;
+
+        Ok(Response::new(result))
+    }
+
+    // ─── Prescriptions ──────────────────────────────────────────────
+
+    async fn generate_prescription(
+        &self,
+        request: Request<proto::GeneratePrescriptionRequest>,
+    ) -> Result<Response<proto::GeneratePrescriptionResponse>, Status> {
+        let mut req = request.into_inner();
+        req.request_id = ensure_request_id(&req.request_id);
+        tracing::info!(
+            request_id = %req.request_id,
+            field = %req.field_id,
+            types = ?req.prescription_types,
+            "GeneratePrescription"
+        );
+
+        let engine = self.prescription.clone();
+        let result = tokio::task::spawn_blocking(move || engine.generate_prescription(&req))
+            .await
+            .map_err(|e| Status::internal(format!("prescription generation panicked: {e}")))?;
 
         Ok(Response::new(result))
     }

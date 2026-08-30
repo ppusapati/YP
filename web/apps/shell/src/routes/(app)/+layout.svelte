@@ -10,6 +10,7 @@
     'fulfillment', 'insights', 'workflow', 'budget', 'banking',
     'notifications', 'audit', 'platform', 'communication', 'data', 'land',
     'farm-management', 'smart-agriculture', 'crop-intelligence', 'supply-chain',
+    'alerts', 'analytics', 'prescriptions',
   ];
 
   const activeModule = $derived(() => {

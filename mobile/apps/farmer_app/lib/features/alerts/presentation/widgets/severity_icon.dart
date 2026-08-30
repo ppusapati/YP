@@ -29,6 +29,8 @@ class SeverityIcon extends StatelessWidget {
         return Icons.warning_amber_rounded;
       case AlertSeverity.critical:
         return Icons.error_outline;
+      case AlertSeverity.emergency:
+        return Icons.crisis_alert;
     }
   }
 
@@ -39,6 +41,8 @@ class SeverityIcon extends StatelessWidget {
       case AlertSeverity.warning:
         return const Color(0xFFF9A825);
       case AlertSeverity.critical:
+        return const Color(0xFFE65100);
+      case AlertSeverity.emergency:
         return const Color(0xFFD32F2F);
     }
   }
@@ -50,6 +54,8 @@ class SeverityIcon extends StatelessWidget {
       case AlertSeverity.warning:
         return const Color(0xFFF9A825);
       case AlertSeverity.critical:
+        return const Color(0xFFE65100);
+      case AlertSeverity.emergency:
         return const Color(0xFFD32F2F);
     }
   }
@@ -61,6 +67,8 @@ class SeverityIcon extends StatelessWidget {
       case AlertSeverity.warning:
         return const Color(0xFFFFF9C4);
       case AlertSeverity.critical:
+        return const Color(0xFFFFE0B2);
+      case AlertSeverity.emergency:
         return const Color(0xFFFCDAD6);
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 
+import '../../domain/usecases/acknowledge_alert_usecase.dart';
 import '../../domain/usecases/get_alerts_usecase.dart';
 import '../../domain/usecases/get_unread_count_usecase.dart';
 import '../../domain/usecases/mark_alert_read_usecase.dart';
@@ -12,20 +13,24 @@ class AlertBloc extends Bloc<AlertEvent, AlertState> {
     required GetAlertsUseCase getAlerts,
     required MarkAlertReadUseCase markAlertRead,
     required GetUnreadCountUseCase getUnreadCount,
+    required AcknowledgeAlertUseCase acknowledgeAlert,
   })  : _getAlerts = getAlerts,
         _markAlertRead = markAlertRead,
         _getUnreadCount = getUnreadCount,
+        _acknowledgeAlert = acknowledgeAlert,
         super(const AlertInitial()) {
     on<LoadAlerts>(_onLoadAlerts);
     on<MarkRead>(_onMarkRead);
     on<MarkAllRead>(_onMarkAllRead);
     on<FilterAlerts>(_onFilterAlerts);
     on<RefreshAlerts>(_onRefreshAlerts);
+    on<AcknowledgeAlert>(_onAcknowledgeAlert);
   }
 
   final GetAlertsUseCase _getAlerts;
   final MarkAlertReadUseCase _markAlertRead;
   final GetUnreadCountUseCase _getUnreadCount;
+  final AcknowledgeAlertUseCase _acknowledgeAlert;
   static final _log = Logger('AlertBloc');
 
   Future<void> _onLoadAlerts(LoadAlerts event, Emitter<AlertState> emit) async {
@@ -111,6 +116,29 @@ class AlertBloc extends Bloc<AlertEvent, AlertState> {
       ));
     } catch (e, s) {
       _log.severe('Failed to refresh alerts', e, s);
+      emit(AlertError(e.toString()));
+    }
+  }
+
+  Future<void> _onAcknowledgeAlert(
+    AcknowledgeAlert event,
+    Emitter<AlertState> emit,
+  ) async {
+    final currentState = state;
+    try {
+      final acknowledged = await _acknowledgeAlert(event.alertId);
+      emit(AlertAcknowledged(alert: acknowledged));
+      if (currentState is AlertsLoaded) {
+        final updatedAlerts = currentState.alerts.map((alert) {
+          if (alert.id == event.alertId) {
+            return acknowledged;
+          }
+          return alert;
+        }).toList();
+        emit(currentState.copyWith(alerts: updatedAlerts));
+      }
+    } catch (e, s) {
+      _log.severe('Failed to acknowledge alert', e, s);
       emit(AlertError(e.toString()));
     }
   }

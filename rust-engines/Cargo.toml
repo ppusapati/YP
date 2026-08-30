@@ -13,5 +13,8 @@ members = [
     "crop-growth-engine",
     "soil-nutrient-engine",
     "climate-response-engine",
+    "alert-engine",
+    "analytics-engine",
+    "prescription-engine",
 ]
 resolver = "2"

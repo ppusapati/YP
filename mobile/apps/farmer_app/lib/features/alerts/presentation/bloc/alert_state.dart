@@ -68,6 +68,14 @@ final class AlertsLoaded extends AlertState {
       ];
 }
 
+final class AlertAcknowledged extends AlertState {
+  const AlertAcknowledged({required this.alert});
+  final Alert alert;
+
+  @override
+  List<Object?> get props => [alert];
+}
+
 final class AlertError extends AlertState {
   const AlertError(this.message);
   final String message;

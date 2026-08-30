@@ -25,6 +25,10 @@ nutrient-deficiency-engine = { path = "../rust-engines/nutrient-deficiency-engin
 crop-growth-engine = { path = "../rust-engines/crop-growth-engine" }
 soil-nutrient-engine = { path = "../rust-engines/soil-nutrient-engine" }
 climate-response-engine = { path = "../rust-engines/climate-response-engine" }
+alert-engine = { path = "../rust-engines/alert-engine" }
+analytics-engine = { path = "../rust-engines/analytics-engine" }
+prescription-engine = { path = "../rust-engines/prescription-engine" }
+chrono = { version = "0.4", features = ["serde"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }

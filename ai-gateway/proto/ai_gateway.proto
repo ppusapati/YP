@@ -37,6 +37,18 @@ service AIGatewayService {
   // ─── Recommendations ──────────────────────────────────────────────
   // Recommend suitable crops based on soil, climate, and economics.
   rpc RecommendCrops(RecommendCropsRequest) returns (RecommendCropsResponse);
+
+  // ─── Alerting ─────────────────────────────────────────────────────
+  // Evaluate field conditions and return risk scores with alerts.
+  rpc EvaluateFieldRisk(EvaluateFieldRiskRequest) returns (EvaluateFieldRiskResponse);
+
+  // ─── Analytics ────────────────────────────────────────────────────
+  // Compute field-level historical analytics with trend analysis.
+  rpc ComputeFieldAnalytics(ComputeFieldAnalyticsRequest) returns (ComputeFieldAnalyticsResponse);
+
+  // ─── Prescriptions ────────────────────────────────────────────────
+  // Generate variable-rate prescription maps for a field.
+  rpc GeneratePrescription(GeneratePrescriptionRequest) returns (GeneratePrescriptionResponse);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -374,4 +386,215 @@ message ImageData {
   bytes image_bytes = 2; // or inline bytes
   string image_type = 3; // LEAF, STEM, FRUIT, WHOLE_PLANT, ROOT
   string mime_type = 4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alerting Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message EvaluateFieldRiskRequest {
+  string request_id = 1;
+  string field_id = 2;
+  string farm_id = 3;
+  string crop_type = 4;
+  FieldWeather weather = 5;
+  FieldSoilState soil_state = 6;
+  DetectionResults detections = 7;
+  GrowthState growth = 8;
+}
+
+message FieldWeather {
+  double temperature_current = 1;
+  double temperature_min_forecast = 2;
+  double temperature_max_forecast = 3;
+  double precipitation_mm = 4;
+  double precipitation_forecast_mm = 5;
+  double et_reference_mm = 6;
+  double co2_ppm = 7;
+}
+
+message FieldSoilState {
+  double soil_moisture = 1;
+}
+
+message DetectionResults {
+  double pest_confidence = 1;
+  string pest_species = 2;
+  double disease_confidence = 3;
+  string disease_name = 4;
+  double nutrient_severity = 5;
+  string nutrient_type = 6;
+}
+
+message GrowthState {
+  double ndvi_current = 1;
+  double ndvi_previous = 2;
+  double growth_expected = 3;
+  double growth_actual = 4;
+}
+
+message EvaluateFieldRiskResponse {
+  string request_id = 1;
+  string field_id = 2;
+  double overall_risk = 3;
+  double temperature_risk = 4;
+  double water_risk = 5;
+  double pest_risk = 6;
+  double disease_risk = 7;
+  double nutrient_risk = 8;
+  double growth_risk = 9;
+  repeated FieldAlert alerts = 10;
+  int64 processing_time_ms = 11;
+}
+
+message FieldAlert {
+  string alert_type = 1;
+  string severity = 2;
+  string title = 3;
+  string message = 4;
+  repeated string recommendations = 5;
+  double metric_value = 6;
+  double threshold_value = 7;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message ComputeFieldAnalyticsRequest {
+  string request_id = 1;
+  string field_id = 2;
+  string farm_id = 3;
+  repeated SeasonRecord seasons = 4;
+  repeated NdviDataPoint ndvi_series = 5;
+}
+
+message SeasonRecord {
+  string crop_type = 1;
+  string season = 2;
+  int32 year = 3;
+  double yield_kg_per_ha = 4;
+  uint32 stress_days = 5;
+  uint32 frost_events = 6;
+  uint32 heat_events = 7;
+  uint32 drought_days = 8;
+  double total_precipitation_mm = 9;
+  double mean_temperature = 10;
+  double mean_ndvi = 11;
+  double peak_ndvi = 12;
+  double total_thermal_time = 13;
+}
+
+message NdviDataPoint {
+  string date = 1;
+  double mean_ndvi = 2;
+  double min_ndvi = 3;
+  double max_ndvi = 4;
+  double std_dev = 5;
+}
+
+message ComputeFieldAnalyticsResponse {
+  string request_id = 1;
+  string field_id = 2;
+  int32 season_count = 3;
+  string yield_trend = 4;
+  double yield_trend_pct_per_year = 5;
+  double mean_yield = 6;
+  double best_yield = 7;
+  double worst_yield = 8;
+  double yield_variability_cv = 9;
+  string ndvi_trend = 10;
+  double ndvi_trend_per_year = 11;
+  double mean_stress_days_per_season = 12;
+  RotationAnalysis rotation = 13;
+  repeated SeasonComparisonResult season_comparisons = 14;
+  int64 processing_time_ms = 15;
+}
+
+message RotationAnalysis {
+  repeated string rotation_pattern = 1;
+  double effectiveness_score = 2;
+  double yield_impact_pct = 3;
+  double stress_reduction_pct = 4;
+  string recommendation = 5;
+}
+
+message SeasonComparisonResult {
+  string season = 1;
+  int32 year = 2;
+  string crop_type = 3;
+  double yield_vs_mean_pct = 4;
+  double stress_vs_mean_pct = 5;
+  double ndvi_vs_mean_pct = 6;
+  repeated string notable_events = 7;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prescription Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message GeneratePrescriptionRequest {
+  string request_id = 1;
+  string field_id = 2;
+  PrescriptionGrid grid = 3;
+  PrescriptionZoneInput zone_input = 4;
+  PrescriptionCropRequirements crop_requirements = 5;
+  repeated string prescription_types = 6; // FERTILIZER, IRRIGATION, SEEDING, LIMING
+}
+
+message PrescriptionGrid {
+  int32 rows = 1;
+  int32 cols = 2;
+  double cell_size_m = 3;
+  double origin_lat = 4;
+  double origin_lon = 5;
+}
+
+message PrescriptionZoneInput {
+  repeated double ndvi = 1;
+  repeated double soil_nitrogen = 2;
+  repeated double soil_phosphorus = 3;
+  repeated double soil_potassium = 4;
+  repeated double soil_ph = 5;
+  repeated double soil_moisture = 6;
+  repeated double soil_organic_matter = 7;
+}
+
+message PrescriptionCropRequirements {
+  string crop_type = 1;
+  double target_yield_kg_ha = 2;
+  double nitrogen_kg_ha = 3;
+  double phosphorus_kg_ha = 4;
+  double potassium_kg_ha = 5;
+  double optimal_ph_low = 6;
+  double optimal_ph_high = 7;
+  double water_requirement_mm = 8;
+  double seed_rate_per_ha = 9;
+}
+
+message GeneratePrescriptionResponse {
+  string request_id = 1;
+  string field_id = 2;
+  repeated PrescriptionMapResult prescriptions = 3;
+  double estimated_cost_savings_pct = 4;
+  double estimated_yield_gain_pct = 5;
+  int64 processing_time_ms = 6;
+}
+
+message PrescriptionMapResult {
+  string prescription_type = 1;
+  repeated double rates = 2;
+  string unit = 3;
+  double total_amount = 4;
+  repeated PrescriptionZoneSummary zone_summaries = 5;
+}
+
+message PrescriptionZoneSummary {
+  string zone = 1;
+  int32 cell_count = 2;
+  double area_ha = 3;
+  double mean_rate = 4;
+  double min_rate = 5;
+  double max_rate = 6;
+  double total_amount = 7;
 }

@@ -35,6 +35,8 @@ class RoleRoutes {
     '/soil',
     '/pest-risk',
     '/alerts',
+    '/analytics',
+    '/prescriptions',
   };
 
   /// Returns true if the given [path] is accessible by [role].
