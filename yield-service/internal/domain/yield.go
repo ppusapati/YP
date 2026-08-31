@@ -191,3 +191,30 @@ var BaseCropYieldKgPerHectare = map[string]float64{
 	"sunflower": 1500.0,
 	"default":   4000.0,
 }
+
+// YieldStatus represents the status of a yield entity in the ports CRUD layer.
+type YieldStatus string
+
+const (
+	YieldStatusActive   YieldStatus = "ACTIVE"
+	YieldStatusInactive YieldStatus = "INACTIVE"
+	YieldStatusArchived YieldStatus = "ARCHIVED"
+)
+
+// Yield is the aggregate root used by the ports layer for CRUD operations.
+type Yield struct {
+	models.BaseModel
+	TenantID string      `json:"tenant_id" db:"tenant_id"`
+	Name     string      `json:"name" db:"name"`
+	Status   YieldStatus `json:"status" db:"status"`
+	Version  int64       `json:"version" db:"version"`
+}
+
+// ListYieldParams holds filter and pagination parameters for listing yields via the ports layer.
+type ListYieldParams struct {
+	TenantID string
+	Status   *YieldStatus
+	Search   *string
+	PageSize int32
+	Offset   int32
+}

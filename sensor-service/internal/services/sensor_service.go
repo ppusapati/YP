@@ -699,9 +699,9 @@ func (s *sensorService) evaluateThresholdAlerts(ctx context.Context, tenantID, s
 				Severity:   alertRule.Severity,
 				Message: fmt.Sprintf("sensor %s (%s): value %.2f %s threshold %.2f",
 					sensorID, sensor.SensorType, value, alertRule.Condition, alertRule.Threshold),
-				UUID:      ulid.NewString(),
-				CreatedBy: "system",
 			}
+			triggeredAlert.UUID = ulid.NewString()
+			triggeredAlert.CreatedBy = "system"
 			triggeredAlert.IsActive = true
 
 			created, createErr := s.repo.CreateAlert(ctx, triggeredAlert)

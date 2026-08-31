@@ -150,9 +150,9 @@ func (s *diagnosisService) SubmitDiagnosis(ctx context.Context, params SubmitDia
 
 	// 1. Create the diagnosis request in PENDING state
 	req := &models.DiagnosisRequest{
-		FarmID:    params.FarmID,
-		CreatedBy: userID,
+		FarmID: params.FarmID,
 	}
+	req.CreatedBy = userID
 	if params.FieldID != "" {
 		req.FieldID = &params.FieldID
 	}
@@ -460,8 +460,8 @@ func (s *diagnosisService) generateTreatmentPlan(ctx context.Context, req *model
 		Title:              fmt.Sprintf("Treatment Plan for Diagnosis %s", req.UUID),
 		Priority:           string(priority),
 		Steps:              stepsJSON,
-		CreatedBy:          userID,
 	}
+	plan.CreatedBy = userID
 
 	summary := fmt.Sprintf(
 		"Plan addresses %d disease(s), %d nutrient deficiency(ies), and %d pest(s) with %d treatment steps.",

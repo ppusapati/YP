@@ -90,6 +90,7 @@ const (
 type Sensor struct {
 	models.BaseModel
 	TenantID               string          `json:"tenant_id" db:"tenant_id"`
+	Name                   string          `json:"name" db:"name"`
 	FieldID                string          `json:"field_id" db:"field_id"`
 	FarmID                 string          `json:"farm_id" db:"farm_id"`
 	SensorType             SensorType      `json:"sensor_type" db:"sensor_type"`
@@ -254,4 +255,17 @@ type AlertListFilter struct {
 	UnacknowledgedOnly bool
 	PageSize           int32
 	PageOffset         int32
+}
+
+// ListSensorParams holds filter and pagination parameters for listing sensors via the ports layer.
+type ListSensorParams struct {
+	TenantID   string
+	FieldID    *string
+	FarmID     *string
+	SensorType *SensorType
+	Status     *SensorStatus
+	Protocol   *SensorProtocol
+	Search     *string
+	PageSize   int32
+	Offset     int32
 }

@@ -191,3 +191,16 @@ var BaseCropYieldKgPerHectare = map[string]float64{
 	"sunflower":  1500.0,
 	"default":    4000.0,
 }
+
+// HarvestDateInput wraps a time value for optional harvest date input.
+type HarvestDateInput = HarvestDateInputType
+
+// HarvestDateInputType wraps a time.Time for harvest date input fields.
+type HarvestDateInputType struct {
+	Time time.Time `json:"time"`
+}
+
+// PlanDateInput wraps a time.Time for harvest plan date input fields.
+type PlanDateInput struct {
+	Time time.Time `json:"time"`
+}

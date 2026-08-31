@@ -3,6 +3,8 @@ package domain
 import (
 	"encoding/json"
 	"time"
+
+	"p9e.in/samavaya/packages/models"
 )
 
 // SupplyChainEventType represents the type of supply chain event.
@@ -279,4 +281,31 @@ type ListBatchesFilter struct {
 	RecordID   string
 	PageSize   int32
 	PageOffset int32
+}
+
+// TraceabilityStatus represents the status of a traceability entity in the ports CRUD layer.
+type TraceabilityStatus string
+
+const (
+	TraceabilityStatusActive   TraceabilityStatus = "ACTIVE"
+	TraceabilityStatusInactive TraceabilityStatus = "INACTIVE"
+	TraceabilityStatusArchived TraceabilityStatus = "ARCHIVED"
+)
+
+// Traceability is the aggregate root used by the ports layer for CRUD operations.
+type Traceability struct {
+	models.BaseModel
+	TenantID string             `json:"tenant_id" db:"tenant_id"`
+	Name     string             `json:"name" db:"name"`
+	Status   TraceabilityStatus `json:"status" db:"status"`
+	Version  int64              `json:"version" db:"version"`
+}
+
+// ListTraceabilityParams holds filter and pagination parameters for listing traceability records via the ports layer.
+type ListTraceabilityParams struct {
+	TenantID string
+	Status   *TraceabilityStatus
+	Search   *string
+	PageSize int32
+	Offset   int32
 }
