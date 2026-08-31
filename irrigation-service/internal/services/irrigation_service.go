@@ -767,12 +767,11 @@ func (s *irrigationService) emitIrrigationEvent(ctx context.Context, eventType d
 	tenantID := p9context.TenantID(ctx)
 	requestID := p9context.RequestID(ctx)
 
-	event := domain.NewDomainEvent(eventType, aggregateID, "irrigation").
+	event := domain.NewDomainEvent(eventType, aggregateID, "irrigation", data).
 		WithSource(serviceName).
 		WithCorrelationID(requestID).
 		WithMetadata("tenant_id", tenantID).
 		WithPriority(domain.PriorityMedium)
-	event.Data = data
 
 	if s.d.KafkaProducer != nil {
 		eventJSON, err := json.Marshal(event)

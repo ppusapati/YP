@@ -14,28 +14,28 @@ import (
 )
 
 type pestClient struct {
-	client pestpredictionv1connect.PestServiceClient
+	client pestpredictionv1connect.PestPredictionServiceClient
 }
 
 // NewPestClient creates a Connect-backed PestClient.
 func NewPestClient(baseURL string, httpClient *http.Client, opts ...connect.ClientOption) outbound.PestClient {
 	return &pestClient{
-		client: pestpredictionv1connect.NewPestServiceClient(httpClient, baseURL, opts...),
+		client: pestpredictionv1connect.NewPestPredictionServiceClient(httpClient, baseURL, opts...),
 	}
 }
 
 func (c *pestClient) PestExists(ctx context.Context, uuid, tenantID string) (bool, error) {
-	resp, err := c.client.GetPest(ctx, connect.NewRequest(&pestpredictionv1.GetPestRequest{Id: uuid}))
+	resp, err := c.client.GetPrediction(ctx, connect.NewRequest(&pestpredictionv1.GetPredictionRequest{Id: uuid}))
 	if err != nil {
 		return false, nil
 	}
-	return resp.Msg.GetPest() != nil, nil
+	return resp.Msg.GetPrediction() != nil, nil
 }
 
 func (c *pestClient) GetLatestPrediction(ctx context.Context, fieldUUID, tenantID string) (string, error) {
-	resp, err := c.client.GetLatestPrediction(ctx, connect.NewRequest(&pestpredictionv1.GetLatestPredictionRequest{FieldId: fieldUUID}))
+	resp, err := c.client.PredictPestRisk(ctx, connect.NewRequest(&pestpredictionv1.PredictPestRiskRequest{FieldId: fieldUUID}))
 	if err != nil {
 		return "", err
 	}
-	return resp.Msg.GetRiskLevel(), nil
+	return resp.Msg.GetPrediction().GetRiskLevel().String(), nil
 }

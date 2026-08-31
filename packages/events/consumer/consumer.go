@@ -105,6 +105,44 @@ func (kc *KafkaConsumer) watchSignals(ctx context.Context) context.Context {
 	return ctx
 }
 
+// Subscribe registers a callback handler for a given topic. It creates a
+// consumer group and starts consuming in the background. The handler is called
+// for each message received on the topic with the raw payload bytes extracted
+// from the EventMessage's Any value.
+func (kc *KafkaConsumer) Subscribe(ctx context.Context, topic string, handler func(ctx context.Context, data []byte) error) error {
+	if kc.shutdown.Load() {
+		return nil
+	}
+
+	consumer := kc.ConsumerGroup(kc.config.Group + "-" + topic)
+	if consumer == nil {
+		return nil
+	}
+
+	msgCh := make(chan *message.EventMessage, 100)
+	kc.ConsumingTopic(ctx, consumer, topic, msgCh)
+
+	go func() {
+		defer consumer.Close()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-msgCh:
+				if !ok {
+					return
+				}
+				data := msg.GetValue().GetValue()
+				if err := handler(ctx, data); err != nil {
+					kc.log.Errorf("Error handling message from topic %s: %v", topic, err)
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+
 func (kc *KafkaConsumer) Cleanup() {
 	kc.shutdown.Store(true)
 }

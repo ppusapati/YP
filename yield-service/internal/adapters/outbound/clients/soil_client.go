@@ -25,17 +25,17 @@ func NewSoilClient(baseURL string, httpClient *http.Client, opts ...connect.Clie
 }
 
 func (c *soilClient) SoilExists(ctx context.Context, uuid, tenantID string) (bool, error) {
-	resp, err := c.client.GetSoil(ctx, connect.NewRequest(&soilv1.GetSoilRequest{Id: uuid}))
+	resp, err := c.client.GetSoilSample(ctx, connect.NewRequest(&soilv1.GetSoilSampleRequest{Id: uuid}))
 	if err != nil {
 		return false, nil
 	}
-	return resp.Msg.GetSoil() != nil, nil
+	return resp.Msg.GetSample() != nil, nil
 }
 
 func (c *soilClient) GetLatestAnalysis(ctx context.Context, fieldUUID, tenantID string) (float64, error) {
-	resp, err := c.client.GetLatestAnalysis(ctx, connect.NewRequest(&soilv1.GetLatestAnalysisRequest{FieldId: fieldUUID}))
+	resp, err := c.client.GetSoilHealth(ctx, connect.NewRequest(&soilv1.GetSoilHealthRequest{FieldId: fieldUUID}))
 	if err != nil {
 		return 0, err
 	}
-	return resp.Msg.GetHealthScore(), nil
+	return resp.Msg.GetHealthScore().GetOverallScore(), nil
 }

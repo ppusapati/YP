@@ -186,7 +186,7 @@ func (h *FieldEventHandler) onFieldUpdated(_ context.Context, evt *domain.Domain
 	)
 	if h.deps.Cache != nil {
 		cacheKey := fmt.Sprintf("field:%s", evt.AggregateID)
-		_ = h.deps.Cache.Delete(context.Background(), cacheKey)
+		h.deps.Cache.Delete(cacheKey)
 	}
 	return nil
 }
@@ -197,7 +197,7 @@ func (h *FieldEventHandler) onFieldDeleted(_ context.Context, evt *domain.Domain
 	)
 	if h.deps.Cache != nil {
 		cacheKey := fmt.Sprintf("field:%s", evt.AggregateID)
-		_ = h.deps.Cache.Delete(context.Background(), cacheKey)
+		h.deps.Cache.Delete(cacheKey)
 	}
 	return nil
 }

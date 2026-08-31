@@ -37,5 +37,5 @@ func (c *sensorClient) GetLatestReading(ctx context.Context, sensorUUID, tenantI
 	if err != nil {
 		return 0, err
 	}
-	return resp.Msg.GetValue(), nil
+	return resp.Msg.GetReading().GetValue(), nil
 }
