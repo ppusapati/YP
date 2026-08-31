@@ -105,7 +105,7 @@ func main() {
 	path, yieldHandler := yieldv1connect.NewYieldServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

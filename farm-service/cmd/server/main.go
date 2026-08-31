@@ -105,7 +105,7 @@ func main() {
 	path, farmHandler := farmv1connect.NewFarmServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

@@ -96,7 +96,7 @@ func main() {
 	path, soilHandler := soilv1connect.NewSoilServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

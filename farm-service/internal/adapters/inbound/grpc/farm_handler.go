@@ -11,11 +11,13 @@ import (
 	"fmt"
 	"strconv"
 
+	"connectrpc.com/connect"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 
 	pb "p9e.in/samavaya/agriculture/farm-service/api/v1"
+	"p9e.in/samavaya/agriculture/farm-service/api/v1/farmv1connect"
 	"p9e.in/samavaya/agriculture/farm-service/internal/domain"
 	"p9e.in/samavaya/agriculture/farm-service/internal/mappers"
 	"p9e.in/samavaya/agriculture/farm-service/internal/ports/inbound"
@@ -24,6 +26,7 @@ import (
 // FarmHandler is the ConnectRPC inbound adapter.  It implements the
 // proto-generated FarmServiceHandler interface and delegates to FarmService.
 type FarmHandler struct {
+	farmv1connect.UnimplementedFarmServiceHandler
 	svc inbound.FarmService
 	log *p9log.Helper
 }
@@ -37,31 +40,31 @@ func NewFarmHandler(svc inbound.FarmService, log p9log.Logger) *FarmHandler {
 }
 
 // CreateFarm handles farm creation requests.
-func (h *FarmHandler) CreateFarm(ctx context.Context, req *pb.CreateFarmRequest) (*pb.CreateFarmResponse, error) {
+func (h *FarmHandler) CreateFarm(ctx context.Context, req *connect.Request[pb.CreateFarmRequest]) (*connect.Response[pb.CreateFarmResponse], error) {
 	requestID := p9context.RequestID(ctx)
 	tenantID := p9context.TenantID(ctx)
 	userID := p9context.UserID(ctx)
 
 	h.log.Infow("msg", "CreateFarm request", "tenant_id", tenantID, "request_id", requestID)
 
-	if req.GetName() == "" {
+	if req.Msg.GetName() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm name is required")
 	}
 
-	farm := mappers.CreateFarmRequestToDomain(req, tenantID, userID)
+	farm := mappers.CreateFarmRequestToDomain(req.Msg, tenantID, userID)
 
 	var ownerInfo *domain.FarmOwner
-	if req.GetOwner() != nil {
+	if req.Msg.GetOwner() != nil {
 		ownerInfo = &domain.FarmOwner{
-			UserID:              req.GetOwner().GetUserId(),
-			OwnerName:           req.GetOwner().GetOwnerName(),
+			UserID:              req.Msg.GetOwner().GetUserId(),
+			OwnerName:           req.Msg.GetOwner().GetOwnerName(),
 			IsPrimary:           true,
-			OwnershipPercentage: req.GetOwner().GetOwnershipPercentage(),
+			OwnershipPercentage: req.Msg.GetOwner().GetOwnershipPercentage(),
 		}
-		if email := req.GetOwner().GetEmail(); email != "" {
+		if email := req.Msg.GetOwner().GetEmail(); email != "" {
 			ownerInfo.Email = &email
 		}
-		if phone := req.GetOwner().GetPhone(); phone != "" {
+		if phone := req.Msg.GetOwner().GetPhone(); phone != "" {
 			ownerInfo.Phone = &phone
 		}
 	}
@@ -71,52 +74,52 @@ func (h *FarmHandler) CreateFarm(ctx context.Context, req *pb.CreateFarmRequest)
 		h.log.Errorw("msg", "CreateFarm failed", "error", err, "request_id", requestID)
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateFarmResponse{Farm: mappers.FarmToProto(created)}, nil
+	return connect.NewResponse(&pb.CreateFarmResponse{Farm: mappers.FarmToProto(created)}), nil
 }
 
 // GetFarm handles get farm requests.
-func (h *FarmHandler) GetFarm(ctx context.Context, req *pb.GetFarmRequest) (*pb.GetFarmResponse, error) {
-	h.log.Infow("msg", "GetFarm request", "id", req.GetId(), "request_id", p9context.RequestID(ctx))
-	if req.GetId() == "" {
+func (h *FarmHandler) GetFarm(ctx context.Context, req *connect.Request[pb.GetFarmRequest]) (*connect.Response[pb.GetFarmResponse], error) {
+	h.log.Infow("msg", "GetFarm request", "id", req.Msg.GetId(), "request_id", p9context.RequestID(ctx))
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm ID is required")
 	}
-	farm, err := h.svc.GetFarm(ctx, req.GetId())
+	farm, err := h.svc.GetFarm(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetFarmResponse{Farm: mappers.FarmToProto(farm)}, nil
+	return connect.NewResponse(&pb.GetFarmResponse{Farm: mappers.FarmToProto(farm)}), nil
 }
 
 // ListFarms handles list farms requests.
-func (h *FarmHandler) ListFarms(ctx context.Context, req *pb.ListFarmsRequest) (*pb.ListFarmsResponse, error) {
+func (h *FarmHandler) ListFarms(ctx context.Context, req *connect.Request[pb.ListFarmsRequest]) (*connect.Response[pb.ListFarmsResponse], error) {
 	h.log.Infow("msg", "ListFarms request", "request_id", p9context.RequestID(ctx))
 
-	params := domain.ListFarmsParams{PageSize: req.GetPageSize()}
+	params := domain.ListFarmsParams{PageSize: req.Msg.GetPageSize()}
 
-	if pt := req.GetPageToken(); pt != "" {
+	if pt := req.Msg.GetPageToken(); pt != "" {
 		if off, err := strconv.ParseInt(pt, 10, 32); err == nil {
 			params.Offset = int32(off)
 		}
 	}
-	if req.GetFarmType() != pb.FarmType_FARM_TYPE_UNSPECIFIED {
-		ft := mappers.ProtoFarmTypeToDomain(req.GetFarmType())
+	if req.Msg.GetFarmType() != pb.FarmType_FARM_TYPE_UNSPECIFIED {
+		ft := mappers.ProtoFarmTypeToDomain(req.Msg.GetFarmType())
 		params.FarmType = &ft
 	}
-	if req.GetStatus() != pb.FarmStatus_FARM_STATUS_UNSPECIFIED {
-		st := mappers.ProtoFarmStatusToDomain(req.GetStatus())
+	if req.Msg.GetStatus() != pb.FarmStatus_FARM_STATUS_UNSPECIFIED {
+		st := mappers.ProtoFarmStatusToDomain(req.Msg.GetStatus())
 		params.Status = &st
 	}
-	if r := req.GetRegion(); r != "" {
+	if r := req.Msg.GetRegion(); r != "" {
 		params.Region = &r
 	}
-	if c := req.GetCountry(); c != "" {
+	if c := req.Msg.GetCountry(); c != "" {
 		params.Country = &c
 	}
-	if req.GetClimateZone() != pb.ClimateZone_CLIMATE_ZONE_UNSPECIFIED {
-		cz := mappers.ProtoClimateZoneToDomain(req.GetClimateZone())
+	if req.Msg.GetClimateZone() != pb.ClimateZone_CLIMATE_ZONE_UNSPECIFIED {
+		cz := mappers.ProtoClimateZoneToDomain(req.Msg.GetClimateZone())
 		params.ClimateZone = &cz
 	}
-	if s := req.GetSearch(); s != "" {
+	if s := req.Msg.GetSearch(); s != "" {
 		params.Search = &s
 	}
 
@@ -128,98 +131,98 @@ func (h *FarmHandler) ListFarms(ctx context.Context, req *pb.ListFarmsRequest) (
 	if next := params.Offset + params.PageSize; next < total {
 		resp.NextPageToken = fmt.Sprintf("%d", next)
 	}
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // UpdateFarm handles farm update requests.
-func (h *FarmHandler) UpdateFarm(ctx context.Context, req *pb.UpdateFarmRequest) (*pb.UpdateFarmResponse, error) {
+func (h *FarmHandler) UpdateFarm(ctx context.Context, req *connect.Request[pb.UpdateFarmRequest]) (*connect.Response[pb.UpdateFarmResponse], error) {
 	requestID := p9context.RequestID(ctx)
 	tenantID := p9context.TenantID(ctx)
 	userID := p9context.UserID(ctx)
 
-	h.log.Infow("msg", "UpdateFarm request", "id", req.GetId(), "request_id", requestID)
-	if req.GetId() == "" {
+	h.log.Infow("msg", "UpdateFarm request", "id", req.Msg.GetId(), "request_id", requestID)
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm ID is required")
 	}
 
-	farm := mappers.UpdateFarmRequestToDomain(req, tenantID, userID)
+	farm := mappers.UpdateFarmRequestToDomain(req.Msg, tenantID, userID)
 
 	updated, err := h.svc.UpdateFarm(ctx, farm)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateFarmResponse{Farm: mappers.FarmToProto(updated)}, nil
+	return connect.NewResponse(&pb.UpdateFarmResponse{Farm: mappers.FarmToProto(updated)}), nil
 }
 
 // DeleteFarm handles farm deletion requests.
-func (h *FarmHandler) DeleteFarm(ctx context.Context, req *pb.DeleteFarmRequest) (*pb.DeleteFarmResponse, error) {
-	h.log.Infow("msg", "DeleteFarm request", "id", req.GetId(), "request_id", p9context.RequestID(ctx))
-	if req.GetId() == "" {
+func (h *FarmHandler) DeleteFarm(ctx context.Context, req *connect.Request[pb.DeleteFarmRequest]) (*connect.Response[pb.DeleteFarmResponse], error) {
+	h.log.Infow("msg", "DeleteFarm request", "id", req.Msg.GetId(), "request_id", p9context.RequestID(ctx))
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm ID is required")
 	}
-	if err := h.svc.DeleteFarm(ctx, req.GetId()); err != nil {
+	if err := h.svc.DeleteFarm(ctx, req.Msg.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteFarmResponse{Success: true}, nil
+	return connect.NewResponse(&pb.DeleteFarmResponse{Success: true}), nil
 }
 
 // SetFarmBoundary handles set boundary requests.
-func (h *FarmHandler) SetFarmBoundary(ctx context.Context, req *pb.SetFarmBoundaryRequest) (*pb.SetFarmBoundaryResponse, error) {
-	h.log.Infow("msg", "SetFarmBoundary request", "farm_id", req.GetFarmId(), "request_id", p9context.RequestID(ctx))
-	if req.GetFarmId() == "" {
+func (h *FarmHandler) SetFarmBoundary(ctx context.Context, req *connect.Request[pb.SetFarmBoundaryRequest]) (*connect.Response[pb.SetFarmBoundaryResponse], error) {
+	h.log.Infow("msg", "SetFarmBoundary request", "farm_id", req.Msg.GetFarmId(), "request_id", p9context.RequestID(ctx))
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	if req.GetGeojson() == "" {
+	if req.Msg.GetGeojson() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "geojson is required")
 	}
-	boundary, err := h.svc.SetFarmBoundary(ctx, req.GetFarmId(), req.GetGeojson())
+	boundary, err := h.svc.SetFarmBoundary(ctx, req.Msg.GetFarmId(), req.Msg.GetGeojson())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.SetFarmBoundaryResponse{Boundary: mappers.FarmBoundaryToProto(boundary)}, nil
+	return connect.NewResponse(&pb.SetFarmBoundaryResponse{Boundary: mappers.FarmBoundaryToProto(boundary)}), nil
 }
 
 // GetFarmBoundary handles get boundary requests.
-func (h *FarmHandler) GetFarmBoundary(ctx context.Context, req *pb.GetFarmBoundaryRequest) (*pb.GetFarmBoundaryResponse, error) {
-	h.log.Infow("msg", "GetFarmBoundary request", "farm_id", req.GetFarmId())
-	if req.GetFarmId() == "" {
+func (h *FarmHandler) GetFarmBoundary(ctx context.Context, req *connect.Request[pb.GetFarmBoundaryRequest]) (*connect.Response[pb.GetFarmBoundaryResponse], error) {
+	h.log.Infow("msg", "GetFarmBoundary request", "farm_id", req.Msg.GetFarmId())
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	boundary, err := h.svc.GetFarmBoundary(ctx, req.GetFarmId())
+	boundary, err := h.svc.GetFarmBoundary(ctx, req.Msg.GetFarmId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetFarmBoundaryResponse{Boundary: mappers.FarmBoundaryToProto(boundary)}, nil
+	return connect.NewResponse(&pb.GetFarmBoundaryResponse{Boundary: mappers.FarmBoundaryToProto(boundary)}), nil
 }
 
 // TransferOwnership handles ownership transfer requests.
-func (h *FarmHandler) TransferOwnership(ctx context.Context, req *pb.TransferOwnershipRequest) (*pb.TransferOwnershipResponse, error) {
-	h.log.Infow("msg", "TransferOwnership request", "farm_id", req.GetFarmId())
-	if req.GetFarmId() == "" {
+func (h *FarmHandler) TransferOwnership(ctx context.Context, req *connect.Request[pb.TransferOwnershipRequest]) (*connect.Response[pb.TransferOwnershipResponse], error) {
+	h.log.Infow("msg", "TransferOwnership request", "farm_id", req.Msg.GetFarmId())
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	if req.GetFromUserId() == "" {
+	if req.Msg.GetFromUserId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "from_user_id is required")
 	}
-	if req.GetToUserId() == "" {
+	if req.Msg.GetToUserId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "to_user_id is required")
 	}
-	if req.GetToOwnerName() == "" {
+	if req.Msg.GetToOwnerName() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "to_owner_name is required")
 	}
 
 	params := domain.TransferOwnershipParams{
-		FarmUUID:            req.GetFarmId(),
-		FromUserID:          req.GetFromUserId(),
-		ToUserID:            req.GetToUserId(),
-		ToOwnerName:         req.GetToOwnerName(),
-		ToEmail:             req.GetToEmail(),
-		ToPhone:             req.GetToPhone(),
-		OwnershipPercentage: req.GetOwnershipPercentage(),
+		FarmUUID:            req.Msg.GetFarmId(),
+		FromUserID:          req.Msg.GetFromUserId(),
+		ToUserID:            req.Msg.GetToUserId(),
+		ToOwnerName:         req.Msg.GetToOwnerName(),
+		ToEmail:             req.Msg.GetToEmail(),
+		ToPhone:             req.Msg.GetToPhone(),
+		OwnershipPercentage: req.Msg.GetOwnershipPercentage(),
 	}
 	farm, err := h.svc.TransferOwnership(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.TransferOwnershipResponse{Farm: mappers.FarmToProto(farm)}, nil
+	return connect.NewResponse(&pb.TransferOwnershipResponse{Farm: mappers.FarmToProto(farm)}), nil
 }

@@ -96,10 +96,10 @@ func main() {
 	connectOpt := connectserver.NewConnectOption(mwCfg)
 
 	mux := http.NewServeMux()
-	path, pestHandler := pestpredictionv1connect.NewPestServiceHandler(handler,
+	path, pestHandler := pestpredictionv1connect.NewPestPredictionServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)
