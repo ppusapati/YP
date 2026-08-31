@@ -1,0 +1,16 @@
+name: yp_mobile_workspace
+description: YieldPoint mobile monorepo workspace root.
+publish_to: none
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+workspace:
+  - apps/farmer_app
+  - apps/agronomist_app
+  - packages/flutter_auth
+  - packages/flutter_map_core
+  - packages/flutter_network
+  - packages/flutter_proto
+  - packages/flutter_storage
+  - packages/flutter_ui_core

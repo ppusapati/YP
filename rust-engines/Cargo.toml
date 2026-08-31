@@ -6,5 +6,15 @@ members = [
     "water-flow-simulation-engine",
     "plant-ai-inference-engine",
     "yield-prediction-engine",
+    "disease-detection-engine",
+    "pest-detection-engine",
+    "plant-classification-engine",
+    "nutrient-deficiency-engine",
+    "crop-growth-engine",
+    "soil-nutrient-engine",
+    "climate-response-engine",
+    "alert-engine",
+    "analytics-engine",
+    "prescription-engine",
 ]
 resolver = "2"

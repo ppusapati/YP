@@ -1,0 +1,152 @@
+syntax = "proto3";
+package agriculture.field.analytics.v1;
+option go_package = "p9e.in/samavaya/agriculture/analytics-service/api/v1";
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+// FieldAnalyticsSummary contains aggregated analytics for a single field.
+message FieldAnalyticsSummary {
+  string field_id         = 1;
+  string field_name       = 2;
+  double mean_yield       = 3;
+  double peak_yield       = 4;
+  string yield_trend      = 5; // "increasing", "decreasing", "stable"
+  double avg_stress_days  = 6;
+  double avg_ndvi         = 7;
+  int32  seasons_analyzed = 8;
+}
+
+// YieldTrendPoint represents a single data point in a yield trend series.
+message YieldTrendPoint {
+  string season      = 1;
+  string crop        = 2;
+  double yield_value = 3;
+  double ndvi        = 4;
+}
+
+// SeasonComparison contains a season-by-season comparison for a field.
+message SeasonComparison {
+  string          season             = 1;
+  string          crop               = 2;
+  double          yield_value        = 3;
+  double          yield_vs_mean_pct  = 4;
+  int32           stress_days        = 5;
+  double          stress_vs_mean_pct = 6;
+  double          ndvi_peak          = 7;
+  double          ndvi_vs_mean_pct   = 8;
+  repeated string notable_events     = 9;
+}
+
+// RotationAnalysis holds crop rotation analysis results for a field.
+message RotationAnalysis {
+  double          effectiveness_score = 1;
+  double          diversity_index     = 2;
+  int32           rotation_length     = 3;
+  string          soil_health_impact  = 4;
+  repeated string rotation_pattern    = 5;
+  repeated string recommendations     = 6;
+}
+
+// HistoricalMetrics contains aggregate metrics across fields.
+message HistoricalMetrics {
+  double                         mean_yield       = 1;
+  double                         peak_yield       = 2;
+  string                         yield_trend      = 3; // "increasing", "decreasing", "stable"
+  double                         avg_stress_days  = 4;
+  double                         avg_ndvi         = 5;
+  int32                          seasons_analyzed = 6;
+  repeated FieldAnalyticsSummary fields           = 7;
+}
+
+// CrossFieldTrendPoint represents trend data for a single field in a
+// cross-field comparison.
+message CrossFieldTrendPoint {
+  string          field_id   = 1;
+  string          field_name = 2;
+  repeated double values     = 3;
+  repeated string labels     = 4;
+}
+
+// -----------------------------------------------------------------------------
+// Request / Response messages
+// -----------------------------------------------------------------------------
+
+message GetHistoricalMetricsRequest {
+  string farm_id     = 1; // optional
+  string field_id    = 2; // optional
+  string time_period = 3; // "all", "3y", "5y", "10y"
+}
+
+message GetHistoricalMetricsResponse {
+  HistoricalMetrics metrics = 1;
+}
+
+message ListFieldAnalyticsRequest {
+  string farm_id = 1; // optional filter
+}
+
+message ListFieldAnalyticsResponse {
+  repeated FieldAnalyticsSummary summaries = 1;
+}
+
+message GetFieldAnalyticsRequest {
+  string field_id = 1;
+}
+
+message GetFieldAnalyticsResponse {
+  FieldAnalyticsSummary       summary      = 1;
+  repeated YieldTrendPoint    yield_trends = 2;
+}
+
+message GetSeasonComparisonsRequest {
+  string field_id = 1;
+}
+
+message GetSeasonComparisonsResponse {
+  repeated SeasonComparison comparisons = 1;
+}
+
+message GetRotationAnalysisRequest {
+  string field_id = 1;
+}
+
+message GetRotationAnalysisResponse {
+  RotationAnalysis analysis = 1;
+}
+
+message GetCrossFieldTrendsRequest {
+  repeated string field_ids = 1;
+  string          metric    = 2; // "yield", "ndvi"
+}
+
+message GetCrossFieldTrendsResponse {
+  repeated CrossFieldTrendPoint trends = 1;
+}
+
+// -----------------------------------------------------------------------------
+// Service
+// -----------------------------------------------------------------------------
+
+service FieldAnalyticsService {
+  // GetHistoricalMetrics returns aggregate metrics with optional farm/field
+  // and time-period filters.
+  rpc GetHistoricalMetrics(GetHistoricalMetricsRequest) returns (GetHistoricalMetricsResponse);
+
+  // ListFieldAnalytics lists analytics summaries for all fields, optionally
+  // filtered by farm.
+  rpc ListFieldAnalytics(ListFieldAnalyticsRequest) returns (ListFieldAnalyticsResponse);
+
+  // GetFieldAnalytics returns detailed analytics for a single field.
+  rpc GetFieldAnalytics(GetFieldAnalyticsRequest) returns (GetFieldAnalyticsResponse);
+
+  // GetSeasonComparisons returns season-by-season comparison data for a field.
+  rpc GetSeasonComparisons(GetSeasonComparisonsRequest) returns (GetSeasonComparisonsResponse);
+
+  // GetRotationAnalysis returns crop rotation analysis for a field.
+  rpc GetRotationAnalysis(GetRotationAnalysisRequest) returns (GetRotationAnalysisResponse);
+
+  // GetCrossFieldTrends returns multi-field trend comparison data.
+  rpc GetCrossFieldTrends(GetCrossFieldTrendsRequest) returns (GetCrossFieldTrendsResponse);
+}

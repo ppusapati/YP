@@ -9,7 +9,7 @@ from .model import PestDetectionModel, PEST_CLASSES, NUM_PEST_CLASSES
 from .inference import PestDetector, PestDetectionResult, DetectedPest
 from .dataset import PestDataset, create_pest_train_val
 from .trainer import PestDetectionTrainer, PestTrainConfig
-from .transforms import get_train_transforms, get_val_transforms
+from .transforms import get_train_transforms, get_val_transforms, get_inference_transforms
 
 __all__ = [
     "PestDetectionModel",
@@ -24,4 +24,5 @@ __all__ = [
     "PestTrainConfig",
     "get_train_transforms",
     "get_val_transforms",
+    "get_inference_transforms",
 ]

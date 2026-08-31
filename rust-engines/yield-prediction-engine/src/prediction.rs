@@ -134,6 +134,166 @@ pub fn predict_yield_batch(
         .collect()
 }
 
+/// Historical yield data for comparison.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoricalYield {
+    /// Year.
+    pub year: u32,
+    /// Actual yield (kg/ha).
+    pub yield_kg_ha: f64,
+}
+
+/// Comparison of predicted yield against historical data.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoricalComparison {
+    /// Predicted yield.
+    pub predicted_yield_kg_ha: f64,
+    /// Historical average yield.
+    pub historical_avg_kg_ha: f64,
+    /// Historical standard deviation.
+    pub historical_std_kg_ha: f64,
+    /// Z-score of prediction relative to historical distribution.
+    pub z_score: f64,
+    /// Percentile rank relative to historical yields.
+    pub percentile: f64,
+    /// Whether the prediction is within 1 standard deviation of historical average.
+    pub within_normal_range: bool,
+    /// Year-over-year trend (slope of linear regression on historical data).
+    pub trend_kg_ha_per_year: f64,
+    /// Best historical yield.
+    pub best_historical_kg_ha: f64,
+    /// Worst historical yield.
+    pub worst_historical_kg_ha: f64,
+}
+
+/// Compare a predicted yield against historical yields.
+pub fn compare_with_historical(
+    prediction: &YieldPrediction,
+    historical: &[HistoricalYield],
+) -> Option<HistoricalComparison> {
+    if historical.is_empty() {
+        return None;
+    }
+
+    let yields: Vec<f64> = historical.iter().map(|h| h.yield_kg_ha).collect();
+    let n = yields.len() as f64;
+    let avg = yields.iter().sum::<f64>() / n;
+    let variance = yields.iter().map(|y| (y - avg).powi(2)).sum::<f64>() / n;
+    let std_dev = variance.sqrt();
+
+    let z_score = if std_dev > f64::EPSILON {
+        (prediction.predicted_yield_kg_ha - avg) / std_dev
+    } else {
+        0.0
+    };
+
+    // Compute percentile
+    let mut sorted = yields.clone();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let below_count = sorted.iter().filter(|&&y| y < prediction.predicted_yield_kg_ha).count();
+    let percentile = (below_count as f64 / n) * 100.0;
+
+    // Compute trend
+    let sum_x: f64 = historical.iter().map(|h| h.year as f64).sum();
+    let sum_y: f64 = yields.iter().sum();
+    let sum_xy: f64 = historical.iter().map(|h| h.year as f64 * h.yield_kg_ha).sum();
+    let sum_x2: f64 = historical.iter().map(|h| (h.year as f64).powi(2)).sum();
+    let denom = n * sum_x2 - sum_x * sum_x;
+    let trend = if denom.abs() > f64::EPSILON {
+        (n * sum_xy - sum_x * sum_y) / denom
+    } else {
+        0.0
+    };
+
+    let best = sorted.last().copied().unwrap_or(0.0);
+    let worst = sorted.first().copied().unwrap_or(0.0);
+
+    Some(HistoricalComparison {
+        predicted_yield_kg_ha: prediction.predicted_yield_kg_ha,
+        historical_avg_kg_ha: avg,
+        historical_std_kg_ha: std_dev,
+        z_score,
+        percentile,
+        within_normal_range: z_score.abs() <= 1.0,
+        trend_kg_ha_per_year: trend,
+        best_historical_kg_ha: best,
+        worst_historical_kg_ha: worst,
+    })
+}
+
+/// Seasonal adjustment factors.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SeasonalAdjustment {
+    /// Month of planting (1-12).
+    pub planting_month: u32,
+    /// Adjustment factor for yield (0.5-1.5 typically).
+    pub adjustment_factor: f64,
+    /// Reason for adjustment.
+    pub reason: String,
+}
+
+/// Apply seasonal adjustment to a yield prediction.
+pub fn apply_seasonal_adjustment(
+    prediction: &YieldPrediction,
+    planting_month: u32,
+    optimal_planting_months: &[u32],
+) -> (f64, SeasonalAdjustment) {
+    let is_optimal = optimal_planting_months.contains(&planting_month);
+
+    let (factor, reason) = if is_optimal {
+        (1.0, "Planted within optimal window".to_string())
+    } else {
+        // Compute how far from optimal
+        let min_distance = optimal_planting_months
+            .iter()
+            .map(|&m| {
+                let diff = (planting_month as i32 - m as i32).abs();
+                diff.min(12 - diff) as f64
+            })
+            .fold(f64::INFINITY, f64::min);
+
+        let factor = (1.0 - min_distance * 0.08).clamp(0.5, 1.0);
+        let reason = format!(
+            "Planted {} month(s) from optimal window, yield reduced by {:.0}%",
+            min_distance as u32,
+            (1.0 - factor) * 100.0,
+        );
+        (factor, reason)
+    };
+
+    let adjusted_yield = prediction.predicted_yield_kg_ha * factor;
+
+    (
+        adjusted_yield,
+        SeasonalAdjustment {
+            planting_month,
+            adjustment_factor: factor,
+            reason,
+        },
+    )
+}
+
+/// Compute yield prediction with a wider confidence interval based on
+/// the number and severity of stress factors.
+pub fn prediction_with_uncertainty(prediction: &YieldPrediction) -> (f64, f64) {
+    // Base uncertainty is 15%
+    let base_uncertainty = 0.15;
+
+    // Increase uncertainty for each significant stress factor
+    let stress_count = prediction
+        .stress_factors
+        .iter()
+        .filter(|s| s.factor < 0.8)
+        .count();
+
+    let uncertainty = base_uncertainty + stress_count as f64 * 0.05;
+    let uncertainty = uncertainty.min(0.5); // Cap at 50%
+
+    let low = (prediction.predicted_yield_kg_ha * (1.0 - uncertainty)).max(0.0);
+    let high = prediction.predicted_yield_kg_ha * (1.0 + uncertainty);
+    (low, high)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

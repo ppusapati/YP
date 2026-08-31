@@ -1,0 +1,12 @@
+version: v2
+plugins:
+  # protoc-gen-es v2 generates BOTH message types AND service descriptors
+  # No separate protoc-gen-connect-es needed in Connect-ES v2
+  - local: protoc-gen-es
+    out: src/gen
+    opt:
+      - target=ts
+      - import_extension=.js
+inputs:
+  # Repo root as proto module (cross-package imports resolve correctly)
+  - directory: ../../..

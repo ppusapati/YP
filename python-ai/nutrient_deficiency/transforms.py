@@ -108,3 +108,29 @@ def get_val_transforms(image_size: int = DEFAULT_IMAGE_SIZE) -> A.Compose:
     )
     transform.albumentations = True
     return transform
+
+
+def get_inference_transforms(image_size: int = DEFAULT_IMAGE_SIZE) -> A.Compose:
+    """Get inference transforms for production nutrient deficiency detection.
+
+    Identical to validation transforms, optimized for single-image
+    inference in deployment.
+
+    Args:
+        image_size: Target image size.
+
+    Returns:
+        Albumentations Compose transform.
+    """
+    resize_size = int(image_size * 1.14)
+
+    transform = A.Compose(
+        [
+            A.Resize(height=resize_size, width=resize_size),
+            A.CenterCrop(height=image_size, width=image_size),
+            A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+            ToTensorV2(),
+        ]
+    )
+    transform.albumentations = True
+    return transform

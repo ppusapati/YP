@@ -1,0 +1,207 @@
+syntax = "proto3";
+package agriculture.alert.v1;
+option go_package = "p9e.in/samavaya/agriculture/alert-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_INFO        = 1;
+  ALERT_SEVERITY_WARNING     = 2;
+  ALERT_SEVERITY_CRITICAL    = 3;
+  ALERT_SEVERITY_EMERGENCY   = 4;
+}
+
+enum AlertStatus {
+  ALERT_STATUS_UNSPECIFIED  = 0;
+  ALERT_STATUS_ACTIVE       = 1;
+  ALERT_STATUS_ACKNOWLEDGED = 2;
+  ALERT_STATUS_RESOLVED     = 3;
+}
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+message Alert {
+  string                    id              = 1;
+  string                    type            = 2;
+  string                    title           = 3;
+  string                    message         = 4;
+  AlertSeverity             severity        = 5;
+  AlertStatus               status          = 6;
+  string                    farm_id         = 7;
+  string                    field_id        = 8;
+  string                    field_name      = 9;
+  google.protobuf.Timestamp timestamp       = 10;
+  bool                      read            = 11;
+  string                    action_url      = 12;
+  repeated string           recommendations = 13;
+  google.protobuf.Timestamp acknowledged_at = 14;
+  string                    acknowledged_by = 15;
+  map<string, double>       metrics         = 16;
+}
+
+message AlertRule {
+  string                    id              = 1;
+  string                    field_id        = 2;
+  string                    metric          = 3;
+  string                    condition       = 4;
+  double                    threshold       = 5;
+  AlertSeverity             severity        = 6;
+  bool                      enabled         = 7;
+  repeated string           notify_channels = 8;
+}
+
+message FieldRiskScore {
+  string              field_id      = 1;
+  string              field_name    = 2;
+  double              overall_score = 3;
+  map<string, double> risk_factors  = 4;
+  string              calculated_at = 5;
+  string              trend         = 6;
+}
+
+// -----------------------------------------------------------------------------
+// Requests / Responses
+// -----------------------------------------------------------------------------
+
+message ListAlertsRequest {
+  string        farm_id    = 1;
+  string        field_id   = 2;
+  AlertSeverity severity   = 3;
+  AlertStatus   status     = 4;
+  int32         page_size  = 5;
+  string        page_token = 6;
+}
+
+message ListAlertsResponse {
+  repeated Alert alerts          = 1;
+  string         next_page_token = 2;
+  int32          total_count     = 3;
+}
+
+message GetAlertRequest {
+  string id = 1;
+}
+
+message GetAlertResponse {
+  Alert alert = 1;
+}
+
+message AcknowledgeAlertRequest {
+  string id = 1;
+}
+
+message AcknowledgeAlertResponse {
+  Alert alert = 1;
+}
+
+message ResolveAlertRequest {
+  string id = 1;
+}
+
+message ResolveAlertResponse {
+  Alert alert = 1;
+}
+
+message MarkAlertReadRequest {
+  string id = 1;
+}
+
+message MarkAlertReadResponse {
+  Alert alert = 1;
+}
+
+message MarkAllAlertsReadRequest {
+  string farm_id = 1;
+}
+
+message MarkAllAlertsReadResponse {
+  int32 updated_count = 1;
+}
+
+message GetUnreadCountRequest {
+  string farm_id = 1;
+}
+
+message GetUnreadCountResponse {
+  int32 count = 1;
+}
+
+message ListAlertRulesRequest {
+  string field_id = 1;
+}
+
+message ListAlertRulesResponse {
+  repeated AlertRule rules = 1;
+}
+
+message CreateAlertRuleRequest {
+  AlertRule rule = 1;
+}
+
+message CreateAlertRuleResponse {
+  AlertRule rule = 1;
+}
+
+message UpdateAlertRuleRequest {
+  AlertRule rule = 1;
+}
+
+message UpdateAlertRuleResponse {
+  AlertRule rule = 1;
+}
+
+message GetFieldRiskRequest {
+  string field_id = 1;
+}
+
+message GetFieldRiskResponse {
+  FieldRiskScore risk_score = 1;
+}
+
+message ListFieldRisksRequest {}
+
+message ListFieldRisksResponse {
+  repeated FieldRiskScore risk_scores = 1;
+}
+
+message ListAlertHistoryRequest {
+  string start_date = 1;
+  string end_date   = 2;
+  string farm_id    = 3;
+  string field_id   = 4;
+  int32  page_size  = 5;
+  string page_token = 6;
+}
+
+message ListAlertHistoryResponse {
+  repeated Alert alerts          = 1;
+  string         next_page_token = 2;
+  int32          total_count     = 3;
+}
+
+// -----------------------------------------------------------------------------
+// Service
+// -----------------------------------------------------------------------------
+
+service AlertService {
+  rpc ListAlerts        (ListAlertsRequest)        returns (ListAlertsResponse);
+  rpc GetAlert          (GetAlertRequest)          returns (GetAlertResponse);
+  rpc AcknowledgeAlert  (AcknowledgeAlertRequest)  returns (AcknowledgeAlertResponse);
+  rpc ResolveAlert      (ResolveAlertRequest)      returns (ResolveAlertResponse);
+  rpc MarkAlertRead     (MarkAlertReadRequest)     returns (MarkAlertReadResponse);
+  rpc MarkAllAlertsRead (MarkAllAlertsReadRequest) returns (MarkAllAlertsReadResponse);
+  rpc GetUnreadCount    (GetUnreadCountRequest)    returns (GetUnreadCountResponse);
+  rpc ListAlertRules    (ListAlertRulesRequest)    returns (ListAlertRulesResponse);
+  rpc CreateAlertRule   (CreateAlertRuleRequest)   returns (CreateAlertRuleResponse);
+  rpc UpdateAlertRule   (UpdateAlertRuleRequest)   returns (UpdateAlertRuleResponse);
+  rpc GetFieldRisk      (GetFieldRiskRequest)      returns (GetFieldRiskResponse);
+  rpc ListFieldRisks    (ListFieldRisksRequest)    returns (ListFieldRisksResponse);
+  rpc ListAlertHistory  (ListAlertHistoryRequest)  returns (ListAlertHistoryResponse);
+}

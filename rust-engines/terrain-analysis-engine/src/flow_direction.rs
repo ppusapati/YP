@@ -162,6 +162,197 @@ pub fn trace_flow_path(
     path
 }
 
+/// Compute D-infinity flow direction from a DEM.
+///
+/// The D-infinity algorithm (Tarboton, 1997) determines the steepest
+/// downslope direction as a continuous angle (0 to 2*PI) rather than
+/// restricting to 8 discrete directions.
+///
+/// Returns a grid of flow angles in radians (0 = east, counter-clockwise).
+/// Flat/pit cells are assigned -1.0.
+pub fn compute_dinf_flow_direction(dem: &Dem) -> Result<Array2<f64>, TerrainError> {
+    if dem.rows() < 3 || dem.cols() < 3 {
+        return Err(TerrainError::TooSmall {
+            min_rows: 3,
+            min_cols: 3,
+            actual_rows: dem.rows(),
+            actual_cols: dem.cols(),
+        });
+    }
+
+    let rows = dem.rows();
+    let cols = dem.cols();
+    let cs = dem.cell_size;
+
+    // The 8 triangular facets defined by pairs of adjacent neighbors
+    // Each facet is defined by (neighbor1, neighbor2) indices into D8_OFFSETS
+    // and the base angle of the first edge
+    let facets: [(usize, usize, f64); 8] = [
+        (0, 7, 0.0),                           // E-NE
+        (7, 6, std::f64::consts::FRAC_PI_4),   // NE-N
+        (6, 5, std::f64::consts::FRAC_PI_2),   // N-NW
+        (5, 4, 3.0 * std::f64::consts::FRAC_PI_4), // NW-W
+        (4, 3, std::f64::consts::PI),           // W-SW
+        (3, 2, 5.0 * std::f64::consts::FRAC_PI_4), // SW-S
+        (2, 1, 3.0 * std::f64::consts::FRAC_PI_2), // S-SE
+        (1, 0, 7.0 * std::f64::consts::FRAC_PI_4), // SE-E
+    ];
+
+    let result_rows: Vec<Vec<f64>> = (0..rows)
+        .into_par_iter()
+        .map(|r| {
+            let mut row_vals = Vec::with_capacity(cols);
+            for c in 0..cols {
+                if dem.is_nodata(r, c) {
+                    row_vals.push(-1.0);
+                    continue;
+                }
+
+                let center = dem.elevation[[r, c]];
+                let mut max_slope = 0.0f64;
+                let mut best_angle = -1.0f64;
+
+                for &(n1_idx, n2_idx, base_angle) in &facets {
+                    let (dr1, dc1) = D8_OFFSETS[n1_idx];
+                    let (dr2, dc2) = D8_OFFSETS[n2_idx];
+
+                    let nr1 = r as isize + dr1;
+                    let nc1 = c as isize + dc1;
+                    let nr2 = r as isize + dr2;
+                    let nc2 = c as isize + dc2;
+
+                    if nr1 < 0 || nr1 >= rows as isize || nc1 < 0 || nc1 >= cols as isize
+                        || nr2 < 0 || nr2 >= rows as isize || nc2 < 0 || nc2 >= cols as isize
+                    {
+                        continue;
+                    }
+
+                    let e1 = dem.elevation[[nr1 as usize, nc1 as usize]];
+                    let e2 = dem.elevation[[nr2 as usize, nc2 as usize]];
+
+                    if dem.is_nodata(nr1 as usize, nc1 as usize)
+                        || dem.is_nodata(nr2 as usize, nc2 as usize)
+                    {
+                        continue;
+                    }
+
+                    let d1 = cs * D8_DISTANCES[n1_idx];
+                    let d2 = cs * D8_DISTANCES[n2_idx];
+
+                    // Slope along the first edge
+                    let s1 = (center - e1) / d1;
+                    // Slope along the second edge
+                    let s2 = (e1 - e2) / d2;
+
+                    let (slope, angle);
+                    if s1 > 0.0 {
+                        let r_val = (s2 / s1).atan();
+                        if r_val >= 0.0 && r_val <= std::f64::consts::FRAC_PI_4 {
+                            slope = (s1 * s1 + s2 * s2).sqrt();
+                            angle = base_angle + r_val;
+                        } else if r_val < 0.0 {
+                            slope = s1;
+                            angle = base_angle;
+                        } else {
+                            slope = (center - e2) / (d1 * std::f64::consts::SQRT_2);
+                            angle = base_angle + std::f64::consts::FRAC_PI_4;
+                        }
+                    } else {
+                        let s_direct = (center - e2) / (d1 * std::f64::consts::SQRT_2);
+                        if s_direct > 0.0 {
+                            slope = s_direct;
+                            angle = base_angle + std::f64::consts::FRAC_PI_4;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    if slope > max_slope {
+                        max_slope = slope;
+                        best_angle = angle;
+                    }
+                }
+
+                row_vals.push(best_angle);
+            }
+            row_vals
+        })
+        .collect();
+
+    let flat: Vec<f64> = result_rows.into_iter().flatten().collect();
+    Ok(Array2::from_shape_vec((rows, cols), flat).unwrap())
+}
+
+/// Compute D-infinity flow accumulation using the proportional distribution method.
+///
+/// Unlike D8 which routes all flow to a single neighbor, D-infinity distributes
+/// flow proportionally between the two neighbors that bound the steepest facet.
+pub fn compute_dinf_accumulation(
+    dem: &Dem,
+    dinf_angles: &Array2<f64>,
+) -> Result<Array2<f64>, TerrainError> {
+    let rows = dem.rows();
+    let cols = dem.cols();
+
+    if dinf_angles.nrows() != rows || dinf_angles.ncols() != cols {
+        return Err(TerrainError::DimensionMismatch {
+            expected_rows: rows,
+            expected_cols: cols,
+            actual_rows: dinf_angles.nrows(),
+            actual_cols: dinf_angles.ncols(),
+        });
+    }
+
+    // Collect all cells with their elevations and sort by elevation (highest first)
+    let mut cells: Vec<(usize, usize, f64)> = Vec::with_capacity(rows * cols);
+    for r in 0..rows {
+        for c in 0..cols {
+            let elev = if dem.is_nodata(r, c) { f64::NEG_INFINITY } else { dem.elevation[[r, c]] };
+            cells.push((r, c, elev));
+        }
+    }
+    cells.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+
+    let mut accum = Array2::<f64>::ones((rows, cols));
+
+    for &(r, c, _) in &cells {
+        let angle = dinf_angles[[r, c]];
+        if angle < 0.0 {
+            continue;
+        }
+
+        // Determine which two D8 neighbors bound this angle
+        let sector = (angle / std::f64::consts::FRAC_PI_4).floor() as usize;
+        let sector = sector % 8;
+        let next_sector = (sector + 1) % 8;
+
+        let base_angle = sector as f64 * std::f64::consts::FRAC_PI_4;
+        let alpha = angle - base_angle;
+        let prop2 = alpha / std::f64::consts::FRAC_PI_4;
+        let prop1 = 1.0 - prop2;
+
+        let current_acc = accum[[r, c]];
+
+        // Distribute to first neighbor
+        let (dr1, dc1) = D8_OFFSETS[sector];
+        let nr1 = r as isize + dr1;
+        let nc1 = c as isize + dc1;
+        if nr1 >= 0 && nr1 < rows as isize && nc1 >= 0 && nc1 < cols as isize {
+            accum[[nr1 as usize, nc1 as usize]] += current_acc * prop1;
+        }
+
+        // Distribute to second neighbor
+        let (dr2, dc2) = D8_OFFSETS[next_sector];
+        let nr2 = r as isize + dr2;
+        let nc2 = c as isize + dc2;
+        if nr2 >= 0 && nr2 < rows as isize && nc2 >= 0 && nc2 < cols as isize {
+            accum[[nr2 as usize, nc2 as usize]] += current_acc * prop2;
+        }
+    }
+
+    Ok(accum)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -250,5 +441,40 @@ mod tests {
             vec![2, 4, 8, 1, 4, 16, 128, 64, 32],
         ).unwrap();
         assert_eq!(downstream_cell(1, 1, &flow_dir), Some((2, 1))); // S
+    }
+
+    #[test]
+    fn test_dinf_flow_direction() {
+        let dem = Dem::from_vec(
+            vec![
+                30.0, 20.0, 10.0,
+                30.0, 20.0, 10.0,
+                30.0, 20.0, 10.0,
+            ],
+            3, 3, 10.0, -9999.0,
+        ).unwrap();
+
+        let dinf = compute_dinf_flow_direction(&dem).unwrap();
+        // Center should flow roughly east (angle near 0)
+        let angle = dinf[[1, 1]];
+        assert!(angle >= 0.0);
+        assert!(angle < std::f64::consts::FRAC_PI_4);
+    }
+
+    #[test]
+    fn test_dinf_accumulation() {
+        let dem = Dem::from_vec(
+            vec![
+                30.0, 20.0, 10.0,
+                30.0, 20.0, 10.0,
+                30.0, 20.0, 10.0,
+            ],
+            3, 3, 10.0, -9999.0,
+        ).unwrap();
+
+        let dinf = compute_dinf_flow_direction(&dem).unwrap();
+        let accum = compute_dinf_accumulation(&dem, &dinf).unwrap();
+        // Rightmost column should have higher accumulation
+        assert!(accum[[1, 2]] > accum[[1, 0]]);
     }
 }

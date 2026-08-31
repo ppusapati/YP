@@ -1,0 +1,128 @@
+syntax = "proto3";
+package agriculture.prescription.v1;
+option go_package = "p9e.in/samavaya/agriculture/prescription-service/api/v1";
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum PrescriptionType {
+  PRESCRIPTION_TYPE_UNSPECIFIED = 0;
+  PRESCRIPTION_TYPE_FERTILIZER  = 1;
+  PRESCRIPTION_TYPE_IRRIGATION  = 2;
+  PRESCRIPTION_TYPE_SEEDING     = 3;
+  PRESCRIPTION_TYPE_LIMING      = 4;
+}
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+// RateRow is a single row of rate values (used to represent a 2D grid).
+message RateRow {
+  repeated double values = 1;
+}
+
+// SoilDataRow is a single row of soil data values.
+message SoilDataRow {
+  repeated double values = 1;
+}
+
+// PrescriptionMap represents one prescription layer (e.g. fertilizer rates).
+message PrescriptionMap {
+  string             id                = 1;
+  PrescriptionType   prescription_type = 2;
+  string             unit              = 3;
+  repeated RateRow   rates             = 4;
+  double             avg_rate          = 5;
+}
+
+// ZoneSummary summarises prescription rates within a management zone.
+message ZoneSummary {
+  string           zone              = 1; // "Low", "Medium", "High"
+  PrescriptionType prescription_type = 2;
+  double           area_hectares     = 3;
+  double           min_rate          = 4;
+  double           mean_rate         = 5;
+  double           max_rate          = 6;
+  double           total_amount      = 7;
+}
+
+// PrescriptionBundle is the top-level prescription output for a field.
+message PrescriptionBundle {
+  string                    id                       = 1;
+  string                    field_id                 = 2;
+  string                    field_name               = 3;
+  string                    crop_type                = 4;
+  double                    target_yield             = 5;
+  string                    created_at               = 6;
+  double                    estimated_cost_savings   = 7;
+  double                    estimated_yield_gain     = 8;
+  repeated PrescriptionMap  prescriptions            = 9;
+  repeated ZoneSummary      zone_summaries           = 10;
+}
+
+// -----------------------------------------------------------------------------
+// Request / Response messages
+// -----------------------------------------------------------------------------
+
+message ListPrescriptionsRequest {
+  PrescriptionType prescription_type = 1; // optional filter
+  int32            page_size         = 2;
+  string           page_token        = 3;
+}
+
+message ListPrescriptionsResponse {
+  repeated PrescriptionBundle prescriptions   = 1;
+  string                      next_page_token = 2;
+}
+
+message GetPrescriptionRequest {
+  string id = 1;
+}
+
+message GetPrescriptionResponse {
+  PrescriptionBundle prescription = 1;
+}
+
+message GeneratePrescriptionRequest {
+  string              field_id     = 1;
+  string              crop_type    = 2;
+  double              target_yield = 3;
+  repeated SoilDataRow soil_data   = 4; // optional
+}
+
+message GeneratePrescriptionResponse {
+  PrescriptionBundle prescription = 1;
+}
+
+message ExportPrescriptionRequest {
+  string id     = 1;
+  string format = 2; // "csv", "shapefile", "pdf"
+}
+
+message ExportPrescriptionResponse {
+  string download_url = 1;
+  string file_name    = 2;
+}
+
+// -----------------------------------------------------------------------------
+// Service
+// -----------------------------------------------------------------------------
+
+service PrescriptionService {
+  // ListPrescriptions lists prescriptions with optional type filter and
+  // pagination.
+  rpc ListPrescriptions(ListPrescriptionsRequest) returns (ListPrescriptionsResponse);
+
+  // GetPrescription returns a single prescription bundle by ID.
+  rpc GetPrescription(GetPrescriptionRequest) returns (GetPrescriptionResponse);
+
+  // GeneratePrescription generates a new variable-rate prescription for a
+  // field.
+  rpc GeneratePrescription(GeneratePrescriptionRequest) returns (GeneratePrescriptionResponse);
+
+  // ExportPrescription exports a prescription in the requested format and
+  // returns a download URL.
+  rpc ExportPrescription(ExportPrescriptionRequest) returns (ExportPrescriptionResponse);
+}

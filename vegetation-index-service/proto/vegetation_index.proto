@@ -1,0 +1,124 @@
+syntax = "proto3";
+package agriculture.satellite.vegetation.v1;
+option go_package = "p9e.in/samavaya/agriculture/vegetation-index-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum VegetationIndexType {
+  VEGETATION_INDEX_TYPE_UNSPECIFIED = 0;
+  VEGETATION_INDEX_TYPE_NDVI = 1;
+  VEGETATION_INDEX_TYPE_NDWI = 2;
+  VEGETATION_INDEX_TYPE_EVI = 3;
+  VEGETATION_INDEX_TYPE_SAVI = 4;
+  VEGETATION_INDEX_TYPE_MSAVI = 5;
+  VEGETATION_INDEX_TYPE_NDRE = 6;
+  VEGETATION_INDEX_TYPE_GNDVI = 7;
+  VEGETATION_INDEX_TYPE_LAI = 8;
+}
+
+enum ComputeStatus {
+  COMPUTE_STATUS_UNSPECIFIED = 0;
+  COMPUTE_STATUS_QUEUED = 1;
+  COMPUTE_STATUS_COMPUTING = 2;
+  COMPUTE_STATUS_INTERSECTING = 3;
+  COMPUTE_STATUS_COMPLETED = 4;
+  COMPUTE_STATUS_FAILED = 5;
+}
+
+message VegetationIndex {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  string processing_job_id = 5;
+  VegetationIndexType index_type = 6;
+  double mean_value = 7;
+  double min_value = 8;
+  double max_value = 9;
+  double std_deviation = 10;
+  double median_value = 11;
+  int64 pixel_count = 12;
+  double coverage_percent = 13;
+  string raster_s3_key = 14;
+  google.protobuf.Timestamp acquisition_date = 15;
+  google.protobuf.Timestamp computed_at = 16;
+  google.protobuf.Timestamp created_at = 17;
+}
+
+message ComputeTask {
+  string id = 1;
+  string tenant_id = 2;
+  string processing_job_id = 3;
+  string farm_id = 4;
+  repeated VegetationIndexType index_types = 5;
+  ComputeStatus status = 6;
+  string error_message = 7;
+  double compute_time_seconds = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp completed_at = 10;
+}
+
+message NDVITimeSeries {
+  string farm_id = 1;
+  string field_id = 2;
+  repeated TimeSeriesPoint points = 3;
+}
+
+message TimeSeriesPoint {
+  google.protobuf.Timestamp date = 1;
+  double value = 2;
+  double std_deviation = 3;
+}
+
+message ComputeIndicesRequest {
+  string processing_job_id = 1;
+  string farm_id = 2;
+  repeated VegetationIndexType index_types = 3;
+}
+message ComputeIndicesResponse { ComputeTask task = 1; }
+
+message GetVegetationIndexRequest { string id = 1; }
+message GetVegetationIndexResponse { VegetationIndex index = 1; }
+
+message ListVegetationIndicesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  VegetationIndexType index_type = 5;
+  google.protobuf.Timestamp date_from = 6;
+  google.protobuf.Timestamp date_to = 7;
+}
+message ListVegetationIndicesResponse {
+  repeated VegetationIndex indices = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetNDVITimeSeriesRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  google.protobuf.Timestamp date_from = 3;
+  google.protobuf.Timestamp date_to = 4;
+}
+message GetNDVITimeSeriesResponse { NDVITimeSeries time_series = 1; }
+
+message GetFieldHealthRequest {
+  string farm_id = 1;
+  string field_id = 2;
+}
+message GetFieldHealthResponse {
+  double current_ndvi = 1;
+  double ndvi_trend = 2;
+  double health_score = 3;
+  string health_category = 4;
+  google.protobuf.Timestamp last_computed = 5;
+}
+
+service VegetationIndexService {
+  rpc ComputeIndices(ComputeIndicesRequest) returns (ComputeIndicesResponse);
+  rpc GetVegetationIndex(GetVegetationIndexRequest) returns (GetVegetationIndexResponse);
+  rpc ListVegetationIndices(ListVegetationIndicesRequest) returns (ListVegetationIndicesResponse);
+  rpc GetNDVITimeSeries(GetNDVITimeSeriesRequest) returns (GetNDVITimeSeriesResponse);
+  rpc GetFieldHealth(GetFieldHealthRequest) returns (GetFieldHealthResponse);
+}

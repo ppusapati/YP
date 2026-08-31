@@ -1,0 +1,105 @@
+syntax = "proto3";
+package agriculture.satellite.processing.v1;
+option go_package = "p9e.in/samavaya/agriculture/satellite-processing-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum ProcessingStatus {
+  PROCESSING_STATUS_UNSPECIFIED = 0;
+  PROCESSING_STATUS_QUEUED = 1;
+  PROCESSING_STATUS_PREPROCESSING = 2;
+  PROCESSING_STATUS_ATMOSPHERIC_CORRECTION = 3;
+  PROCESSING_STATUS_CLOUD_MASKING = 4;
+  PROCESSING_STATUS_ORTHORECTIFICATION = 5;
+  PROCESSING_STATUS_BAND_MATH = 6;
+  PROCESSING_STATUS_COMPLETED = 7;
+  PROCESSING_STATUS_FAILED = 8;
+}
+
+enum ProcessingLevel {
+  PROCESSING_LEVEL_UNSPECIFIED = 0;
+  PROCESSING_LEVEL_L1C = 1;  // Top of atmosphere
+  PROCESSING_LEVEL_L2A = 2;  // Bottom of atmosphere (surface reflectance)
+  PROCESSING_LEVEL_L3 = 3;   // Composited / mosaicked
+}
+
+enum CorrectionAlgorithm {
+  CORRECTION_ALGORITHM_UNSPECIFIED = 0;
+  CORRECTION_ALGORITHM_SEN2COR = 1;
+  CORRECTION_ALGORITHM_LASRC = 2;
+  CORRECTION_ALGORITHM_FLAASH = 3;
+  CORRECTION_ALGORITHM_DOS = 4;
+}
+
+message ProcessingJob {
+  string id = 1;
+  string tenant_id = 2;
+  string ingestion_task_id = 3;
+  string farm_id = 4;
+  ProcessingStatus status = 5;
+  ProcessingLevel input_level = 6;
+  ProcessingLevel output_level = 7;
+  CorrectionAlgorithm algorithm = 8;
+  string input_s3_key = 9;
+  string output_s3_key = 10;
+  double cloud_mask_threshold = 11;
+  bool apply_atmospheric_correction = 12;
+  bool apply_cloud_masking = 13;
+  bool apply_orthorectification = 14;
+  int32 output_resolution_meters = 15;
+  string output_crs = 16;
+  string error_message = 17;
+  double processing_time_seconds = 18;
+  google.protobuf.Timestamp created_at = 19;
+  google.protobuf.Timestamp updated_at = 20;
+  google.protobuf.Timestamp completed_at = 21;
+}
+
+message SubmitProcessingJobRequest {
+  string ingestion_task_id = 1;
+  string farm_id = 2;
+  ProcessingLevel output_level = 3;
+  CorrectionAlgorithm algorithm = 4;
+  double cloud_mask_threshold = 5;
+  bool apply_atmospheric_correction = 6;
+  bool apply_cloud_masking = 7;
+  bool apply_orthorectification = 8;
+  int32 output_resolution_meters = 9;
+  string output_crs = 10;
+}
+message SubmitProcessingJobResponse { ProcessingJob job = 1; }
+
+message GetProcessingJobRequest { string id = 1; }
+message GetProcessingJobResponse { ProcessingJob job = 1; }
+
+message ListProcessingJobsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  ProcessingStatus status = 4;
+}
+message ListProcessingJobsResponse {
+  repeated ProcessingJob jobs = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CancelProcessingJobRequest { string id = 1; }
+message CancelProcessingJobResponse { bool success = 1; }
+
+message GetProcessingStatsRequest { string farm_id = 1; }
+message GetProcessingStatsResponse {
+  int64 total_jobs = 1;
+  int64 completed_jobs = 2;
+  int64 failed_jobs = 3;
+  int64 pending_jobs = 4;
+  double avg_processing_time_seconds = 5;
+}
+
+service SatelliteProcessingService {
+  rpc SubmitProcessingJob(SubmitProcessingJobRequest) returns (SubmitProcessingJobResponse);
+  rpc GetProcessingJob(GetProcessingJobRequest) returns (GetProcessingJobResponse);
+  rpc ListProcessingJobs(ListProcessingJobsRequest) returns (ListProcessingJobsResponse);
+  rpc CancelProcessingJob(CancelProcessingJobRequest) returns (CancelProcessingJobResponse);
+  rpc GetProcessingStats(GetProcessingStatsRequest) returns (GetProcessingStatsResponse);
+}

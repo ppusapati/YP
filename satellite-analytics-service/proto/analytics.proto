@@ -1,0 +1,120 @@
+syntax = "proto3";
+package agriculture.satellite.analytics.v1;
+option go_package = "p9e.in/samavaya/agriculture/satellite-analytics-service/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum StressType {
+  STRESS_TYPE_UNSPECIFIED = 0;
+  STRESS_TYPE_WATER = 1;
+  STRESS_TYPE_NUTRIENT = 2;
+  STRESS_TYPE_DISEASE = 3;
+  STRESS_TYPE_PEST = 4;
+  STRESS_TYPE_HEAT = 5;
+  STRESS_TYPE_FROST = 6;
+}
+
+enum SeverityLevel {
+  SEVERITY_LEVEL_UNSPECIFIED = 0;
+  SEVERITY_LEVEL_LOW = 1;
+  SEVERITY_LEVEL_MEDIUM = 2;
+  SEVERITY_LEVEL_HIGH = 3;
+  SEVERITY_LEVEL_CRITICAL = 4;
+}
+
+enum AnalysisType {
+  ANALYSIS_TYPE_UNSPECIFIED = 0;
+  ANALYSIS_TYPE_STRESS_DETECTION = 1;
+  ANALYSIS_TYPE_CHANGE_DETECTION = 2;
+  ANALYSIS_TYPE_TEMPORAL_TREND = 3;
+  ANALYSIS_TYPE_ANOMALY_DETECTION = 4;
+  ANALYSIS_TYPE_CROP_CLASSIFICATION = 5;
+}
+
+message StressAlert {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  StressType stress_type = 5;
+  SeverityLevel severity = 6;
+  double confidence = 7;
+  double affected_area_hectares = 8;
+  double affected_percentage = 9;
+  string bbox_geojson = 10;
+  string description = 11;
+  string recommendation = 12;
+  bool acknowledged = 13;
+  google.protobuf.Timestamp detected_at = 14;
+  google.protobuf.Timestamp created_at = 15;
+}
+
+message TemporalAnalysis {
+  string id = 1;
+  string tenant_id = 2;
+  string farm_id = 3;
+  string field_id = 4;
+  AnalysisType analysis_type = 5;
+  string metric_name = 6;
+  double trend_slope = 7;
+  double trend_r_squared = 8;
+  double current_value = 9;
+  double baseline_value = 10;
+  double deviation_percent = 11;
+  google.protobuf.Timestamp period_start = 12;
+  google.protobuf.Timestamp period_end = 13;
+  google.protobuf.Timestamp created_at = 14;
+}
+
+message DetectStressRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string processing_job_id = 3;
+}
+message DetectStressResponse { repeated StressAlert alerts = 1; }
+
+message ListStressAlertsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string farm_id = 3;
+  StressType stress_type = 4;
+  SeverityLevel min_severity = 5;
+  bool unacknowledged_only = 6;
+}
+message ListStressAlertsResponse {
+  repeated StressAlert alerts = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message AcknowledgeAlertRequest { string id = 1; }
+message AcknowledgeAlertResponse { bool success = 1; }
+
+message RunTemporalAnalysisRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  AnalysisType analysis_type = 3;
+  google.protobuf.Timestamp period_start = 4;
+  google.protobuf.Timestamp period_end = 5;
+}
+message RunTemporalAnalysisResponse { TemporalAnalysis analysis = 1; }
+
+message GetFieldAnalyticsSummaryRequest {
+  string farm_id = 1;
+  string field_id = 2;
+}
+message GetFieldAnalyticsSummaryResponse {
+  int32 active_stress_alerts = 1;
+  double health_score = 2;
+  double ndvi_trend = 3;
+  string dominant_stress_type = 4;
+  google.protobuf.Timestamp last_analysis = 5;
+}
+
+service SatelliteAnalyticsService {
+  rpc DetectStress(DetectStressRequest) returns (DetectStressResponse);
+  rpc ListStressAlerts(ListStressAlertsRequest) returns (ListStressAlertsResponse);
+  rpc AcknowledgeAlert(AcknowledgeAlertRequest) returns (AcknowledgeAlertResponse);
+  rpc RunTemporalAnalysis(RunTemporalAnalysisRequest) returns (RunTemporalAnalysisResponse);
+  rpc GetFieldAnalyticsSummary(GetFieldAnalyticsSummaryRequest) returns (GetFieldAnalyticsSummaryResponse);
+}

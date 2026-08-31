@@ -1,0 +1,154 @@
+name: yp_mobile
+repository: https://github.com/yieldpoint/yp-mobile
+
+packages:
+  - apps/*
+  - packages/*
+
+ide:
+  intellij:
+    enabled: true
+  vscode:
+    enabled: true
+
+command:
+  bootstrap:
+    environment:
+      sdk: ">=3.4.0 <4.0.0"
+      flutter: ">=3.22.0"
+    hooks:
+      post: melos run gen:proto
+
+  clean:
+    hooks:
+      post: |
+        melos exec -- "flutter clean"
+
+scripts:
+  # ── Code generation ─────────────────────────────────────────────────
+  gen:
+    description: Run all code generators across the workspace.
+    run: melos run gen:proto && melos run gen:build
+
+  gen:proto:
+    description: Generate protobuf Dart files from .proto definitions.
+    run: |
+      cd packages/flutter_proto && \
+      buf generate
+    packageFilters:
+      scope: flutter_proto
+
+  gen:build:
+    description: Run build_runner for Drift, Freezed, Riverpod, and JSON serialization.
+    exec: dart run build_runner build --delete-conflicting-outputs
+    packageFilters:
+      dependsOn: build_runner
+
+  # ── Analysis & formatting ──────────────────────────────────────────
+  analyze:
+    description: Run static analysis on all packages.
+    exec: dart analyze --fatal-infos
+    packageFilters:
+      ignore:
+        - flutter_proto
+
+  format:
+    description: Format all Dart files.
+    exec: dart format --set-exit-if-changed .
+    packageFilters:
+      ignore:
+        - flutter_proto
+
+  format:fix:
+    description: Format all Dart files (apply fixes).
+    exec: dart format .
+
+  fix:
+    description: Apply dart fix suggestions.
+    exec: dart fix --apply
+
+  # ── Testing ────────────────────────────────────────────────────────
+  test:
+    description: Run all tests with coverage.
+    exec: flutter test --coverage
+    packageFilters:
+      dirExists: test
+
+  test:unit:
+    description: Run unit tests only.
+    exec: flutter test --coverage --tags unit
+    packageFilters:
+      dirExists: test
+
+  test:integration:
+    description: Run integration tests for apps.
+    exec: flutter test integration_test/
+    packageFilters:
+      scope:
+        - farmer_app
+        - agronomist_app
+
+  coverage:
+    description: Generate combined coverage report.
+    run: |
+      melos run test && \
+      melos exec -- "test -d coverage && lcov --remove coverage/lcov.info '*.g.dart' '*.freezed.dart' '*.pb*.dart' -o coverage/filtered.info || true"
+
+  # ── Build ──────────────────────────────────────────────────────────
+  build:android:farmer:
+    description: Build farmer app APK.
+    run: |
+      cd apps/farmer_app && \
+      flutter build apk --release
+
+  build:android:agronomist:
+    description: Build agronomist app APK.
+    run: |
+      cd apps/agronomist_app && \
+      flutter build apk --release
+
+  build:ios:farmer:
+    description: Build farmer app for iOS.
+    run: |
+      cd apps/farmer_app && \
+      flutter build ios --release --no-codesign
+
+  build:ios:agronomist:
+    description: Build agronomist app for iOS.
+    run: |
+      cd apps/agronomist_app && \
+      flutter build ios --release --no-codesign
+
+  # ── Utilities ──────────────────────────────────────────────────────
+  clean:all:
+    description: Deep clean all packages.
+    exec: |
+      flutter clean && \
+      rm -rf .dart_tool build pubspec.lock
+
+  deps:check:
+    description: Check for outdated dependencies.
+    exec: flutter pub outdated
+
+  deps:upgrade:
+    description: Upgrade dependencies to latest compatible versions.
+    exec: flutter pub upgrade
+
+  loc:
+    description: Count lines of Dart code (excluding generated files).
+    run: |
+      find . -name "*.dart" \
+        ! -name "*.g.dart" \
+        ! -name "*.freezed.dart" \
+        ! -name "*.pb*.dart" \
+        ! -path "*/generated/*" \
+        | xargs wc -l | tail -1
+
+  # ── CI convenience ─────────────────────────────────────────────────
+  ci:
+    description: Full CI pipeline — analyze, test, and build.
+    run: |
+      melos run gen && \
+      melos run analyze && \
+      melos run format && \
+      melos run test
