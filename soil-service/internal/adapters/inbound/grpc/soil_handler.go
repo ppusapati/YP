@@ -30,21 +30,21 @@ func NewSoilHandler(svc inbound.SoilService, log p9log.Logger) *SoilHandler {
 }
 
 // CreateSoil handles creation requests.
-func (h *SoilHandler) CreateSoil(ctx context.Context, req *pb.CreateSoilRequest) (*pb.CreateSoilResponse, error) {
+func (h *SoilHandler) CreateSoil(ctx context.Context, req *pb.CreateSoilSampleRequest) (*pb.CreateSoilSampleResponse, error) {
 	h.log.Infow("msg", "CreateSoil request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
 	}
-	entity := &domain.Soil{Name: req.GetName()}
+	entity := &domain.Soil{Name: req.GetFieldId()}
 	created, err := h.svc.CreateSoil(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateSoilResponse{Soil: soilToProto(created)}, nil
+	return &pb.CreateSoilSampleResponse{Sample: soilToProto(created)}, nil
 }
 
 // GetSoil handles get requests.
-func (h *SoilHandler) GetSoil(ctx context.Context, req *pb.GetSoilRequest) (*pb.GetSoilResponse, error) {
+func (h *SoilHandler) GetSoil(ctx context.Context, req *pb.GetSoilSampleRequest) (*pb.GetSoilSampleResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -52,25 +52,25 @@ func (h *SoilHandler) GetSoil(ctx context.Context, req *pb.GetSoilRequest) (*pb.
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetSoilResponse{Soil: soilToProto(entity)}, nil
+	return &pb.GetSoilSampleResponse{Sample: soilToProto(entity)}, nil
 }
 
 // ListSoils handles list requests.
-func (h *SoilHandler) ListSoils(ctx context.Context, req *pb.ListSoilsRequest) (*pb.ListSoilsResponse, error) {
+func (h *SoilHandler) ListSoils(ctx context.Context, req *pb.ListSoilSamplesRequest) (*pb.ListSoilSamplesResponse, error) {
 	params := domain.ListSoilParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListSoils(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Soil, 0, len(entities))
+	protos := make([]*pb.SoilSample, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, soilToProto(&entities[i]))
 	}
-	return &pb.ListSoilsResponse{Soils: protos, TotalCount: total}, nil
+	return &pb.ListSoilSamplesResponse{Samples: protos, TotalCount: total}, nil
 }
 
 // UpdateSoil handles update requests.
-func (h *SoilHandler) UpdateSoil(ctx context.Context, req *pb.UpdateSoilRequest) (*pb.UpdateSoilResponse, error) {
+func (h *SoilHandler) UpdateSoil(ctx context.Context, req *pb.GetSoilSampleRequest) (*pb.GetSoilSampleResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -80,25 +80,23 @@ func (h *SoilHandler) UpdateSoil(ctx context.Context, req *pb.UpdateSoilRequest)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateSoilResponse{Soil: soilToProto(updated)}, nil
+	return &pb.GetSoilSampleResponse{Sample: soilToProto(updated)}, nil
 }
 
 // DeleteSoil handles delete requests.
-func (h *SoilHandler) DeleteSoil(ctx context.Context, req *pb.DeleteSoilRequest) (*pb.DeleteSoilResponse, error) {
+func (h *SoilHandler) DeleteSoil(ctx context.Context, req *pb.GetSoilSampleRequest) (*pb.GetSoilSampleResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteSoil(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteSoilResponse{Success: true}, nil
+	return &pb.GetSoilSampleResponse{}, nil
 }
 
-func soilToProto(e *domain.Soil) *pb.Soil {
-	return &pb.Soil{
+func soilToProto(e *domain.Soil) *pb.SoilSample {
+	return &pb.SoilSample{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
 	}
 }

@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	farmmodels "p9e.in/samavaya/agriculture/farm-service/internal/models"
+	"p9e.in/samavaya/agriculture/farm-service/internal/domain"
 	pb "p9e.in/samavaya/agriculture/farm-service/api/v1"
 	"p9e.in/samavaya/packages/convert/ptr"
 )
@@ -13,31 +13,31 @@ import (
 // ---- Proto enum <-> Domain enum conversions ----
 
 // ProtoFarmTypeToDomain converts a proto FarmType to the domain FarmType.
-func ProtoFarmTypeToDomain(ft pb.FarmType) farmmodels.FarmType {
+func ProtoFarmTypeToDomain(ft pb.FarmType) domain.FarmType {
 	switch ft {
 	case pb.FarmType_FARM_TYPE_CROP:
-		return farmmodels.FarmTypeCrop
+		return domain.FarmTypeCrop
 	case pb.FarmType_FARM_TYPE_LIVESTOCK:
-		return farmmodels.FarmTypeLivestock
+		return domain.FarmTypeLivestock
 	case pb.FarmType_FARM_TYPE_MIXED:
-		return farmmodels.FarmTypeMixed
+		return domain.FarmTypeMixed
 	case pb.FarmType_FARM_TYPE_AQUACULTURE:
-		return farmmodels.FarmTypeAquaculture
+		return domain.FarmTypeAquaculture
 	default:
-		return farmmodels.FarmTypeUnspecified
+		return domain.FarmTypeUnspecified
 	}
 }
 
 // DomainFarmTypeToProto converts a domain FarmType to the proto FarmType.
-func DomainFarmTypeToProto(ft farmmodels.FarmType) pb.FarmType {
+func DomainFarmTypeToProto(ft domain.FarmType) pb.FarmType {
 	switch ft {
-	case farmmodels.FarmTypeCrop:
+	case domain.FarmTypeCrop:
 		return pb.FarmType_FARM_TYPE_CROP
-	case farmmodels.FarmTypeLivestock:
+	case domain.FarmTypeLivestock:
 		return pb.FarmType_FARM_TYPE_LIVESTOCK
-	case farmmodels.FarmTypeMixed:
+	case domain.FarmTypeMixed:
 		return pb.FarmType_FARM_TYPE_MIXED
-	case farmmodels.FarmTypeAquaculture:
+	case domain.FarmTypeAquaculture:
 		return pb.FarmType_FARM_TYPE_AQUACULTURE
 	default:
 		return pb.FarmType_FARM_TYPE_UNSPECIFIED
@@ -45,35 +45,35 @@ func DomainFarmTypeToProto(ft farmmodels.FarmType) pb.FarmType {
 }
 
 // ProtoFarmStatusToDomain converts a proto FarmStatus to the domain FarmStatus.
-func ProtoFarmStatusToDomain(s pb.FarmStatus) farmmodels.FarmStatus {
+func ProtoFarmStatusToDomain(s pb.FarmStatus) domain.FarmStatus {
 	switch s {
 	case pb.FarmStatus_FARM_STATUS_ACTIVE:
-		return farmmodels.FarmStatusActive
+		return domain.FarmStatusActive
 	case pb.FarmStatus_FARM_STATUS_INACTIVE:
-		return farmmodels.FarmStatusInactive
+		return domain.FarmStatusInactive
 	case pb.FarmStatus_FARM_STATUS_PENDING:
-		return farmmodels.FarmStatusPending
+		return domain.FarmStatusPending
 	case pb.FarmStatus_FARM_STATUS_SUSPENDED:
-		return farmmodels.FarmStatusSuspended
+		return domain.FarmStatusSuspended
 	case pb.FarmStatus_FARM_STATUS_ARCHIVED:
-		return farmmodels.FarmStatusArchived
+		return domain.FarmStatusArchived
 	default:
-		return farmmodels.FarmStatusUnspecified
+		return domain.FarmStatusUnspecified
 	}
 }
 
 // DomainFarmStatusToProto converts a domain FarmStatus to the proto FarmStatus.
-func DomainFarmStatusToProto(s farmmodels.FarmStatus) pb.FarmStatus {
+func DomainFarmStatusToProto(s domain.FarmStatus) pb.FarmStatus {
 	switch s {
-	case farmmodels.FarmStatusActive:
+	case domain.FarmStatusActive:
 		return pb.FarmStatus_FARM_STATUS_ACTIVE
-	case farmmodels.FarmStatusInactive:
+	case domain.FarmStatusInactive:
 		return pb.FarmStatus_FARM_STATUS_INACTIVE
-	case farmmodels.FarmStatusPending:
+	case domain.FarmStatusPending:
 		return pb.FarmStatus_FARM_STATUS_PENDING
-	case farmmodels.FarmStatusSuspended:
+	case domain.FarmStatusSuspended:
 		return pb.FarmStatus_FARM_STATUS_SUSPENDED
-	case farmmodels.FarmStatusArchived:
+	case domain.FarmStatusArchived:
 		return pb.FarmStatus_FARM_STATUS_ARCHIVED
 	default:
 		return pb.FarmStatus_FARM_STATUS_UNSPECIFIED
@@ -81,55 +81,55 @@ func DomainFarmStatusToProto(s farmmodels.FarmStatus) pb.FarmStatus {
 }
 
 // ProtoSoilTypeToDomain converts a proto SoilType to the domain SoilType.
-func ProtoSoilTypeToDomain(s pb.SoilType) farmmodels.SoilType {
+func ProtoSoilTypeToDomain(s pb.SoilType) domain.SoilType {
 	switch s {
 	case pb.SoilType_SOIL_TYPE_CLAY:
-		return farmmodels.SoilTypeClay
+		return domain.SoilTypeClay
 	case pb.SoilType_SOIL_TYPE_SANDY:
-		return farmmodels.SoilTypeSandy
+		return domain.SoilTypeSandy
 	case pb.SoilType_SOIL_TYPE_LOAMY:
-		return farmmodels.SoilTypeLoamy
+		return domain.SoilTypeLoamy
 	case pb.SoilType_SOIL_TYPE_SILT:
-		return farmmodels.SoilTypeSilt
+		return domain.SoilTypeSilt
 	case pb.SoilType_SOIL_TYPE_PEAT:
-		return farmmodels.SoilTypePeat
+		return domain.SoilTypePeat
 	case pb.SoilType_SOIL_TYPE_CHALKY:
-		return farmmodels.SoilTypeChalky
+		return domain.SoilTypeChalky
 	case pb.SoilType_SOIL_TYPE_LATERITE:
-		return farmmodels.SoilTypeLaterite
+		return domain.SoilTypeLaterite
 	case pb.SoilType_SOIL_TYPE_BLACK:
-		return farmmodels.SoilTypeBlack
+		return domain.SoilTypeBlack
 	case pb.SoilType_SOIL_TYPE_RED:
-		return farmmodels.SoilTypeRed
+		return domain.SoilTypeRed
 	case pb.SoilType_SOIL_TYPE_ALLUVIAL:
-		return farmmodels.SoilTypeAlluvial
+		return domain.SoilTypeAlluvial
 	default:
-		return farmmodels.SoilTypeUnspecified
+		return domain.SoilTypeUnspecified
 	}
 }
 
 // DomainSoilTypeToProto converts a domain SoilType to the proto SoilType.
-func DomainSoilTypeToProto(s farmmodels.SoilType) pb.SoilType {
+func DomainSoilTypeToProto(s domain.SoilType) pb.SoilType {
 	switch s {
-	case farmmodels.SoilTypeClay:
+	case domain.SoilTypeClay:
 		return pb.SoilType_SOIL_TYPE_CLAY
-	case farmmodels.SoilTypeSandy:
+	case domain.SoilTypeSandy:
 		return pb.SoilType_SOIL_TYPE_SANDY
-	case farmmodels.SoilTypeLoamy:
+	case domain.SoilTypeLoamy:
 		return pb.SoilType_SOIL_TYPE_LOAMY
-	case farmmodels.SoilTypeSilt:
+	case domain.SoilTypeSilt:
 		return pb.SoilType_SOIL_TYPE_SILT
-	case farmmodels.SoilTypePeat:
+	case domain.SoilTypePeat:
 		return pb.SoilType_SOIL_TYPE_PEAT
-	case farmmodels.SoilTypeChalky:
+	case domain.SoilTypeChalky:
 		return pb.SoilType_SOIL_TYPE_CHALKY
-	case farmmodels.SoilTypeLaterite:
+	case domain.SoilTypeLaterite:
 		return pb.SoilType_SOIL_TYPE_LATERITE
-	case farmmodels.SoilTypeBlack:
+	case domain.SoilTypeBlack:
 		return pb.SoilType_SOIL_TYPE_BLACK
-	case farmmodels.SoilTypeRed:
+	case domain.SoilTypeRed:
 		return pb.SoilType_SOIL_TYPE_RED
-	case farmmodels.SoilTypeAlluvial:
+	case domain.SoilTypeAlluvial:
 		return pb.SoilType_SOIL_TYPE_ALLUVIAL
 	default:
 		return pb.SoilType_SOIL_TYPE_UNSPECIFIED
@@ -137,51 +137,51 @@ func DomainSoilTypeToProto(s farmmodels.SoilType) pb.SoilType {
 }
 
 // ProtoClimateZoneToDomain converts a proto ClimateZone to the domain ClimateZone.
-func ProtoClimateZoneToDomain(c pb.ClimateZone) farmmodels.ClimateZone {
+func ProtoClimateZoneToDomain(c pb.ClimateZone) domain.ClimateZone {
 	switch c {
 	case pb.ClimateZone_CLIMATE_ZONE_TROPICAL:
-		return farmmodels.ClimateZoneTropical
+		return domain.ClimateZoneTropical
 	case pb.ClimateZone_CLIMATE_ZONE_SUBTROPICAL:
-		return farmmodels.ClimateZoneSubtropical
+		return domain.ClimateZoneSubtropical
 	case pb.ClimateZone_CLIMATE_ZONE_ARID:
-		return farmmodels.ClimateZoneArid
+		return domain.ClimateZoneArid
 	case pb.ClimateZone_CLIMATE_ZONE_SEMIARID:
-		return farmmodels.ClimateZoneSemiarid
+		return domain.ClimateZoneSemiarid
 	case pb.ClimateZone_CLIMATE_ZONE_TEMPERATE:
-		return farmmodels.ClimateZoneTemperate
+		return domain.ClimateZoneTemperate
 	case pb.ClimateZone_CLIMATE_ZONE_CONTINENTAL:
-		return farmmodels.ClimateZoneContinental
+		return domain.ClimateZoneContinental
 	case pb.ClimateZone_CLIMATE_ZONE_POLAR:
-		return farmmodels.ClimateZonePolar
+		return domain.ClimateZonePolar
 	case pb.ClimateZone_CLIMATE_ZONE_MEDITERRANEAN:
-		return farmmodels.ClimateZoneMediterranean
+		return domain.ClimateZoneMediterranean
 	case pb.ClimateZone_CLIMATE_ZONE_MONSOON:
-		return farmmodels.ClimateZoneMonsoon
+		return domain.ClimateZoneMonsoon
 	default:
-		return farmmodels.ClimateZoneUnspecified
+		return domain.ClimateZoneUnspecified
 	}
 }
 
 // DomainClimateZoneToProto converts a domain ClimateZone to the proto ClimateZone.
-func DomainClimateZoneToProto(c farmmodels.ClimateZone) pb.ClimateZone {
+func DomainClimateZoneToProto(c domain.ClimateZone) pb.ClimateZone {
 	switch c {
-	case farmmodels.ClimateZoneTropical:
+	case domain.ClimateZoneTropical:
 		return pb.ClimateZone_CLIMATE_ZONE_TROPICAL
-	case farmmodels.ClimateZoneSubtropical:
+	case domain.ClimateZoneSubtropical:
 		return pb.ClimateZone_CLIMATE_ZONE_SUBTROPICAL
-	case farmmodels.ClimateZoneArid:
+	case domain.ClimateZoneArid:
 		return pb.ClimateZone_CLIMATE_ZONE_ARID
-	case farmmodels.ClimateZoneSemiarid:
+	case domain.ClimateZoneSemiarid:
 		return pb.ClimateZone_CLIMATE_ZONE_SEMIARID
-	case farmmodels.ClimateZoneTemperate:
+	case domain.ClimateZoneTemperate:
 		return pb.ClimateZone_CLIMATE_ZONE_TEMPERATE
-	case farmmodels.ClimateZoneContinental:
+	case domain.ClimateZoneContinental:
 		return pb.ClimateZone_CLIMATE_ZONE_CONTINENTAL
-	case farmmodels.ClimateZonePolar:
+	case domain.ClimateZonePolar:
 		return pb.ClimateZone_CLIMATE_ZONE_POLAR
-	case farmmodels.ClimateZoneMediterranean:
+	case domain.ClimateZoneMediterranean:
 		return pb.ClimateZone_CLIMATE_ZONE_MEDITERRANEAN
-	case farmmodels.ClimateZoneMonsoon:
+	case domain.ClimateZoneMonsoon:
 		return pb.ClimateZone_CLIMATE_ZONE_MONSOON
 	default:
 		return pb.ClimateZone_CLIMATE_ZONE_UNSPECIFIED
@@ -191,7 +191,7 @@ func DomainClimateZoneToProto(c farmmodels.ClimateZone) pb.ClimateZone {
 // ---- Domain -> Proto conversions ----
 
 // FarmToProto converts a domain Farm to its proto representation.
-func FarmToProto(f *farmmodels.Farm) *pb.Farm {
+func FarmToProto(f *domain.Farm) *pb.Farm {
 	if f == nil {
 		return nil
 	}
@@ -258,7 +258,7 @@ func FarmToProto(f *farmmodels.Farm) *pb.Farm {
 }
 
 // FarmBoundaryToProto converts a domain FarmBoundary to its proto representation.
-func FarmBoundaryToProto(b *farmmodels.FarmBoundary) *pb.FarmBoundary {
+func FarmBoundaryToProto(b *domain.FarmBoundary) *pb.FarmBoundary {
 	if b == nil {
 		return nil
 	}
@@ -280,7 +280,7 @@ func FarmBoundaryToProto(b *farmmodels.FarmBoundary) *pb.FarmBoundary {
 }
 
 // FarmOwnerToProto converts a domain FarmOwner to its proto representation.
-func FarmOwnerToProto(o *farmmodels.FarmOwner) *pb.FarmOwner {
+func FarmOwnerToProto(o *domain.FarmOwner) *pb.FarmOwner {
 	if o == nil {
 		return nil
 	}
@@ -308,14 +308,14 @@ func FarmOwnerToProto(o *farmmodels.FarmOwner) *pb.FarmOwner {
 // ---- Proto -> Domain conversions ----
 
 // CreateFarmRequestToDomain converts a CreateFarm proto request to a domain Farm.
-func CreateFarmRequestToDomain(req *pb.CreateFarmRequest, tenantID, userID string) *farmmodels.Farm {
-	farm := &farmmodels.Farm{
+func CreateFarmRequestToDomain(req *pb.CreateFarmRequest, tenantID, userID string) *domain.Farm {
+	farm := &domain.Farm{
 		TenantID:          tenantID,
 		Name:              req.GetName(),
 		Description:       ptr.StringOrNil(req.GetDescription()),
 		TotalAreaHectares: req.GetTotalAreaHectares(),
 		FarmType:          ProtoFarmTypeToDomain(req.GetFarmType()),
-		Status:            farmmodels.FarmStatusPending,
+		Status:            domain.FarmStatusPending,
 		ElevationMeters:   Float64OrNil(req.GetElevationMeters()),
 		Address:           ptr.StringOrNil(req.GetAddress()),
 		Region:            ptr.StringOrNil(req.GetRegion()),
@@ -351,13 +351,72 @@ func CreateFarmRequestToDomain(req *pb.CreateFarmRequest, tenantID, userID strin
 	return farm
 }
 
+// UpdateFarmRequestToDomain converts an UpdateFarm proto request to a domain Farm.
+func UpdateFarmRequestToDomain(req *pb.UpdateFarmRequest, tenantID, userID string) *domain.Farm {
+	farm := &domain.Farm{
+		TenantID: tenantID,
+	}
+
+	farm.UUID = req.GetId()
+	farm.UpdatedBy = ptr.String(userID)
+
+	if req.GetName() != "" {
+		farm.Name = req.GetName()
+	}
+	if req.GetDescription() != "" {
+		farm.Description = ptr.String(req.GetDescription())
+	}
+	if req.GetTotalAreaHectares() != 0 {
+		farm.TotalAreaHectares = req.GetTotalAreaHectares()
+	}
+	if req.GetFarmType() != pb.FarmType_FARM_TYPE_UNSPECIFIED {
+		farm.FarmType = ProtoFarmTypeToDomain(req.GetFarmType())
+	}
+	if req.GetStatus() != pb.FarmStatus_FARM_STATUS_UNSPECIFIED {
+		farm.Status = ProtoFarmStatusToDomain(req.GetStatus())
+	}
+	if req.GetElevationMeters() != 0 {
+		farm.ElevationMeters = Float64OrNil(req.GetElevationMeters())
+	}
+	if req.GetAddress() != "" {
+		farm.Address = ptr.String(req.GetAddress())
+	}
+	if req.GetRegion() != "" {
+		farm.Region = ptr.String(req.GetRegion())
+	}
+	if req.GetCountry() != "" {
+		farm.Country = ptr.String(req.GetCountry())
+	}
+	if req.GetSoilType() != pb.SoilType_SOIL_TYPE_UNSPECIFIED {
+		st := ProtoSoilTypeToDomain(req.GetSoilType())
+		farm.SoilType = &st
+	}
+	if req.GetClimateZone() != pb.ClimateZone_CLIMATE_ZONE_UNSPECIFIED {
+		cz := ProtoClimateZoneToDomain(req.GetClimateZone())
+		farm.ClimateZone = &cz
+	}
+	if req.GetLocation() != nil {
+		farm.Latitude = ptr.Float64(req.GetLocation().GetLatitude())
+		farm.Longitude = ptr.Float64(req.GetLocation().GetLongitude())
+		if req.GetLocation().GetElevationMeters() != 0 {
+			farm.ElevationMeters = ptr.Float64(req.GetLocation().GetElevationMeters())
+		}
+	}
+	if len(req.GetMetadata()) > 0 {
+		md, _ := json.Marshal(req.GetMetadata())
+		farm.Metadata = md
+	}
+
+	return farm
+}
+
 // CreateFarmOwnerFromProto converts a proto FarmOwner from the CreateFarm request to a domain FarmOwner.
-func CreateFarmOwnerFromProto(o *pb.FarmOwner, farmID int64, farmUUID, tenantID, userID string) *farmmodels.FarmOwner {
+func CreateFarmOwnerFromProto(o *pb.FarmOwner, farmID int64, farmUUID, tenantID, userID string) *domain.FarmOwner {
 	if o == nil {
 		return nil
 	}
 
-	return &farmmodels.FarmOwner{
+	return &domain.FarmOwner{
 		FarmID:              farmID,
 		FarmUUID:            farmUUID,
 		TenantID:            tenantID,
@@ -380,7 +439,7 @@ func Float64OrNil(f float64) *float64 {
 }
 
 // FarmsToProto converts a slice of domain Farms to their proto representations.
-func FarmsToProto(farms []farmmodels.Farm) []*pb.Farm {
+func FarmsToProto(farms []domain.Farm) []*pb.Farm {
 	if farms == nil {
 		return nil
 	}

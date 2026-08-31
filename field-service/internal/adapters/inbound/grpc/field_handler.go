@@ -44,8 +44,8 @@ func (h *FieldHandler) CreateField(ctx context.Context, req *pb.CreateFieldReque
 		FarmID:       req.GetFarmId(),
 		Name:         req.GetName(),
 		AreaHectares: req.GetAreaHectares(),
-		FieldType:    domain.FieldType(req.GetFieldType()),
-		SoilType:     domain.SoilType(req.GetSoilType()),
+		FieldType:    protoFieldTypeToDomain(req.GetFieldType()),
+		SoilType:     protoSoilTypeToDomain(req.GetSoilType()),
 	}
 
 	created, err := h.svc.CreateField(ctx, field)
@@ -109,7 +109,7 @@ func (h *FieldHandler) DeleteField(ctx context.Context, req *pb.DeleteFieldReque
 	if err := h.svc.DeleteField(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteFieldResponse{Success: true}, nil
+	return &pb.DeleteFieldResponse{}, nil
 }
 
 // AssignCrop handles crop assignment requests.
@@ -128,7 +128,10 @@ func (h *FieldHandler) AssignCrop(ctx context.Context, req *pb.AssignCropRequest
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.AssignCropResponse{Field: fieldToProto(field)}, nil
+	return &pb.AssignCropResponse{Assignment: &pb.FieldCropAssignment{
+		FieldId: field.UUID,
+		CropId:  req.GetCropId(),
+	}}, nil
 }
 
 // fieldToProto converts a domain Field to a proto Field message.
@@ -139,8 +142,115 @@ func fieldToProto(f *domain.Field) *pb.Field {
 		FarmId:       f.FarmID,
 		Name:         f.Name,
 		AreaHectares: f.AreaHectares,
-		FieldType:    string(f.FieldType),
-		SoilType:     string(f.SoilType),
-		Status:       string(f.Status),
+		FieldType:    domainFieldTypeToProto(f.FieldType),
+		SoilType:     domainSoilTypeToProto(f.SoilType),
+		Status:       domainFieldStatusToProto(f.Status),
+	}
+}
+
+func domainFieldTypeToProto(ft domain.FieldType) pb.FieldType {
+	switch ft {
+	case domain.FieldTypeCropland:
+		return pb.FieldType_FIELD_TYPE_CROPLAND
+	case domain.FieldTypePasture:
+		return pb.FieldType_FIELD_TYPE_PASTURE
+	case domain.FieldTypeOrchard:
+		return pb.FieldType_FIELD_TYPE_ORCHARD
+	case domain.FieldTypeVineyard:
+		return pb.FieldType_FIELD_TYPE_VINEYARD
+	case domain.FieldTypeGreenhouse:
+		return pb.FieldType_FIELD_TYPE_GREENHOUSE
+	case domain.FieldTypeNursery:
+		return pb.FieldType_FIELD_TYPE_NURSERY
+	case domain.FieldTypeAgroforest:
+		return pb.FieldType_FIELD_TYPE_AGROFOREST
+	default:
+		return pb.FieldType_FIELD_TYPE_UNSPECIFIED
+	}
+}
+
+func domainSoilTypeToProto(st domain.SoilType) pb.SoilType {
+	switch st {
+	case domain.SoilTypeClay:
+		return pb.SoilType_SOIL_TYPE_CLAY
+	case domain.SoilTypeSandy:
+		return pb.SoilType_SOIL_TYPE_SANDY
+	case domain.SoilTypeLoamy:
+		return pb.SoilType_SOIL_TYPE_LOAMY
+	case domain.SoilTypeSilt:
+		return pb.SoilType_SOIL_TYPE_SILT
+	case domain.SoilTypePeat:
+		return pb.SoilType_SOIL_TYPE_PEAT
+	case domain.SoilTypeChalk:
+		return pb.SoilType_SOIL_TYPE_CHALK
+	case domain.SoilTypeClayLoam:
+		return pb.SoilType_SOIL_TYPE_CLAY_LOAM
+	case domain.SoilTypeSandyLoam:
+		return pb.SoilType_SOIL_TYPE_SANDY_LOAM
+	default:
+		return pb.SoilType_SOIL_TYPE_UNSPECIFIED
+	}
+}
+
+func domainFieldStatusToProto(s domain.FieldStatus) pb.FieldStatus {
+	switch s {
+	case domain.FieldStatusActive:
+		return pb.FieldStatus_FIELD_STATUS_ACTIVE
+	case domain.FieldStatusFallow:
+		return pb.FieldStatus_FIELD_STATUS_FALLOW
+	case domain.FieldStatusPreparation:
+		return pb.FieldStatus_FIELD_STATUS_PREPARATION
+	case domain.FieldStatusPlanted:
+		return pb.FieldStatus_FIELD_STATUS_PLANTED
+	case domain.FieldStatusHarvesting:
+		return pb.FieldStatus_FIELD_STATUS_HARVESTING
+	case domain.FieldStatusRetired:
+		return pb.FieldStatus_FIELD_STATUS_RETIRED
+	default:
+		return pb.FieldStatus_FIELD_STATUS_UNSPECIFIED
+	}
+}
+
+func protoFieldTypeToDomain(ft pb.FieldType) domain.FieldType {
+	switch ft {
+	case pb.FieldType_FIELD_TYPE_CROPLAND:
+		return domain.FieldTypeCropland
+	case pb.FieldType_FIELD_TYPE_PASTURE:
+		return domain.FieldTypePasture
+	case pb.FieldType_FIELD_TYPE_ORCHARD:
+		return domain.FieldTypeOrchard
+	case pb.FieldType_FIELD_TYPE_VINEYARD:
+		return domain.FieldTypeVineyard
+	case pb.FieldType_FIELD_TYPE_GREENHOUSE:
+		return domain.FieldTypeGreenhouse
+	case pb.FieldType_FIELD_TYPE_NURSERY:
+		return domain.FieldTypeNursery
+	case pb.FieldType_FIELD_TYPE_AGROFOREST:
+		return domain.FieldTypeAgroforest
+	default:
+		return domain.FieldTypeUnspecified
+	}
+}
+
+func protoSoilTypeToDomain(st pb.SoilType) domain.SoilType {
+	switch st {
+	case pb.SoilType_SOIL_TYPE_CLAY:
+		return domain.SoilTypeClay
+	case pb.SoilType_SOIL_TYPE_SANDY:
+		return domain.SoilTypeSandy
+	case pb.SoilType_SOIL_TYPE_LOAMY:
+		return domain.SoilTypeLoamy
+	case pb.SoilType_SOIL_TYPE_SILT:
+		return domain.SoilTypeSilt
+	case pb.SoilType_SOIL_TYPE_PEAT:
+		return domain.SoilTypePeat
+	case pb.SoilType_SOIL_TYPE_CHALK:
+		return domain.SoilTypeChalk
+	case pb.SoilType_SOIL_TYPE_CLAY_LOAM:
+		return domain.SoilTypeClayLoam
+	case pb.SoilType_SOIL_TYPE_SANDY_LOAM:
+		return domain.SoilTypeSandyLoam
+	default:
+		return domain.SoilTypeUnspecified
 	}
 }

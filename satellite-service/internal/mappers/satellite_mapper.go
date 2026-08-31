@@ -88,8 +88,9 @@ func BandFromProto(b pb.SpectralBand) string {
 func BandsToProto(bands []string) []pb.SpectralBand {
 	out := make([]pb.SpectralBand, 0, len(bands))
 	for _, b := range bands {
-		if pb := BandToProto(b); pb != pb.Number() { // always add
-			out = append(out, BandToProto(b))
+		v := BandToProto(b)
+		if v != pb.SpectralBand_SPECTRAL_BAND_UNSPECIFIED {
+			out = append(out, v)
 		}
 	}
 	return out

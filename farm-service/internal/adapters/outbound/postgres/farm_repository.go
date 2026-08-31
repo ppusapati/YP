@@ -508,20 +508,24 @@ func scanBoundary(row pgx.Row, b *domain.FarmBoundary) error {
 }
 
 func scanOwner(row pgx.Row, o *domain.FarmOwner) error {
+	var deletedBy *string
+	var deletedAt *time.Time
 	return row.Scan(
 		&o.ID, &o.UUID, &o.FarmID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
-		&o.UpdatedBy, &o.UpdatedAt, &o.DeletedBy, &o.DeletedAt,
+		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
 	)
 }
 
 func scanOwnerFromRows(rows pgx.Rows, o *domain.FarmOwner) error {
+	var deletedBy *string
+	var deletedAt *time.Time
 	return rows.Scan(
 		&o.ID, &o.UUID, &o.FarmID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
-		&o.UpdatedBy, &o.UpdatedAt, &o.DeletedBy, &o.DeletedAt,
+		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
 	)
 }
 

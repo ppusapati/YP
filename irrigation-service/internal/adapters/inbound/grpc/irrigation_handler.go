@@ -30,21 +30,21 @@ func NewIrrigationHandler(svc inbound.IrrigationService, log p9log.Logger) *Irri
 }
 
 // CreateIrrigation handles creation requests.
-func (h *IrrigationHandler) CreateIrrigation(ctx context.Context, req *pb.CreateIrrigationRequest) (*pb.CreateIrrigationResponse, error) {
+func (h *IrrigationHandler) CreateIrrigation(ctx context.Context, req *pb.CreateScheduleRequest) (*pb.CreateScheduleResponse, error) {
 	h.log.Infow("msg", "CreateIrrigation request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
+	if req.GetSchedule().GetName() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
 	}
-	entity := &domain.Irrigation{Name: req.GetName()}
+	entity := &domain.Irrigation{Name: req.GetSchedule().GetName()}
 	created, err := h.svc.CreateIrrigation(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateIrrigationResponse{Irrigation: irrigationToProto(created)}, nil
+	return &pb.CreateScheduleResponse{Schedule: irrigationToProto(created)}, nil
 }
 
 // GetIrrigation handles get requests.
-func (h *IrrigationHandler) GetIrrigation(ctx context.Context, req *pb.GetIrrigationRequest) (*pb.GetIrrigationResponse, error) {
+func (h *IrrigationHandler) GetIrrigation(ctx context.Context, req *pb.GetScheduleRequest) (*pb.GetScheduleResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -52,53 +52,70 @@ func (h *IrrigationHandler) GetIrrigation(ctx context.Context, req *pb.GetIrriga
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetIrrigationResponse{Irrigation: irrigationToProto(entity)}, nil
+	return &pb.GetScheduleResponse{Schedule: irrigationToProto(entity)}, nil
 }
 
 // ListIrrigations handles list requests.
-func (h *IrrigationHandler) ListIrrigations(ctx context.Context, req *pb.ListIrrigationsRequest) (*pb.ListIrrigationsResponse, error) {
+func (h *IrrigationHandler) ListIrrigations(ctx context.Context, req *pb.ListSchedulesRequest) (*pb.ListSchedulesResponse, error) {
 	params := domain.ListIrrigationParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListIrrigations(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Irrigation, 0, len(entities))
+	protos := make([]*pb.IrrigationSchedule, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, irrigationToProto(&entities[i]))
 	}
-	return &pb.ListIrrigationsResponse{Irrigations: protos, TotalCount: total}, nil
+	return &pb.ListSchedulesResponse{Schedules: protos, TotalCount: total}, nil
 }
 
 // UpdateIrrigation handles update requests.
-func (h *IrrigationHandler) UpdateIrrigation(ctx context.Context, req *pb.UpdateIrrigationRequest) (*pb.UpdateIrrigationResponse, error) {
-	if req.GetId() == "" {
+func (h *IrrigationHandler) UpdateIrrigation(ctx context.Context, req *pb.UpdateScheduleRequest) (*pb.UpdateScheduleResponse, error) {
+	if req.GetSchedule().GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	entity := &domain.Irrigation{}
-	entity.UUID = req.GetId()
+	entity.UUID = req.GetSchedule().GetId()
 	updated, err := h.svc.UpdateIrrigation(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateIrrigationResponse{Irrigation: irrigationToProto(updated)}, nil
+	return &pb.UpdateScheduleResponse{Schedule: irrigationToProto(updated)}, nil
 }
 
 // DeleteIrrigation handles delete requests.
-func (h *IrrigationHandler) DeleteIrrigation(ctx context.Context, req *pb.DeleteIrrigationRequest) (*pb.DeleteIrrigationResponse, error) {
+func (h *IrrigationHandler) DeleteIrrigation(ctx context.Context, req *pb.DeleteScheduleRequest) (*pb.DeleteScheduleResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteIrrigation(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteIrrigationResponse{Success: true}, nil
+	return &pb.DeleteScheduleResponse{Success: true}, nil
 }
 
-func irrigationToProto(e *domain.Irrigation) *pb.Irrigation {
-	return &pb.Irrigation{
+func irrigationToProto(e *domain.Irrigation) *pb.IrrigationSchedule {
+	return &pb.IrrigationSchedule{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
 		Name:     e.Name,
-		Status:   string(e.Status),
+		Status:   domainIrrigationStatusToProto(e.Status),
+	}
+}
+
+func domainIrrigationStatusToProto(s domain.IrrigationStatus) pb.IrrigationStatus {
+	switch s {
+	case domain.IrrigationStatusScheduled:
+		return pb.IrrigationStatus_IRRIGATION_STATUS_SCHEDULED
+	case domain.IrrigationStatusActive:
+		return pb.IrrigationStatus_IRRIGATION_STATUS_ACTIVE
+	case domain.IrrigationStatusCompleted:
+		return pb.IrrigationStatus_IRRIGATION_STATUS_COMPLETED
+	case domain.IrrigationStatusCancelled:
+		return pb.IrrigationStatus_IRRIGATION_STATUS_CANCELLED
+	case domain.IrrigationStatusFailed:
+		return pb.IrrigationStatus_IRRIGATION_STATUS_FAILED
+	default:
+		return pb.IrrigationStatus_IRRIGATION_STATUS_UNSPECIFIED
 	}
 }

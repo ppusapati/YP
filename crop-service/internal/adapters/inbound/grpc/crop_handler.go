@@ -99,6 +99,5 @@ func cropToProto(e *domain.Crop) *pb.Crop {
 		Id:       e.UUID,
 		TenantId: e.TenantID,
 		Name:     e.Name,
-		Status:   string(e.Status),
 	}
 }
