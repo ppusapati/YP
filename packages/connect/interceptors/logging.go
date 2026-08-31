@@ -14,14 +14,14 @@ import (
 type LoggingInterceptorOption func(*loggingConfig)
 
 type loggingConfig struct {
-	logger            p9log.Helper
+	logger            *p9log.Helper
 	logRequestStart   bool
 	logRequestEnd     bool
 	slowRequestThresh time.Duration
 }
 
 // WithLogger sets the logger for the interceptor.
-func WithLogger(logger p9log.Helper) LoggingInterceptorOption {
+func WithLogger(logger *p9log.Helper) LoggingInterceptorOption {
 	return func(c *loggingConfig) {
 		c.logger = logger
 	}
@@ -72,7 +72,7 @@ func LoggingInterceptor(opts ...LoggingInterceptorOption) connect.UnaryIntercept
 			// Get logger from config or create from context
 			logger := cfg.logger
 			if logger == nil {
-				logger = p9log.NewHelper(p9log.Context(ctx))
+				logger = p9log.Context(ctx)
 			}
 
 			// Log request start
