@@ -1,6 +1,27 @@
 version: v2
 deps:
   - buf.build/googleapis/googleapis
+modules:
+  - path: alert-service/proto
+  - path: analytics-service/proto
+  - path: prescription-service/proto
+  - path: farm-service/proto
+  - path: field-service/proto
+  - path: crop-service/proto
+  - path: soil-service/proto
+  - path: sensor-service/proto
+  - path: irrigation-service/proto
+  - path: satellite-service/proto
+  - path: pest-prediction-service/proto
+  - path: plant-diagnosis-service/proto
+  - path: yield-service/proto
+  - path: traceability-service/proto
+  - path: satellite-ingestion-service/proto
+  - path: satellite-processing-service/proto
+  - path: satellite-analytics-service/proto
+  - path: satellite-tile-service/proto
+  - path: vegetation-index-service/proto
+  - path: ai-gateway/proto
 lint:
   use:
     - DEFAULT
