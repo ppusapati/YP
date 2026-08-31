@@ -30,17 +30,17 @@ func NewDiagnosisHandler(svc inbound.DiagnosisService, log p9log.Logger) *Diagno
 }
 
 // CreateDiagnosis handles creation requests.
-func (h *DiagnosisHandler) CreateDiagnosis(ctx context.Context, req *pb.CreateDiagnosisRequest) (*pb.CreateDiagnosisResponse, error) {
+func (h *DiagnosisHandler) CreateDiagnosis(ctx context.Context, req *pb.SubmitDiagnosisRequest) (*pb.SubmitDiagnosisResponse, error) {
 	h.log.Infow("msg", "CreateDiagnosis request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	entity := &domain.Diagnosis{Name: req.GetName()}
+	entity := &domain.Diagnosis{Name: req.GetFarmId()}
 	created, err := h.svc.CreateDiagnosis(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateDiagnosisResponse{Diagnosis: diagnosisToProto(created)}, nil
+	return &pb.SubmitDiagnosisResponse{Diagnosis: diagnosisToProto(created)}, nil
 }
 
 // GetDiagnosis handles get requests.
@@ -56,21 +56,21 @@ func (h *DiagnosisHandler) GetDiagnosis(ctx context.Context, req *pb.GetDiagnosi
 }
 
 // ListPlantDiagnoses handles list requests.
-func (h *DiagnosisHandler) ListPlantDiagnoses(ctx context.Context, req *pb.ListPlantDiagnosesRequest) (*pb.ListPlantDiagnosesResponse, error) {
+func (h *DiagnosisHandler) ListPlantDiagnoses(ctx context.Context, req *pb.ListDiagnosesRequest) (*pb.ListDiagnosesResponse, error) {
 	params := domain.ListPlantDiagnosisParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListPlantDiagnoses(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Diagnosis, 0, len(entities))
+	protos := make([]*pb.DiagnosisRequest, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, diagnosisToProto(&entities[i]))
 	}
-	return &pb.ListPlantDiagnosesResponse{PlantDiagnoses: protos, TotalCount: total}, nil
+	return &pb.ListDiagnosesResponse{Diagnoses: protos, TotalCount: total}, nil
 }
 
 // UpdateDiagnosis handles update requests.
-func (h *DiagnosisHandler) UpdateDiagnosis(ctx context.Context, req *pb.UpdateDiagnosisRequest) (*pb.UpdateDiagnosisResponse, error) {
+func (h *DiagnosisHandler) UpdateDiagnosis(ctx context.Context, req *pb.GetDiagnosisRequest) (*pb.GetDiagnosisResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -80,25 +80,23 @@ func (h *DiagnosisHandler) UpdateDiagnosis(ctx context.Context, req *pb.UpdateDi
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateDiagnosisResponse{Diagnosis: diagnosisToProto(updated)}, nil
+	return &pb.GetDiagnosisResponse{Diagnosis: diagnosisToProto(updated)}, nil
 }
 
 // DeleteDiagnosis handles delete requests.
-func (h *DiagnosisHandler) DeleteDiagnosis(ctx context.Context, req *pb.DeleteDiagnosisRequest) (*pb.DeleteDiagnosisResponse, error) {
+func (h *DiagnosisHandler) DeleteDiagnosis(ctx context.Context, req *pb.GetDiagnosisRequest) (*pb.GetDiagnosisResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteDiagnosis(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteDiagnosisResponse{Success: true}, nil
+	return &pb.GetDiagnosisResponse{}, nil
 }
 
-func diagnosisToProto(e *domain.Diagnosis) *pb.Diagnosis {
-	return &pb.Diagnosis{
+func diagnosisToProto(e *domain.Diagnosis) *pb.DiagnosisRequest {
+	return &pb.DiagnosisRequest{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
 	}
 }

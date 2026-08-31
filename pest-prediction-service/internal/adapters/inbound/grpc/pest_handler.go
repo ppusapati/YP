@@ -30,21 +30,21 @@ func NewPestHandler(svc inbound.PestService, log p9log.Logger) *PestHandler {
 }
 
 // CreatePest handles creation requests.
-func (h *PestHandler) CreatePest(ctx context.Context, req *pb.CreatePestRequest) (*pb.CreatePestResponse, error) {
+func (h *PestHandler) CreatePest(ctx context.Context, req *pb.PredictPestRiskRequest) (*pb.PredictPestRiskResponse, error) {
 	h.log.Infow("msg", "CreatePest request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetCropType() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "crop_type is required")
 	}
-	entity := &domain.Pest{Name: req.GetName()}
+	entity := &domain.Pest{Name: req.GetCropType()}
 	created, err := h.svc.CreatePest(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreatePestResponse{Pest: pestToProto(created)}, nil
+	return &pb.PredictPestRiskResponse{Prediction: pestToProto(created)}, nil
 }
 
 // GetPest handles get requests.
-func (h *PestHandler) GetPest(ctx context.Context, req *pb.GetPestRequest) (*pb.GetPestResponse, error) {
+func (h *PestHandler) GetPest(ctx context.Context, req *pb.GetPredictionRequest) (*pb.GetPredictionResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -52,25 +52,25 @@ func (h *PestHandler) GetPest(ctx context.Context, req *pb.GetPestRequest) (*pb.
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetPestResponse{Pest: pestToProto(entity)}, nil
+	return &pb.GetPredictionResponse{Prediction: pestToProto(entity)}, nil
 }
 
 // ListPestPredictions handles list requests.
-func (h *PestHandler) ListPestPredictions(ctx context.Context, req *pb.ListPestPredictionsRequest) (*pb.ListPestPredictionsResponse, error) {
+func (h *PestHandler) ListPestPredictions(ctx context.Context, req *pb.ListPredictionsRequest) (*pb.ListPredictionsResponse, error) {
 	params := domain.ListPestPredictionParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListPestPredictions(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Pest, 0, len(entities))
+	protos := make([]*pb.PestPrediction, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, pestToProto(&entities[i]))
 	}
-	return &pb.ListPestPredictionsResponse{PestPredictions: protos, TotalCount: total}, nil
+	return &pb.ListPredictionsResponse{Predictions: protos, TotalCount: total}, nil
 }
 
 // UpdatePest handles update requests.
-func (h *PestHandler) UpdatePest(ctx context.Context, req *pb.UpdatePestRequest) (*pb.UpdatePestResponse, error) {
+func (h *PestHandler) UpdatePest(ctx context.Context, req *pb.GetPredictionRequest) (*pb.GetPredictionResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -80,25 +80,24 @@ func (h *PestHandler) UpdatePest(ctx context.Context, req *pb.UpdatePestRequest)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdatePestResponse{Pest: pestToProto(updated)}, nil
+	return &pb.GetPredictionResponse{Prediction: pestToProto(updated)}, nil
 }
 
 // DeletePest handles delete requests.
-func (h *PestHandler) DeletePest(ctx context.Context, req *pb.DeletePestRequest) (*pb.DeletePestResponse, error) {
+func (h *PestHandler) DeletePest(ctx context.Context, req *pb.GetPredictionRequest) (*pb.GetPredictionResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeletePest(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeletePestResponse{Success: true}, nil
+	return &pb.GetPredictionResponse{}, nil
 }
 
-func pestToProto(e *domain.Pest) *pb.Pest {
-	return &pb.Pest{
+func pestToProto(e *domain.Pest) *pb.PestPrediction {
+	return &pb.PestPrediction{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
+		CropType: e.Name,
 	}
 }

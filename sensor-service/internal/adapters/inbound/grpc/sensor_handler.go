@@ -30,17 +30,17 @@ func NewSensorHandler(svc inbound.SensorService, log p9log.Logger) *SensorHandle
 }
 
 // CreateSensor handles creation requests.
-func (h *SensorHandler) CreateSensor(ctx context.Context, req *pb.CreateSensorRequest) (*pb.CreateSensorResponse, error) {
+func (h *SensorHandler) CreateSensor(ctx context.Context, req *pb.RegisterSensorRequest) (*pb.RegisterSensorResponse, error) {
 	h.log.Infow("msg", "CreateSensor request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetDeviceId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "device_id is required")
 	}
-	entity := &domain.Sensor{Name: req.GetName()}
+	entity := &domain.Sensor{Name: req.GetDeviceId()}
 	created, err := h.svc.CreateSensor(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateSensorResponse{Sensor: sensorToProto(created)}, nil
+	return &pb.RegisterSensorResponse{Sensor: sensorToProto(created)}, nil
 }
 
 // GetSensor handles get requests.
@@ -84,21 +84,23 @@ func (h *SensorHandler) UpdateSensor(ctx context.Context, req *pb.UpdateSensorRe
 }
 
 // DeleteSensor handles delete requests.
-func (h *SensorHandler) DeleteSensor(ctx context.Context, req *pb.DeleteSensorRequest) (*pb.DeleteSensorResponse, error) {
+func (h *SensorHandler) DeleteSensor(ctx context.Context, req *pb.DecommissionSensorRequest) (*pb.DecommissionSensorResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteSensor(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteSensorResponse{Success: true}, nil
+	return &pb.DecommissionSensorResponse{Sensor: sensorToProto(nil)}, nil
 }
 
 func sensorToProto(e *domain.Sensor) *pb.Sensor {
+	if e == nil {
+		return nil
+	}
 	return &pb.Sensor{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
+		Status:   pb.SensorStatus(pb.SensorStatus_value["SENSOR_STATUS_"+string(e.Status)]),
 	}
 }

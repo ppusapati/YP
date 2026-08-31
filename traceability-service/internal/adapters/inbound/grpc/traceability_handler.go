@@ -30,21 +30,21 @@ func NewTraceabilityHandler(svc inbound.TraceabilityService, log p9log.Logger) *
 }
 
 // CreateTraceability handles creation requests.
-func (h *TraceabilityHandler) CreateTraceability(ctx context.Context, req *pb.CreateTraceabilityRequest) (*pb.CreateTraceabilityResponse, error) {
+func (h *TraceabilityHandler) CreateTraceability(ctx context.Context, req *pb.CreateRecordRequest) (*pb.CreateRecordResponse, error) {
 	h.log.Infow("msg", "CreateTraceability request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	entity := &domain.Traceability{Name: req.GetName()}
+	entity := &domain.Traceability{Name: req.GetFarmId()}
 	created, err := h.svc.CreateTraceability(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateTraceabilityResponse{Traceability: traceabilityToProto(created)}, nil
+	return &pb.CreateRecordResponse{Record: traceabilityToProto(created)}, nil
 }
 
 // GetTraceability handles get requests.
-func (h *TraceabilityHandler) GetTraceability(ctx context.Context, req *pb.GetTraceabilityRequest) (*pb.GetTraceabilityResponse, error) {
+func (h *TraceabilityHandler) GetTraceability(ctx context.Context, req *pb.GetRecordRequest) (*pb.GetRecordResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -52,25 +52,25 @@ func (h *TraceabilityHandler) GetTraceability(ctx context.Context, req *pb.GetTr
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetTraceabilityResponse{Traceability: traceabilityToProto(entity)}, nil
+	return &pb.GetRecordResponse{Record: traceabilityToProto(entity)}, nil
 }
 
 // ListTraceabilitys handles list requests.
-func (h *TraceabilityHandler) ListTraceabilitys(ctx context.Context, req *pb.ListTraceabilitysRequest) (*pb.ListTraceabilitysResponse, error) {
+func (h *TraceabilityHandler) ListTraceabilitys(ctx context.Context, req *pb.ListRecordsRequest) (*pb.ListRecordsResponse, error) {
 	params := domain.ListTraceabilityParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListTraceabilitys(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Traceability, 0, len(entities))
+	protos := make([]*pb.TraceabilityRecord, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, traceabilityToProto(&entities[i]))
 	}
-	return &pb.ListTraceabilitysResponse{Traceabilitys: protos, TotalCount: total}, nil
+	return &pb.ListRecordsResponse{Records: protos, TotalCount: total}, nil
 }
 
 // UpdateTraceability handles update requests.
-func (h *TraceabilityHandler) UpdateTraceability(ctx context.Context, req *pb.UpdateTraceabilityRequest) (*pb.UpdateTraceabilityResponse, error) {
+func (h *TraceabilityHandler) UpdateTraceability(ctx context.Context, req *pb.GetRecordRequest) (*pb.GetRecordResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -80,25 +80,23 @@ func (h *TraceabilityHandler) UpdateTraceability(ctx context.Context, req *pb.Up
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateTraceabilityResponse{Traceability: traceabilityToProto(updated)}, nil
+	return &pb.GetRecordResponse{Record: traceabilityToProto(updated)}, nil
 }
 
 // DeleteTraceability handles delete requests.
-func (h *TraceabilityHandler) DeleteTraceability(ctx context.Context, req *pb.DeleteTraceabilityRequest) (*pb.DeleteTraceabilityResponse, error) {
+func (h *TraceabilityHandler) DeleteTraceability(ctx context.Context, req *pb.GetRecordRequest) (*pb.GetRecordResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteTraceability(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteTraceabilityResponse{Success: true}, nil
+	return &pb.GetRecordResponse{}, nil
 }
 
-func traceabilityToProto(e *domain.Traceability) *pb.Traceability {
-	return &pb.Traceability{
+func traceabilityToProto(e *domain.Traceability) *pb.TraceabilityRecord {
+	return &pb.TraceabilityRecord{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
 	}
 }

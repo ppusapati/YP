@@ -30,21 +30,21 @@ func NewYieldHandler(svc inbound.YieldService, log p9log.Logger) *YieldHandler {
 }
 
 // CreateYield handles creation requests.
-func (h *YieldHandler) CreateYield(ctx context.Context, req *pb.CreateYieldRequest) (*pb.CreateYieldResponse, error) {
+func (h *YieldHandler) CreateYield(ctx context.Context, req *pb.PredictYieldRequest) (*pb.PredictYieldResponse, error) {
 	h.log.Infow("msg", "CreateYield request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	entity := &domain.Yield{Name: req.GetName()}
+	entity := &domain.Yield{Name: req.GetFarmId()}
 	created, err := h.svc.CreateYield(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateYieldResponse{Yield: yieldToProto(created)}, nil
+	return &pb.PredictYieldResponse{Prediction: yieldToProto(created)}, nil
 }
 
 // GetYield handles get requests.
-func (h *YieldHandler) GetYield(ctx context.Context, req *pb.GetYieldRequest) (*pb.GetYieldResponse, error) {
+func (h *YieldHandler) GetYield(ctx context.Context, req *pb.GetPredictionRequest) (*pb.GetPredictionResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -52,25 +52,25 @@ func (h *YieldHandler) GetYield(ctx context.Context, req *pb.GetYieldRequest) (*
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetYieldResponse{Yield: yieldToProto(entity)}, nil
+	return &pb.GetPredictionResponse{Prediction: yieldToProto(entity)}, nil
 }
 
 // ListYields handles list requests.
-func (h *YieldHandler) ListYields(ctx context.Context, req *pb.ListYieldsRequest) (*pb.ListYieldsResponse, error) {
+func (h *YieldHandler) ListYields(ctx context.Context, req *pb.ListPredictionsRequest) (*pb.ListPredictionsResponse, error) {
 	params := domain.ListYieldParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListYields(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Yield, 0, len(entities))
+	protos := make([]*pb.YieldPrediction, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, yieldToProto(&entities[i]))
 	}
-	return &pb.ListYieldsResponse{Yields: protos, TotalCount: total}, nil
+	return &pb.ListPredictionsResponse{Predictions: protos, TotalCount: total}, nil
 }
 
 // UpdateYield handles update requests.
-func (h *YieldHandler) UpdateYield(ctx context.Context, req *pb.UpdateYieldRequest) (*pb.UpdateYieldResponse, error) {
+func (h *YieldHandler) UpdateYield(ctx context.Context, req *pb.GetPredictionRequest) (*pb.GetPredictionResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -80,25 +80,23 @@ func (h *YieldHandler) UpdateYield(ctx context.Context, req *pb.UpdateYieldReque
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateYieldResponse{Yield: yieldToProto(updated)}, nil
+	return &pb.GetPredictionResponse{Prediction: yieldToProto(updated)}, nil
 }
 
 // DeleteYield handles delete requests.
-func (h *YieldHandler) DeleteYield(ctx context.Context, req *pb.DeleteYieldRequest) (*pb.DeleteYieldResponse, error) {
+func (h *YieldHandler) DeleteYield(ctx context.Context, req *pb.GetPredictionRequest) (*pb.GetPredictionResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteYield(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteYieldResponse{Success: true}, nil
+	return &pb.GetPredictionResponse{}, nil
 }
 
-func yieldToProto(e *domain.Yield) *pb.Yield {
-	return &pb.Yield{
+func yieldToProto(e *domain.Yield) *pb.YieldPrediction {
+	return &pb.YieldPrediction{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
 	}
 }

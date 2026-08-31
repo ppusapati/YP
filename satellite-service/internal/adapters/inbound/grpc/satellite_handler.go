@@ -30,21 +30,21 @@ func NewSatelliteHandler(svc inbound.SatelliteService, log p9log.Logger) *Satell
 }
 
 // CreateSatellite handles creation requests.
-func (h *SatelliteHandler) CreateSatellite(ctx context.Context, req *pb.CreateSatelliteRequest) (*pb.CreateSatelliteResponse, error) {
+func (h *SatelliteHandler) CreateSatellite(ctx context.Context, req *pb.RequestImageryRequest) (*pb.GetImageResponse, error) {
 	h.log.Infow("msg", "CreateSatellite request", "tenant_id", p9context.TenantID(ctx))
-	if req.GetName() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	if req.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
 	}
-	entity := &domain.Satellite{Name: req.GetName()}
+	entity := &domain.Satellite{Name: req.GetFieldId()}
 	created, err := h.svc.CreateSatellite(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.CreateSatelliteResponse{Satellite: satelliteToProto(created)}, nil
+	return &pb.GetImageResponse{Image: satelliteToProto(created)}, nil
 }
 
 // GetSatellite handles get requests.
-func (h *SatelliteHandler) GetSatellite(ctx context.Context, req *pb.GetSatelliteRequest) (*pb.GetSatelliteResponse, error) {
+func (h *SatelliteHandler) GetSatellite(ctx context.Context, req *pb.GetImageRequest) (*pb.GetImageResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -52,25 +52,25 @@ func (h *SatelliteHandler) GetSatellite(ctx context.Context, req *pb.GetSatellit
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.GetSatelliteResponse{Satellite: satelliteToProto(entity)}, nil
+	return &pb.GetImageResponse{Image: satelliteToProto(entity)}, nil
 }
 
 // ListSatellites handles list requests.
-func (h *SatelliteHandler) ListSatellites(ctx context.Context, req *pb.ListSatellitesRequest) (*pb.ListSatellitesResponse, error) {
+func (h *SatelliteHandler) ListSatellites(ctx context.Context, req *pb.ListImagesRequest) (*pb.ListImagesResponse, error) {
 	params := domain.ListSatelliteParams{PageSize: req.GetPageSize()}
 	entities, total, err := h.svc.ListSatellites(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.Satellite, 0, len(entities))
+	protos := make([]*pb.SatelliteImage, 0, len(entities))
 	for i := range entities {
 		protos = append(protos, satelliteToProto(&entities[i]))
 	}
-	return &pb.ListSatellitesResponse{Satellites: protos, TotalCount: total}, nil
+	return &pb.ListImagesResponse{Images: protos, TotalCount: total}, nil
 }
 
 // UpdateSatellite handles update requests.
-func (h *SatelliteHandler) UpdateSatellite(ctx context.Context, req *pb.UpdateSatelliteRequest) (*pb.UpdateSatelliteResponse, error) {
+func (h *SatelliteHandler) UpdateSatellite(ctx context.Context, req *pb.GetImageRequest) (*pb.GetImageResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
@@ -80,25 +80,23 @@ func (h *SatelliteHandler) UpdateSatellite(ctx context.Context, req *pb.UpdateSa
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.UpdateSatelliteResponse{Satellite: satelliteToProto(updated)}, nil
+	return &pb.GetImageResponse{Image: satelliteToProto(updated)}, nil
 }
 
 // DeleteSatellite handles delete requests.
-func (h *SatelliteHandler) DeleteSatellite(ctx context.Context, req *pb.DeleteSatelliteRequest) (*pb.DeleteSatelliteResponse, error) {
+func (h *SatelliteHandler) DeleteSatellite(ctx context.Context, req *pb.GetImageRequest) (*pb.GetImageResponse, error) {
 	if req.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	if err := h.svc.DeleteSatellite(ctx, req.GetId()); err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return &pb.DeleteSatelliteResponse{Success: true}, nil
+	return &pb.GetImageResponse{}, nil
 }
 
-func satelliteToProto(e *domain.Satellite) *pb.Satellite {
-	return &pb.Satellite{
+func satelliteToProto(e *domain.Satellite) *pb.SatelliteImage {
+	return &pb.SatelliteImage{
 		Id:       e.UUID,
 		TenantId: e.TenantID,
-		Name:     e.Name,
-		Status:   string(e.Status),
 	}
 }
