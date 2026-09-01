@@ -1,0 +1,42 @@
+# Build artifacts
+**/server
+**/*.exe
+
+# Version control
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Node / web build artifacts
+web/node_modules
+web/**/node_modules
+web/**/dist
+web/**/.next
+
+# Mobile
+mobile/.dart_tool
+mobile/**/build
+mobile/**/.flutter-plugins
+
+# Python caches
+python-ai/**/__pycache__
+python-ai/**/*.pyc
+
+# Documentation
+**/*.md
+!packages/**/README.md
+
+# Test artifacts
+**/*_test.go
+**/tests/
+**/testdata/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore

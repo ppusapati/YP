@@ -1,0 +1,212 @@
+# YieldPoint — Local Development Stack
+# Usage: docker compose up -d
+# Ports: postgres 5432, kafka 9092, services 8081-8091
+
+x-go-service: &go-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  environment: &go-env
+    JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
+    KAFKA_BROKER: kafka:9092
+    PORT: "8080"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    kafka:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+    interval: 10s
+    timeout: 3s
+    retries: 5
+
+services:
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yieldpoint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yieldpoint}
+      POSTGRES_DB: ${POSTGRES_DB:-yieldpoint}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yieldpoint}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zkdata:/var/lib/zookeeper/data
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "29092:29092"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+
+  # ── Go Agriculture Services ───────────────────────────────────────────────
+
+  farm-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: farm-service
+    ports:
+      - "8081:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${FARM_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/farm_service?sslmode=disable}
+
+  field-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: field-service
+    ports:
+      - "8082:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${FIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/field_service?sslmode=disable}
+
+  crop-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: crop-service
+    ports:
+      - "8083:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${CROP_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/crop_service?sslmode=disable}
+
+  sensor-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: sensor-service
+    ports:
+      - "8084:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SENSOR_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/sensor_service?sslmode=disable}
+
+  irrigation-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: irrigation-service
+    ports:
+      - "8085:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/irrigation_service?sslmode=disable}
+
+  soil-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: soil-service
+    ports:
+      - "8086:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SOIL_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_service?sslmode=disable}
+
+  yield-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: yield-service
+    ports:
+      - "8087:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${YIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/yield_service?sslmode=disable}
+
+  pest-prediction-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: pest-prediction-service
+    ports:
+      - "8088:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${PEST_PREDICTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/pest_prediction_service?sslmode=disable}
+
+  plant-diagnosis-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: plant-diagnosis-service
+    ports:
+      - "8089:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/plant_diagnosis_service?sslmode=disable}
+
+  satellite-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-service
+    ports:
+      - "8090:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_service?sslmode=disable}
+
+  traceability-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: traceability-service
+    ports:
+      - "8091:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${TRACEABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/traceability_service?sslmode=disable}
+
+volumes:
+  pgdata:
+  zkdata:
+  kafkadata:
