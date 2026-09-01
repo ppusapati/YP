@@ -3,15 +3,22 @@ package domain
 import "fmt"
 
 // ErrDiagnosisNotFound is returned when a diagnosis cannot be located.
-type ErrDiagnosisNotFound struct{ UUID string }
+type ErrDiagnosisNotFound struct{ ID string }
 
 func (e ErrDiagnosisNotFound) Error() string {
-	return fmt.Sprintf("diagnosis not found: %s", e.UUID)
+	return fmt.Sprintf("diagnosis not found: %s", e.ID)
 }
 
-// ErrDiagnosisNameExists is returned when a duplicate name is detected.
-type ErrDiagnosisNameExists struct{ Name string }
+// ErrDiseaseNotFound is returned when a disease cannot be located.
+type ErrDiseaseNotFound struct{ ID string }
 
-func (e ErrDiagnosisNameExists) Error() string {
-	return fmt.Sprintf("diagnosis with name %q already exists", e.Name)
+func (e ErrDiseaseNotFound) Error() string {
+	return fmt.Sprintf("disease not found: %s", e.ID)
+}
+
+// ErrTreatmentPlanNotFound is returned when a treatment plan cannot be located.
+type ErrTreatmentPlanNotFound struct{ DiagnosisID string }
+
+func (e ErrTreatmentPlanNotFound) Error() string {
+	return fmt.Sprintf("treatment plan not found for diagnosis: %s", e.DiagnosisID)
 }

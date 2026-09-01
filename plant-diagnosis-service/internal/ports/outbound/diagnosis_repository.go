@@ -11,13 +11,21 @@ import (
 
 // DiagnosisRepository is the secondary port for diagnosis persistence.
 type DiagnosisRepository interface {
-	CreateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error)
-	GetDiagnosisByUUID(ctx context.Context, uuid, tenantID string) (*domain.Diagnosis, error)
-	ListPlantDiagnoses(ctx context.Context, params domain.ListPlantDiagnosisParams) ([]domain.Diagnosis, int32, error)
-	UpdateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error)
-	DeleteDiagnosis(ctx context.Context, uuid, tenantID, deletedBy string) error
-	CheckDiagnosisExists(ctx context.Context, uuid, tenantID string) (bool, error)
-	CheckDiagnosisNameExists(ctx context.Context, name, tenantID string) (bool, error)
+	// diagnosis_requests
+	CreateDiagnosisRequest(ctx context.Context, req *domain.DiagnosisRequest) (*domain.DiagnosisRequest, error)
+	GetDiagnosisRequestByID(ctx context.Context, id, tenantID string) (*domain.DiagnosisRequest, error)
+	ListDiagnosisRequests(ctx context.Context, params domain.ListDiagnosesParams) ([]domain.DiagnosisRequest, int32, error)
+
+	// diagnosis_results
+	GetDiagnosisResultByRequestID(ctx context.Context, requestID, tenantID string) (*domain.DiagnosisResult, error)
+
+	// diseases (reference data)
+	GetDiseaseByID(ctx context.Context, id, tenantID string) (*domain.DiseaseInfo, error)
+	ListDiseases(ctx context.Context, params domain.ListDiseasesParams) ([]domain.DiseaseInfo, int32, error)
+
+	// treatment_plans
+	GetTreatmentPlanByDiagnosisID(ctx context.Context, diagnosisID, tenantID string) (*domain.TreatmentPlan, error)
+	CreateTreatmentPlan(ctx context.Context, plan *domain.TreatmentPlan) (*domain.TreatmentPlan, error)
 
 	WithTx(tx pgx.Tx) DiagnosisRepository
 }
