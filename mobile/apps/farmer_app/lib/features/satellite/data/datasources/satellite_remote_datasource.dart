@@ -1,8 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter_network/flutter_network.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_proto/src/generated/satellite.pb.dart';
 import 'package:logging/logging.dart';
+import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as timestamp_pb;
 
 import '../../domain/entities/satellite_entity.dart';
 import '../models/ndvi_data_model.dart';
@@ -31,46 +32,27 @@ abstract class SatelliteRemoteDataSource {
 
 /// ConnectRPC-based implementation of [SatelliteRemoteDataSource].
 class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
-  final ApiConfig _apiConfig;
-  final http.Client _httpClient;
+  final ConnectClient _client;
   final _log = Logger('SatelliteRemoteDataSource');
+  static const _basePath = '/agriculture.satellite.v1.SatelliteService';
 
-  SatelliteRemoteDataSourceImpl({
-    required ApiConfig apiConfig,
-    required http.Client httpClient,
-  })  : _apiConfig = apiConfig,
-        _httpClient = httpClient;
+  SatelliteRemoteDataSourceImpl({required ConnectClient client})
+      : _client = client;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        ..._apiConfig.headers,
-      };
-
-  String _buildUrl(String service, String method) =>
-      '${_apiConfig.origin}/agriculture.satellite.v1.$service/$method';
-
-  Future<Map<String, dynamic>> _post(
-      String service, String method, Map<String, dynamic> body) async {
-    final url = _buildUrl(service, method);
-    _log.fine('POST $url');
-
-    final response = await _httpClient
-        .post(
-          Uri.parse(url),
-          headers: _headers,
-          body: jsonEncode(body),
-        )
-        .timeout(_apiConfig.timeout);
-
-    if (response.statusCode != 200) {
-      _log.severe('RPC error ${response.statusCode}: ${response.body}');
-      throw SatelliteRemoteException(
-        'RPC call $service/$method failed',
+  Future<ConnectResponse> _call(
+      String method, $pb.GeneratedMessage request) async {
+    final response = await _client.unary(
+      '$_basePath/$method',
+      body: request.writeToBuffer(),
+    );
+    if (!response.isSuccess) {
+      throw ConnectException(
+        code: 'internal',
+        message: '$_basePath/$method failed',
         statusCode: response.statusCode,
       );
     }
-
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return response;
   }
 
   @override
@@ -80,17 +62,24 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
     DateTime? from,
     DateTime? to,
   }) async {
-    final body = <String, dynamic>{
-      'field_id': fieldId,
-      if (layerType != null) 'layer_type': layerType.name,
-      if (from != null) 'from': from.millisecondsSinceEpoch,
-      if (to != null) 'to': to.millisecondsSinceEpoch,
-    };
-    final data = await _post('SatelliteService', 'ListTiles', body);
-    final tiles = data['tiles'] as List<dynamic>? ?? [];
-    return tiles
-        .map((t) => SatelliteTileModel.fromProto(t as Map<String, dynamic>))
-        .toList();
+    // The proto has ListImages which returns SatelliteImage objects.
+    // We map SatelliteImage to SatelliteTileModel.
+    final request = ListImagesRequest(fieldId: fieldId);
+    final response = await _call('ListImages', request);
+    final result = ListImagesResponse.fromBuffer(response.body);
+
+    return result.images.map((image) {
+      return SatelliteTileModel(
+        id: image.id,
+        fieldId: image.fieldId,
+        layerType: layerType ?? SatelliteLayerType.ndvi,
+        tileUrl: image.imageUrl,
+        captureDate: image.hasAcquisitionDate()
+            ? image.acquisitionDate.toDateTime()
+            : DateTime.now(),
+        cloudCoverPercent: image.cloudCoverPct,
+      );
+    }).toList();
   }
 
   @override
@@ -99,45 +88,69 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
     required DateTime from,
     required DateTime to,
   }) async {
-    final data = await _post('SatelliteService', 'GetNdviHistory', {
-      'field_id': fieldId,
-      'from': from.millisecondsSinceEpoch,
-      'to': to.millisecondsSinceEpoch,
-    });
-    final points = data['data_points'] as List<dynamic>? ?? [];
-    return points
-        .map((p) => NdviDataModel.fromProto(p as Map<String, dynamic>))
-        .toList();
+    // The proto has GetTemporalAnalysis which returns a TemporalAnalysis with
+    // dataPoints (TemporalDataPoint: date, meanValue, minValue, maxValue).
+    final request = GetTemporalAnalysisRequest(
+      fieldId: fieldId,
+      indexType: 'NDVI',
+      startDate: _toTimestamp(from),
+      endDate: _toTimestamp(to),
+    );
+    final response = await _call('GetTemporalAnalysis', request);
+    final result = GetTemporalAnalysisResponse.fromBuffer(response.body);
+
+    if (!result.hasAnalysis()) return [];
+
+    return result.analysis.dataPoints.map((dp) {
+      return NdviDataModel(
+        date: dp.hasDate() ? dp.date.toDateTime() : DateTime.now(),
+        meanNdvi: dp.meanValue,
+        minNdvi: dp.minValue,
+        maxNdvi: dp.maxValue,
+      );
+    }).toList();
   }
 
   @override
   Future<Map<String, dynamic>> getCropHealth({required String fieldId}) async {
-    final data = await _post('SatelliteService', 'GetCropHealth', {
-      'field_id': fieldId,
-    });
-    return data['crop_health'] as Map<String, dynamic>;
+    // The proto has DetectCropStress which is the closest to getCropHealth.
+    // It returns a CropStressAlert with stressDetected, stressType,
+    // stressSeverity, affectedAreaPct, description, recommendation.
+    final request = DetectCropStressRequest(fieldId: fieldId);
+    final response = await _call('DetectCropStress', request);
+    final result = DetectCropStressResponse.fromBuffer(response.body);
+
+    if (!result.hasAlert()) return {};
+
+    final alert = result.alert;
+    return {
+      'stress_detected': alert.stressDetected,
+      'stress_type': alert.stressType.name,
+      'stress_severity': alert.stressSeverity,
+      'affected_area_pct': alert.affectedAreaPct,
+      'description': alert.description,
+      'recommendation': alert.recommendation,
+    };
   }
 
   @override
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
   }) async {
-    final data = await _post('SatelliteService', 'GetCropHealthByFarm', {
-      'farm_id': farmId,
-    });
-    final items = data['crop_health_list'] as List<dynamic>? ?? [];
-    return items.cast<Map<String, dynamic>>();
+    // TODO: No matching RPC in proto for per-farm crop health aggregation.
+    // The proto only has per-field DetectCropStress and ListAlerts.
+    // Implement when a farm-level RPC is added to the proto.
+    throw UnimplementedError(
+      'getCropHealthByFarm is not supported by the satellite proto. '
+      'No farm-level crop health RPC exists.',
+    );
   }
-}
 
-/// Exception thrown when a satellite remote API call fails.
-class SatelliteRemoteException implements Exception {
-  final String message;
-  final int? statusCode;
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
-  const SatelliteRemoteException(this.message, {this.statusCode});
-
-  @override
-  String toString() =>
-      'SatelliteRemoteException($message, statusCode: $statusCode)';
+  static timestamp_pb.Timestamp _toTimestamp(DateTime dt) {
+    return timestamp_pb.Timestamp.fromDateTime(dt);
+  }
 }

@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/processing.pb.dart';
 import 'base_service.dart';
 
@@ -19,36 +17,44 @@ class ProcessingServiceClient extends BaseService {
       'agriculture.satellite.processing.v1.SatelliteProcessingService';
 
   /// Submits a new processing job.
-  Future<ProcessingJob> submitProcessingJob(ProcessingJob job) async {
-    final bytes = await callUnary('SubmitProcessingJob', job);
-    return ProcessingJob.fromBuffer(bytes);
+  Future<SubmitProcessingJobResponse> submitProcessingJob(
+      SubmitProcessingJobRequest request) async {
+    final bytes = await callUnary('SubmitProcessingJob', request);
+    return SubmitProcessingJobResponse.fromBuffer(bytes);
   }
 
   /// Retrieves a processing job by ID.
-  Future<ProcessingJob> getProcessingJob(String id) async {
-    final request = ProcessingJob(id: id);
+  Future<GetProcessingJobResponse> getProcessingJob(String id) async {
+    final request = GetProcessingJobRequest(id: id);
     final bytes = await callUnary('GetProcessingJob', request);
-    return ProcessingJob.fromBuffer(bytes);
+    return GetProcessingJobResponse.fromBuffer(bytes);
   }
 
   /// Lists processing jobs.
-  Future<List<ProcessingJob>> listProcessingJobs({int pageSize = 20}) async {
-    final request = ProcessingJob();
+  Future<ListProcessingJobsResponse> listProcessingJobs({
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListProcessingJobsRequest(
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListProcessingJobs', request);
-    final job = ProcessingJob.fromBuffer(bytes);
-    return [job];
+    return ListProcessingJobsResponse.fromBuffer(bytes);
   }
 
   /// Cancels a processing job by ID.
   Future<void> cancelProcessingJob(String id) async {
-    final request = ProcessingJob(id: id);
+    final request = CancelProcessingJobRequest(id: id);
     await callUnary('CancelProcessingJob', request);
   }
 
   /// Retrieves processing statistics.
-  Future<ProcessingStats> getProcessingStats() async {
-    final request = ProcessingStats();
+  Future<GetProcessingStatsResponse> getProcessingStats({
+    String? farmId,
+  }) async {
+    final request = GetProcessingStatsRequest(farmId: farmId);
     final bytes = await callUnary('GetProcessingStats', request);
-    return ProcessingStats.fromBuffer(bytes);
+    return GetProcessingStatsResponse.fromBuffer(bytes);
   }
 }

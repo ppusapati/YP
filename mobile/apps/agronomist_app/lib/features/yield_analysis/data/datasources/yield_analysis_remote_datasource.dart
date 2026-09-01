@@ -1,7 +1,6 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter_network/flutter_network.dart';
+import 'package:flutter_proto/src/generated/yield.pb.dart' as yield_pb;
+import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/yield_prediction_model.dart';
 
@@ -12,29 +11,83 @@ abstract class YieldAnalysisRemoteDataSource {
 
 class YieldAnalysisRemoteDataSourceImpl implements YieldAnalysisRemoteDataSource {
   final ConnectClient _client;
+
+  static const _basePath = '/agriculture.yield.v1.YieldService';
+
   YieldAnalysisRemoteDataSourceImpl(this._client);
 
-  Future<Map<String, dynamic>> _post(String method, Map<String, dynamic> body) async {
+  Future<ConnectResponse> _call(
+      String method, $pb.GeneratedMessage request) async {
     final response = await _client.unary(
-      '/agriculture.yield.v1.YieldService/$method',
-      body: Uint8List.fromList(utf8.encode(jsonEncode(body))),
-      headers: {'Content-Type': 'application/json'},
+      '$_basePath/$method',
+      body: request.writeToBuffer(),
     );
-    if (!response.isSuccess) throw Exception('YieldService/$method failed');
-    return jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    if (!response.isSuccess) {
+      throw ConnectException(
+        code: 'internal',
+        message: '$_basePath/$method failed',
+        statusCode: response.statusCode,
+      );
+    }
+    return response;
   }
 
   @override
   Future<List<YieldPredictionModel>> getYieldForecast(String fieldId) async {
-    final data = await _post('GetForecast', {'field_id': fieldId});
-    final list = data['predictions'] as List<dynamic>? ?? [];
-    return list.map((e) => YieldPredictionModel.fromJson(e as Map<String, dynamic>)).toList();
+    final request = yield_pb.ListPredictionsRequest(fieldId: fieldId);
+    final response = await _call('ListPredictions', request);
+    final pbResponse =
+        yield_pb.ListPredictionsResponse.fromBuffer(response.body);
+    return pbResponse.predictions.map(_predictionFromProto).toList();
   }
 
   @override
   Future<List<YieldPredictionModel>> getYieldHistory(String fieldId) async {
-    final data = await _post('GetHistory', {'field_id': fieldId});
-    final list = data['predictions'] as List<dynamic>? ?? [];
-    return list.map((e) => YieldPredictionModel.fromJson(e as Map<String, dynamic>)).toList();
+    final request = yield_pb.GetYieldHistoryRequest(fieldId: fieldId);
+    final response = await _call('GetYieldHistory', request);
+    final pbResponse =
+        yield_pb.GetYieldHistoryResponse.fromBuffer(response.body);
+    return pbResponse.records.map(_recordFromProto).toList();
+  }
+
+  /// Converts a protobuf [yield_pb.YieldPrediction] to [YieldPredictionModel].
+  static YieldPredictionModel _predictionFromProto(
+      yield_pb.YieldPrediction pb) {
+    final createdAt = pb.hasCreatedAt()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.createdAt.seconds.toInt() * 1000)
+        : DateTime.now();
+    return YieldPredictionModel(
+      id: pb.id,
+      fieldId: pb.fieldId,
+      cropName: pb.cropId,
+      predictedYield: pb.predictedYieldKgPerHectare / 1000.0,
+      unit: 'tonnes/ha',
+      confidence: pb.predictionConfidencePct / 100.0,
+      harvestDate: createdAt,
+      predictedAt: createdAt,
+    );
+  }
+
+  /// Converts a protobuf [yield_pb.YieldRecord] to [YieldPredictionModel].
+  static YieldPredictionModel _recordFromProto(yield_pb.YieldRecord pb) {
+    final harvestDate = pb.hasHarvestDate()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.harvestDate.seconds.toInt() * 1000)
+        : DateTime.now();
+    final createdAt = pb.hasCreatedAt()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.createdAt.seconds.toInt() * 1000)
+        : DateTime.now();
+    return YieldPredictionModel(
+      id: pb.id,
+      fieldId: pb.fieldId,
+      cropName: pb.cropId,
+      predictedYield: pb.actualYieldKgPerHectare / 1000.0,
+      unit: 'tonnes/ha',
+      confidence: 1.0,
+      harvestDate: harvestDate,
+      predictedAt: createdAt,
+    );
   }
 }

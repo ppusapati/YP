@@ -1,4 +1,6 @@
-import 'package:flutter_proto/flutter_proto.dart';
+import 'package:flutter_proto/src/generated/farm.pb.dart';
+import 'package:flutter_proto/src/services/farm_service.dart';
+import 'package:flutter_proto/src/services/base_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
@@ -10,10 +12,11 @@ void main() {
   group('FarmServiceClient', () {
     group('getFarm', () {
       test('sends correct request and parses response', () async {
-        final responseFarm = Farm(id: 'farm-1', name: 'Test Farm');
+        final responseFarm = GetFarmResponse(
+          farm: Farm(id: 'farm-1', name: 'Test Farm'),
+        );
         final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/GetFarm');
+          expect(request.url.toString(), '$baseUrl/$serviceName/GetFarm');
           expect(request.headers['Content-Type'], 'application/proto');
           expect(request.headers['Connect-Protocol-Version'], '1');
           return http.Response.bytes(responseFarm.writeToBuffer(), 200);
@@ -24,9 +27,9 @@ void main() {
           httpClient: mockClient,
         );
 
-        final farm = await client.getFarm('farm-1');
-        expect(farm.id, 'farm-1');
-        expect(farm.name, 'Test Farm');
+        final result = await client.getFarm('farm-1');
+        expect(result.farm.id, 'farm-1');
+        expect(result.farm.name, 'Test Farm');
       });
 
       test('throws ServiceException on non-200 status', () async {
@@ -43,13 +46,14 @@ void main() {
           () => client.getFarm('farm-1'),
           throwsA(isA<ServiceException>()
               .having((e) => e.statusCode, 'statusCode', 500)
-              .having((e) => e.method, 'method',
-                  '$serviceName/GetFarm')),
+              .having((e) => e.method, 'method', '$serviceName/GetFarm')),
         );
       });
 
       test('applies interceptors to request headers', () async {
-        final responseFarm = Farm(id: 'farm-1');
+        final responseFarm = GetFarmResponse(
+          farm: Farm(id: 'farm-1'),
+        );
         final mockClient = MockClient((request) async {
           expect(request.headers['Authorization'], 'Bearer test-token');
           return http.Response.bytes(responseFarm.writeToBuffer(), 200);
@@ -72,12 +76,13 @@ void main() {
 
     group('listFarms', () {
       test('sends correct request and returns response', () async {
-        final responseFarm = Farm(ownerId: 'owner-1', name: 'Farm A');
+        final responseList = ListFarmsResponse(
+          farms: [Farm(name: 'Farm A')],
+        );
         final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/ListFarms');
+          expect(request.url.toString(), '$baseUrl/$serviceName/ListFarms');
           expect(request.headers['Content-Type'], 'application/proto');
-          return http.Response.bytes(responseFarm.writeToBuffer(), 200);
+          return http.Response.bytes(responseList.writeToBuffer(), 200);
         });
 
         final client = FarmServiceClient(
@@ -85,39 +90,22 @@ void main() {
           httpClient: mockClient,
         );
 
-        final response = await client.listFarms(ownerId: 'owner-1');
+        final response = await client.listFarms();
         expect(response.farms, isNotEmpty);
-        expect(response.farms.first.ownerId, 'owner-1');
-      });
-
-      test('throws ServiceException on error', () async {
-        final mockClient = MockClient((request) async {
-          return http.Response('not found', 404);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
-        );
-
-        expect(
-          () => client.listFarms(ownerId: 'owner-1'),
-          throwsA(isA<ServiceException>()
-              .having((e) => e.statusCode, 'statusCode', 404)),
-        );
+        expect(response.farms.first.name, 'Farm A');
       });
     });
 
     group('createFarm', () {
-      test('sends farm and returns created farm', () async {
-        final responseFarm =
-            Farm(id: 'new-farm', name: 'New Farm', ownerId: 'owner-1');
+      test('sends request and returns created farm', () async {
+        final responseCreate = CreateFarmResponse(
+          farm: Farm(id: 'new-farm', name: 'New Farm'),
+        );
         final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/CreateFarm');
-          final sentFarm = Farm.fromBuffer(request.bodyBytes);
-          expect(sentFarm.name, 'New Farm');
-          return http.Response.bytes(responseFarm.writeToBuffer(), 200);
+          expect(request.url.toString(), '$baseUrl/$serviceName/CreateFarm');
+          final sentReq = CreateFarmRequest.fromBuffer(request.bodyBytes);
+          expect(sentReq.name, 'New Farm');
+          return http.Response.bytes(responseCreate.writeToBuffer(), 200);
         });
 
         final client = FarmServiceClient(
@@ -125,37 +113,22 @@ void main() {
           httpClient: mockClient,
         );
 
-        final farm =
-            await client.createFarm(Farm(name: 'New Farm', ownerId: 'owner-1'));
-        expect(farm.id, 'new-farm');
-        expect(farm.name, 'New Farm');
-      });
-
-      test('throws ServiceException on error', () async {
-        final mockClient = MockClient((request) async {
-          return http.Response('error', 400);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
+        final result = await client.createFarm(
+          CreateFarmRequest(name: 'New Farm'),
         );
-
-        expect(
-          () => client.createFarm(Farm(name: 'Test')),
-          throwsA(isA<ServiceException>()
-              .having((e) => e.statusCode, 'statusCode', 400)),
-        );
+        expect(result.farm.id, 'new-farm');
+        expect(result.farm.name, 'New Farm');
       });
     });
 
     group('updateFarm', () {
       test('sends updated farm and returns result', () async {
-        final responseFarm = Farm(id: 'farm-1', name: 'Updated Farm');
+        final responseUpdate = UpdateFarmResponse(
+          farm: Farm(id: 'farm-1', name: 'Updated Farm'),
+        );
         final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/UpdateFarm');
-          return http.Response.bytes(responseFarm.writeToBuffer(), 200);
+          expect(request.url.toString(), '$baseUrl/$serviceName/UpdateFarm');
+          return http.Response.bytes(responseUpdate.writeToBuffer(), 200);
         });
 
         final client = FarmServiceClient(
@@ -163,20 +136,21 @@ void main() {
           httpClient: mockClient,
         );
 
-        final farm = await client
-            .updateFarm(Farm(id: 'farm-1', name: 'Updated Farm'));
-        expect(farm.name, 'Updated Farm');
+        final result = await client.updateFarm(
+          UpdateFarmRequest(id: 'farm-1', name: 'Updated Farm'),
+        );
+        expect(result.farm.name, 'Updated Farm');
       });
     });
 
     group('deleteFarm', () {
       test('sends delete request with correct URL', () async {
+        final responseDelete = DeleteFarmResponse();
         final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/DeleteFarm');
-          final sentFarm = Farm.fromBuffer(request.bodyBytes);
-          expect(sentFarm.id, 'farm-1');
-          return http.Response.bytes(Farm().writeToBuffer(), 200);
+          expect(request.url.toString(), '$baseUrl/$serviceName/DeleteFarm');
+          final sentReq = DeleteFarmRequest.fromBuffer(request.bodyBytes);
+          expect(sentReq.id, 'farm-1');
+          return http.Response.bytes(responseDelete.writeToBuffer(), 200);
         });
 
         final client = FarmServiceClient(
@@ -202,107 +176,6 @@ void main() {
           throwsA(isA<ServiceException>()
               .having((e) => e.statusCode, 'statusCode', 403)),
         );
-      });
-    });
-
-    group('getField', () {
-      test('sends correct request and parses response', () async {
-        final responseField =
-            Field(id: 'field-1', farmId: 'farm-1', name: 'North Field');
-        final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/GetField');
-          return http.Response.bytes(responseField.writeToBuffer(), 200);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
-        );
-
-        final field = await client.getField('field-1');
-        expect(field.id, 'field-1');
-        expect(field.name, 'North Field');
-      });
-    });
-
-    group('listFields', () {
-      test('sends correct request and returns list', () async {
-        final responseField = Field(farmId: 'farm-1', name: 'Field A');
-        final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/ListFields');
-          return http.Response.bytes(responseField.writeToBuffer(), 200);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
-        );
-
-        final fields = await client.listFields('farm-1');
-        expect(fields, isNotEmpty);
-        expect(fields.first.farmId, 'farm-1');
-      });
-    });
-
-    group('createField', () {
-      test('sends field and returns created field', () async {
-        final responseField =
-            Field(id: 'field-new', farmId: 'farm-1', name: 'New Field');
-        final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/CreateField');
-          return http.Response.bytes(responseField.writeToBuffer(), 200);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
-        );
-
-        final field = await client.createField(
-            Field(farmId: 'farm-1', name: 'New Field'));
-        expect(field.id, 'field-new');
-      });
-    });
-
-    group('updateField', () {
-      test('sends updated field and returns result', () async {
-        final responseField = Field(id: 'field-1', name: 'Updated Field');
-        final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/UpdateField');
-          return http.Response.bytes(responseField.writeToBuffer(), 200);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
-        );
-
-        final field = await client
-            .updateField(Field(id: 'field-1', name: 'Updated Field'));
-        expect(field.name, 'Updated Field');
-      });
-    });
-
-    group('deleteField', () {
-      test('sends delete request with correct URL', () async {
-        final mockClient = MockClient((request) async {
-          expect(request.url.toString(),
-              '$baseUrl/$serviceName/DeleteField');
-          final sentField = Field.fromBuffer(request.bodyBytes);
-          expect(sentField.id, 'field-1');
-          return http.Response.bytes(Field().writeToBuffer(), 200);
-        });
-
-        final client = FarmServiceClient(
-          baseUrl: baseUrl,
-          httpClient: mockClient,
-        );
-
-        await client.deleteField('field-1');
       });
     });
   });

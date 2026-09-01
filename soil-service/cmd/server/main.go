@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
+	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/deps"
@@ -37,6 +38,12 @@ func main() {
 	}
 	defer zapLogger.Sync() //nolint:errcheck
 	logger := p9log.NewLogger(zapLogger)
+
+	// ── JWT ─────────────────────────────────────────────────────────────────
+	if err := authz.InitJWTFromEnv(); err != nil {
+		log.Printf("WARNING: JWT not configured: %v — auth interceptor will reject all requests", err)
+	}
+	jwtValidator := interceptors.NewAuthzJWTValidator()
 
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/soil_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
@@ -90,6 +97,10 @@ func main() {
 		EnableLogging:   true,
 		EnableDB:        true,
 		DBPool:          pool,
+		EnableAuth:      true,
+		JWTValidator:    jwtValidator,
+		EnableRLS:       true,
+		RLSLevel:        interceptors.ScopeLevelTenant,
 	}
 	connectOpt := connectserver.NewConnectOption(mwCfg)
 

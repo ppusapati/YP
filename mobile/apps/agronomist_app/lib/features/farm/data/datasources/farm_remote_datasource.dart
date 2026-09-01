@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter_network/flutter_network.dart';
-import 'package:logging/logging.dart';
+import 'package:flutter_proto/src/generated/farm.pb.dart' as farm_pb;
+import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/farm_model.dart';
 
@@ -18,65 +16,96 @@ abstract class FarmRemoteDataSource {
 /// ConnectRPC-based implementation of [FarmRemoteDataSource].
 class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
   final ConnectClient _client;
-  final _log = Logger('FarmRemoteDataSource');
+
+  static const _basePath = '/agriculture.farm.v1.FarmService';
 
   FarmRemoteDataSourceImpl(this._client);
 
-  Future<Map<String, dynamic>> _post(
-      String service, String method, Map<String, dynamic> body) async {
-    final path = '/agriculture.farm.v1.$service/$method';
-    _log.fine('POST $path');
-
+  Future<ConnectResponse> _call(
+      String method, $pb.GeneratedMessage request) async {
     final response = await _client.unary(
-      path,
-      body: Uint8List.fromList(utf8.encode(jsonEncode(body))),
-      headers: {'Content-Type': 'application/json'},
+      '$_basePath/$method',
+      body: request.writeToBuffer(),
     );
-
     if (!response.isSuccess) {
       throw FarmRemoteException(
-        'RPC call $service/$method failed',
+        'RPC call FarmService/$method failed',
         statusCode: response.statusCode,
       );
     }
-
-    return jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    return response;
   }
 
   @override
   Future<List<FarmModel>> getFarms() async {
-    final data = await _post('FarmService', 'ListFarms', {});
-    final farms = data['farms'] as List<dynamic>? ?? [];
-    return farms
-        .map((f) => FarmModel.fromJson(f as Map<String, dynamic>))
-        .toList();
+    final request = farm_pb.ListFarmsRequest();
+    final response = await _call('ListFarms', request);
+    final pbResponse = farm_pb.ListFarmsResponse.fromBuffer(response.body);
+    return pbResponse.farms.map(_farmFromProto).toList();
   }
 
   @override
   Future<FarmModel> getFarmById(String farmId) async {
-    final data = await _post('FarmService', 'GetFarm', {'id': farmId});
-    return FarmModel.fromJson(data['farm'] as Map<String, dynamic>);
+    final request = farm_pb.GetFarmRequest(id: farmId);
+    final response = await _call('GetFarm', request);
+    final pbResponse = farm_pb.GetFarmResponse.fromBuffer(response.body);
+    return _farmFromProto(pbResponse.farm);
   }
 
   @override
   Future<FarmModel> createFarm(FarmModel farm) async {
-    final data = await _post('FarmService', 'CreateFarm', {
-      'farm': farm.toJson(),
-    });
-    return FarmModel.fromJson(data['farm'] as Map<String, dynamic>);
+    final request = farm_pb.CreateFarmRequest(
+      name: farm.name,
+      description: farm.location,
+      totalAreaHectares: farm.areaHectares,
+    );
+    final response = await _call('CreateFarm', request);
+    final pbResponse = farm_pb.CreateFarmResponse.fromBuffer(response.body);
+    return _farmFromProto(pbResponse.farm);
   }
 
   @override
   Future<FarmModel> updateFarm(FarmModel farm) async {
-    final data = await _post('FarmService', 'UpdateFarm', {
-      'farm': farm.toJson(),
-    });
-    return FarmModel.fromJson(data['farm'] as Map<String, dynamic>);
+    final request = farm_pb.UpdateFarmRequest(
+      id: farm.id,
+      name: farm.name,
+      description: farm.location,
+      totalAreaHectares: farm.areaHectares,
+    );
+    final response = await _call('UpdateFarm', request);
+    final pbResponse = farm_pb.UpdateFarmResponse.fromBuffer(response.body);
+    return _farmFromProto(pbResponse.farm);
   }
 
   @override
   Future<void> deleteFarm(String farmId) async {
-    await _post('FarmService', 'DeleteFarm', {'id': farmId});
+    final request = farm_pb.DeleteFarmRequest(id: farmId);
+    await _call('DeleteFarm', request);
+  }
+
+  /// Converts a protobuf [farm_pb.Farm] to a [FarmModel].
+  static FarmModel _farmFromProto(farm_pb.Farm pb) {
+    final owners = pb.owners;
+    final ownerName =
+        owners.isNotEmpty ? owners.first.ownerName : '';
+    final createdAt = pb.hasCreatedAt()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.createdAt.seconds.toInt() * 1000)
+        : DateTime.now();
+    final updatedAt = pb.hasUpdatedAt()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.updatedAt.seconds.toInt() * 1000)
+        : DateTime.now();
+    return FarmModel(
+      id: pb.id,
+      name: pb.name,
+      location: pb.address.isNotEmpty ? pb.address : pb.description,
+      areaHectares: pb.totalAreaHectares,
+      ownerName: ownerName,
+      fieldCount: 0,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
   }
 }
 

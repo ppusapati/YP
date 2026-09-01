@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter_network/flutter_network.dart';
-import 'package:logging/logging.dart';
+import 'package:flutter_proto/src/generated/soil.pb.dart' as soil_pb;
+import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/soil_analysis_model.dart';
 
@@ -13,44 +11,65 @@ abstract class SoilAnalysisRemoteDataSource {
 
 class SoilAnalysisRemoteDataSourceImpl implements SoilAnalysisRemoteDataSource {
   final ConnectClient _client;
-  final _log = Logger('SoilAnalysisRemoteDataSource');
+
+  static const _basePath = '/agriculture.soil.v1.SoilService';
 
   SoilAnalysisRemoteDataSourceImpl(this._client);
 
-  Future<Map<String, dynamic>> _post(
-      String method, Map<String, dynamic> body) async {
-    final path = '/agriculture.soil.v1.SoilService/$method';
-    _log.fine('POST $path');
-
+  Future<ConnectResponse> _call(
+      String method, $pb.GeneratedMessage request) async {
     final response = await _client.unary(
-      path,
-      body: Uint8List.fromList(utf8.encode(jsonEncode(body))),
-      headers: {'Content-Type': 'application/json'},
+      '$_basePath/$method',
+      body: request.writeToBuffer(),
     );
-
     if (!response.isSuccess) {
-      throw Exception('RPC call SoilService/$method failed');
+      throw ConnectException(
+        code: 'internal',
+        message: '$_basePath/$method failed',
+        statusCode: response.statusCode,
+      );
     }
-
-    return jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    return response;
   }
 
   @override
   Future<List<SoilAnalysisModel>> getSoilAnalyses(String fieldId) async {
-    final data = await _post('ListSoilAnalyses', {'field_id': fieldId});
-    final list = data['analyses'] as List<dynamic>? ?? [];
-    return list
-        .map((e) => SoilAnalysisModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final request = soil_pb.ListSoilAnalysesRequest(fieldId: fieldId);
+    final response = await _call('ListSoilAnalyses', request);
+    final pbResponse =
+        soil_pb.ListSoilAnalysesResponse.fromBuffer(response.body);
+    return pbResponse.analyses.map(_analysisFromProto).toList();
   }
 
   @override
   Future<SoilAnalysisModel> createSoilAnalysis(
       SoilAnalysisModel analysis) async {
-    final data = await _post('CreateSoilAnalysis', {
-      'analysis': analysis.toJson(),
-    });
-    return SoilAnalysisModel.fromJson(
-        data['analysis'] as Map<String, dynamic>);
+    // The proto uses AnalyzeSoil which takes a sampleId, not a full analysis
+    // object. We pass the field-level identifier via sampleId.
+    final request = soil_pb.AnalyzeSoilRequest(
+      sampleId: analysis.id,
+    );
+    final response = await _call('AnalyzeSoil', request);
+    final pbResponse = soil_pb.AnalyzeSoilResponse.fromBuffer(response.body);
+    return _analysisFromProto(pbResponse.analysis);
+  }
+
+  /// Converts a protobuf [soil_pb.SoilAnalysis] to [SoilAnalysisModel].
+  static SoilAnalysisModel _analysisFromProto(soil_pb.SoilAnalysis pb) {
+    final analyzedAt = pb.hasAnalyzedAt()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.analyzedAt.seconds.toInt() * 1000)
+        : DateTime.now();
+    return SoilAnalysisModel(
+      id: pb.id,
+      fieldId: pb.fieldId,
+      pH: 0,
+      nitrogen: 0,
+      phosphorus: 0,
+      potassium: 0,
+      organicMatter: 0,
+      healthScore: pb.soilHealthScore,
+      sampledAt: analyzedAt,
+    );
   }
 }

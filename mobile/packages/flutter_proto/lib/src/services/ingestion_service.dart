@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/ingestion.pb.dart';
 import 'base_service.dart';
 
@@ -19,43 +17,51 @@ class IngestionServiceClient extends BaseService {
       'agriculture.satellite.ingestion.v1.SatelliteIngestionService';
 
   /// Requests a new satellite imagery ingestion.
-  Future<IngestionTask> requestIngestion(IngestionTask task) async {
-    final bytes = await callUnary('RequestIngestion', task);
-    return IngestionTask.fromBuffer(bytes);
+  Future<RequestIngestionResponse> requestIngestion(
+      RequestIngestionRequest request) async {
+    final bytes = await callUnary('RequestIngestion', request);
+    return RequestIngestionResponse.fromBuffer(bytes);
   }
 
   /// Retrieves an ingestion task by ID.
-  Future<IngestionTask> getIngestionTask(String id) async {
-    final request = IngestionTask(id: id);
+  Future<GetIngestionTaskResponse> getIngestionTask(String id) async {
+    final request = GetIngestionTaskRequest(id: id);
     final bytes = await callUnary('GetIngestionTask', request);
-    return IngestionTask.fromBuffer(bytes);
+    return GetIngestionTaskResponse.fromBuffer(bytes);
   }
 
   /// Lists ingestion tasks.
-  Future<List<IngestionTask>> listIngestionTasks({int pageSize = 20}) async {
-    final request = IngestionTask();
+  Future<ListIngestionTasksResponse> listIngestionTasks({
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListIngestionTasksRequest(
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListIngestionTasks', request);
-    final task = IngestionTask.fromBuffer(bytes);
-    return [task];
+    return ListIngestionTasksResponse.fromBuffer(bytes);
   }
 
   /// Cancels an ingestion task by ID.
   Future<void> cancelIngestion(String id) async {
-    final request = IngestionTask(id: id);
+    final request = CancelIngestionRequest(id: id);
     await callUnary('CancelIngestion', request);
   }
 
   /// Retries a failed ingestion task.
-  Future<IngestionTask> retryIngestion(String id) async {
-    final request = IngestionTask(id: id);
+  Future<RetryIngestionResponse> retryIngestion(String id) async {
+    final request = RetryIngestionRequest(id: id);
     final bytes = await callUnary('RetryIngestion', request);
-    return IngestionTask.fromBuffer(bytes);
+    return RetryIngestionResponse.fromBuffer(bytes);
   }
 
   /// Retrieves ingestion statistics.
-  Future<IngestionStats> getIngestionStats() async {
-    final request = IngestionStats();
+  Future<GetIngestionStatsResponse> getIngestionStats({
+    String? farmId,
+  }) async {
+    final request = GetIngestionStatsRequest(farmId: farmId);
     final bytes = await callUnary('GetIngestionStats', request);
-    return IngestionStats.fromBuffer(bytes);
+    return GetIngestionStatsResponse.fromBuffer(bytes);
   }
 }

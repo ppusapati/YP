@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/tile.pb.dart';
 import 'base_service.dart';
 
@@ -19,35 +17,41 @@ class TileServiceClient extends BaseService {
       'agriculture.satellite.tile.v1.SatelliteTileService';
 
   /// Generates a new tileset from a processing job.
-  Future<Tileset> generateTileset(Tileset tileset) async {
-    final bytes = await callUnary('GenerateTileset', tileset);
-    return Tileset.fromBuffer(bytes);
+  Future<GenerateTilesetResponse> generateTileset(
+      GenerateTilesetRequest request) async {
+    final bytes = await callUnary('GenerateTileset', request);
+    return GenerateTilesetResponse.fromBuffer(bytes);
   }
 
   /// Retrieves a tileset by ID.
-  Future<Tileset> getTileset(String id) async {
-    final request = Tileset(id: id);
+  Future<GetTilesetResponse> getTileset(String id) async {
+    final request = GetTilesetRequest(id: id);
     final bytes = await callUnary('GetTileset', request);
-    return Tileset.fromBuffer(bytes);
+    return GetTilesetResponse.fromBuffer(bytes);
   }
 
   /// Lists available tilesets.
-  Future<List<Tileset>> listTilesets({int pageSize = 20}) async {
-    final request = Tileset();
+  Future<ListTilesetsResponse> listTilesets({
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListTilesetsRequest(
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListTilesets', request);
-    final tileset = Tileset.fromBuffer(bytes);
-    return [tileset];
+    return ListTilesetsResponse.fromBuffer(bytes);
   }
 
   /// Retrieves tile data for a specific tile.
-  Future<TileData> getTile(TileRequest request) async {
+  Future<GetTileResponse> getTile(GetTileRequest request) async {
     final bytes = await callUnary('GetTile', request);
-    return TileData.fromBuffer(bytes);
+    return GetTileResponse.fromBuffer(bytes);
   }
 
   /// Deletes a tileset by ID.
   Future<void> deleteTileset(String id) async {
-    final request = Tileset(id: id);
+    final request = DeleteTilesetRequest(id: id);
     await callUnary('DeleteTileset', request);
   }
 }

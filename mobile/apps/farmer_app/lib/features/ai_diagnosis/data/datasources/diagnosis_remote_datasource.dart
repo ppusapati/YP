@@ -1,10 +1,11 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_network/flutter_network.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_proto/src/generated/diagnosis.pb.dart';
 import 'package:logging/logging.dart';
+import 'package:protobuf/protobuf.dart' as $pb;
 
+import '../../domain/entities/diagnosis_entity.dart' show DiagnosisSeverity;
 import '../models/diagnosis_model.dart';
 
 /// Remote data source for AI diagnosis using ConnectRPC.
@@ -22,46 +23,27 @@ abstract class DiagnosisRemoteDataSource {
 
 /// ConnectRPC-based implementation of [DiagnosisRemoteDataSource].
 class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
-  final ApiConfig _apiConfig;
-  final http.Client _httpClient;
+  final ConnectClient _client;
   final _log = Logger('DiagnosisRemoteDataSource');
+  static const _basePath = '/agriculture.diagnosis.v1.PlantDiagnosisService';
 
-  DiagnosisRemoteDataSourceImpl({
-    required ApiConfig apiConfig,
-    required http.Client httpClient,
-  })  : _apiConfig = apiConfig,
-        _httpClient = httpClient;
+  DiagnosisRemoteDataSourceImpl({required ConnectClient client})
+      : _client = client;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        ..._apiConfig.headers,
-      };
-
-  String _buildUrl(String service, String method) =>
-      '${_apiConfig.origin}/agriculture.diagnosis.v1.$service/$method';
-
-  Future<Map<String, dynamic>> _post(
-      String service, String method, Map<String, dynamic> body) async {
-    final url = _buildUrl(service, method);
-    _log.fine('POST $url');
-
-    final response = await _httpClient
-        .post(
-          Uri.parse(url),
-          headers: _headers,
-          body: jsonEncode(body),
-        )
-        .timeout(_apiConfig.timeout);
-
-    if (response.statusCode != 200) {
-      _log.severe('RPC error ${response.statusCode}: ${response.body}');
-      throw DiagnosisRemoteException(
-        'RPC call $service/$method failed',
+  Future<ConnectResponse> _call(
+      String method, $pb.GeneratedMessage request) async {
+    final response = await _client.unary(
+      '$_basePath/$method',
+      body: request.writeToBuffer(),
+    );
+    if (!response.isSuccess) {
+      throw ConnectException(
+        code: 'internal',
+        message: '$_basePath/$method failed',
         statusCode: response.statusCode,
       );
     }
-
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return response;
   }
 
   @override
@@ -69,74 +51,133 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     required String fieldId,
     required String imagePath,
   }) async {
-    final data = await _post('PlantDiagnosisService', 'SubmitDiagnosis', {
-      'field_id': fieldId,
-      'image_path': imagePath,
-    });
-    return DiagnosisModel.fromProto(
-        data['diagnosis'] as Map<String, dynamic>);
+    try {
+      // The proto SubmitDiagnosisRequest uses structured ImageInput objects
+      // with imageUrl (not a raw path). The imagePath should be a URL obtained
+      // from a prior uploadImage call.
+      final request = SubmitDiagnosisRequest(
+        fieldId: fieldId,
+        images: [
+          ImageInput(imageUrl: imagePath),
+        ],
+      );
+      final response = await _call('SubmitDiagnosis', request);
+      final result = SubmitDiagnosisResponse.fromBuffer(response.body);
+
+      return _mapDiagnosisRequestToModel(result.diagnosis);
+    } on ConnectException catch (e) {
+      _log.severe('Failed to submit diagnosis: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<String> uploadImage(Uint8List imageBytes, String fileName) async {
-    final url =
-        '${_apiConfig.origin}/agriculture.diagnosis.v1.PlantDiagnosisService/UploadImage';
-    _log.fine('Uploading image: $fileName (${imageBytes.length} bytes)');
-
-    final request = http.MultipartRequest('POST', Uri.parse(url))
-      ..headers.addAll(_apiConfig.headers)
-      ..files.add(http.MultipartFile.fromBytes(
-        'image',
-        imageBytes,
-        filename: fileName,
-      ));
-
-    final streamedResponse =
-        await request.send().timeout(_apiConfig.timeout);
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode != 200) {
-      throw DiagnosisRemoteException(
-        'Image upload failed',
-        statusCode: response.statusCode,
-      );
-    }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    return data['image_url'] as String;
+    // TODO: The proto has no UploadImage RPC. Image upload is not defined in
+    // the PlantDiagnosisService proto. This likely needs a separate upload
+    // endpoint or a different service. Keeping the interface for compatibility.
+    throw UnimplementedError(
+      'uploadImage is not supported by the diagnosis proto. '
+      'No UploadImage RPC exists in PlantDiagnosisService.',
+    );
   }
 
   @override
   Future<List<DiagnosisModel>> getDiagnosisHistory({String? fieldId}) async {
-    final body = <String, dynamic>{};
-    if (fieldId != null) body['field_id'] = fieldId;
+    try {
+      final request = ListDiagnosesRequest(
+        fieldId: fieldId,
+      );
+      final response = await _call('ListDiagnoses', request);
+      final result = ListDiagnosesResponse.fromBuffer(response.body);
 
-    final data =
-        await _post('PlantDiagnosisService', 'ListDiagnoses', body);
-    final diagnoses = data['diagnoses'] as List<dynamic>? ?? [];
-    return diagnoses
-        .map((d) => DiagnosisModel.fromProto(d as Map<String, dynamic>))
-        .toList();
+      return result.diagnoses
+          .map(_mapDiagnosisRequestToModel)
+          .toList();
+    } on ConnectException catch (e) {
+      _log.severe('Failed to fetch diagnosis history: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<DiagnosisModel> getDiagnosisById(String diagnosisId) async {
-    final data = await _post('PlantDiagnosisService', 'GetDiagnosis', {
-      'id': diagnosisId,
-    });
-    return DiagnosisModel.fromProto(
-        data['diagnosis'] as Map<String, dynamic>);
+    try {
+      final request = GetDiagnosisRequest(id: diagnosisId);
+      final response = await _call('GetDiagnosis', request);
+      final result = GetDiagnosisResponse.fromBuffer(response.body);
+
+      return _mapDiagnosisRequestToModel(result.diagnosis);
+    } on ConnectException catch (e) {
+      _log.severe('Failed to fetch diagnosis $diagnosisId: $e');
+      rethrow;
+    }
   }
-}
 
-/// Exception thrown when a remote diagnosis API call fails.
-class DiagnosisRemoteException implements Exception {
-  final String message;
-  final int? statusCode;
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
-  const DiagnosisRemoteException(this.message, {this.statusCode});
+  static DiagnosisModel _mapDiagnosisRequestToModel(
+      DiagnosisRequest diagnosis) {
+    // Extract first image URL if available.
+    final firstImageUrl =
+        diagnosis.images.isNotEmpty ? diagnosis.images.first.imageUrl : '';
 
-  @override
-  String toString() =>
-      'DiagnosisRemoteException($message, statusCode: $statusCode)';
+    // Extract disease info from DiagnosisResult if present.
+    String diseaseName = '';
+    String diseaseType = '';
+    double confidence = 0.0;
+    DiagnosisSeverity severity = DiagnosisSeverity.healthy;
+    String description = '';
+    List<String> recommendations = [];
+    String plantSpecies = '';
+
+    if (diagnosis.hasResult()) {
+      final diagResult = diagnosis.result;
+      if (diagResult.detectedDiseases.isNotEmpty) {
+        final firstDisease = diagResult.detectedDiseases.first;
+        diseaseName = firstDisease.diseaseName;
+        diseaseType = firstDisease.scientificName;
+        confidence = firstDisease.confidenceScore;
+        severity = _mapProtoSeverity(firstDisease.severity);
+        description = firstDisease.description;
+      }
+      recommendations = List<String>.from(diagResult.treatmentRecommendations);
+      if (diagResult.hasIdentifiedSpecies()) {
+        plantSpecies = diagResult.identifiedSpecies.commonName;
+      }
+      if (description.isEmpty) {
+        description = diagResult.summary;
+      }
+    }
+
+    return DiagnosisModel(
+      id: diagnosis.id,
+      fieldId: diagnosis.fieldId,
+      imagePath: firstImageUrl,
+      imageUrl: firstImageUrl,
+      plantSpecies: plantSpecies,
+      diseaseName: diseaseName,
+      diseaseType: diseaseType,
+      confidence: confidence,
+      severity: severity,
+      description: description.isNotEmpty ? description : diagnosis.notes,
+      recommendations: recommendations,
+      createdAt: diagnosis.hasCreatedAt()
+          ? diagnosis.createdAt.toDateTime()
+          : DateTime.now(),
+    );
+  }
+
+  static DiagnosisSeverity _mapProtoSeverity(Severity protoSeverity) {
+    return switch (protoSeverity) {
+      Severity.SEVERITY_UNSPECIFIED => DiagnosisSeverity.healthy,
+      Severity.SEVERITY_MILD => DiagnosisSeverity.mild,
+      Severity.SEVERITY_MODERATE => DiagnosisSeverity.moderate,
+      Severity.SEVERITY_SEVERE => DiagnosisSeverity.severe,
+      Severity.SEVERITY_CRITICAL => DiagnosisSeverity.severe,
+      _ => DiagnosisSeverity.moderate,
+    };
+  }
 }

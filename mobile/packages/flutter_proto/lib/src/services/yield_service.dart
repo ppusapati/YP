@@ -1,14 +1,10 @@
-import 'package:http/http.dart' as http;
-
-import '../generated/crop_recommendation.pb.dart';
-import '../generated/soil.pb.dart';
 import '../generated/yield.pb.dart';
 import 'base_service.dart';
 
-/// ConnectRPC service client for yield predictions and crop recommendations.
+/// ConnectRPC service client for yield predictions.
 ///
-/// Provides access to yield predictions, contributing factors,
-/// soil analysis, and crop recommendations.
+/// Provides access to yield predictions, history,
+/// and real-time yield prediction updates.
 class YieldServiceClient extends BaseService {
   YieldServiceClient({
     required super.baseUrl,
@@ -19,51 +15,61 @@ class YieldServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.yield.v1.YieldService';
 
-  /// Retrieves the latest yield prediction for a field.
-  Future<YieldPrediction> getYieldPrediction(String fieldId) async {
-    final request = YieldPrediction(fieldId: fieldId);
-    final bytes = await callUnary('GetYieldPrediction', request);
-    return YieldPrediction.fromBuffer(bytes);
+  /// Predicts yield for a field.
+  Future<PredictYieldResponse> predictYield(
+      PredictYieldRequest request) async {
+    final bytes = await callUnary('PredictYield', request);
+    return PredictYieldResponse.fromBuffer(bytes);
   }
 
-  /// Lists yield predictions for a field over time.
-  Future<List<YieldPrediction>> listYieldPredictions({
-    required String fieldId,
-    String? cropType,
+  /// Retrieves a yield prediction by ID.
+  Future<GetPredictionResponse> getPrediction(String id) async {
+    final request = GetPredictionRequest(id: id);
+    final bytes = await callUnary('GetPrediction', request);
+    return GetPredictionResponse.fromBuffer(bytes);
+  }
+
+  /// Lists yield predictions.
+  Future<ListPredictionsResponse> listPredictions({
+    String? farmId,
+    String? fieldId,
+    String? cropId,
     int pageSize = 20,
+    String pageToken = '',
   }) async {
-    final request = YieldPrediction(fieldId: fieldId, cropType: cropType);
-    final bytes = await callUnary('ListYieldPredictions', request);
-    final prediction = YieldPrediction.fromBuffer(bytes);
-    return [prediction];
+    final request = ListPredictionsRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+      cropId: cropId,
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
+    final bytes = await callUnary('ListPredictions', request);
+    return ListPredictionsResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves the latest soil analysis for a field.
-  Future<SoilAnalysis> getSoilAnalysis(String fieldId) async {
-    final request = SoilAnalysis(fieldId: fieldId);
-    final bytes = await callUnary('GetSoilAnalysis', request);
-    return SoilAnalysis.fromBuffer(bytes);
-  }
-
-  /// Submits a new soil analysis for a field.
-  Future<SoilAnalysis> submitSoilAnalysis(SoilAnalysis analysis) async {
-    final bytes = await callUnary('SubmitSoilAnalysis', analysis);
-    return SoilAnalysis.fromBuffer(bytes);
-  }
-
-  /// Retrieves crop recommendations for a field based on soil and climate data.
-  Future<List<CropRecommendation>> getCropRecommendations(
-    String fieldId,
-  ) async {
-    final request = CropRecommendation(cropName: fieldId);
-    final bytes = await callUnary('GetCropRecommendations', request);
-    final rec = CropRecommendation.fromBuffer(bytes);
-    return [rec];
+  /// Retrieves yield history for a field.
+  Future<GetYieldHistoryResponse> getYieldHistory({
+    required String fieldId,
+    String? farmId,
+    String? cropId,
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = GetYieldHistoryRequest(
+      fieldId: fieldId,
+      farmId: farmId,
+      cropId: cropId,
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
+    final bytes = await callUnary('GetYieldHistory', request);
+    return GetYieldHistoryResponse.fromBuffer(bytes);
   }
 
   /// Streams real-time yield prediction updates for a field.
   Stream<YieldPrediction> streamYieldUpdates(String fieldId) {
-    final request = YieldPrediction(fieldId: fieldId);
+    final request = PredictYieldRequest(fieldId: fieldId);
     return callServerStream('StreamYieldUpdates', request)
         .map((bytes) => YieldPrediction.fromBuffer(bytes));
   }

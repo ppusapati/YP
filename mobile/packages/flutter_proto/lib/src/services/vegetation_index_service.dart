@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/vegetation_index.pb.dart';
 import 'base_service.dart';
 
@@ -18,41 +16,56 @@ class VegetationIndexServiceClient extends BaseService {
   String get serviceName =>
       'agriculture.satellite.vegetation.v1.VegetationIndexService';
 
-  /// Computes vegetation indices for a field.
-  Future<VegetationIndex> computeIndices(VegetationIndex request) async {
+  /// Computes vegetation indices.
+  Future<ComputeIndicesResponse> computeIndices(
+      ComputeIndicesRequest request) async {
     final bytes = await callUnary('ComputeIndices', request);
-    return VegetationIndex.fromBuffer(bytes);
+    return ComputeIndicesResponse.fromBuffer(bytes);
   }
 
   /// Retrieves a vegetation index by ID.
-  Future<VegetationIndex> getVegetationIndex(String id) async {
-    final request = VegetationIndex(id: id);
+  Future<GetVegetationIndexResponse> getVegetationIndex(String id) async {
+    final request = GetVegetationIndexRequest(id: id);
     final bytes = await callUnary('GetVegetationIndex', request);
-    return VegetationIndex.fromBuffer(bytes);
+    return GetVegetationIndexResponse.fromBuffer(bytes);
   }
 
   /// Lists vegetation indices.
-  Future<List<VegetationIndex>> listVegetationIndices(
-      {int pageSize = 20}) async {
-    final request = VegetationIndex();
+  Future<ListVegetationIndicesResponse> listVegetationIndices({
+    int pageSize = 20,
+    String pageToken = '',
+    String? farmId,
+    String? fieldId,
+  }) async {
+    final request = ListVegetationIndicesRequest(
+      pageSize: pageSize,
+      pageToken: pageToken,
+      farmId: farmId,
+      fieldId: fieldId,
+    );
     final bytes = await callUnary('ListVegetationIndices', request);
-    final index = VegetationIndex.fromBuffer(bytes);
-    return [index];
+    return ListVegetationIndicesResponse.fromBuffer(bytes);
   }
 
   /// Retrieves NDVI time series for a field.
-  Future<List<NDVITimeSeriesEntry>> getNDVITimeSeries(
+  Future<GetNDVITimeSeriesResponse> getNDVITimeSeries(
       String farmId, String fieldId) async {
-    final request = VegetationIndex(farmId: farmId, fieldId: fieldId);
+    final request = GetNDVITimeSeriesRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+    );
     final bytes = await callUnary('GetNDVITimeSeries', request);
-    final entry = NDVITimeSeriesEntry.fromBuffer(bytes);
-    return [entry];
+    return GetNDVITimeSeriesResponse.fromBuffer(bytes);
   }
 
   /// Retrieves field health assessment.
-  Future<FieldHealth> getFieldHealth(String farmId, String fieldId) async {
-    final request = FieldHealth(farmId: farmId, fieldId: fieldId);
+  Future<GetFieldHealthResponse> getFieldHealth(
+      String farmId, String fieldId) async {
+    final request = GetFieldHealthRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+    );
     final bytes = await callUnary('GetFieldHealth', request);
-    return FieldHealth.fromBuffer(bytes);
+    return GetFieldHealthResponse.fromBuffer(bytes);
   }
 }

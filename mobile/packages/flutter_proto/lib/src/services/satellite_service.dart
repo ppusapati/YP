@@ -1,14 +1,10 @@
-import 'package:fixnum/fixnum.dart';
-import 'package:http/http.dart' as http;
-
-import '../generated/farm.pb.dart';
 import '../generated/satellite.pb.dart';
 import 'base_service.dart';
 
-/// ConnectRPC service client for satellite imagery and NDVI data.
+/// ConnectRPC service client for satellite imagery and analysis.
 ///
-/// Provides access to satellite tiles, NDVI vegetation index data,
-/// and crop health time series.
+/// Provides access to satellite imagery, vegetation index computation,
+/// crop stress detection, and temporal analysis.
 class SatelliteServiceClient extends BaseService {
   SatelliteServiceClient({
     required super.baseUrl,
@@ -19,57 +15,97 @@ class SatelliteServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.satellite.v1.SatelliteService';
 
-  /// Retrieves available satellite tiles for a field.
-  Future<List<SatelliteTile>> getTilesForField({
+  /// Requests new satellite imagery for a field.
+  Future<RequestImageryResponse> requestImagery(
+      RequestImageryRequest request) async {
+    final bytes = await callUnary('RequestImagery', request);
+    return RequestImageryResponse.fromBuffer(bytes);
+  }
+
+  /// Retrieves a satellite image by ID.
+  Future<GetImageResponse> getImage(String id) async {
+    final request = GetImageRequest(id: id);
+    final bytes = await callUnary('GetImage', request);
+    return GetImageResponse.fromBuffer(bytes);
+  }
+
+  /// Lists satellite images for a field.
+  Future<ListImagesResponse> listImages({
+    required String fieldId,
+    String? farmId,
+    int pageSize = 20,
+    int pageOffset = 0,
+  }) async {
+    final request = ListImagesRequest(
+      fieldId: fieldId,
+      farmId: farmId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
+    final bytes = await callUnary('ListImages', request);
+    return ListImagesResponse.fromBuffer(bytes);
+  }
+
+  /// Computes a vegetation index for an image.
+  Future<ComputeIndexResponse> computeIndex({
+    required String imageId,
+    required String fieldId,
+  }) async {
+    final request = ComputeIndexRequest(
+      imageId: imageId,
+      fieldId: fieldId,
+    );
+    final bytes = await callUnary('ComputeIndex', request);
+    return ComputeIndexResponse.fromBuffer(bytes);
+  }
+
+  /// Retrieves vegetation indices for an image.
+  Future<GetVegetationIndicesResponse> getVegetationIndices({
+    required String imageId,
     required String fieldId,
     String? indexType,
-    Int64? fromDate,
-    Int64? toDate,
   }) async {
-    final request = SatelliteTile(
+    final request = GetVegetationIndicesRequest(
+      imageId: imageId,
       fieldId: fieldId,
       indexType: indexType,
     );
-    final bytes = await callUnary('GetTilesForField', request);
-    final tile = SatelliteTile.fromBuffer(bytes);
-    return [tile];
+    final bytes = await callUnary('GetVegetationIndices', request);
+    return GetVegetationIndicesResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves a specific satellite tile by ID.
-  Future<SatelliteTile> getTile(String tileId) async {
-    final request = SatelliteTile(id: tileId);
-    final bytes = await callUnary('GetTile', request);
-    return SatelliteTile.fromBuffer(bytes);
-  }
-
-  /// Retrieves NDVI data for a field at a specific timestamp.
-  Future<NDVIData> getNDVIData({
+  /// Detects crop stress for a field from an image.
+  Future<DetectCropStressResponse> detectCropStress({
+    required String imageId,
     required String fieldId,
-    Int64? timestamp,
   }) async {
-    final request = NDVIData(
+    final request = DetectCropStressRequest(
+      imageId: imageId,
       fieldId: fieldId,
-      timestamp: timestamp,
     );
-    final bytes = await callUnary('GetNDVIData', request);
-    return NDVIData.fromBuffer(bytes);
+    final bytes = await callUnary('DetectCropStress', request);
+    return DetectCropStressResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves the crop health time series for a field.
-  Future<CropHealthTimeSeries> getCropHealthTimeSeries({
+  /// Retrieves temporal analysis for a field.
+  Future<GetTemporalAnalysisResponse> getTemporalAnalysis(
+      GetTemporalAnalysisRequest request) async {
+    final bytes = await callUnary('GetTemporalAnalysis', request);
+    return GetTemporalAnalysisResponse.fromBuffer(bytes);
+  }
+
+  /// Lists satellite alerts for a field.
+  Future<ListAlertsResponse> listAlerts({
     required String fieldId,
-    Int64? fromDate,
-    Int64? toDate,
+    int pageSize = 20,
+    int pageOffset = 0,
   }) async {
-    final request = CropHealthTimeSeries(fieldId: fieldId);
-    final bytes = await callUnary('GetCropHealthTimeSeries', request);
-    return CropHealthTimeSeries.fromBuffer(bytes);
-  }
-
-  /// Streams real-time NDVI updates for a field.
-  Stream<NDVIData> streamNDVIUpdates(String fieldId) {
-    final request = NDVIData(fieldId: fieldId);
-    return callServerStream('StreamNDVIUpdates', request)
-        .map((bytes) => NDVIData.fromBuffer(bytes));
+    final request = ListAlertsRequest(
+      fieldId: fieldId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
+    final bytes = await callUnary('ListAlerts', request);
+    return ListAlertsResponse.fromBuffer(bytes);
   }
 }

@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/diagnosis.pb.dart';
 import 'base_service.dart';
 
@@ -18,35 +16,33 @@ class DiagnosisServiceClient extends BaseService {
   String get serviceName => 'agriculture.diagnosis.v1.PlantDiagnosisService';
 
   /// Submits a crop image for AI diagnosis.
-  ///
-  /// Returns a [DiagnosisResult] containing the identified plant species,
-  /// disease type, confidence score, severity, and recommended treatments.
-  Future<DiagnosisResult> diagnose(DiagnosisRequest request) async {
-    final bytes = await callUnary('Diagnose', request);
-    return DiagnosisResult.fromBuffer(bytes);
+  Future<SubmitDiagnosisResponse> submitDiagnosis(
+      SubmitDiagnosisRequest request) async {
+    final bytes = await callUnary('SubmitDiagnosis', request);
+    return SubmitDiagnosisResponse.fromBuffer(bytes);
   }
 
   /// Retrieves a previously computed diagnosis result by ID.
-  Future<DiagnosisResult> getDiagnosisResult(String resultId) async {
-    final request = DiagnosisResult(plantSpecies: resultId);
-    final bytes = await callUnary('GetDiagnosisResult', request);
-    return DiagnosisResult.fromBuffer(bytes);
+  Future<GetDiagnosisResponse> getDiagnosis(String id) async {
+    final request = GetDiagnosisRequest(id: id);
+    final bytes = await callUnary('GetDiagnosis', request);
+    return GetDiagnosisResponse.fromBuffer(bytes);
   }
 
-  /// Lists diagnosis history for a given crop type and location.
-  Future<List<DiagnosisResult>> listDiagnoses({
-    required String cropType,
-    double? latitude,
-    double? longitude,
+  /// Lists diagnosis history.
+  Future<ListDiagnosesResponse> listDiagnoses({
+    String? farmId,
+    String? fieldId,
     int pageSize = 20,
+    int pageOffset = 0,
   }) async {
-    final request = DiagnosisRequest(
-      cropType: cropType,
-      latitude: latitude,
-      longitude: longitude,
+    final request = ListDiagnosesRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
     );
     final bytes = await callUnary('ListDiagnoses', request);
-    final result = DiagnosisResult.fromBuffer(bytes);
-    return [result];
+    return ListDiagnosesResponse.fromBuffer(bytes);
   }
 }

@@ -298,10 +298,183 @@ message GetCropHistoryResponse {
 }
 
 // -----------------------------------------------------------------------------
+// Crop Cycles
+// -----------------------------------------------------------------------------
+
+enum CropCycleStatus {
+  CYCLE_STATUS_UNSPECIFIED = 0;
+  CYCLE_STATUS_PLANNED     = 1;
+  CYCLE_STATUS_ACTIVE      = 2;
+  CYCLE_STATUS_HARVESTING  = 3;
+  CYCLE_STATUS_COMPLETED   = 4;
+  CYCLE_STATUS_ABANDONED   = 5;
+}
+
+message CropCycle {
+  string                     id                        = 1;
+  string                     tenant_id                 = 2;
+  string                     field_id                  = 3;
+  string                     crop_id                   = 4;
+  string                     crop_assignment_id        = 5;
+  string                     season                    = 6;
+  int32                      cycle_year                = 7;
+  string                     name                      = 8;
+  google.protobuf.Timestamp  planned_planting_date     = 9;
+  google.protobuf.Timestamp  actual_planting_date      = 10;
+  google.protobuf.Timestamp  planned_harvest_date      = 11;
+  google.protobuf.Timestamp  actual_harvest_date       = 12;
+  CropCycleStatus            status                    = 13;
+  double                     target_yield_per_hectare  = 14;
+  double                     actual_yield_per_hectare  = 15;
+  string                     yield_unit                = 16;
+  int64                      total_input_cost          = 17;
+  int64                      total_revenue             = 18;
+  string                     currency                  = 19;
+  string                     notes                     = 20;
+  int64                      version                   = 21;
+  string                     created_by                = 22;
+  google.protobuf.Timestamp  created_at                = 23;
+  google.protobuf.Timestamp  updated_at                = 24;
+}
+
+message CreateCropCycleRequest {
+  string                     field_id                  = 1;
+  string                     crop_id                   = 2;
+  string                     season                    = 3;
+  int32                      cycle_year                = 4;
+  string                     name                      = 5;
+  google.protobuf.Timestamp  planned_planting_date     = 6;
+  google.protobuf.Timestamp  planned_harvest_date      = 7;
+  double                     target_yield_per_hectare  = 8;
+  string                     yield_unit                = 9;
+  string                     notes                     = 10;
+}
+
+message CreateCropCycleResponse {
+  CropCycle cycle = 1;
+}
+
+message GetCropCycleRequest {
+  string id = 1;
+}
+
+message GetCropCycleResponse {
+  CropCycle cycle = 1;
+}
+
+message ListCropCyclesRequest {
+  string           field_id    = 1;
+  CropCycleStatus  status      = 2;
+  int32            page_size   = 3;
+  int32            page_offset = 4;
+}
+
+message ListCropCyclesResponse {
+  repeated CropCycle cycles      = 1;
+  int32              total_count = 2;
+}
+
+message UpdateCropCycleRequest {
+  string                     id                        = 1;
+  CropCycleStatus            status                    = 2;
+  google.protobuf.Timestamp  actual_planting_date      = 3;
+  google.protobuf.Timestamp  actual_harvest_date       = 4;
+  double                     actual_yield_per_hectare  = 5;
+  int64                      total_input_cost          = 6;
+  int64                      total_revenue             = 7;
+  string                     notes                     = 8;
+  google.protobuf.FieldMask  update_mask               = 9;
+}
+
+message UpdateCropCycleResponse {
+  CropCycle cycle = 1;
+}
+
+// -----------------------------------------------------------------------------
+// Activity Events
+// -----------------------------------------------------------------------------
+
+enum ActivityCategory {
+  CATEGORY_UNSPECIFIED     = 0;
+  CATEGORY_LAND_PREP      = 1;
+  CATEGORY_PLANTING       = 2;
+  CATEGORY_IRRIGATION     = 3;
+  CATEGORY_FERTILIZATION  = 4;
+  CATEGORY_PEST_CONTROL   = 5;
+  CATEGORY_SCOUTING       = 6;
+  CATEGORY_HARVESTING     = 7;
+  CATEGORY_POST_HARVEST   = 8;
+  CATEGORY_SOIL_SAMPLING  = 9;
+  CATEGORY_MAINTENANCE    = 10;
+}
+
+message ActivityEvent {
+  string                     id                     = 1;
+  string                     tenant_id              = 2;
+  string                     field_id               = 3;
+  string                     crop_cycle_id          = 4;
+  string                     performed_by           = 5;
+  string                     activity_type          = 6;
+  ActivityCategory           category               = 7;
+  google.protobuf.Timestamp  started_at             = 8;
+  google.protobuf.Timestamp  completed_at           = 9;
+  int32                      duration_minutes       = 10;
+  string                     description            = 11;
+  string                     notes                  = 12;
+  string                     input_product_id       = 13;
+  double                     input_quantity         = 14;
+  string                     input_unit             = 15;
+  int64                      input_cost             = 16;
+  string                     currency               = 17;
+  double                     area_hectares          = 18;
+  double                     weather_temp_celsius   = 19;
+  double                     weather_humidity_pct   = 20;
+  double                     weather_wind_speed_kmh = 21;
+  string                     weather_conditions     = 22;
+  google.protobuf.Timestamp  created_at             = 23;
+}
+
+message LogActivityEventRequest {
+  string                     field_id               = 1;
+  string                     crop_cycle_id          = 2;
+  string                     activity_type          = 3;
+  ActivityCategory           category               = 4;
+  google.protobuf.Timestamp  started_at             = 5;
+  google.protobuf.Timestamp  completed_at           = 6;
+  int32                      duration_minutes       = 7;
+  string                     description            = 8;
+  string                     notes                  = 9;
+  string                     input_product_id       = 10;
+  double                     input_quantity         = 11;
+  string                     input_unit             = 12;
+  int64                      input_cost             = 13;
+  string                     currency               = 14;
+  double                     area_hectares          = 15;
+}
+
+message LogActivityEventResponse {
+  ActivityEvent event = 1;
+}
+
+message ListActivityEventsRequest {
+  string            field_id       = 1;
+  string            crop_cycle_id  = 2;
+  ActivityCategory  category       = 3;
+  int32             page_size      = 4;
+  int32             page_offset    = 5;
+}
+
+message ListActivityEventsResponse {
+  repeated ActivityEvent events      = 1;
+  int32                  total_count = 2;
+}
+
+// -----------------------------------------------------------------------------
 // Service
 // -----------------------------------------------------------------------------
 
 service FieldService {
+  // Field CRUD
   rpc CreateField       (CreateFieldRequest)       returns (CreateFieldResponse);
   rpc GetField          (GetFieldRequest)          returns (GetFieldResponse);
   rpc ListFields        (ListFieldsRequest)        returns (ListFieldsResponse);
@@ -313,4 +486,14 @@ service FieldService {
   rpc SegmentField      (SegmentFieldRequest)       returns (SegmentFieldResponse);
   rpc GetFieldSegments  (GetFieldSegmentsRequest)   returns (GetFieldSegmentsResponse);
   rpc GetCropHistory    (GetCropHistoryRequest)     returns (GetCropHistoryResponse);
+
+  // Crop Cycles
+  rpc CreateCropCycle   (CreateCropCycleRequest)    returns (CreateCropCycleResponse);
+  rpc GetCropCycle      (GetCropCycleRequest)       returns (GetCropCycleResponse);
+  rpc ListCropCycles    (ListCropCyclesRequest)     returns (ListCropCyclesResponse);
+  rpc UpdateCropCycle   (UpdateCropCycleRequest)    returns (UpdateCropCycleResponse);
+
+  // Activity Events
+  rpc LogActivityEvent  (LogActivityEventRequest)   returns (LogActivityEventResponse);
+  rpc ListActivityEvents(ListActivityEventsRequest) returns (ListActivityEventsResponse);
 }

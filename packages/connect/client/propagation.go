@@ -74,13 +74,16 @@ func propagateHeaders(ctx context.Context, req connect.AnyRequest) {
 		req.Header().Set(headerTraceID, rc.TraceID)
 	}
 
-	// Tenant identifier for multi-tenancy
-	if tenantID := p9context.TenantID(ctx); tenantID != "" {
+	// Tenant identifier for multi-tenancy (falls back to UserContext from JWT)
+	if tenantID := p9context.GetTenantID(ctx); tenantID != "" {
 		req.Header().Set(headerTenantName, tenantID)
 	}
 
-	// JWT forwarding: forward raw token stored via WithRawToken.
-	if tok := RawTokenFromContext(ctx); tok != "" {
+	// JWT forwarding: prefer token from p9context (set by auth interceptor),
+	// fall back to client-local WithRawToken for backward compatibility.
+	if tok := p9context.RawToken(ctx); tok != "" {
+		req.Header().Set(headerAuthorization, "Bearer "+tok)
+	} else if tok := RawTokenFromContext(ctx); tok != "" {
 		req.Header().Set(headerAuthorization, "Bearer "+tok)
 	}
 }

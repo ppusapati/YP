@@ -222,22 +222,132 @@ message TransferOwnershipResponse {
   Farm farm = 1;
 }
 
+// ----- Management Units -----
+
+enum ManagementUnitType {
+  UNIT_TYPE_UNSPECIFIED = 0;
+  UNIT_TYPE_ZONE        = 1;
+  UNIT_TYPE_BLOCK       = 2;
+  UNIT_TYPE_SECTION     = 3;
+  UNIT_TYPE_PLOT        = 4;
+}
+
+enum ManagementUnitStatus {
+  UNIT_STATUS_UNSPECIFIED = 0;
+  UNIT_STATUS_ACTIVE      = 1;
+  UNIT_STATUS_INACTIVE    = 2;
+  UNIT_STATUS_ARCHIVED    = 3;
+}
+
+message ManagementUnit {
+  string                     id              = 1;
+  string                     tenant_id       = 2;
+  string                     farm_id         = 3;
+  string                     parent_unit_id  = 4;
+  string                     name            = 5;
+  string                     description     = 6;
+  ManagementUnitType         unit_type       = 7;
+  double                     area_hectares   = 8;
+  string                     boundary_geojson = 9;
+  string                     manager_id      = 10;
+  ManagementUnitStatus       status          = 11;
+  repeated string            field_ids       = 12;
+  int64                      version         = 13;
+  string                     created_by      = 14;
+  google.protobuf.Timestamp  created_at      = 15;
+  google.protobuf.Timestamp  updated_at      = 16;
+}
+
+message CreateManagementUnitRequest {
+  string              farm_id         = 1;
+  string              parent_unit_id  = 2;
+  string              name            = 3;
+  string              description     = 4;
+  ManagementUnitType  unit_type       = 5;
+  double              area_hectares   = 6;
+  string              boundary_geojson = 7;
+  string              manager_id      = 8;
+  repeated string     field_ids       = 9;
+}
+
+message CreateManagementUnitResponse {
+  ManagementUnit unit = 1;
+}
+
+message GetManagementUnitRequest {
+  string id = 1;
+}
+
+message GetManagementUnitResponse {
+  ManagementUnit unit = 1;
+}
+
+message ListManagementUnitsRequest {
+  string farm_id     = 1;
+  int32  page_size   = 2;
+  int32  page_offset = 3;
+}
+
+message ListManagementUnitsResponse {
+  repeated ManagementUnit units       = 1;
+  int32                   total_count = 2;
+}
+
+message UpdateManagementUnitRequest {
+  string                     id              = 1;
+  string                     name            = 2;
+  string                     description     = 3;
+  ManagementUnitStatus       status          = 4;
+  string                     manager_id      = 5;
+  double                     area_hectares   = 6;
+  string                     boundary_geojson = 7;
+  google.protobuf.FieldMask  update_mask     = 8;
+}
+
+message UpdateManagementUnitResponse {
+  ManagementUnit unit = 1;
+}
+
+message DeleteManagementUnitRequest {
+  string id = 1;
+}
+
+message DeleteManagementUnitResponse {}
+
+message AssignFieldsToUnitRequest {
+  string          management_unit_id = 1;
+  repeated string field_ids          = 2;
+}
+
+message AssignFieldsToUnitResponse {
+  ManagementUnit unit = 1;
+}
+
+message RemoveFieldsFromUnitRequest {
+  string          management_unit_id = 1;
+  repeated string field_ids          = 2;
+}
+
+message RemoveFieldsFromUnitResponse {
+  ManagementUnit unit = 1;
+}
+
 // FarmService provides farm management operations.
 service FarmService {
-  // CreateFarm registers a new farm.
   rpc CreateFarm(CreateFarmRequest) returns (CreateFarmResponse);
-  // GetFarm retrieves a farm by ID.
   rpc GetFarm(GetFarmRequest) returns (GetFarmResponse);
-  // ListFarms lists farms with filtering and pagination.
   rpc ListFarms(ListFarmsRequest) returns (ListFarmsResponse);
-  // UpdateFarm updates an existing farm.
   rpc UpdateFarm(UpdateFarmRequest) returns (UpdateFarmResponse);
-  // DeleteFarm soft-deletes a farm.
   rpc DeleteFarm(DeleteFarmRequest) returns (DeleteFarmResponse);
-  // SetFarmBoundary sets or updates the geographic boundary of a farm.
   rpc SetFarmBoundary(SetFarmBoundaryRequest) returns (SetFarmBoundaryResponse);
-  // GetFarmBoundary retrieves the geographic boundary of a farm.
   rpc GetFarmBoundary(GetFarmBoundaryRequest) returns (GetFarmBoundaryResponse);
-  // TransferOwnership transfers ownership of a farm between users.
   rpc TransferOwnership(TransferOwnershipRequest) returns (TransferOwnershipResponse);
+
+  rpc CreateManagementUnit(CreateManagementUnitRequest) returns (CreateManagementUnitResponse);
+  rpc GetManagementUnit(GetManagementUnitRequest) returns (GetManagementUnitResponse);
+  rpc ListManagementUnits(ListManagementUnitsRequest) returns (ListManagementUnitsResponse);
+  rpc UpdateManagementUnit(UpdateManagementUnitRequest) returns (UpdateManagementUnitResponse);
+  rpc DeleteManagementUnit(DeleteManagementUnitRequest) returns (DeleteManagementUnitResponse);
+  rpc AssignFieldsToUnit(AssignFieldsToUnitRequest) returns (AssignFieldsToUnitResponse);
+  rpc RemoveFieldsFromUnit(RemoveFieldsFromUnitRequest) returns (RemoveFieldsFromUnitResponse);
 }
