@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_auth/flutter_auth.dart';
 import 'package:flutter_network/flutter_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -186,10 +187,42 @@ final apiConfigProvider = Provider<ApiConfig>((ref) {
   );
 });
 
-/// ConnectRPC client.
+/// Secure token storage and lifecycle management.
+final tokenServiceProvider = Provider<TokenService>((ref) {
+  return TokenService();
+});
+
+/// Authentication repository for login, logout, and token refresh.
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  final config = ref.watch(apiConfigProvider);
+  final tokenService = ref.watch(tokenServiceProvider);
+  final httpClient = ref.watch(httpClientProvider);
+  return AuthRepository(
+    baseUrl: config.origin,
+    tokenService: tokenService,
+    httpClient: httpClient,
+  );
+});
+
+/// ConnectRPC client with auth interceptor attached.
 final connectClientProvider = Provider<ConnectClient>((ref) {
   final config = ref.watch(apiConfigProvider);
+  final tokenService = ref.watch(tokenServiceProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
+
   final client = ConnectClient(config: config);
+
+  final authInterceptor = AuthInterceptor(
+    tokenReader: () => tokenService.getAccessToken(),
+    tokenRefresher: () async {
+      final token = await authRepository.refreshToken();
+      return token.accessToken;
+    },
+  );
+
+  client.addRequestInterceptor(authInterceptor.interceptRequest);
+  client.addResponseInterceptor(authInterceptor.interceptResponse);
+
   ref.onDispose(() => client.close());
   return client;
 });
