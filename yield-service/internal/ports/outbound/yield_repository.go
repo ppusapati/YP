@@ -11,13 +11,18 @@ import (
 
 // YieldRepository is the secondary port for yield persistence.
 type YieldRepository interface {
-	CreateYield(ctx context.Context, entity *domain.Yield) (*domain.Yield, error)
-	GetYieldByUUID(ctx context.Context, uuid, tenantID string) (*domain.Yield, error)
-	ListYields(ctx context.Context, params domain.ListYieldParams) ([]domain.Yield, int32, error)
-	UpdateYield(ctx context.Context, entity *domain.Yield) (*domain.Yield, error)
-	DeleteYield(ctx context.Context, uuid, tenantID, deletedBy string) error
-	CheckYieldExists(ctx context.Context, uuid, tenantID string) (bool, error)
-	CheckYieldNameExists(ctx context.Context, name, tenantID string) (bool, error)
+	CreatePrediction(ctx context.Context, p *domain.YieldPrediction) (*domain.YieldPrediction, error)
+	GetPredictionByID(ctx context.Context, id, tenantID string) (*domain.YieldPrediction, error)
+	ListPredictions(ctx context.Context, params domain.ListPredictionsParams) ([]domain.YieldPrediction, int32, error)
+
+	CreateYieldRecord(ctx context.Context, r *domain.YieldRecord) (*domain.YieldRecord, error)
+	ListYieldRecords(ctx context.Context, params domain.YieldHistoryParams) ([]domain.YieldRecord, int32, error)
+
+	CreateHarvestPlan(ctx context.Context, p *domain.HarvestPlan) (*domain.HarvestPlan, error)
+	GetHarvestPlanByID(ctx context.Context, id, tenantID string) (*domain.HarvestPlan, error)
+	ListHarvestPlans(ctx context.Context, params domain.ListHarvestPlansParams) ([]domain.HarvestPlan, int32, error)
+
+	GetCropPerformance(ctx context.Context, params domain.CropPerformanceParams) (*domain.CropPerformance, error)
 
 	WithTx(tx pgx.Tx) YieldRepository
 }
