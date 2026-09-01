@@ -1,10 +1,10 @@
-// Package application contains the field-service application service.
 package application
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -33,7 +33,6 @@ type fieldService struct {
 	log        *p9log.Helper
 }
 
-// NewFieldService creates a new application-layer FieldService.
 func NewFieldService(
 	repo outbound.FieldRepository,
 	pub outbound.EventPublisher,
@@ -73,7 +72,6 @@ func (s *fieldService) CreateField(ctx context.Context, field *domain.Field) (*d
 		userID = "system"
 	}
 
-	// Validate farm exists via outbound port
 	if s.farmClient != nil {
 		exists, err := s.farmClient.FarmExists(ctx, field.FarmID, tenantID)
 		if err != nil {
@@ -206,7 +204,7 @@ func (s *fieldService) DeleteField(ctx context.Context, uuid string) error {
 	return nil
 }
 
-func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropParams) (*domain.Field, error) {
+func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropParams) (*domain.CropAssignment, error) {
 	tenantID := p9context.TenantID(ctx)
 	userID := p9context.UserID(ctx)
 
@@ -236,15 +234,32 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 	updatedBy := userID
 	field.UpdatedBy = &updatedBy
 
-	updated, err := s.repo.UpdateField(ctx, field)
+	_, err = s.repo.UpdateField(ctx, field)
 	if err != nil {
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.crop.assigned", updated.UUID, map[string]interface{}{
-		"field_id": updated.UUID, "crop_id": params.CropID, "tenant_id": tenantID,
+	assignment := &domain.CropAssignment{
+		TenantID:            tenantID,
+		FieldID:             params.FieldUUID,
+		CropID:              params.CropID,
+		CropVariety:         params.CropVariety,
+		PlantingDate:        &params.PlantingDate,
+		ExpectedHarvestDate: params.ExpectedHarvestDate,
+		GrowthStage:         params.GrowthStage,
+		Season:              params.Season,
+		Notes:               params.Notes,
+	}
+
+	created, err := s.repo.CreateCropAssignment(ctx, assignment)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.UUID, map[string]interface{}{
+		"field_id": field.UUID, "crop_id": params.CropID, "tenant_id": tenantID,
 	})
-	return updated, nil
+	return created, nil
 }
 
 func (s *fieldService) GetFieldSummary(ctx context.Context, uuid string) (*domain.FieldSummary, error) {
@@ -261,6 +276,129 @@ func (s *fieldService) GetFieldSummary(ctx context.Context, uuid string) (*domai
 		Status:   field.Status,
 	}, nil
 }
+
+// ---------------------------------------------------------------------------
+// New RPCs
+// ---------------------------------------------------------------------------
+
+func (s *fieldService) SetFieldBoundary(ctx context.Context, params domain.SetBoundaryParams) (*domain.FieldBoundary, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
+	}
+	if params.Polygon == "" {
+		return nil, errors.BadRequest("MISSING_POLYGON", "polygon is required")
+	}
+
+	exists, err := s.repo.CheckFieldExists(ctx, params.FieldID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", params.FieldID))
+	}
+
+	now := time.Now()
+	b := &domain.FieldBoundary{
+		TenantID:   tenantID,
+		FieldID:    params.FieldID,
+		Polygon:    params.Polygon,
+		Source:     params.Source,
+		RecordedAt: &now,
+	}
+
+	created, err := s.repo.SetFieldBoundary(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.boundary.set", params.FieldID, map[string]interface{}{
+		"field_id": params.FieldID, "boundary_id": created.ID, "tenant_id": tenantID,
+	})
+	return created, nil
+}
+
+func (s *fieldService) ListFieldsByFarm(ctx context.Context, farmID string, pageSize, offset int32) ([]domain.Field, int32, error) {
+	if farmID == "" {
+		return nil, 0, errors.BadRequest("MISSING_FARM_ID", "farm ID is required")
+	}
+	params := domain.ListFieldsParams{
+		FarmID:   &farmID,
+		PageSize: pageSize,
+		Offset:   offset,
+	}
+	return s.ListFields(ctx, params)
+}
+
+func (s *fieldService) SegmentField(ctx context.Context, params domain.SegmentFieldParams) ([]domain.FieldSegment, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
+	}
+	if len(params.Segments) == 0 {
+		return nil, errors.BadRequest("MISSING_SEGMENTS", "at least one segment is required")
+	}
+
+	exists, err := s.repo.CheckFieldExists(ctx, params.FieldID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", params.FieldID))
+	}
+
+	if err := s.repo.DeleteFieldSegments(ctx, params.FieldID, tenantID); err != nil {
+		return nil, err
+	}
+
+	segments, err := s.repo.CreateFieldSegments(ctx, params.FieldID, tenantID, params.Segments)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.segmented", params.FieldID, map[string]interface{}{
+		"field_id": params.FieldID, "segment_count": len(segments), "tenant_id": tenantID,
+	})
+	return segments, nil
+}
+
+func (s *fieldService) GetFieldSegments(ctx context.Context, fieldID string) ([]domain.FieldSegment, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if fieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
+	}
+	return s.repo.GetFieldSegments(ctx, fieldID, tenantID)
+}
+
+func (s *fieldService) GetCropHistory(ctx context.Context, params domain.CropHistoryParams) ([]domain.CropAssignment, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FieldID == "" {
+		return nil, 0, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
+	}
+	if params.PageSize <= 0 {
+		params.PageSize = defaultPageSize
+	}
+	if params.PageSize > maxPageSize {
+		params.PageSize = maxPageSize
+	}
+	return s.repo.GetCropHistory(ctx, params.FieldID, tenantID, params.PageSize, params.Offset)
+}
+
+// ---------------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------------
 
 func (s *fieldService) emitEvent(ctx context.Context, eventType, aggregateID string, data map[string]interface{}) {
 	if s.pub == nil {
