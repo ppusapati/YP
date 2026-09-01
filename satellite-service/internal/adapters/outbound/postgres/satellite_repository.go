@@ -54,9 +54,9 @@ func (r *satelliteRepository) exec(ctx context.Context, sql string, args ...any)
 func (r *satelliteRepository) CreateSatellite(ctx context.Context, entity *domain.Satellite) (*domain.Satellite, error) {
 	entity.UUID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO satellites (uuid, tenant_id, name, status, is_active, created_by)
-		VALUES ($1,$2,$3,$4,true,$5)
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		`INSERT INTO satellite_images (uuid, tenant_id, field_id, farm_id, satellite_provider, acquisition_date, processing_status, is_active, created_by)
+		VALUES ($1,$2,'','',$3,NOW(),$4,true,$5)
+		RETURNING uuid, tenant_id, satellite_provider, processing_status, is_active, created_by, created_at, version`,
 		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	return scanSatellite(row)
@@ -64,8 +64,8 @@ func (r *satelliteRepository) CreateSatellite(ctx context.Context, entity *domai
 
 func (r *satelliteRepository) GetSatelliteByUUID(ctx context.Context, uuid, tenantID string) (*domain.Satellite, error) {
 	row := r.queryRow(ctx,
-		`SELECT uuid, tenant_id, name, status, is_active, created_by, created_at, version
-		FROM satellites WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		`SELECT uuid, tenant_id, satellite_provider, processing_status, is_active, created_by, created_at, version
+		FROM satellite_images WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		uuid, tenantID,
 	)
 	e, err := scanSatellite(row)
@@ -84,10 +84,10 @@ func (r *satelliteRepository) ListSatellites(ctx context.Context, params domain.
 
 func (r *satelliteRepository) UpdateSatellite(ctx context.Context, entity *domain.Satellite) (*domain.Satellite, error) {
 	row := r.queryRow(ctx,
-		`UPDATE satellites SET name=COALESCE(NULLIF($1,''),name), status=COALESCE(NULLIF($2,''),status),
+		`UPDATE satellite_images SET satellite_provider=COALESCE(NULLIF($1,''),satellite_provider), processing_status=COALESCE(NULLIF($2,''),processing_status),
 		updated_by=$3, updated_at=NOW(), version=version+1
 		WHERE uuid=$4 AND tenant_id=$5 AND deleted_at IS NULL
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		RETURNING uuid, tenant_id, satellite_provider, processing_status, is_active, created_by, created_at, version`,
 		entity.Name, string(entity.Status), entity.UpdatedBy, entity.UUID, entity.TenantID,
 	)
 	e, err := scanSatellite(row)
@@ -102,7 +102,7 @@ func (r *satelliteRepository) UpdateSatellite(ctx context.Context, entity *domai
 
 func (r *satelliteRepository) DeleteSatellite(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	return r.exec(ctx,
-		`UPDATE satellites SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
+		`UPDATE satellite_images SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
 		deletedBy, uuid, tenantID,
 	)
 }
@@ -110,7 +110,7 @@ func (r *satelliteRepository) DeleteSatellite(ctx context.Context, uuid, tenantI
 func (r *satelliteRepository) CheckSatelliteExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM satellites WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM satellite_images WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		uuid, tenantID,
 	).Scan(&exists)
 	return exists, err
@@ -119,7 +119,7 @@ func (r *satelliteRepository) CheckSatelliteExists(ctx context.Context, uuid, te
 func (r *satelliteRepository) CheckSatelliteNameExists(ctx context.Context, name, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM satellites WHERE name=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM satellite_images WHERE satellite_provider=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		name, tenantID,
 	).Scan(&exists)
 	return exists, err

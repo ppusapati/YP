@@ -25,7 +25,7 @@ class YieldFactor extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'YieldFactor',
-    package: const $pb.PackageName('yieldpoint.yield.v1'),
+    package: const $pb.PackageName('agriculture.yield.v1'),
     createEmptyInstance: () => YieldFactor._(),
   )
     ..aOS(1, 'name')
@@ -85,7 +85,7 @@ class YieldPrediction extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'YieldPrediction',
-    package: const $pb.PackageName('yieldpoint.yield.v1'),
+    package: const $pb.PackageName('agriculture.yield.v1'),
     createEmptyInstance: () => YieldPrediction._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')

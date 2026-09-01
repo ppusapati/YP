@@ -24,7 +24,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
 
   Future<Map<String, dynamic>> _post(
       String service, String method, Map<String, dynamic> body) async {
-    final path = '/yieldpoint.agronomy.v1.$service/$method';
+    final path = '/agriculture.farm.v1.$service/$method';
     _log.fine('POST $path');
 
     final response = await _client.unary(

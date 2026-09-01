@@ -57,7 +57,7 @@ class Alert extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'Alert',
-    package: const $pb.PackageName('yieldpoint.alert.v1'),
+    package: const $pb.PackageName('agriculture.alert.v1'),
     createEmptyInstance: () => Alert._(),
   )
     ..aOS(1, 'id')

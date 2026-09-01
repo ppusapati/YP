@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"p9e.in/samavaya/packages/deps"
@@ -104,8 +103,8 @@ func (s *analyticsService) DetectStress(ctx context.Context, farmID, fieldID, pr
 		Description:          strPtr("Water stress detected in northern section of the field based on NDWI analysis"),
 		Recommendation:       strPtr("Consider increasing irrigation frequency in the affected area"),
 		DetectedAt:           time.Now(),
-		CreatedBy:            userID,
 	}
+	alert.CreatedBy = userID
 
 	created, err := s.repo.CreateStressAlert(ctx, alert)
 	if err != nil {
@@ -254,8 +253,8 @@ func (s *analyticsService) RunTemporalAnalysis(ctx context.Context, farmID, fiel
 		DeviationPercent: 5.88,
 		PeriodStart:      periodStart,
 		PeriodEnd:        periodEnd,
-		CreatedBy:        userID,
 	}
+	analysis.CreatedBy = userID
 
 	created, err := s.repo.CreateTemporalAnalysis(ctx, analysis)
 	if err != nil {
@@ -383,12 +382,11 @@ func (s *analyticsService) emitAnalyticsEvent(ctx context.Context, eventType dom
 		aggregateID = farmID
 	}
 
-	event := domain.NewDomainEvent(eventType, aggregateID, "satellite-analytics").
+	event := domain.NewDomainEvent(eventType, aggregateID, "satellite-analytics", data).
 		WithSource(serviceName).
 		WithCorrelationID(requestID).
 		WithMetadata("tenant_id", tenantID).
 		WithPriority(domain.PriorityMedium)
-	event.Data = data
 
 	if s.d.KafkaProducer != nil {
 		eventJSON, err := json.Marshal(event)

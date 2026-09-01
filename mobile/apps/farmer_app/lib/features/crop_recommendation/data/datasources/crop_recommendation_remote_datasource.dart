@@ -17,7 +17,7 @@ class CropRecommendationRemoteDataSourceImpl
   final ConnectClient _client;
 
   static const _basePath =
-      '/yieldpoint.recommendation.v1.RecommendationService';
+      '/agriculture.recommendation.v1.RecommendationService';
 
   @override
   Future<List<CropRecommendationModel>> getRecommendations({

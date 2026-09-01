@@ -398,3 +398,30 @@ type ReportObservationParams struct {
 	Notes         *string
 	ObservedBy    string
 }
+
+// PestStatus represents the status of a pest record.
+type PestStatus string
+
+const (
+	PestStatusActive   PestStatus = "ACTIVE"
+	PestStatusInactive PestStatus = "INACTIVE"
+	PestStatusArchived PestStatus = "ARCHIVED"
+)
+
+// Pest is the aggregate root used by the ports layer for CRUD operations.
+type Pest struct {
+	models.BaseModel
+	TenantID string     `json:"tenant_id" db:"tenant_id"`
+	Name     string     `json:"name" db:"name"`
+	Status   PestStatus `json:"status" db:"status"`
+	Version  int64      `json:"version" db:"version"`
+}
+
+// ListPestPredictionParams holds filter and pagination parameters for listing pest predictions via the ports layer.
+type ListPestPredictionParams struct {
+	TenantID string
+	Status   *PestStatus
+	Search   *string
+	PageSize int32
+	Offset   int32
+}

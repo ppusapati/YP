@@ -568,12 +568,11 @@ func (s *farmService) emitFarmEvent(ctx context.Context, eventType domain.EventT
 		data[k] = v
 	}
 
-	event := domain.NewDomainEvent(eventType, aggregateID, "farm").
+	event := domain.NewDomainEvent(eventType, aggregateID, "farm", data).
 		WithSource(serviceName).
 		WithCorrelationID(requestID).
 		WithMetadata("tenant_id", tenantID).
 		WithPriority(domain.PriorityMedium)
-	event.Data = data
 
 	if s.d.KafkaProducer != nil {
 		eventJSON, err := json.Marshal(event)

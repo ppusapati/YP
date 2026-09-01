@@ -25,17 +25,21 @@ func NewYieldClient(baseURL string, httpClient *http.Client, opts ...connect.Cli
 }
 
 func (c *yieldClient) YieldExists(ctx context.Context, uuid, tenantID string) (bool, error) {
-	resp, err := c.client.GetYield(ctx, connect.NewRequest(&yieldv1.GetYieldRequest{Id: uuid}))
+	resp, err := c.client.GetPrediction(ctx, connect.NewRequest(&yieldv1.GetPredictionRequest{Id: uuid}))
 	if err != nil {
 		return false, nil
 	}
-	return resp.Msg.GetYield() != nil, nil
+	return resp.Msg.GetPrediction() != nil, nil
 }
 
 func (c *yieldClient) GetYieldRecord(ctx context.Context, fieldUUID, tenantID string) (float64, error) {
-	resp, err := c.client.GetYieldRecord(ctx, connect.NewRequest(&yieldv1.GetYieldRecordRequest{FieldId: fieldUUID}))
+	resp, err := c.client.GetYieldHistory(ctx, connect.NewRequest(&yieldv1.GetYieldHistoryRequest{FieldId: fieldUUID}))
 	if err != nil {
 		return 0, err
 	}
-	return resp.Msg.GetActualYieldKgPerHectare(), nil
+	records := resp.Msg.GetRecords()
+	if len(records) == 0 {
+		return 0, nil
+	}
+	return records[0].GetActualYieldKgPerHectare(), nil
 }

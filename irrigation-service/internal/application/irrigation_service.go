@@ -15,7 +15,6 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/domain"
-	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/outbound"
 )
 
@@ -41,7 +40,7 @@ func NewIrrigationService(
 	fieldClient outbound.FieldClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
-) inbound.IrrigationService {
+) *irrigationService {
 	_ = fieldClient // not used in this implementation
 	return &irrigationService{
 		repo: repo,

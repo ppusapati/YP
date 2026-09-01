@@ -26,7 +26,7 @@ class DiagnosisRequest extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'DiagnosisRequest',
-    package: const $pb.PackageName('yieldpoint.diagnosis.v1'),
+    package: const $pb.PackageName('agriculture.diagnosis.v1'),
     createEmptyInstance: () => DiagnosisRequest._(),
   )
     ..a<List<int>>(1, 'imageData', $pb.PbFieldType.OY, protoName: 'imageData')
@@ -108,7 +108,7 @@ class Treatment extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'Treatment',
-    package: const $pb.PackageName('yieldpoint.diagnosis.v1'),
+    package: const $pb.PackageName('agriculture.diagnosis.v1'),
     createEmptyInstance: () => Treatment._(),
   )
     ..aOS(1, 'name')
@@ -172,7 +172,7 @@ class DiagnosisResult extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'DiagnosisResult',
-    package: const $pb.PackageName('yieldpoint.diagnosis.v1'),
+    package: const $pb.PackageName('agriculture.diagnosis.v1'),
     createEmptyInstance: () => DiagnosisResult._(),
   )
     ..aOS(1, 'plantSpecies', protoName: 'plantSpecies')

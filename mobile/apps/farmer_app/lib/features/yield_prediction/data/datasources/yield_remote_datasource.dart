@@ -21,7 +21,7 @@ class YieldRemoteDataSourceImpl implements YieldRemoteDataSource {
 
   final ConnectClient _client;
 
-  static const _basePath = '/yieldpoint.yield.v1.YieldService';
+  static const _basePath = '/agriculture.yield.v1.YieldService';
 
   @override
   Future<List<YieldPredictionModel>> getPredictions({
@@ -85,7 +85,7 @@ class YieldRemoteDataSourceImpl implements YieldRemoteDataSource {
     if (cropType != null) reqBody['crop_type'] = cropType;
 
     final response = await _client.unary(
-      '$_basePath/GetHistory',
+      '$_basePath/GetYieldHistory',
       body: utf8.encoder.convert(jsonEncode(reqBody)),
       headers: {'Content-Type': 'application/json'},
     );

@@ -16,7 +16,7 @@ class SensorRemoteDataSourceImpl implements SensorRemoteDataSource {
   @override
   Future<List<SensorReadingModel>> getSensorReadings(String fieldId) async {
     final response = await _client.unary(
-      '/yieldpoint.agronomy.v1.SensorService/ListReadings',
+      '/agriculture.sensor.v1.SensorService/ListReadings',
       body: Uint8List.fromList(utf8.encode(jsonEncode({'field_id': fieldId}))),
       headers: {'Content-Type': 'application/json'},
     );

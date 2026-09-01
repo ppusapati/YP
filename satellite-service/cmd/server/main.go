@@ -99,7 +99,7 @@ func main() {
 	path, satelliteHandler := satellitev1connect.NewSatelliteServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

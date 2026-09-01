@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 void main() {
   const baseUrl = 'http://localhost:8080';
   const serviceName =
-      'yieldpoint.satellite.vegetation.v1.VegetationIndexService';
+      'agriculture.satellite.vegetation.v1.VegetationIndexService';
 
   group('VegetationIndexServiceClient', () {
     group('computeIndices', () {

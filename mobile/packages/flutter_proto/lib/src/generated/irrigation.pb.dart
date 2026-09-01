@@ -31,7 +31,7 @@ class IrrigationZone extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'IrrigationZone',
-    package: const $pb.PackageName('yieldpoint.irrigation.v1'),
+    package: const $pb.PackageName('agriculture.irrigation.v1'),
     createEmptyInstance: () => IrrigationZone._(),
   )
     ..aOS(1, 'id')
@@ -118,7 +118,7 @@ class IrrigationSchedule extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'IrrigationSchedule',
-    package: const $pb.PackageName('yieldpoint.irrigation.v1'),
+    package: const $pb.PackageName('agriculture.irrigation.v1'),
     createEmptyInstance: () => IrrigationSchedule._(),
   )
     ..aOS(1, 'zoneId', protoName: 'zoneId')
@@ -181,7 +181,7 @@ class IrrigationAlert extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'IrrigationAlert',
-    package: const $pb.PackageName('yieldpoint.irrigation.v1'),
+    package: const $pb.PackageName('agriculture.irrigation.v1'),
     createEmptyInstance: () => IrrigationAlert._(),
   )
     ..aOS(1, 'zoneId', protoName: 'zoneId')

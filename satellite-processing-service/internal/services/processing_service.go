@@ -262,12 +262,11 @@ func (s *processingService) emitProcessingEvent(ctx context.Context, eventType d
 		data[k] = v
 	}
 
-	event := domain.NewDomainEvent(eventType, aggregateID, "processing_job").
+	event := domain.NewDomainEvent(eventType, aggregateID, "processing_job", data).
 		WithSource(serviceName).
 		WithCorrelationID(requestID).
 		WithMetadata("tenant_id", tenantID).
 		WithPriority(domain.PriorityMedium)
-	event.Data = data
 
 	if s.d.KafkaProducer != nil {
 		eventJSON, err := json.Marshal(event)

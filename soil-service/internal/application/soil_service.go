@@ -16,7 +16,6 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/soil-service/internal/domain"
-	"p9e.in/samavaya/agriculture/soil-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/soil-service/internal/ports/outbound"
 )
 
@@ -35,6 +34,7 @@ type soilService struct {
 }
 
 // NewSoilService creates a new application-layer SoilService.
+// Deprecated: use services.NewSoilService with deps.ServiceDeps instead.
 // The fieldClient parameter is accepted for backward compatibility with main.go wiring.
 func NewSoilService(
 	repo outbound.SoilRepository,
@@ -42,7 +42,7 @@ func NewSoilService(
 	fieldClient outbound.FieldClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
-) inbound.SoilService {
+) *soilService {
 	_ = fieldClient // not used in this implementation
 	return &soilService{
 		repo: repo,

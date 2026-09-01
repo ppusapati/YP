@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"p9e.in/samavaya/packages/errors"
@@ -42,7 +43,7 @@ func (r *farmRepository) WithTx(tx pgx.Tx) outbound.FarmRepository {
 func (r *farmRepository) querier() interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	Exec(ctx context.Context, sql string, args ...any) (interface{ RowsAffected() int64 }, error)
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 } {
 	if r.tx != nil {
 		return r.tx
@@ -507,20 +508,24 @@ func scanBoundary(row pgx.Row, b *domain.FarmBoundary) error {
 }
 
 func scanOwner(row pgx.Row, o *domain.FarmOwner) error {
+	var deletedBy *string
+	var deletedAt *time.Time
 	return row.Scan(
 		&o.ID, &o.UUID, &o.FarmID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
-		&o.UpdatedBy, &o.UpdatedAt, &o.DeletedBy, &o.DeletedAt,
+		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
 	)
 }
 
 func scanOwnerFromRows(rows pgx.Rows, o *domain.FarmOwner) error {
+	var deletedBy *string
+	var deletedAt *time.Time
 	return rows.Scan(
 		&o.ID, &o.UUID, &o.FarmID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
-		&o.UpdatedBy, &o.UpdatedAt, &o.DeletedBy, &o.DeletedAt,
+		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
 	)
 }
 

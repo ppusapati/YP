@@ -25,11 +25,11 @@ func NewIrrigationClient(baseURL string, httpClient *http.Client, opts ...connec
 }
 
 func (c *irrigationClient) IrrigationExists(ctx context.Context, uuid, tenantID string) (bool, error) {
-	resp, err := c.client.GetIrrigation(ctx, connect.NewRequest(&irrigationv1.GetIrrigationRequest{Id: uuid}))
+	resp, err := c.client.GetSchedule(ctx, connect.NewRequest(&irrigationv1.GetScheduleRequest{Id: uuid}))
 	if err != nil {
 		return false, nil
 	}
-	return resp.Msg.GetIrrigation() != nil, nil
+	return resp.Msg.GetSchedule() != nil, nil
 }
 
 func (c *irrigationClient) GetWaterUsage(ctx context.Context, fieldUUID, tenantID string) (float64, error) {

@@ -79,7 +79,52 @@ func (r *sensorRepository) GetSensorByUUID(ctx context.Context, uuid, tenantID s
 }
 
 func (r *sensorRepository) ListSensors(ctx context.Context, params domain.ListSensorParams) ([]domain.Sensor, int32, error) {
-	return nil, 0, nil
+	pageSize := params.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	var totalCount int32
+	err := r.queryRow(ctx,
+		`SELECT COUNT(*)::int FROM sensors
+		 WHERE tenant_id = $1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR status = $2)
+		   AND ($3::varchar IS NULL OR name ILIKE '%' || $3 || '%')`,
+		params.TenantID, params.Status, params.Search,
+	).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, errors.InternalServer("SENSOR_LIST_COUNT_FAILED", fmt.Sprintf("failed to count sensors: %v", err))
+	}
+
+	rows, err := r.pool.Query(ctx,
+		`SELECT uuid, tenant_id, name, status,
+			is_active, created_by, created_at, version
+		 FROM sensors
+		 WHERE tenant_id = $1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR status = $2)
+		   AND ($3::varchar IS NULL OR name ILIKE '%' || $3 || '%')
+		 ORDER BY created_at DESC
+		 LIMIT $4 OFFSET $5`,
+		params.TenantID, params.Status, params.Search,
+		pageSize, params.Offset,
+	)
+	if err != nil {
+		return nil, 0, errors.InternalServer("SENSOR_LIST_FAILED", fmt.Sprintf("failed to list sensors: %v", err))
+	}
+	defer rows.Close()
+
+	var sensors []domain.Sensor
+	for rows.Next() {
+		s, err := scanSensor(rows)
+		if err != nil {
+			return nil, 0, errors.InternalServer("SENSOR_SCAN_FAILED", err.Error())
+		}
+		sensors = append(sensors, *s)
+	}
+	return sensors, totalCount, nil
 }
 
 func (r *sensorRepository) UpdateSensor(ctx context.Context, entity *domain.Sensor) (*domain.Sensor, error) {

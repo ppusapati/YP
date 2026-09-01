@@ -49,7 +49,7 @@ class PestRiskZone extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'PestRiskZone',
-    package: const $pb.PackageName('yieldpoint.pest.v1'),
+    package: const $pb.PackageName('agriculture.pest.v1'),
     createEmptyInstance: () => PestRiskZone._(),
   )
     ..aOS(1, 'id')

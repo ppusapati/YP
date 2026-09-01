@@ -16,7 +16,7 @@ class TileServiceClient extends BaseService {
 
   @override
   String get serviceName =>
-      'yieldpoint.satellite.tile.v1.SatelliteTileService';
+      'agriculture.satellite.tile.v1.SatelliteTileService';
 
   /// Generates a new tileset from a processing job.
   Future<Tileset> generateTileset(Tileset tileset) async {

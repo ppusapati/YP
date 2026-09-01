@@ -22,7 +22,7 @@ class PestRemoteDataSourceImpl implements PestRemoteDataSource {
   @override
   Future<List<PestRiskZoneModel>> fetchPestRiskZones({String? fieldId}) async {
     try {
-      final path = '/yieldpoint.pest.v1.PestService/GetPestRiskZones';
+      final path = '/agriculture.pest.v1.PestPredictionService/GetPestRiskZones';
       final body = fieldId != null
           ? utf8.encode(jsonEncode({'field_id': fieldId}))
           : null;
@@ -47,7 +47,7 @@ class PestRemoteDataSourceImpl implements PestRemoteDataSource {
   @override
   Future<List<PestAlertModel>> fetchPestAlerts({String? fieldId}) async {
     try {
-      final path = '/yieldpoint.pest.v1.PestService/GetPestAlerts';
+      final path = '/agriculture.pest.v1.PestPredictionService/GetPestAlerts';
       final body = fieldId != null
           ? utf8.encode(jsonEncode({'field_id': fieldId}))
           : null;
@@ -72,7 +72,7 @@ class PestRemoteDataSourceImpl implements PestRemoteDataSource {
   @override
   Future<PestAlertModel> fetchPestAlertById(String alertId) async {
     try {
-      final path = '/yieldpoint.pest.v1.PestService/GetPestAlert';
+      final path = '/agriculture.pest.v1.PestPredictionService/GetPestAlert';
       final body = utf8.encode(jsonEncode({'alert_id': alertId}));
 
       final response = await _client.unary(path, body: body as dynamic);
@@ -88,7 +88,7 @@ class PestRemoteDataSourceImpl implements PestRemoteDataSource {
   @override
   Future<void> markAlertAsRead(String alertId) async {
     try {
-      final path = '/yieldpoint.pest.v1.PestService/MarkAlertAsRead';
+      final path = '/agriculture.pest.v1.PestPredictionService/MarkAlertAsRead';
       final body = utf8.encode(jsonEncode({'alert_id': alertId}));
 
       await _client.unary(path, body: body as dynamic);

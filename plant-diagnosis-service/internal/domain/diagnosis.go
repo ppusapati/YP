@@ -236,3 +236,24 @@ type ImagePreprocessResult struct {
 	ProcessedURLs []string               `json:"processed_urls"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
+
+// DiagnosisStatusActive represents the active status for a diagnosis entity in the ports CRUD layer.
+const DiagnosisStatusActive DiagnosisStatus = "ACTIVE"
+
+// Diagnosis is the aggregate root used by the ports layer for CRUD operations.
+type Diagnosis struct {
+	models.BaseModel
+	TenantID string          `json:"tenant_id" db:"tenant_id"`
+	Name     string          `json:"name" db:"name"`
+	Status   DiagnosisStatus `json:"status" db:"status"`
+	Version  int64           `json:"version" db:"version"`
+}
+
+// ListPlantDiagnosisParams holds filter and pagination parameters for listing diagnoses via the ports layer.
+type ListPlantDiagnosisParams struct {
+	TenantID string
+	Status   *DiagnosisStatus
+	Search   *string
+	PageSize int32
+	Offset   int32
+}

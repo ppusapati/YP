@@ -54,9 +54,9 @@ func (r *soilRepository) exec(ctx context.Context, sql string, args ...any) erro
 func (r *soilRepository) CreateSoil(ctx context.Context, entity *domain.Soil) (*domain.Soil, error) {
 	entity.UUID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO soils (uuid, tenant_id, name, status, is_active, created_by)
-		VALUES ($1,$2,$3,$4,true,$5)
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		`INSERT INTO soil_samples (uuid, tenant_id, field_id, farm_id, notes, texture, is_active, created_by)
+		VALUES ($1,$2,'','',$3,$4,true,$5)
+		RETURNING uuid, tenant_id, notes, texture, is_active, created_by, created_at, version`,
 		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	return scanSoil(row)
@@ -64,8 +64,8 @@ func (r *soilRepository) CreateSoil(ctx context.Context, entity *domain.Soil) (*
 
 func (r *soilRepository) GetSoilByUUID(ctx context.Context, uuid, tenantID string) (*domain.Soil, error) {
 	row := r.queryRow(ctx,
-		`SELECT uuid, tenant_id, name, status, is_active, created_by, created_at, version
-		FROM soils WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		`SELECT uuid, tenant_id, notes, texture, is_active, created_by, created_at, version
+		FROM soil_samples WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		uuid, tenantID,
 	)
 	e, err := scanSoil(row)
@@ -84,10 +84,10 @@ func (r *soilRepository) ListSoils(ctx context.Context, params domain.ListSoilPa
 
 func (r *soilRepository) UpdateSoil(ctx context.Context, entity *domain.Soil) (*domain.Soil, error) {
 	row := r.queryRow(ctx,
-		`UPDATE soils SET name=COALESCE(NULLIF($1,''),name), status=COALESCE(NULLIF($2,''),status),
+		`UPDATE soil_samples SET notes=COALESCE(NULLIF($1,''),notes), texture=COALESCE(NULLIF($2,''),texture),
 		updated_by=$3, updated_at=NOW(), version=version+1
 		WHERE uuid=$4 AND tenant_id=$5 AND deleted_at IS NULL
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		RETURNING uuid, tenant_id, notes, texture, is_active, created_by, created_at, version`,
 		entity.Name, string(entity.Status), entity.UpdatedBy, entity.UUID, entity.TenantID,
 	)
 	e, err := scanSoil(row)
@@ -102,7 +102,7 @@ func (r *soilRepository) UpdateSoil(ctx context.Context, entity *domain.Soil) (*
 
 func (r *soilRepository) DeleteSoil(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	return r.exec(ctx,
-		`UPDATE soils SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
+		`UPDATE soil_samples SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
 		deletedBy, uuid, tenantID,
 	)
 }
@@ -110,7 +110,7 @@ func (r *soilRepository) DeleteSoil(ctx context.Context, uuid, tenantID, deleted
 func (r *soilRepository) CheckSoilExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM soils WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM soil_samples WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		uuid, tenantID,
 	).Scan(&exists)
 	return exists, err
@@ -119,7 +119,7 @@ func (r *soilRepository) CheckSoilExists(ctx context.Context, uuid, tenantID str
 func (r *soilRepository) CheckSoilNameExists(ctx context.Context, name, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM soils WHERE name=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM soil_samples WHERE notes=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		name, tenantID,
 	).Scan(&exists)
 	return exists, err

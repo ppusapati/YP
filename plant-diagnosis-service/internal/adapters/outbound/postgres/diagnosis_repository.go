@@ -54,9 +54,9 @@ func (r *diagnosisRepository) exec(ctx context.Context, sql string, args ...any)
 func (r *diagnosisRepository) CreateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error) {
 	entity.UUID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO plant_diagnoses (uuid, tenant_id, name, status, is_active, created_by)
-		VALUES ($1,$2,$3,$4,true,$5)
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		`INSERT INTO diagnosis_requests (uuid, tenant_id, farm_id, notes, status, is_active, created_by)
+		VALUES ($1,$2,'',$3,$4,true,$5)
+		RETURNING uuid, tenant_id, notes, status, is_active, created_by, created_at, version`,
 		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	return scanDiagnosis(row)
@@ -64,8 +64,8 @@ func (r *diagnosisRepository) CreateDiagnosis(ctx context.Context, entity *domai
 
 func (r *diagnosisRepository) GetDiagnosisByUUID(ctx context.Context, uuid, tenantID string) (*domain.Diagnosis, error) {
 	row := r.queryRow(ctx,
-		`SELECT uuid, tenant_id, name, status, is_active, created_by, created_at, version
-		FROM plant_diagnoses WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		`SELECT uuid, tenant_id, notes, status, is_active, created_by, created_at, version
+		FROM diagnosis_requests WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		uuid, tenantID,
 	)
 	e, err := scanDiagnosis(row)
@@ -84,10 +84,10 @@ func (r *diagnosisRepository) ListPlantDiagnoses(ctx context.Context, params dom
 
 func (r *diagnosisRepository) UpdateDiagnosis(ctx context.Context, entity *domain.Diagnosis) (*domain.Diagnosis, error) {
 	row := r.queryRow(ctx,
-		`UPDATE plant_diagnoses SET name=COALESCE(NULLIF($1,''),name), status=COALESCE(NULLIF($2,''),status),
+		`UPDATE diagnosis_requests SET notes=COALESCE(NULLIF($1,''),notes), status=COALESCE(NULLIF($2,''),status),
 		updated_by=$3, updated_at=NOW(), version=version+1
 		WHERE uuid=$4 AND tenant_id=$5 AND deleted_at IS NULL
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		RETURNING uuid, tenant_id, notes, status, is_active, created_by, created_at, version`,
 		entity.Name, string(entity.Status), entity.UpdatedBy, entity.UUID, entity.TenantID,
 	)
 	e, err := scanDiagnosis(row)
@@ -102,7 +102,7 @@ func (r *diagnosisRepository) UpdateDiagnosis(ctx context.Context, entity *domai
 
 func (r *diagnosisRepository) DeleteDiagnosis(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	return r.exec(ctx,
-		`UPDATE plant_diagnoses SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
+		`UPDATE diagnosis_requests SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
 		deletedBy, uuid, tenantID,
 	)
 }
@@ -110,7 +110,7 @@ func (r *diagnosisRepository) DeleteDiagnosis(ctx context.Context, uuid, tenantI
 func (r *diagnosisRepository) CheckDiagnosisExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM plant_diagnoses WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM diagnosis_requests WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		uuid, tenantID,
 	).Scan(&exists)
 	return exists, err
@@ -119,7 +119,7 @@ func (r *diagnosisRepository) CheckDiagnosisExists(ctx context.Context, uuid, te
 func (r *diagnosisRepository) CheckDiagnosisNameExists(ctx context.Context, name, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM plant_diagnoses WHERE name=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM diagnosis_requests WHERE notes=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		name, tenantID,
 	).Scan(&exists)
 	return exists, err

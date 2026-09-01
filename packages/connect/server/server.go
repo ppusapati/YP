@@ -86,7 +86,7 @@ type MiddlewareConfig struct {
 	DBPoolResolver interceptors.DBPoolResolver
 
 	// Logger for logging interceptor
-	Logger p9log.Helper
+	Logger *p9log.Helper
 
 	// SlowRequestThreshold for logging slow requests
 	SlowRequestThreshold time.Duration

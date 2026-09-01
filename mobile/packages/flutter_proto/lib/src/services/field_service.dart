@@ -16,7 +16,7 @@ class FieldServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.field.v1.FieldService';
+  String get serviceName => 'agriculture.field.v1.FieldService';
 
   /// Retrieves a field by ID.
   Future<Field> getField(String id) async {

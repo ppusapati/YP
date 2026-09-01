@@ -21,14 +21,14 @@ class TraceabilityRemoteDataSourceImpl
   static final _log = Logger('TraceabilityRemoteDataSource');
 
   static const _basePath =
-      '/yieldpoint.traceability.v1.TraceabilityService';
+      '/agriculture.traceability.v1.TraceabilityService';
 
   @override
   Future<ProduceRecordModel> scanQrCode(String qrData) async {
     try {
       final body = utf8.encode(jsonEncode({'qr_data': qrData}));
       final response = await _client.unary(
-        '$_basePath/ScanQRCode',
+        '$_basePath/VerifyQRCode',
         body: body as dynamic,
       );
       final data =
@@ -45,7 +45,7 @@ class TraceabilityRemoteDataSourceImpl
     try {
       final body = utf8.encode(jsonEncode({'record_id': recordId}));
       final response = await _client.unary(
-        '$_basePath/GetProduceRecord',
+        '$_basePath/GetRecord',
         body: body as dynamic,
       );
       final data =
@@ -62,7 +62,7 @@ class TraceabilityRemoteDataSourceImpl
     try {
       final body = utf8.encode(jsonEncode({'farm_id': farmId}));
       final response = await _client.unary(
-        '$_basePath/GetFarmHistory',
+        '$_basePath/ListRecords',
         body: body as dynamic,
       );
       final data =

@@ -11,20 +11,20 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 
 	pb "p9e.in/samavaya/agriculture/farm-service/api/v1"
+	"p9e.in/samavaya/agriculture/farm-service/internal/domain"
 	"p9e.in/samavaya/agriculture/farm-service/internal/mappers"
-	farmmodels "p9e.in/samavaya/agriculture/farm-service/internal/models"
-	"p9e.in/samavaya/agriculture/farm-service/internal/services"
+	"p9e.in/samavaya/agriculture/farm-service/internal/ports/inbound"
 )
 
 // FarmHandler implements the ConnectRPC FarmService handler.
 type FarmHandler struct {
 	d       deps.ServiceDeps
-	service services.FarmService
+	service inbound.FarmService
 	log     *p9log.Helper
 }
 
 // NewFarmHandler creates a new FarmHandler.
-func NewFarmHandler(d deps.ServiceDeps, service services.FarmService) *FarmHandler {
+func NewFarmHandler(d deps.ServiceDeps, service inbound.FarmService) *FarmHandler {
 	return &FarmHandler{
 		d:       d,
 		service: service,
@@ -46,9 +46,9 @@ func (h *FarmHandler) CreateFarm(ctx context.Context, req *pb.CreateFarmRequest)
 
 	farm := mappers.CreateFarmRequestToDomain(req, tenantID, userID)
 
-	var ownerInfo *farmmodels.FarmOwner
+	var ownerInfo *domain.FarmOwner
 	if req.GetOwner() != nil {
-		ownerInfo = &farmmodels.FarmOwner{
+		ownerInfo = &domain.FarmOwner{
 			UserID:              req.GetOwner().GetUserId(),
 			OwnerName:           req.GetOwner().GetOwnerName(),
 			IsPrimary:           true,
@@ -101,7 +101,7 @@ func (h *FarmHandler) ListFarms(ctx context.Context, req *pb.ListFarmsRequest) (
 
 	h.log.Infow("msg", "ListFarms request", "request_id", requestID)
 
-	params := farmmodels.ListFarmsParams{
+	params := domain.ListFarmsParams{
 		PageSize: req.GetPageSize(),
 	}
 
@@ -170,7 +170,7 @@ func (h *FarmHandler) UpdateFarm(ctx context.Context, req *pb.UpdateFarmRequest)
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm ID is required")
 	}
 
-	farm := &farmmodels.Farm{
+	farm := &domain.Farm{
 		TenantID: tenantID,
 	}
 	farm.UUID = req.GetId()
@@ -327,7 +327,7 @@ func (h *FarmHandler) TransferOwnership(ctx context.Context, req *pb.TransferOwn
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "to_owner_name is required")
 	}
 
-	params := farmmodels.TransferOwnershipParams{
+	params := domain.TransferOwnershipParams{
 		FarmUUID:            req.GetFarmId(),
 		FromUserID:          req.GetFromUserId(),
 		ToUserID:            req.GetToUserId(),

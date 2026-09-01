@@ -268,3 +268,30 @@ func (b BandValues) ComputeEVI() float64 {
 	}
 	return evi
 }
+
+// SatelliteStatus represents the status of a satellite record.
+type SatelliteStatus string
+
+const (
+	SatelliteStatusActive   SatelliteStatus = "ACTIVE"
+	SatelliteStatusInactive SatelliteStatus = "INACTIVE"
+	SatelliteStatusArchived SatelliteStatus = "ARCHIVED"
+)
+
+// Satellite is the aggregate root used by the ports layer for CRUD operations.
+type Satellite struct {
+	models.BaseModel
+	TenantID string          `json:"tenant_id" db:"tenant_id"`
+	Name     string          `json:"name" db:"name"`
+	Status   SatelliteStatus `json:"status" db:"status"`
+	Version  int64           `json:"version" db:"version"`
+}
+
+// ListSatelliteParams holds filter and pagination parameters for listing satellites via the ports layer.
+type ListSatelliteParams struct {
+	TenantID string
+	Status   *SatelliteStatus
+	Search   *string
+	PageSize int32
+	Offset   int32
+}

@@ -37,7 +37,7 @@ class IngestionTask extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'IngestionTask',
-    package: const $pb.PackageName('yieldpoint.satellite.ingestion.v1'),
+    package: const $pb.PackageName('agriculture.satellite.ingestion.v1'),
     createEmptyInstance: () => IngestionTask._(),
   )
     ..aOS(1, 'id')
@@ -132,7 +132,7 @@ class IngestionStats extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'IngestionStats',
-    package: const $pb.PackageName('yieldpoint.satellite.ingestion.v1'),
+    package: const $pb.PackageName('agriculture.satellite.ingestion.v1'),
     createEmptyInstance: () => IngestionStats._(),
   )
     ..a<int>(1, 'totalTasks', $pb.PbFieldType.O3, protoName: 'totalTasks')

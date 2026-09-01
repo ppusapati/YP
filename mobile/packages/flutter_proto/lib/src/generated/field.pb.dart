@@ -24,7 +24,7 @@ class FieldBoundary extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'FieldBoundary',
-    package: const $pb.PackageName('yieldpoint.field.v1'),
+    package: const $pb.PackageName('agriculture.field.v1'),
     createEmptyInstance: () => FieldBoundary._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')
@@ -75,7 +75,7 @@ class FieldSegment extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'FieldSegment',
-    package: const $pb.PackageName('yieldpoint.field.v1'),
+    package: const $pb.PackageName('agriculture.field.v1'),
     createEmptyInstance: () => FieldSegment._(),
   )
     ..aOS(1, 'id')
@@ -143,7 +143,7 @@ class CropAssignment extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropAssignment',
-    package: const $pb.PackageName('yieldpoint.field.v1'),
+    package: const $pb.PackageName('agriculture.field.v1'),
     createEmptyInstance: () => CropAssignment._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')
@@ -208,7 +208,7 @@ class CropHistoryEntry extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropHistoryEntry',
-    package: const $pb.PackageName('yieldpoint.field.v1'),
+    package: const $pb.PackageName('agriculture.field.v1'),
     createEmptyInstance: () => CropHistoryEntry._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')

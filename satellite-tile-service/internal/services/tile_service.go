@@ -290,12 +290,11 @@ func (s *tileService) emitTileEvent(ctx context.Context, eventType domain.EventT
 		data["max_zoom"] = tileset.MaxZoom
 	}
 
-	event := domain.NewDomainEvent(eventType, aggregateID, "tileset").
+	event := domain.NewDomainEvent(eventType, aggregateID, "tileset", data).
 		WithSource(serviceName).
 		WithCorrelationID(requestID).
 		WithMetadata("tenant_id", tenantID).
 		WithPriority(domain.PriorityMedium)
-	event.Data = data
 
 	if s.d.KafkaProducer != nil {
 		eventJSON, err := json.Marshal(event)

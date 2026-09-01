@@ -24,7 +24,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
   final ConnectClient _client;
   static final _log = Logger('ObservationRemoteDataSource');
 
-  static const _basePath = '/yieldpoint.observation.v1.ObservationService';
+  static const _basePath = '/agriculture.observation.v1.ObservationService';
 
   @override
   Future<List<ObservationModel>> fetchObservations({String? fieldId}) async {

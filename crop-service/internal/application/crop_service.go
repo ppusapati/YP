@@ -17,7 +17,6 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/crop-service/internal/domain"
-	"p9e.in/samavaya/agriculture/crop-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/crop-service/internal/ports/outbound"
 )
 
@@ -36,12 +35,13 @@ type cropService struct {
 }
 
 // NewCropService creates a new application-layer CropService.
+// Deprecated: use services.NewCropService with deps.ServiceDeps instead.
 func NewCropService(
 	repo outbound.CropRepository,
 	pub outbound.EventPublisher,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
-) inbound.CropService {
+) *cropService {
 	return &cropService{
 		repo: repo,
 		pub:  pub,

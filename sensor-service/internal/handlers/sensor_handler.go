@@ -255,7 +255,7 @@ func (h *SensorHandler) BatchIngestReadings(ctx context.Context, req *pb.BatchIn
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "at least one reading is required")
 	}
 
-	readings := make([]services.ReadingInput, 0, len(req.GetReadings()))
+	readings := make([]models.ReadingInput, 0, len(req.GetReadings()))
 	for _, r := range req.GetReadings() {
 		var ts time.Time
 		if r.GetTimestamp() != nil {
@@ -281,7 +281,7 @@ func (h *SensorHandler) BatchIngestReadings(ctx context.Context, req *pb.BatchIn
 			metadata = mappers.MetadataToJSON(r.GetMetadata())
 		}
 
-		readings = append(readings, services.ReadingInput{
+		readings = append(readings, models.ReadingInput{
 			SensorID:          r.GetSensorId(),
 			Value:             r.GetValue(),
 			Unit:              r.GetUnit(),

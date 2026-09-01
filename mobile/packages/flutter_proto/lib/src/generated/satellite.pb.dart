@@ -33,7 +33,7 @@ class SatelliteTile extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'SatelliteTile',
-    package: const $pb.PackageName('yieldpoint.satellite.v1'),
+    package: const $pb.PackageName('agriculture.satellite.v1'),
     createEmptyInstance: () => SatelliteTile._(),
   )
     ..aOS(1, 'id')
@@ -125,7 +125,7 @@ class NDVIData extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'NDVIData',
-    package: const $pb.PackageName('yieldpoint.satellite.v1'),
+    package: const $pb.PackageName('agriculture.satellite.v1'),
     createEmptyInstance: () => NDVIData._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')
@@ -192,7 +192,7 @@ class CropHealthDataPoint extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropHealthDataPoint',
-    package: const $pb.PackageName('yieldpoint.satellite.v1'),
+    package: const $pb.PackageName('agriculture.satellite.v1'),
     createEmptyInstance: () => CropHealthDataPoint._(),
   )
     ..aInt64(1, 'timestamp')
@@ -251,7 +251,7 @@ class CropHealthTimeSeries extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropHealthTimeSeries',
-    package: const $pb.PackageName('yieldpoint.satellite.v1'),
+    package: const $pb.PackageName('agriculture.satellite.v1'),
     createEmptyInstance: () => CropHealthTimeSeries._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')

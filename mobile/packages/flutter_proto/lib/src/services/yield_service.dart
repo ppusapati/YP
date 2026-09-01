@@ -17,7 +17,7 @@ class YieldServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.yield.v1.YieldService';
+  String get serviceName => 'agriculture.yield.v1.YieldService';
 
   /// Retrieves the latest yield prediction for a field.
   Future<YieldPrediction> getYieldPrediction(String fieldId) async {

@@ -54,9 +54,9 @@ func (r *traceabilityRepository) exec(ctx context.Context, sql string, args ...a
 func (r *traceabilityRepository) CreateTraceability(ctx context.Context, entity *domain.Traceability) (*domain.Traceability, error) {
 	entity.UUID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO traceabilitys (uuid, tenant_id, name, status, is_active, created_by)
-		VALUES ($1,$2,$3,$4,true,$5)
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		`INSERT INTO traceability_records (id, tenant_id, farm_id, product_type, compliance_status, created_by)
+		VALUES ($1,$2,'',$3,$4,$5)
+		RETURNING id, tenant_id, product_type, compliance_status, TRUE AS is_active, created_by, created_at, version`,
 		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	return scanTraceability(row)
@@ -64,8 +64,8 @@ func (r *traceabilityRepository) CreateTraceability(ctx context.Context, entity 
 
 func (r *traceabilityRepository) GetTraceabilityByUUID(ctx context.Context, uuid, tenantID string) (*domain.Traceability, error) {
 	row := r.queryRow(ctx,
-		`SELECT uuid, tenant_id, name, status, is_active, created_by, created_at, version
-		FROM traceabilitys WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		`SELECT id, tenant_id, product_type, compliance_status, TRUE AS is_active, created_by, created_at, version
+		FROM traceability_records WHERE id=$1 AND tenant_id=$2`,
 		uuid, tenantID,
 	)
 	e, err := scanTraceability(row)
@@ -84,10 +84,10 @@ func (r *traceabilityRepository) ListTraceabilitys(ctx context.Context, params d
 
 func (r *traceabilityRepository) UpdateTraceability(ctx context.Context, entity *domain.Traceability) (*domain.Traceability, error) {
 	row := r.queryRow(ctx,
-		`UPDATE traceabilitys SET name=COALESCE(NULLIF($1,''),name), status=COALESCE(NULLIF($2,''),status),
+		`UPDATE traceability_records SET product_type=COALESCE(NULLIF($1,''),product_type), compliance_status=COALESCE(NULLIF($2,''),compliance_status),
 		updated_by=$3, updated_at=NOW(), version=version+1
-		WHERE uuid=$4 AND tenant_id=$5 AND deleted_at IS NULL
-		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
+		WHERE id=$4 AND tenant_id=$5
+		RETURNING id, tenant_id, product_type, compliance_status, TRUE AS is_active, created_by, created_at, version`,
 		entity.Name, string(entity.Status), entity.UpdatedBy, entity.UUID, entity.TenantID,
 	)
 	e, err := scanTraceability(row)
@@ -102,15 +102,15 @@ func (r *traceabilityRepository) UpdateTraceability(ctx context.Context, entity 
 
 func (r *traceabilityRepository) DeleteTraceability(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	return r.exec(ctx,
-		`UPDATE traceabilitys SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
-		deletedBy, uuid, tenantID,
+		`DELETE FROM traceability_records WHERE id=$1 AND tenant_id=$2`,
+		uuid, tenantID,
 	)
 }
 
 func (r *traceabilityRepository) CheckTraceabilityExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM traceabilitys WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM traceability_records WHERE id=$1 AND tenant_id=$2)`,
 		uuid, tenantID,
 	).Scan(&exists)
 	return exists, err
@@ -119,7 +119,7 @@ func (r *traceabilityRepository) CheckTraceabilityExists(ctx context.Context, uu
 func (r *traceabilityRepository) CheckTraceabilityNameExists(ctx context.Context, name, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM traceabilitys WHERE name=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM traceability_records WHERE product_type=$1 AND tenant_id=$2)`,
 		name, tenantID,
 	).Scan(&exists)
 	return exists, err

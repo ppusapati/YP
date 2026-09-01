@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   const baseUrl = 'http://localhost:8080';
   const serviceName =
-      'yieldpoint.satellite.analytics.v1.SatelliteAnalyticsService';
+      'agriculture.satellite.analytics.v1.SatelliteAnalyticsService';
 
   group('AnalyticsServiceClient', () {
     group('detectStress', () {

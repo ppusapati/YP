@@ -39,7 +39,7 @@ class Tileset extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'Tileset',
-    package: const $pb.PackageName('yieldpoint.satellite.tile.v1'),
+    package: const $pb.PackageName('agriculture.satellite.tile.v1'),
     createEmptyInstance: () => Tileset._(),
   )
     ..aOS(1, 'id')
@@ -137,7 +137,7 @@ class TileRequest extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'TileRequest',
-    package: const $pb.PackageName('yieldpoint.satellite.tile.v1'),
+    package: const $pb.PackageName('agriculture.satellite.tile.v1'),
     createEmptyInstance: () => TileRequest._(),
   )
     ..aOS(1, 'tilesetId', protoName: 'tilesetId')
@@ -203,7 +203,7 @@ class TileData extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'TileData',
-    package: const $pb.PackageName('yieldpoint.satellite.tile.v1'),
+    package: const $pb.PackageName('agriculture.satellite.tile.v1'),
     createEmptyInstance: () => TileData._(),
   )
     ..aOS(1, 'tilesetId', protoName: 'tilesetId')

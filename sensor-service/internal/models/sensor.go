@@ -233,6 +233,18 @@ func EvaluateCondition(condition AlertCondition, actual, threshold float64) bool
 	}
 }
 
+// ReadingInput represents an individual reading in a batch ingest request.
+type ReadingInput struct {
+	SensorID          string
+	Value             float64
+	Unit              string
+	Timestamp         time.Time
+	Quality           ReadingQuality
+	BatteryLevelPct   *float64
+	SignalStrengthDbm *float64
+	Metadata          json.RawMessage
+}
+
 // SensorListFilter encapsulates all filter parameters for listing sensors.
 type SensorListFilter struct {
 	TenantID   string

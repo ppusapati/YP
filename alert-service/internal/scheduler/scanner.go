@@ -7,10 +7,9 @@ import (
 	"sync"
 	"time"
 
-	alertmodels "p9e.in/samavaya/agriculture/alert-service/internal/models"
+	v1 "p9e.in/samavaya/agriculture/alert-service/api/v1"
 	"p9e.in/samavaya/agriculture/alert-service/internal/services"
 	"p9e.in/samavaya/packages/p9log"
-	"p9e.in/samavaya/packages/ulid"
 )
 
 // FieldProvider abstracts the source of active fields to scan.
@@ -28,7 +27,7 @@ type FieldScanner struct {
 	logger         *p9log.Helper
 
 	// cooldownTracker prevents duplicate alerts within the cooldown window.
-	// key: fieldID + ":" + alertType, value: last alert time
+	// key: fieldID + ":" + metric, value: last alert time
 	mu             sync.Mutex
 	cooldownTracker map[string]time.Time
 }
@@ -38,7 +37,7 @@ func NewFieldScanner(svc services.AlertService, fp FieldProvider, logger *p9log.
 	return &FieldScanner{
 		svc:             svc,
 		fieldProvider:   fp,
-		logger:          p9log.NewHelper(p9log.With(logger.GetLogger(), "component", "FieldScanner")),
+		logger:          logger,
 		cooldownTracker: make(map[string]time.Time),
 	}
 }
@@ -85,9 +84,9 @@ func (s *FieldScanner) scan(ctx context.Context) {
 	s.purgeCooldowns()
 }
 
-// evaluateField evaluates a single field and creates alerts for any risk conditions.
+// evaluateField evaluates a single field and logs risk threshold exceedances.
 func (s *FieldScanner) evaluateField(ctx context.Context, fieldID string) {
-	riskScore, err := s.svc.EvaluateField(ctx, fieldID)
+	riskScore, err := s.svc.GetFieldRisk(ctx, fieldID)
 	if err != nil {
 		s.logger.Errorf("Failed to evaluate field %s: %v", fieldID, err)
 		return
@@ -100,64 +99,50 @@ func (s *FieldScanner) evaluateField(ctx context.Context, fieldID string) {
 		return
 	}
 
-	// Build a rule lookup by alert type.
-	ruleByType := make(map[alertmodels.AlertType]*alertmodels.AlertRule, len(rules))
+	// Build a rule lookup by metric name.
+	ruleByMetric := make(map[string]*v1.AlertRule, len(rules))
 	for _, r := range rules {
-		if r.Enabled {
-			ruleByType[r.AlertType] = r
+		if r.GetEnabled() {
+			ruleByMetric[r.GetMetric()] = r
 		}
 	}
 
-	for _, alert := range riskScore.Alerts {
-		s.processAlert(ctx, &alert, ruleByType, riskScore)
+	// Check each risk factor against its corresponding rule threshold.
+	for factor, score := range riskScore.GetRiskFactors() {
+		rule, hasRule := ruleByMetric[factor]
+		if !hasRule {
+			continue
+		}
+		if score >= rule.GetThreshold() {
+			s.processRiskExceedance(ctx, fieldID, factor, score, rule, riskScore)
+		}
 	}
 }
 
-// processAlert creates an alert if the matching rule allows it (enabled + cooldown respected).
-func (s *FieldScanner) processAlert(
+// processRiskExceedance handles a risk factor that exceeded its rule threshold.
+func (s *FieldScanner) processRiskExceedance(
 	ctx context.Context,
-	alert *alertmodels.Alert,
-	ruleByType map[alertmodels.AlertType]*alertmodels.AlertRule,
-	riskScore *alertmodels.FieldRiskScore,
+	fieldID string,
+	metric string,
+	score float64,
+	rule *v1.AlertRule,
+	riskScore *v1.FieldRiskScore,
 ) {
-	rule, hasRule := ruleByType[alert.AlertType]
-
-	// If there is a rule, enforce it; if there is no rule, default behavior is to create the alert.
-	if hasRule && !rule.Enabled {
-		return
-	}
+	_ = ctx // reserved for future alert creation via service
 
 	// Check cooldown.
 	cooldownMinutes := int32(60) // default
-	if hasRule && rule.CooldownMinutes > 0 {
-		cooldownMinutes = rule.CooldownMinutes
-	}
-
-	cooldownKey := alert.FieldID + ":" + string(alert.AlertType)
+	cooldownKey := fieldID + ":" + metric
 	if s.isCoolingDown(cooldownKey, time.Duration(cooldownMinutes)*time.Minute) {
-		s.logger.Infof("Skipping alert (cooldown active): field=%s type=%s", alert.FieldID, alert.AlertType)
-		return
-	}
-
-	// Populate alert fields from risk score context.
-	alert.ID = ulid.NewString()
-	alert.FieldID = riskScore.FieldID
-	alert.FarmID = riskScore.FarmID
-	alert.Status = alertmodels.AlertStatusActive
-	alert.CreatedAt = time.Now()
-
-	created, err := s.svc.CreateAlert(ctx, alert)
-	if err != nil {
-		s.logger.Errorf("Failed to create alert for field %s type %s: %v",
-			alert.FieldID, alert.AlertType, err)
+		s.logger.Infof("Skipping alert (cooldown active): field=%s metric=%s", fieldID, metric)
 		return
 	}
 
 	// Record cooldown.
 	s.recordCooldown(cooldownKey)
 
-	s.logger.Infof("Alert created by scanner: id=%s field=%s type=%s severity=%s",
-		created.ID, created.FieldID, created.AlertType, created.Severity)
+	s.logger.Infof("Risk threshold exceeded: field=%s metric=%s score=%.2f threshold=%.2f severity=%s overall=%.2f",
+		fieldID, metric, score, rule.GetThreshold(), rule.GetSeverity().String(), riskScore.GetOverallScore())
 }
 
 // isCoolingDown checks whether an alert for the given key is within its cooldown window.

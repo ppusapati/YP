@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 void main() {
   const baseUrl = 'http://localhost:8080';
-  const serviceName = 'yieldpoint.crop.v1.CropService';
+  const serviceName = 'agriculture.crop.v1.CropService';
 
   group('CropServiceClient', () {
     group('getCrop', () {

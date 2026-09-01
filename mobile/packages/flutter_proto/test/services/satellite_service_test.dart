@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   const baseUrl = 'http://localhost:8080';
-  const serviceName = 'yieldpoint.satellite.v1.SatelliteService';
+  const serviceName = 'agriculture.satellite.v1.SatelliteService';
 
   group('SatelliteServiceClient', () {
     group('getTilesForField', () {

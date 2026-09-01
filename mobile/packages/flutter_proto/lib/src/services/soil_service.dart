@@ -15,7 +15,7 @@ class SoilServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.soil.v1.SoilService';
+  String get serviceName => 'agriculture.soil.v1.SoilService';
 
   /// Retrieves a soil sample by ID.
   Future<SoilAnalysis> getSoilSample(String id) async {

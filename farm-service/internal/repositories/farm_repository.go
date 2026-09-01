@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9log"
@@ -68,7 +69,7 @@ func (r *farmRepository) WithTx(tx pgx.Tx) FarmRepository {
 func (r *farmRepository) querier() interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	Exec(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 } {
 	if r.tx != nil {
 		return r.tx

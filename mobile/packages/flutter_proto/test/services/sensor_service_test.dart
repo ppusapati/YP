@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   const baseUrl = 'http://localhost:8080';
-  const serviceName = 'yieldpoint.sensor.v1.SensorService';
+  const serviceName = 'agriculture.sensor.v1.SensorService';
 
   group('SensorServiceClient', () {
     group('getReading', () {

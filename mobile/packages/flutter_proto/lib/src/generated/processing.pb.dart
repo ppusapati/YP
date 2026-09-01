@@ -43,7 +43,7 @@ class ProcessingJob extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'ProcessingJob',
-    package: const $pb.PackageName('yieldpoint.satellite.processing.v1'),
+    package: const $pb.PackageName('agriculture.satellite.processing.v1'),
     createEmptyInstance: () => ProcessingJob._(),
   )
     ..aOS(1, 'id')
@@ -147,7 +147,7 @@ class ProcessingStats extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'ProcessingStats',
-    package: const $pb.PackageName('yieldpoint.satellite.processing.v1'),
+    package: const $pb.PackageName('agriculture.satellite.processing.v1'),
     createEmptyInstance: () => ProcessingStats._(),
   )
     ..a<int>(1, 'totalJobs', $pb.PbFieldType.O3, protoName: 'totalJobs')

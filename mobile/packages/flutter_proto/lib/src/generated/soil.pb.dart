@@ -32,7 +32,7 @@ class SoilAnalysis extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'SoilAnalysis',
-    package: const $pb.PackageName('yieldpoint.soil.v1'),
+    package: const $pb.PackageName('agriculture.soil.v1'),
     createEmptyInstance: () => SoilAnalysis._(),
   )
     ..aOS(1, 'fieldId', protoName: 'fieldId')

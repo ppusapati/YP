@@ -16,7 +16,7 @@ class IngestionServiceClient extends BaseService {
 
   @override
   String get serviceName =>
-      'yieldpoint.satellite.ingestion.v1.SatelliteIngestionService';
+      'agriculture.satellite.ingestion.v1.SatelliteIngestionService';
 
   /// Requests a new satellite imagery ingestion.
   Future<IngestionTask> requestIngestion(IngestionTask task) async {

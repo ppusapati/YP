@@ -36,7 +36,7 @@ class FarmServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.farm.v1.FarmService';
+  String get serviceName => 'agriculture.farm.v1.FarmService';
 
   /// Retrieves a farm by its unique identifier.
   Future<Farm> getFarm(String farmId) async {

@@ -15,7 +15,7 @@ class TaskServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.task.v1.TaskService';
+  String get serviceName => 'agriculture.task.v1.TaskService';
 
   /// Retrieves a task by its unique identifier.
   Future<FarmTask> getTask(String taskId) async {

@@ -4,6 +4,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
@@ -67,7 +68,7 @@ func NewHTTPClient(cfg Config) *http.Client {
 	// h2c transport: HTTP/2 without TLS, required for Connect binary (grpc) protocol.
 	transport := &http2.Transport{
 		AllowHTTP: true,
-		DialTLSContext: func(ctx context.Context, network, addr string, _ interface{}) (net.Conn, error) {
+		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
 			return (&net.Dialer{
 				Timeout:   10 * time.Second,
 				KeepAlive: 30 * time.Second,

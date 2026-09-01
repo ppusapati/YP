@@ -28,7 +28,7 @@ type SensorService interface {
 
 	// Data ingestion
 	IngestReading(ctx context.Context, sensorID string, value float64, unit string, timestamp time.Time, quality models.ReadingQuality, batteryPct, signalDbm *float64, metadata json.RawMessage) (*models.SensorReading, *models.SensorAlert, error)
-	BatchIngestReadings(ctx context.Context, readings []ReadingInput) (int32, int32, []string, []models.SensorAlert, error)
+	BatchIngestReadings(ctx context.Context, readings []models.ReadingInput) (int32, int32, []string, []models.SensorAlert, error)
 	GetLatestReading(ctx context.Context, sensorID string) (*models.SensorReading, error)
 	GetReadingHistory(ctx context.Context, sensorID string, start, end time.Time, minQuality string, pageSize, pageOffset int32) ([]models.SensorReading, int32, error)
 
@@ -40,18 +40,6 @@ type SensorService interface {
 	// Network and calibration
 	GetSensorNetwork(ctx context.Context, id, farmID string) (*models.SensorNetwork, error)
 	CalibrateSensor(ctx context.Context, sensorID string, offset, scaleFactor float64, notes string, nextCalDate *time.Time) (*models.SensorCalibration, error)
-}
-
-// ReadingInput represents an individual reading in a batch ingest request.
-type ReadingInput struct {
-	SensorID          string
-	Value             float64
-	Unit              string
-	Timestamp         time.Time
-	Quality           models.ReadingQuality
-	BatteryLevelPct   *float64
-	SignalStrengthDbm *float64
-	Metadata          json.RawMessage
 }
 
 type sensorService struct {
@@ -294,7 +282,7 @@ func (s *sensorService) IngestReading(ctx context.Context, sensorID string, valu
 	return created, triggeredAlert, nil
 }
 
-func (s *sensorService) BatchIngestReadings(ctx context.Context, readings []ReadingInput) (int32, int32, []string, []models.SensorAlert, error) {
+func (s *sensorService) BatchIngestReadings(ctx context.Context, readings []models.ReadingInput) (int32, int32, []string, []models.SensorAlert, error) {
 	tenantID := p9context.TenantID(ctx)
 	if tenantID == "" {
 		return 0, 0, nil, nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
@@ -699,9 +687,9 @@ func (s *sensorService) evaluateThresholdAlerts(ctx context.Context, tenantID, s
 				Severity:   alertRule.Severity,
 				Message: fmt.Sprintf("sensor %s (%s): value %.2f %s threshold %.2f",
 					sensorID, sensor.SensorType, value, alertRule.Condition, alertRule.Threshold),
-				UUID:      ulid.NewString(),
-				CreatedBy: "system",
 			}
+			triggeredAlert.UUID = ulid.NewString()
+			triggeredAlert.CreatedBy = "system"
 			triggeredAlert.IsActive = true
 
 			created, createErr := s.repo.CreateAlert(ctx, triggeredAlert)

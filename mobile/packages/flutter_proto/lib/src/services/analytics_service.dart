@@ -16,7 +16,7 @@ class AnalyticsServiceClient extends BaseService {
 
   @override
   String get serviceName =>
-      'yieldpoint.satellite.analytics.v1.SatelliteAnalyticsService';
+      'agriculture.satellite.analytics.v1.SatelliteAnalyticsService';
 
   /// Detects stress in a field.
   Future<StressAlert> detectStress(StressAlert request) async {

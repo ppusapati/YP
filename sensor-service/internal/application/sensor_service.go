@@ -14,7 +14,6 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/sensor-service/internal/domain"
-	"p9e.in/samavaya/agriculture/sensor-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/sensor-service/internal/ports/outbound"
 )
 
@@ -40,7 +39,7 @@ func NewSensorService(
 	fieldClient outbound.FieldClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
-) inbound.SensorService {
+) *sensorService {
 	return &sensorService{
 		repo:        repo,
 		pub:         pub,

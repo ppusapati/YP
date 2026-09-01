@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   const baseUrl = 'http://localhost:8080';
   const serviceName =
-      'yieldpoint.satellite.tile.v1.SatelliteTileService';
+      'agriculture.satellite.tile.v1.SatelliteTileService';
 
   group('TileServiceClient', () {
     group('generateTileset', () {

@@ -93,10 +93,10 @@ func main() {
 	connectOpt := connectserver.NewConnectOption(mwCfg)
 
 	mux := http.NewServeMux()
-	path, diagnosisHandler := plantdiagnosisv1connect.NewDiagnosisServiceHandler(handler,
+	path, diagnosisHandler := plantdiagnosisv1connect.NewPlantDiagnosisServiceHandler(handler,
 		connect.WithInterceptors(
 			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(*p9log.NewHelper(logger))),
+			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 		),
 		connectOpt,
 	)

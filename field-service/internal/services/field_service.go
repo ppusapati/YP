@@ -2,8 +2,14 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	msgp "p9e.in/samavaya/packages/api/v1/message"
 
 	"p9e.in/samavaya/agriculture/field-service/internal/models"
 	"p9e.in/samavaya/agriculture/field-service/internal/repositories"
@@ -431,7 +437,24 @@ func (s *fieldService) publishEvent(ctx context.Context, eventType domain.EventT
 	}
 
 	go func() {
-		if err := s.deps.KafkaProducer.Publish(ctx, evt.GetTopic(), evt.ID, evt); err != nil {
+		eventData, err := json.Marshal(evt)
+		if err != nil {
+			s.logger.Errorw("msg", "failed to marshal event",
+				"event_type", string(eventType),
+				"error", err.Error(),
+			)
+			return
+		}
+		anyValue, _ := anypb.New(wrapperspb.String(string(eventData)))
+		kafkaMessage := &msgp.EventMessage{
+			Key:       evt.AggregateID,
+			Value:     anyValue,
+			Topic:     evt.GetTopic(),
+			Partition: 0,
+			Offset:    0,
+			EventTime: timestamppb.New(evt.Timestamp),
+		}
+		if err := s.deps.KafkaProducer.ProduceMessage(ctx, kafkaMessage); err != nil {
 			s.logger.Errorw("msg", "failed to publish event",
 				"event_type", string(eventType),
 				"aggregate_id", aggregateID,

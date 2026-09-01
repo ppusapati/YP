@@ -15,7 +15,7 @@ class PestPredictionServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.pest.v1.PestPredictionService';
+  String get serviceName => 'agriculture.pest.v1.PestPredictionService';
 
   /// Predicts pest risk for a field.
   Future<PestRiskZone> predictPestRisk(String fieldId) async {

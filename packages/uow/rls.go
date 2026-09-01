@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
@@ -46,7 +47,7 @@ func (f *RLSFactory) Begin(ctx context.Context) (UnitOfWork, error) {
 
 // setRLSVariables sets PostgreSQL session variables for RLS policies.
 // Uses SET LOCAL to scope variables to the current transaction only.
-func setRLSVariables(ctx context.Context, tx interface{ Exec(context.Context, string, ...interface{}) (interface{}, error) }, scope p9context.RLSScope) error {
+func setRLSVariables(ctx context.Context, tx interface{ Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error) }, scope p9context.RLSScope) error {
 	// Always set tenant_id (may be empty for super-admin operations)
 	if scope.TenantID != "" {
 		if _, err := tx.Exec(ctx, "SET LOCAL app.tenant_id = $1", scope.TenantID); err != nil {

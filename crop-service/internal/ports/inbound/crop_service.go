@@ -4,20 +4,20 @@ package inbound
 import (
 	"context"
 
-	"p9e.in/samavaya/agriculture/crop-service/internal/domain"
+	cropmodels "p9e.in/samavaya/agriculture/crop-service/internal/models"
 )
 
 // CropService is the primary port for all crop business operations.
 type CropService interface {
-	CreateCrop(ctx context.Context, entity *domain.Crop) (*domain.Crop, error)
-	GetCrop(ctx context.Context, uuid string) (*domain.Crop, error)
-	ListCrops(ctx context.Context, params domain.ListCropParams) ([]domain.Crop, int32, error)
-	UpdateCrop(ctx context.Context, entity *domain.Crop) (*domain.Crop, error)
-	DeleteCrop(ctx context.Context, uuid string) error
+	CreateCrop(ctx context.Context, crop *cropmodels.Crop) (*cropmodels.Crop, error)
+	GetCrop(ctx context.Context, id, tenantID string) (*cropmodels.Crop, error)
+	ListCrops(ctx context.Context, tenantID string, category *string, searchTerm *string, limit, offset int32) ([]*cropmodels.Crop, int32, error)
+	UpdateCrop(ctx context.Context, crop *cropmodels.Crop) (*cropmodels.Crop, error)
+	DeleteCrop(ctx context.Context, id, tenantID string) error
 
-	AddVariety(ctx context.Context, variety *domain.CropVariety) (*domain.CropVariety, error)
-	ListVarieties(ctx context.Context, cropUUID, tenantID string, limit, offset int32) ([]*domain.CropVariety, int32, error)
-	GetGrowthStages(ctx context.Context, cropUUID, tenantID string) ([]*domain.CropGrowthStage, error)
-	GetCropRequirements(ctx context.Context, cropUUID, tenantID string) (*domain.CropRequirements, error)
-	GenerateRecommendation(ctx context.Context, input *domain.RecommendationInput) (*domain.CropRecommendation, error)
+	AddVariety(ctx context.Context, variety *cropmodels.CropVariety) (*cropmodels.CropVariety, error)
+	ListVarieties(ctx context.Context, cropUUID, tenantID string, limit, offset int32) ([]*cropmodels.CropVariety, int32, error)
+	GetGrowthStages(ctx context.Context, cropUUID, tenantID string) ([]*cropmodels.CropGrowthStage, error)
+	GetCropRequirements(ctx context.Context, cropUUID, tenantID string) (*cropmodels.CropRequirements, error)
+	GenerateRecommendation(ctx context.Context, input *cropmodels.RecommendationInput) (*cropmodels.CropRecommendation, error)
 }

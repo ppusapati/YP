@@ -15,7 +15,7 @@ class DiagnosisServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.diagnosis.v1.DiagnosisService';
+  String get serviceName => 'agriculture.diagnosis.v1.PlantDiagnosisService';
 
   /// Submits a crop image for AI diagnosis.
   ///

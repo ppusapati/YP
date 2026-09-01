@@ -20,7 +20,7 @@ class IrrigationRemoteDataSourceImpl implements IrrigationRemoteDataSource {
 
   final ConnectClient _client;
 
-  static const _basePath = '/yieldpoint.irrigation.v1.IrrigationService';
+  static const _basePath = '/agriculture.irrigation.v1.IrrigationService';
 
   @override
   Future<List<IrrigationZoneModel>> getZones(String fieldId) async {
