@@ -55,8 +55,8 @@ func (r *irrigationRepository) exec(ctx context.Context, sql string, args ...any
 func (r *irrigationRepository) CreateIrrigation(ctx context.Context, entity *domain.Irrigation) (*domain.Irrigation, error) {
 	entity.UUID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO irrigations (uuid, tenant_id, name, status, is_active, created_by)
-		VALUES ($1,$2,$3,$4,true,$5)
+		`INSERT INTO irrigation_schedules (uuid, tenant_id, field_id, farm_id, name, status, is_active, created_by)
+		VALUES ($1,$2,'','',$3,$4,true,$5)
 		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
 		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
@@ -66,7 +66,7 @@ func (r *irrigationRepository) CreateIrrigation(ctx context.Context, entity *dom
 func (r *irrigationRepository) GetIrrigationByUUID(ctx context.Context, uuid, tenantID string) (*domain.Irrigation, error) {
 	row := r.queryRow(ctx,
 		`SELECT uuid, tenant_id, name, status, is_active, created_by, created_at, version
-		FROM irrigations WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		FROM irrigation_schedules WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		uuid, tenantID,
 	)
 	e, err := scanIrrigation(row)
@@ -85,7 +85,7 @@ func (r *irrigationRepository) ListIrrigations(ctx context.Context, params domai
 
 func (r *irrigationRepository) UpdateIrrigation(ctx context.Context, entity *domain.Irrigation) (*domain.Irrigation, error) {
 	row := r.queryRow(ctx,
-		`UPDATE irrigations SET name=COALESCE(NULLIF($1,''),name), status=COALESCE(NULLIF($2,''),status),
+		`UPDATE irrigation_schedules SET name=COALESCE(NULLIF($1,''),name), status=COALESCE(NULLIF($2,''),status),
 		updated_by=$3, updated_at=NOW(), version=version+1
 		WHERE uuid=$4 AND tenant_id=$5 AND deleted_at IS NULL
 		RETURNING uuid, tenant_id, name, status, is_active, created_by, created_at, version`,
@@ -103,7 +103,7 @@ func (r *irrigationRepository) UpdateIrrigation(ctx context.Context, entity *dom
 
 func (r *irrigationRepository) DeleteIrrigation(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	return r.exec(ctx,
-		`UPDATE irrigations SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
+		`UPDATE irrigation_schedules SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
 		deletedBy, uuid, tenantID,
 	)
 }
@@ -111,7 +111,7 @@ func (r *irrigationRepository) DeleteIrrigation(ctx context.Context, uuid, tenan
 func (r *irrigationRepository) CheckIrrigationExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM irrigations WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM irrigation_schedules WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		uuid, tenantID,
 	).Scan(&exists)
 	return exists, err
@@ -120,7 +120,7 @@ func (r *irrigationRepository) CheckIrrigationExists(ctx context.Context, uuid, 
 func (r *irrigationRepository) CheckIrrigationNameExists(ctx context.Context, name, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM irrigations WHERE name=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM irrigation_schedules WHERE name=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		name, tenantID,
 	).Scan(&exists)
 	return exists, err
