@@ -88,8 +88,58 @@ FROM fields WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 }
 
 func (r *fieldRepository) ListFields(ctx context.Context, params domain.ListFieldsParams) ([]domain.Field, int32, error) {
-	// Simplified list implementation
-	return nil, 0, nil
+	pageSize := params.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	var totalCount int32
+	err := r.queryRow(ctx,
+		`SELECT COUNT(*)::int FROM fields
+		 WHERE tenant_id = $1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR farm_id = $2)
+		   AND ($3::varchar IS NULL OR status = $3)
+		   AND ($4::varchar IS NULL OR field_type = $4)
+		   AND ($5::varchar IS NULL OR name ILIKE '%' || $5 || '%')`,
+		params.TenantID, params.FarmID, params.Status, params.FieldType, params.Search,
+	).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, errors.InternalServer("FIELD_LIST_COUNT_FAILED", fmt.Sprintf("failed to count fields: %v", err))
+	}
+
+	rows, err := r.pool.Query(ctx,
+		`SELECT uuid, tenant_id, farm_id, name, area_hectares,
+			field_type, soil_type, irrigation_type, status,
+			elevation_meters, slope_degrees, aspect_direction, growth_stage,
+			is_active, created_by, created_at, version
+		 FROM fields
+		 WHERE tenant_id = $1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR farm_id = $2)
+		   AND ($3::varchar IS NULL OR status = $3)
+		   AND ($4::varchar IS NULL OR field_type = $4)
+		   AND ($5::varchar IS NULL OR name ILIKE '%' || $5 || '%')
+		 ORDER BY created_at DESC
+		 LIMIT $6 OFFSET $7`,
+		params.TenantID, params.FarmID, params.Status, params.FieldType, params.Search,
+		pageSize, params.Offset,
+	)
+	if err != nil {
+		return nil, 0, errors.InternalServer("FIELD_LIST_FAILED", fmt.Sprintf("failed to list fields: %v", err))
+	}
+	defer rows.Close()
+
+	var fields []domain.Field
+	for rows.Next() {
+		f, err := scanField(rows)
+		if err != nil {
+			return nil, 0, errors.InternalServer("FIELD_SCAN_FAILED", err.Error())
+		}
+		fields = append(fields, *f)
+	}
+	return fields, totalCount, nil
 }
 
 func (r *fieldRepository) UpdateField(ctx context.Context, field *domain.Field) (*domain.Field, error) {
