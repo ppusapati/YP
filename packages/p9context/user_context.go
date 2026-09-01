@@ -16,6 +16,21 @@ type UserContext struct {
 }
 
 type userContextKey struct{}
+type rawTokenContextKey struct{}
+
+// WithRawToken stores the raw Bearer JWT in the context so that inter-service
+// call propagators can forward it on outbound requests.
+func WithRawToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, rawTokenContextKey{}, token)
+}
+
+// RawToken retrieves the raw Bearer JWT stored by WithRawToken.
+func RawToken(ctx context.Context) string {
+	if tok, ok := ctx.Value(rawTokenContextKey{}).(string); ok {
+		return tok
+	}
+	return ""
+}
 
 // NewUserContext creates a new context with the user context.
 func NewUserContext(ctx context.Context, user UserContext) context.Context {

@@ -153,6 +153,9 @@ func AuthInterceptor(jwtValidator JWTValidator, opts ...AuthInterceptorOption) c
 				}
 			}
 
+			// Store raw token for inter-service forwarding via ContextPropagator
+			ctx = p9context.WithRawToken(ctx, token)
+
 			// Enrich context with user context
 			ctx = p9context.NewUserContext(ctx, p9context.UserContext{
 				UserID:      claims.UserID,
