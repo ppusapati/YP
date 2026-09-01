@@ -226,3 +226,156 @@ func (h *FarmHandler) TransferOwnership(ctx context.Context, req *connect.Reques
 	}
 	return connect.NewResponse(&pb.TransferOwnershipResponse{Farm: mappers.FarmToProto(farm)}), nil
 }
+
+// ---- Management Unit RPCs ----
+
+func (h *FarmHandler) CreateManagementUnit(ctx context.Context, req *connect.Request[pb.CreateManagementUnitRequest]) (*connect.Response[pb.CreateManagementUnitResponse], error) {
+	h.log.Infow("msg", "CreateManagementUnit request", "farm_id", req.Msg.GetFarmId())
+	if req.Msg.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
+	}
+	if req.Msg.GetName() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "name is required")
+	}
+
+	unit := &domain.ManagementUnit{
+		FarmID:          req.Msg.GetFarmId(),
+		Name:            req.Msg.GetName(),
+		UnitType:        mappers.ProtoManagementUnitTypeToDomain(req.Msg.GetUnitType()),
+		FieldIDs:        req.Msg.GetFieldIds(),
+	}
+	if req.Msg.GetParentUnitId() != "" {
+		s := req.Msg.GetParentUnitId()
+		unit.ParentUnitID = &s
+	}
+	if req.Msg.GetDescription() != "" {
+		s := req.Msg.GetDescription()
+		unit.Description = &s
+	}
+	if req.Msg.GetAreaHectares() != 0 {
+		f := req.Msg.GetAreaHectares()
+		unit.AreaHectares = &f
+	}
+	if req.Msg.GetBoundaryGeojson() != "" {
+		s := req.Msg.GetBoundaryGeojson()
+		unit.BoundaryGeoJSON = &s
+	}
+	if req.Msg.GetManagerId() != "" {
+		s := req.Msg.GetManagerId()
+		unit.ManagerID = &s
+	}
+
+	created, err := h.svc.CreateManagementUnit(ctx, unit)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.CreateManagementUnitResponse{Unit: mappers.ManagementUnitToProto(created)}), nil
+}
+
+func (h *FarmHandler) GetManagementUnit(ctx context.Context, req *connect.Request[pb.GetManagementUnitRequest]) (*connect.Response[pb.GetManagementUnitResponse], error) {
+	h.log.Infow("msg", "GetManagementUnit request", "id", req.Msg.GetId())
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+	unit, err := h.svc.GetManagementUnit(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.GetManagementUnitResponse{Unit: mappers.ManagementUnitToProto(unit)}), nil
+}
+
+func (h *FarmHandler) ListManagementUnits(ctx context.Context, req *connect.Request[pb.ListManagementUnitsRequest]) (*connect.Response[pb.ListManagementUnitsResponse], error) {
+	h.log.Infow("msg", "ListManagementUnits request", "farm_id", req.Msg.GetFarmId())
+	if req.Msg.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
+	}
+	params := domain.ListManagementUnitsParams{
+		FarmID:   req.Msg.GetFarmId(),
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   req.Msg.GetPageOffset(),
+	}
+	units, total, err := h.svc.ListManagementUnits(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.ListManagementUnitsResponse{
+		Units:      mappers.ManagementUnitsToProto(units),
+		TotalCount: total,
+	}), nil
+}
+
+func (h *FarmHandler) UpdateManagementUnit(ctx context.Context, req *connect.Request[pb.UpdateManagementUnitRequest]) (*connect.Response[pb.UpdateManagementUnitResponse], error) {
+	h.log.Infow("msg", "UpdateManagementUnit request", "id", req.Msg.GetId())
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+
+	unit := &domain.ManagementUnit{ID: req.Msg.GetId()}
+	unit.Name = req.Msg.GetName()
+	if req.Msg.GetDescription() != "" {
+		s := req.Msg.GetDescription()
+		unit.Description = &s
+	}
+	if req.Msg.GetStatus() != pb.ManagementUnitStatus_UNIT_STATUS_UNSPECIFIED {
+		unit.Status = mappers.ProtoManagementUnitStatusToDomain(req.Msg.GetStatus())
+	}
+	if req.Msg.GetManagerId() != "" {
+		s := req.Msg.GetManagerId()
+		unit.ManagerID = &s
+	}
+	if req.Msg.GetAreaHectares() != 0 {
+		f := req.Msg.GetAreaHectares()
+		unit.AreaHectares = &f
+	}
+	if req.Msg.GetBoundaryGeojson() != "" {
+		s := req.Msg.GetBoundaryGeojson()
+		unit.BoundaryGeoJSON = &s
+	}
+
+	updated, err := h.svc.UpdateManagementUnit(ctx, unit)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.UpdateManagementUnitResponse{Unit: mappers.ManagementUnitToProto(updated)}), nil
+}
+
+func (h *FarmHandler) DeleteManagementUnit(ctx context.Context, req *connect.Request[pb.DeleteManagementUnitRequest]) (*connect.Response[pb.DeleteManagementUnitResponse], error) {
+	h.log.Infow("msg", "DeleteManagementUnit request", "id", req.Msg.GetId())
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+	if err := h.svc.DeleteManagementUnit(ctx, req.Msg.GetId()); err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.DeleteManagementUnitResponse{}), nil
+}
+
+func (h *FarmHandler) AssignFieldsToUnit(ctx context.Context, req *connect.Request[pb.AssignFieldsToUnitRequest]) (*connect.Response[pb.AssignFieldsToUnitResponse], error) {
+	h.log.Infow("msg", "AssignFieldsToUnit request", "unit_id", req.Msg.GetManagementUnitId())
+	if req.Msg.GetManagementUnitId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "management_unit_id is required")
+	}
+	if len(req.Msg.GetFieldIds()) == 0 {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "at least one field_id is required")
+	}
+	unit, err := h.svc.AssignFieldsToUnit(ctx, req.Msg.GetManagementUnitId(), req.Msg.GetFieldIds())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.AssignFieldsToUnitResponse{Unit: mappers.ManagementUnitToProto(unit)}), nil
+}
+
+func (h *FarmHandler) RemoveFieldsFromUnit(ctx context.Context, req *connect.Request[pb.RemoveFieldsFromUnitRequest]) (*connect.Response[pb.RemoveFieldsFromUnitResponse], error) {
+	h.log.Infow("msg", "RemoveFieldsFromUnit request", "unit_id", req.Msg.GetManagementUnitId())
+	if req.Msg.GetManagementUnitId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "management_unit_id is required")
+	}
+	if len(req.Msg.GetFieldIds()) == 0 {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "at least one field_id is required")
+	}
+	unit, err := h.svc.RemoveFieldsFromUnit(ctx, req.Msg.GetManagementUnitId(), req.Msg.GetFieldIds())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.RemoveFieldsFromUnitResponse{Unit: mappers.ManagementUnitToProto(unit)}), nil
+}

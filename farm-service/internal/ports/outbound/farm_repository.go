@@ -34,6 +34,15 @@ type FarmRepository interface {
 	DeactivateFarmOwner(ctx context.Context, farmUUID, tenantID, userID, deletedBy string) error
 	ClearPrimaryOwner(ctx context.Context, farmUUID, tenantID, updatedBy string) error
 
+	CreateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error)
+	GetManagementUnitByID(ctx context.Context, id, tenantID string) (*domain.ManagementUnit, error)
+	ListManagementUnits(ctx context.Context, params domain.ListManagementUnitsParams) ([]domain.ManagementUnit, int32, error)
+	UpdateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error)
+	DeleteManagementUnit(ctx context.Context, id, tenantID, deletedBy string) error
+	GetUnitFieldIDs(ctx context.Context, unitID, tenantID string) ([]string, error)
+	AssignFieldsToUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error
+	RemoveFieldsFromUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error
+
 	// WithTx returns a copy of this repository that executes queries inside the
 	// provided pgx transaction.  Used by the application layer to compose
 	// multiple repository operations atomically.

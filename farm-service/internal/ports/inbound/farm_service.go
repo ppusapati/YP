@@ -22,4 +22,12 @@ type FarmService interface {
 	SetFarmBoundary(ctx context.Context, farmUUID, geoJSON string) (*domain.FarmBoundary, error)
 	GetFarmBoundary(ctx context.Context, farmUUID string) (*domain.FarmBoundary, error)
 	TransferOwnership(ctx context.Context, params domain.TransferOwnershipParams) (*domain.Farm, error)
+
+	CreateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error)
+	GetManagementUnit(ctx context.Context, id string) (*domain.ManagementUnit, error)
+	ListManagementUnits(ctx context.Context, params domain.ListManagementUnitsParams) ([]domain.ManagementUnit, int32, error)
+	UpdateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error)
+	DeleteManagementUnit(ctx context.Context, id string) error
+	AssignFieldsToUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error)
+	RemoveFieldsFromUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error)
 }

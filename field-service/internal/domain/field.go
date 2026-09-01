@@ -225,3 +225,115 @@ type CropHistoryParams struct {
 	PageSize int32
 	Offset   int32
 }
+
+// CropCycleStatus represents the lifecycle status of a crop cycle.
+type CropCycleStatus string
+
+const (
+	CropCycleStatusUnspecified CropCycleStatus = ""
+	CropCycleStatusPlanned    CropCycleStatus = "CYCLE_STATUS_PLANNED"
+	CropCycleStatusActive     CropCycleStatus = "CYCLE_STATUS_ACTIVE"
+	CropCycleStatusHarvesting CropCycleStatus = "CYCLE_STATUS_HARVESTING"
+	CropCycleStatusCompleted  CropCycleStatus = "CYCLE_STATUS_COMPLETED"
+	CropCycleStatusAbandoned  CropCycleStatus = "CYCLE_STATUS_ABANDONED"
+)
+
+func (s CropCycleStatus) IsValid() bool {
+	switch s {
+	case CropCycleStatusPlanned, CropCycleStatusActive, CropCycleStatusHarvesting,
+		CropCycleStatusCompleted, CropCycleStatusAbandoned:
+		return true
+	}
+	return false
+}
+
+// ActivityCategory classifies field activities.
+type ActivityCategory string
+
+const (
+	ActivityCategoryUnspecified   ActivityCategory = ""
+	ActivityCategoryLandPrep     ActivityCategory = "CATEGORY_LAND_PREP"
+	ActivityCategoryPlanting     ActivityCategory = "CATEGORY_PLANTING"
+	ActivityCategoryIrrigation   ActivityCategory = "CATEGORY_IRRIGATION"
+	ActivityCategoryFertilization ActivityCategory = "CATEGORY_FERTILIZATION"
+	ActivityCategoryPestControl  ActivityCategory = "CATEGORY_PEST_CONTROL"
+	ActivityCategoryScouting     ActivityCategory = "CATEGORY_SCOUTING"
+	ActivityCategoryHarvesting   ActivityCategory = "CATEGORY_HARVESTING"
+	ActivityCategoryPostHarvest  ActivityCategory = "CATEGORY_POST_HARVEST"
+	ActivityCategorySoilSampling ActivityCategory = "CATEGORY_SOIL_SAMPLING"
+	ActivityCategoryMaintenance  ActivityCategory = "CATEGORY_MAINTENANCE"
+)
+
+// CropCycle is a season-level aggregate linking field, crop, and lifecycle data.
+type CropCycle struct {
+	ID                    string          `json:"id"`
+	TenantID              string          `json:"tenant_id"`
+	FieldID               string          `json:"field_id"`
+	CropID                string          `json:"crop_id"`
+	CropAssignmentID      *string         `json:"crop_assignment_id,omitempty"`
+	Season                string          `json:"season"`
+	CycleYear             int32           `json:"cycle_year"`
+	Name                  *string         `json:"name,omitempty"`
+	PlannedPlantingDate   *time.Time      `json:"planned_planting_date,omitempty"`
+	ActualPlantingDate    *time.Time      `json:"actual_planting_date,omitempty"`
+	PlannedHarvestDate    *time.Time      `json:"planned_harvest_date,omitempty"`
+	ActualHarvestDate     *time.Time      `json:"actual_harvest_date,omitempty"`
+	Status                CropCycleStatus `json:"status"`
+	TargetYieldPerHectare *float64        `json:"target_yield_per_hectare,omitempty"`
+	ActualYieldPerHectare *float64        `json:"actual_yield_per_hectare,omitempty"`
+	YieldUnit             *string         `json:"yield_unit,omitempty"`
+	TotalInputCost        int64           `json:"total_input_cost"`
+	TotalRevenue          int64           `json:"total_revenue"`
+	Currency              string          `json:"currency"`
+	Notes                 *string         `json:"notes,omitempty"`
+	Version               int64           `json:"version"`
+	CreatedBy             string          `json:"created_by"`
+	UpdatedBy             *string         `json:"updated_by,omitempty"`
+	CreatedAt             time.Time       `json:"created_at"`
+	UpdatedAt             time.Time       `json:"updated_at"`
+	DeletedAt             *time.Time      `json:"deleted_at,omitempty"`
+}
+
+type ListCropCyclesParams struct {
+	TenantID string
+	FieldID  string
+	Status   *CropCycleStatus
+	PageSize int32
+	Offset   int32
+}
+
+// ActivityEvent is an immutable log entry for actions taken on a field.
+type ActivityEvent struct {
+	ID               string           `json:"id"`
+	TenantID         string           `json:"tenant_id"`
+	FieldID          string           `json:"field_id"`
+	CropCycleID      *string          `json:"crop_cycle_id,omitempty"`
+	PerformedBy      string           `json:"performed_by"`
+	ActivityType     string           `json:"activity_type"`
+	Category         ActivityCategory `json:"category"`
+	StartedAt        time.Time        `json:"started_at"`
+	CompletedAt      *time.Time       `json:"completed_at,omitempty"`
+	DurationMinutes  *int32           `json:"duration_minutes,omitempty"`
+	Description      *string          `json:"description,omitempty"`
+	Notes            *string          `json:"notes,omitempty"`
+	InputProductID   *string          `json:"input_product_id,omitempty"`
+	InputQuantity    *float64         `json:"input_quantity,omitempty"`
+	InputUnit        *string          `json:"input_unit,omitempty"`
+	InputCost        int64            `json:"input_cost"`
+	Currency         string           `json:"currency"`
+	AreaHectares     *float64         `json:"area_hectares,omitempty"`
+	WeatherTempC     *float64         `json:"weather_temp_celsius,omitempty"`
+	WeatherHumidity  *float64         `json:"weather_humidity_pct,omitempty"`
+	WeatherWindSpeed *float64         `json:"weather_wind_speed_kmh,omitempty"`
+	WeatherConditions *string         `json:"weather_conditions,omitempty"`
+	CreatedAt        time.Time        `json:"created_at"`
+}
+
+type ListActivityEventsParams struct {
+	TenantID    string
+	FieldID     string
+	CropCycleID *string
+	Category    *ActivityCategory
+	PageSize    int32
+	Offset      int32
+}

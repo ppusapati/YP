@@ -466,6 +466,245 @@ func (s *farmService) TransferOwnership(ctx context.Context, params domain.Trans
 	return updatedFarm, nil
 }
 
+// ---- Management Unit operations ----
+
+// CreateManagementUnit creates a management unit within a farm, optionally assigning fields.
+func (s *farmService) CreateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error) {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+	requestID := p9context.RequestID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if unit.FarmID == "" {
+		return nil, errors.BadRequest("MISSING_FARM_ID", "farm_id is required")
+	}
+	if unit.Name == "" {
+		return nil, errors.BadRequest("MISSING_UNIT_NAME", "name is required")
+	}
+	if !unit.UnitType.IsValid() {
+		return nil, errors.BadRequest("INVALID_UNIT_TYPE", "invalid management unit type")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	exists, err := s.repo.CheckFarmExists(ctx, unit.FarmID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", unit.FarmID))
+	}
+
+	unit.ID = ulid.NewString()
+	unit.TenantID = tenantID
+	unit.CreatedBy = userID
+	unit.Status = domain.ManagementUnitStatusActive
+
+	fieldIDs := unit.FieldIDs
+	unit.FieldIDs = nil
+
+	var created *domain.ManagementUnit
+	txErr := uow.WithTransaction(ctx, s.pool, func(u uow.UnitOfWork) error {
+		txRepo := s.repo.WithTx(u.Tx())
+		c, err := txRepo.CreateManagementUnit(ctx, unit)
+		if err != nil {
+			return err
+		}
+		created = c
+		if len(fieldIDs) > 0 {
+			if err := txRepo.AssignFieldsToUnit(ctx, created.ID, tenantID, fieldIDs); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if txErr != nil {
+		s.log.Errorw("msg", "failed to create management unit", "error", txErr, "request_id", requestID)
+		return nil, txErr
+	}
+
+	created.FieldIDs, _ = s.repo.GetUnitFieldIDs(ctx, created.ID, tenantID)
+
+	s.emitEvent(ctx, "agriculture.farm.management_unit.created", created.ID, map[string]interface{}{
+		"unit_id": created.ID, "farm_id": created.FarmID, "tenant_id": tenantID,
+	})
+	s.log.Infow("msg", "management unit created", "id", created.ID, "farm_id", created.FarmID)
+	return created, nil
+}
+
+// GetManagementUnit retrieves a management unit by ID, including its assigned field IDs.
+func (s *farmService) GetManagementUnit(ctx context.Context, id string) (*domain.ManagementUnit, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_UNIT_ID", "management unit ID is required")
+	}
+	unit, err := s.repo.GetManagementUnitByID(ctx, id, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	unit.FieldIDs, _ = s.repo.GetUnitFieldIDs(ctx, id, tenantID)
+	return unit, nil
+}
+
+// ListManagementUnits lists management units for a farm with pagination.
+func (s *farmService) ListManagementUnits(ctx context.Context, params domain.ListManagementUnitsParams) ([]domain.ManagementUnit, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FarmID == "" {
+		return nil, 0, errors.BadRequest("MISSING_FARM_ID", "farm_id is required")
+	}
+	params.TenantID = tenantID
+	if params.PageSize <= 0 {
+		params.PageSize = defaultPageSize
+	}
+	if params.PageSize > maxPageSize {
+		params.PageSize = maxPageSize
+	}
+
+	units, total, err := s.repo.ListManagementUnits(ctx, params)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range units {
+		units[i].FieldIDs, _ = s.repo.GetUnitFieldIDs(ctx, units[i].ID, tenantID)
+	}
+	return units, total, nil
+}
+
+// UpdateManagementUnit updates a management unit's mutable fields.
+func (s *farmService) UpdateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error) {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+	requestID := p9context.RequestID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if unit.ID == "" {
+		return nil, errors.BadRequest("MISSING_UNIT_ID", "management unit ID is required")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	unit.TenantID = tenantID
+	unit.UpdatedBy = ptr.String(userID)
+
+	updated, err := s.repo.UpdateManagementUnit(ctx, unit)
+	if err != nil {
+		return nil, err
+	}
+	updated.FieldIDs, _ = s.repo.GetUnitFieldIDs(ctx, updated.ID, tenantID)
+
+	s.emitEvent(ctx, "agriculture.farm.management_unit.updated", updated.ID, map[string]interface{}{
+		"unit_id": updated.ID, "farm_id": updated.FarmID,
+	})
+	s.log.Infow("msg", "management unit updated", "id", updated.ID, "request_id", requestID)
+	return updated, nil
+}
+
+// DeleteManagementUnit soft-deletes a management unit.
+func (s *farmService) DeleteManagementUnit(ctx context.Context, id string) error {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+	requestID := p9context.RequestID(ctx)
+
+	if tenantID == "" {
+		return errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return errors.BadRequest("MISSING_UNIT_ID", "management unit ID is required")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	if _, err := s.repo.GetManagementUnitByID(ctx, id, tenantID); err != nil {
+		return err
+	}
+
+	if err := s.repo.DeleteManagementUnit(ctx, id, tenantID, userID); err != nil {
+		s.log.Errorw("msg", "failed to delete management unit", "id", id, "error", err, "request_id", requestID)
+		return err
+	}
+
+	s.emitEvent(ctx, "agriculture.farm.management_unit.deleted", id, map[string]interface{}{
+		"unit_id": id, "tenant_id": tenantID,
+	})
+	s.log.Infow("msg", "management unit deleted", "id", id)
+	return nil
+}
+
+// AssignFieldsToUnit assigns fields to a management unit.
+func (s *farmService) AssignFieldsToUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error) {
+	tenantID := p9context.TenantID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if unitID == "" {
+		return nil, errors.BadRequest("MISSING_UNIT_ID", "management_unit_id is required")
+	}
+	if len(fieldIDs) == 0 {
+		return nil, errors.BadRequest("MISSING_FIELD_IDS", "at least one field_id is required")
+	}
+
+	unit, err := s.repo.GetManagementUnitByID(ctx, unitID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.AssignFieldsToUnit(ctx, unitID, tenantID, fieldIDs); err != nil {
+		return nil, err
+	}
+
+	unit.FieldIDs, _ = s.repo.GetUnitFieldIDs(ctx, unitID, tenantID)
+
+	s.emitEvent(ctx, "agriculture.farm.management_unit.fields_assigned", unitID, map[string]interface{}{
+		"unit_id": unitID, "field_ids": fieldIDs,
+	})
+	return unit, nil
+}
+
+// RemoveFieldsFromUnit removes fields from a management unit.
+func (s *farmService) RemoveFieldsFromUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error) {
+	tenantID := p9context.TenantID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if unitID == "" {
+		return nil, errors.BadRequest("MISSING_UNIT_ID", "management_unit_id is required")
+	}
+	if len(fieldIDs) == 0 {
+		return nil, errors.BadRequest("MISSING_FIELD_IDS", "at least one field_id is required")
+	}
+
+	unit, err := s.repo.GetManagementUnitByID(ctx, unitID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.RemoveFieldsFromUnit(ctx, unitID, tenantID, fieldIDs); err != nil {
+		return nil, err
+	}
+
+	unit.FieldIDs, _ = s.repo.GetUnitFieldIDs(ctx, unitID, tenantID)
+
+	s.emitEvent(ctx, "agriculture.farm.management_unit.fields_removed", unitID, map[string]interface{}{
+		"unit_id": unitID, "field_ids": fieldIDs,
+	})
+	return unit, nil
+}
+
 // emitEvent publishes a domain event best-effort (errors are logged, not propagated).
 func (s *farmService) emitEvent(ctx context.Context, eventType, aggregateID string, data map[string]interface{}) {
 	if s.pub == nil {

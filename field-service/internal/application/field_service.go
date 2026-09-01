@@ -397,6 +397,178 @@ func (s *fieldService) GetCropHistory(ctx context.Context, params domain.CropHis
 }
 
 // ---------------------------------------------------------------------------
+// Crop Cycles
+// ---------------------------------------------------------------------------
+
+func (s *fieldService) CreateCropCycle(ctx context.Context, cycle *domain.CropCycle) (*domain.CropCycle, error) {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if cycle.FieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	if cycle.CropID == "" {
+		return nil, errors.BadRequest("MISSING_CROP_ID", "crop_id is required")
+	}
+	if cycle.Season == "" {
+		return nil, errors.BadRequest("MISSING_SEASON", "season is required")
+	}
+	if cycle.CycleYear <= 0 {
+		return nil, errors.BadRequest("INVALID_CYCLE_YEAR", "cycle_year must be positive")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	exists, err := s.repo.CheckFieldExists(ctx, cycle.FieldID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", cycle.FieldID))
+	}
+
+	cycle.TenantID = tenantID
+	cycle.CreatedBy = userID
+	cycle.Status = domain.CropCycleStatusPlanned
+
+	created, err := s.repo.CreateCropCycle(ctx, cycle)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.crop_cycle.created", created.ID, map[string]interface{}{
+		"cycle_id": created.ID, "field_id": created.FieldID, "crop_id": created.CropID,
+	})
+	return created, nil
+}
+
+func (s *fieldService) GetCropCycle(ctx context.Context, id string) (*domain.CropCycle, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_CYCLE_ID", "crop cycle ID is required")
+	}
+	return s.repo.GetCropCycleByID(ctx, id, tenantID)
+}
+
+func (s *fieldService) ListCropCycles(ctx context.Context, params domain.ListCropCyclesParams) ([]domain.CropCycle, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FieldID == "" {
+		return nil, 0, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	params.TenantID = tenantID
+	if params.PageSize <= 0 {
+		params.PageSize = defaultPageSize
+	}
+	if params.PageSize > maxPageSize {
+		params.PageSize = maxPageSize
+	}
+	return s.repo.ListCropCycles(ctx, params)
+}
+
+func (s *fieldService) UpdateCropCycle(ctx context.Context, cycle *domain.CropCycle) (*domain.CropCycle, error) {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if cycle.ID == "" {
+		return nil, errors.BadRequest("MISSING_CYCLE_ID", "crop cycle ID is required")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	cycle.TenantID = tenantID
+	updatedBy := userID
+	cycle.UpdatedBy = &updatedBy
+
+	updated, err := s.repo.UpdateCropCycle(ctx, cycle)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.crop_cycle.updated", updated.ID, map[string]interface{}{
+		"cycle_id": updated.ID, "field_id": updated.FieldID,
+	})
+	return updated, nil
+}
+
+// ---------------------------------------------------------------------------
+// Activity Events
+// ---------------------------------------------------------------------------
+
+func (s *fieldService) LogActivityEvent(ctx context.Context, event *domain.ActivityEvent) (*domain.ActivityEvent, error) {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if event.FieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	if event.ActivityType == "" {
+		return nil, errors.BadRequest("MISSING_ACTIVITY_TYPE", "activity_type is required")
+	}
+	if event.StartedAt.IsZero() {
+		return nil, errors.BadRequest("MISSING_STARTED_AT", "started_at is required")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	exists, err := s.repo.CheckFieldExists(ctx, event.FieldID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", event.FieldID))
+	}
+
+	event.TenantID = tenantID
+	event.PerformedBy = userID
+
+	created, err := s.repo.CreateActivityEvent(ctx, event)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.activity.logged", created.ID, map[string]interface{}{
+		"event_id": created.ID, "field_id": created.FieldID, "activity_type": created.ActivityType,
+	})
+	return created, nil
+}
+
+func (s *fieldService) ListActivityEvents(ctx context.Context, params domain.ListActivityEventsParams) ([]domain.ActivityEvent, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FieldID == "" {
+		return nil, 0, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	params.TenantID = tenantID
+	if params.PageSize <= 0 {
+		params.PageSize = defaultPageSize
+	}
+	if params.PageSize > maxPageSize {
+		params.PageSize = maxPageSize
+	}
+	return s.repo.ListActivityEvents(ctx, params)
+}
+
+// ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
 

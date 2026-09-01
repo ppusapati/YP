@@ -529,6 +529,209 @@ func scanOwnerFromRows(rows pgx.Rows, o *domain.FarmOwner) error {
 	)
 }
 
+// ---- Management Unit CRUD ----
+
+func (r *farmRepository) CreateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error) {
+	row := r.queryRow(ctx, `
+		INSERT INTO management_units (
+			id, tenant_id, farm_id, parent_unit_id, name, description,
+			unit_type, area_hectares, boundary_geojson, manager_id,
+			status, version, created_by, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1, $12, NOW(), NOW())
+		RETURNING id, tenant_id, farm_id, parent_unit_id, name, description,
+			unit_type, area_hectares, boundary_geojson, manager_id,
+			status, version, created_by, updated_by, created_at, updated_at, deleted_at`,
+		unit.ID, unit.TenantID, unit.FarmID, unit.ParentUnitID,
+		unit.Name, unit.Description, string(unit.UnitType),
+		unit.AreaHectares, unit.BoundaryGeoJSON, unit.ManagerID,
+		string(unit.Status), unit.CreatedBy,
+	)
+	result := &domain.ManagementUnit{}
+	if err := scanManagementUnit(row, result); err != nil {
+		return nil, errors.InternalServer("UNIT_CREATE_FAILED", fmt.Sprintf("failed to create management unit: %v", err))
+	}
+	return result, nil
+}
+
+func (r *farmRepository) GetManagementUnitByID(ctx context.Context, id, tenantID string) (*domain.ManagementUnit, error) {
+	row := r.queryRow(ctx, `
+		SELECT id, tenant_id, farm_id, parent_unit_id, name, description,
+			unit_type, area_hectares, boundary_geojson, manager_id,
+			status, version, created_by, updated_by, created_at, updated_at, deleted_at
+		FROM management_units
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+		id, tenantID,
+	)
+	unit := &domain.ManagementUnit{}
+	if err := scanManagementUnit(row, unit); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("UNIT_NOT_FOUND", fmt.Sprintf("management unit not found: %s", id))
+		}
+		return nil, errors.InternalServer("UNIT_GET_FAILED", fmt.Sprintf("failed to get management unit: %v", err))
+	}
+	return unit, nil
+}
+
+func (r *farmRepository) ListManagementUnits(ctx context.Context, params domain.ListManagementUnitsParams) ([]domain.ManagementUnit, int32, error) {
+	var total int32
+	countRow := r.queryRow(ctx, `
+		SELECT COUNT(*) FROM management_units
+		WHERE tenant_id = $1 AND farm_id = $2 AND deleted_at IS NULL`,
+		params.TenantID, params.FarmID,
+	)
+	if err := countRow.Scan(&total); err != nil {
+		return nil, 0, errors.InternalServer("UNIT_COUNT_FAILED", "failed to count management units")
+	}
+
+	rows, err := r.query(ctx, `
+		SELECT id, tenant_id, farm_id, parent_unit_id, name, description,
+			unit_type, area_hectares, boundary_geojson, manager_id,
+			status, version, created_by, updated_by, created_at, updated_at, deleted_at
+		FROM management_units
+		WHERE tenant_id = $1 AND farm_id = $2 AND deleted_at IS NULL
+		ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
+		params.TenantID, params.FarmID, params.PageSize, params.Offset,
+	)
+	if err != nil {
+		return nil, 0, errors.InternalServer("UNIT_LIST_FAILED", "failed to list management units")
+	}
+	defer rows.Close()
+
+	units := make([]domain.ManagementUnit, 0)
+	for rows.Next() {
+		var u domain.ManagementUnit
+		if err := scanManagementUnitFromRows(rows, &u); err != nil {
+			return nil, 0, errors.InternalServer("UNIT_SCAN_FAILED", "failed to scan management unit")
+		}
+		units = append(units, u)
+	}
+	return units, total, rows.Err()
+}
+
+func (r *farmRepository) UpdateManagementUnit(ctx context.Context, unit *domain.ManagementUnit) (*domain.ManagementUnit, error) {
+	row := r.queryRow(ctx, `
+		UPDATE management_units SET
+			name = COALESCE(NULLIF($3, ''), name),
+			description = COALESCE($4, description),
+			status = COALESCE(NULLIF($5, '')::TEXT, status),
+			manager_id = COALESCE($6, manager_id),
+			area_hectares = COALESCE($7, area_hectares),
+			boundary_geojson = COALESCE($8, boundary_geojson),
+			version = version + 1,
+			updated_by = $9
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+		RETURNING id, tenant_id, farm_id, parent_unit_id, name, description,
+			unit_type, area_hectares, boundary_geojson, manager_id,
+			status, version, created_by, updated_by, created_at, updated_at, deleted_at`,
+		unit.ID, unit.TenantID,
+		unit.Name, unit.Description,
+		nilIfEmptyUnitStatus(unit.Status), unit.ManagerID,
+		unit.AreaHectares, unit.BoundaryGeoJSON, unit.UpdatedBy,
+	)
+	result := &domain.ManagementUnit{}
+	if err := scanManagementUnit(row, result); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("UNIT_NOT_FOUND", fmt.Sprintf("management unit not found: %s", unit.ID))
+		}
+		return nil, errors.InternalServer("UNIT_UPDATE_FAILED", fmt.Sprintf("failed to update management unit: %v", err))
+	}
+	return result, nil
+}
+
+func (r *farmRepository) DeleteManagementUnit(ctx context.Context, id, tenantID, deletedBy string) error {
+	return r.exec(ctx, `
+		UPDATE management_units SET deleted_at = NOW(), updated_by = $3
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+		id, tenantID, deletedBy)
+}
+
+func (r *farmRepository) GetUnitFieldIDs(ctx context.Context, unitID, tenantID string) ([]string, error) {
+	rows, err := r.query(ctx, `
+		SELECT field_id FROM management_unit_fields
+		WHERE management_unit_id = $1 AND tenant_id = $2
+		ORDER BY created_at`,
+		unitID, tenantID,
+	)
+	if err != nil {
+		return nil, errors.InternalServer("UNIT_FIELDS_FAILED", "failed to get unit field IDs")
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, errors.InternalServer("UNIT_FIELDS_SCAN_FAILED", "failed to scan field ID")
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+func (r *farmRepository) AssignFieldsToUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error {
+	for _, fid := range fieldIDs {
+		if err := r.exec(ctx, `
+			INSERT INTO management_unit_fields (id, tenant_id, management_unit_id, field_id, created_at)
+			VALUES ($1, $2, $3, $4, NOW())
+			ON CONFLICT (management_unit_id, field_id) DO NOTHING`,
+			ulid.NewString(), tenantID, unitID, fid,
+		); err != nil {
+			return errors.InternalServer("UNIT_ASSIGN_FAILED", fmt.Sprintf("failed to assign field %s: %v", fid, err))
+		}
+	}
+	return nil
+}
+
+func (r *farmRepository) RemoveFieldsFromUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error {
+	for _, fid := range fieldIDs {
+		if err := r.exec(ctx, `
+			DELETE FROM management_unit_fields
+			WHERE management_unit_id = $1 AND tenant_id = $2 AND field_id = $3`,
+			unitID, tenantID, fid,
+		); err != nil {
+			return errors.InternalServer("UNIT_REMOVE_FAILED", fmt.Sprintf("failed to remove field %s: %v", fid, err))
+		}
+	}
+	return nil
+}
+
+func scanManagementUnit(row pgx.Row, u *domain.ManagementUnit) error {
+	var unitType, status string
+	err := row.Scan(
+		&u.ID, &u.TenantID, &u.FarmID, &u.ParentUnitID, &u.Name, &u.Description,
+		&unitType, &u.AreaHectares, &u.BoundaryGeoJSON, &u.ManagerID,
+		&status, &u.Version, &u.CreatedBy, &u.UpdatedBy, &u.CreatedAt, &u.UpdatedAt, &u.DeletedAt,
+	)
+	if err != nil {
+		return err
+	}
+	u.UnitType = domain.ManagementUnitType(unitType)
+	u.Status = domain.ManagementUnitStatus(status)
+	return nil
+}
+
+func scanManagementUnitFromRows(rows pgx.Rows, u *domain.ManagementUnit) error {
+	var unitType, status string
+	err := rows.Scan(
+		&u.ID, &u.TenantID, &u.FarmID, &u.ParentUnitID, &u.Name, &u.Description,
+		&unitType, &u.AreaHectares, &u.BoundaryGeoJSON, &u.ManagerID,
+		&status, &u.Version, &u.CreatedBy, &u.UpdatedBy, &u.CreatedAt, &u.UpdatedAt, &u.DeletedAt,
+	)
+	if err != nil {
+		return err
+	}
+	u.UnitType = domain.ManagementUnitType(unitType)
+	u.Status = domain.ManagementUnitStatus(status)
+	return nil
+}
+
+func nilIfEmptyUnitStatus(s domain.ManagementUnitStatus) interface{} {
+	if s == domain.ManagementUnitStatusUnspecified {
+		return nil
+	}
+	return string(s)
+}
+
 // ---- Null helpers ----
 
 func nilIfZeroFloat(f float64) interface{} {
