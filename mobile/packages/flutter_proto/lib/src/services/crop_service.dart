@@ -15,7 +15,7 @@ class CropServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.crop.v1.CropService';
+  String get serviceName => 'agriculture.crop.v1.CropService';
 
   /// Retrieves a crop by ID.
   Future<Crop> getCrop(String id) async {

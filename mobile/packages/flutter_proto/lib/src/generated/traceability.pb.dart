@@ -35,7 +35,7 @@ class ProduceRecord extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'ProduceRecord',
-    package: const $pb.PackageName('yieldpoint.traceability.v1'),
+    package: const $pb.PackageName('agriculture.traceability.v1'),
     createEmptyInstance: () => ProduceRecord._(),
   )
     ..aOS(1, 'id')

@@ -20,7 +20,7 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
 
   Future<Map<String, dynamic>> _post(
       String method, Map<String, dynamic> body) async {
-    final path = '/yieldpoint.agronomy.v1.SatelliteService/$method';
+    final path = '/agriculture.satellite.v1.SatelliteService/$method';
     _log.fine('POST $path');
 
     final response = await _client.unary(

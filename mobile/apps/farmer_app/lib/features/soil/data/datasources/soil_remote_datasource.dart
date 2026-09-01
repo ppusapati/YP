@@ -19,7 +19,7 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
 
   final ConnectClient _client;
 
-  static const _basePath = '/yieldpoint.soil.v1.SoilService';
+  static const _basePath = '/agriculture.soil.v1.SoilService';
 
   @override
   Future<SoilAnalysisModel> getSoilAnalysis(String fieldId) async {

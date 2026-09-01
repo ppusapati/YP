@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 void main() {
   const baseUrl = 'http://localhost:8080';
-  const serviceName = 'yieldpoint.irrigation.v1.IrrigationService';
+  const serviceName = 'agriculture.irrigation.v1.IrrigationService';
 
   group('IrrigationServiceClient', () {
     group('getZone', () {

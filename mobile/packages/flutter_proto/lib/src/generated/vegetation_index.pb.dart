@@ -39,7 +39,7 @@ class VegetationIndex extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'VegetationIndex',
-    package: const $pb.PackageName('yieldpoint.satellite.vegetation.v1'),
+    package: const $pb.PackageName('agriculture.satellite.vegetation.v1'),
     createEmptyInstance: () => VegetationIndex._(),
   )
     ..aOS(1, 'id')
@@ -141,7 +141,7 @@ class NDVITimeSeriesEntry extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'NDVITimeSeriesEntry',
-    package: const $pb.PackageName('yieldpoint.satellite.vegetation.v1'),
+    package: const $pb.PackageName('agriculture.satellite.vegetation.v1'),
     createEmptyInstance: () => NDVITimeSeriesEntry._(),
   )
     ..aInt64(1, 'date')
@@ -217,7 +217,7 @@ class FieldHealth extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'FieldHealth',
-    package: const $pb.PackageName('yieldpoint.satellite.vegetation.v1'),
+    package: const $pb.PackageName('agriculture.satellite.vegetation.v1'),
     createEmptyInstance: () => FieldHealth._(),
   )
     ..aOS(1, 'farmId', protoName: 'farmId')

@@ -28,7 +28,7 @@ class CropRecommendation extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropRecommendation',
-    package: const $pb.PackageName('yieldpoint.recommendation.v1'),
+    package: const $pb.PackageName('agriculture.recommendation.v1'),
     createEmptyInstance: () => CropRecommendation._(),
   )
     ..aOS(1, 'cropName', protoName: 'cropName')

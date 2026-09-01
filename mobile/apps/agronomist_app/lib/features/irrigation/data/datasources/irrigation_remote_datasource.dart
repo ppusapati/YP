@@ -19,7 +19,7 @@ class IrrigationRemoteDataSourceImpl implements IrrigationRemoteDataSource {
   IrrigationRemoteDataSourceImpl(this._client);
 
   Future<Map<String, dynamic>> _post(String method, Map<String, dynamic> body) async {
-    final path = '/yieldpoint.agronomy.v1.IrrigationService/$method';
+    final path = '/agriculture.irrigation.v1.IrrigationService/$method';
     _log.fine('POST $path');
     final response = await _client.unary(path,
       body: Uint8List.fromList(utf8.encode(jsonEncode(body))),

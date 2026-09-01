@@ -30,7 +30,7 @@ class Crop extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'Crop',
-    package: const $pb.PackageName('yieldpoint.crop.v1'),
+    package: const $pb.PackageName('agriculture.crop.v1'),
     createEmptyInstance: () => Crop._(),
   )
     ..aOS(1, 'id')
@@ -109,7 +109,7 @@ class CropVariety extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropVariety',
-    package: const $pb.PackageName('yieldpoint.crop.v1'),
+    package: const $pb.PackageName('agriculture.crop.v1'),
     createEmptyInstance: () => CropVariety._(),
   )
     ..aOS(1, 'id')
@@ -173,7 +173,7 @@ class CropRequirements extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'CropRequirements',
-    package: const $pb.PackageName('yieldpoint.crop.v1'),
+    package: const $pb.PackageName('agriculture.crop.v1'),
     createEmptyInstance: () => CropRequirements._(),
   )
     ..aOS(1, 'cropId', protoName: 'cropId')
@@ -244,7 +244,7 @@ class GrowthStage extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'GrowthStage',
-    package: const $pb.PackageName('yieldpoint.crop.v1'),
+    package: const $pb.PackageName('agriculture.crop.v1'),
     createEmptyInstance: () => GrowthStage._(),
   )
     ..aOS(1, 'id')

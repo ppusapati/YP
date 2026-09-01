@@ -26,7 +26,7 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
   final ConnectClient _client;
   static final _log = Logger('TaskRemoteDataSource');
 
-  static const _basePath = '/yieldpoint.task.v1.TaskService';
+  static const _basePath = '/agriculture.task.v1.TaskService';
 
   @override
   Future<List<TaskModel>> fetchTasks({

@@ -47,7 +47,7 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
       };
 
   String _buildUrl(String service, String method) =>
-      '${_apiConfig.origin}/yieldpoint.satellite.v1.$service/$method';
+      '${_apiConfig.origin}/agriculture.satellite.v1.$service/$method';
 
   Future<Map<String, dynamic>> _post(
       String service, String method, Map<String, dynamic> body) async {

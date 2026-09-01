@@ -16,7 +16,7 @@ class ProcessingServiceClient extends BaseService {
 
   @override
   String get serviceName =>
-      'yieldpoint.satellite.processing.v1.SatelliteProcessingService';
+      'agriculture.satellite.processing.v1.SatelliteProcessingService';
 
   /// Submits a new processing job.
   Future<ProcessingJob> submitProcessingJob(ProcessingJob job) async {

@@ -15,7 +15,7 @@ class IrrigationServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.irrigation.v1.IrrigationService';
+  String get serviceName => 'agriculture.irrigation.v1.IrrigationService';
 
   /// Retrieves an irrigation zone by ID.
   Future<IrrigationZone> getZone(String zoneId) async {

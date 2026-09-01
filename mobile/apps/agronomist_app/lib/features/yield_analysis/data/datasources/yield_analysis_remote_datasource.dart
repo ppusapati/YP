@@ -16,7 +16,7 @@ class YieldAnalysisRemoteDataSourceImpl implements YieldAnalysisRemoteDataSource
 
   Future<Map<String, dynamic>> _post(String method, Map<String, dynamic> body) async {
     final response = await _client.unary(
-      '/yieldpoint.agronomy.v1.YieldService/$method',
+      '/agriculture.yield.v1.YieldService/$method',
       body: Uint8List.fromList(utf8.encode(jsonEncode(body))),
       headers: {'Content-Type': 'application/json'},
     );

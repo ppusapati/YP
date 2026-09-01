@@ -38,7 +38,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
       };
 
   String _buildUrl(String service, String method) =>
-      '${_apiConfig.origin}/yieldpoint.diagnosis.v1.$service/$method';
+      '${_apiConfig.origin}/agriculture.diagnosis.v1.$service/$method';
 
   Future<Map<String, dynamic>> _post(
       String service, String method, Map<String, dynamic> body) async {
@@ -69,7 +69,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     required String fieldId,
     required String imagePath,
   }) async {
-    final data = await _post('DiagnosisService', 'SubmitDiagnosis', {
+    final data = await _post('PlantDiagnosisService', 'SubmitDiagnosis', {
       'field_id': fieldId,
       'image_path': imagePath,
     });
@@ -80,7 +80,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
   @override
   Future<String> uploadImage(Uint8List imageBytes, String fileName) async {
     final url =
-        '${_apiConfig.origin}/yieldpoint.diagnosis.v1.DiagnosisService/UploadImage';
+        '${_apiConfig.origin}/agriculture.diagnosis.v1.PlantDiagnosisService/UploadImage';
     _log.fine('Uploading image: $fileName (${imageBytes.length} bytes)');
 
     final request = http.MultipartRequest('POST', Uri.parse(url))
@@ -112,7 +112,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     if (fieldId != null) body['field_id'] = fieldId;
 
     final data =
-        await _post('DiagnosisService', 'ListDiagnoses', body);
+        await _post('PlantDiagnosisService', 'ListDiagnoses', body);
     final diagnoses = data['diagnoses'] as List<dynamic>? ?? [];
     return diagnoses
         .map((d) => DiagnosisModel.fromProto(d as Map<String, dynamic>))
@@ -121,7 +121,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
 
   @override
   Future<DiagnosisModel> getDiagnosisById(String diagnosisId) async {
-    final data = await _post('DiagnosisService', 'GetDiagnosis', {
+    final data = await _post('PlantDiagnosisService', 'GetDiagnosis', {
       'id': diagnosisId,
     });
     return DiagnosisModel.fromProto(

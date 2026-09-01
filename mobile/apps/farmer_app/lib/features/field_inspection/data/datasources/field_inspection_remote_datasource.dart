@@ -23,7 +23,7 @@ class FieldInspectionRemoteDataSourceImpl
 
   Future<Map<String, dynamic>> _post(
       String method, Map<String, dynamic> body) async {
-    final path = '/yieldpoint.agronomy.v1.InspectionService/$method';
+    final path = '/agriculture.agronomy.v1.InspectionService/$method';
     _log.fine('POST $path');
 
     final response = await _client.unary(

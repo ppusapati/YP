@@ -35,7 +35,7 @@ class FieldObservation extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'FieldObservation',
-    package: const $pb.PackageName('yieldpoint.observation.v1'),
+    package: const $pb.PackageName('agriculture.observation.v1'),
     createEmptyInstance: () => FieldObservation._(),
   )
     ..aOS(1, 'id')

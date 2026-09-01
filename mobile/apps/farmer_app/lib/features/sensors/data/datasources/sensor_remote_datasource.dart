@@ -23,7 +23,7 @@ class SensorRemoteDataSourceImpl implements SensorRemoteDataSource {
 
   final ConnectClient _client;
 
-  static const _basePath = '/yieldpoint.sensor.v1.SensorService';
+  static const _basePath = '/agriculture.sensor.v1.SensorService';
 
   @override
   Future<List<SensorModel>> getSensors() async {

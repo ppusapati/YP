@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   const baseUrl = 'http://localhost:8080';
   const serviceName =
-      'yieldpoint.satellite.processing.v1.SatelliteProcessingService';
+      'agriculture.satellite.processing.v1.SatelliteProcessingService';
 
   group('ProcessingServiceClient', () {
     group('submitProcessingJob', () {

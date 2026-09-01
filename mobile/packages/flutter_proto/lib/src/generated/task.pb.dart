@@ -91,7 +91,7 @@ class FarmTask extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'FarmTask',
-    package: const $pb.PackageName('yieldpoint.task.v1'),
+    package: const $pb.PackageName('agriculture.task.v1'),
     createEmptyInstance: () => FarmTask._(),
   )
     ..aOS(1, 'id')

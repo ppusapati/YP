@@ -60,7 +60,7 @@ class SensorReading extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'SensorReading',
-    package: const $pb.PackageName('yieldpoint.sensor.v1'),
+    package: const $pb.PackageName('agriculture.sensor.v1'),
     createEmptyInstance: () => SensorReading._(),
   )
     ..aOS(1, 'sensorId', protoName: 'sensorId')
@@ -164,7 +164,7 @@ class SensorStats extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'SensorStats',
-    package: const $pb.PackageName('yieldpoint.sensor.v1'),
+    package: const $pb.PackageName('agriculture.sensor.v1'),
     createEmptyInstance: () => SensorStats._(),
   )
     ..a<double>(1, 'min', $pb.PbFieldType.OD)
@@ -224,7 +224,7 @@ class SensorDashboard extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'SensorDashboard',
-    package: const $pb.PackageName('yieldpoint.sensor.v1'),
+    package: const $pb.PackageName('agriculture.sensor.v1'),
     createEmptyInstance: () => SensorDashboard._(),
   )
     ..aOS(1, 'sensorId', protoName: 'sensorId')

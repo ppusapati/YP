@@ -38,7 +38,35 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
       };
 
   String _buildUrl(String service, String method) =>
-      '${_apiConfig.origin}/yieldpoint.farm.v1.$service/$method';
+      '${_apiConfig.origin}/agriculture.farm.v1.$service/$method';
+
+  String _buildFieldUrl(String service, String method) =>
+      '${_apiConfig.origin}/agriculture.field.v1.$service/$method';
+
+  Future<Map<String, dynamic>> _postField(
+      String service, String method, Map<String, dynamic> body) async {
+    final url = _buildFieldUrl(service, method);
+    _log.fine('POST $url');
+
+    final response = await _httpClient
+        .post(
+          Uri.parse(url),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(_apiConfig.timeout);
+
+    if (response.statusCode != 200) {
+      _log.severe('RPC error ${response.statusCode}: ${response.body}');
+      throw FarmRemoteException(
+        'RPC call $service/$method failed',
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 
   Future<Map<String, dynamic>> _post(
       String service, String method, Map<String, dynamic> body) async {
@@ -109,7 +137,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
 
   @override
   Future<FieldModel> createField(FieldModel field) async {
-    final data = await _post('FieldService', 'CreateField', {
+    final data = await _postField('FieldService', 'CreateField', {
       'field': field.toProto(),
     });
     return FieldModel.fromProto(data['field'] as Map<String, dynamic>);
@@ -117,7 +145,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
 
   @override
   Future<FieldModel> updateField(FieldModel field) async {
-    final data = await _post('FieldService', 'UpdateField', {
+    final data = await _postField('FieldService', 'UpdateField', {
       'field': field.toProto(),
     });
     return FieldModel.fromProto(data['field'] as Map<String, dynamic>);
@@ -125,14 +153,14 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
 
   @override
   Future<void> deleteField(String fieldId) async {
-    await _post('FieldService', 'DeleteField', {
+    await _postField('FieldService', 'DeleteField', {
       'id': fieldId,
     });
   }
 
   @override
   Future<List<FieldModel>> getFieldsByFarmId(String farmId) async {
-    final data = await _post('FieldService', 'ListFields', {
+    final data = await _postField('FieldService', 'ListFields', {
       'farm_id': farmId,
     });
     final fields = data['fields'] as List<dynamic>? ?? [];

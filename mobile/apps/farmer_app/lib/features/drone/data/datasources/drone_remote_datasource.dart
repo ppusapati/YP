@@ -18,7 +18,7 @@ class DroneRemoteDataSourceImpl implements DroneRemoteDataSource {
 
   final ConnectClient _client;
 
-  static const _basePath = '/yieldpoint.drone.v1.DroneService';
+  static const _basePath = '/agriculture.drone.v1.DroneService';
 
   @override
   Future<List<DroneLayerModel>> getDroneLayers({

@@ -20,7 +20,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
 
   Future<Map<String, dynamic>> _post(
       String method, Map<String, dynamic> body) async {
-    final path = '/yieldpoint.agronomy.v1.DiagnosisService/$method';
+    final path = '/agriculture.diagnosis.v1.PlantDiagnosisService/$method';
     _log.fine('POST $path');
 
     final response = await _client.unary(

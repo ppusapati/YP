@@ -17,7 +17,7 @@ class SatelliteServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.satellite.v1.SatelliteService';
+  String get serviceName => 'agriculture.satellite.v1.SatelliteService';
 
   /// Retrieves available satellite tiles for a field.
   Future<List<SatelliteTile>> getTilesForField({

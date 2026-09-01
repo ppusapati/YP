@@ -16,7 +16,7 @@ class VegetationIndexServiceClient extends BaseService {
 
   @override
   String get serviceName =>
-      'yieldpoint.satellite.vegetation.v1.VegetationIndexService';
+      'agriculture.satellite.vegetation.v1.VegetationIndexService';
 
   /// Computes vegetation indices for a field.
   Future<VegetationIndex> computeIndices(VegetationIndex request) async {

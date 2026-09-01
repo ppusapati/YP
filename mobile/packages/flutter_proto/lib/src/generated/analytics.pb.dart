@@ -39,7 +39,7 @@ class StressAlert extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'StressAlert',
-    package: const $pb.PackageName('yieldpoint.satellite.analytics.v1'),
+    package: const $pb.PackageName('agriculture.satellite.analytics.v1'),
     createEmptyInstance: () => StressAlert._(),
   )
     ..aOS(1, 'id')
@@ -138,7 +138,7 @@ class TemporalAnalysisResult extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'TemporalAnalysisResult',
-    package: const $pb.PackageName('yieldpoint.satellite.analytics.v1'),
+    package: const $pb.PackageName('agriculture.satellite.analytics.v1'),
     createEmptyInstance: () => TemporalAnalysisResult._(),
   )
     ..aOS(1, 'farmId', protoName: 'farmId')
@@ -229,7 +229,7 @@ class FieldAnalyticsSummary extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'FieldAnalyticsSummary',
-    package: const $pb.PackageName('yieldpoint.satellite.analytics.v1'),
+    package: const $pb.PackageName('agriculture.satellite.analytics.v1'),
     createEmptyInstance: () => FieldAnalyticsSummary._(),
   )
     ..aOS(1, 'farmId', protoName: 'farmId')

@@ -15,7 +15,7 @@ class TraceabilityServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.traceability.v1.TraceabilityService';
+  String get serviceName => 'agriculture.traceability.v1.TraceabilityService';
 
   /// Retrieves a produce record by ID.
   Future<ProduceRecord> getRecord(String recordId) async {

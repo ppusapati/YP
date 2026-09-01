@@ -16,7 +16,7 @@ class SensorServiceClient extends BaseService {
   });
 
   @override
-  String get serviceName => 'yieldpoint.sensor.v1.SensorService';
+  String get serviceName => 'agriculture.sensor.v1.SensorService';
 
   /// Retrieves a single sensor reading by sensor ID and timestamp.
   Future<SensorReading> getReading({

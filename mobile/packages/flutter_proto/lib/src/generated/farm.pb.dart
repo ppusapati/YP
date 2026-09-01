@@ -27,7 +27,7 @@ class LatLng extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'LatLng',
-    package: const $pb.PackageName('yieldpoint.farm.v1'),
+    package: const $pb.PackageName('agriculture.farm.v1'),
     createEmptyInstance: () => LatLng._(),
   )
     ..a<double>(1, 'latitude', $pb.PbFieldType.OD)
@@ -97,7 +97,7 @@ class Farm extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'Farm',
-    package: const $pb.PackageName('yieldpoint.farm.v1'),
+    package: const $pb.PackageName('agriculture.farm.v1'),
     createEmptyInstance: () => Farm._(),
   )
     ..aOS(1, 'id')
@@ -224,7 +224,7 @@ class Field extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
     'Field',
-    package: const $pb.PackageName('yieldpoint.farm.v1'),
+    package: const $pb.PackageName('agriculture.farm.v1'),
     createEmptyInstance: () => Field._(),
   )
     ..aOS(1, 'id')

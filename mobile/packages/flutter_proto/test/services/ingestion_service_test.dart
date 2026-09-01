@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 void main() {
   const baseUrl = 'http://localhost:8080';
   const serviceName =
-      'yieldpoint.satellite.ingestion.v1.SatelliteIngestionService';
+      'agriculture.satellite.ingestion.v1.SatelliteIngestionService';
 
   group('IngestionServiceClient', () {
     group('requestIngestion', () {
