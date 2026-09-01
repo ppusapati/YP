@@ -269,29 +269,40 @@ func (b BandValues) ComputeEVI() float64 {
 	return evi
 }
 
-// SatelliteStatus represents the status of a satellite record.
-type SatelliteStatus string
+// ---------------------------------------------------------------------------
+// Query Param Structs
+// ---------------------------------------------------------------------------
 
-const (
-	SatelliteStatusActive   SatelliteStatus = "ACTIVE"
-	SatelliteStatusInactive SatelliteStatus = "INACTIVE"
-	SatelliteStatusArchived SatelliteStatus = "ARCHIVED"
-)
-
-// Satellite is the aggregate root used by the ports layer for CRUD operations.
-type Satellite struct {
-	models.BaseModel
-	TenantID string          `json:"tenant_id" db:"tenant_id"`
-	Name     string          `json:"name" db:"name"`
-	Status   SatelliteStatus `json:"status" db:"status"`
-	Version  int64           `json:"version" db:"version"`
-}
-
-// ListSatelliteParams holds filter and pagination parameters for listing satellites via the ports layer.
-type ListSatelliteParams struct {
+// ListImagesParams holds filter and pagination parameters for listing images.
+type ListImagesParams struct {
 	TenantID string
-	Status   *SatelliteStatus
-	Search   *string
+	FieldID  string
+	FarmID   string
 	PageSize int32
 	Offset   int32
+}
+
+// GetVegetationIndicesParams holds filter parameters for querying vegetation indices.
+type GetVegetationIndicesParams struct {
+	TenantID  string
+	ImageID   string
+	FieldID   string
+	IndexType string
+}
+
+// ListAlertsParams holds filter and pagination parameters for listing alerts.
+type ListAlertsParams struct {
+	TenantID string
+	FieldID  string
+	PageSize int32
+	Offset   int32
+}
+
+// TemporalAnalysisParams holds parameters for computing a temporal analysis.
+type TemporalAnalysisParams struct {
+	TenantID  string
+	FieldID   string
+	IndexType string
+	StartDate time.Time
+	EndDate   time.Time
 }
