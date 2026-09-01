@@ -1,13 +1,11 @@
-import 'package:fixnum/fixnum.dart';
-import 'package:http/http.dart' as http;
-
 import '../generated/sensor.pb.dart';
 import 'base_service.dart';
 
 /// ConnectRPC service client for sensor data operations.
 ///
-/// Provides access to sensor readings, dashboards, and real-time
-/// streaming of sensor data from IoT devices in the field.
+/// Provides access to sensor management, reading ingestion,
+/// history retrieval, and real-time streaming of sensor data
+/// from IoT devices in the field.
 class SensorServiceClient extends BaseService {
   SensorServiceClient({
     required super.baseUrl,
@@ -18,64 +16,75 @@ class SensorServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.sensor.v1.SensorService';
 
-  /// Retrieves a single sensor reading by sensor ID and timestamp.
-  Future<SensorReading> getReading({
-    required String sensorId,
-    Int64? timestamp,
-  }) async {
-    final request = SensorReading(
-      sensorId: sensorId,
-      timestamp: timestamp,
-    );
-    final bytes = await callUnary('GetReading', request);
-    return SensorReading.fromBuffer(bytes);
+  /// Retrieves a sensor by ID.
+  Future<GetSensorResponse> getSensor(String id) async {
+    final request = GetSensorRequest(id: id);
+    final bytes = await callUnary('GetSensor', request);
+    return GetSensorResponse.fromBuffer(bytes);
   }
 
-  /// Lists sensor readings for a sensor within a time range.
-  Future<List<SensorReading>> listReadings({
-    required String sensorId,
-    Int64? fromTimestamp,
-    Int64? toTimestamp,
-    SensorType? type,
-    int pageSize = 100,
+  /// Lists sensors with optional filters.
+  Future<ListSensorsResponse> listSensors({
+    String? fieldId,
+    String? farmId,
+    SensorType? sensorType,
+    int pageSize = 20,
+    int pageOffset = 0,
   }) async {
-    final request = SensorReading(
-      sensorId: sensorId,
-      type: type,
+    final request = ListSensorsRequest(
+      fieldId: fieldId,
+      farmId: farmId,
+      sensorType: sensorType,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
     );
-    final bytes = await callUnary('ListReadings', request);
-    final reading = SensorReading.fromBuffer(bytes);
-    return [reading];
+    final bytes = await callUnary('ListSensors', request);
+    return ListSensorsResponse.fromBuffer(bytes);
   }
 
   /// Records a new sensor reading.
-  Future<SensorReading> recordReading(SensorReading reading) async {
-    final bytes = await callUnary('RecordReading', reading);
-    return SensorReading.fromBuffer(bytes);
+  Future<IngestReadingResponse> ingestReading(
+      IngestReadingRequest request) async {
+    final bytes = await callUnary('IngestReading', request);
+    return IngestReadingResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves a dashboard view for a sensor including recent readings
-  /// and aggregated statistics.
-  Future<SensorDashboard> getDashboard(String sensorId) async {
-    final request = SensorDashboard(sensorId: sensorId);
-    final bytes = await callUnary('GetDashboard', request);
-    return SensorDashboard.fromBuffer(bytes);
+  /// Retrieves the latest reading for a sensor.
+  Future<GetLatestReadingResponse> getLatestReading(String sensorId) async {
+    final request = GetLatestReadingRequest(sensorId: sensorId);
+    final bytes = await callUnary('GetLatestReading', request);
+    return GetLatestReadingResponse.fromBuffer(bytes);
+  }
+
+  /// Retrieves reading history for a sensor.
+  Future<GetReadingHistoryResponse> getReadingHistory({
+    required String sensorId,
+    int pageSize = 100,
+    int pageOffset = 0,
+  }) async {
+    final request = GetReadingHistoryRequest(
+      sensorId: sensorId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
+    final bytes = await callUnary('GetReadingHistory', request);
+    return GetReadingHistoryResponse.fromBuffer(bytes);
+  }
+
+  /// Retrieves sensor network information.
+  Future<GetSensorNetworkResponse> getSensorNetwork({
+    String? id,
+    String? farmId,
+  }) async {
+    final request = GetSensorNetworkRequest(id: id, farmId: farmId);
+    final bytes = await callUnary('GetSensorNetwork', request);
+    return GetSensorNetworkResponse.fromBuffer(bytes);
   }
 
   /// Streams real-time sensor readings for a given sensor.
   Stream<SensorReading> streamReadings(String sensorId) {
-    final request = SensorReading(sensorId: sensorId);
+    final request = GetLatestReadingRequest(sensorId: sensorId);
     return callServerStream('StreamReadings', request)
-        .map((bytes) => SensorReading.fromBuffer(bytes));
-  }
-
-  /// Streams real-time sensor readings filtered by type.
-  Stream<SensorReading> streamReadingsByType({
-    required String sensorId,
-    required SensorType type,
-  }) {
-    final request = SensorReading(sensorId: sensorId, type: type);
-    return callServerStream('StreamReadingsByType', request)
         .map((bytes) => SensorReading.fromBuffer(bytes));
   }
 }

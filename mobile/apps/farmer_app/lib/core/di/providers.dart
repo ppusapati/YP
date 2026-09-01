@@ -359,8 +359,7 @@ final getRecommendationsUseCaseProvider =
 
 final farmRemoteDataSourceProvider = Provider<FarmRemoteDataSource>((ref) {
   return FarmRemoteDataSourceImpl(
-    apiConfig: ref.watch(apiConfigProvider),
-    httpClient: ref.watch(httpClientProvider),
+    client: ref.watch(connectClientProvider),
   );
 });
 
@@ -400,10 +399,7 @@ final createFieldUseCaseProvider = Provider<CreateFieldUseCase>((ref) {
 
 final diagnosisRemoteDataSourceProvider =
     Provider<DiagnosisRemoteDataSource>((ref) {
-  return DiagnosisRemoteDataSourceImpl(
-    apiConfig: ref.watch(apiConfigProvider),
-    httpClient: ref.watch(httpClientProvider),
-  );
+  return DiagnosisRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 final diagnosisLocalDataSourceProvider =
@@ -436,10 +432,7 @@ final getDiagnosisHistoryUseCaseProvider =
 
 final satelliteRemoteDataSourceProvider =
     Provider<SatelliteRemoteDataSource>((ref) {
-  return SatelliteRemoteDataSourceImpl(
-    apiConfig: ref.watch(apiConfigProvider),
-    httpClient: ref.watch(httpClientProvider),
-  );
+  return SatelliteRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 final satelliteLocalDataSourceProvider =

@@ -1,13 +1,6 @@
-import 'package:http/http.dart' as http;
-
-import '../generated/farm.pb.dart';
 import '../generated/field.pb.dart';
 import 'base_service.dart';
 
-/// ConnectRPC service client for field management.
-///
-/// Provides CRUD operations for fields, boundaries, segments,
-/// crop assignments, and crop history.
 class FieldServiceClient extends BaseService {
   FieldServiceClient({
     required super.baseUrl,
@@ -18,72 +11,83 @@ class FieldServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.field.v1.FieldService';
 
-  /// Retrieves a field by ID.
-  Future<Field> getField(String id) async {
-    final request = Field(id: id);
+  Future<GetFieldResponse> getField(String id) async {
+    final request = GetFieldRequest(id: id);
     final bytes = await callUnary('GetField', request);
-    return Field.fromBuffer(bytes);
+    return GetFieldResponse.fromBuffer(bytes);
   }
 
-  /// Lists all fields for a farm.
-  Future<List<Field>> listFields(String farmId) async {
-    final request = Field(farmId: farmId);
+  Future<ListFieldsResponse> listFields({
+    String? farmId,
+    int pageSize = 20,
+    int pageOffset = 0,
+  }) async {
+    final request = ListFieldsRequest(
+      farmId: farmId ?? '',
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
     final bytes = await callUnary('ListFields', request);
-    final field = Field.fromBuffer(bytes);
-    return [field];
+    return ListFieldsResponse.fromBuffer(bytes);
   }
 
-  /// Creates a new field.
-  Future<Field> createField(Field field) async {
-    final bytes = await callUnary('CreateField', field);
-    return Field.fromBuffer(bytes);
+  Future<CreateFieldResponse> createField(CreateFieldRequest request) async {
+    final bytes = await callUnary('CreateField', request);
+    return CreateFieldResponse.fromBuffer(bytes);
   }
 
-  /// Updates an existing field.
-  Future<Field> updateField(Field field) async {
-    final bytes = await callUnary('UpdateField', field);
-    return Field.fromBuffer(bytes);
+  Future<UpdateFieldResponse> updateField(UpdateFieldRequest request) async {
+    final bytes = await callUnary('UpdateField', request);
+    return UpdateFieldResponse.fromBuffer(bytes);
   }
 
-  /// Deletes a field by ID.
   Future<void> deleteField(String id) async {
-    final request = Field(id: id);
+    final request = DeleteFieldRequest(id: id);
     await callUnary('DeleteField', request);
   }
 
-  /// Sets the boundary for a field.
-  Future<FieldBoundary> setFieldBoundary(FieldBoundary boundary) async {
-    final bytes = await callUnary('SetFieldBoundary', boundary);
-    return FieldBoundary.fromBuffer(bytes);
+  Future<SetFieldBoundaryResponse> setFieldBoundary(
+      SetFieldBoundaryRequest request) async {
+    final bytes = await callUnary('SetFieldBoundary', request);
+    return SetFieldBoundaryResponse.fromBuffer(bytes);
   }
 
-  /// Assigns a crop to a field.
-  Future<CropAssignment> assignCrop(CropAssignment assignment) async {
-    final bytes = await callUnary('AssignCrop', assignment);
-    return CropAssignment.fromBuffer(bytes);
+  Future<AssignCropResponse> assignCrop(AssignCropRequest request) async {
+    final bytes = await callUnary('AssignCrop', request);
+    return AssignCropResponse.fromBuffer(bytes);
   }
 
-  /// Segments a field into zones.
-  Future<List<FieldSegment>> segmentField(String fieldId) async {
-    final request = FieldSegment(fieldId: fieldId);
+  Future<ListFieldsByFarmResponse> listFieldsByFarm(String farmId,
+      {int pageSize = 20, int pageOffset = 0}) async {
+    final request = ListFieldsByFarmRequest(
+      farmId: farmId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
+    final bytes = await callUnary('ListFieldsByFarm', request);
+    return ListFieldsByFarmResponse.fromBuffer(bytes);
+  }
+
+  Future<SegmentFieldResponse> segmentField(
+      SegmentFieldRequest request) async {
     final bytes = await callUnary('SegmentField', request);
-    final segment = FieldSegment.fromBuffer(bytes);
-    return [segment];
+    return SegmentFieldResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves all segments for a field.
-  Future<List<FieldSegment>> getFieldSegments(String fieldId) async {
-    final request = FieldSegment(fieldId: fieldId);
+  Future<GetFieldSegmentsResponse> getFieldSegments(String fieldId) async {
+    final request = GetFieldSegmentsRequest(fieldId: fieldId);
     final bytes = await callUnary('GetFieldSegments', request);
-    final segment = FieldSegment.fromBuffer(bytes);
-    return [segment];
+    return GetFieldSegmentsResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves crop history for a field.
-  Future<List<CropHistoryEntry>> getCropHistory(String fieldId) async {
-    final request = CropHistoryEntry(fieldId: fieldId);
+  Future<GetCropHistoryResponse> getCropHistory(String fieldId,
+      {int pageSize = 20, int pageOffset = 0}) async {
+    final request = GetCropHistoryRequest(
+      fieldId: fieldId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
     final bytes = await callUnary('GetCropHistory', request);
-    final entry = CropHistoryEntry.fromBuffer(bytes);
-    return [entry];
+    return GetCropHistoryResponse.fromBuffer(bytes);
   }
 }

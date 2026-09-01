@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/pest.pb.dart';
 import 'base_service.dart';
 
@@ -18,67 +16,102 @@ class PestPredictionServiceClient extends BaseService {
   String get serviceName => 'agriculture.pest.v1.PestPredictionService';
 
   /// Predicts pest risk for a field.
-  Future<PestRiskZone> predictPestRisk(String fieldId) async {
-    final request = PestRiskZone(fieldId: fieldId);
+  Future<PredictPestRiskResponse> predictPestRisk(
+      PredictPestRiskRequest request) async {
     final bytes = await callUnary('PredictPestRisk', request);
-    return PestRiskZone.fromBuffer(bytes);
+    return PredictPestRiskResponse.fromBuffer(bytes);
   }
 
   /// Retrieves a pest prediction by ID.
-  Future<PestRiskZone> getPrediction(String id) async {
-    final request = PestRiskZone(id: id);
+  Future<GetPredictionResponse> getPrediction(String id) async {
+    final request = GetPredictionRequest(id: id);
     final bytes = await callUnary('GetPrediction', request);
-    return PestRiskZone.fromBuffer(bytes);
+    return GetPredictionResponse.fromBuffer(bytes);
   }
 
-  /// Lists all pest predictions for a field.
-  Future<List<PestRiskZone>> listPredictions(String fieldId) async {
-    final request = PestRiskZone(fieldId: fieldId);
+  /// Lists pest predictions for a field.
+  Future<ListPredictionsResponse> listPredictions({
+    String? farmId,
+    String? fieldId,
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListPredictionsRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListPredictions', request);
-    final zone = PestRiskZone.fromBuffer(bytes);
-    return [zone];
+    return ListPredictionsResponse.fromBuffer(bytes);
   }
 
   /// Reports a pest observation.
-  Future<PestRiskZone> reportObservation(PestRiskZone obs) async {
-    final bytes = await callUnary('ReportObservation', obs);
-    return PestRiskZone.fromBuffer(bytes);
+  Future<ReportObservationResponse> reportObservation(
+      ReportObservationRequest request) async {
+    final bytes = await callUnary('ReportObservation', request);
+    return ReportObservationResponse.fromBuffer(bytes);
   }
 
-  /// Lists all pest observations for a field.
-  Future<List<PestRiskZone>> listObservations(String fieldId) async {
-    final request = PestRiskZone(fieldId: fieldId);
+  /// Lists pest observations for a field.
+  Future<ListObservationsResponse> listObservations({
+    String? farmId,
+    String? fieldId,
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListObservationsRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListObservations', request);
-    final zone = PestRiskZone.fromBuffer(bytes);
-    return [zone];
+    return ListObservationsResponse.fromBuffer(bytes);
   }
 
   /// Retrieves a treatment plan for a prediction.
-  Future<PestRiskZone> getTreatmentPlan(String predictionId) async {
-    final request = PestRiskZone(id: predictionId);
+  Future<GetTreatmentPlanResponse> getTreatmentPlan(
+      String predictionId) async {
+    final request = GetTreatmentPlanRequest(predictionId: predictionId);
     final bytes = await callUnary('GetTreatmentPlan', request);
-    return PestRiskZone.fromBuffer(bytes);
+    return GetTreatmentPlanResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves the risk map for a farm.
-  Future<List<PestRiskZone>> getRiskMap(String farmId) async {
-    final request = PestRiskZone(fieldId: farmId);
+  /// Retrieves the risk map.
+  Future<GetRiskMapResponse> getRiskMap({
+    String? pestSpeciesId,
+    String? region,
+  }) async {
+    final request = GetRiskMapRequest(
+      pestSpeciesId: pestSpeciesId,
+      region: region,
+    );
     final bytes = await callUnary('GetRiskMap', request);
-    final zone = PestRiskZone.fromBuffer(bytes);
-    return [zone];
+    return GetRiskMapResponse.fromBuffer(bytes);
   }
 
-  /// Lists all active pest alerts for a farm.
-  Future<List<PestRiskZone>> listAlerts(String farmId) async {
-    final request = PestRiskZone(fieldId: farmId);
+  /// Lists active pest alerts for a farm.
+  Future<ListAlertsResponse> listAlerts({
+    required String farmId,
+    String? fieldId,
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListAlertsRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListAlerts', request);
-    final zone = PestRiskZone.fromBuffer(bytes);
-    return [zone];
+    return ListAlertsResponse.fromBuffer(bytes);
   }
 
   /// Acknowledges a pest alert.
-  Future<void> acknowledgeAlert(String alertId) async {
-    final request = PestRiskZone(id: alertId);
-    await callUnary('AcknowledgeAlert', request);
+  Future<AcknowledgeAlertResponse> acknowledgeAlert(String alertId) async {
+    final request = AcknowledgeAlertRequest(id: alertId);
+    final bytes = await callUnary('AcknowledgeAlert', request);
+    return AcknowledgeAlertResponse.fromBuffer(bytes);
   }
 }

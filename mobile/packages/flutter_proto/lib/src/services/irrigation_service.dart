@@ -1,12 +1,10 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/irrigation.pb.dart';
 import 'base_service.dart';
 
 /// ConnectRPC service client for irrigation management.
 ///
-/// Provides CRUD operations for irrigation zones, scheduling,
-/// and alert management.
+/// Provides operations for irrigation zones, scheduling,
+/// and water management.
 class IrrigationServiceClient extends BaseService {
   IrrigationServiceClient({
     required super.baseUrl,
@@ -17,64 +15,63 @@ class IrrigationServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.irrigation.v1.IrrigationService';
 
-  /// Retrieves an irrigation zone by ID.
-  Future<IrrigationZone> getZone(String zoneId) async {
-    final request = IrrigationZone(id: zoneId);
-    final bytes = await callUnary('GetZone', request);
-    return IrrigationZone.fromBuffer(bytes);
-  }
-
-  /// Lists all irrigation zones for a field.
-  Future<List<IrrigationZone>> listZones(String fieldId) async {
-    final request = IrrigationZone(fieldId: fieldId);
-    final bytes = await callUnary('ListZones', request);
-    final zone = IrrigationZone.fromBuffer(bytes);
-    return [zone];
-  }
-
   /// Creates a new irrigation zone.
-  Future<IrrigationZone> createZone(IrrigationZone zone) async {
-    final bytes = await callUnary('CreateZone', zone);
-    return IrrigationZone.fromBuffer(bytes);
+  Future<CreateZoneResponse> createZone(IrrigationZone zone) async {
+    final request = CreateZoneRequest(zone: zone);
+    final bytes = await callUnary('CreateZone', request);
+    return CreateZoneResponse.fromBuffer(bytes);
   }
 
-  /// Updates an existing irrigation zone.
-  Future<IrrigationZone> updateZone(IrrigationZone zone) async {
-    final bytes = await callUnary('UpdateZone', zone);
-    return IrrigationZone.fromBuffer(bytes);
+  /// Lists irrigation zones for a field.
+  Future<ListZonesResponse> listZones(String fieldId) async {
+    final request = ListZonesRequest(fieldId: fieldId);
+    final bytes = await callUnary('ListZones', request);
+    return ListZonesResponse.fromBuffer(bytes);
   }
 
-  /// Deletes an irrigation zone by ID.
-  Future<void> deleteZone(String zoneId) async {
-    final request = IrrigationZone(id: zoneId);
-    await callUnary('DeleteZone', request);
+  /// Creates an irrigation schedule.
+  Future<CreateScheduleResponse> createSchedule(
+      IrrigationSchedule schedule) async {
+    final request = CreateScheduleRequest(schedule: schedule);
+    final bytes = await callUnary('CreateSchedule', request);
+    return CreateScheduleResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves the irrigation schedule for a zone.
-  Future<IrrigationSchedule> getSchedule(String zoneId) async {
-    final request = IrrigationSchedule(zoneId: zoneId);
+  /// Retrieves an irrigation schedule by ID.
+  Future<GetScheduleResponse> getSchedule(String id) async {
+    final request = GetScheduleRequest(id: id);
     final bytes = await callUnary('GetSchedule', request);
-    return IrrigationSchedule.fromBuffer(bytes);
+    return GetScheduleResponse.fromBuffer(bytes);
   }
 
-  /// Creates or updates an irrigation schedule for a zone.
-  Future<IrrigationSchedule> setSchedule(IrrigationSchedule schedule) async {
-    final bytes = await callUnary('SetSchedule', schedule);
-    return IrrigationSchedule.fromBuffer(bytes);
+  /// Lists irrigation schedules.
+  Future<ListSchedulesResponse> listSchedules({
+    String? fieldId,
+    String? farmId,
+    String? zoneId,
+    int pageSize = 20,
+  }) async {
+    final request = ListSchedulesRequest(
+      fieldId: fieldId,
+      farmId: farmId,
+      zoneId: zoneId,
+      pageSize: pageSize,
+    );
+    final bytes = await callUnary('ListSchedules', request);
+    return ListSchedulesResponse.fromBuffer(bytes);
   }
 
-  /// Lists active irrigation alerts for a zone.
-  Future<List<IrrigationAlert>> listAlerts(String zoneId) async {
-    final request = IrrigationAlert(zoneId: zoneId);
-    final bytes = await callUnary('ListAlerts', request);
-    final alert = IrrigationAlert.fromBuffer(bytes);
-    return [alert];
+  /// Updates an existing irrigation schedule.
+  Future<UpdateScheduleResponse> updateSchedule(
+      IrrigationSchedule schedule) async {
+    final request = UpdateScheduleRequest(schedule: schedule);
+    final bytes = await callUnary('UpdateSchedule', request);
+    return UpdateScheduleResponse.fromBuffer(bytes);
   }
 
-  /// Streams real-time irrigation alerts for a zone.
-  Stream<IrrigationAlert> streamAlerts(String zoneId) {
-    final request = IrrigationAlert(zoneId: zoneId);
-    return callServerStream('StreamAlerts', request)
-        .map((bytes) => IrrigationAlert.fromBuffer(bytes));
+  /// Deletes an irrigation schedule by ID.
+  Future<void> deleteSchedule(String id) async {
+    final request = DeleteScheduleRequest(id: id);
+    await callUnary('DeleteSchedule', request);
   }
 }

@@ -1,12 +1,10 @@
-import 'package:http/http.dart' as http;
-
-import '../generated/task.pb.dart';
 import 'base_service.dart';
 
 /// ConnectRPC service client for farm task management.
 ///
-/// Provides CRUD operations for tasks, status updates,
-/// and assignment management.
+/// NOTE: No generated protobuf file exists for the task service
+/// (no task.proto definition). This service client is a placeholder
+/// until the task proto is defined and code-generated.
 class TaskServiceClient extends BaseService {
   TaskServiceClient({
     required super.baseUrl,
@@ -17,74 +15,38 @@ class TaskServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.task.v1.TaskService';
 
-  /// Retrieves a task by its unique identifier.
-  Future<FarmTask> getTask(String taskId) async {
-    final request = FarmTask(id: taskId);
-    final bytes = await callUnary('GetTask', request);
-    return FarmTask.fromBuffer(bytes);
-  }
-
-  /// Lists tasks for a farm with optional status filter.
-  Future<List<FarmTask>> listTasks({
-    required String farmId,
-    TaskStatus? status,
-    TaskType? taskType,
-    String? assignee,
-    int pageSize = 20,
-  }) async {
-    final request = FarmTask(
-      farmId: farmId,
-      status: status,
-      taskType: taskType,
-      assignee: assignee,
+  /// Not implemented - no task.pb.dart generated file exists.
+  Future<void> getTask(String taskId) async {
+    throw UnimplementedError(
+      'TaskService is not yet available: no task.proto has been defined.',
     );
-    final bytes = await callUnary('ListTasks', request);
-    final task = FarmTask.fromBuffer(bytes);
-    return [task];
   }
 
-  /// Creates a new farm task.
-  Future<FarmTask> createTask(FarmTask task) async {
-    final bytes = await callUnary('CreateTask', task);
-    return FarmTask.fromBuffer(bytes);
+  /// Not implemented - no task.pb.dart generated file exists.
+  Future<void> listTasks({required String farmId}) async {
+    throw UnimplementedError(
+      'TaskService is not yet available: no task.proto has been defined.',
+    );
   }
 
-  /// Updates an existing task.
-  Future<FarmTask> updateTask(FarmTask task) async {
-    final bytes = await callUnary('UpdateTask', task);
-    return FarmTask.fromBuffer(bytes);
+  /// Not implemented - no task.pb.dart generated file exists.
+  Future<void> createTask() async {
+    throw UnimplementedError(
+      'TaskService is not yet available: no task.proto has been defined.',
+    );
   }
 
-  /// Deletes a task by ID.
+  /// Not implemented - no task.pb.dart generated file exists.
+  Future<void> updateTask() async {
+    throw UnimplementedError(
+      'TaskService is not yet available: no task.proto has been defined.',
+    );
+  }
+
+  /// Not implemented - no task.pb.dart generated file exists.
   Future<void> deleteTask(String taskId) async {
-    final request = FarmTask(id: taskId);
-    await callUnary('DeleteTask', request);
-  }
-
-  /// Updates only the status of a task.
-  Future<FarmTask> updateTaskStatus({
-    required String taskId,
-    required TaskStatus status,
-  }) async {
-    final request = FarmTask(id: taskId, status: status);
-    final bytes = await callUnary('UpdateTaskStatus', request);
-    return FarmTask.fromBuffer(bytes);
-  }
-
-  /// Assigns a task to a user.
-  Future<FarmTask> assignTask({
-    required String taskId,
-    required String assignee,
-  }) async {
-    final request = FarmTask(id: taskId, assignee: assignee);
-    final bytes = await callUnary('AssignTask', request);
-    return FarmTask.fromBuffer(bytes);
-  }
-
-  /// Streams real-time task updates for a farm.
-  Stream<FarmTask> streamTaskUpdates(String farmId) {
-    final request = FarmTask(farmId: farmId);
-    return callServerStream('StreamTaskUpdates', request)
-        .map((bytes) => FarmTask.fromBuffer(bytes));
+    throw UnimplementedError(
+      'TaskService is not yet available: no task.proto has been defined.',
+    );
   }
 }

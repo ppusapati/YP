@@ -33,7 +33,7 @@ class ConnectRequest {
     this.queryParameters = const {},
   });
 
-  /// The RPC method path (e.g., `/yieldpoint.farm.v1.FarmService/GetFarm`).
+  /// The RPC method path (e.g., `/agriculture.farm.v1.FarmService/GetFarm`).
   final String path;
 
   /// The HTTP method (typically POST for ConnectRPC unary calls).
@@ -42,7 +42,7 @@ class ConnectRequest {
   /// Request headers. Interceptors may add or modify headers.
   Map<String, String> headers;
 
-  /// The serialised protobuf request body.
+  /// The serialised request body (JSON-encoded bytes for ConnectRPC JSON mode).
   Uint8List? body;
 
   /// Optional query parameters for GET requests.

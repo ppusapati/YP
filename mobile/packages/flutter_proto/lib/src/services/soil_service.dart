@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/soil.pb.dart';
 import 'base_service.dart';
 
@@ -18,51 +16,68 @@ class SoilServiceClient extends BaseService {
   String get serviceName => 'agriculture.soil.v1.SoilService';
 
   /// Retrieves a soil sample by ID.
-  Future<SoilAnalysis> getSoilSample(String id) async {
-    final request = SoilAnalysis(fieldId: id);
+  Future<GetSoilSampleResponse> getSoilSample(String id) async {
+    final request = GetSoilSampleRequest(id: id);
     final bytes = await callUnary('GetSoilSample', request);
-    return SoilAnalysis.fromBuffer(bytes);
+    return GetSoilSampleResponse.fromBuffer(bytes);
   }
 
-  /// Lists all soil samples for a field.
-  Future<List<SoilAnalysis>> listSoilSamples(String fieldId) async {
-    final request = SoilAnalysis(fieldId: fieldId);
+  /// Lists soil samples for a field.
+  Future<ListSoilSamplesResponse> listSoilSamples({
+    required String fieldId,
+    String? farmId,
+    int pageSize = 20,
+    int pageOffset = 0,
+  }) async {
+    final request = ListSoilSamplesRequest(
+      fieldId: fieldId,
+      farmId: farmId,
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
     final bytes = await callUnary('ListSoilSamples', request);
-    final sample = SoilAnalysis.fromBuffer(bytes);
-    return [sample];
+    return ListSoilSamplesResponse.fromBuffer(bytes);
   }
 
   /// Creates a new soil sample.
-  Future<SoilAnalysis> createSoilSample(SoilAnalysis sample) async {
-    final bytes = await callUnary('CreateSoilSample', sample);
-    return SoilAnalysis.fromBuffer(bytes);
+  Future<CreateSoilSampleResponse> createSoilSample(
+      CreateSoilSampleRequest request) async {
+    final bytes = await callUnary('CreateSoilSample', request);
+    return CreateSoilSampleResponse.fromBuffer(bytes);
   }
 
-  /// Runs soil analysis for a field.
-  Future<SoilAnalysis> analyzeSoil(String fieldId) async {
-    final request = SoilAnalysis(fieldId: fieldId);
+  /// Runs soil analysis for a sample.
+  Future<AnalyzeSoilResponse> analyzeSoil(String sampleId) async {
+    final request = AnalyzeSoilRequest(sampleId: sampleId);
     final bytes = await callUnary('AnalyzeSoil', request);
-    return SoilAnalysis.fromBuffer(bytes);
+    return AnalyzeSoilResponse.fromBuffer(bytes);
   }
 
   /// Retrieves soil health assessment for a field.
-  Future<SoilAnalysis> getSoilHealth(String fieldId) async {
-    final request = SoilAnalysis(fieldId: fieldId);
+  Future<GetSoilHealthResponse> getSoilHealth(String fieldId) async {
+    final request = GetSoilHealthRequest(fieldId: fieldId);
     final bytes = await callUnary('GetSoilHealth', request);
-    return SoilAnalysis.fromBuffer(bytes);
+    return GetSoilHealthResponse.fromBuffer(bytes);
   }
 
-  /// Retrieves nutrient levels for a field.
-  Future<SoilAnalysis> getNutrientLevels(String fieldId) async {
-    final request = SoilAnalysis(fieldId: fieldId);
+  /// Retrieves nutrient levels for a sample.
+  Future<GetNutrientLevelsResponse> getNutrientLevels(
+      String sampleId) async {
+    final request = GetNutrientLevelsRequest(sampleId: sampleId);
     final bytes = await callUnary('GetNutrientLevels', request);
-    return SoilAnalysis.fromBuffer(bytes);
+    return GetNutrientLevelsResponse.fromBuffer(bytes);
   }
 
   /// Generates a soil report for a field.
-  Future<SoilAnalysis> generateSoilReport(String fieldId) async {
-    final request = SoilAnalysis(fieldId: fieldId);
+  Future<GenerateSoilReportResponse> generateSoilReport({
+    required String fieldId,
+    String? farmId,
+  }) async {
+    final request = GenerateSoilReportRequest(
+      fieldId: fieldId,
+      farmId: farmId,
+    );
     final bytes = await callUnary('GenerateSoilReport', request);
-    return SoilAnalysis.fromBuffer(bytes);
+    return GenerateSoilReportResponse.fromBuffer(bytes);
   }
 }

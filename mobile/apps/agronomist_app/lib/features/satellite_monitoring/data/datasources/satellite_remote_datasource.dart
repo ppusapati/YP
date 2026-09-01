@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter_network/flutter_network.dart';
-import 'package:logging/logging.dart';
+import 'package:flutter_proto/src/generated/satellite.pb.dart' as satellite_pb;
+import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/satellite_data_model.dart';
 
@@ -14,52 +12,97 @@ abstract class SatelliteRemoteDataSource {
 
 class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
   final ConnectClient _client;
-  final _log = Logger('SatelliteRemoteDataSource');
+
+  static const _basePath = '/agriculture.satellite.v1.SatelliteService';
 
   SatelliteRemoteDataSourceImpl(this._client);
 
-  Future<Map<String, dynamic>> _post(
-      String method, Map<String, dynamic> body) async {
-    final path = '/agriculture.satellite.v1.SatelliteService/$method';
-    _log.fine('POST $path');
-
+  Future<ConnectResponse> _call(
+      String method, $pb.GeneratedMessage request) async {
     final response = await _client.unary(
-      path,
-      body: Uint8List.fromList(utf8.encode(jsonEncode(body))),
-      headers: {'Content-Type': 'application/json'},
+      '$_basePath/$method',
+      body: request.writeToBuffer(),
     );
-
     if (!response.isSuccess) {
-      throw Exception('RPC call SatelliteService/$method failed');
+      throw ConnectException(
+        code: 'internal',
+        message: '$_basePath/$method failed',
+        statusCode: response.statusCode,
+      );
     }
-
-    return jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
+    return response;
   }
 
   @override
   Future<List<SatelliteDataModel>> getTilesForField(String fieldId) async {
-    final data = await _post('GetTiles', {'field_id': fieldId});
-    final list = data['tiles'] as List<dynamic>? ?? [];
-    return list
-        .map((e) => SatelliteDataModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final request = satellite_pb.ListImagesRequest(fieldId: fieldId);
+    final response = await _call('ListImages', request);
+    final pbResponse =
+        satellite_pb.ListImagesResponse.fromBuffer(response.body);
+    return pbResponse.images.map(_imageToModel).toList();
   }
 
   @override
   Future<List<StressAlertModel>> getStressAlerts(String farmId) async {
-    final data = await _post('GetStressAlerts', {'farm_id': farmId});
-    final list = data['alerts'] as List<dynamic>? ?? [];
-    return list
-        .map((e) => StressAlertModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    // ListAlertsRequest does not have a farmId field; filtering by farm is
+    // not supported in the proto. We send an unfiltered request.
+    final request = satellite_pb.ListAlertsRequest();
+    final response = await _call('ListAlerts', request);
+    final pbResponse =
+        satellite_pb.ListAlertsResponse.fromBuffer(response.body);
+    return pbResponse.alerts.map(_alertToModel).toList();
   }
 
   @override
   Future<Map<String, dynamic>> getFieldSummary(
       String farmId, String fieldId) async {
-    return _post('GetFieldSummary', {
-      'farm_id': farmId,
-      'field_id': fieldId,
-    });
+    final request =
+        satellite_pb.GetTemporalAnalysisRequest(fieldId: fieldId);
+    final response = await _call('GetTemporalAnalysis', request);
+    final pbResponse =
+        satellite_pb.GetTemporalAnalysisResponse.fromBuffer(response.body);
+    final analysis = pbResponse.analysis;
+    return {
+      'field_id': analysis.fieldId,
+      'index_type': analysis.indexType,
+      'data_points': analysis.dataPoints.length,
+    };
+  }
+
+  /// Converts a protobuf [satellite_pb.SatelliteImage] to [SatelliteDataModel].
+  static SatelliteDataModel _imageToModel(satellite_pb.SatelliteImage pb) {
+    final captureDate = pb.hasAcquisitionDate()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.acquisitionDate.seconds.toInt() * 1000)
+        : DateTime.now();
+    return SatelliteDataModel(
+      id: pb.id,
+      fieldId: pb.fieldId,
+      tileUrl: pb.imageUrl,
+      captureDate: captureDate,
+      indexType: 'ndvi',
+    );
+  }
+
+  /// Converts a protobuf [satellite_pb.CropStressAlert] to [StressAlertModel].
+  static StressAlertModel _alertToModel(satellite_pb.CropStressAlert pb) {
+    final detectedAt = pb.hasDetectedAt()
+        ? DateTime.fromMillisecondsSinceEpoch(
+            pb.detectedAt.seconds.toInt() * 1000)
+        : DateTime.now();
+    return StressAlertModel(
+      id: pb.id,
+      farmId: '',
+      fieldId: pb.fieldId,
+      stressType: pb.stressType.name,
+      severity: pb.stressSeverity > 0.7
+          ? 'high'
+          : pb.stressSeverity > 0.4
+              ? 'medium'
+              : 'low',
+      confidence: pb.stressSeverity,
+      affectedArea: pb.affectedAreaPct,
+      detectedAt: detectedAt,
+    );
   }
 }

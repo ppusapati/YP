@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/crop.pb.dart';
 import 'base_service.dart';
 
@@ -18,71 +16,75 @@ class CropServiceClient extends BaseService {
   String get serviceName => 'agriculture.crop.v1.CropService';
 
   /// Retrieves a crop by ID.
-  Future<Crop> getCrop(String id) async {
-    final request = Crop(id: id);
+  Future<GetCropResponse> getCrop(String id) async {
+    final request = GetCropRequest(id: id);
     final bytes = await callUnary('GetCrop', request);
-    return Crop.fromBuffer(bytes);
+    return GetCropResponse.fromBuffer(bytes);
   }
 
-  /// Lists all crops for a farm.
-  Future<List<Crop>> listCrops(String farmId) async {
-    final request = Crop(id: farmId);
+  /// Lists all crops.
+  Future<ListCropsResponse> listCrops({
+    int pageSize = 20,
+    int pageOffset = 0,
+  }) async {
+    final request = ListCropsRequest(
+      pageSize: pageSize,
+      pageOffset: pageOffset,
+    );
     final bytes = await callUnary('ListCrops', request);
-    final crop = Crop.fromBuffer(bytes);
-    return [crop];
+    return ListCropsResponse.fromBuffer(bytes);
   }
 
   /// Creates a new crop.
-  Future<Crop> createCrop(Crop crop) async {
-    final bytes = await callUnary('CreateCrop', crop);
-    return Crop.fromBuffer(bytes);
+  Future<CreateCropResponse> createCrop(CreateCropRequest request) async {
+    final bytes = await callUnary('CreateCrop', request);
+    return CreateCropResponse.fromBuffer(bytes);
   }
 
   /// Updates an existing crop.
-  Future<Crop> updateCrop(Crop crop) async {
-    final bytes = await callUnary('UpdateCrop', crop);
-    return Crop.fromBuffer(bytes);
+  Future<UpdateCropResponse> updateCrop(UpdateCropRequest request) async {
+    final bytes = await callUnary('UpdateCrop', request);
+    return UpdateCropResponse.fromBuffer(bytes);
   }
 
   /// Deletes a crop by ID.
   Future<void> deleteCrop(String id) async {
-    final request = Crop(id: id);
+    final request = DeleteCropRequest(id: id);
     await callUnary('DeleteCrop', request);
   }
 
   /// Adds a variety to a crop.
-  Future<CropVariety> addVariety(CropVariety variety) async {
-    final bytes = await callUnary('AddVariety', variety);
-    return CropVariety.fromBuffer(bytes);
+  Future<AddVarietyResponse> addVariety(AddVarietyRequest request) async {
+    final bytes = await callUnary('AddVariety', request);
+    return AddVarietyResponse.fromBuffer(bytes);
   }
 
   /// Lists all varieties for a crop.
-  Future<List<CropVariety>> listVarieties(String cropId) async {
-    final request = CropVariety(cropId: cropId);
+  Future<ListVarietiesResponse> listVarieties(String cropId) async {
+    final request = ListVarietiesRequest(cropId: cropId);
     final bytes = await callUnary('ListVarieties', request);
-    final variety = CropVariety.fromBuffer(bytes);
-    return [variety];
+    return ListVarietiesResponse.fromBuffer(bytes);
   }
 
   /// Retrieves growth stages for a crop.
-  Future<List<GrowthStage>> getGrowthStages(String cropId) async {
-    final request = GrowthStage(cropId: cropId);
+  Future<GetGrowthStagesResponse> getGrowthStages(String cropId) async {
+    final request = GetGrowthStagesRequest(cropId: cropId);
     final bytes = await callUnary('GetGrowthStages', request);
-    final stage = GrowthStage.fromBuffer(bytes);
-    return [stage];
+    return GetGrowthStagesResponse.fromBuffer(bytes);
   }
 
   /// Retrieves crop requirements for a crop.
-  Future<CropRequirements> getCropRequirements(String cropId) async {
-    final request = CropRequirements(cropId: cropId);
+  Future<GetCropRequirementsResponse> getCropRequirements(
+      String cropId) async {
+    final request = GetCropRequirementsRequest(cropId: cropId);
     final bytes = await callUnary('GetCropRequirements', request);
-    return CropRequirements.fromBuffer(bytes);
+    return GetCropRequirementsResponse.fromBuffer(bytes);
   }
 
-  /// Generates a crop recommendation for a field.
-  Future<Crop> generateRecommendation(String fieldId) async {
-    final request = Crop(id: fieldId);
+  /// Generates a crop recommendation.
+  Future<GenerateRecommendationResponse> generateRecommendation(
+      GenerateRecommendationRequest request) async {
     final bytes = await callUnary('GenerateRecommendation', request);
-    return Crop.fromBuffer(bytes);
+    return GenerateRecommendationResponse.fromBuffer(bytes);
   }
 }

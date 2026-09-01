@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../generated/analytics.pb.dart';
 import 'base_service.dart';
 
@@ -19,44 +17,49 @@ class AnalyticsServiceClient extends BaseService {
       'agriculture.satellite.analytics.v1.SatelliteAnalyticsService';
 
   /// Detects stress in a field.
-  Future<StressAlert> detectStress(StressAlert request) async {
+  Future<DetectStressResponse> detectStress(
+      DetectStressRequest request) async {
     final bytes = await callUnary('DetectStress', request);
-    return StressAlert.fromBuffer(bytes);
+    return DetectStressResponse.fromBuffer(bytes);
   }
 
   /// Lists stress alerts for a farm.
-  Future<List<StressAlert>> listStressAlerts(String farmId) async {
-    final request = StressAlert(farmId: farmId);
+  Future<ListStressAlertsResponse> listStressAlerts({
+    required String farmId,
+    int pageSize = 20,
+    String pageToken = '',
+  }) async {
+    final request = ListStressAlertsRequest(
+      farmId: farmId,
+      pageSize: pageSize,
+      pageToken: pageToken,
+    );
     final bytes = await callUnary('ListStressAlerts', request);
-    final alert = StressAlert.fromBuffer(bytes);
-    return [alert];
-  }
-
-  /// Retrieves a stress alert by ID.
-  Future<StressAlert> getStressAlert(String id) async {
-    final request = StressAlert(id: id);
-    final bytes = await callUnary('GetStressAlert', request);
-    return StressAlert.fromBuffer(bytes);
+    return ListStressAlertsResponse.fromBuffer(bytes);
   }
 
   /// Acknowledges a stress alert.
-  Future<void> acknowledgeAlert(String id) async {
-    final request = StressAlert(id: id);
-    await callUnary('AcknowledgeAlert', request);
+  Future<AcknowledgeAlertResponse> acknowledgeAlert(String id) async {
+    final request = AcknowledgeAlertRequest(id: id);
+    final bytes = await callUnary('AcknowledgeAlert', request);
+    return AcknowledgeAlertResponse.fromBuffer(bytes);
   }
 
   /// Runs a temporal analysis over a time period.
-  Future<TemporalAnalysisResult> runTemporalAnalysis(
-      TemporalAnalysisResult request) async {
+  Future<RunTemporalAnalysisResponse> runTemporalAnalysis(
+      RunTemporalAnalysisRequest request) async {
     final bytes = await callUnary('RunTemporalAnalysis', request);
-    return TemporalAnalysisResult.fromBuffer(bytes);
+    return RunTemporalAnalysisResponse.fromBuffer(bytes);
   }
 
   /// Retrieves analytics summary for a field.
-  Future<FieldAnalyticsSummary> getFieldAnalyticsSummary(
+  Future<GetFieldAnalyticsSummaryResponse> getFieldAnalyticsSummary(
       String farmId, String fieldId) async {
-    final request = FieldAnalyticsSummary(farmId: farmId, fieldId: fieldId);
+    final request = GetFieldAnalyticsSummaryRequest(
+      farmId: farmId,
+      fieldId: fieldId,
+    );
     final bytes = await callUnary('GetFieldAnalyticsSummary', request);
-    return FieldAnalyticsSummary.fromBuffer(bytes);
+    return GetFieldAnalyticsSummaryResponse.fromBuffer(bytes);
   }
 }
