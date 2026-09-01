@@ -14,7 +14,6 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/traceability-service/internal/domain"
-	"p9e.in/samavaya/agriculture/traceability-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/traceability-service/internal/ports/outbound"
 )
 
@@ -24,6 +23,16 @@ const (
 	maxPageSize     int32 = 100
 	defaultPageSize       = int32(20)
 )
+
+// TraceabilityService is the legacy application-layer service interface.
+// Deprecated: Use internal/services.TraceabilityService instead.
+type TraceabilityService interface {
+	CreateTraceability(ctx context.Context, entity *domain.Traceability) (*domain.Traceability, error)
+	GetTraceability(ctx context.Context, uuid string) (*domain.Traceability, error)
+	ListTraceabilitys(ctx context.Context, params domain.ListTraceabilityParams) ([]domain.Traceability, int32, error)
+	UpdateTraceability(ctx context.Context, entity *domain.Traceability) (*domain.Traceability, error)
+	DeleteTraceability(ctx context.Context, uuid string) error
+}
 
 type traceabilityService struct {
 	repo        outbound.TraceabilityRepository
@@ -36,6 +45,7 @@ type traceabilityService struct {
 }
 
 // NewTraceabilityService creates a new application-layer TraceabilityService.
+// Deprecated: Use internal/services.NewTraceabilityService instead.
 func NewTraceabilityService(
 	repo outbound.TraceabilityRepository,
 	pub outbound.EventPublisher,
@@ -44,7 +54,7 @@ func NewTraceabilityService(
 	yieldClient outbound.YieldClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
-) inbound.TraceabilityService {
+) TraceabilityService {
 	return &traceabilityService{
 		repo:        repo,
 		pub:         pub,
