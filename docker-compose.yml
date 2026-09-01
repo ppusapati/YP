@@ -1,6 +1,6 @@
 # YieldPoint — Local Development Stack
 # Usage: docker compose up -d
-# Ports: postgres 5432, kafka 9092, services 8081-8091
+# Ports: postgres 5432, kafka 9092, Go services 8081-8091, ai-gateway 50051
 
 x-go-service: &go-service
   build:
@@ -205,6 +205,21 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${TRACEABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/traceability_service?sslmode=disable}
+
+  # ── Rust AI Gateway ────────────────────────────────────────────────────────
+
+  ai-gateway:
+    build:
+      context: .
+      dockerfile: ai-gateway/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
 
 volumes:
   pgdata:

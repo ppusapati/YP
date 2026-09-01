@@ -419,6 +419,137 @@ func (AspectDirection) EnumDescriptor() ([]byte, []int) {
 	return file_field_proto_rawDescGZIP(), []int{5}
 }
 
+type CropCycleStatus int32
+
+const (
+	CropCycleStatus_CYCLE_STATUS_UNSPECIFIED CropCycleStatus = 0
+	CropCycleStatus_CYCLE_STATUS_PLANNED     CropCycleStatus = 1
+	CropCycleStatus_CYCLE_STATUS_ACTIVE      CropCycleStatus = 2
+	CropCycleStatus_CYCLE_STATUS_HARVESTING  CropCycleStatus = 3
+	CropCycleStatus_CYCLE_STATUS_COMPLETED   CropCycleStatus = 4
+	CropCycleStatus_CYCLE_STATUS_ABANDONED   CropCycleStatus = 5
+)
+
+// Enum value maps for CropCycleStatus.
+var (
+	CropCycleStatus_name = map[int32]string{
+		0: "CYCLE_STATUS_UNSPECIFIED",
+		1: "CYCLE_STATUS_PLANNED",
+		2: "CYCLE_STATUS_ACTIVE",
+		3: "CYCLE_STATUS_HARVESTING",
+		4: "CYCLE_STATUS_COMPLETED",
+		5: "CYCLE_STATUS_ABANDONED",
+	}
+	CropCycleStatus_value = map[string]int32{
+		"CYCLE_STATUS_UNSPECIFIED": 0,
+		"CYCLE_STATUS_PLANNED":     1,
+		"CYCLE_STATUS_ACTIVE":      2,
+		"CYCLE_STATUS_HARVESTING":  3,
+		"CYCLE_STATUS_COMPLETED":   4,
+		"CYCLE_STATUS_ABANDONED":   5,
+	}
+)
+
+func (x CropCycleStatus) Enum() *CropCycleStatus {
+	p := new(CropCycleStatus)
+	*p = x
+	return p
+}
+
+func (x CropCycleStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CropCycleStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_field_proto_enumTypes[6].Descriptor()
+}
+
+func (CropCycleStatus) Type() protoreflect.EnumType {
+	return &file_field_proto_enumTypes[6]
+}
+
+func (x CropCycleStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CropCycleStatus.Descriptor instead.
+func (CropCycleStatus) EnumDescriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{6}
+}
+
+type ActivityCategory int32
+
+const (
+	ActivityCategory_CATEGORY_UNSPECIFIED   ActivityCategory = 0
+	ActivityCategory_CATEGORY_LAND_PREP     ActivityCategory = 1
+	ActivityCategory_CATEGORY_PLANTING      ActivityCategory = 2
+	ActivityCategory_CATEGORY_IRRIGATION    ActivityCategory = 3
+	ActivityCategory_CATEGORY_FERTILIZATION ActivityCategory = 4
+	ActivityCategory_CATEGORY_PEST_CONTROL  ActivityCategory = 5
+	ActivityCategory_CATEGORY_SCOUTING      ActivityCategory = 6
+	ActivityCategory_CATEGORY_HARVESTING    ActivityCategory = 7
+	ActivityCategory_CATEGORY_POST_HARVEST  ActivityCategory = 8
+	ActivityCategory_CATEGORY_SOIL_SAMPLING ActivityCategory = 9
+	ActivityCategory_CATEGORY_MAINTENANCE   ActivityCategory = 10
+)
+
+// Enum value maps for ActivityCategory.
+var (
+	ActivityCategory_name = map[int32]string{
+		0:  "CATEGORY_UNSPECIFIED",
+		1:  "CATEGORY_LAND_PREP",
+		2:  "CATEGORY_PLANTING",
+		3:  "CATEGORY_IRRIGATION",
+		4:  "CATEGORY_FERTILIZATION",
+		5:  "CATEGORY_PEST_CONTROL",
+		6:  "CATEGORY_SCOUTING",
+		7:  "CATEGORY_HARVESTING",
+		8:  "CATEGORY_POST_HARVEST",
+		9:  "CATEGORY_SOIL_SAMPLING",
+		10: "CATEGORY_MAINTENANCE",
+	}
+	ActivityCategory_value = map[string]int32{
+		"CATEGORY_UNSPECIFIED":   0,
+		"CATEGORY_LAND_PREP":     1,
+		"CATEGORY_PLANTING":      2,
+		"CATEGORY_IRRIGATION":    3,
+		"CATEGORY_FERTILIZATION": 4,
+		"CATEGORY_PEST_CONTROL":  5,
+		"CATEGORY_SCOUTING":      6,
+		"CATEGORY_HARVESTING":    7,
+		"CATEGORY_POST_HARVEST":  8,
+		"CATEGORY_SOIL_SAMPLING": 9,
+		"CATEGORY_MAINTENANCE":   10,
+	}
+)
+
+func (x ActivityCategory) Enum() *ActivityCategory {
+	p := new(ActivityCategory)
+	*p = x
+	return p
+}
+
+func (x ActivityCategory) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActivityCategory) Descriptor() protoreflect.EnumDescriptor {
+	return file_field_proto_enumTypes[7].Descriptor()
+}
+
+func (ActivityCategory) Type() protoreflect.EnumType {
+	return &file_field_proto_enumTypes[7]
+}
+
+func (x ActivityCategory) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActivityCategory.Descriptor instead.
+func (ActivityCategory) EnumDescriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{7}
+}
+
 type GeoPoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Longitude     float64                `protobuf:"fixed64,1,opt,name=longitude,proto3" json:"longitude,omitempty"`
@@ -2455,6 +2586,1302 @@ func (x *GetCropHistoryResponse) GetTotalCount() int32 {
 	return 0
 }
 
+type CropCycle struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Id                    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId              string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	FieldId               string                 `protobuf:"bytes,3,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	CropId                string                 `protobuf:"bytes,4,opt,name=crop_id,json=cropId,proto3" json:"crop_id,omitempty"`
+	CropAssignmentId      string                 `protobuf:"bytes,5,opt,name=crop_assignment_id,json=cropAssignmentId,proto3" json:"crop_assignment_id,omitempty"`
+	Season                string                 `protobuf:"bytes,6,opt,name=season,proto3" json:"season,omitempty"`
+	CycleYear             int32                  `protobuf:"varint,7,opt,name=cycle_year,json=cycleYear,proto3" json:"cycle_year,omitempty"`
+	Name                  string                 `protobuf:"bytes,8,opt,name=name,proto3" json:"name,omitempty"`
+	PlannedPlantingDate   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=planned_planting_date,json=plannedPlantingDate,proto3" json:"planned_planting_date,omitempty"`
+	ActualPlantingDate    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=actual_planting_date,json=actualPlantingDate,proto3" json:"actual_planting_date,omitempty"`
+	PlannedHarvestDate    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=planned_harvest_date,json=plannedHarvestDate,proto3" json:"planned_harvest_date,omitempty"`
+	ActualHarvestDate     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=actual_harvest_date,json=actualHarvestDate,proto3" json:"actual_harvest_date,omitempty"`
+	Status                CropCycleStatus        `protobuf:"varint,13,opt,name=status,proto3,enum=agriculture.field.v1.CropCycleStatus" json:"status,omitempty"`
+	TargetYieldPerHectare float64                `protobuf:"fixed64,14,opt,name=target_yield_per_hectare,json=targetYieldPerHectare,proto3" json:"target_yield_per_hectare,omitempty"`
+	ActualYieldPerHectare float64                `protobuf:"fixed64,15,opt,name=actual_yield_per_hectare,json=actualYieldPerHectare,proto3" json:"actual_yield_per_hectare,omitempty"`
+	YieldUnit             string                 `protobuf:"bytes,16,opt,name=yield_unit,json=yieldUnit,proto3" json:"yield_unit,omitempty"`
+	TotalInputCost        int64                  `protobuf:"varint,17,opt,name=total_input_cost,json=totalInputCost,proto3" json:"total_input_cost,omitempty"`
+	TotalRevenue          int64                  `protobuf:"varint,18,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`
+	Currency              string                 `protobuf:"bytes,19,opt,name=currency,proto3" json:"currency,omitempty"`
+	Notes                 string                 `protobuf:"bytes,20,opt,name=notes,proto3" json:"notes,omitempty"`
+	Version               int64                  `protobuf:"varint,21,opt,name=version,proto3" json:"version,omitempty"`
+	CreatedBy             string                 `protobuf:"bytes,22,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	CreatedAt             *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt             *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CropCycle) Reset() {
+	*x = CropCycle{}
+	mi := &file_field_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CropCycle) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CropCycle) ProtoMessage() {}
+
+func (x *CropCycle) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CropCycle.ProtoReflect.Descriptor instead.
+func (*CropCycle) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *CropCycle) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CropCycle) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *CropCycle) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *CropCycle) GetCropId() string {
+	if x != nil {
+		return x.CropId
+	}
+	return ""
+}
+
+func (x *CropCycle) GetCropAssignmentId() string {
+	if x != nil {
+		return x.CropAssignmentId
+	}
+	return ""
+}
+
+func (x *CropCycle) GetSeason() string {
+	if x != nil {
+		return x.Season
+	}
+	return ""
+}
+
+func (x *CropCycle) GetCycleYear() int32 {
+	if x != nil {
+		return x.CycleYear
+	}
+	return 0
+}
+
+func (x *CropCycle) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CropCycle) GetPlannedPlantingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PlannedPlantingDate
+	}
+	return nil
+}
+
+func (x *CropCycle) GetActualPlantingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ActualPlantingDate
+	}
+	return nil
+}
+
+func (x *CropCycle) GetPlannedHarvestDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PlannedHarvestDate
+	}
+	return nil
+}
+
+func (x *CropCycle) GetActualHarvestDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ActualHarvestDate
+	}
+	return nil
+}
+
+func (x *CropCycle) GetStatus() CropCycleStatus {
+	if x != nil {
+		return x.Status
+	}
+	return CropCycleStatus_CYCLE_STATUS_UNSPECIFIED
+}
+
+func (x *CropCycle) GetTargetYieldPerHectare() float64 {
+	if x != nil {
+		return x.TargetYieldPerHectare
+	}
+	return 0
+}
+
+func (x *CropCycle) GetActualYieldPerHectare() float64 {
+	if x != nil {
+		return x.ActualYieldPerHectare
+	}
+	return 0
+}
+
+func (x *CropCycle) GetYieldUnit() string {
+	if x != nil {
+		return x.YieldUnit
+	}
+	return ""
+}
+
+func (x *CropCycle) GetTotalInputCost() int64 {
+	if x != nil {
+		return x.TotalInputCost
+	}
+	return 0
+}
+
+func (x *CropCycle) GetTotalRevenue() int64 {
+	if x != nil {
+		return x.TotalRevenue
+	}
+	return 0
+}
+
+func (x *CropCycle) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *CropCycle) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *CropCycle) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *CropCycle) GetCreatedBy() string {
+	if x != nil {
+		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *CropCycle) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *CropCycle) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+type CreateCropCycleRequest struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	FieldId               string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	CropId                string                 `protobuf:"bytes,2,opt,name=crop_id,json=cropId,proto3" json:"crop_id,omitempty"`
+	Season                string                 `protobuf:"bytes,3,opt,name=season,proto3" json:"season,omitempty"`
+	CycleYear             int32                  `protobuf:"varint,4,opt,name=cycle_year,json=cycleYear,proto3" json:"cycle_year,omitempty"`
+	Name                  string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	PlannedPlantingDate   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=planned_planting_date,json=plannedPlantingDate,proto3" json:"planned_planting_date,omitempty"`
+	PlannedHarvestDate    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=planned_harvest_date,json=plannedHarvestDate,proto3" json:"planned_harvest_date,omitempty"`
+	TargetYieldPerHectare float64                `protobuf:"fixed64,8,opt,name=target_yield_per_hectare,json=targetYieldPerHectare,proto3" json:"target_yield_per_hectare,omitempty"`
+	YieldUnit             string                 `protobuf:"bytes,9,opt,name=yield_unit,json=yieldUnit,proto3" json:"yield_unit,omitempty"`
+	Notes                 string                 `protobuf:"bytes,10,opt,name=notes,proto3" json:"notes,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CreateCropCycleRequest) Reset() {
+	*x = CreateCropCycleRequest{}
+	mi := &file_field_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCropCycleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCropCycleRequest) ProtoMessage() {}
+
+func (x *CreateCropCycleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCropCycleRequest.ProtoReflect.Descriptor instead.
+func (*CreateCropCycleRequest) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *CreateCropCycleRequest) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetCropId() string {
+	if x != nil {
+		return x.CropId
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetSeason() string {
+	if x != nil {
+		return x.Season
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetCycleYear() int32 {
+	if x != nil {
+		return x.CycleYear
+	}
+	return 0
+}
+
+func (x *CreateCropCycleRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetPlannedPlantingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PlannedPlantingDate
+	}
+	return nil
+}
+
+func (x *CreateCropCycleRequest) GetPlannedHarvestDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PlannedHarvestDate
+	}
+	return nil
+}
+
+func (x *CreateCropCycleRequest) GetTargetYieldPerHectare() float64 {
+	if x != nil {
+		return x.TargetYieldPerHectare
+	}
+	return 0
+}
+
+func (x *CreateCropCycleRequest) GetYieldUnit() string {
+	if x != nil {
+		return x.YieldUnit
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+type CreateCropCycleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cycle         *CropCycle             `protobuf:"bytes,1,opt,name=cycle,proto3" json:"cycle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCropCycleResponse) Reset() {
+	*x = CreateCropCycleResponse{}
+	mi := &file_field_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCropCycleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCropCycleResponse) ProtoMessage() {}
+
+func (x *CreateCropCycleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCropCycleResponse.ProtoReflect.Descriptor instead.
+func (*CreateCropCycleResponse) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *CreateCropCycleResponse) GetCycle() *CropCycle {
+	if x != nil {
+		return x.Cycle
+	}
+	return nil
+}
+
+type GetCropCycleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCropCycleRequest) Reset() {
+	*x = GetCropCycleRequest{}
+	mi := &file_field_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCropCycleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCropCycleRequest) ProtoMessage() {}
+
+func (x *GetCropCycleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCropCycleRequest.ProtoReflect.Descriptor instead.
+func (*GetCropCycleRequest) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetCropCycleRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetCropCycleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cycle         *CropCycle             `protobuf:"bytes,1,opt,name=cycle,proto3" json:"cycle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCropCycleResponse) Reset() {
+	*x = GetCropCycleResponse{}
+	mi := &file_field_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCropCycleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCropCycleResponse) ProtoMessage() {}
+
+func (x *GetCropCycleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCropCycleResponse.ProtoReflect.Descriptor instead.
+func (*GetCropCycleResponse) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetCropCycleResponse) GetCycle() *CropCycle {
+	if x != nil {
+		return x.Cycle
+	}
+	return nil
+}
+
+type ListCropCyclesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FieldId       string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	Status        CropCycleStatus        `protobuf:"varint,2,opt,name=status,proto3,enum=agriculture.field.v1.CropCycleStatus" json:"status,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageOffset    int32                  `protobuf:"varint,4,opt,name=page_offset,json=pageOffset,proto3" json:"page_offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCropCyclesRequest) Reset() {
+	*x = ListCropCyclesRequest{}
+	mi := &file_field_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCropCyclesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCropCyclesRequest) ProtoMessage() {}
+
+func (x *ListCropCyclesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCropCyclesRequest.ProtoReflect.Descriptor instead.
+func (*ListCropCyclesRequest) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *ListCropCyclesRequest) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *ListCropCyclesRequest) GetStatus() CropCycleStatus {
+	if x != nil {
+		return x.Status
+	}
+	return CropCycleStatus_CYCLE_STATUS_UNSPECIFIED
+}
+
+func (x *ListCropCyclesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListCropCyclesRequest) GetPageOffset() int32 {
+	if x != nil {
+		return x.PageOffset
+	}
+	return 0
+}
+
+type ListCropCyclesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cycles        []*CropCycle           `protobuf:"bytes,1,rep,name=cycles,proto3" json:"cycles,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,2,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCropCyclesResponse) Reset() {
+	*x = ListCropCyclesResponse{}
+	mi := &file_field_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCropCyclesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCropCyclesResponse) ProtoMessage() {}
+
+func (x *ListCropCyclesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCropCyclesResponse.ProtoReflect.Descriptor instead.
+func (*ListCropCyclesResponse) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *ListCropCyclesResponse) GetCycles() []*CropCycle {
+	if x != nil {
+		return x.Cycles
+	}
+	return nil
+}
+
+func (x *ListCropCyclesResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+type UpdateCropCycleRequest struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Id                    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status                CropCycleStatus        `protobuf:"varint,2,opt,name=status,proto3,enum=agriculture.field.v1.CropCycleStatus" json:"status,omitempty"`
+	ActualPlantingDate    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=actual_planting_date,json=actualPlantingDate,proto3" json:"actual_planting_date,omitempty"`
+	ActualHarvestDate     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=actual_harvest_date,json=actualHarvestDate,proto3" json:"actual_harvest_date,omitempty"`
+	ActualYieldPerHectare float64                `protobuf:"fixed64,5,opt,name=actual_yield_per_hectare,json=actualYieldPerHectare,proto3" json:"actual_yield_per_hectare,omitempty"`
+	TotalInputCost        int64                  `protobuf:"varint,6,opt,name=total_input_cost,json=totalInputCost,proto3" json:"total_input_cost,omitempty"`
+	TotalRevenue          int64                  `protobuf:"varint,7,opt,name=total_revenue,json=totalRevenue,proto3" json:"total_revenue,omitempty"`
+	Notes                 string                 `protobuf:"bytes,8,opt,name=notes,proto3" json:"notes,omitempty"`
+	UpdateMask            *fieldmaskpb.FieldMask `protobuf:"bytes,9,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *UpdateCropCycleRequest) Reset() {
+	*x = UpdateCropCycleRequest{}
+	mi := &file_field_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCropCycleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCropCycleRequest) ProtoMessage() {}
+
+func (x *UpdateCropCycleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCropCycleRequest.ProtoReflect.Descriptor instead.
+func (*UpdateCropCycleRequest) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *UpdateCropCycleRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateCropCycleRequest) GetStatus() CropCycleStatus {
+	if x != nil {
+		return x.Status
+	}
+	return CropCycleStatus_CYCLE_STATUS_UNSPECIFIED
+}
+
+func (x *UpdateCropCycleRequest) GetActualPlantingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ActualPlantingDate
+	}
+	return nil
+}
+
+func (x *UpdateCropCycleRequest) GetActualHarvestDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ActualHarvestDate
+	}
+	return nil
+}
+
+func (x *UpdateCropCycleRequest) GetActualYieldPerHectare() float64 {
+	if x != nil {
+		return x.ActualYieldPerHectare
+	}
+	return 0
+}
+
+func (x *UpdateCropCycleRequest) GetTotalInputCost() int64 {
+	if x != nil {
+		return x.TotalInputCost
+	}
+	return 0
+}
+
+func (x *UpdateCropCycleRequest) GetTotalRevenue() int64 {
+	if x != nil {
+		return x.TotalRevenue
+	}
+	return 0
+}
+
+func (x *UpdateCropCycleRequest) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *UpdateCropCycleRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
+	if x != nil {
+		return x.UpdateMask
+	}
+	return nil
+}
+
+type UpdateCropCycleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cycle         *CropCycle             `protobuf:"bytes,1,opt,name=cycle,proto3" json:"cycle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCropCycleResponse) Reset() {
+	*x = UpdateCropCycleResponse{}
+	mi := &file_field_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCropCycleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCropCycleResponse) ProtoMessage() {}
+
+func (x *UpdateCropCycleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCropCycleResponse.ProtoReflect.Descriptor instead.
+func (*UpdateCropCycleResponse) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *UpdateCropCycleResponse) GetCycle() *CropCycle {
+	if x != nil {
+		return x.Cycle
+	}
+	return nil
+}
+
+type ActivityEvent struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId            string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	FieldId             string                 `protobuf:"bytes,3,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	CropCycleId         string                 `protobuf:"bytes,4,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
+	PerformedBy         string                 `protobuf:"bytes,5,opt,name=performed_by,json=performedBy,proto3" json:"performed_by,omitempty"`
+	ActivityType        string                 `protobuf:"bytes,6,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"`
+	Category            ActivityCategory       `protobuf:"varint,7,opt,name=category,proto3,enum=agriculture.field.v1.ActivityCategory" json:"category,omitempty"`
+	StartedAt           *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt         *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	DurationMinutes     int32                  `protobuf:"varint,10,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
+	Description         string                 `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"`
+	Notes               string                 `protobuf:"bytes,12,opt,name=notes,proto3" json:"notes,omitempty"`
+	InputProductId      string                 `protobuf:"bytes,13,opt,name=input_product_id,json=inputProductId,proto3" json:"input_product_id,omitempty"`
+	InputQuantity       float64                `protobuf:"fixed64,14,opt,name=input_quantity,json=inputQuantity,proto3" json:"input_quantity,omitempty"`
+	InputUnit           string                 `protobuf:"bytes,15,opt,name=input_unit,json=inputUnit,proto3" json:"input_unit,omitempty"`
+	InputCost           int64                  `protobuf:"varint,16,opt,name=input_cost,json=inputCost,proto3" json:"input_cost,omitempty"`
+	Currency            string                 `protobuf:"bytes,17,opt,name=currency,proto3" json:"currency,omitempty"`
+	AreaHectares        float64                `protobuf:"fixed64,18,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
+	WeatherTempCelsius  float64                `protobuf:"fixed64,19,opt,name=weather_temp_celsius,json=weatherTempCelsius,proto3" json:"weather_temp_celsius,omitempty"`
+	WeatherHumidityPct  float64                `protobuf:"fixed64,20,opt,name=weather_humidity_pct,json=weatherHumidityPct,proto3" json:"weather_humidity_pct,omitempty"`
+	WeatherWindSpeedKmh float64                `protobuf:"fixed64,21,opt,name=weather_wind_speed_kmh,json=weatherWindSpeedKmh,proto3" json:"weather_wind_speed_kmh,omitempty"`
+	WeatherConditions   string                 `protobuf:"bytes,22,opt,name=weather_conditions,json=weatherConditions,proto3" json:"weather_conditions,omitempty"`
+	CreatedAt           *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ActivityEvent) Reset() {
+	*x = ActivityEvent{}
+	mi := &file_field_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivityEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivityEvent) ProtoMessage() {}
+
+func (x *ActivityEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivityEvent.ProtoReflect.Descriptor instead.
+func (*ActivityEvent) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ActivityEvent) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetCropCycleId() string {
+	if x != nil {
+		return x.CropCycleId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetPerformedBy() string {
+	if x != nil {
+		return x.PerformedBy
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetActivityType() string {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetCategory() ActivityCategory {
+	if x != nil {
+		return x.Category
+	}
+	return ActivityCategory_CATEGORY_UNSPECIFIED
+}
+
+func (x *ActivityEvent) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *ActivityEvent) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
+func (x *ActivityEvent) GetDurationMinutes() int32 {
+	if x != nil {
+		return x.DurationMinutes
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetInputProductId() string {
+	if x != nil {
+		return x.InputProductId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetInputQuantity() float64 {
+	if x != nil {
+		return x.InputQuantity
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetInputUnit() string {
+	if x != nil {
+		return x.InputUnit
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetInputCost() int64 {
+	if x != nil {
+		return x.InputCost
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetAreaHectares() float64 {
+	if x != nil {
+		return x.AreaHectares
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetWeatherTempCelsius() float64 {
+	if x != nil {
+		return x.WeatherTempCelsius
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetWeatherHumidityPct() float64 {
+	if x != nil {
+		return x.WeatherHumidityPct
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetWeatherWindSpeedKmh() float64 {
+	if x != nil {
+		return x.WeatherWindSpeedKmh
+	}
+	return 0
+}
+
+func (x *ActivityEvent) GetWeatherConditions() string {
+	if x != nil {
+		return x.WeatherConditions
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type LogActivityEventRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	FieldId         string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	CropCycleId     string                 `protobuf:"bytes,2,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
+	ActivityType    string                 `protobuf:"bytes,3,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"`
+	Category        ActivityCategory       `protobuf:"varint,4,opt,name=category,proto3,enum=agriculture.field.v1.ActivityCategory" json:"category,omitempty"`
+	StartedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	DurationMinutes int32                  `protobuf:"varint,7,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
+	Description     string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	Notes           string                 `protobuf:"bytes,9,opt,name=notes,proto3" json:"notes,omitempty"`
+	InputProductId  string                 `protobuf:"bytes,10,opt,name=input_product_id,json=inputProductId,proto3" json:"input_product_id,omitempty"`
+	InputQuantity   float64                `protobuf:"fixed64,11,opt,name=input_quantity,json=inputQuantity,proto3" json:"input_quantity,omitempty"`
+	InputUnit       string                 `protobuf:"bytes,12,opt,name=input_unit,json=inputUnit,proto3" json:"input_unit,omitempty"`
+	InputCost       int64                  `protobuf:"varint,13,opt,name=input_cost,json=inputCost,proto3" json:"input_cost,omitempty"`
+	Currency        string                 `protobuf:"bytes,14,opt,name=currency,proto3" json:"currency,omitempty"`
+	AreaHectares    float64                `protobuf:"fixed64,15,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *LogActivityEventRequest) Reset() {
+	*x = LogActivityEventRequest{}
+	mi := &file_field_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogActivityEventRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogActivityEventRequest) ProtoMessage() {}
+
+func (x *LogActivityEventRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogActivityEventRequest.ProtoReflect.Descriptor instead.
+func (*LogActivityEventRequest) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *LogActivityEventRequest) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetCropCycleId() string {
+	if x != nil {
+		return x.CropCycleId
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetActivityType() string {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetCategory() ActivityCategory {
+	if x != nil {
+		return x.Category
+	}
+	return ActivityCategory_CATEGORY_UNSPECIFIED
+}
+
+func (x *LogActivityEventRequest) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *LogActivityEventRequest) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
+func (x *LogActivityEventRequest) GetDurationMinutes() int32 {
+	if x != nil {
+		return x.DurationMinutes
+	}
+	return 0
+}
+
+func (x *LogActivityEventRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetInputProductId() string {
+	if x != nil {
+		return x.InputProductId
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetInputQuantity() float64 {
+	if x != nil {
+		return x.InputQuantity
+	}
+	return 0
+}
+
+func (x *LogActivityEventRequest) GetInputUnit() string {
+	if x != nil {
+		return x.InputUnit
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetInputCost() int64 {
+	if x != nil {
+		return x.InputCost
+	}
+	return 0
+}
+
+func (x *LogActivityEventRequest) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *LogActivityEventRequest) GetAreaHectares() float64 {
+	if x != nil {
+		return x.AreaHectares
+	}
+	return 0
+}
+
+type LogActivityEventResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Event         *ActivityEvent         `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogActivityEventResponse) Reset() {
+	*x = LogActivityEventResponse{}
+	mi := &file_field_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogActivityEventResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogActivityEventResponse) ProtoMessage() {}
+
+func (x *LogActivityEventResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogActivityEventResponse.ProtoReflect.Descriptor instead.
+func (*LogActivityEventResponse) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *LogActivityEventResponse) GetEvent() *ActivityEvent {
+	if x != nil {
+		return x.Event
+	}
+	return nil
+}
+
+type ListActivityEventsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FieldId       string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	CropCycleId   string                 `protobuf:"bytes,2,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
+	Category      ActivityCategory       `protobuf:"varint,3,opt,name=category,proto3,enum=agriculture.field.v1.ActivityCategory" json:"category,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageOffset    int32                  `protobuf:"varint,5,opt,name=page_offset,json=pageOffset,proto3" json:"page_offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListActivityEventsRequest) Reset() {
+	*x = ListActivityEventsRequest{}
+	mi := &file_field_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListActivityEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListActivityEventsRequest) ProtoMessage() {}
+
+func (x *ListActivityEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListActivityEventsRequest.ProtoReflect.Descriptor instead.
+func (*ListActivityEventsRequest) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *ListActivityEventsRequest) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *ListActivityEventsRequest) GetCropCycleId() string {
+	if x != nil {
+		return x.CropCycleId
+	}
+	return ""
+}
+
+func (x *ListActivityEventsRequest) GetCategory() ActivityCategory {
+	if x != nil {
+		return x.Category
+	}
+	return ActivityCategory_CATEGORY_UNSPECIFIED
+}
+
+func (x *ListActivityEventsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListActivityEventsRequest) GetPageOffset() int32 {
+	if x != nil {
+		return x.PageOffset
+	}
+	return 0
+}
+
+type ListActivityEventsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Events        []*ActivityEvent       `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,2,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListActivityEventsResponse) Reset() {
+	*x = ListActivityEventsResponse{}
+	mi := &file_field_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListActivityEventsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListActivityEventsResponse) ProtoMessage() {}
+
+func (x *ListActivityEventsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_field_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListActivityEventsResponse.ProtoReflect.Descriptor instead.
+func (*ListActivityEventsResponse) Descriptor() ([]byte, []int) {
+	return file_field_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *ListActivityEventsResponse) GetEvents() []*ActivityEvent {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+func (x *ListActivityEventsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
 var File_field_proto protoreflect.FileDescriptor
 
 const file_field_proto_rawDesc = "" +
@@ -2641,6 +4068,142 @@ const file_field_proto_rawDesc = "" +
 	"\x16GetCropHistoryResponse\x12K\n" +
 	"\vassignments\x18\x01 \x03(\v2).agriculture.field.v1.FieldCropAssignmentR\vassignments\x12\x1f\n" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
+	"totalCount\"\x9d\b\n" +
+	"\tCropCycle\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
+	"\bfield_id\x18\x03 \x01(\tR\afieldId\x12\x17\n" +
+	"\acrop_id\x18\x04 \x01(\tR\x06cropId\x12,\n" +
+	"\x12crop_assignment_id\x18\x05 \x01(\tR\x10cropAssignmentId\x12\x16\n" +
+	"\x06season\x18\x06 \x01(\tR\x06season\x12\x1d\n" +
+	"\n" +
+	"cycle_year\x18\a \x01(\x05R\tcycleYear\x12\x12\n" +
+	"\x04name\x18\b \x01(\tR\x04name\x12N\n" +
+	"\x15planned_planting_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x13plannedPlantingDate\x12L\n" +
+	"\x14actual_planting_date\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\x12actualPlantingDate\x12L\n" +
+	"\x14planned_harvest_date\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x12plannedHarvestDate\x12J\n" +
+	"\x13actual_harvest_date\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x11actualHarvestDate\x12=\n" +
+	"\x06status\x18\r \x01(\x0e2%.agriculture.field.v1.CropCycleStatusR\x06status\x127\n" +
+	"\x18target_yield_per_hectare\x18\x0e \x01(\x01R\x15targetYieldPerHectare\x127\n" +
+	"\x18actual_yield_per_hectare\x18\x0f \x01(\x01R\x15actualYieldPerHectare\x12\x1d\n" +
+	"\n" +
+	"yield_unit\x18\x10 \x01(\tR\tyieldUnit\x12(\n" +
+	"\x10total_input_cost\x18\x11 \x01(\x03R\x0etotalInputCost\x12#\n" +
+	"\rtotal_revenue\x18\x12 \x01(\x03R\ftotalRevenue\x12\x1a\n" +
+	"\bcurrency\x18\x13 \x01(\tR\bcurrency\x12\x14\n" +
+	"\x05notes\x18\x14 \x01(\tR\x05notes\x12\x18\n" +
+	"\aversion\x18\x15 \x01(\x03R\aversion\x12\x1d\n" +
+	"\n" +
+	"created_by\x18\x16 \x01(\tR\tcreatedBy\x129\n" +
+	"\n" +
+	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xa3\x03\n" +
+	"\x16CreateCropCycleRequest\x12\x19\n" +
+	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\x17\n" +
+	"\acrop_id\x18\x02 \x01(\tR\x06cropId\x12\x16\n" +
+	"\x06season\x18\x03 \x01(\tR\x06season\x12\x1d\n" +
+	"\n" +
+	"cycle_year\x18\x04 \x01(\x05R\tcycleYear\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12N\n" +
+	"\x15planned_planting_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x13plannedPlantingDate\x12L\n" +
+	"\x14planned_harvest_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x12plannedHarvestDate\x127\n" +
+	"\x18target_yield_per_hectare\x18\b \x01(\x01R\x15targetYieldPerHectare\x12\x1d\n" +
+	"\n" +
+	"yield_unit\x18\t \x01(\tR\tyieldUnit\x12\x14\n" +
+	"\x05notes\x18\n" +
+	" \x01(\tR\x05notes\"P\n" +
+	"\x17CreateCropCycleResponse\x125\n" +
+	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"%\n" +
+	"\x13GetCropCycleRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"M\n" +
+	"\x14GetCropCycleResponse\x125\n" +
+	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"\xaf\x01\n" +
+	"\x15ListCropCyclesRequest\x12\x19\n" +
+	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12=\n" +
+	"\x06status\x18\x02 \x01(\x0e2%.agriculture.field.v1.CropCycleStatusR\x06status\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1f\n" +
+	"\vpage_offset\x18\x04 \x01(\x05R\n" +
+	"pageOffset\"r\n" +
+	"\x16ListCropCyclesResponse\x127\n" +
+	"\x06cycles\x18\x01 \x03(\v2\x1f.agriculture.field.v1.CropCycleR\x06cycles\x12\x1f\n" +
+	"\vtotal_count\x18\x02 \x01(\x05R\n" +
+	"totalCount\"\xdc\x03\n" +
+	"\x16UpdateCropCycleRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12=\n" +
+	"\x06status\x18\x02 \x01(\x0e2%.agriculture.field.v1.CropCycleStatusR\x06status\x12L\n" +
+	"\x14actual_planting_date\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x12actualPlantingDate\x12J\n" +
+	"\x13actual_harvest_date\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x11actualHarvestDate\x127\n" +
+	"\x18actual_yield_per_hectare\x18\x05 \x01(\x01R\x15actualYieldPerHectare\x12(\n" +
+	"\x10total_input_cost\x18\x06 \x01(\x03R\x0etotalInputCost\x12#\n" +
+	"\rtotal_revenue\x18\a \x01(\x03R\ftotalRevenue\x12\x14\n" +
+	"\x05notes\x18\b \x01(\tR\x05notes\x12;\n" +
+	"\vupdate_mask\x18\t \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
+	"updateMask\"P\n" +
+	"\x17UpdateCropCycleResponse\x125\n" +
+	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"\xb7\a\n" +
+	"\rActivityEvent\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
+	"\bfield_id\x18\x03 \x01(\tR\afieldId\x12\"\n" +
+	"\rcrop_cycle_id\x18\x04 \x01(\tR\vcropCycleId\x12!\n" +
+	"\fperformed_by\x18\x05 \x01(\tR\vperformedBy\x12#\n" +
+	"\ractivity_type\x18\x06 \x01(\tR\factivityType\x12B\n" +
+	"\bcategory\x18\a \x01(\x0e2&.agriculture.field.v1.ActivityCategoryR\bcategory\x129\n" +
+	"\n" +
+	"started_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12)\n" +
+	"\x10duration_minutes\x18\n" +
+	" \x01(\x05R\x0fdurationMinutes\x12 \n" +
+	"\vdescription\x18\v \x01(\tR\vdescription\x12\x14\n" +
+	"\x05notes\x18\f \x01(\tR\x05notes\x12(\n" +
+	"\x10input_product_id\x18\r \x01(\tR\x0einputProductId\x12%\n" +
+	"\x0einput_quantity\x18\x0e \x01(\x01R\rinputQuantity\x12\x1d\n" +
+	"\n" +
+	"input_unit\x18\x0f \x01(\tR\tinputUnit\x12\x1d\n" +
+	"\n" +
+	"input_cost\x18\x10 \x01(\x03R\tinputCost\x12\x1a\n" +
+	"\bcurrency\x18\x11 \x01(\tR\bcurrency\x12#\n" +
+	"\rarea_hectares\x18\x12 \x01(\x01R\fareaHectares\x120\n" +
+	"\x14weather_temp_celsius\x18\x13 \x01(\x01R\x12weatherTempCelsius\x120\n" +
+	"\x14weather_humidity_pct\x18\x14 \x01(\x01R\x12weatherHumidityPct\x123\n" +
+	"\x16weather_wind_speed_kmh\x18\x15 \x01(\x01R\x13weatherWindSpeedKmh\x12-\n" +
+	"\x12weather_conditions\x18\x16 \x01(\tR\x11weatherConditions\x129\n" +
+	"\n" +
+	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xee\x04\n" +
+	"\x17LogActivityEventRequest\x12\x19\n" +
+	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\"\n" +
+	"\rcrop_cycle_id\x18\x02 \x01(\tR\vcropCycleId\x12#\n" +
+	"\ractivity_type\x18\x03 \x01(\tR\factivityType\x12B\n" +
+	"\bcategory\x18\x04 \x01(\x0e2&.agriculture.field.v1.ActivityCategoryR\bcategory\x129\n" +
+	"\n" +
+	"started_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12)\n" +
+	"\x10duration_minutes\x18\a \x01(\x05R\x0fdurationMinutes\x12 \n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12\x14\n" +
+	"\x05notes\x18\t \x01(\tR\x05notes\x12(\n" +
+	"\x10input_product_id\x18\n" +
+	" \x01(\tR\x0einputProductId\x12%\n" +
+	"\x0einput_quantity\x18\v \x01(\x01R\rinputQuantity\x12\x1d\n" +
+	"\n" +
+	"input_unit\x18\f \x01(\tR\tinputUnit\x12\x1d\n" +
+	"\n" +
+	"input_cost\x18\r \x01(\x03R\tinputCost\x12\x1a\n" +
+	"\bcurrency\x18\x0e \x01(\tR\bcurrency\x12#\n" +
+	"\rarea_hectares\x18\x0f \x01(\x01R\fareaHectares\"U\n" +
+	"\x18LogActivityEventResponse\x129\n" +
+	"\x05event\x18\x01 \x01(\v2#.agriculture.field.v1.ActivityEventR\x05event\"\xdc\x01\n" +
+	"\x19ListActivityEventsRequest\x12\x19\n" +
+	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\"\n" +
+	"\rcrop_cycle_id\x18\x02 \x01(\tR\vcropCycleId\x12B\n" +
+	"\bcategory\x18\x03 \x01(\x0e2&.agriculture.field.v1.ActivityCategoryR\bcategory\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1f\n" +
+	"\vpage_offset\x18\x05 \x01(\x05R\n" +
+	"pageOffset\"z\n" +
+	"\x1aListActivityEventsResponse\x12;\n" +
+	"\x06events\x18\x01 \x03(\v2#.agriculture.field.v1.ActivityEventR\x06events\x12\x1f\n" +
+	"\vtotal_count\x18\x02 \x01(\x05R\n" +
 	"totalCount*\xcc\x01\n" +
 	"\vFieldStatus\x12\x1c\n" +
 	"\x18FIELD_STATUS_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -2699,7 +4262,27 @@ const file_field_proto_rawDesc = "" +
 	"\x1aASPECT_DIRECTION_SOUTHWEST\x10\x06\x12\x19\n" +
 	"\x15ASPECT_DIRECTION_WEST\x10\a\x12\x1e\n" +
 	"\x1aASPECT_DIRECTION_NORTHWEST\x10\b\x12\x19\n" +
-	"\x15ASPECT_DIRECTION_FLAT\x10\t2\x84\t\n" +
+	"\x15ASPECT_DIRECTION_FLAT\x10\t*\xb7\x01\n" +
+	"\x0fCropCycleStatus\x12\x1c\n" +
+	"\x18CYCLE_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14CYCLE_STATUS_PLANNED\x10\x01\x12\x17\n" +
+	"\x13CYCLE_STATUS_ACTIVE\x10\x02\x12\x1b\n" +
+	"\x17CYCLE_STATUS_HARVESTING\x10\x03\x12\x1a\n" +
+	"\x16CYCLE_STATUS_COMPLETED\x10\x04\x12\x1a\n" +
+	"\x16CYCLE_STATUS_ABANDONED\x10\x05*\xac\x02\n" +
+	"\x10ActivityCategory\x12\x18\n" +
+	"\x14CATEGORY_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12CATEGORY_LAND_PREP\x10\x01\x12\x15\n" +
+	"\x11CATEGORY_PLANTING\x10\x02\x12\x17\n" +
+	"\x13CATEGORY_IRRIGATION\x10\x03\x12\x1a\n" +
+	"\x16CATEGORY_FERTILIZATION\x10\x04\x12\x19\n" +
+	"\x15CATEGORY_PEST_CONTROL\x10\x05\x12\x15\n" +
+	"\x11CATEGORY_SCOUTING\x10\x06\x12\x17\n" +
+	"\x13CATEGORY_HARVESTING\x10\a\x12\x19\n" +
+	"\x15CATEGORY_POST_HARVEST\x10\b\x12\x1a\n" +
+	"\x16CATEGORY_SOIL_SAMPLING\x10\t\x12\x18\n" +
+	"\x14CATEGORY_MAINTENANCE\x10\n" +
+	"2\xa4\x0e\n" +
 	"\fFieldService\x12b\n" +
 	"\vCreateField\x12(.agriculture.field.v1.CreateFieldRequest\x1a).agriculture.field.v1.CreateFieldResponse\x12Y\n" +
 	"\bGetField\x12%.agriculture.field.v1.GetFieldRequest\x1a&.agriculture.field.v1.GetFieldResponse\x12_\n" +
@@ -2713,7 +4296,13 @@ const file_field_proto_rawDesc = "" +
 	"\x10ListFieldsByFarm\x12-.agriculture.field.v1.ListFieldsByFarmRequest\x1a..agriculture.field.v1.ListFieldsByFarmResponse\x12e\n" +
 	"\fSegmentField\x12).agriculture.field.v1.SegmentFieldRequest\x1a*.agriculture.field.v1.SegmentFieldResponse\x12q\n" +
 	"\x10GetFieldSegments\x12-.agriculture.field.v1.GetFieldSegmentsRequest\x1a..agriculture.field.v1.GetFieldSegmentsResponse\x12k\n" +
-	"\x0eGetCropHistory\x12+.agriculture.field.v1.GetCropHistoryRequest\x1a,.agriculture.field.v1.GetCropHistoryResponseB2Z0p9e.in/samavaya/agriculture/field-service/api/v1b\x06proto3"
+	"\x0eGetCropHistory\x12+.agriculture.field.v1.GetCropHistoryRequest\x1a,.agriculture.field.v1.GetCropHistoryResponse\x12n\n" +
+	"\x0fCreateCropCycle\x12,.agriculture.field.v1.CreateCropCycleRequest\x1a-.agriculture.field.v1.CreateCropCycleResponse\x12e\n" +
+	"\fGetCropCycle\x12).agriculture.field.v1.GetCropCycleRequest\x1a*.agriculture.field.v1.GetCropCycleResponse\x12k\n" +
+	"\x0eListCropCycles\x12+.agriculture.field.v1.ListCropCyclesRequest\x1a,.agriculture.field.v1.ListCropCyclesResponse\x12n\n" +
+	"\x0fUpdateCropCycle\x12,.agriculture.field.v1.UpdateCropCycleRequest\x1a-.agriculture.field.v1.UpdateCropCycleResponse\x12q\n" +
+	"\x10LogActivityEvent\x12-.agriculture.field.v1.LogActivityEventRequest\x1a..agriculture.field.v1.LogActivityEventResponse\x12w\n" +
+	"\x12ListActivityEvents\x12/.agriculture.field.v1.ListActivityEventsRequest\x1a0.agriculture.field.v1.ListActivityEventsResponseB2Z0p9e.in/samavaya/agriculture/field-service/api/v1b\x06proto3"
 
 var (
 	file_field_proto_rawDescOnce sync.Once
@@ -2727,130 +4316,186 @@ func file_field_proto_rawDescGZIP() []byte {
 	return file_field_proto_rawDescData
 }
 
-var file_field_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_field_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_field_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_field_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
 var file_field_proto_goTypes = []any{
-	(FieldStatus)(0),                 // 0: agriculture.field.v1.FieldStatus
-	(FieldType)(0),                   // 1: agriculture.field.v1.FieldType
-	(SoilType)(0),                    // 2: agriculture.field.v1.SoilType
-	(IrrigationType)(0),              // 3: agriculture.field.v1.IrrigationType
-	(GrowthStage)(0),                 // 4: agriculture.field.v1.GrowthStage
-	(AspectDirection)(0),             // 5: agriculture.field.v1.AspectDirection
-	(*GeoPoint)(nil),                 // 6: agriculture.field.v1.GeoPoint
-	(*GeoPolygon)(nil),               // 7: agriculture.field.v1.GeoPolygon
-	(*Field)(nil),                    // 8: agriculture.field.v1.Field
-	(*FieldBoundary)(nil),            // 9: agriculture.field.v1.FieldBoundary
-	(*FieldCropAssignment)(nil),      // 10: agriculture.field.v1.FieldCropAssignment
-	(*FieldSegment)(nil),             // 11: agriculture.field.v1.FieldSegment
-	(*CreateFieldRequest)(nil),       // 12: agriculture.field.v1.CreateFieldRequest
-	(*CreateFieldResponse)(nil),      // 13: agriculture.field.v1.CreateFieldResponse
-	(*GetFieldRequest)(nil),          // 14: agriculture.field.v1.GetFieldRequest
-	(*GetFieldResponse)(nil),         // 15: agriculture.field.v1.GetFieldResponse
-	(*ListFieldsRequest)(nil),        // 16: agriculture.field.v1.ListFieldsRequest
-	(*ListFieldsResponse)(nil),       // 17: agriculture.field.v1.ListFieldsResponse
-	(*UpdateFieldRequest)(nil),       // 18: agriculture.field.v1.UpdateFieldRequest
-	(*UpdateFieldResponse)(nil),      // 19: agriculture.field.v1.UpdateFieldResponse
-	(*DeleteFieldRequest)(nil),       // 20: agriculture.field.v1.DeleteFieldRequest
-	(*DeleteFieldResponse)(nil),      // 21: agriculture.field.v1.DeleteFieldResponse
-	(*SetFieldBoundaryRequest)(nil),  // 22: agriculture.field.v1.SetFieldBoundaryRequest
-	(*SetFieldBoundaryResponse)(nil), // 23: agriculture.field.v1.SetFieldBoundaryResponse
-	(*AssignCropRequest)(nil),        // 24: agriculture.field.v1.AssignCropRequest
-	(*AssignCropResponse)(nil),       // 25: agriculture.field.v1.AssignCropResponse
-	(*ListFieldsByFarmRequest)(nil),  // 26: agriculture.field.v1.ListFieldsByFarmRequest
-	(*ListFieldsByFarmResponse)(nil), // 27: agriculture.field.v1.ListFieldsByFarmResponse
-	(*SegmentFieldRequest)(nil),      // 28: agriculture.field.v1.SegmentFieldRequest
-	(*FieldSegmentInput)(nil),        // 29: agriculture.field.v1.FieldSegmentInput
-	(*SegmentFieldResponse)(nil),     // 30: agriculture.field.v1.SegmentFieldResponse
-	(*GetFieldSegmentsRequest)(nil),  // 31: agriculture.field.v1.GetFieldSegmentsRequest
-	(*GetFieldSegmentsResponse)(nil), // 32: agriculture.field.v1.GetFieldSegmentsResponse
-	(*GetCropHistoryRequest)(nil),    // 33: agriculture.field.v1.GetCropHistoryRequest
-	(*GetCropHistoryResponse)(nil),   // 34: agriculture.field.v1.GetCropHistoryResponse
-	(*timestamppb.Timestamp)(nil),    // 35: google.protobuf.Timestamp
-	(*fieldmaskpb.FieldMask)(nil),    // 36: google.protobuf.FieldMask
+	(FieldStatus)(0),                   // 0: agriculture.field.v1.FieldStatus
+	(FieldType)(0),                     // 1: agriculture.field.v1.FieldType
+	(SoilType)(0),                      // 2: agriculture.field.v1.SoilType
+	(IrrigationType)(0),                // 3: agriculture.field.v1.IrrigationType
+	(GrowthStage)(0),                   // 4: agriculture.field.v1.GrowthStage
+	(AspectDirection)(0),               // 5: agriculture.field.v1.AspectDirection
+	(CropCycleStatus)(0),               // 6: agriculture.field.v1.CropCycleStatus
+	(ActivityCategory)(0),              // 7: agriculture.field.v1.ActivityCategory
+	(*GeoPoint)(nil),                   // 8: agriculture.field.v1.GeoPoint
+	(*GeoPolygon)(nil),                 // 9: agriculture.field.v1.GeoPolygon
+	(*Field)(nil),                      // 10: agriculture.field.v1.Field
+	(*FieldBoundary)(nil),              // 11: agriculture.field.v1.FieldBoundary
+	(*FieldCropAssignment)(nil),        // 12: agriculture.field.v1.FieldCropAssignment
+	(*FieldSegment)(nil),               // 13: agriculture.field.v1.FieldSegment
+	(*CreateFieldRequest)(nil),         // 14: agriculture.field.v1.CreateFieldRequest
+	(*CreateFieldResponse)(nil),        // 15: agriculture.field.v1.CreateFieldResponse
+	(*GetFieldRequest)(nil),            // 16: agriculture.field.v1.GetFieldRequest
+	(*GetFieldResponse)(nil),           // 17: agriculture.field.v1.GetFieldResponse
+	(*ListFieldsRequest)(nil),          // 18: agriculture.field.v1.ListFieldsRequest
+	(*ListFieldsResponse)(nil),         // 19: agriculture.field.v1.ListFieldsResponse
+	(*UpdateFieldRequest)(nil),         // 20: agriculture.field.v1.UpdateFieldRequest
+	(*UpdateFieldResponse)(nil),        // 21: agriculture.field.v1.UpdateFieldResponse
+	(*DeleteFieldRequest)(nil),         // 22: agriculture.field.v1.DeleteFieldRequest
+	(*DeleteFieldResponse)(nil),        // 23: agriculture.field.v1.DeleteFieldResponse
+	(*SetFieldBoundaryRequest)(nil),    // 24: agriculture.field.v1.SetFieldBoundaryRequest
+	(*SetFieldBoundaryResponse)(nil),   // 25: agriculture.field.v1.SetFieldBoundaryResponse
+	(*AssignCropRequest)(nil),          // 26: agriculture.field.v1.AssignCropRequest
+	(*AssignCropResponse)(nil),         // 27: agriculture.field.v1.AssignCropResponse
+	(*ListFieldsByFarmRequest)(nil),    // 28: agriculture.field.v1.ListFieldsByFarmRequest
+	(*ListFieldsByFarmResponse)(nil),   // 29: agriculture.field.v1.ListFieldsByFarmResponse
+	(*SegmentFieldRequest)(nil),        // 30: agriculture.field.v1.SegmentFieldRequest
+	(*FieldSegmentInput)(nil),          // 31: agriculture.field.v1.FieldSegmentInput
+	(*SegmentFieldResponse)(nil),       // 32: agriculture.field.v1.SegmentFieldResponse
+	(*GetFieldSegmentsRequest)(nil),    // 33: agriculture.field.v1.GetFieldSegmentsRequest
+	(*GetFieldSegmentsResponse)(nil),   // 34: agriculture.field.v1.GetFieldSegmentsResponse
+	(*GetCropHistoryRequest)(nil),      // 35: agriculture.field.v1.GetCropHistoryRequest
+	(*GetCropHistoryResponse)(nil),     // 36: agriculture.field.v1.GetCropHistoryResponse
+	(*CropCycle)(nil),                  // 37: agriculture.field.v1.CropCycle
+	(*CreateCropCycleRequest)(nil),     // 38: agriculture.field.v1.CreateCropCycleRequest
+	(*CreateCropCycleResponse)(nil),    // 39: agriculture.field.v1.CreateCropCycleResponse
+	(*GetCropCycleRequest)(nil),        // 40: agriculture.field.v1.GetCropCycleRequest
+	(*GetCropCycleResponse)(nil),       // 41: agriculture.field.v1.GetCropCycleResponse
+	(*ListCropCyclesRequest)(nil),      // 42: agriculture.field.v1.ListCropCyclesRequest
+	(*ListCropCyclesResponse)(nil),     // 43: agriculture.field.v1.ListCropCyclesResponse
+	(*UpdateCropCycleRequest)(nil),     // 44: agriculture.field.v1.UpdateCropCycleRequest
+	(*UpdateCropCycleResponse)(nil),    // 45: agriculture.field.v1.UpdateCropCycleResponse
+	(*ActivityEvent)(nil),              // 46: agriculture.field.v1.ActivityEvent
+	(*LogActivityEventRequest)(nil),    // 47: agriculture.field.v1.LogActivityEventRequest
+	(*LogActivityEventResponse)(nil),   // 48: agriculture.field.v1.LogActivityEventResponse
+	(*ListActivityEventsRequest)(nil),  // 49: agriculture.field.v1.ListActivityEventsRequest
+	(*ListActivityEventsResponse)(nil), // 50: agriculture.field.v1.ListActivityEventsResponse
+	(*timestamppb.Timestamp)(nil),      // 51: google.protobuf.Timestamp
+	(*fieldmaskpb.FieldMask)(nil),      // 52: google.protobuf.FieldMask
 }
 var file_field_proto_depIdxs = []int32{
-	6,  // 0: agriculture.field.v1.GeoPolygon.points:type_name -> agriculture.field.v1.GeoPoint
-	7,  // 1: agriculture.field.v1.Field.boundary:type_name -> agriculture.field.v1.GeoPolygon
-	35, // 2: agriculture.field.v1.Field.planting_date:type_name -> google.protobuf.Timestamp
-	35, // 3: agriculture.field.v1.Field.expected_harvest_date:type_name -> google.protobuf.Timestamp
-	4,  // 4: agriculture.field.v1.Field.growth_stage:type_name -> agriculture.field.v1.GrowthStage
-	2,  // 5: agriculture.field.v1.Field.soil_type:type_name -> agriculture.field.v1.SoilType
-	3,  // 6: agriculture.field.v1.Field.irrigation_type:type_name -> agriculture.field.v1.IrrigationType
-	1,  // 7: agriculture.field.v1.Field.field_type:type_name -> agriculture.field.v1.FieldType
-	0,  // 8: agriculture.field.v1.Field.status:type_name -> agriculture.field.v1.FieldStatus
-	5,  // 9: agriculture.field.v1.Field.aspect_direction:type_name -> agriculture.field.v1.AspectDirection
-	35, // 10: agriculture.field.v1.Field.created_at:type_name -> google.protobuf.Timestamp
-	35, // 11: agriculture.field.v1.Field.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 12: agriculture.field.v1.FieldBoundary.polygon:type_name -> agriculture.field.v1.GeoPolygon
-	35, // 13: agriculture.field.v1.FieldBoundary.recorded_at:type_name -> google.protobuf.Timestamp
-	35, // 14: agriculture.field.v1.FieldBoundary.created_at:type_name -> google.protobuf.Timestamp
-	35, // 15: agriculture.field.v1.FieldCropAssignment.planting_date:type_name -> google.protobuf.Timestamp
-	35, // 16: agriculture.field.v1.FieldCropAssignment.expected_harvest_date:type_name -> google.protobuf.Timestamp
-	35, // 17: agriculture.field.v1.FieldCropAssignment.actual_harvest_date:type_name -> google.protobuf.Timestamp
-	4,  // 18: agriculture.field.v1.FieldCropAssignment.growth_stage:type_name -> agriculture.field.v1.GrowthStage
-	35, // 19: agriculture.field.v1.FieldCropAssignment.created_at:type_name -> google.protobuf.Timestamp
-	35, // 20: agriculture.field.v1.FieldCropAssignment.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 21: agriculture.field.v1.FieldSegment.boundary:type_name -> agriculture.field.v1.GeoPolygon
-	2,  // 22: agriculture.field.v1.FieldSegment.soil_type:type_name -> agriculture.field.v1.SoilType
-	35, // 23: agriculture.field.v1.FieldSegment.created_at:type_name -> google.protobuf.Timestamp
-	35, // 24: agriculture.field.v1.FieldSegment.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 25: agriculture.field.v1.CreateFieldRequest.boundary:type_name -> agriculture.field.v1.GeoPolygon
-	1,  // 26: agriculture.field.v1.CreateFieldRequest.field_type:type_name -> agriculture.field.v1.FieldType
-	2,  // 27: agriculture.field.v1.CreateFieldRequest.soil_type:type_name -> agriculture.field.v1.SoilType
-	3,  // 28: agriculture.field.v1.CreateFieldRequest.irrigation_type:type_name -> agriculture.field.v1.IrrigationType
-	5,  // 29: agriculture.field.v1.CreateFieldRequest.aspect_direction:type_name -> agriculture.field.v1.AspectDirection
-	8,  // 30: agriculture.field.v1.CreateFieldResponse.field:type_name -> agriculture.field.v1.Field
-	8,  // 31: agriculture.field.v1.GetFieldResponse.field:type_name -> agriculture.field.v1.Field
-	0,  // 32: agriculture.field.v1.ListFieldsRequest.status:type_name -> agriculture.field.v1.FieldStatus
-	1,  // 33: agriculture.field.v1.ListFieldsRequest.field_type:type_name -> agriculture.field.v1.FieldType
-	8,  // 34: agriculture.field.v1.ListFieldsResponse.fields:type_name -> agriculture.field.v1.Field
-	1,  // 35: agriculture.field.v1.UpdateFieldRequest.field_type:type_name -> agriculture.field.v1.FieldType
-	2,  // 36: agriculture.field.v1.UpdateFieldRequest.soil_type:type_name -> agriculture.field.v1.SoilType
-	3,  // 37: agriculture.field.v1.UpdateFieldRequest.irrigation_type:type_name -> agriculture.field.v1.IrrigationType
-	0,  // 38: agriculture.field.v1.UpdateFieldRequest.status:type_name -> agriculture.field.v1.FieldStatus
-	5,  // 39: agriculture.field.v1.UpdateFieldRequest.aspect_direction:type_name -> agriculture.field.v1.AspectDirection
-	4,  // 40: agriculture.field.v1.UpdateFieldRequest.growth_stage:type_name -> agriculture.field.v1.GrowthStage
-	36, // 41: agriculture.field.v1.UpdateFieldRequest.update_mask:type_name -> google.protobuf.FieldMask
-	8,  // 42: agriculture.field.v1.UpdateFieldResponse.field:type_name -> agriculture.field.v1.Field
-	7,  // 43: agriculture.field.v1.SetFieldBoundaryRequest.polygon:type_name -> agriculture.field.v1.GeoPolygon
-	9,  // 44: agriculture.field.v1.SetFieldBoundaryResponse.boundary:type_name -> agriculture.field.v1.FieldBoundary
-	35, // 45: agriculture.field.v1.AssignCropRequest.planting_date:type_name -> google.protobuf.Timestamp
-	35, // 46: agriculture.field.v1.AssignCropRequest.expected_harvest_date:type_name -> google.protobuf.Timestamp
-	10, // 47: agriculture.field.v1.AssignCropResponse.assignment:type_name -> agriculture.field.v1.FieldCropAssignment
-	8,  // 48: agriculture.field.v1.ListFieldsByFarmResponse.fields:type_name -> agriculture.field.v1.Field
-	29, // 49: agriculture.field.v1.SegmentFieldRequest.segments:type_name -> agriculture.field.v1.FieldSegmentInput
-	7,  // 50: agriculture.field.v1.FieldSegmentInput.boundary:type_name -> agriculture.field.v1.GeoPolygon
-	2,  // 51: agriculture.field.v1.FieldSegmentInput.soil_type:type_name -> agriculture.field.v1.SoilType
-	11, // 52: agriculture.field.v1.SegmentFieldResponse.segments:type_name -> agriculture.field.v1.FieldSegment
-	11, // 53: agriculture.field.v1.GetFieldSegmentsResponse.segments:type_name -> agriculture.field.v1.FieldSegment
-	10, // 54: agriculture.field.v1.GetCropHistoryResponse.assignments:type_name -> agriculture.field.v1.FieldCropAssignment
-	12, // 55: agriculture.field.v1.FieldService.CreateField:input_type -> agriculture.field.v1.CreateFieldRequest
-	14, // 56: agriculture.field.v1.FieldService.GetField:input_type -> agriculture.field.v1.GetFieldRequest
-	16, // 57: agriculture.field.v1.FieldService.ListFields:input_type -> agriculture.field.v1.ListFieldsRequest
-	18, // 58: agriculture.field.v1.FieldService.UpdateField:input_type -> agriculture.field.v1.UpdateFieldRequest
-	20, // 59: agriculture.field.v1.FieldService.DeleteField:input_type -> agriculture.field.v1.DeleteFieldRequest
-	22, // 60: agriculture.field.v1.FieldService.SetFieldBoundary:input_type -> agriculture.field.v1.SetFieldBoundaryRequest
-	24, // 61: agriculture.field.v1.FieldService.AssignCrop:input_type -> agriculture.field.v1.AssignCropRequest
-	26, // 62: agriculture.field.v1.FieldService.ListFieldsByFarm:input_type -> agriculture.field.v1.ListFieldsByFarmRequest
-	28, // 63: agriculture.field.v1.FieldService.SegmentField:input_type -> agriculture.field.v1.SegmentFieldRequest
-	31, // 64: agriculture.field.v1.FieldService.GetFieldSegments:input_type -> agriculture.field.v1.GetFieldSegmentsRequest
-	33, // 65: agriculture.field.v1.FieldService.GetCropHistory:input_type -> agriculture.field.v1.GetCropHistoryRequest
-	13, // 66: agriculture.field.v1.FieldService.CreateField:output_type -> agriculture.field.v1.CreateFieldResponse
-	15, // 67: agriculture.field.v1.FieldService.GetField:output_type -> agriculture.field.v1.GetFieldResponse
-	17, // 68: agriculture.field.v1.FieldService.ListFields:output_type -> agriculture.field.v1.ListFieldsResponse
-	19, // 69: agriculture.field.v1.FieldService.UpdateField:output_type -> agriculture.field.v1.UpdateFieldResponse
-	21, // 70: agriculture.field.v1.FieldService.DeleteField:output_type -> agriculture.field.v1.DeleteFieldResponse
-	23, // 71: agriculture.field.v1.FieldService.SetFieldBoundary:output_type -> agriculture.field.v1.SetFieldBoundaryResponse
-	25, // 72: agriculture.field.v1.FieldService.AssignCrop:output_type -> agriculture.field.v1.AssignCropResponse
-	27, // 73: agriculture.field.v1.FieldService.ListFieldsByFarm:output_type -> agriculture.field.v1.ListFieldsByFarmResponse
-	30, // 74: agriculture.field.v1.FieldService.SegmentField:output_type -> agriculture.field.v1.SegmentFieldResponse
-	32, // 75: agriculture.field.v1.FieldService.GetFieldSegments:output_type -> agriculture.field.v1.GetFieldSegmentsResponse
-	34, // 76: agriculture.field.v1.FieldService.GetCropHistory:output_type -> agriculture.field.v1.GetCropHistoryResponse
-	66, // [66:77] is the sub-list for method output_type
-	55, // [55:66] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	8,   // 0: agriculture.field.v1.GeoPolygon.points:type_name -> agriculture.field.v1.GeoPoint
+	9,   // 1: agriculture.field.v1.Field.boundary:type_name -> agriculture.field.v1.GeoPolygon
+	51,  // 2: agriculture.field.v1.Field.planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 3: agriculture.field.v1.Field.expected_harvest_date:type_name -> google.protobuf.Timestamp
+	4,   // 4: agriculture.field.v1.Field.growth_stage:type_name -> agriculture.field.v1.GrowthStage
+	2,   // 5: agriculture.field.v1.Field.soil_type:type_name -> agriculture.field.v1.SoilType
+	3,   // 6: agriculture.field.v1.Field.irrigation_type:type_name -> agriculture.field.v1.IrrigationType
+	1,   // 7: agriculture.field.v1.Field.field_type:type_name -> agriculture.field.v1.FieldType
+	0,   // 8: agriculture.field.v1.Field.status:type_name -> agriculture.field.v1.FieldStatus
+	5,   // 9: agriculture.field.v1.Field.aspect_direction:type_name -> agriculture.field.v1.AspectDirection
+	51,  // 10: agriculture.field.v1.Field.created_at:type_name -> google.protobuf.Timestamp
+	51,  // 11: agriculture.field.v1.Field.updated_at:type_name -> google.protobuf.Timestamp
+	9,   // 12: agriculture.field.v1.FieldBoundary.polygon:type_name -> agriculture.field.v1.GeoPolygon
+	51,  // 13: agriculture.field.v1.FieldBoundary.recorded_at:type_name -> google.protobuf.Timestamp
+	51,  // 14: agriculture.field.v1.FieldBoundary.created_at:type_name -> google.protobuf.Timestamp
+	51,  // 15: agriculture.field.v1.FieldCropAssignment.planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 16: agriculture.field.v1.FieldCropAssignment.expected_harvest_date:type_name -> google.protobuf.Timestamp
+	51,  // 17: agriculture.field.v1.FieldCropAssignment.actual_harvest_date:type_name -> google.protobuf.Timestamp
+	4,   // 18: agriculture.field.v1.FieldCropAssignment.growth_stage:type_name -> agriculture.field.v1.GrowthStage
+	51,  // 19: agriculture.field.v1.FieldCropAssignment.created_at:type_name -> google.protobuf.Timestamp
+	51,  // 20: agriculture.field.v1.FieldCropAssignment.updated_at:type_name -> google.protobuf.Timestamp
+	9,   // 21: agriculture.field.v1.FieldSegment.boundary:type_name -> agriculture.field.v1.GeoPolygon
+	2,   // 22: agriculture.field.v1.FieldSegment.soil_type:type_name -> agriculture.field.v1.SoilType
+	51,  // 23: agriculture.field.v1.FieldSegment.created_at:type_name -> google.protobuf.Timestamp
+	51,  // 24: agriculture.field.v1.FieldSegment.updated_at:type_name -> google.protobuf.Timestamp
+	9,   // 25: agriculture.field.v1.CreateFieldRequest.boundary:type_name -> agriculture.field.v1.GeoPolygon
+	1,   // 26: agriculture.field.v1.CreateFieldRequest.field_type:type_name -> agriculture.field.v1.FieldType
+	2,   // 27: agriculture.field.v1.CreateFieldRequest.soil_type:type_name -> agriculture.field.v1.SoilType
+	3,   // 28: agriculture.field.v1.CreateFieldRequest.irrigation_type:type_name -> agriculture.field.v1.IrrigationType
+	5,   // 29: agriculture.field.v1.CreateFieldRequest.aspect_direction:type_name -> agriculture.field.v1.AspectDirection
+	10,  // 30: agriculture.field.v1.CreateFieldResponse.field:type_name -> agriculture.field.v1.Field
+	10,  // 31: agriculture.field.v1.GetFieldResponse.field:type_name -> agriculture.field.v1.Field
+	0,   // 32: agriculture.field.v1.ListFieldsRequest.status:type_name -> agriculture.field.v1.FieldStatus
+	1,   // 33: agriculture.field.v1.ListFieldsRequest.field_type:type_name -> agriculture.field.v1.FieldType
+	10,  // 34: agriculture.field.v1.ListFieldsResponse.fields:type_name -> agriculture.field.v1.Field
+	1,   // 35: agriculture.field.v1.UpdateFieldRequest.field_type:type_name -> agriculture.field.v1.FieldType
+	2,   // 36: agriculture.field.v1.UpdateFieldRequest.soil_type:type_name -> agriculture.field.v1.SoilType
+	3,   // 37: agriculture.field.v1.UpdateFieldRequest.irrigation_type:type_name -> agriculture.field.v1.IrrigationType
+	0,   // 38: agriculture.field.v1.UpdateFieldRequest.status:type_name -> agriculture.field.v1.FieldStatus
+	5,   // 39: agriculture.field.v1.UpdateFieldRequest.aspect_direction:type_name -> agriculture.field.v1.AspectDirection
+	4,   // 40: agriculture.field.v1.UpdateFieldRequest.growth_stage:type_name -> agriculture.field.v1.GrowthStage
+	52,  // 41: agriculture.field.v1.UpdateFieldRequest.update_mask:type_name -> google.protobuf.FieldMask
+	10,  // 42: agriculture.field.v1.UpdateFieldResponse.field:type_name -> agriculture.field.v1.Field
+	9,   // 43: agriculture.field.v1.SetFieldBoundaryRequest.polygon:type_name -> agriculture.field.v1.GeoPolygon
+	11,  // 44: agriculture.field.v1.SetFieldBoundaryResponse.boundary:type_name -> agriculture.field.v1.FieldBoundary
+	51,  // 45: agriculture.field.v1.AssignCropRequest.planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 46: agriculture.field.v1.AssignCropRequest.expected_harvest_date:type_name -> google.protobuf.Timestamp
+	12,  // 47: agriculture.field.v1.AssignCropResponse.assignment:type_name -> agriculture.field.v1.FieldCropAssignment
+	10,  // 48: agriculture.field.v1.ListFieldsByFarmResponse.fields:type_name -> agriculture.field.v1.Field
+	31,  // 49: agriculture.field.v1.SegmentFieldRequest.segments:type_name -> agriculture.field.v1.FieldSegmentInput
+	9,   // 50: agriculture.field.v1.FieldSegmentInput.boundary:type_name -> agriculture.field.v1.GeoPolygon
+	2,   // 51: agriculture.field.v1.FieldSegmentInput.soil_type:type_name -> agriculture.field.v1.SoilType
+	13,  // 52: agriculture.field.v1.SegmentFieldResponse.segments:type_name -> agriculture.field.v1.FieldSegment
+	13,  // 53: agriculture.field.v1.GetFieldSegmentsResponse.segments:type_name -> agriculture.field.v1.FieldSegment
+	12,  // 54: agriculture.field.v1.GetCropHistoryResponse.assignments:type_name -> agriculture.field.v1.FieldCropAssignment
+	51,  // 55: agriculture.field.v1.CropCycle.planned_planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 56: agriculture.field.v1.CropCycle.actual_planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 57: agriculture.field.v1.CropCycle.planned_harvest_date:type_name -> google.protobuf.Timestamp
+	51,  // 58: agriculture.field.v1.CropCycle.actual_harvest_date:type_name -> google.protobuf.Timestamp
+	6,   // 59: agriculture.field.v1.CropCycle.status:type_name -> agriculture.field.v1.CropCycleStatus
+	51,  // 60: agriculture.field.v1.CropCycle.created_at:type_name -> google.protobuf.Timestamp
+	51,  // 61: agriculture.field.v1.CropCycle.updated_at:type_name -> google.protobuf.Timestamp
+	51,  // 62: agriculture.field.v1.CreateCropCycleRequest.planned_planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 63: agriculture.field.v1.CreateCropCycleRequest.planned_harvest_date:type_name -> google.protobuf.Timestamp
+	37,  // 64: agriculture.field.v1.CreateCropCycleResponse.cycle:type_name -> agriculture.field.v1.CropCycle
+	37,  // 65: agriculture.field.v1.GetCropCycleResponse.cycle:type_name -> agriculture.field.v1.CropCycle
+	6,   // 66: agriculture.field.v1.ListCropCyclesRequest.status:type_name -> agriculture.field.v1.CropCycleStatus
+	37,  // 67: agriculture.field.v1.ListCropCyclesResponse.cycles:type_name -> agriculture.field.v1.CropCycle
+	6,   // 68: agriculture.field.v1.UpdateCropCycleRequest.status:type_name -> agriculture.field.v1.CropCycleStatus
+	51,  // 69: agriculture.field.v1.UpdateCropCycleRequest.actual_planting_date:type_name -> google.protobuf.Timestamp
+	51,  // 70: agriculture.field.v1.UpdateCropCycleRequest.actual_harvest_date:type_name -> google.protobuf.Timestamp
+	52,  // 71: agriculture.field.v1.UpdateCropCycleRequest.update_mask:type_name -> google.protobuf.FieldMask
+	37,  // 72: agriculture.field.v1.UpdateCropCycleResponse.cycle:type_name -> agriculture.field.v1.CropCycle
+	7,   // 73: agriculture.field.v1.ActivityEvent.category:type_name -> agriculture.field.v1.ActivityCategory
+	51,  // 74: agriculture.field.v1.ActivityEvent.started_at:type_name -> google.protobuf.Timestamp
+	51,  // 75: agriculture.field.v1.ActivityEvent.completed_at:type_name -> google.protobuf.Timestamp
+	51,  // 76: agriculture.field.v1.ActivityEvent.created_at:type_name -> google.protobuf.Timestamp
+	7,   // 77: agriculture.field.v1.LogActivityEventRequest.category:type_name -> agriculture.field.v1.ActivityCategory
+	51,  // 78: agriculture.field.v1.LogActivityEventRequest.started_at:type_name -> google.protobuf.Timestamp
+	51,  // 79: agriculture.field.v1.LogActivityEventRequest.completed_at:type_name -> google.protobuf.Timestamp
+	46,  // 80: agriculture.field.v1.LogActivityEventResponse.event:type_name -> agriculture.field.v1.ActivityEvent
+	7,   // 81: agriculture.field.v1.ListActivityEventsRequest.category:type_name -> agriculture.field.v1.ActivityCategory
+	46,  // 82: agriculture.field.v1.ListActivityEventsResponse.events:type_name -> agriculture.field.v1.ActivityEvent
+	14,  // 83: agriculture.field.v1.FieldService.CreateField:input_type -> agriculture.field.v1.CreateFieldRequest
+	16,  // 84: agriculture.field.v1.FieldService.GetField:input_type -> agriculture.field.v1.GetFieldRequest
+	18,  // 85: agriculture.field.v1.FieldService.ListFields:input_type -> agriculture.field.v1.ListFieldsRequest
+	20,  // 86: agriculture.field.v1.FieldService.UpdateField:input_type -> agriculture.field.v1.UpdateFieldRequest
+	22,  // 87: agriculture.field.v1.FieldService.DeleteField:input_type -> agriculture.field.v1.DeleteFieldRequest
+	24,  // 88: agriculture.field.v1.FieldService.SetFieldBoundary:input_type -> agriculture.field.v1.SetFieldBoundaryRequest
+	26,  // 89: agriculture.field.v1.FieldService.AssignCrop:input_type -> agriculture.field.v1.AssignCropRequest
+	28,  // 90: agriculture.field.v1.FieldService.ListFieldsByFarm:input_type -> agriculture.field.v1.ListFieldsByFarmRequest
+	30,  // 91: agriculture.field.v1.FieldService.SegmentField:input_type -> agriculture.field.v1.SegmentFieldRequest
+	33,  // 92: agriculture.field.v1.FieldService.GetFieldSegments:input_type -> agriculture.field.v1.GetFieldSegmentsRequest
+	35,  // 93: agriculture.field.v1.FieldService.GetCropHistory:input_type -> agriculture.field.v1.GetCropHistoryRequest
+	38,  // 94: agriculture.field.v1.FieldService.CreateCropCycle:input_type -> agriculture.field.v1.CreateCropCycleRequest
+	40,  // 95: agriculture.field.v1.FieldService.GetCropCycle:input_type -> agriculture.field.v1.GetCropCycleRequest
+	42,  // 96: agriculture.field.v1.FieldService.ListCropCycles:input_type -> agriculture.field.v1.ListCropCyclesRequest
+	44,  // 97: agriculture.field.v1.FieldService.UpdateCropCycle:input_type -> agriculture.field.v1.UpdateCropCycleRequest
+	47,  // 98: agriculture.field.v1.FieldService.LogActivityEvent:input_type -> agriculture.field.v1.LogActivityEventRequest
+	49,  // 99: agriculture.field.v1.FieldService.ListActivityEvents:input_type -> agriculture.field.v1.ListActivityEventsRequest
+	15,  // 100: agriculture.field.v1.FieldService.CreateField:output_type -> agriculture.field.v1.CreateFieldResponse
+	17,  // 101: agriculture.field.v1.FieldService.GetField:output_type -> agriculture.field.v1.GetFieldResponse
+	19,  // 102: agriculture.field.v1.FieldService.ListFields:output_type -> agriculture.field.v1.ListFieldsResponse
+	21,  // 103: agriculture.field.v1.FieldService.UpdateField:output_type -> agriculture.field.v1.UpdateFieldResponse
+	23,  // 104: agriculture.field.v1.FieldService.DeleteField:output_type -> agriculture.field.v1.DeleteFieldResponse
+	25,  // 105: agriculture.field.v1.FieldService.SetFieldBoundary:output_type -> agriculture.field.v1.SetFieldBoundaryResponse
+	27,  // 106: agriculture.field.v1.FieldService.AssignCrop:output_type -> agriculture.field.v1.AssignCropResponse
+	29,  // 107: agriculture.field.v1.FieldService.ListFieldsByFarm:output_type -> agriculture.field.v1.ListFieldsByFarmResponse
+	32,  // 108: agriculture.field.v1.FieldService.SegmentField:output_type -> agriculture.field.v1.SegmentFieldResponse
+	34,  // 109: agriculture.field.v1.FieldService.GetFieldSegments:output_type -> agriculture.field.v1.GetFieldSegmentsResponse
+	36,  // 110: agriculture.field.v1.FieldService.GetCropHistory:output_type -> agriculture.field.v1.GetCropHistoryResponse
+	39,  // 111: agriculture.field.v1.FieldService.CreateCropCycle:output_type -> agriculture.field.v1.CreateCropCycleResponse
+	41,  // 112: agriculture.field.v1.FieldService.GetCropCycle:output_type -> agriculture.field.v1.GetCropCycleResponse
+	43,  // 113: agriculture.field.v1.FieldService.ListCropCycles:output_type -> agriculture.field.v1.ListCropCyclesResponse
+	45,  // 114: agriculture.field.v1.FieldService.UpdateCropCycle:output_type -> agriculture.field.v1.UpdateCropCycleResponse
+	48,  // 115: agriculture.field.v1.FieldService.LogActivityEvent:output_type -> agriculture.field.v1.LogActivityEventResponse
+	50,  // 116: agriculture.field.v1.FieldService.ListActivityEvents:output_type -> agriculture.field.v1.ListActivityEventsResponse
+	100, // [100:117] is the sub-list for method output_type
+	83,  // [83:100] is the sub-list for method input_type
+	83,  // [83:83] is the sub-list for extension type_name
+	83,  // [83:83] is the sub-list for extension extendee
+	0,   // [0:83] is the sub-list for field type_name
 }
 
 func init() { file_field_proto_init() }
@@ -2863,8 +4508,8 @@ func file_field_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_field_proto_rawDesc), len(file_field_proto_rawDesc)),
-			NumEnums:      6,
-			NumMessages:   29,
+			NumEnums:      8,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

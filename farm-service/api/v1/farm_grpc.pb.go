@@ -19,14 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FarmService_CreateFarm_FullMethodName        = "/agriculture.farm.v1.FarmService/CreateFarm"
-	FarmService_GetFarm_FullMethodName           = "/agriculture.farm.v1.FarmService/GetFarm"
-	FarmService_ListFarms_FullMethodName         = "/agriculture.farm.v1.FarmService/ListFarms"
-	FarmService_UpdateFarm_FullMethodName        = "/agriculture.farm.v1.FarmService/UpdateFarm"
-	FarmService_DeleteFarm_FullMethodName        = "/agriculture.farm.v1.FarmService/DeleteFarm"
-	FarmService_SetFarmBoundary_FullMethodName   = "/agriculture.farm.v1.FarmService/SetFarmBoundary"
-	FarmService_GetFarmBoundary_FullMethodName   = "/agriculture.farm.v1.FarmService/GetFarmBoundary"
-	FarmService_TransferOwnership_FullMethodName = "/agriculture.farm.v1.FarmService/TransferOwnership"
+	FarmService_CreateFarm_FullMethodName           = "/agriculture.farm.v1.FarmService/CreateFarm"
+	FarmService_GetFarm_FullMethodName              = "/agriculture.farm.v1.FarmService/GetFarm"
+	FarmService_ListFarms_FullMethodName            = "/agriculture.farm.v1.FarmService/ListFarms"
+	FarmService_UpdateFarm_FullMethodName           = "/agriculture.farm.v1.FarmService/UpdateFarm"
+	FarmService_DeleteFarm_FullMethodName           = "/agriculture.farm.v1.FarmService/DeleteFarm"
+	FarmService_SetFarmBoundary_FullMethodName      = "/agriculture.farm.v1.FarmService/SetFarmBoundary"
+	FarmService_GetFarmBoundary_FullMethodName      = "/agriculture.farm.v1.FarmService/GetFarmBoundary"
+	FarmService_TransferOwnership_FullMethodName    = "/agriculture.farm.v1.FarmService/TransferOwnership"
+	FarmService_CreateManagementUnit_FullMethodName = "/agriculture.farm.v1.FarmService/CreateManagementUnit"
+	FarmService_GetManagementUnit_FullMethodName    = "/agriculture.farm.v1.FarmService/GetManagementUnit"
+	FarmService_ListManagementUnits_FullMethodName  = "/agriculture.farm.v1.FarmService/ListManagementUnits"
+	FarmService_UpdateManagementUnit_FullMethodName = "/agriculture.farm.v1.FarmService/UpdateManagementUnit"
+	FarmService_DeleteManagementUnit_FullMethodName = "/agriculture.farm.v1.FarmService/DeleteManagementUnit"
+	FarmService_AssignFieldsToUnit_FullMethodName   = "/agriculture.farm.v1.FarmService/AssignFieldsToUnit"
+	FarmService_RemoveFieldsFromUnit_FullMethodName = "/agriculture.farm.v1.FarmService/RemoveFieldsFromUnit"
 )
 
 // FarmServiceClient is the client API for FarmService service.
@@ -35,22 +42,21 @@ const (
 //
 // FarmService provides farm management operations.
 type FarmServiceClient interface {
-	// CreateFarm registers a new farm.
 	CreateFarm(ctx context.Context, in *CreateFarmRequest, opts ...grpc.CallOption) (*CreateFarmResponse, error)
-	// GetFarm retrieves a farm by ID.
 	GetFarm(ctx context.Context, in *GetFarmRequest, opts ...grpc.CallOption) (*GetFarmResponse, error)
-	// ListFarms lists farms with filtering and pagination.
 	ListFarms(ctx context.Context, in *ListFarmsRequest, opts ...grpc.CallOption) (*ListFarmsResponse, error)
-	// UpdateFarm updates an existing farm.
 	UpdateFarm(ctx context.Context, in *UpdateFarmRequest, opts ...grpc.CallOption) (*UpdateFarmResponse, error)
-	// DeleteFarm soft-deletes a farm.
 	DeleteFarm(ctx context.Context, in *DeleteFarmRequest, opts ...grpc.CallOption) (*DeleteFarmResponse, error)
-	// SetFarmBoundary sets or updates the geographic boundary of a farm.
 	SetFarmBoundary(ctx context.Context, in *SetFarmBoundaryRequest, opts ...grpc.CallOption) (*SetFarmBoundaryResponse, error)
-	// GetFarmBoundary retrieves the geographic boundary of a farm.
 	GetFarmBoundary(ctx context.Context, in *GetFarmBoundaryRequest, opts ...grpc.CallOption) (*GetFarmBoundaryResponse, error)
-	// TransferOwnership transfers ownership of a farm between users.
 	TransferOwnership(ctx context.Context, in *TransferOwnershipRequest, opts ...grpc.CallOption) (*TransferOwnershipResponse, error)
+	CreateManagementUnit(ctx context.Context, in *CreateManagementUnitRequest, opts ...grpc.CallOption) (*CreateManagementUnitResponse, error)
+	GetManagementUnit(ctx context.Context, in *GetManagementUnitRequest, opts ...grpc.CallOption) (*GetManagementUnitResponse, error)
+	ListManagementUnits(ctx context.Context, in *ListManagementUnitsRequest, opts ...grpc.CallOption) (*ListManagementUnitsResponse, error)
+	UpdateManagementUnit(ctx context.Context, in *UpdateManagementUnitRequest, opts ...grpc.CallOption) (*UpdateManagementUnitResponse, error)
+	DeleteManagementUnit(ctx context.Context, in *DeleteManagementUnitRequest, opts ...grpc.CallOption) (*DeleteManagementUnitResponse, error)
+	AssignFieldsToUnit(ctx context.Context, in *AssignFieldsToUnitRequest, opts ...grpc.CallOption) (*AssignFieldsToUnitResponse, error)
+	RemoveFieldsFromUnit(ctx context.Context, in *RemoveFieldsFromUnitRequest, opts ...grpc.CallOption) (*RemoveFieldsFromUnitResponse, error)
 }
 
 type farmServiceClient struct {
@@ -141,28 +147,97 @@ func (c *farmServiceClient) TransferOwnership(ctx context.Context, in *TransferO
 	return out, nil
 }
 
+func (c *farmServiceClient) CreateManagementUnit(ctx context.Context, in *CreateManagementUnitRequest, opts ...grpc.CallOption) (*CreateManagementUnitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateManagementUnitResponse)
+	err := c.cc.Invoke(ctx, FarmService_CreateManagementUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) GetManagementUnit(ctx context.Context, in *GetManagementUnitRequest, opts ...grpc.CallOption) (*GetManagementUnitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetManagementUnitResponse)
+	err := c.cc.Invoke(ctx, FarmService_GetManagementUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) ListManagementUnits(ctx context.Context, in *ListManagementUnitsRequest, opts ...grpc.CallOption) (*ListManagementUnitsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListManagementUnitsResponse)
+	err := c.cc.Invoke(ctx, FarmService_ListManagementUnits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) UpdateManagementUnit(ctx context.Context, in *UpdateManagementUnitRequest, opts ...grpc.CallOption) (*UpdateManagementUnitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateManagementUnitResponse)
+	err := c.cc.Invoke(ctx, FarmService_UpdateManagementUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) DeleteManagementUnit(ctx context.Context, in *DeleteManagementUnitRequest, opts ...grpc.CallOption) (*DeleteManagementUnitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteManagementUnitResponse)
+	err := c.cc.Invoke(ctx, FarmService_DeleteManagementUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) AssignFieldsToUnit(ctx context.Context, in *AssignFieldsToUnitRequest, opts ...grpc.CallOption) (*AssignFieldsToUnitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AssignFieldsToUnitResponse)
+	err := c.cc.Invoke(ctx, FarmService_AssignFieldsToUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) RemoveFieldsFromUnit(ctx context.Context, in *RemoveFieldsFromUnitRequest, opts ...grpc.CallOption) (*RemoveFieldsFromUnitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveFieldsFromUnitResponse)
+	err := c.cc.Invoke(ctx, FarmService_RemoveFieldsFromUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FarmServiceServer is the server API for FarmService service.
 // All implementations must embed UnimplementedFarmServiceServer
 // for forward compatibility.
 //
 // FarmService provides farm management operations.
 type FarmServiceServer interface {
-	// CreateFarm registers a new farm.
 	CreateFarm(context.Context, *CreateFarmRequest) (*CreateFarmResponse, error)
-	// GetFarm retrieves a farm by ID.
 	GetFarm(context.Context, *GetFarmRequest) (*GetFarmResponse, error)
-	// ListFarms lists farms with filtering and pagination.
 	ListFarms(context.Context, *ListFarmsRequest) (*ListFarmsResponse, error)
-	// UpdateFarm updates an existing farm.
 	UpdateFarm(context.Context, *UpdateFarmRequest) (*UpdateFarmResponse, error)
-	// DeleteFarm soft-deletes a farm.
 	DeleteFarm(context.Context, *DeleteFarmRequest) (*DeleteFarmResponse, error)
-	// SetFarmBoundary sets or updates the geographic boundary of a farm.
 	SetFarmBoundary(context.Context, *SetFarmBoundaryRequest) (*SetFarmBoundaryResponse, error)
-	// GetFarmBoundary retrieves the geographic boundary of a farm.
 	GetFarmBoundary(context.Context, *GetFarmBoundaryRequest) (*GetFarmBoundaryResponse, error)
-	// TransferOwnership transfers ownership of a farm between users.
 	TransferOwnership(context.Context, *TransferOwnershipRequest) (*TransferOwnershipResponse, error)
+	CreateManagementUnit(context.Context, *CreateManagementUnitRequest) (*CreateManagementUnitResponse, error)
+	GetManagementUnit(context.Context, *GetManagementUnitRequest) (*GetManagementUnitResponse, error)
+	ListManagementUnits(context.Context, *ListManagementUnitsRequest) (*ListManagementUnitsResponse, error)
+	UpdateManagementUnit(context.Context, *UpdateManagementUnitRequest) (*UpdateManagementUnitResponse, error)
+	DeleteManagementUnit(context.Context, *DeleteManagementUnitRequest) (*DeleteManagementUnitResponse, error)
+	AssignFieldsToUnit(context.Context, *AssignFieldsToUnitRequest) (*AssignFieldsToUnitResponse, error)
+	RemoveFieldsFromUnit(context.Context, *RemoveFieldsFromUnitRequest) (*RemoveFieldsFromUnitResponse, error)
 	mustEmbedUnimplementedFarmServiceServer()
 }
 
@@ -196,6 +271,27 @@ func (UnimplementedFarmServiceServer) GetFarmBoundary(context.Context, *GetFarmB
 }
 func (UnimplementedFarmServiceServer) TransferOwnership(context.Context, *TransferOwnershipRequest) (*TransferOwnershipResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method TransferOwnership not implemented")
+}
+func (UnimplementedFarmServiceServer) CreateManagementUnit(context.Context, *CreateManagementUnitRequest) (*CreateManagementUnitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateManagementUnit not implemented")
+}
+func (UnimplementedFarmServiceServer) GetManagementUnit(context.Context, *GetManagementUnitRequest) (*GetManagementUnitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetManagementUnit not implemented")
+}
+func (UnimplementedFarmServiceServer) ListManagementUnits(context.Context, *ListManagementUnitsRequest) (*ListManagementUnitsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListManagementUnits not implemented")
+}
+func (UnimplementedFarmServiceServer) UpdateManagementUnit(context.Context, *UpdateManagementUnitRequest) (*UpdateManagementUnitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateManagementUnit not implemented")
+}
+func (UnimplementedFarmServiceServer) DeleteManagementUnit(context.Context, *DeleteManagementUnitRequest) (*DeleteManagementUnitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteManagementUnit not implemented")
+}
+func (UnimplementedFarmServiceServer) AssignFieldsToUnit(context.Context, *AssignFieldsToUnitRequest) (*AssignFieldsToUnitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssignFieldsToUnit not implemented")
+}
+func (UnimplementedFarmServiceServer) RemoveFieldsFromUnit(context.Context, *RemoveFieldsFromUnitRequest) (*RemoveFieldsFromUnitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveFieldsFromUnit not implemented")
 }
 func (UnimplementedFarmServiceServer) mustEmbedUnimplementedFarmServiceServer() {}
 func (UnimplementedFarmServiceServer) testEmbeddedByValue()                     {}
@@ -362,6 +458,132 @@ func _FarmService_TransferOwnership_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FarmService_CreateManagementUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateManagementUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).CreateManagementUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_CreateManagementUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).CreateManagementUnit(ctx, req.(*CreateManagementUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_GetManagementUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetManagementUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).GetManagementUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_GetManagementUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).GetManagementUnit(ctx, req.(*GetManagementUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_ListManagementUnits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListManagementUnitsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).ListManagementUnits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_ListManagementUnits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).ListManagementUnits(ctx, req.(*ListManagementUnitsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_UpdateManagementUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateManagementUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).UpdateManagementUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_UpdateManagementUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).UpdateManagementUnit(ctx, req.(*UpdateManagementUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_DeleteManagementUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteManagementUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).DeleteManagementUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_DeleteManagementUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).DeleteManagementUnit(ctx, req.(*DeleteManagementUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_AssignFieldsToUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssignFieldsToUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).AssignFieldsToUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_AssignFieldsToUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).AssignFieldsToUnit(ctx, req.(*AssignFieldsToUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_RemoveFieldsFromUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveFieldsFromUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).RemoveFieldsFromUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_RemoveFieldsFromUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).RemoveFieldsFromUnit(ctx, req.(*RemoveFieldsFromUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FarmService_ServiceDesc is the grpc.ServiceDesc for FarmService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -400,6 +622,34 @@ var FarmService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TransferOwnership",
 			Handler:    _FarmService_TransferOwnership_Handler,
+		},
+		{
+			MethodName: "CreateManagementUnit",
+			Handler:    _FarmService_CreateManagementUnit_Handler,
+		},
+		{
+			MethodName: "GetManagementUnit",
+			Handler:    _FarmService_GetManagementUnit_Handler,
+		},
+		{
+			MethodName: "ListManagementUnits",
+			Handler:    _FarmService_ListManagementUnits_Handler,
+		},
+		{
+			MethodName: "UpdateManagementUnit",
+			Handler:    _FarmService_UpdateManagementUnit_Handler,
+		},
+		{
+			MethodName: "DeleteManagementUnit",
+			Handler:    _FarmService_DeleteManagementUnit_Handler,
+		},
+		{
+			MethodName: "AssignFieldsToUnit",
+			Handler:    _FarmService_AssignFieldsToUnit_Handler,
+		},
+		{
+			MethodName: "RemoveFieldsFromUnit",
+			Handler:    _FarmService_RemoveFieldsFromUnit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

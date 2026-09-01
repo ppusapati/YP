@@ -19,23 +19,30 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FieldService_CreateField_FullMethodName      = "/agriculture.field.v1.FieldService/CreateField"
-	FieldService_GetField_FullMethodName         = "/agriculture.field.v1.FieldService/GetField"
-	FieldService_ListFields_FullMethodName       = "/agriculture.field.v1.FieldService/ListFields"
-	FieldService_UpdateField_FullMethodName      = "/agriculture.field.v1.FieldService/UpdateField"
-	FieldService_DeleteField_FullMethodName      = "/agriculture.field.v1.FieldService/DeleteField"
-	FieldService_SetFieldBoundary_FullMethodName = "/agriculture.field.v1.FieldService/SetFieldBoundary"
-	FieldService_AssignCrop_FullMethodName       = "/agriculture.field.v1.FieldService/AssignCrop"
-	FieldService_ListFieldsByFarm_FullMethodName = "/agriculture.field.v1.FieldService/ListFieldsByFarm"
-	FieldService_SegmentField_FullMethodName     = "/agriculture.field.v1.FieldService/SegmentField"
-	FieldService_GetFieldSegments_FullMethodName = "/agriculture.field.v1.FieldService/GetFieldSegments"
-	FieldService_GetCropHistory_FullMethodName   = "/agriculture.field.v1.FieldService/GetCropHistory"
+	FieldService_CreateField_FullMethodName        = "/agriculture.field.v1.FieldService/CreateField"
+	FieldService_GetField_FullMethodName           = "/agriculture.field.v1.FieldService/GetField"
+	FieldService_ListFields_FullMethodName         = "/agriculture.field.v1.FieldService/ListFields"
+	FieldService_UpdateField_FullMethodName        = "/agriculture.field.v1.FieldService/UpdateField"
+	FieldService_DeleteField_FullMethodName        = "/agriculture.field.v1.FieldService/DeleteField"
+	FieldService_SetFieldBoundary_FullMethodName   = "/agriculture.field.v1.FieldService/SetFieldBoundary"
+	FieldService_AssignCrop_FullMethodName         = "/agriculture.field.v1.FieldService/AssignCrop"
+	FieldService_ListFieldsByFarm_FullMethodName   = "/agriculture.field.v1.FieldService/ListFieldsByFarm"
+	FieldService_SegmentField_FullMethodName       = "/agriculture.field.v1.FieldService/SegmentField"
+	FieldService_GetFieldSegments_FullMethodName   = "/agriculture.field.v1.FieldService/GetFieldSegments"
+	FieldService_GetCropHistory_FullMethodName     = "/agriculture.field.v1.FieldService/GetCropHistory"
+	FieldService_CreateCropCycle_FullMethodName    = "/agriculture.field.v1.FieldService/CreateCropCycle"
+	FieldService_GetCropCycle_FullMethodName       = "/agriculture.field.v1.FieldService/GetCropCycle"
+	FieldService_ListCropCycles_FullMethodName     = "/agriculture.field.v1.FieldService/ListCropCycles"
+	FieldService_UpdateCropCycle_FullMethodName    = "/agriculture.field.v1.FieldService/UpdateCropCycle"
+	FieldService_LogActivityEvent_FullMethodName   = "/agriculture.field.v1.FieldService/LogActivityEvent"
+	FieldService_ListActivityEvents_FullMethodName = "/agriculture.field.v1.FieldService/ListActivityEvents"
 )
 
 // FieldServiceClient is the client API for FieldService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FieldServiceClient interface {
+	// Field CRUD
 	CreateField(ctx context.Context, in *CreateFieldRequest, opts ...grpc.CallOption) (*CreateFieldResponse, error)
 	GetField(ctx context.Context, in *GetFieldRequest, opts ...grpc.CallOption) (*GetFieldResponse, error)
 	ListFields(ctx context.Context, in *ListFieldsRequest, opts ...grpc.CallOption) (*ListFieldsResponse, error)
@@ -47,6 +54,14 @@ type FieldServiceClient interface {
 	SegmentField(ctx context.Context, in *SegmentFieldRequest, opts ...grpc.CallOption) (*SegmentFieldResponse, error)
 	GetFieldSegments(ctx context.Context, in *GetFieldSegmentsRequest, opts ...grpc.CallOption) (*GetFieldSegmentsResponse, error)
 	GetCropHistory(ctx context.Context, in *GetCropHistoryRequest, opts ...grpc.CallOption) (*GetCropHistoryResponse, error)
+	// Crop Cycles
+	CreateCropCycle(ctx context.Context, in *CreateCropCycleRequest, opts ...grpc.CallOption) (*CreateCropCycleResponse, error)
+	GetCropCycle(ctx context.Context, in *GetCropCycleRequest, opts ...grpc.CallOption) (*GetCropCycleResponse, error)
+	ListCropCycles(ctx context.Context, in *ListCropCyclesRequest, opts ...grpc.CallOption) (*ListCropCyclesResponse, error)
+	UpdateCropCycle(ctx context.Context, in *UpdateCropCycleRequest, opts ...grpc.CallOption) (*UpdateCropCycleResponse, error)
+	// Activity Events
+	LogActivityEvent(ctx context.Context, in *LogActivityEventRequest, opts ...grpc.CallOption) (*LogActivityEventResponse, error)
+	ListActivityEvents(ctx context.Context, in *ListActivityEventsRequest, opts ...grpc.CallOption) (*ListActivityEventsResponse, error)
 }
 
 type fieldServiceClient struct {
@@ -167,10 +182,71 @@ func (c *fieldServiceClient) GetCropHistory(ctx context.Context, in *GetCropHist
 	return out, nil
 }
 
+func (c *fieldServiceClient) CreateCropCycle(ctx context.Context, in *CreateCropCycleRequest, opts ...grpc.CallOption) (*CreateCropCycleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCropCycleResponse)
+	err := c.cc.Invoke(ctx, FieldService_CreateCropCycle_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) GetCropCycle(ctx context.Context, in *GetCropCycleRequest, opts ...grpc.CallOption) (*GetCropCycleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCropCycleResponse)
+	err := c.cc.Invoke(ctx, FieldService_GetCropCycle_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) ListCropCycles(ctx context.Context, in *ListCropCyclesRequest, opts ...grpc.CallOption) (*ListCropCyclesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCropCyclesResponse)
+	err := c.cc.Invoke(ctx, FieldService_ListCropCycles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) UpdateCropCycle(ctx context.Context, in *UpdateCropCycleRequest, opts ...grpc.CallOption) (*UpdateCropCycleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCropCycleResponse)
+	err := c.cc.Invoke(ctx, FieldService_UpdateCropCycle_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) LogActivityEvent(ctx context.Context, in *LogActivityEventRequest, opts ...grpc.CallOption) (*LogActivityEventResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogActivityEventResponse)
+	err := c.cc.Invoke(ctx, FieldService_LogActivityEvent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) ListActivityEvents(ctx context.Context, in *ListActivityEventsRequest, opts ...grpc.CallOption) (*ListActivityEventsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListActivityEventsResponse)
+	err := c.cc.Invoke(ctx, FieldService_ListActivityEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FieldServiceServer is the server API for FieldService service.
 // All implementations must embed UnimplementedFieldServiceServer
 // for forward compatibility.
 type FieldServiceServer interface {
+	// Field CRUD
 	CreateField(context.Context, *CreateFieldRequest) (*CreateFieldResponse, error)
 	GetField(context.Context, *GetFieldRequest) (*GetFieldResponse, error)
 	ListFields(context.Context, *ListFieldsRequest) (*ListFieldsResponse, error)
@@ -182,6 +258,14 @@ type FieldServiceServer interface {
 	SegmentField(context.Context, *SegmentFieldRequest) (*SegmentFieldResponse, error)
 	GetFieldSegments(context.Context, *GetFieldSegmentsRequest) (*GetFieldSegmentsResponse, error)
 	GetCropHistory(context.Context, *GetCropHistoryRequest) (*GetCropHistoryResponse, error)
+	// Crop Cycles
+	CreateCropCycle(context.Context, *CreateCropCycleRequest) (*CreateCropCycleResponse, error)
+	GetCropCycle(context.Context, *GetCropCycleRequest) (*GetCropCycleResponse, error)
+	ListCropCycles(context.Context, *ListCropCyclesRequest) (*ListCropCyclesResponse, error)
+	UpdateCropCycle(context.Context, *UpdateCropCycleRequest) (*UpdateCropCycleResponse, error)
+	// Activity Events
+	LogActivityEvent(context.Context, *LogActivityEventRequest) (*LogActivityEventResponse, error)
+	ListActivityEvents(context.Context, *ListActivityEventsRequest) (*ListActivityEventsResponse, error)
 	mustEmbedUnimplementedFieldServiceServer()
 }
 
@@ -224,6 +308,24 @@ func (UnimplementedFieldServiceServer) GetFieldSegments(context.Context, *GetFie
 }
 func (UnimplementedFieldServiceServer) GetCropHistory(context.Context, *GetCropHistoryRequest) (*GetCropHistoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCropHistory not implemented")
+}
+func (UnimplementedFieldServiceServer) CreateCropCycle(context.Context, *CreateCropCycleRequest) (*CreateCropCycleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCropCycle not implemented")
+}
+func (UnimplementedFieldServiceServer) GetCropCycle(context.Context, *GetCropCycleRequest) (*GetCropCycleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCropCycle not implemented")
+}
+func (UnimplementedFieldServiceServer) ListCropCycles(context.Context, *ListCropCyclesRequest) (*ListCropCyclesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCropCycles not implemented")
+}
+func (UnimplementedFieldServiceServer) UpdateCropCycle(context.Context, *UpdateCropCycleRequest) (*UpdateCropCycleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCropCycle not implemented")
+}
+func (UnimplementedFieldServiceServer) LogActivityEvent(context.Context, *LogActivityEventRequest) (*LogActivityEventResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LogActivityEvent not implemented")
+}
+func (UnimplementedFieldServiceServer) ListActivityEvents(context.Context, *ListActivityEventsRequest) (*ListActivityEventsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListActivityEvents not implemented")
 }
 func (UnimplementedFieldServiceServer) mustEmbedUnimplementedFieldServiceServer() {}
 func (UnimplementedFieldServiceServer) testEmbeddedByValue()                      {}
@@ -444,6 +546,114 @@ func _FieldService_GetCropHistory_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FieldService_CreateCropCycle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCropCycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).CreateCropCycle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_CreateCropCycle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).CreateCropCycle(ctx, req.(*CreateCropCycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_GetCropCycle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCropCycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).GetCropCycle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_GetCropCycle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).GetCropCycle(ctx, req.(*GetCropCycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_ListCropCycles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCropCyclesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).ListCropCycles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_ListCropCycles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).ListCropCycles(ctx, req.(*ListCropCyclesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_UpdateCropCycle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCropCycleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).UpdateCropCycle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_UpdateCropCycle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).UpdateCropCycle(ctx, req.(*UpdateCropCycleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_LogActivityEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogActivityEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).LogActivityEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_LogActivityEvent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).LogActivityEvent(ctx, req.(*LogActivityEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_ListActivityEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListActivityEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).ListActivityEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_ListActivityEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).ListActivityEvents(ctx, req.(*ListActivityEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FieldService_ServiceDesc is the grpc.ServiceDesc for FieldService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -494,6 +704,30 @@ var FieldService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCropHistory",
 			Handler:    _FieldService_GetCropHistory_Handler,
+		},
+		{
+			MethodName: "CreateCropCycle",
+			Handler:    _FieldService_CreateCropCycle_Handler,
+		},
+		{
+			MethodName: "GetCropCycle",
+			Handler:    _FieldService_GetCropCycle_Handler,
+		},
+		{
+			MethodName: "ListCropCycles",
+			Handler:    _FieldService_ListCropCycles_Handler,
+		},
+		{
+			MethodName: "UpdateCropCycle",
+			Handler:    _FieldService_UpdateCropCycle_Handler,
+		},
+		{
+			MethodName: "LogActivityEvent",
+			Handler:    _FieldService_LogActivityEvent_Handler,
+		},
+		{
+			MethodName: "ListActivityEvents",
+			Handler:    _FieldService_ListActivityEvents_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -283,6 +283,113 @@ func (ClimateZone) EnumDescriptor() ([]byte, []int) {
 	return file_farm_proto_rawDescGZIP(), []int{3}
 }
 
+type ManagementUnitType int32
+
+const (
+	ManagementUnitType_UNIT_TYPE_UNSPECIFIED ManagementUnitType = 0
+	ManagementUnitType_UNIT_TYPE_ZONE        ManagementUnitType = 1
+	ManagementUnitType_UNIT_TYPE_BLOCK       ManagementUnitType = 2
+	ManagementUnitType_UNIT_TYPE_SECTION     ManagementUnitType = 3
+	ManagementUnitType_UNIT_TYPE_PLOT        ManagementUnitType = 4
+)
+
+// Enum value maps for ManagementUnitType.
+var (
+	ManagementUnitType_name = map[int32]string{
+		0: "UNIT_TYPE_UNSPECIFIED",
+		1: "UNIT_TYPE_ZONE",
+		2: "UNIT_TYPE_BLOCK",
+		3: "UNIT_TYPE_SECTION",
+		4: "UNIT_TYPE_PLOT",
+	}
+	ManagementUnitType_value = map[string]int32{
+		"UNIT_TYPE_UNSPECIFIED": 0,
+		"UNIT_TYPE_ZONE":        1,
+		"UNIT_TYPE_BLOCK":       2,
+		"UNIT_TYPE_SECTION":     3,
+		"UNIT_TYPE_PLOT":        4,
+	}
+)
+
+func (x ManagementUnitType) Enum() *ManagementUnitType {
+	p := new(ManagementUnitType)
+	*p = x
+	return p
+}
+
+func (x ManagementUnitType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ManagementUnitType) Descriptor() protoreflect.EnumDescriptor {
+	return file_farm_proto_enumTypes[4].Descriptor()
+}
+
+func (ManagementUnitType) Type() protoreflect.EnumType {
+	return &file_farm_proto_enumTypes[4]
+}
+
+func (x ManagementUnitType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ManagementUnitType.Descriptor instead.
+func (ManagementUnitType) EnumDescriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{4}
+}
+
+type ManagementUnitStatus int32
+
+const (
+	ManagementUnitStatus_UNIT_STATUS_UNSPECIFIED ManagementUnitStatus = 0
+	ManagementUnitStatus_UNIT_STATUS_ACTIVE      ManagementUnitStatus = 1
+	ManagementUnitStatus_UNIT_STATUS_INACTIVE    ManagementUnitStatus = 2
+	ManagementUnitStatus_UNIT_STATUS_ARCHIVED    ManagementUnitStatus = 3
+)
+
+// Enum value maps for ManagementUnitStatus.
+var (
+	ManagementUnitStatus_name = map[int32]string{
+		0: "UNIT_STATUS_UNSPECIFIED",
+		1: "UNIT_STATUS_ACTIVE",
+		2: "UNIT_STATUS_INACTIVE",
+		3: "UNIT_STATUS_ARCHIVED",
+	}
+	ManagementUnitStatus_value = map[string]int32{
+		"UNIT_STATUS_UNSPECIFIED": 0,
+		"UNIT_STATUS_ACTIVE":      1,
+		"UNIT_STATUS_INACTIVE":    2,
+		"UNIT_STATUS_ARCHIVED":    3,
+	}
+)
+
+func (x ManagementUnitStatus) Enum() *ManagementUnitStatus {
+	p := new(ManagementUnitStatus)
+	*p = x
+	return p
+}
+
+func (x ManagementUnitStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ManagementUnitStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_farm_proto_enumTypes[5].Descriptor()
+}
+
+func (ManagementUnitStatus) Type() protoreflect.EnumType {
+	return &file_farm_proto_enumTypes[5]
+}
+
+func (x ManagementUnitStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ManagementUnitStatus.Descriptor instead.
+func (ManagementUnitStatus) EnumDescriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{5}
+}
+
 // FarmLocation represents the geographic coordinates of a farm.
 type FarmLocation struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
@@ -1824,6 +1931,938 @@ func (x *TransferOwnershipResponse) GetFarm() *Farm {
 	return nil
 }
 
+type ManagementUnit struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId        string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	FarmId          string                 `protobuf:"bytes,3,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
+	ParentUnitId    string                 `protobuf:"bytes,4,opt,name=parent_unit_id,json=parentUnitId,proto3" json:"parent_unit_id,omitempty"`
+	Name            string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	Description     string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	UnitType        ManagementUnitType     `protobuf:"varint,7,opt,name=unit_type,json=unitType,proto3,enum=agriculture.farm.v1.ManagementUnitType" json:"unit_type,omitempty"`
+	AreaHectares    float64                `protobuf:"fixed64,8,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
+	BoundaryGeojson string                 `protobuf:"bytes,9,opt,name=boundary_geojson,json=boundaryGeojson,proto3" json:"boundary_geojson,omitempty"`
+	ManagerId       string                 `protobuf:"bytes,10,opt,name=manager_id,json=managerId,proto3" json:"manager_id,omitempty"`
+	Status          ManagementUnitStatus   `protobuf:"varint,11,opt,name=status,proto3,enum=agriculture.farm.v1.ManagementUnitStatus" json:"status,omitempty"`
+	FieldIds        []string               `protobuf:"bytes,12,rep,name=field_ids,json=fieldIds,proto3" json:"field_ids,omitempty"`
+	Version         int64                  `protobuf:"varint,13,opt,name=version,proto3" json:"version,omitempty"`
+	CreatedBy       string                 `protobuf:"bytes,14,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ManagementUnit) Reset() {
+	*x = ManagementUnit{}
+	mi := &file_farm_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManagementUnit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManagementUnit) ProtoMessage() {}
+
+func (x *ManagementUnit) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManagementUnit.ProtoReflect.Descriptor instead.
+func (*ManagementUnit) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ManagementUnit) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetFarmId() string {
+	if x != nil {
+		return x.FarmId
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetParentUnitId() string {
+	if x != nil {
+		return x.ParentUnitId
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetUnitType() ManagementUnitType {
+	if x != nil {
+		return x.UnitType
+	}
+	return ManagementUnitType_UNIT_TYPE_UNSPECIFIED
+}
+
+func (x *ManagementUnit) GetAreaHectares() float64 {
+	if x != nil {
+		return x.AreaHectares
+	}
+	return 0
+}
+
+func (x *ManagementUnit) GetBoundaryGeojson() string {
+	if x != nil {
+		return x.BoundaryGeojson
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetManagerId() string {
+	if x != nil {
+		return x.ManagerId
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetStatus() ManagementUnitStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ManagementUnitStatus_UNIT_STATUS_UNSPECIFIED
+}
+
+func (x *ManagementUnit) GetFieldIds() []string {
+	if x != nil {
+		return x.FieldIds
+	}
+	return nil
+}
+
+func (x *ManagementUnit) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *ManagementUnit) GetCreatedBy() string {
+	if x != nil {
+		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *ManagementUnit) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *ManagementUnit) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+type CreateManagementUnitRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	FarmId          string                 `protobuf:"bytes,1,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
+	ParentUnitId    string                 `protobuf:"bytes,2,opt,name=parent_unit_id,json=parentUnitId,proto3" json:"parent_unit_id,omitempty"`
+	Name            string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description     string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	UnitType        ManagementUnitType     `protobuf:"varint,5,opt,name=unit_type,json=unitType,proto3,enum=agriculture.farm.v1.ManagementUnitType" json:"unit_type,omitempty"`
+	AreaHectares    float64                `protobuf:"fixed64,6,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
+	BoundaryGeojson string                 `protobuf:"bytes,7,opt,name=boundary_geojson,json=boundaryGeojson,proto3" json:"boundary_geojson,omitempty"`
+	ManagerId       string                 `protobuf:"bytes,8,opt,name=manager_id,json=managerId,proto3" json:"manager_id,omitempty"`
+	FieldIds        []string               `protobuf:"bytes,9,rep,name=field_ids,json=fieldIds,proto3" json:"field_ids,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CreateManagementUnitRequest) Reset() {
+	*x = CreateManagementUnitRequest{}
+	mi := &file_farm_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateManagementUnitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateManagementUnitRequest) ProtoMessage() {}
+
+func (x *CreateManagementUnitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateManagementUnitRequest.ProtoReflect.Descriptor instead.
+func (*CreateManagementUnitRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *CreateManagementUnitRequest) GetFarmId() string {
+	if x != nil {
+		return x.FarmId
+	}
+	return ""
+}
+
+func (x *CreateManagementUnitRequest) GetParentUnitId() string {
+	if x != nil {
+		return x.ParentUnitId
+	}
+	return ""
+}
+
+func (x *CreateManagementUnitRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateManagementUnitRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateManagementUnitRequest) GetUnitType() ManagementUnitType {
+	if x != nil {
+		return x.UnitType
+	}
+	return ManagementUnitType_UNIT_TYPE_UNSPECIFIED
+}
+
+func (x *CreateManagementUnitRequest) GetAreaHectares() float64 {
+	if x != nil {
+		return x.AreaHectares
+	}
+	return 0
+}
+
+func (x *CreateManagementUnitRequest) GetBoundaryGeojson() string {
+	if x != nil {
+		return x.BoundaryGeojson
+	}
+	return ""
+}
+
+func (x *CreateManagementUnitRequest) GetManagerId() string {
+	if x != nil {
+		return x.ManagerId
+	}
+	return ""
+}
+
+func (x *CreateManagementUnitRequest) GetFieldIds() []string {
+	if x != nil {
+		return x.FieldIds
+	}
+	return nil
+}
+
+type CreateManagementUnitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Unit          *ManagementUnit        `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateManagementUnitResponse) Reset() {
+	*x = CreateManagementUnitResponse{}
+	mi := &file_farm_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateManagementUnitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateManagementUnitResponse) ProtoMessage() {}
+
+func (x *CreateManagementUnitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateManagementUnitResponse.ProtoReflect.Descriptor instead.
+func (*CreateManagementUnitResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *CreateManagementUnitResponse) GetUnit() *ManagementUnit {
+	if x != nil {
+		return x.Unit
+	}
+	return nil
+}
+
+type GetManagementUnitRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetManagementUnitRequest) Reset() {
+	*x = GetManagementUnitRequest{}
+	mi := &file_farm_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetManagementUnitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetManagementUnitRequest) ProtoMessage() {}
+
+func (x *GetManagementUnitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetManagementUnitRequest.ProtoReflect.Descriptor instead.
+func (*GetManagementUnitRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetManagementUnitRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetManagementUnitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Unit          *ManagementUnit        `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetManagementUnitResponse) Reset() {
+	*x = GetManagementUnitResponse{}
+	mi := &file_farm_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetManagementUnitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetManagementUnitResponse) ProtoMessage() {}
+
+func (x *GetManagementUnitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetManagementUnitResponse.ProtoReflect.Descriptor instead.
+func (*GetManagementUnitResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GetManagementUnitResponse) GetUnit() *ManagementUnit {
+	if x != nil {
+		return x.Unit
+	}
+	return nil
+}
+
+type ListManagementUnitsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FarmId        string                 `protobuf:"bytes,1,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageOffset    int32                  `protobuf:"varint,3,opt,name=page_offset,json=pageOffset,proto3" json:"page_offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListManagementUnitsRequest) Reset() {
+	*x = ListManagementUnitsRequest{}
+	mi := &file_farm_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListManagementUnitsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListManagementUnitsRequest) ProtoMessage() {}
+
+func (x *ListManagementUnitsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListManagementUnitsRequest.ProtoReflect.Descriptor instead.
+func (*ListManagementUnitsRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ListManagementUnitsRequest) GetFarmId() string {
+	if x != nil {
+		return x.FarmId
+	}
+	return ""
+}
+
+func (x *ListManagementUnitsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListManagementUnitsRequest) GetPageOffset() int32 {
+	if x != nil {
+		return x.PageOffset
+	}
+	return 0
+}
+
+type ListManagementUnitsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Units         []*ManagementUnit      `protobuf:"bytes,1,rep,name=units,proto3" json:"units,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,2,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListManagementUnitsResponse) Reset() {
+	*x = ListManagementUnitsResponse{}
+	mi := &file_farm_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListManagementUnitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListManagementUnitsResponse) ProtoMessage() {}
+
+func (x *ListManagementUnitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListManagementUnitsResponse.ProtoReflect.Descriptor instead.
+func (*ListManagementUnitsResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListManagementUnitsResponse) GetUnits() []*ManagementUnit {
+	if x != nil {
+		return x.Units
+	}
+	return nil
+}
+
+func (x *ListManagementUnitsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+type UpdateManagementUnitRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description     string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Status          ManagementUnitStatus   `protobuf:"varint,4,opt,name=status,proto3,enum=agriculture.farm.v1.ManagementUnitStatus" json:"status,omitempty"`
+	ManagerId       string                 `protobuf:"bytes,5,opt,name=manager_id,json=managerId,proto3" json:"manager_id,omitempty"`
+	AreaHectares    float64                `protobuf:"fixed64,6,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
+	BoundaryGeojson string                 `protobuf:"bytes,7,opt,name=boundary_geojson,json=boundaryGeojson,proto3" json:"boundary_geojson,omitempty"`
+	UpdateMask      *fieldmaskpb.FieldMask `protobuf:"bytes,8,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UpdateManagementUnitRequest) Reset() {
+	*x = UpdateManagementUnitRequest{}
+	mi := &file_farm_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateManagementUnitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateManagementUnitRequest) ProtoMessage() {}
+
+func (x *UpdateManagementUnitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateManagementUnitRequest.ProtoReflect.Descriptor instead.
+func (*UpdateManagementUnitRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *UpdateManagementUnitRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateManagementUnitRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdateManagementUnitRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *UpdateManagementUnitRequest) GetStatus() ManagementUnitStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ManagementUnitStatus_UNIT_STATUS_UNSPECIFIED
+}
+
+func (x *UpdateManagementUnitRequest) GetManagerId() string {
+	if x != nil {
+		return x.ManagerId
+	}
+	return ""
+}
+
+func (x *UpdateManagementUnitRequest) GetAreaHectares() float64 {
+	if x != nil {
+		return x.AreaHectares
+	}
+	return 0
+}
+
+func (x *UpdateManagementUnitRequest) GetBoundaryGeojson() string {
+	if x != nil {
+		return x.BoundaryGeojson
+	}
+	return ""
+}
+
+func (x *UpdateManagementUnitRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
+	if x != nil {
+		return x.UpdateMask
+	}
+	return nil
+}
+
+type UpdateManagementUnitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Unit          *ManagementUnit        `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateManagementUnitResponse) Reset() {
+	*x = UpdateManagementUnitResponse{}
+	mi := &file_farm_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateManagementUnitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateManagementUnitResponse) ProtoMessage() {}
+
+func (x *UpdateManagementUnitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateManagementUnitResponse.ProtoReflect.Descriptor instead.
+func (*UpdateManagementUnitResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *UpdateManagementUnitResponse) GetUnit() *ManagementUnit {
+	if x != nil {
+		return x.Unit
+	}
+	return nil
+}
+
+type DeleteManagementUnitRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteManagementUnitRequest) Reset() {
+	*x = DeleteManagementUnitRequest{}
+	mi := &file_farm_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteManagementUnitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteManagementUnitRequest) ProtoMessage() {}
+
+func (x *DeleteManagementUnitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteManagementUnitRequest.ProtoReflect.Descriptor instead.
+func (*DeleteManagementUnitRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *DeleteManagementUnitRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type DeleteManagementUnitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteManagementUnitResponse) Reset() {
+	*x = DeleteManagementUnitResponse{}
+	mi := &file_farm_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteManagementUnitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteManagementUnitResponse) ProtoMessage() {}
+
+func (x *DeleteManagementUnitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteManagementUnitResponse.ProtoReflect.Descriptor instead.
+func (*DeleteManagementUnitResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{30}
+}
+
+type AssignFieldsToUnitRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ManagementUnitId string                 `protobuf:"bytes,1,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	FieldIds         []string               `protobuf:"bytes,2,rep,name=field_ids,json=fieldIds,proto3" json:"field_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AssignFieldsToUnitRequest) Reset() {
+	*x = AssignFieldsToUnitRequest{}
+	mi := &file_farm_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssignFieldsToUnitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssignFieldsToUnitRequest) ProtoMessage() {}
+
+func (x *AssignFieldsToUnitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssignFieldsToUnitRequest.ProtoReflect.Descriptor instead.
+func (*AssignFieldsToUnitRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *AssignFieldsToUnitRequest) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
+	}
+	return ""
+}
+
+func (x *AssignFieldsToUnitRequest) GetFieldIds() []string {
+	if x != nil {
+		return x.FieldIds
+	}
+	return nil
+}
+
+type AssignFieldsToUnitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Unit          *ManagementUnit        `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssignFieldsToUnitResponse) Reset() {
+	*x = AssignFieldsToUnitResponse{}
+	mi := &file_farm_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssignFieldsToUnitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssignFieldsToUnitResponse) ProtoMessage() {}
+
+func (x *AssignFieldsToUnitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssignFieldsToUnitResponse.ProtoReflect.Descriptor instead.
+func (*AssignFieldsToUnitResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *AssignFieldsToUnitResponse) GetUnit() *ManagementUnit {
+	if x != nil {
+		return x.Unit
+	}
+	return nil
+}
+
+type RemoveFieldsFromUnitRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ManagementUnitId string                 `protobuf:"bytes,1,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	FieldIds         []string               `protobuf:"bytes,2,rep,name=field_ids,json=fieldIds,proto3" json:"field_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *RemoveFieldsFromUnitRequest) Reset() {
+	*x = RemoveFieldsFromUnitRequest{}
+	mi := &file_farm_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveFieldsFromUnitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveFieldsFromUnitRequest) ProtoMessage() {}
+
+func (x *RemoveFieldsFromUnitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveFieldsFromUnitRequest.ProtoReflect.Descriptor instead.
+func (*RemoveFieldsFromUnitRequest) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *RemoveFieldsFromUnitRequest) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
+	}
+	return ""
+}
+
+func (x *RemoveFieldsFromUnitRequest) GetFieldIds() []string {
+	if x != nil {
+		return x.FieldIds
+	}
+	return nil
+}
+
+type RemoveFieldsFromUnitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Unit          *ManagementUnit        `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveFieldsFromUnitResponse) Reset() {
+	*x = RemoveFieldsFromUnitResponse{}
+	mi := &file_farm_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveFieldsFromUnitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveFieldsFromUnitResponse) ProtoMessage() {}
+
+func (x *RemoveFieldsFromUnitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_farm_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveFieldsFromUnitResponse.ProtoReflect.Descriptor instead.
+func (*RemoveFieldsFromUnitResponse) Descriptor() ([]byte, []int) {
+	return file_farm_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *RemoveFieldsFromUnitResponse) GetUnit() *ManagementUnit {
+	if x != nil {
+		return x.Unit
+	}
+	return nil
+}
+
 var File_farm_proto protoreflect.FileDescriptor
 
 const file_farm_proto_rawDesc = "" +
@@ -1980,7 +3019,81 @@ const file_farm_proto_rawDesc = "" +
 	"\bto_phone\x18\x06 \x01(\tR\atoPhone\x121\n" +
 	"\x14ownership_percentage\x18\a \x01(\x01R\x13ownershipPercentage\"J\n" +
 	"\x19TransferOwnershipResponse\x12-\n" +
-	"\x04farm\x18\x01 \x01(\v2\x19.agriculture.farm.v1.FarmR\x04farm*\x82\x01\n" +
+	"\x04farm\x18\x01 \x01(\v2\x19.agriculture.farm.v1.FarmR\x04farm\"\xf6\x04\n" +
+	"\x0eManagementUnit\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
+	"\afarm_id\x18\x03 \x01(\tR\x06farmId\x12$\n" +
+	"\x0eparent_unit_id\x18\x04 \x01(\tR\fparentUnitId\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x06 \x01(\tR\vdescription\x12D\n" +
+	"\tunit_type\x18\a \x01(\x0e2'.agriculture.farm.v1.ManagementUnitTypeR\bunitType\x12#\n" +
+	"\rarea_hectares\x18\b \x01(\x01R\fareaHectares\x12)\n" +
+	"\x10boundary_geojson\x18\t \x01(\tR\x0fboundaryGeojson\x12\x1d\n" +
+	"\n" +
+	"manager_id\x18\n" +
+	" \x01(\tR\tmanagerId\x12A\n" +
+	"\x06status\x18\v \x01(\x0e2).agriculture.farm.v1.ManagementUnitStatusR\x06status\x12\x1b\n" +
+	"\tfield_ids\x18\f \x03(\tR\bfieldIds\x12\x18\n" +
+	"\aversion\x18\r \x01(\x03R\aversion\x12\x1d\n" +
+	"\n" +
+	"created_by\x18\x0e \x01(\tR\tcreatedBy\x129\n" +
+	"\n" +
+	"created_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xe4\x02\n" +
+	"\x1bCreateManagementUnitRequest\x12\x17\n" +
+	"\afarm_id\x18\x01 \x01(\tR\x06farmId\x12$\n" +
+	"\x0eparent_unit_id\x18\x02 \x01(\tR\fparentUnitId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12D\n" +
+	"\tunit_type\x18\x05 \x01(\x0e2'.agriculture.farm.v1.ManagementUnitTypeR\bunitType\x12#\n" +
+	"\rarea_hectares\x18\x06 \x01(\x01R\fareaHectares\x12)\n" +
+	"\x10boundary_geojson\x18\a \x01(\tR\x0fboundaryGeojson\x12\x1d\n" +
+	"\n" +
+	"manager_id\x18\b \x01(\tR\tmanagerId\x12\x1b\n" +
+	"\tfield_ids\x18\t \x03(\tR\bfieldIds\"W\n" +
+	"\x1cCreateManagementUnitResponse\x127\n" +
+	"\x04unit\x18\x01 \x01(\v2#.agriculture.farm.v1.ManagementUnitR\x04unit\"*\n" +
+	"\x18GetManagementUnitRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"T\n" +
+	"\x19GetManagementUnitResponse\x127\n" +
+	"\x04unit\x18\x01 \x01(\v2#.agriculture.farm.v1.ManagementUnitR\x04unit\"s\n" +
+	"\x1aListManagementUnitsRequest\x12\x17\n" +
+	"\afarm_id\x18\x01 \x01(\tR\x06farmId\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1f\n" +
+	"\vpage_offset\x18\x03 \x01(\x05R\n" +
+	"pageOffset\"y\n" +
+	"\x1bListManagementUnitsResponse\x129\n" +
+	"\x05units\x18\x01 \x03(\v2#.agriculture.farm.v1.ManagementUnitR\x05units\x12\x1f\n" +
+	"\vtotal_count\x18\x02 \x01(\x05R\n" +
+	"totalCount\"\xd2\x02\n" +
+	"\x1bUpdateManagementUnitRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12A\n" +
+	"\x06status\x18\x04 \x01(\x0e2).agriculture.farm.v1.ManagementUnitStatusR\x06status\x12\x1d\n" +
+	"\n" +
+	"manager_id\x18\x05 \x01(\tR\tmanagerId\x12#\n" +
+	"\rarea_hectares\x18\x06 \x01(\x01R\fareaHectares\x12)\n" +
+	"\x10boundary_geojson\x18\a \x01(\tR\x0fboundaryGeojson\x12;\n" +
+	"\vupdate_mask\x18\b \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
+	"updateMask\"W\n" +
+	"\x1cUpdateManagementUnitResponse\x127\n" +
+	"\x04unit\x18\x01 \x01(\v2#.agriculture.farm.v1.ManagementUnitR\x04unit\"-\n" +
+	"\x1bDeleteManagementUnitRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x1e\n" +
+	"\x1cDeleteManagementUnitResponse\"f\n" +
+	"\x19AssignFieldsToUnitRequest\x12,\n" +
+	"\x12management_unit_id\x18\x01 \x01(\tR\x10managementUnitId\x12\x1b\n" +
+	"\tfield_ids\x18\x02 \x03(\tR\bfieldIds\"U\n" +
+	"\x1aAssignFieldsToUnitResponse\x127\n" +
+	"\x04unit\x18\x01 \x01(\v2#.agriculture.farm.v1.ManagementUnitR\x04unit\"h\n" +
+	"\x1bRemoveFieldsFromUnitRequest\x12,\n" +
+	"\x12management_unit_id\x18\x01 \x01(\tR\x10managementUnitId\x12\x1b\n" +
+	"\tfield_ids\x18\x02 \x03(\tR\bfieldIds\"W\n" +
+	"\x1cRemoveFieldsFromUnitResponse\x127\n" +
+	"\x04unit\x18\x01 \x01(\v2#.agriculture.farm.v1.ManagementUnitR\x04unit*\x82\x01\n" +
 	"\bFarmType\x12\x19\n" +
 	"\x15FARM_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eFARM_TYPE_CROP\x10\x01\x12\x17\n" +
@@ -2018,7 +3131,18 @@ const file_farm_proto_rawDesc = "" +
 	"\x18CLIMATE_ZONE_CONTINENTAL\x10\x06\x12\x16\n" +
 	"\x12CLIMATE_ZONE_POLAR\x10\a\x12\x1e\n" +
 	"\x1aCLIMATE_ZONE_MEDITERRANEAN\x10\b\x12\x18\n" +
-	"\x14CLIMATE_ZONE_MONSOON\x10\t2\xac\x06\n" +
+	"\x14CLIMATE_ZONE_MONSOON\x10\t*\x83\x01\n" +
+	"\x12ManagementUnitType\x12\x19\n" +
+	"\x15UNIT_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eUNIT_TYPE_ZONE\x10\x01\x12\x13\n" +
+	"\x0fUNIT_TYPE_BLOCK\x10\x02\x12\x15\n" +
+	"\x11UNIT_TYPE_SECTION\x10\x03\x12\x12\n" +
+	"\x0eUNIT_TYPE_PLOT\x10\x04*\x7f\n" +
+	"\x14ManagementUnitStatus\x12\x1b\n" +
+	"\x17UNIT_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12UNIT_STATUS_ACTIVE\x10\x01\x12\x18\n" +
+	"\x14UNIT_STATUS_INACTIVE\x10\x02\x12\x18\n" +
+	"\x14UNIT_STATUS_ARCHIVED\x10\x032\x85\r\n" +
 	"\vFarmService\x12]\n" +
 	"\n" +
 	"CreateFarm\x12&.agriculture.farm.v1.CreateFarmRequest\x1a'.agriculture.farm.v1.CreateFarmResponse\x12T\n" +
@@ -2030,7 +3154,14 @@ const file_farm_proto_rawDesc = "" +
 	"DeleteFarm\x12&.agriculture.farm.v1.DeleteFarmRequest\x1a'.agriculture.farm.v1.DeleteFarmResponse\x12l\n" +
 	"\x0fSetFarmBoundary\x12+.agriculture.farm.v1.SetFarmBoundaryRequest\x1a,.agriculture.farm.v1.SetFarmBoundaryResponse\x12l\n" +
 	"\x0fGetFarmBoundary\x12+.agriculture.farm.v1.GetFarmBoundaryRequest\x1a,.agriculture.farm.v1.GetFarmBoundaryResponse\x12r\n" +
-	"\x11TransferOwnership\x12-.agriculture.farm.v1.TransferOwnershipRequest\x1a..agriculture.farm.v1.TransferOwnershipResponseB1Z/p9e.in/samavaya/agriculture/farm-service/api/v1b\x06proto3"
+	"\x11TransferOwnership\x12-.agriculture.farm.v1.TransferOwnershipRequest\x1a..agriculture.farm.v1.TransferOwnershipResponse\x12{\n" +
+	"\x14CreateManagementUnit\x120.agriculture.farm.v1.CreateManagementUnitRequest\x1a1.agriculture.farm.v1.CreateManagementUnitResponse\x12r\n" +
+	"\x11GetManagementUnit\x12-.agriculture.farm.v1.GetManagementUnitRequest\x1a..agriculture.farm.v1.GetManagementUnitResponse\x12x\n" +
+	"\x13ListManagementUnits\x12/.agriculture.farm.v1.ListManagementUnitsRequest\x1a0.agriculture.farm.v1.ListManagementUnitsResponse\x12{\n" +
+	"\x14UpdateManagementUnit\x120.agriculture.farm.v1.UpdateManagementUnitRequest\x1a1.agriculture.farm.v1.UpdateManagementUnitResponse\x12{\n" +
+	"\x14DeleteManagementUnit\x120.agriculture.farm.v1.DeleteManagementUnitRequest\x1a1.agriculture.farm.v1.DeleteManagementUnitResponse\x12u\n" +
+	"\x12AssignFieldsToUnit\x12..agriculture.farm.v1.AssignFieldsToUnitRequest\x1a/.agriculture.farm.v1.AssignFieldsToUnitResponse\x12{\n" +
+	"\x14RemoveFieldsFromUnit\x120.agriculture.farm.v1.RemoveFieldsFromUnitRequest\x1a1.agriculture.farm.v1.RemoveFieldsFromUnitResponseB1Z/p9e.in/samavaya/agriculture/farm-service/api/v1b\x06proto3"
 
 var (
 	file_farm_proto_rawDescOnce sync.Once
@@ -2044,99 +3175,143 @@ func file_farm_proto_rawDescGZIP() []byte {
 	return file_farm_proto_rawDescData
 }
 
-var file_farm_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_farm_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_farm_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_farm_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_farm_proto_goTypes = []any{
-	(FarmType)(0),                     // 0: agriculture.farm.v1.FarmType
-	(FarmStatus)(0),                   // 1: agriculture.farm.v1.FarmStatus
-	(SoilType)(0),                     // 2: agriculture.farm.v1.SoilType
-	(ClimateZone)(0),                  // 3: agriculture.farm.v1.ClimateZone
-	(*FarmLocation)(nil),              // 4: agriculture.farm.v1.FarmLocation
-	(*FarmBoundary)(nil),              // 5: agriculture.farm.v1.FarmBoundary
-	(*FarmOwner)(nil),                 // 6: agriculture.farm.v1.FarmOwner
-	(*Farm)(nil),                      // 7: agriculture.farm.v1.Farm
-	(*CreateFarmRequest)(nil),         // 8: agriculture.farm.v1.CreateFarmRequest
-	(*CreateFarmResponse)(nil),        // 9: agriculture.farm.v1.CreateFarmResponse
-	(*GetFarmRequest)(nil),            // 10: agriculture.farm.v1.GetFarmRequest
-	(*GetFarmResponse)(nil),           // 11: agriculture.farm.v1.GetFarmResponse
-	(*ListFarmsRequest)(nil),          // 12: agriculture.farm.v1.ListFarmsRequest
-	(*ListFarmsResponse)(nil),         // 13: agriculture.farm.v1.ListFarmsResponse
-	(*UpdateFarmRequest)(nil),         // 14: agriculture.farm.v1.UpdateFarmRequest
-	(*UpdateFarmResponse)(nil),        // 15: agriculture.farm.v1.UpdateFarmResponse
-	(*DeleteFarmRequest)(nil),         // 16: agriculture.farm.v1.DeleteFarmRequest
-	(*DeleteFarmResponse)(nil),        // 17: agriculture.farm.v1.DeleteFarmResponse
-	(*SetFarmBoundaryRequest)(nil),    // 18: agriculture.farm.v1.SetFarmBoundaryRequest
-	(*SetFarmBoundaryResponse)(nil),   // 19: agriculture.farm.v1.SetFarmBoundaryResponse
-	(*GetFarmBoundaryRequest)(nil),    // 20: agriculture.farm.v1.GetFarmBoundaryRequest
-	(*GetFarmBoundaryResponse)(nil),   // 21: agriculture.farm.v1.GetFarmBoundaryResponse
-	(*TransferOwnershipRequest)(nil),  // 22: agriculture.farm.v1.TransferOwnershipRequest
-	(*TransferOwnershipResponse)(nil), // 23: agriculture.farm.v1.TransferOwnershipResponse
-	nil,                               // 24: agriculture.farm.v1.Farm.MetadataEntry
-	nil,                               // 25: agriculture.farm.v1.CreateFarmRequest.MetadataEntry
-	nil,                               // 26: agriculture.farm.v1.UpdateFarmRequest.MetadataEntry
-	(*timestamppb.Timestamp)(nil),     // 27: google.protobuf.Timestamp
-	(*fieldmaskpb.FieldMask)(nil),     // 28: google.protobuf.FieldMask
+	(FarmType)(0),                        // 0: agriculture.farm.v1.FarmType
+	(FarmStatus)(0),                      // 1: agriculture.farm.v1.FarmStatus
+	(SoilType)(0),                        // 2: agriculture.farm.v1.SoilType
+	(ClimateZone)(0),                     // 3: agriculture.farm.v1.ClimateZone
+	(ManagementUnitType)(0),              // 4: agriculture.farm.v1.ManagementUnitType
+	(ManagementUnitStatus)(0),            // 5: agriculture.farm.v1.ManagementUnitStatus
+	(*FarmLocation)(nil),                 // 6: agriculture.farm.v1.FarmLocation
+	(*FarmBoundary)(nil),                 // 7: agriculture.farm.v1.FarmBoundary
+	(*FarmOwner)(nil),                    // 8: agriculture.farm.v1.FarmOwner
+	(*Farm)(nil),                         // 9: agriculture.farm.v1.Farm
+	(*CreateFarmRequest)(nil),            // 10: agriculture.farm.v1.CreateFarmRequest
+	(*CreateFarmResponse)(nil),           // 11: agriculture.farm.v1.CreateFarmResponse
+	(*GetFarmRequest)(nil),               // 12: agriculture.farm.v1.GetFarmRequest
+	(*GetFarmResponse)(nil),              // 13: agriculture.farm.v1.GetFarmResponse
+	(*ListFarmsRequest)(nil),             // 14: agriculture.farm.v1.ListFarmsRequest
+	(*ListFarmsResponse)(nil),            // 15: agriculture.farm.v1.ListFarmsResponse
+	(*UpdateFarmRequest)(nil),            // 16: agriculture.farm.v1.UpdateFarmRequest
+	(*UpdateFarmResponse)(nil),           // 17: agriculture.farm.v1.UpdateFarmResponse
+	(*DeleteFarmRequest)(nil),            // 18: agriculture.farm.v1.DeleteFarmRequest
+	(*DeleteFarmResponse)(nil),           // 19: agriculture.farm.v1.DeleteFarmResponse
+	(*SetFarmBoundaryRequest)(nil),       // 20: agriculture.farm.v1.SetFarmBoundaryRequest
+	(*SetFarmBoundaryResponse)(nil),      // 21: agriculture.farm.v1.SetFarmBoundaryResponse
+	(*GetFarmBoundaryRequest)(nil),       // 22: agriculture.farm.v1.GetFarmBoundaryRequest
+	(*GetFarmBoundaryResponse)(nil),      // 23: agriculture.farm.v1.GetFarmBoundaryResponse
+	(*TransferOwnershipRequest)(nil),     // 24: agriculture.farm.v1.TransferOwnershipRequest
+	(*TransferOwnershipResponse)(nil),    // 25: agriculture.farm.v1.TransferOwnershipResponse
+	(*ManagementUnit)(nil),               // 26: agriculture.farm.v1.ManagementUnit
+	(*CreateManagementUnitRequest)(nil),  // 27: agriculture.farm.v1.CreateManagementUnitRequest
+	(*CreateManagementUnitResponse)(nil), // 28: agriculture.farm.v1.CreateManagementUnitResponse
+	(*GetManagementUnitRequest)(nil),     // 29: agriculture.farm.v1.GetManagementUnitRequest
+	(*GetManagementUnitResponse)(nil),    // 30: agriculture.farm.v1.GetManagementUnitResponse
+	(*ListManagementUnitsRequest)(nil),   // 31: agriculture.farm.v1.ListManagementUnitsRequest
+	(*ListManagementUnitsResponse)(nil),  // 32: agriculture.farm.v1.ListManagementUnitsResponse
+	(*UpdateManagementUnitRequest)(nil),  // 33: agriculture.farm.v1.UpdateManagementUnitRequest
+	(*UpdateManagementUnitResponse)(nil), // 34: agriculture.farm.v1.UpdateManagementUnitResponse
+	(*DeleteManagementUnitRequest)(nil),  // 35: agriculture.farm.v1.DeleteManagementUnitRequest
+	(*DeleteManagementUnitResponse)(nil), // 36: agriculture.farm.v1.DeleteManagementUnitResponse
+	(*AssignFieldsToUnitRequest)(nil),    // 37: agriculture.farm.v1.AssignFieldsToUnitRequest
+	(*AssignFieldsToUnitResponse)(nil),   // 38: agriculture.farm.v1.AssignFieldsToUnitResponse
+	(*RemoveFieldsFromUnitRequest)(nil),  // 39: agriculture.farm.v1.RemoveFieldsFromUnitRequest
+	(*RemoveFieldsFromUnitResponse)(nil), // 40: agriculture.farm.v1.RemoveFieldsFromUnitResponse
+	nil,                                  // 41: agriculture.farm.v1.Farm.MetadataEntry
+	nil,                                  // 42: agriculture.farm.v1.CreateFarmRequest.MetadataEntry
+	nil,                                  // 43: agriculture.farm.v1.UpdateFarmRequest.MetadataEntry
+	(*timestamppb.Timestamp)(nil),        // 44: google.protobuf.Timestamp
+	(*fieldmaskpb.FieldMask)(nil),        // 45: google.protobuf.FieldMask
 }
 var file_farm_proto_depIdxs = []int32{
-	27, // 0: agriculture.farm.v1.FarmBoundary.created_at:type_name -> google.protobuf.Timestamp
-	27, // 1: agriculture.farm.v1.FarmBoundary.updated_at:type_name -> google.protobuf.Timestamp
-	27, // 2: agriculture.farm.v1.FarmOwner.acquired_at:type_name -> google.protobuf.Timestamp
-	27, // 3: agriculture.farm.v1.FarmOwner.created_at:type_name -> google.protobuf.Timestamp
-	27, // 4: agriculture.farm.v1.FarmOwner.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 5: agriculture.farm.v1.Farm.location:type_name -> agriculture.farm.v1.FarmLocation
+	44, // 0: agriculture.farm.v1.FarmBoundary.created_at:type_name -> google.protobuf.Timestamp
+	44, // 1: agriculture.farm.v1.FarmBoundary.updated_at:type_name -> google.protobuf.Timestamp
+	44, // 2: agriculture.farm.v1.FarmOwner.acquired_at:type_name -> google.protobuf.Timestamp
+	44, // 3: agriculture.farm.v1.FarmOwner.created_at:type_name -> google.protobuf.Timestamp
+	44, // 4: agriculture.farm.v1.FarmOwner.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 5: agriculture.farm.v1.Farm.location:type_name -> agriculture.farm.v1.FarmLocation
 	0,  // 6: agriculture.farm.v1.Farm.farm_type:type_name -> agriculture.farm.v1.FarmType
 	1,  // 7: agriculture.farm.v1.Farm.status:type_name -> agriculture.farm.v1.FarmStatus
 	2,  // 8: agriculture.farm.v1.Farm.soil_type:type_name -> agriculture.farm.v1.SoilType
 	3,  // 9: agriculture.farm.v1.Farm.climate_zone:type_name -> agriculture.farm.v1.ClimateZone
-	5,  // 10: agriculture.farm.v1.Farm.boundary:type_name -> agriculture.farm.v1.FarmBoundary
-	6,  // 11: agriculture.farm.v1.Farm.owners:type_name -> agriculture.farm.v1.FarmOwner
-	24, // 12: agriculture.farm.v1.Farm.metadata:type_name -> agriculture.farm.v1.Farm.MetadataEntry
-	27, // 13: agriculture.farm.v1.Farm.created_at:type_name -> google.protobuf.Timestamp
-	27, // 14: agriculture.farm.v1.Farm.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 15: agriculture.farm.v1.CreateFarmRequest.location:type_name -> agriculture.farm.v1.FarmLocation
+	7,  // 10: agriculture.farm.v1.Farm.boundary:type_name -> agriculture.farm.v1.FarmBoundary
+	8,  // 11: agriculture.farm.v1.Farm.owners:type_name -> agriculture.farm.v1.FarmOwner
+	41, // 12: agriculture.farm.v1.Farm.metadata:type_name -> agriculture.farm.v1.Farm.MetadataEntry
+	44, // 13: agriculture.farm.v1.Farm.created_at:type_name -> google.protobuf.Timestamp
+	44, // 14: agriculture.farm.v1.Farm.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 15: agriculture.farm.v1.CreateFarmRequest.location:type_name -> agriculture.farm.v1.FarmLocation
 	0,  // 16: agriculture.farm.v1.CreateFarmRequest.farm_type:type_name -> agriculture.farm.v1.FarmType
 	2,  // 17: agriculture.farm.v1.CreateFarmRequest.soil_type:type_name -> agriculture.farm.v1.SoilType
 	3,  // 18: agriculture.farm.v1.CreateFarmRequest.climate_zone:type_name -> agriculture.farm.v1.ClimateZone
-	25, // 19: agriculture.farm.v1.CreateFarmRequest.metadata:type_name -> agriculture.farm.v1.CreateFarmRequest.MetadataEntry
-	6,  // 20: agriculture.farm.v1.CreateFarmRequest.owner:type_name -> agriculture.farm.v1.FarmOwner
-	7,  // 21: agriculture.farm.v1.CreateFarmResponse.farm:type_name -> agriculture.farm.v1.Farm
-	7,  // 22: agriculture.farm.v1.GetFarmResponse.farm:type_name -> agriculture.farm.v1.Farm
+	42, // 19: agriculture.farm.v1.CreateFarmRequest.metadata:type_name -> agriculture.farm.v1.CreateFarmRequest.MetadataEntry
+	8,  // 20: agriculture.farm.v1.CreateFarmRequest.owner:type_name -> agriculture.farm.v1.FarmOwner
+	9,  // 21: agriculture.farm.v1.CreateFarmResponse.farm:type_name -> agriculture.farm.v1.Farm
+	9,  // 22: agriculture.farm.v1.GetFarmResponse.farm:type_name -> agriculture.farm.v1.Farm
 	0,  // 23: agriculture.farm.v1.ListFarmsRequest.farm_type:type_name -> agriculture.farm.v1.FarmType
 	1,  // 24: agriculture.farm.v1.ListFarmsRequest.status:type_name -> agriculture.farm.v1.FarmStatus
 	3,  // 25: agriculture.farm.v1.ListFarmsRequest.climate_zone:type_name -> agriculture.farm.v1.ClimateZone
-	7,  // 26: agriculture.farm.v1.ListFarmsResponse.farms:type_name -> agriculture.farm.v1.Farm
-	4,  // 27: agriculture.farm.v1.UpdateFarmRequest.location:type_name -> agriculture.farm.v1.FarmLocation
+	9,  // 26: agriculture.farm.v1.ListFarmsResponse.farms:type_name -> agriculture.farm.v1.Farm
+	6,  // 27: agriculture.farm.v1.UpdateFarmRequest.location:type_name -> agriculture.farm.v1.FarmLocation
 	0,  // 28: agriculture.farm.v1.UpdateFarmRequest.farm_type:type_name -> agriculture.farm.v1.FarmType
 	1,  // 29: agriculture.farm.v1.UpdateFarmRequest.status:type_name -> agriculture.farm.v1.FarmStatus
 	2,  // 30: agriculture.farm.v1.UpdateFarmRequest.soil_type:type_name -> agriculture.farm.v1.SoilType
 	3,  // 31: agriculture.farm.v1.UpdateFarmRequest.climate_zone:type_name -> agriculture.farm.v1.ClimateZone
-	26, // 32: agriculture.farm.v1.UpdateFarmRequest.metadata:type_name -> agriculture.farm.v1.UpdateFarmRequest.MetadataEntry
-	28, // 33: agriculture.farm.v1.UpdateFarmRequest.update_mask:type_name -> google.protobuf.FieldMask
-	7,  // 34: agriculture.farm.v1.UpdateFarmResponse.farm:type_name -> agriculture.farm.v1.Farm
-	5,  // 35: agriculture.farm.v1.SetFarmBoundaryResponse.boundary:type_name -> agriculture.farm.v1.FarmBoundary
-	5,  // 36: agriculture.farm.v1.GetFarmBoundaryResponse.boundary:type_name -> agriculture.farm.v1.FarmBoundary
-	7,  // 37: agriculture.farm.v1.TransferOwnershipResponse.farm:type_name -> agriculture.farm.v1.Farm
-	8,  // 38: agriculture.farm.v1.FarmService.CreateFarm:input_type -> agriculture.farm.v1.CreateFarmRequest
-	10, // 39: agriculture.farm.v1.FarmService.GetFarm:input_type -> agriculture.farm.v1.GetFarmRequest
-	12, // 40: agriculture.farm.v1.FarmService.ListFarms:input_type -> agriculture.farm.v1.ListFarmsRequest
-	14, // 41: agriculture.farm.v1.FarmService.UpdateFarm:input_type -> agriculture.farm.v1.UpdateFarmRequest
-	16, // 42: agriculture.farm.v1.FarmService.DeleteFarm:input_type -> agriculture.farm.v1.DeleteFarmRequest
-	18, // 43: agriculture.farm.v1.FarmService.SetFarmBoundary:input_type -> agriculture.farm.v1.SetFarmBoundaryRequest
-	20, // 44: agriculture.farm.v1.FarmService.GetFarmBoundary:input_type -> agriculture.farm.v1.GetFarmBoundaryRequest
-	22, // 45: agriculture.farm.v1.FarmService.TransferOwnership:input_type -> agriculture.farm.v1.TransferOwnershipRequest
-	9,  // 46: agriculture.farm.v1.FarmService.CreateFarm:output_type -> agriculture.farm.v1.CreateFarmResponse
-	11, // 47: agriculture.farm.v1.FarmService.GetFarm:output_type -> agriculture.farm.v1.GetFarmResponse
-	13, // 48: agriculture.farm.v1.FarmService.ListFarms:output_type -> agriculture.farm.v1.ListFarmsResponse
-	15, // 49: agriculture.farm.v1.FarmService.UpdateFarm:output_type -> agriculture.farm.v1.UpdateFarmResponse
-	17, // 50: agriculture.farm.v1.FarmService.DeleteFarm:output_type -> agriculture.farm.v1.DeleteFarmResponse
-	19, // 51: agriculture.farm.v1.FarmService.SetFarmBoundary:output_type -> agriculture.farm.v1.SetFarmBoundaryResponse
-	21, // 52: agriculture.farm.v1.FarmService.GetFarmBoundary:output_type -> agriculture.farm.v1.GetFarmBoundaryResponse
-	23, // 53: agriculture.farm.v1.FarmService.TransferOwnership:output_type -> agriculture.farm.v1.TransferOwnershipResponse
-	46, // [46:54] is the sub-list for method output_type
-	38, // [38:46] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	43, // 32: agriculture.farm.v1.UpdateFarmRequest.metadata:type_name -> agriculture.farm.v1.UpdateFarmRequest.MetadataEntry
+	45, // 33: agriculture.farm.v1.UpdateFarmRequest.update_mask:type_name -> google.protobuf.FieldMask
+	9,  // 34: agriculture.farm.v1.UpdateFarmResponse.farm:type_name -> agriculture.farm.v1.Farm
+	7,  // 35: agriculture.farm.v1.SetFarmBoundaryResponse.boundary:type_name -> agriculture.farm.v1.FarmBoundary
+	7,  // 36: agriculture.farm.v1.GetFarmBoundaryResponse.boundary:type_name -> agriculture.farm.v1.FarmBoundary
+	9,  // 37: agriculture.farm.v1.TransferOwnershipResponse.farm:type_name -> agriculture.farm.v1.Farm
+	4,  // 38: agriculture.farm.v1.ManagementUnit.unit_type:type_name -> agriculture.farm.v1.ManagementUnitType
+	5,  // 39: agriculture.farm.v1.ManagementUnit.status:type_name -> agriculture.farm.v1.ManagementUnitStatus
+	44, // 40: agriculture.farm.v1.ManagementUnit.created_at:type_name -> google.protobuf.Timestamp
+	44, // 41: agriculture.farm.v1.ManagementUnit.updated_at:type_name -> google.protobuf.Timestamp
+	4,  // 42: agriculture.farm.v1.CreateManagementUnitRequest.unit_type:type_name -> agriculture.farm.v1.ManagementUnitType
+	26, // 43: agriculture.farm.v1.CreateManagementUnitResponse.unit:type_name -> agriculture.farm.v1.ManagementUnit
+	26, // 44: agriculture.farm.v1.GetManagementUnitResponse.unit:type_name -> agriculture.farm.v1.ManagementUnit
+	26, // 45: agriculture.farm.v1.ListManagementUnitsResponse.units:type_name -> agriculture.farm.v1.ManagementUnit
+	5,  // 46: agriculture.farm.v1.UpdateManagementUnitRequest.status:type_name -> agriculture.farm.v1.ManagementUnitStatus
+	45, // 47: agriculture.farm.v1.UpdateManagementUnitRequest.update_mask:type_name -> google.protobuf.FieldMask
+	26, // 48: agriculture.farm.v1.UpdateManagementUnitResponse.unit:type_name -> agriculture.farm.v1.ManagementUnit
+	26, // 49: agriculture.farm.v1.AssignFieldsToUnitResponse.unit:type_name -> agriculture.farm.v1.ManagementUnit
+	26, // 50: agriculture.farm.v1.RemoveFieldsFromUnitResponse.unit:type_name -> agriculture.farm.v1.ManagementUnit
+	10, // 51: agriculture.farm.v1.FarmService.CreateFarm:input_type -> agriculture.farm.v1.CreateFarmRequest
+	12, // 52: agriculture.farm.v1.FarmService.GetFarm:input_type -> agriculture.farm.v1.GetFarmRequest
+	14, // 53: agriculture.farm.v1.FarmService.ListFarms:input_type -> agriculture.farm.v1.ListFarmsRequest
+	16, // 54: agriculture.farm.v1.FarmService.UpdateFarm:input_type -> agriculture.farm.v1.UpdateFarmRequest
+	18, // 55: agriculture.farm.v1.FarmService.DeleteFarm:input_type -> agriculture.farm.v1.DeleteFarmRequest
+	20, // 56: agriculture.farm.v1.FarmService.SetFarmBoundary:input_type -> agriculture.farm.v1.SetFarmBoundaryRequest
+	22, // 57: agriculture.farm.v1.FarmService.GetFarmBoundary:input_type -> agriculture.farm.v1.GetFarmBoundaryRequest
+	24, // 58: agriculture.farm.v1.FarmService.TransferOwnership:input_type -> agriculture.farm.v1.TransferOwnershipRequest
+	27, // 59: agriculture.farm.v1.FarmService.CreateManagementUnit:input_type -> agriculture.farm.v1.CreateManagementUnitRequest
+	29, // 60: agriculture.farm.v1.FarmService.GetManagementUnit:input_type -> agriculture.farm.v1.GetManagementUnitRequest
+	31, // 61: agriculture.farm.v1.FarmService.ListManagementUnits:input_type -> agriculture.farm.v1.ListManagementUnitsRequest
+	33, // 62: agriculture.farm.v1.FarmService.UpdateManagementUnit:input_type -> agriculture.farm.v1.UpdateManagementUnitRequest
+	35, // 63: agriculture.farm.v1.FarmService.DeleteManagementUnit:input_type -> agriculture.farm.v1.DeleteManagementUnitRequest
+	37, // 64: agriculture.farm.v1.FarmService.AssignFieldsToUnit:input_type -> agriculture.farm.v1.AssignFieldsToUnitRequest
+	39, // 65: agriculture.farm.v1.FarmService.RemoveFieldsFromUnit:input_type -> agriculture.farm.v1.RemoveFieldsFromUnitRequest
+	11, // 66: agriculture.farm.v1.FarmService.CreateFarm:output_type -> agriculture.farm.v1.CreateFarmResponse
+	13, // 67: agriculture.farm.v1.FarmService.GetFarm:output_type -> agriculture.farm.v1.GetFarmResponse
+	15, // 68: agriculture.farm.v1.FarmService.ListFarms:output_type -> agriculture.farm.v1.ListFarmsResponse
+	17, // 69: agriculture.farm.v1.FarmService.UpdateFarm:output_type -> agriculture.farm.v1.UpdateFarmResponse
+	19, // 70: agriculture.farm.v1.FarmService.DeleteFarm:output_type -> agriculture.farm.v1.DeleteFarmResponse
+	21, // 71: agriculture.farm.v1.FarmService.SetFarmBoundary:output_type -> agriculture.farm.v1.SetFarmBoundaryResponse
+	23, // 72: agriculture.farm.v1.FarmService.GetFarmBoundary:output_type -> agriculture.farm.v1.GetFarmBoundaryResponse
+	25, // 73: agriculture.farm.v1.FarmService.TransferOwnership:output_type -> agriculture.farm.v1.TransferOwnershipResponse
+	28, // 74: agriculture.farm.v1.FarmService.CreateManagementUnit:output_type -> agriculture.farm.v1.CreateManagementUnitResponse
+	30, // 75: agriculture.farm.v1.FarmService.GetManagementUnit:output_type -> agriculture.farm.v1.GetManagementUnitResponse
+	32, // 76: agriculture.farm.v1.FarmService.ListManagementUnits:output_type -> agriculture.farm.v1.ListManagementUnitsResponse
+	34, // 77: agriculture.farm.v1.FarmService.UpdateManagementUnit:output_type -> agriculture.farm.v1.UpdateManagementUnitResponse
+	36, // 78: agriculture.farm.v1.FarmService.DeleteManagementUnit:output_type -> agriculture.farm.v1.DeleteManagementUnitResponse
+	38, // 79: agriculture.farm.v1.FarmService.AssignFieldsToUnit:output_type -> agriculture.farm.v1.AssignFieldsToUnitResponse
+	40, // 80: agriculture.farm.v1.FarmService.RemoveFieldsFromUnit:output_type -> agriculture.farm.v1.RemoveFieldsFromUnitResponse
+	66, // [66:81] is the sub-list for method output_type
+	51, // [51:66] is the sub-list for method input_type
+	51, // [51:51] is the sub-list for extension type_name
+	51, // [51:51] is the sub-list for extension extendee
+	0,  // [0:51] is the sub-list for field type_name
 }
 
 func init() { file_farm_proto_init() }
@@ -2149,8 +3324,8 @@ func file_farm_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_farm_proto_rawDesc), len(file_farm_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   23,
+			NumEnums:      6,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
