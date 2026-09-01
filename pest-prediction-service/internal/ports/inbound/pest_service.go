@@ -9,9 +9,15 @@ import (
 
 // PestService is the primary port for all pest business operations.
 type PestService interface {
-	CreatePest(ctx context.Context, entity *domain.Pest) (*domain.Pest, error)
-	GetPest(ctx context.Context, uuid string) (*domain.Pest, error)
-	ListPestPredictions(ctx context.Context, params domain.ListPestPredictionParams) ([]domain.Pest, int32, error)
-	UpdatePest(ctx context.Context, entity *domain.Pest) (*domain.Pest, error)
-	DeletePest(ctx context.Context, uuid string) error
+	PredictPestRisk(ctx context.Context, params *domain.PredictPestRiskParams) (*domain.PestPrediction, error)
+	GetPrediction(ctx context.Context, id string) (*domain.PestPrediction, error)
+	ListPredictions(ctx context.Context, params domain.ListPredictionsParams) ([]domain.PestPrediction, int32, error)
+	ReportObservation(ctx context.Context, obs *domain.PestObservation) (*domain.PestObservation, error)
+	ListObservations(ctx context.Context, params domain.ListObservationsParams) ([]domain.PestObservation, int32, error)
+	GetPestSpecies(ctx context.Context, id string) (*domain.PestSpecies, error)
+	ListPestSpecies(ctx context.Context, params domain.ListPestSpeciesParams) ([]domain.PestSpecies, int32, error)
+	GetTreatmentPlan(ctx context.Context, predictionID string) (*domain.PestPrediction, error)
+	GetRiskMap(ctx context.Context, pestSpeciesID, region string) (*domain.PestRiskMap, error)
+	ListAlerts(ctx context.Context, params domain.ListAlertsParams) ([]domain.PestAlert, int32, error)
+	AcknowledgeAlert(ctx context.Context, id string) (*domain.PestAlert, error)
 }

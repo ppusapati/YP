@@ -11,13 +11,28 @@ import (
 
 // PestRepository is the secondary port for pest persistence.
 type PestRepository interface {
-	CreatePest(ctx context.Context, entity *domain.Pest) (*domain.Pest, error)
-	GetPestByUUID(ctx context.Context, uuid, tenantID string) (*domain.Pest, error)
-	ListPestPredictions(ctx context.Context, params domain.ListPestPredictionParams) ([]domain.Pest, int32, error)
-	UpdatePest(ctx context.Context, entity *domain.Pest) (*domain.Pest, error)
-	DeletePest(ctx context.Context, uuid, tenantID, deletedBy string) error
-	CheckPestExists(ctx context.Context, uuid, tenantID string) (bool, error)
-	CheckPestNameExists(ctx context.Context, name, tenantID string) (bool, error)
+	// Predictions
+	CreatePrediction(ctx context.Context, p *domain.PestPrediction) (*domain.PestPrediction, error)
+	GetPredictionByID(ctx context.Context, id, tenantID string) (*domain.PestPrediction, error)
+	ListPredictions(ctx context.Context, params domain.ListPredictionsParams) ([]domain.PestPrediction, int32, error)
+	CountPredictionsBySpecies(ctx context.Context, pestSpeciesID, tenantID string) (int, error)
+
+	// Observations
+	CreateObservation(ctx context.Context, o *domain.PestObservation) (*domain.PestObservation, error)
+	ListObservations(ctx context.Context, params domain.ListObservationsParams) ([]domain.PestObservation, int32, error)
+
+	// Species
+	GetSpeciesByID(ctx context.Context, id, tenantID string) (*domain.PestSpecies, error)
+	ListSpecies(ctx context.Context, params domain.ListPestSpeciesParams) ([]domain.PestSpecies, int32, error)
+
+	// Risk maps
+	GetRiskMap(ctx context.Context, pestSpeciesID, region, tenantID string) (*domain.PestRiskMap, error)
+
+	// Alerts
+	CreateAlert(ctx context.Context, a *domain.PestAlert) (*domain.PestAlert, error)
+	GetAlertByID(ctx context.Context, id, tenantID string) (*domain.PestAlert, error)
+	ListAlerts(ctx context.Context, params domain.ListAlertsParams) ([]domain.PestAlert, int32, error)
+	AcknowledgeAlert(ctx context.Context, id, tenantID, userID string) (*domain.PestAlert, error)
 
 	WithTx(tx pgx.Tx) PestRepository
 }
