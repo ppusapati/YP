@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
+	"p9e.in/samavaya/packages/database/migrate"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/middleware"
@@ -66,6 +67,13 @@ func main() {
 
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("database ping failed: %v", err)
+	}
+
+	// ── Auto-migrate ─────────────────────────────────────────────────────
+	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer migrateCancel()
+	if err := migrate.Up(migrateCtx, pool, os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
+		log.Fatalf("migration failed: %v", err)
 	}
 
 	var kafkaProducer sarama.SyncProducer
