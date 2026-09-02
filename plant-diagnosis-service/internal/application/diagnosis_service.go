@@ -12,6 +12,7 @@ import (
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
+	"p9e.in/samavaya/packages/urlsafe"
 
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ai"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/domain"
@@ -331,6 +332,12 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 		},
 	}
 
+	for _, img := range images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
+	}
+
 	if s.aiClient == nil {
 		return syntheticResult, nil
 	}
@@ -378,6 +385,12 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 			Severity:        domain.SeverityModerate,
 			Description:     "Possible nitrogen deficiency detected",
 		},
+	}
+
+	for _, img := range images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
 	}
 
 	if s.aiClient == nil {
@@ -432,6 +445,12 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 			ConfidenceScore: 0.0,
 			DamageLevel:     domain.SeverityUnspecified,
 		},
+	}
+
+	for _, img := range images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
 	}
 
 	if s.aiClient == nil {
