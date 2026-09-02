@@ -120,7 +120,7 @@ func (s *processingService) SubmitProcessingJob(ctx context.Context, job *procmo
 	s.emitProcessingEvent(ctx, EventTypeProcessingSubmitted, createdJob, nil)
 
 	s.log.Infow("msg", "processing job submitted",
-		"uuid", createdJob.UUID,
+		"uuid", createdJob.ID,
 		"tenant_id", tenantID,
 		"farm_uuid", createdJob.FarmUUID,
 		"algorithm", string(createdJob.Algorithm),
@@ -244,12 +244,12 @@ func (s *processingService) emitProcessingEvent(ctx context.Context, eventType d
 
 	aggregateID := ""
 	if job != nil {
-		aggregateID = job.UUID
+		aggregateID = job.ID
 	}
 
 	data := make(map[string]interface{})
 	if job != nil {
-		data["job_id"] = job.UUID
+		data["job_id"] = job.ID
 		data["tenant_id"] = job.TenantID
 		data["farm_id"] = job.FarmUUID
 		data["ingestion_task_id"] = job.IngestionTaskUUID

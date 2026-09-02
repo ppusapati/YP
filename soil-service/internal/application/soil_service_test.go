@@ -95,9 +95,8 @@ func newMockSoilRepo() *mockSoilRepo {
 }
 
 func (m *mockSoilRepo) CreateSoil(_ context.Context, e *domain.Soil) (*domain.Soil, error) {
-	e.UUID = "soil-uuid-001"
-	e.ID = 1
-	m.soils[e.UUID] = e
+	e.ID = "soil-uuid-001"
+	m.soils[e.ID] = e
 	m.names[e.TenantID+"/"+e.Name] = true
 	return e, nil
 }
@@ -121,7 +120,7 @@ func (m *mockSoilRepo) ListSoils(_ context.Context, params domain.ListSoilParams
 }
 
 func (m *mockSoilRepo) UpdateSoil(_ context.Context, e *domain.Soil) (*domain.Soil, error) {
-	existing, ok := m.soils[e.UUID]
+	existing, ok := m.soils[e.ID]
 	if !ok {
 		return nil, errors.NotFound("SOIL_NOT_FOUND", "not found")
 	}
@@ -152,11 +151,10 @@ func (m *mockSoilRepo) CheckSoilNameExists(_ context.Context, name, tenantID str
 func (m *mockSoilRepo) WithTx(_ pgx.Tx) outbound.SoilRepository { return m }
 
 func (m *mockSoilRepo) CreateSoilSample(_ context.Context, s *domain.SoilSample) (*domain.SoilSample, error) {
-	if s.UUID == "" {
-		s.UUID = "sample-uuid-001"
+	if s.ID == "" {
+		s.ID = "sample-uuid-001"
 	}
-	s.ID = 1
-	m.samples[s.UUID] = s
+	m.samples[s.ID] = s
 	return s, nil
 }
 
@@ -187,11 +185,10 @@ func (m *mockSoilRepo) DeleteSoilSample(_ context.Context, uuid, tenantID string
 }
 
 func (m *mockSoilRepo) CreateSoilAnalysis(_ context.Context, a *domain.SoilAnalysis) (*domain.SoilAnalysis, error) {
-	if a.UUID == "" {
-		a.UUID = "analysis-uuid-001"
+	if a.ID == "" {
+		a.ID = "analysis-uuid-001"
 	}
-	a.ID = 1
-	m.analyses[a.UUID] = a
+	m.analyses[a.ID] = a
 	return a, nil
 }
 
@@ -222,7 +219,7 @@ func (m *mockSoilRepo) UpdateSoilAnalysisStatus(_ context.Context, uuid string, 
 }
 
 func (m *mockSoilRepo) CreateSoilMap(_ context.Context, sm *domain.SoilMap) (*domain.SoilMap, error) {
-	sm.UUID = "map-uuid-001"
+	sm.ID = "map-uuid-001"
 	m.soilMaps[sm.FieldID+"/"+sm.MapType] = sm
 	return sm, nil
 }
@@ -236,7 +233,6 @@ func (m *mockSoilRepo) GetSoilMapByFieldAndType(_ context.Context, fieldID, tena
 }
 
 func (m *mockSoilRepo) CreateSoilNutrient(_ context.Context, n *domain.SoilNutrient) (*domain.SoilNutrient, error) {
-	n.ID = 1
 	m.nutrients[n.SampleID] = append(m.nutrients[n.SampleID], *n)
 	return n, nil
 }
@@ -254,17 +250,16 @@ func (m *mockSoilRepo) ListNutrientsBySample(_ context.Context, sampleID, tenant
 
 func (m *mockSoilRepo) BatchCreateNutrients(_ context.Context, nutrients []domain.SoilNutrient) ([]domain.SoilNutrient, error) {
 	for i := range nutrients {
-		nutrients[i].ID = int64(i + 1)
+		nutrients[i].ID = fmt.Sprintf("nutrient-%d", i+1)
 		m.nutrients[nutrients[i].SampleID] = append(m.nutrients[nutrients[i].SampleID], nutrients[i])
 	}
 	return nutrients, nil
 }
 
 func (m *mockSoilRepo) CreateSoilHealthScore(_ context.Context, s *domain.SoilHealthScore) (*domain.SoilHealthScore, error) {
-	if s.UUID == "" {
-		s.UUID = "health-uuid-001"
+	if s.ID == "" {
+		s.ID = "health-uuid-001"
 	}
-	s.ID = 1
 	m.healthScores[s.FieldID] = s
 	return s, nil
 }
@@ -350,7 +345,7 @@ func TestCreateSoil_HappyPath(t *testing.T) {
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Equal(t, domain.SoilStatusActive, created.Status)
-	assert.Equal(t, "soil-uuid-001", created.UUID)
+	assert.Equal(t, "soil-uuid-001", created.ID)
 	assert.Len(t, pub.published, 1)
 	assert.Equal(t, eventTopic, pub.published[0].topic)
 }
@@ -405,7 +400,7 @@ func TestGetSoil_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.soils["soil-001"] = &domain.Soil{TenantID: "tenant-1", Name: "Red Soil"}
-	repo.soils["soil-001"].UUID = "soil-001"
+	repo.soils["soil-001"].ID = "soil-001"
 
 	result, err := svc.GetSoil(ctx, "soil-001")
 	require.NoError(t, err)
@@ -449,9 +444,9 @@ func TestListSoils_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.soils["s1"] = &domain.Soil{TenantID: "tenant-1", Name: "A"}
-	repo.soils["s1"].UUID = "s1"
+	repo.soils["s1"].ID = "s1"
 	repo.soils["s2"] = &domain.Soil{TenantID: "tenant-1", Name: "B"}
-	repo.soils["s2"].UUID = "s2"
+	repo.soils["s2"].ID = "s2"
 
 	list, total, err := svc.ListSoils(ctx, domain.ListSoilParams{})
 	require.NoError(t, err)
@@ -477,10 +472,10 @@ func TestUpdateSoil_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.soils["soil-001"] = &domain.Soil{TenantID: "tenant-1", Name: "Old Name"}
-	repo.soils["soil-001"].UUID = "soil-001"
+	repo.soils["soil-001"].ID = "soil-001"
 
 	entity := &domain.Soil{Name: "New Name"}
-	entity.UUID = "soil-001"
+	entity.ID = "soil-001"
 	updated, err := svc.UpdateSoil(ctx, entity)
 	require.NoError(t, err)
 	assert.Equal(t, "New Name", updated.Name)
@@ -494,7 +489,7 @@ func TestUpdateSoil_MissingTenant(t *testing.T) {
 	ctx := testContext("", "user-1")
 
 	entity := &domain.Soil{Name: "X"}
-	entity.UUID = "soil-001"
+	entity.ID = "soil-001"
 	_, err := svc.UpdateSoil(ctx, entity)
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
@@ -515,7 +510,7 @@ func TestUpdateSoil_NotFound(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	entity := &domain.Soil{Name: "X"}
-	entity.UUID = "nonexistent"
+	entity.ID = "nonexistent"
 	_, err := svc.UpdateSoil(ctx, entity)
 	require.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
@@ -530,7 +525,7 @@ func TestDeleteSoil_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.soils["soil-001"] = &domain.Soil{TenantID: "tenant-1", Name: "X"}
-	repo.soils["soil-001"].UUID = "soil-001"
+	repo.soils["soil-001"].ID = "soil-001"
 
 	err := svc.DeleteSoil(ctx, "soil-001")
 	require.NoError(t, err)
@@ -576,7 +571,7 @@ func TestCreateSoilSample_HappyPath(t *testing.T) {
 	sample := validSoilSample()
 	created, err := svc.CreateSoilSample(ctx, sample)
 	require.NoError(t, err)
-	assert.NotEmpty(t, created.UUID)
+	assert.NotEmpty(t, created.ID)
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Equal(t, int64(1), created.Version)
@@ -706,7 +701,7 @@ func TestGetSoilSample_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		FieldID:  "field-001",
 	}
-	repo.samples["sample-001"].UUID = "sample-001"
+	repo.samples["sample-001"].ID = "sample-001"
 
 	result, err := svc.GetSoilSample(ctx, "sample-001", "")
 	require.NoError(t, err)
@@ -758,7 +753,7 @@ func TestListSoilSamples_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.samples["s1"] = &domain.SoilSample{TenantID: "tenant-1", FieldID: "f1"}
-	repo.samples["s1"].UUID = "s1"
+	repo.samples["s1"].ID = "s1"
 
 	samples, total, err := svc.ListSoilSamples(ctx, "", "", "", 20, 0)
 	require.NoError(t, err)
@@ -775,12 +770,12 @@ func TestAnalyzeSoil_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	sample := validSoilSample()
-	sample.UUID = "sample-001"
+	sample.ID = "sample-001"
 	repo.samples["sample-001"] = sample
 
 	analysis, err := svc.AnalyzeSoil(ctx, "sample-001", "", "STANDARD")
 	require.NoError(t, err)
-	assert.NotEmpty(t, analysis.UUID)
+	assert.NotEmpty(t, analysis.ID)
 	assert.Equal(t, "tenant-1", analysis.TenantID)
 	assert.Equal(t, "sample-001", analysis.SampleID)
 	assert.Equal(t, domain.AnalysisStatusCompleted, analysis.Status)
@@ -823,7 +818,7 @@ func TestAnalyzeSoil_DefaultAnalysisType(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	sample := validSoilSample()
-	sample.UUID = "sample-001"
+	sample.ID = "sample-001"
 	repo.samples["sample-001"] = sample
 
 	analysis, err := svc.AnalyzeSoil(ctx, "sample-001", "", "")
@@ -973,7 +968,7 @@ func TestGenerateSoilReport_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	sample := validSoilSample()
-	sample.UUID = "sample-001"
+	sample.ID = "sample-001"
 	repo.samples["sample-001"] = sample
 
 	report, err := svc.GenerateSoilReport(ctx, "field-001", "", "farm-001")

@@ -43,7 +43,7 @@ func DiagnosisRequestToProto(d *models.DiagnosisRequest) *pb.DiagnosisRequest {
 	}
 
 	out := &pb.DiagnosisRequest{
-		Id:             d.UUID,
+		Id:             d.ID,
 		TenantId:       d.TenantID,
 		FarmId:         d.FarmID,
 		FieldId:        ptr.Deref(d.FieldID),
@@ -79,7 +79,7 @@ func DiagnosisImageToProto(img *models.DiagnosisImage) *pb.DiagnosisImage {
 		return nil
 	}
 	out := &pb.DiagnosisImage{
-		Id:         img.UUID,
+		Id:         img.ID,
 		ImageUrl:   img.ImageURL,
 		ImageType:  stringToProtoImageType(img.ImageType),
 		SizeBytes:  ptr.Deref(img.SizeBytes),
@@ -97,7 +97,7 @@ func DiagnosisResultToProto(r *models.DiagnosisResult) *pb.DiagnosisResult {
 	}
 
 	out := &pb.DiagnosisResult{
-		Id:                    r.UUID,
+		Id:                    r.ID,
 		DiagnosisRequestId:    "", // populated by caller if needed
 		AiModelVersion:        r.AIModelVersion,
 		ProcessingTimeMs:      r.ProcessingTimeMs,
@@ -136,7 +136,7 @@ func DiseaseCatalogToProto(d *models.DiseaseCatalog) *pb.DiseaseInfo {
 		return nil
 	}
 	out := &pb.DiseaseInfo{
-		DiseaseId:      d.UUID,
+		DiseaseId:      d.ID,
 		DiseaseName:    d.DiseaseName,
 		ScientificName: ptr.Deref(d.ScientificName),
 		Description:    ptr.Deref(d.Description),
@@ -153,7 +153,7 @@ func TreatmentPlanToProto(tp *models.TreatmentPlan) *pb.TreatmentPlan {
 		return nil
 	}
 	out := &pb.TreatmentPlan{
-		Id:            tp.UUID,
+		Id:            tp.ID,
 		Title:         tp.Title,
 		Description:   ptr.Deref(tp.Description),
 		Priority:      severityStringToProto(tp.Priority),
@@ -244,7 +244,7 @@ func DetectedPestDamageToProto(p *models.DetectedPestDamage) *pb.PestDamage {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // AIResponseToResult converts an AIInferenceResponse into a DiagnosisResult ready for persistence.
-func AIResponseToResult(resp *models.AIInferenceResponse, requestDBID int64) (*models.DiagnosisResult, error) {
+func AIResponseToResult(resp *models.AIInferenceResponse, requestDBID string) (*models.DiagnosisResult, error) {
 	diseases, err := json.Marshal(resp.Diseases)
 	if err != nil {
 		return nil, err

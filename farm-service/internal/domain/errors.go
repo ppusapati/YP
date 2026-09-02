@@ -6,9 +6,9 @@ package domain
 import "fmt"
 
 // ErrFarmNotFound is returned when a farm cannot be located.
-type ErrFarmNotFound struct{ UUID string }
+type ErrFarmNotFound struct{ ID string }
 
-func (e ErrFarmNotFound) Error() string { return fmt.Sprintf("farm not found: %s", e.UUID) }
+func (e ErrFarmNotFound) Error() string { return fmt.Sprintf("farm not found: %s", e.ID) }
 
 // ErrFarmNameExists is returned when a duplicate farm name is detected.
 type ErrFarmNameExists struct{ Name string }

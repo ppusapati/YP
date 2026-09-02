@@ -338,12 +338,12 @@ func (s *analyticsService) RunTemporalAnalysis(ctx context.Context, farmID, fiel
 		"farm_id":       farmID,
 		"field_id":      fieldID,
 		"analysis_type": string(analysisType),
-		"analysis_id":   created.UUID,
+		"analysis_id":   created.ID,
 		"metric_name":   metricName,
 	})
 
 	s.log.Infow("msg", "temporal analysis completed",
-		"uuid", created.UUID,
+		"uuid", created.ID,
 		"farm_id", farmID,
 		"field_id", fieldID,
 		"analysis_type", string(analysisType),

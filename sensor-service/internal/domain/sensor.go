@@ -114,8 +114,7 @@ type Sensor struct {
 
 // SensorReading represents a single time-series data point from a sensor.
 type SensorReading struct {
-	ID                int64           `json:"id" db:"id"`
-	UUID              string          `json:"uuid" db:"uuid"`
+	ID                string          `json:"id" db:"id"`
 	SensorID          string          `json:"sensor_id" db:"sensor_id"`
 	TenantID          string          `json:"tenant_id" db:"tenant_id"`
 	Value             float64         `json:"value" db:"value"`
@@ -161,8 +160,7 @@ type SensorNetwork struct {
 
 // SensorCalibration represents a calibration event for a sensor.
 type SensorCalibration struct {
-	ID                  int64      `json:"id" db:"id"`
-	UUID                string     `json:"uuid" db:"uuid"`
+	ID                  string     `json:"id" db:"id"`
 	SensorID            string     `json:"sensor_id" db:"sensor_id"`
 	TenantID            string     `json:"tenant_id" db:"tenant_id"`
 	OffsetValue         float64    `json:"offset_value" db:"offset_value"`

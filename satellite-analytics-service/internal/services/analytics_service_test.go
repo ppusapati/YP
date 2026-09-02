@@ -53,12 +53,11 @@ func newMockAnalyticsRepo() *mockAnalyticsRepo {
 }
 
 func (m *mockAnalyticsRepo) CreateStressAlert(_ context.Context, alert *analyticsmodels.StressAlert) (*analyticsmodels.StressAlert, error) {
-	alert.UUID = "alert-uuid-001"
-	alert.ID = 1
+	alert.ID = "alert-uuid-001"
 	alert.IsActive = true
 	alert.Acknowledged = false
 	alert.CreatedAt = time.Now()
-	m.stressAlerts[alert.UUID] = alert
+	m.stressAlerts[alert.ID] = alert
 	return alert, nil
 }
 
@@ -112,11 +111,10 @@ func (m *mockAnalyticsRepo) GetDominantStressType(_ context.Context, tenantID, f
 }
 
 func (m *mockAnalyticsRepo) CreateTemporalAnalysis(_ context.Context, analysis *analyticsmodels.TemporalAnalysis) (*analyticsmodels.TemporalAnalysis, error) {
-	analysis.UUID = "analysis-uuid-001"
-	analysis.ID = 1
+	analysis.ID = "analysis-uuid-001"
 	analysis.IsActive = true
 	analysis.CreatedAt = time.Now()
-	m.temporalAnalyses[analysis.UUID] = analysis
+	m.temporalAnalyses[analysis.ID] = analysis
 	return analysis, nil
 }
 
@@ -188,13 +186,13 @@ func TestDetectStress_ReturnsExistingAlerts(t *testing.T) {
 		StressType: analyticsmodels.StressTypeNutrient,
 		Severity:   analyticsmodels.SeverityLevelHigh,
 	}
-	existingAlert.UUID = "existing-alert-001"
+	existingAlert.ID = "existing-alert-001"
 	repo.alertsByJob["job-001"] = []analyticsmodels.StressAlert{existingAlert}
 
 	alerts, err := svc.DetectStress(ctx, "farm-001", "field-001", "job-001")
 	require.NoError(t, err)
 	require.Len(t, alerts, 1)
-	assert.Equal(t, "existing-alert-001", alerts[0].UUID)
+	assert.Equal(t, "existing-alert-001", alerts[0].ID)
 	assert.Equal(t, analyticsmodels.StressTypeNutrient, alerts[0].StressType)
 }
 
@@ -260,7 +258,7 @@ func TestListStressAlerts_HappyPath(t *testing.T) {
 		TenantID:   "tenant-1",
 		StressType: analyticsmodels.StressTypeWater,
 	}
-	repo.stressAlerts["a1"].UUID = "a1"
+	repo.stressAlerts["a1"].ID = "a1"
 
 	alerts, total, err := svc.ListStressAlerts(ctx, analyticsmodels.ListStressAlertsParams{})
 	require.NoError(t, err)
@@ -289,7 +287,7 @@ func TestAcknowledgeAlert_HappyPath(t *testing.T) {
 		TenantID:     "tenant-1",
 		Acknowledged: false,
 	}
-	repo.stressAlerts["alert-001"].UUID = "alert-001"
+	repo.stressAlerts["alert-001"].ID = "alert-001"
 
 	err := svc.AcknowledgeAlert(ctx, "alert-001")
 	require.NoError(t, err)
@@ -333,7 +331,7 @@ func TestAcknowledgeAlert_AlreadyAcknowledged(t *testing.T) {
 		TenantID:     "tenant-1",
 		Acknowledged: true,
 	}
-	repo.stressAlerts["alert-001"].UUID = "alert-001"
+	repo.stressAlerts["alert-001"].ID = "alert-001"
 
 	err := svc.AcknowledgeAlert(ctx, "alert-001")
 	require.Error(t, err)
@@ -361,7 +359,7 @@ func TestRunTemporalAnalysis_HappyPath(t *testing.T) {
 	assert.Equal(t, analyticsmodels.AnalysisTypeTemporalTrend, analysis.AnalysisType)
 	assert.Equal(t, "NDVI", analysis.MetricName)
 	assert.Equal(t, "user-1", analysis.CreatedBy)
-	assert.Equal(t, "analysis-uuid-001", analysis.UUID)
+	assert.Equal(t, "analysis-uuid-001", analysis.ID)
 }
 
 func TestRunTemporalAnalysis_MissingTenant(t *testing.T) {

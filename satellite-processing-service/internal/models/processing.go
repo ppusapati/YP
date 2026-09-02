@@ -105,13 +105,13 @@ type ProcessingJob struct {
 }
 
 // GetID returns the primary key of the processing job.
-func (j *ProcessingJob) GetID() int64 {
+func (j *ProcessingJob) GetID() string {
 	return j.ID
 }
 
 // GetUUID returns the ULID identifier of the processing job.
 func (j *ProcessingJob) GetUUID() string {
-	return j.UUID
+	return j.ID
 }
 
 // ListProcessingJobsParams holds the filter and pagination parameters for listing processing jobs.

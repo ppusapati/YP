@@ -86,10 +86,10 @@ func (s *soilService) CreateSoil(ctx context.Context, entity *domain.Soil) (*dom
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.soil.created", created.UUID, map[string]interface{}{
-		"soil_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.soil.created", created.ID, map[string]interface{}{
+		"soil_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "soil created", "uuid", created.UUID)
+	s.log.Infow("msg", "soil created", "uuid", created.ID)
 	return created, nil
 }
 
@@ -126,19 +126,19 @@ func (s *soilService) UpdateSoil(ctx context.Context, entity *domain.Soil) (*dom
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if entity.UUID == "" {
+	if entity.ID == "" {
 		return nil, errors.BadRequest("MISSING_ID", "soil ID is required")
 	}
 	if userID == "" {
 		userID = "system"
 	}
 
-	exists, err := s.repo.CheckSoilExists(ctx, entity.UUID, tenantID)
+	exists, err := s.repo.CheckSoilExists(ctx, entity.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NotFound("SOIL_NOT_FOUND", fmt.Sprintf("soil not found: %s", entity.UUID))
+		return nil, errors.NotFound("SOIL_NOT_FOUND", fmt.Sprintf("soil not found: %s", entity.ID))
 	}
 
 	entity.TenantID = tenantID
@@ -150,8 +150,8 @@ func (s *soilService) UpdateSoil(ctx context.Context, entity *domain.Soil) (*dom
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.soil.updated", updated.UUID, map[string]interface{}{
-		"soil_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.soil.updated", updated.ID, map[string]interface{}{
+		"soil_id": updated.ID, "tenant_id": tenantID,
 	})
 	return updated, nil
 }
@@ -203,8 +203,8 @@ func (s *soilService) CreateSoilSample(ctx context.Context, sample *domain.SoilS
 		return nil, err
 	}
 
-	if sample.UUID == "" {
-		sample.UUID = ulid.NewString()
+	if sample.ID == "" {
+		sample.ID = ulid.NewString()
 	}
 	sample.Version = 1
 	sample.IsActive = true
@@ -215,8 +215,8 @@ func (s *soilService) CreateSoilSample(ctx context.Context, sample *domain.SoilS
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.soil.sample.collected", created.UUID, map[string]interface{}{
-		"sample_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.soil.sample.collected", created.ID, map[string]interface{}{
+		"sample_id": created.ID,
 		"field_id":  created.FieldID,
 		"farm_id":   created.FarmID,
 		"tenant_id": created.TenantID,
@@ -225,7 +225,7 @@ func (s *soilService) CreateSoilSample(ctx context.Context, sample *domain.SoilS
 		"longitude": created.Longitude,
 	})
 
-	s.log.Infow("msg", "created soil sample", "uuid", created.UUID, "field_id", created.FieldID)
+	s.log.Infow("msg", "created soil sample", "uuid", created.ID, "field_id", created.FieldID)
 	return created, nil
 }
 
@@ -302,7 +302,7 @@ func (s *soilService) AnalyzeSoil(ctx context.Context, sampleID, tenantID, analy
 		Summary:         generateAnalysisSummary(sample, healthScore, category),
 		Version:         1,
 	}
-	analysis.UUID = ulid.NewString()
+	analysis.ID = ulid.NewString()
 	analysis.CreatedBy = userID
 	analysis.IsActive = true
 
@@ -353,7 +353,7 @@ func (s *soilService) AnalyzeSoil(ctx context.Context, sampleID, tenantID, analy
 			AssessedAt:      &now,
 			Version:         1,
 		}
-		healthRecord.UUID = ulid.NewString()
+		healthRecord.ID = ulid.NewString()
 		healthRecord.CreatedBy = userID
 		healthRecord.IsActive = true
 		if _, createErr := s.repo.CreateSoilHealthScore(ctx, healthRecord); createErr != nil {
@@ -361,8 +361,8 @@ func (s *soilService) AnalyzeSoil(ctx context.Context, sampleID, tenantID, analy
 		}
 	}
 
-	s.emitEvent(ctx, "agriculture.soil.analysis.completed", created.UUID, map[string]interface{}{
-		"analysis_id":       created.UUID,
+	s.emitEvent(ctx, "agriculture.soil.analysis.completed", created.ID, map[string]interface{}{
+		"analysis_id":       created.ID,
 		"sample_id":         sampleID,
 		"field_id":          sample.FieldID,
 		"farm_id":           sample.FarmID,
@@ -382,7 +382,7 @@ func (s *soilService) AnalyzeSoil(ctx context.Context, sampleID, tenantID, analy
 		})
 	}
 
-	s.log.Infow("msg", "completed soil analysis", "uuid", created.UUID, "sample_id", sampleID,
+	s.log.Infow("msg", "completed soil analysis", "uuid", created.ID, "sample_id", sampleID,
 		"score", healthScore, "category", category)
 	return created, nil
 }
@@ -482,7 +482,7 @@ func (s *soilService) GenerateSoilReport(ctx context.Context, fieldID, tenantID,
 		s.log.Warnw("msg", "failed to fetch health score for report", "error", err)
 	}
 
-	nutrients, err := s.repo.ListNutrientsBySample(ctx, latestSample.UUID, tenantID)
+	nutrients, err := s.repo.ListNutrientsBySample(ctx, latestSample.ID, tenantID)
 	if err != nil {
 		s.log.Warnw("msg", "failed to fetch nutrients for report", "error", err)
 		nutrients = make([]domain.SoilNutrient, 0)
@@ -882,7 +882,7 @@ func extractNutrients(sample *domain.SoilSample, tenantID, sampleID, userID stri
 			OptimalMax:   sp.optMax,
 			Unit:         sp.unit,
 		}
-		n.UUID = ulid.NewString()
+		n.ID = ulid.NewString()
 		n.CreatedBy = userID
 		n.IsActive = true
 		nutrients = append(nutrients, n)

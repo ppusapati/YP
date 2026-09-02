@@ -141,7 +141,7 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 	if riskLevel.Severity() >= domain.RiskLevelHigh.Severity() {
 		alert := &domain.PestAlert{
 			TenantID:        tenantID,
-			PredictionUUID:  created.UUID,
+			PredictionUUID:  created.ID,
 			FarmID:          params.FarmID,
 			FieldID:         params.FieldID,
 			PestSpeciesUUID: params.PestSpeciesID,
@@ -155,10 +155,10 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 		}
 	}
 
-	s.emitEvent(ctx, "agriculture.pest-prediction.predicted", created.UUID, map[string]interface{}{
-		"prediction_id": created.UUID, "tenant_id": tenantID, "risk_level": string(riskLevel),
+	s.emitEvent(ctx, "agriculture.pest-prediction.predicted", created.ID, map[string]interface{}{
+		"prediction_id": created.ID, "tenant_id": tenantID, "risk_level": string(riskLevel),
 	})
-	s.log.Infow("msg", "pest risk predicted", "uuid", created.UUID, "risk_level", riskLevel, "risk_score", riskScore)
+	s.log.Infow("msg", "pest risk predicted", "uuid", created.ID, "risk_level", riskLevel, "risk_score", riskScore)
 
 	return created, nil
 }
@@ -217,10 +217,10 @@ func (s *pestService) ReportObservation(ctx context.Context, obs *domain.PestObs
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.pest-prediction.observation.reported", created.UUID, map[string]interface{}{
-		"observation_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.pest-prediction.observation.reported", created.ID, map[string]interface{}{
+		"observation_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "observation reported", "uuid", created.UUID)
+	s.log.Infow("msg", "observation reported", "uuid", created.ID)
 
 	return created, nil
 }

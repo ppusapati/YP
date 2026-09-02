@@ -61,9 +61,8 @@ type DiagnosisRequest struct {
 
 // DiagnosisImage represents an image attached to a diagnosis request.
 type DiagnosisImage struct {
-	ID                 int64     `json:"id" db:"id"`
-	UUID               string    `json:"uuid" db:"uuid"`
-	DiagnosisRequestID int64     `json:"diagnosis_request_id" db:"diagnosis_request_id"`
+	ID                 string    `json:"id" db:"id"`
+	DiagnosisRequestID string    `json:"diagnosis_request_id" db:"diagnosis_request_id"`
 	ImageURL           string    `json:"image_url" db:"image_url"`
 	ImageType          string    `json:"image_type" db:"image_type"`
 	SizeBytes          *int64    `json:"size_bytes" db:"size_bytes"`
@@ -74,9 +73,8 @@ type DiagnosisImage struct {
 
 // DiagnosisResult holds the AI inference output for a diagnosis request.
 type DiagnosisResult struct {
-	ID                      int64            `json:"id" db:"id"`
-	UUID                    string           `json:"uuid" db:"uuid"`
-	DiagnosisRequestID      int64            `json:"diagnosis_request_id" db:"diagnosis_request_id"`
+	ID                      string           `json:"id" db:"id"`
+	DiagnosisRequestID      string           `json:"diagnosis_request_id" db:"diagnosis_request_id"`
 	IdentifiedSpeciesID     *string          `json:"identified_species_id" db:"identified_species_id"`
 	IdentifiedSpeciesName   *string          `json:"identified_species_name" db:"identified_species_name"`
 	IdentifiedSpeciesConf   *float64         `json:"identified_species_conf" db:"identified_species_conf"`
@@ -184,7 +182,7 @@ type PestCatalog struct {
 // TreatmentPlan is a generated action plan for a diagnosis.
 type TreatmentPlan struct {
 	models.BaseModel
-	DiagnosisRequestID int64           `json:"diagnosis_request_id" db:"diagnosis_request_id"`
+	DiagnosisRequestID string          `json:"diagnosis_request_id" db:"diagnosis_request_id"`
 	Title              string          `json:"title" db:"title"`
 	Description        *string         `json:"description" db:"description"`
 	Priority           string          `json:"priority" db:"priority"`

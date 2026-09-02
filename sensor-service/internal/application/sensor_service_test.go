@@ -96,9 +96,8 @@ func newMockSensorRepo() *mockSensorRepo {
 }
 
 func (m *mockSensorRepo) CreateSensor(_ context.Context, s *domain.Sensor) (*domain.Sensor, error) {
-	s.UUID = "sensor-uuid-001"
-	s.ID = 1
-	m.sensors[s.UUID] = s
+	s.ID = "sensor-uuid-001"
+	m.sensors[s.ID] = s
 	m.deviceIndex[s.TenantID+"/"+s.DeviceID] = s
 	return s, nil
 }
@@ -130,7 +129,7 @@ func (m *mockSensorRepo) ListSensors(_ context.Context, filter domain.SensorList
 }
 
 func (m *mockSensorRepo) UpdateSensor(_ context.Context, s *domain.Sensor) (*domain.Sensor, error) {
-	existing, ok := m.sensors[s.UUID]
+	existing, ok := m.sensors[s.ID]
 	if !ok {
 		return nil, errors.NotFound("SENSOR_NOT_FOUND", "sensor not found")
 	}
@@ -155,8 +154,7 @@ func (m *mockSensorRepo) UpdateSensorLastReading(_ context.Context, _, _ string,
 }
 
 func (m *mockSensorRepo) CreateReading(_ context.Context, r *domain.SensorReading) (*domain.SensorReading, error) {
-	r.UUID = "reading-uuid-001"
-	r.ID = 1
+	r.ID = "reading-uuid-001"
 	m.readings[r.SensorID] = r
 	return r, nil
 }
@@ -174,9 +172,8 @@ func (m *mockSensorRepo) GetReadingHistory(_ context.Context, _, _ string, _, _ 
 }
 
 func (m *mockSensorRepo) CreateAlert(_ context.Context, a *domain.SensorAlert) (*domain.SensorAlert, error) {
-	a.UUID = "alert-uuid-001"
-	a.ID = 1
-	m.alerts[a.UUID] = a
+	a.ID = "alert-uuid-001"
+	m.alerts[a.ID] = a
 	return a, nil
 }
 
@@ -224,8 +221,7 @@ func (m *mockSensorRepo) GetSensorNetworkByFarm(_ context.Context, farmID, tenan
 }
 
 func (m *mockSensorRepo) CreateCalibration(_ context.Context, cal *domain.SensorCalibration) (*domain.SensorCalibration, error) {
-	cal.UUID = "cal-uuid-001"
-	cal.ID = 1
+	cal.ID = "cal-uuid-001"
 	m.calibrations[cal.SensorID] = cal
 	return cal, nil
 }
@@ -286,7 +282,7 @@ func TestRegisterSensor_HappyPath(t *testing.T) {
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Equal(t, domain.SensorStatusActive, created.Status)
-	assert.Equal(t, "sensor-uuid-001", created.UUID)
+	assert.Equal(t, "sensor-uuid-001", created.ID)
 
 	// Event published.
 	assert.Len(t, pub.published, 1)
@@ -396,7 +392,7 @@ func TestRegisterSensor_DuplicateDevice(t *testing.T) {
 	// Pre-register device.
 	existing := validSensor()
 	existing.TenantID = "tenant-1"
-	existing.UUID = "existing-uuid"
+	existing.ID = "existing-uuid"
 	repo.sensors["existing-uuid"] = existing
 	repo.deviceIndex["tenant-1/device-001"] = existing
 
@@ -428,7 +424,7 @@ func TestGetSensor_HappyPath(t *testing.T) {
 		Name:       "Temp Sensor",
 		SensorType: domain.SensorTypeTemperature,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	sensor, err := svc.GetSensor(ctx, "sensor-001")
 	require.NoError(t, err)
@@ -473,9 +469,9 @@ func TestListSensors_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.sensors["s1"] = &domain.Sensor{TenantID: "tenant-1", Name: "A"}
-	repo.sensors["s1"].UUID = "s1"
+	repo.sensors["s1"].ID = "s1"
 	repo.sensors["s2"] = &domain.Sensor{TenantID: "tenant-1", Name: "B"}
-	repo.sensors["s2"].UUID = "s2"
+	repo.sensors["s2"].ID = "s2"
 
 	sensors, total, err := svc.ListSensors(ctx, domain.SensorListFilter{})
 	require.NoError(t, err)
@@ -523,7 +519,7 @@ func TestUpdateSensor_HappyPath(t *testing.T) {
 		SensorType: domain.SensorTypeSoilMoisture,
 		Status:     domain.SensorStatusActive,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	updated, err := svc.UpdateSensor(ctx, &domain.Sensor{
 		Name: "New Name",
@@ -535,7 +531,7 @@ func TestUpdateSensor_HappyPath(t *testing.T) {
 
 	// Now with UUID.
 	sensor := &domain.Sensor{Name: "New Name"}
-	sensor.UUID = "sensor-001"
+	sensor.ID = "sensor-001"
 	updated, err = svc.UpdateSensor(ctx, sensor)
 	require.NoError(t, err)
 	assert.Equal(t, "New Name", updated.Name)
@@ -551,7 +547,7 @@ func TestUpdateSensor_MissingTenant(t *testing.T) {
 	ctx := testContext("", "user-1")
 
 	sensor := &domain.Sensor{Name: "X"}
-	sensor.UUID = "sensor-001"
+	sensor.ID = "sensor-001"
 	_, err := svc.UpdateSensor(ctx, sensor)
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
@@ -566,10 +562,10 @@ func TestUpdateSensor_Decommissioned(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.SensorStatusDecommissioned,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	sensor := &domain.Sensor{Name: "X"}
-	sensor.UUID = "sensor-001"
+	sensor.ID = "sensor-001"
 	_, err := svc.UpdateSensor(ctx, sensor)
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
@@ -581,7 +577,7 @@ func TestUpdateSensor_NotFound(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	sensor := &domain.Sensor{Name: "X"}
-	sensor.UUID = "nonexistent"
+	sensor.ID = "nonexistent"
 	_, err := svc.UpdateSensor(ctx, sensor)
 	require.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
@@ -600,7 +596,7 @@ func TestDecommissionSensor_HappyPath(t *testing.T) {
 		DeviceID: "dev-001",
 		Status:   domain.SensorStatusActive,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	decommissioned, err := svc.DecommissionSensor(ctx, "sensor-001", "end of life")
 	require.NoError(t, err)
@@ -650,12 +646,12 @@ func TestIngestReading_HappyPath(t *testing.T) {
 		Status:     domain.SensorStatusActive,
 		FieldID:    "field-001",
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	reading, alert, err := svc.IngestReading(ctx, "sensor-001", 45.0, "%", time.Now(), domain.ReadingQualityGood, nil, nil, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, reading)
-	assert.Equal(t, "reading-uuid-001", reading.UUID)
+	assert.Equal(t, "reading-uuid-001", reading.ID)
 	assert.Nil(t, alert) // No alert rules set up.
 	assert.Len(t, pub.published, 1)
 }
@@ -688,7 +684,7 @@ func TestIngestReading_SensorNotActive(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.SensorStatusInactive,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	_, _, err := svc.IngestReading(ctx, "sensor-001", 45.0, "%", time.Now(), "", nil, nil, nil)
 	require.Error(t, err)
@@ -715,7 +711,7 @@ func TestIngestReading_AppliesCalibration(t *testing.T) {
 		Status:     domain.SensorStatusActive,
 		FieldID:    "field-001",
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	// Set up calibration: value = (raw * scale) + offset
 	repo.calibrations["sensor-001"] = &domain.SensorCalibration{
@@ -740,7 +736,7 @@ func TestIngestReading_DefaultUnit(t *testing.T) {
 		Status:     domain.SensorStatusActive,
 		FieldID:    "field-001",
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	reading, _, err := svc.IngestReading(ctx, "sensor-001", 25.0, "", time.Now(), domain.ReadingQualityGood, nil, nil, nil)
 	require.NoError(t, err)
@@ -761,7 +757,7 @@ func TestBatchIngestReadings_HappyPath(t *testing.T) {
 		Status:     domain.SensorStatusActive,
 		FieldID:    "field-001",
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	readings := []domain.ReadingInput{
 		{SensorID: "sensor-001", Value: 30.0, Unit: "%", Timestamp: time.Now()},
@@ -815,7 +811,7 @@ func TestBatchIngestReadings_PartialFailure(t *testing.T) {
 		Status:     domain.SensorStatusActive,
 		FieldID:    "field-001",
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	readings := []domain.ReadingInput{
 		{SensorID: "sensor-001", Value: 30.0},
@@ -902,7 +898,7 @@ func TestCreateAlert_HappyPath(t *testing.T) {
 		FieldID:    "field-001",
 		Status:     domain.SensorStatusActive,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	alert := &domain.SensorAlert{
 		SensorID:  "sensor-001",
@@ -912,7 +908,7 @@ func TestCreateAlert_HappyPath(t *testing.T) {
 
 	created, err := svc.CreateAlert(ctx, alert)
 	require.NoError(t, err)
-	assert.Equal(t, "alert-uuid-001", created.UUID)
+	assert.Equal(t, "alert-uuid-001", created.ID)
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "field-001", created.FieldID)
 	assert.Equal(t, domain.SensorTypeSoilMoisture, created.SensorType)
@@ -984,7 +980,7 @@ func TestAcknowledgeAlert_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		SensorID: "sensor-001",
 	}
-	repo.alerts["alert-001"].UUID = "alert-001"
+	repo.alerts["alert-001"].ID = "alert-001"
 
 	acked, err := svc.AcknowledgeAlert(ctx, "alert-001")
 	require.NoError(t, err)
@@ -1034,7 +1030,7 @@ func TestGetSensorNetwork_ByID(t *testing.T) {
 		FarmID:   "farm-001",
 		Name:     "Main Network",
 	}
-	repo.networks["net-001"].UUID = "net-001"
+	repo.networks["net-001"].ID = "net-001"
 
 	network, err := svc.GetSensorNetwork(ctx, "net-001", "")
 	require.NoError(t, err)
@@ -1050,7 +1046,7 @@ func TestGetSensorNetwork_ByFarmID(t *testing.T) {
 		FarmID:   "farm-001",
 		Name:     "Farm Network",
 	}
-	repo.networks["net-001"].UUID = "net-001"
+	repo.networks["net-001"].ID = "net-001"
 
 	network, err := svc.GetSensorNetwork(ctx, "", "farm-001")
 	require.NoError(t, err)
@@ -1088,11 +1084,11 @@ func TestCalibrateSensor_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.SensorStatusActive,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	cal, err := svc.CalibrateSensor(ctx, "sensor-001", 1.5, 1.1, "annual calibration", nil)
 	require.NoError(t, err)
-	assert.Equal(t, "cal-uuid-001", cal.UUID)
+	assert.Equal(t, "cal-uuid-001", cal.ID)
 	assert.Equal(t, 1.5, cal.OffsetValue)
 	assert.Equal(t, 1.1, cal.ScaleFactor)
 	assert.Equal(t, "user-1", cal.CalibratedBy)
@@ -1136,7 +1132,7 @@ func TestCalibrateSensor_Decommissioned(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.SensorStatusDecommissioned,
 	}
-	repo.sensors["sensor-001"].UUID = "sensor-001"
+	repo.sensors["sensor-001"].ID = "sensor-001"
 
 	_, err := svc.CalibrateSensor(ctx, "sensor-001", 0, 1.0, "", nil)
 	require.Error(t, err)

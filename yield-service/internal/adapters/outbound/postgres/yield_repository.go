@@ -72,7 +72,7 @@ const predictionColumns = `id, tenant_id, farm_id, field_id, crop_id, season, ye
 func scanPrediction(row pgx.Row) (*domain.YieldPrediction, error) {
 	p := &domain.YieldPrediction{}
 	err := row.Scan(
-		&p.UUID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
+		&p.ID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
 		&p.PredictedYieldKgPerHectare, &p.PredictionConfidencePct, &p.PredictionModelVersion,
 		&p.Status, &p.SoilQualityScore, &p.WeatherScore, &p.IrrigationScore,
 		&p.PestPressureScore, &p.NutrientScore, &p.ManagementScore,
@@ -86,7 +86,7 @@ func scanPredictionRows(rows pgx.Rows) ([]domain.YieldPrediction, error) {
 	for rows.Next() {
 		p := domain.YieldPrediction{}
 		if err := rows.Scan(
-			&p.UUID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
+			&p.ID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
 			&p.PredictedYieldKgPerHectare, &p.PredictionConfidencePct, &p.PredictionModelVersion,
 			&p.Status, &p.SoilQualityScore, &p.WeatherScore, &p.IrrigationScore,
 			&p.PestPressureScore, &p.NutrientScore, &p.ManagementScore,
@@ -100,7 +100,7 @@ func scanPredictionRows(rows pgx.Rows) ([]domain.YieldPrediction, error) {
 }
 
 func (r *yieldRepository) CreatePrediction(ctx context.Context, p *domain.YieldPrediction) (*domain.YieldPrediction, error) {
-	p.UUID = ulid.NewString()
+	p.ID = ulid.NewString()
 	row := r.queryRow(ctx,
 		`INSERT INTO yield_predictions (
 			id, tenant_id, farm_id, field_id, crop_id, season, year,
@@ -110,7 +110,7 @@ func (r *yieldRepository) CreatePrediction(ctx context.Context, p *domain.YieldP
 			created_by
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		RETURNING `+predictionColumns,
-		p.UUID, p.TenantID, p.FarmID, p.FieldID, p.CropID, p.Season, p.Year,
+		p.ID, p.TenantID, p.FarmID, p.FieldID, p.CropID, p.Season, p.Year,
 		p.PredictedYieldKgPerHectare, p.PredictionConfidencePct, p.PredictionModelVersion,
 		p.Status, p.SoilQualityScore, p.WeatherScore, p.IrrigationScore,
 		p.PestPressureScore, p.NutrientScore, p.ManagementScore,
@@ -228,7 +228,7 @@ const recordColumns = `id, tenant_id, farm_id, field_id, crop_id, prediction_id,
 func scanRecord(row pgx.Row) (*domain.YieldRecord, error) {
 	r := &domain.YieldRecord{}
 	err := row.Scan(
-		&r.UUID, &r.TenantID, &r.FarmID, &r.FieldID, &r.CropID, &r.PredictionID, &r.Season, &r.Year,
+		&r.ID, &r.TenantID, &r.FarmID, &r.FieldID, &r.CropID, &r.PredictionID, &r.Season, &r.Year,
 		&r.HarvestDate, &r.ActualYieldKgPerHectare, &r.TotalAreaHarvestedHectares, &r.TotalYieldKg,
 		&r.HarvestQualityGrade, &r.MoistureContentPct, &r.RevenuePerHectare, &r.CostPerHectare,
 		&r.ProfitPerHectare, &r.Version, &r.CreatedBy, &r.UpdatedBy, &r.CreatedAt, &r.UpdatedAt,
@@ -241,7 +241,7 @@ func scanRecordRows(rows pgx.Rows) ([]domain.YieldRecord, error) {
 	for rows.Next() {
 		r := domain.YieldRecord{}
 		if err := rows.Scan(
-			&r.UUID, &r.TenantID, &r.FarmID, &r.FieldID, &r.CropID, &r.PredictionID, &r.Season, &r.Year,
+			&r.ID, &r.TenantID, &r.FarmID, &r.FieldID, &r.CropID, &r.PredictionID, &r.Season, &r.Year,
 			&r.HarvestDate, &r.ActualYieldKgPerHectare, &r.TotalAreaHarvestedHectares, &r.TotalYieldKg,
 			&r.HarvestQualityGrade, &r.MoistureContentPct, &r.RevenuePerHectare, &r.CostPerHectare,
 			&r.ProfitPerHectare, &r.Version, &r.CreatedBy, &r.UpdatedBy, &r.CreatedAt, &r.UpdatedAt,
@@ -254,7 +254,7 @@ func scanRecordRows(rows pgx.Rows) ([]domain.YieldRecord, error) {
 }
 
 func (r *yieldRepository) CreateYieldRecord(ctx context.Context, rec *domain.YieldRecord) (*domain.YieldRecord, error) {
-	rec.UUID = ulid.NewString()
+	rec.ID = ulid.NewString()
 	row := r.queryRow(ctx,
 		`INSERT INTO yield_records (
 			id, tenant_id, farm_id, field_id, crop_id, prediction_id, season, year,
@@ -263,7 +263,7 @@ func (r *yieldRepository) CreateYieldRecord(ctx context.Context, rec *domain.Yie
 			profit_per_hectare, created_by
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		RETURNING `+recordColumns,
-		rec.UUID, rec.TenantID, rec.FarmID, rec.FieldID, rec.CropID, rec.PredictionID, rec.Season, rec.Year,
+		rec.ID, rec.TenantID, rec.FarmID, rec.FieldID, rec.CropID, rec.PredictionID, rec.Season, rec.Year,
 		rec.HarvestDate, rec.ActualYieldKgPerHectare, rec.TotalAreaHarvestedHectares, rec.TotalYieldKg,
 		rec.HarvestQualityGrade, rec.MoistureContentPct, rec.RevenuePerHectare, rec.CostPerHectare,
 		rec.ProfitPerHectare, rec.CreatedBy,
@@ -362,7 +362,7 @@ const planColumns = `id, tenant_id, farm_id, field_id, crop_id, season, year,
 func scanHarvestPlan(row pgx.Row) (*domain.HarvestPlan, error) {
 	p := &domain.HarvestPlan{}
 	err := row.Scan(
-		&p.UUID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
+		&p.ID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
 		&p.PlannedStartDate, &p.PlannedEndDate, &p.EstimatedYieldKg, &p.TotalAreaHectares,
 		&p.Status, &p.Notes, &p.Version, &p.CreatedBy, &p.UpdatedBy, &p.CreatedAt, &p.UpdatedAt,
 	)
@@ -374,7 +374,7 @@ func scanHarvestPlanRows(rows pgx.Rows) ([]domain.HarvestPlan, error) {
 	for rows.Next() {
 		p := domain.HarvestPlan{}
 		if err := rows.Scan(
-			&p.UUID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
+			&p.ID, &p.TenantID, &p.FarmID, &p.FieldID, &p.CropID, &p.Season, &p.Year,
 			&p.PlannedStartDate, &p.PlannedEndDate, &p.EstimatedYieldKg, &p.TotalAreaHectares,
 			&p.Status, &p.Notes, &p.Version, &p.CreatedBy, &p.UpdatedBy, &p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
@@ -386,7 +386,7 @@ func scanHarvestPlanRows(rows pgx.Rows) ([]domain.HarvestPlan, error) {
 }
 
 func (r *yieldRepository) CreateHarvestPlan(ctx context.Context, p *domain.HarvestPlan) (*domain.HarvestPlan, error) {
-	p.UUID = ulid.NewString()
+	p.ID = ulid.NewString()
 	row := r.queryRow(ctx,
 		`INSERT INTO harvest_plans (
 			id, tenant_id, farm_id, field_id, crop_id, season, year,
@@ -394,7 +394,7 @@ func (r *yieldRepository) CreateHarvestPlan(ctx context.Context, p *domain.Harve
 			status, notes, created_by
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 		RETURNING `+planColumns,
-		p.UUID, p.TenantID, p.FarmID, p.FieldID, p.CropID, p.Season, p.Year,
+		p.ID, p.TenantID, p.FarmID, p.FieldID, p.CropID, p.Season, p.Year,
 		p.PlannedStartDate, p.PlannedEndDate, p.EstimatedYieldKg, p.TotalAreaHectares,
 		p.Status, p.Notes, p.CreatedBy,
 	)
@@ -560,7 +560,7 @@ func (r *yieldRepository) GetCropPerformance(ctx context.Context, params domain.
 
 	cp := &domain.CropPerformance{}
 	err := r.queryRow(ctx, sql, args...).Scan(
-		&cp.UUID, &cp.TenantID, &cp.FarmID, &cp.FieldID, &cp.CropID, &cp.Season, &cp.Year,
+		&cp.ID, &cp.TenantID, &cp.FarmID, &cp.FieldID, &cp.CropID, &cp.Season, &cp.Year,
 		&cp.ActualYieldKgPerHectare,
 		&cp.PredictedYieldKgPerHectare,
 		&cp.RevenuePerHectare, &cp.CostPerHectare, &cp.ProfitPerHectare,

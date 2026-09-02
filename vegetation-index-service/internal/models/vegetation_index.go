@@ -76,19 +76,18 @@ type ComputeTask struct {
 }
 
 // GetID returns the primary key of the compute task.
-func (ct *ComputeTask) GetID() int64 {
+func (ct *ComputeTask) GetID() string {
 	return ct.ID
 }
 
 // GetUUID returns the ULID identifier of the compute task.
 func (ct *ComputeTask) GetUUID() string {
-	return ct.UUID
+	return ct.ID
 }
 
 // VegetationIndex represents a computed vegetation index for a field/farm.
 type VegetationIndex struct {
-	ID                int64       `json:"id" db:"id"`
-	UUID              string      `json:"uuid" db:"uuid"`
+	ID                string      `json:"id" db:"id"`
 	TenantID          string      `json:"tenant_id" db:"tenant_id"`
 	FarmUUID          string      `json:"farm_uuid" db:"farm_uuid"`
 	FieldUUID         *string     `json:"field_uuid,omitempty" db:"field_uuid"`
@@ -113,14 +112,10 @@ type VegetationIndex struct {
 }
 
 // GetID returns the primary key of the vegetation index.
-func (vi *VegetationIndex) GetID() int64 {
+func (vi *VegetationIndex) GetID() string {
 	return vi.ID
 }
 
-// GetUUID returns the ULID identifier of the vegetation index.
-func (vi *VegetationIndex) GetUUID() string {
-	return vi.UUID
-}
 
 // TimeSeriesPoint represents a single point in a vegetation index time series.
 type TimeSeriesPoint struct {

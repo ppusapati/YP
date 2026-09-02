@@ -73,7 +73,7 @@ const sensorColumns = `id, tenant_id, field_id, farm_id, sensor_type, device_id,
 func scanSensor(row pgx.Row) (*domain.Sensor, error) {
 	s := &domain.Sensor{}
 	err := row.Scan(
-		&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
+		&s.ID, &s.TenantID, &s.FieldID, &s.FarmID,
 		&s.SensorType, &s.DeviceID,
 		&s.Manufacturer, &s.Model, &s.FirmwareVersion,
 		&s.Latitude, &s.Longitude, &s.ElevationM,
@@ -88,7 +88,7 @@ func scanSensor(row pgx.Row) (*domain.Sensor, error) {
 }
 
 func (r *sensorRepository) CreateSensor(ctx context.Context, entity *domain.Sensor) (*domain.Sensor, error) {
-	entity.UUID = ulid.NewString()
+	entity.ID = ulid.NewString()
 
 	query := `
 		INSERT INTO sensors (
@@ -108,7 +108,7 @@ func (r *sensorRepository) CreateSensor(ctx context.Context, entity *domain.Sens
 		) RETURNING ` + sensorColumns
 
 	row := r.queryRow(ctx, query,
-		entity.UUID, entity.TenantID, entity.FieldID, entity.FarmID,
+		entity.ID, entity.TenantID, entity.FieldID, entity.FarmID,
 		string(entity.SensorType), entity.DeviceID,
 		entity.Manufacturer, entity.Model, entity.FirmwareVersion,
 		entity.Latitude, entity.Longitude, entity.ElevationM,
@@ -240,7 +240,7 @@ func (r *sensorRepository) UpdateSensor(ctx context.Context, entity *domain.Sens
 		RETURNING ` + sensorColumns
 
 	row := r.queryRow(ctx, query,
-		entity.UUID, entity.TenantID,
+		entity.ID, entity.TenantID,
 		entity.FirmwareVersion,
 		entity.Latitude, entity.Longitude, entity.ElevationM,
 		string(entity.Status), string(entity.Protocol),
@@ -251,7 +251,7 @@ func (r *sensorRepository) UpdateSensor(ctx context.Context, entity *domain.Sens
 	result, err := scanSensor(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("SENSOR_NOT_FOUND", fmt.Sprintf("sensor %s not found", entity.UUID))
+			return nil, errors.NotFound("SENSOR_NOT_FOUND", fmt.Sprintf("sensor %s not found", entity.ID))
 		}
 		r.log.Errorw("msg", "failed to update sensor", "error", err)
 		return nil, errors.Internal("failed to update sensor: %v", err)
@@ -308,7 +308,7 @@ const readingColumns = `id, sensor_id, tenant_id, value, unit, recorded_at,
 func scanReading(row pgx.Row) (*domain.SensorReading, error) {
 	rd := &domain.SensorReading{}
 	err := row.Scan(
-		&rd.UUID, &rd.SensorID, &rd.TenantID,
+		&rd.ID, &rd.SensorID, &rd.TenantID,
 		&rd.Value, &rd.Unit, &rd.RecordedAt,
 		&rd.Quality, &rd.BatteryLevelPct, &rd.SignalStrengthDbm,
 		&rd.Metadata, &rd.CreatedAt,
@@ -317,7 +317,7 @@ func scanReading(row pgx.Row) (*domain.SensorReading, error) {
 }
 
 func (r *sensorRepository) CreateReading(ctx context.Context, reading *domain.SensorReading) (*domain.SensorReading, error) {
-	reading.UUID = ulid.NewString()
+	reading.ID = ulid.NewString()
 
 	query := `
 		INSERT INTO sensor_readings (
@@ -332,7 +332,7 @@ func (r *sensorRepository) CreateReading(ctx context.Context, reading *domain.Se
 	}
 
 	row := r.queryRow(ctx, query,
-		reading.UUID, reading.SensorID, reading.TenantID,
+		reading.ID, reading.SensorID, reading.TenantID,
 		reading.Value, reading.Unit, reading.RecordedAt,
 		string(reading.Quality), reading.BatteryLevelPct, reading.SignalStrengthDbm,
 		metadataJSON,
@@ -421,7 +421,7 @@ const alertColumns = `id, sensor_id, tenant_id, field_id, sensor_type,
 func scanAlert(row pgx.Row) (*domain.SensorAlert, error) {
 	a := &domain.SensorAlert{}
 	err := row.Scan(
-		&a.UUID, &a.SensorID, &a.TenantID,
+		&a.ID, &a.SensorID, &a.TenantID,
 		&a.FieldID, &a.SensorType,
 		&a.Threshold, &a.ActualValue,
 		&a.Condition, &a.Severity, &a.Message,
@@ -433,7 +433,7 @@ func scanAlert(row pgx.Row) (*domain.SensorAlert, error) {
 }
 
 func (r *sensorRepository) CreateAlert(ctx context.Context, alert *domain.SensorAlert) (*domain.SensorAlert, error) {
-	alert.UUID = ulid.NewString()
+	alert.ID = ulid.NewString()
 
 	query := `
 		INSERT INTO sensor_alerts (
@@ -446,7 +446,7 @@ func (r *sensorRepository) CreateAlert(ctx context.Context, alert *domain.Sensor
 		) RETURNING ` + alertColumns
 
 	row := r.queryRow(ctx, query,
-		alert.UUID, alert.SensorID, alert.TenantID, alert.FieldID,
+		alert.ID, alert.SensorID, alert.TenantID, alert.FieldID,
 		string(alert.SensorType),
 		alert.Threshold, alert.ActualValue,
 		string(alert.Condition), string(alert.Severity), alert.Message,
@@ -575,7 +575,7 @@ const networkColumns = `id, tenant_id, farm_id, name, description, protocol,
 func scanNetwork(row pgx.Row) (*domain.SensorNetwork, error) {
 	n := &domain.SensorNetwork{}
 	err := row.Scan(
-		&n.UUID, &n.TenantID, &n.FarmID,
+		&n.ID, &n.TenantID, &n.FarmID,
 		&n.Name, &n.Description, &n.Protocol,
 		&n.GatewayID, &n.SensorIDs, &n.TotalSensors, &n.ActiveSensors,
 		&n.IsActive, &n.CreatedBy, &n.CreatedAt,
@@ -628,7 +628,7 @@ const calibrationColumns = `id, sensor_id, tenant_id, offset_value, scale_factor
 func scanCalibration(row pgx.Row) (*domain.SensorCalibration, error) {
 	c := &domain.SensorCalibration{}
 	err := row.Scan(
-		&c.UUID, &c.SensorID, &c.TenantID,
+		&c.ID, &c.SensorID, &c.TenantID,
 		&c.OffsetValue, &c.ScaleFactor,
 		&c.CalibrationDate, &c.NextCalibrationDate,
 		&c.CalibratedBy, &c.Notes,
@@ -638,7 +638,7 @@ func scanCalibration(row pgx.Row) (*domain.SensorCalibration, error) {
 }
 
 func (r *sensorRepository) CreateCalibration(ctx context.Context, cal *domain.SensorCalibration) (*domain.SensorCalibration, error) {
-	cal.UUID = ulid.NewString()
+	cal.ID = ulid.NewString()
 
 	query := `
 		INSERT INTO sensor_calibrations (
@@ -649,7 +649,7 @@ func (r *sensorRepository) CreateCalibration(ctx context.Context, cal *domain.Se
 		RETURNING ` + calibrationColumns
 
 	row := r.queryRow(ctx, query,
-		cal.UUID, cal.SensorID, cal.TenantID,
+		cal.ID, cal.SensorID, cal.TenantID,
 		cal.OffsetValue, cal.ScaleFactor,
 		cal.NextCalibrationDate, cal.CalibratedBy, cal.Notes,
 	)

@@ -127,7 +127,7 @@ func StressAlertToProto(a *analyticsmodels.StressAlert) *pb.StressAlert {
 	}
 
 	alert := &pb.StressAlert{
-		Id:                   a.UUID,
+		Id:                   a.ID,
 		TenantId:             a.TenantID,
 		FarmId:               a.FarmID,
 		FieldId:              a.FieldID,
@@ -166,7 +166,7 @@ func TemporalAnalysisToProto(t *analyticsmodels.TemporalAnalysis) *pb.TemporalAn
 	}
 
 	return &pb.TemporalAnalysis{
-		Id:               t.UUID,
+		Id:               t.ID,
 		TenantId:         t.TenantID,
 		FarmId:           t.FarmID,
 		FieldId:          t.FieldID,

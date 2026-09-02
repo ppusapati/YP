@@ -124,14 +124,14 @@ func (s *yieldService) PredictYield(ctx context.Context, prediction *domain.Yiel
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.yield.prediction.created", created.UUID, map[string]interface{}{
-		"prediction_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.yield.prediction.created", created.ID, map[string]interface{}{
+		"prediction_id": created.ID,
 		"tenant_id":     tenantID,
 		"farm_id":       created.FarmID,
 		"field_id":      created.FieldID,
 		"crop_id":       created.CropID,
 	})
-	s.log.Infow("msg", "prediction created", "id", created.UUID)
+	s.log.Infow("msg", "prediction created", "id", created.ID)
 	return created, nil
 }
 
@@ -197,14 +197,14 @@ func (s *yieldService) RecordYield(ctx context.Context, record *domain.YieldReco
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.yield.record.created", created.UUID, map[string]interface{}{
-		"record_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.yield.record.created", created.ID, map[string]interface{}{
+		"record_id": created.ID,
 		"tenant_id": tenantID,
 		"farm_id":   created.FarmID,
 		"field_id":  created.FieldID,
 		"crop_id":   created.CropID,
 	})
-	s.log.Infow("msg", "yield record created", "id", created.UUID)
+	s.log.Infow("msg", "yield record created", "id", created.ID)
 	return created, nil
 }
 
@@ -251,14 +251,14 @@ func (s *yieldService) CreateHarvestPlan(ctx context.Context, plan *domain.Harve
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.yield.harvest_plan.created", created.UUID, map[string]interface{}{
-		"plan_id":   created.UUID,
+	s.emitEvent(ctx, "agriculture.yield.harvest_plan.created", created.ID, map[string]interface{}{
+		"plan_id":   created.ID,
 		"tenant_id": tenantID,
 		"farm_id":   created.FarmID,
 		"field_id":  created.FieldID,
 		"crop_id":   created.CropID,
 	})
-	s.log.Infow("msg", "harvest plan created", "id", created.UUID)
+	s.log.Infow("msg", "harvest plan created", "id", created.ID)
 	return created, nil
 }
 

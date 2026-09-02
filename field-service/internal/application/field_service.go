@@ -102,10 +102,10 @@ func (s *fieldService) CreateField(ctx context.Context, field *domain.Field) (*d
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.created", created.UUID, map[string]interface{}{
-		"field_id": created.UUID, "farm_id": created.FarmID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.field.created", created.ID, map[string]interface{}{
+		"field_id": created.ID, "farm_id": created.FarmID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "field created", "uuid", created.UUID, "farm_id", created.FarmID)
+	s.log.Infow("msg", "field created", "uuid", created.ID, "farm_id", created.FarmID)
 	return created, nil
 }
 
@@ -142,7 +142,7 @@ func (s *fieldService) UpdateField(ctx context.Context, field *domain.Field) (*d
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if field.UUID == "" {
+	if field.ID == "" {
 		return nil, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
 	}
 	if field.Status != domain.FieldStatusUnspecified && !field.Status.IsValid() {
@@ -152,12 +152,12 @@ func (s *fieldService) UpdateField(ctx context.Context, field *domain.Field) (*d
 		userID = "system"
 	}
 
-	exists, err := s.repo.CheckFieldExists(ctx, field.UUID, tenantID)
+	exists, err := s.repo.CheckFieldExists(ctx, field.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.UUID))
+		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.ID))
 	}
 
 	field.TenantID = tenantID
@@ -169,8 +169,8 @@ func (s *fieldService) UpdateField(ctx context.Context, field *domain.Field) (*d
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.updated", updated.UUID, map[string]interface{}{
-		"field_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.field.updated", updated.ID, map[string]interface{}{
+		"field_id": updated.ID, "tenant_id": tenantID,
 	})
 	return updated, nil
 }
@@ -259,8 +259,8 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.UUID, map[string]interface{}{
-		"field_id": field.UUID, "crop_id": params.CropID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.ID, map[string]interface{}{
+		"field_id": field.ID, "crop_id": params.CropID, "tenant_id": tenantID,
 	})
 	return created, nil
 }
@@ -271,7 +271,7 @@ func (s *fieldService) GetFieldSummary(ctx context.Context, uuid string) (*domai
 		return nil, err
 	}
 	return &domain.FieldSummary{
-		UUID:     field.UUID,
+		UUID:     field.ID,
 		TenantID: field.TenantID,
 		FarmID:   field.FarmID,
 		Name:     field.Name,

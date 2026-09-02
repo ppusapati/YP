@@ -82,7 +82,7 @@ func (r *ingestionRepository) exec(ctx context.Context, sql string, args ...any)
 // ---------- IngestionTask CRUD ----------
 
 func (r *ingestionRepository) CreateIngestionTask(ctx context.Context, task *ingestionmodels.IngestionTask) (*ingestionmodels.IngestionTask, error) {
-	task.UUID = ulid.NewString()
+	task.ID = ulid.NewString()
 	task.CreatedAt = time.Now()
 	task.IsActive = true
 	task.Version = 1
@@ -111,7 +111,7 @@ func (r *ingestionRepository) CreateIngestionTask(ctx context.Context, task *ing
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at`,
-		task.UUID, task.TenantID, task.FarmID, task.FarmUUID, task.Provider,
+		task.ID, task.TenantID, task.FarmID, task.FarmUUID, task.Provider,
 		task.SceneID, task.S3Bucket, task.S3Key,
 		task.CloudCoverPercent, task.ResolutionMeters, pq.Array(task.Bands),
 		task.BboxGeoJSON, task.FileSizeBytes, task.ChecksumSHA256, task.ErrorMessage,
@@ -125,7 +125,7 @@ func (r *ingestionRepository) CreateIngestionTask(ctx context.Context, task *ing
 		return nil, errors.InternalServer("INGESTION_CREATE_FAILED", fmt.Sprintf("failed to create ingestion task: %v", err))
 	}
 
-	r.log.Infow("msg", "ingestion task created", "uuid", result.UUID, "tenant_id", result.TenantID)
+	r.log.Infow("msg", "ingestion task created", "uuid", result.ID, "tenant_id", result.TenantID)
 	return result, nil
 }
 
@@ -245,7 +245,7 @@ func (r *ingestionRepository) UpdateIngestionStatus(ctx context.Context, task *i
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at`,
-		task.UUID, task.TenantID, task.Status,
+		task.ID, task.TenantID, task.Status,
 		task.S3Bucket, task.S3Key,
 		nilIfZeroInt64(task.FileSizeBytes), task.ChecksumSHA256,
 		task.ErrorMessage, nilIfZeroInt32(task.RetryCount),
@@ -256,13 +256,13 @@ func (r *ingestionRepository) UpdateIngestionStatus(ctx context.Context, task *i
 	result := &ingestionmodels.IngestionTask{}
 	if err := scanIngestionTask(row, result); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("INGESTION_TASK_NOT_FOUND", fmt.Sprintf("ingestion task not found: %s", task.UUID))
+			return nil, errors.NotFound("INGESTION_TASK_NOT_FOUND", fmt.Sprintf("ingestion task not found: %s", task.ID))
 		}
-		r.log.Errorw("msg", "failed to update ingestion status", "uuid", task.UUID, "error", err)
+		r.log.Errorw("msg", "failed to update ingestion status", "uuid", task.ID, "error", err)
 		return nil, errors.InternalServer("INGESTION_UPDATE_FAILED", fmt.Sprintf("failed to update ingestion task: %v", err))
 	}
 
-	r.log.Infow("msg", "ingestion task status updated", "uuid", result.UUID, "status", result.Status, "version", result.Version)
+	r.log.Infow("msg", "ingestion task status updated", "uuid", result.ID, "status", result.Status, "version", result.Version)
 	return result, nil
 }
 
@@ -296,7 +296,7 @@ func (r *ingestionRepository) CancelIngestionTask(ctx context.Context, uuid, ten
 		return nil, errors.InternalServer("INGESTION_CANCEL_FAILED", fmt.Sprintf("failed to cancel ingestion task: %v", err))
 	}
 
-	r.log.Infow("msg", "ingestion task cancelled", "uuid", result.UUID)
+	r.log.Infow("msg", "ingestion task cancelled", "uuid", result.ID)
 	return result, nil
 }
 
@@ -338,7 +338,7 @@ func (r *ingestionRepository) GetIngestionStats(ctx context.Context, tenantID st
 
 func scanIngestionTask(row pgx.Row, t *ingestionmodels.IngestionTask) error {
 	return row.Scan(
-		&t.ID, &t.UUID, &t.TenantID, &t.FarmID, &t.FarmUUID, &t.Provider,
+		&t.ID, &t.TenantID, &t.FarmID, &t.FarmUUID, &t.Provider,
 		&t.SceneID, &t.Status, &t.S3Bucket, &t.S3Key,
 		&t.CloudCoverPercent, &t.ResolutionMeters, pq.Array(&t.Bands),
 		&t.FileSizeBytes, &t.ChecksumSHA256, &t.ErrorMessage,
@@ -350,7 +350,7 @@ func scanIngestionTask(row pgx.Row, t *ingestionmodels.IngestionTask) error {
 
 func scanIngestionTaskFromRows(rows pgx.Rows, t *ingestionmodels.IngestionTask) error {
 	return rows.Scan(
-		&t.ID, &t.UUID, &t.TenantID, &t.FarmID, &t.FarmUUID, &t.Provider,
+		&t.ID, &t.TenantID, &t.FarmID, &t.FarmUUID, &t.Provider,
 		&t.SceneID, &t.Status, &t.S3Bucket, &t.S3Key,
 		&t.CloudCoverPercent, &t.ResolutionMeters, pq.Array(&t.Bands),
 		&t.FileSizeBytes, &t.ChecksumSHA256, &t.ErrorMessage,

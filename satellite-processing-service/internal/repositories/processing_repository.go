@@ -81,7 +81,7 @@ func (r *processingRepository) exec(ctx context.Context, sql string, args ...any
 // ---------- Processing Job CRUD ----------
 
 func (r *processingRepository) CreateProcessingJob(ctx context.Context, job *procmodels.ProcessingJob) (*procmodels.ProcessingJob, error) {
-	job.UUID = ulid.NewString()
+	job.ID = ulid.NewString()
 	job.CreatedAt = time.Now()
 	job.IsActive = true
 	job.Status = procmodels.ProcessingStatusQueued
@@ -106,7 +106,7 @@ func (r *processingRepository) CreateProcessingJob(ctx context.Context, job *pro
 			apply_orthorectification, output_resolution_meters, output_crs,
 			error_message, processing_time_seconds, is_active, created_by, created_at,
 			updated_by, updated_at, completed_at, deleted_by, deleted_at`,
-		job.UUID, job.TenantID, job.IngestionTaskUUID, job.FarmUUID, procmodels.ProcessingStatusQueued,
+		job.ID, job.TenantID, job.IngestionTaskUUID, job.FarmUUID, procmodels.ProcessingStatusQueued,
 		job.InputLevel, job.OutputLevel, job.Algorithm, job.InputS3Key, job.OutputS3Key,
 		job.CloudMaskThreshold, job.ApplyAtmosphericCorrection, job.ApplyCloudMasking,
 		job.ApplyOrthorectification, job.OutputResolutionMeters, job.OutputCRS,
@@ -119,7 +119,7 @@ func (r *processingRepository) CreateProcessingJob(ctx context.Context, job *pro
 		return nil, errors.InternalServer("JOB_CREATE_FAILED", fmt.Sprintf("failed to create processing job: %v", err))
 	}
 
-	r.log.Infow("msg", "processing job created", "uuid", result.UUID, "tenant_id", result.TenantID)
+	r.log.Infow("msg", "processing job created", "uuid", result.ID, "tenant_id", result.TenantID)
 	return result, nil
 }
 
@@ -228,7 +228,7 @@ func (r *processingRepository) UpdateProcessingStatus(ctx context.Context, job *
 			apply_orthorectification, output_resolution_meters, output_crs,
 			error_message, processing_time_seconds, is_active, created_by, created_at,
 			updated_by, updated_at, completed_at, deleted_by, deleted_at`,
-		job.UUID, job.TenantID,
+		job.ID, job.TenantID,
 		job.Status, job.OutputS3Key, job.ErrorMessage,
 		job.ProcessingTimeSeconds, job.CompletedAt,
 		job.UpdatedBy,
@@ -237,13 +237,13 @@ func (r *processingRepository) UpdateProcessingStatus(ctx context.Context, job *
 	result := &procmodels.ProcessingJob{}
 	if err := scanProcessingJob(row, result); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("JOB_NOT_FOUND", fmt.Sprintf("processing job not found: %s", job.UUID))
+			return nil, errors.NotFound("JOB_NOT_FOUND", fmt.Sprintf("processing job not found: %s", job.ID))
 		}
-		r.log.Errorw("msg", "failed to update processing job status", "uuid", job.UUID, "error", err)
+		r.log.Errorw("msg", "failed to update processing job status", "uuid", job.ID, "error", err)
 		return nil, errors.InternalServer("JOB_UPDATE_FAILED", fmt.Sprintf("failed to update processing job: %v", err))
 	}
 
-	r.log.Infow("msg", "processing job status updated", "uuid", result.UUID, "status", string(result.Status))
+	r.log.Infow("msg", "processing job status updated", "uuid", result.ID, "status", string(result.Status))
 	return result, nil
 }
 
@@ -300,7 +300,7 @@ func (r *processingRepository) GetProcessingStats(ctx context.Context, tenantID 
 
 func scanProcessingJob(row pgx.Row, j *procmodels.ProcessingJob) error {
 	return row.Scan(
-		&j.ID, &j.UUID, &j.TenantID, &j.IngestionTaskUUID, &j.FarmUUID, &j.Status,
+		&j.ID, &j.TenantID, &j.IngestionTaskUUID, &j.FarmUUID, &j.Status,
 		&j.InputLevel, &j.OutputLevel, &j.Algorithm, &j.InputS3Key, &j.OutputS3Key,
 		&j.CloudMaskThreshold, &j.ApplyAtmosphericCorrection, &j.ApplyCloudMasking,
 		&j.ApplyOrthorectification, &j.OutputResolutionMeters, &j.OutputCRS,
@@ -311,7 +311,7 @@ func scanProcessingJob(row pgx.Row, j *procmodels.ProcessingJob) error {
 
 func scanProcessingJobFromRows(rows pgx.Rows, j *procmodels.ProcessingJob) error {
 	return rows.Scan(
-		&j.ID, &j.UUID, &j.TenantID, &j.IngestionTaskUUID, &j.FarmUUID, &j.Status,
+		&j.ID, &j.TenantID, &j.IngestionTaskUUID, &j.FarmUUID, &j.Status,
 		&j.InputLevel, &j.OutputLevel, &j.Algorithm, &j.InputS3Key, &j.OutputS3Key,
 		&j.CloudMaskThreshold, &j.ApplyAtmosphericCorrection, &j.ApplyCloudMasking,
 		&j.ApplyOrthorectification, &j.OutputResolutionMeters, &j.OutputCRS,

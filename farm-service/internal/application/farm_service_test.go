@@ -71,9 +71,8 @@ func (m *mockFarmRepo) CreateFarm(_ context.Context, f *domain.Farm) (*domain.Fa
 	if m.createFarmFn != nil {
 		return m.createFarmFn(nil, f)
 	}
-	f.UUID = "farm-uuid-001"
-	f.ID = 1
-	m.farms[f.UUID] = f
+	f.ID = "farm-uuid-001"
+	m.farms[f.ID] = f
 	m.names[f.TenantID+"/"+f.Name] = true
 	return f, nil
 }
@@ -97,7 +96,7 @@ func (m *mockFarmRepo) ListFarms(_ context.Context, params domain.ListFarmsParam
 }
 
 func (m *mockFarmRepo) UpdateFarm(_ context.Context, f *domain.Farm) (*domain.Farm, error) {
-	existing, ok := m.farms[f.UUID]
+	existing, ok := m.farms[f.ID]
 	if !ok {
 		return nil, errors.NotFound("FARM_NOT_FOUND", "farm not found")
 	}
@@ -126,7 +125,7 @@ func (m *mockFarmRepo) CheckFarmNameExists(_ context.Context, name, tenantID str
 }
 
 func (m *mockFarmRepo) CreateFarmBoundary(_ context.Context, b *domain.FarmBoundary) (*domain.FarmBoundary, error) {
-	b.UUID = "boundary-uuid-001"
+	b.ID = "boundary-uuid-001"
 	m.boundaries[b.FarmUUID] = b
 	return b, nil
 }
@@ -150,7 +149,7 @@ func (m *mockFarmRepo) DeleteFarmBoundary(_ context.Context, farmUUID, _, _ stri
 }
 
 func (m *mockFarmRepo) CreateFarmOwner(_ context.Context, o *domain.FarmOwner) (*domain.FarmOwner, error) {
-	o.UUID = "owner-uuid-001"
+	o.ID = "owner-uuid-001"
 	m.owners[o.FarmUUID] = append(m.owners[o.FarmUUID], *o)
 	return o, nil
 }
@@ -317,7 +316,7 @@ func TestGetFarm_HappyPath(t *testing.T) {
 		Name:     "Sunrise Farm",
 		FarmType: domain.FarmTypeCrop,
 	}
-	repo.farms["farm-uuid-001"].UUID = "farm-uuid-001"
+	repo.farms["farm-uuid-001"].ID = "farm-uuid-001"
 
 	farm, err := svc.GetFarm(ctx, "farm-uuid-001")
 	require.NoError(t, err)
@@ -342,9 +341,9 @@ func TestListFarms_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.farms["f1"] = &domain.Farm{TenantID: "tenant-1", Name: "Farm A"}
-	repo.farms["f1"].UUID = "f1"
+	repo.farms["f1"].ID = "f1"
 	repo.farms["f2"] = &domain.Farm{TenantID: "tenant-1", Name: "Farm B"}
-	repo.farms["f2"].UUID = "f2"
+	repo.farms["f2"].ID = "f2"
 
 	farms, total, err := svc.ListFarms(ctx, domain.ListFarmsParams{})
 	require.NoError(t, err)

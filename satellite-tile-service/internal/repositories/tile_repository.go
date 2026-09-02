@@ -83,7 +83,7 @@ func (r *tileRepository) exec(ctx context.Context, sql string, args ...any) erro
 // ---------- Tileset CRUD ----------
 
 func (r *tileRepository) CreateTileset(ctx context.Context, tileset *tilemodels.Tileset) (*tilemodels.Tileset, error) {
-	tileset.UUID = ulid.NewString()
+	tileset.ID = ulid.NewString()
 	tileset.CreatedAt = time.Now()
 	tileset.IsActive = true
 	tileset.Status = tilemodels.TilesetStatusQueued
@@ -104,7 +104,7 @@ func (r *tileRepository) CreateTileset(ctx context.Context, tileset *tilemodels.
 			format, status, min_zoom, max_zoom, s3_prefix,
 			total_tiles, bbox_geojson, error_message, acquisition_date, completed_at,
 			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
-		tileset.UUID, tileset.TenantID, tileset.FarmID, tileset.ProcessingJobID, tileset.Layer,
+		tileset.ID, tileset.TenantID, tileset.FarmID, tileset.ProcessingJobID, tileset.Layer,
 		tileset.Format, tileset.MinZoom, tileset.MaxZoom, tileset.S3Prefix,
 		tileset.BboxGeoJSON, tileset.AcquisitionDate,
 		tileset.CreatedBy,
@@ -116,7 +116,7 @@ func (r *tileRepository) CreateTileset(ctx context.Context, tileset *tilemodels.
 		return nil, errors.InternalServer("TILESET_CREATE_FAILED", fmt.Sprintf("failed to create tileset: %v", err))
 	}
 
-	r.log.Infow("msg", "tileset created", "uuid", result.UUID, "tenant_id", result.TenantID)
+	r.log.Infow("msg", "tileset created", "uuid", result.ID, "tenant_id", result.TenantID)
 	return result, nil
 }
 
@@ -261,7 +261,7 @@ func (r *tileRepository) CompleteTileset(ctx context.Context, uuid, tenantID str
 		return nil, errors.InternalServer("TILESET_COMPLETE_FAILED", fmt.Sprintf("failed to complete tileset: %v", err))
 	}
 
-	r.log.Infow("msg", "tileset completed", "uuid", result.UUID, "total_tiles", totalTiles)
+	r.log.Infow("msg", "tileset completed", "uuid", result.ID, "total_tiles", totalTiles)
 	return result, nil
 }
 
@@ -289,7 +289,7 @@ func (r *tileRepository) FailTileset(ctx context.Context, uuid, tenantID, errorM
 		return nil, errors.InternalServer("TILESET_FAIL_FAILED", fmt.Sprintf("failed to fail tileset: %v", err))
 	}
 
-	r.log.Infow("msg", "tileset marked as failed", "uuid", result.UUID, "error_message", errorMessage)
+	r.log.Infow("msg", "tileset marked as failed", "uuid", result.ID, "error_message", errorMessage)
 	return result, nil
 }
 
@@ -354,7 +354,7 @@ func (r *tileRepository) GetTilesetByProcessingJobAndLayer(ctx context.Context, 
 
 func scanTileset(row pgx.Row, t *tilemodels.Tileset) error {
 	return row.Scan(
-		&t.ID, &t.UUID, &t.TenantID, &t.FarmID, &t.ProcessingJobID, &t.Layer,
+		&t.ID, &t.TenantID, &t.FarmID, &t.ProcessingJobID, &t.Layer,
 		&t.Format, &t.Status, &t.MinZoom, &t.MaxZoom, &t.S3Prefix,
 		&t.TotalTiles, &t.BboxGeoJSON, &t.ErrorMessage, &t.AcquisitionDate, &t.CompletedAt,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
@@ -363,7 +363,7 @@ func scanTileset(row pgx.Row, t *tilemodels.Tileset) error {
 
 func scanTilesetFromRows(rows pgx.Rows, t *tilemodels.Tileset) error {
 	return rows.Scan(
-		&t.ID, &t.UUID, &t.TenantID, &t.FarmID, &t.ProcessingJobID, &t.Layer,
+		&t.ID, &t.TenantID, &t.FarmID, &t.ProcessingJobID, &t.Layer,
 		&t.Format, &t.Status, &t.MinZoom, &t.MaxZoom, &t.S3Prefix,
 		&t.TotalTiles, &t.BboxGeoJSON, &t.ErrorMessage, &t.AcquisitionDate, &t.CompletedAt,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,

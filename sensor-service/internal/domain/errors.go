@@ -3,10 +3,10 @@ package domain
 import "fmt"
 
 // ErrSensorNotFound is returned when a sensor cannot be located.
-type ErrSensorNotFound struct{ UUID string }
+type ErrSensorNotFound struct{ ID string }
 
 func (e ErrSensorNotFound) Error() string {
-	return fmt.Sprintf("sensor not found: %s", e.UUID)
+	return fmt.Sprintf("sensor not found: %s", e.ID)
 }
 
 // ErrSensorNameExists is returned when a duplicate name is detected.

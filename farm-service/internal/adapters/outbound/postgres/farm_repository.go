@@ -78,7 +78,7 @@ func (r *farmRepository) exec(ctx context.Context, sql string, args ...any) erro
 // ---- Farm CRUD ----
 
 func (r *farmRepository) CreateFarm(ctx context.Context, farm *domain.Farm) (*domain.Farm, error) {
-	farm.UUID = ulid.NewString()
+	farm.ID = ulid.NewString()
 	farm.CreatedAt = time.Now()
 	farm.IsActive = true
 	farm.Version = 1
@@ -105,7 +105,7 @@ func (r *farmRepository) CreateFarm(ctx context.Context, farm *domain.Farm) (*do
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at`,
-		farm.UUID, farm.TenantID, farm.Name, farm.Description, farm.TotalAreaHectares,
+		farm.ID, farm.TenantID, farm.Name, farm.Description, farm.TotalAreaHectares,
 		farm.Latitude, farm.Longitude, farm.ElevationMeters, string(farm.FarmType), string(domain.FarmStatusPending),
 		nullableSoilType(farm.SoilType), nullableClimateZone(farm.ClimateZone),
 		farm.Address, farm.Region, farm.Country,
@@ -233,7 +233,7 @@ func (r *farmRepository) UpdateFarm(ctx context.Context, farm *domain.Farm) (*do
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at`,
-		farm.UUID, farm.TenantID,
+		farm.ID, farm.TenantID,
 		farm.Name, farm.Description, nilIfZeroFloat(farm.TotalAreaHectares),
 		farm.Latitude, farm.Longitude, farm.ElevationMeters,
 		nilIfEmptyFarmType(farm.FarmType), nilIfEmptyFarmStatus(farm.Status),
@@ -243,7 +243,7 @@ func (r *farmRepository) UpdateFarm(ctx context.Context, farm *domain.Farm) (*do
 	result := &domain.Farm{}
 	if err := scanFarm(row, result); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", farm.UUID))
+			return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", farm.ID))
 		}
 		return nil, errors.InternalServer("FARM_UPDATE_FAILED", fmt.Sprintf("failed to update farm: %v", err))
 	}
@@ -286,7 +286,7 @@ func (r *farmRepository) CheckFarmNameExists(ctx context.Context, name, tenantID
 // ---- Farm Boundary ----
 
 func (r *farmRepository) CreateFarmBoundary(ctx context.Context, b *domain.FarmBoundary) (*domain.FarmBoundary, error) {
-	b.UUID = ulid.NewString()
+	b.ID = ulid.NewString()
 	b.CreatedAt = time.Now()
 	b.IsActive = true
 
@@ -299,7 +299,7 @@ func (r *farmRepository) CreateFarmBoundary(ctx context.Context, b *domain.FarmB
 		RETURNING id, farm_id, tenant_id, geojson,
 			area_hectares, perimeter_meters, is_active,
 			created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
-		b.UUID, b.FarmUUID, b.TenantID,
+		b.ID, b.FarmUUID, b.TenantID,
 		b.GeoJSON, b.AreaHectares, b.PerimeterMeters, b.CreatedBy,
 	)
 	result := &domain.FarmBoundary{}
@@ -359,7 +359,7 @@ func (r *farmRepository) DeleteFarmBoundary(ctx context.Context, farmUUID, tenan
 // ---- Farm Owners ----
 
 func (r *farmRepository) CreateFarmOwner(ctx context.Context, o *domain.FarmOwner) (*domain.FarmOwner, error) {
-	o.UUID = ulid.NewString()
+	o.ID = ulid.NewString()
 	o.CreatedAt = time.Now()
 	o.IsActive = true
 	if o.AcquiredAt.IsZero() {
@@ -375,7 +375,7 @@ func (r *farmRepository) CreateFarmOwner(ctx context.Context, o *domain.FarmOwne
 			owner_name, email, phone, is_primary, ownership_percentage,
 			acquired_at, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at`,
-		o.UUID, o.FarmUUID, o.TenantID, o.UserID,
+		o.ID, o.FarmUUID, o.TenantID, o.UserID,
 		o.OwnerName, o.Email, o.Phone, o.IsPrimary, o.OwnershipPercentage,
 		o.AcquiredAt, o.CreatedBy,
 	)
@@ -451,7 +451,7 @@ func scanFarm(row pgx.Row, f *domain.Farm) error {
 	var farmType, status string
 	var soilType, climateZone *string
 	err := row.Scan(
-		&f.UUID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
+		&f.ID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
 		&f.Latitude, &f.Longitude, &f.ElevationMeters, &farmType, &status,
 		&soilType, &climateZone, &f.Address, &f.Region, &f.Country,
 		&f.Metadata, &f.Version, &f.IsActive, &f.CreatedBy, &f.CreatedAt,
@@ -477,7 +477,7 @@ func scanFarmFromRows(rows pgx.Rows, f *domain.Farm) error {
 	var farmType, status string
 	var soilType, climateZone *string
 	err := rows.Scan(
-		&f.UUID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
+		&f.ID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
 		&f.Latitude, &f.Longitude, &f.ElevationMeters, &farmType, &status,
 		&soilType, &climateZone, &f.Address, &f.Region, &f.Country,
 		&f.Metadata, &f.Version, &f.IsActive, &f.CreatedBy, &f.CreatedAt,
@@ -501,7 +501,7 @@ func scanFarmFromRows(rows pgx.Rows, f *domain.Farm) error {
 
 func scanBoundary(row pgx.Row, b *domain.FarmBoundary) error {
 	return row.Scan(
-		&b.UUID, &b.FarmUUID, &b.TenantID, &b.GeoJSON,
+		&b.ID, &b.FarmUUID, &b.TenantID, &b.GeoJSON,
 		&b.AreaHectares, &b.PerimeterMeters, &b.IsActive,
 		&b.CreatedBy, &b.CreatedAt, &b.UpdatedBy, &b.UpdatedAt, &b.DeletedBy, &b.DeletedAt,
 	)
@@ -511,7 +511,7 @@ func scanOwner(row pgx.Row, o *domain.FarmOwner) error {
 	var deletedBy *string
 	var deletedAt *time.Time
 	return row.Scan(
-		&o.UUID, &o.FarmUUID, &o.TenantID, &o.UserID,
+		&o.ID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
 		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
@@ -522,7 +522,7 @@ func scanOwnerFromRows(rows pgx.Rows, o *domain.FarmOwner) error {
 	var deletedBy *string
 	var deletedAt *time.Time
 	return rows.Scan(
-		&o.UUID, &o.FarmUUID, &o.TenantID, &o.UserID,
+		&o.ID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
 		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,

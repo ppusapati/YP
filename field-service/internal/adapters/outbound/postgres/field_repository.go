@@ -66,13 +66,13 @@ current_crop_id, planting_date, expected_harvest_date,
 created_by, updated_by, created_at, updated_at, version`
 
 func (r *fieldRepository) CreateField(ctx context.Context, field *domain.Field) (*domain.Field, error) {
-	field.UUID = ulid.NewString()
+	field.ID = ulid.NewString()
 	row := r.queryRow(ctx,
 		`INSERT INTO fields (id, tenant_id, farm_id, name, area_hectares, field_type, soil_type,
 irrigation_type, status, elevation_meters, slope_degrees, aspect_direction, growth_stage, created_by)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 RETURNING `+fieldColumns,
-		field.UUID, field.TenantID, field.FarmID, field.Name, field.AreaHectares,
+		field.ID, field.TenantID, field.FarmID, field.Name, field.AreaHectares,
 		string(field.FieldType), string(field.SoilType), string(field.IrrigationType),
 		string(field.Status), field.ElevationMeters, field.SlopeDegrees,
 		string(field.AspectDirection), string(field.GrowthStage), field.CreatedBy,
@@ -163,12 +163,12 @@ func (r *fieldRepository) UpdateField(ctx context.Context, field *domain.Field) 
 		field.Name, string(field.Status),
 		field.CurrentCropID, field.PlantingDate, field.ExpectedHarvestDate,
 		string(field.GrowthStage), field.UpdatedBy,
-		field.UUID, field.TenantID,
+		field.ID, field.TenantID,
 	)
 	f, err := scanField(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.UUID))
+			return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.ID))
 		}
 		return nil, errors.InternalServer("DB_ERROR", err.Error())
 	}
@@ -203,7 +203,7 @@ func (r *fieldRepository) CheckFieldNameExists(ctx context.Context, name, farmID
 func scanField(row pgx.Row) (*domain.Field, error) {
 	f := &domain.Field{}
 	err := row.Scan(
-		&f.UUID, &f.TenantID, &f.FarmID, &f.Name, &f.AreaHectares,
+		&f.ID, &f.TenantID, &f.FarmID, &f.Name, &f.AreaHectares,
 		&f.FieldType, &f.SoilType, &f.IrrigationType, &f.Status,
 		&f.ElevationMeters, &f.SlopeDegrees, &f.AspectDirection, &f.GrowthStage,
 		&f.CurrentCropID, &f.PlantingDate, &f.ExpectedHarvestDate,

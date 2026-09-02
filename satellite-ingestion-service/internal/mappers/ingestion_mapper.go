@@ -135,7 +135,7 @@ func IngestionTaskToProto(t *ingestionmodels.IngestionTask) *pb.IngestionTask {
 	}
 
 	task := &pb.IngestionTask{
-		Id:                t.UUID,
+		Id:                t.ID,
 		TenantId:          t.TenantID,
 		FarmId:            t.FarmUUID,
 		Provider:          DomainProviderToProto(t.Provider),

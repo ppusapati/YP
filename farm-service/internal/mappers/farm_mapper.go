@@ -197,7 +197,7 @@ func FarmToProto(f *domain.Farm) *pb.Farm {
 	}
 
 	farm := &pb.Farm{
-		Id:                f.UUID,
+		Id:                f.ID,
 		TenantId:          f.TenantID,
 		Name:              f.Name,
 		Description:       ptr.Deref(f.Description),
@@ -264,7 +264,7 @@ func FarmBoundaryToProto(b *domain.FarmBoundary) *pb.FarmBoundary {
 	}
 
 	boundary := &pb.FarmBoundary{
-		Id:              b.UUID,
+		Id:              b.ID,
 		FarmId:          b.FarmUUID,
 		Geojson:         b.GeoJSON,
 		AreaHectares:    b.AreaHectares,
@@ -286,7 +286,7 @@ func FarmOwnerToProto(o *domain.FarmOwner) *pb.FarmOwner {
 	}
 
 	owner := &pb.FarmOwner{
-		Id:                  o.UUID,
+		Id:                  o.ID,
 		FarmId:              o.FarmUUID,
 		UserId:              o.UserID,
 		OwnerName:           o.OwnerName,
@@ -357,7 +357,7 @@ func UpdateFarmRequestToDomain(req *pb.UpdateFarmRequest, tenantID, userID strin
 		TenantID: tenantID,
 	}
 
-	farm.UUID = req.GetId()
+	farm.ID = req.GetId()
 	farm.UpdatedBy = ptr.String(userID)
 
 	if req.GetName() != "" {
@@ -411,7 +411,7 @@ func UpdateFarmRequestToDomain(req *pb.UpdateFarmRequest, tenantID, userID strin
 }
 
 // CreateFarmOwnerFromProto converts a proto FarmOwner from the CreateFarm request to a domain FarmOwner.
-func CreateFarmOwnerFromProto(o *pb.FarmOwner, farmID int64, farmUUID, tenantID, userID string) *domain.FarmOwner {
+func CreateFarmOwnerFromProto(o *pb.FarmOwner, farmID string, farmUUID, tenantID, userID string) *domain.FarmOwner {
 	if o == nil {
 		return nil
 	}

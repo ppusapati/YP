@@ -97,13 +97,13 @@ type StressAlert struct {
 }
 
 // GetID returns the primary key of the stress alert.
-func (s *StressAlert) GetID() int64 {
+func (s *StressAlert) GetID() string {
 	return s.ID
 }
 
 // GetUUID returns the ULID identifier of the stress alert.
 func (s *StressAlert) GetUUID() string {
-	return s.UUID
+	return s.ID
 }
 
 // TemporalAnalysis represents a temporal analysis result in the domain.
@@ -124,13 +124,13 @@ type TemporalAnalysis struct {
 }
 
 // GetID returns the primary key of the temporal analysis.
-func (t *TemporalAnalysis) GetID() int64 {
+func (t *TemporalAnalysis) GetID() string {
 	return t.ID
 }
 
 // GetUUID returns the ULID identifier of the temporal analysis.
 func (t *TemporalAnalysis) GetUUID() string {
-	return t.UUID
+	return t.ID
 }
 
 // ListStressAlertsParams holds the filter and pagination parameters for listing stress alerts.

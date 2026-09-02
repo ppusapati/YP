@@ -104,7 +104,7 @@ func (h *IrrigationHandler) UpdateSchedule(ctx context.Context, req *connect.Req
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "schedule with id is required")
 	}
 	entity := scheduleFromProto(req.Msg.GetSchedule())
-	entity.UUID = req.Msg.GetSchedule().GetId()
+	entity.ID = req.Msg.GetSchedule().GetId()
 	updated, err := h.svc.UpdateSchedule(ctx, entity)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
@@ -545,7 +545,7 @@ func scheduleToProto(s *domain.IrrigationSchedule) *pb.IrrigationSchedule {
 		return nil
 	}
 	return &pb.IrrigationSchedule{
-		Id:                       s.UUID,
+		Id:                       s.ID,
 		TenantId:                 s.TenantID,
 		FieldId:                  s.FieldID,
 		FarmId:                   s.FarmID,
@@ -605,7 +605,7 @@ func zoneToProto(z *domain.IrrigationZone) *pb.IrrigationZone {
 		return nil
 	}
 	return &pb.IrrigationZone{
-		Id:              z.UUID,
+		Id:              z.ID,
 		TenantId:        z.TenantID,
 		FieldId:         z.FieldID,
 		FarmId:          z.FarmID,
@@ -649,7 +649,7 @@ func controllerToProto(c *domain.WaterController) *pb.WaterController {
 		return nil
 	}
 	return &pb.WaterController{
-		Id:                       c.UUID,
+		Id:                       c.ID,
 		TenantId:                 c.TenantID,
 		ZoneId:                   c.ZoneID,
 		FieldId:                  c.FieldID,
@@ -696,7 +696,7 @@ func eventToProto(e *domain.IrrigationEvent) *pb.IrrigationEvent {
 		return nil
 	}
 	return &pb.IrrigationEvent{
-		Id:                    e.UUID,
+		Id:                    e.ID,
 		TenantId:              e.TenantID,
 		ScheduleId:            e.ScheduleID,
 		ZoneId:                e.ZoneID,
@@ -736,7 +736,7 @@ func decisionToProto(d *domain.IrrigationDecision) *pb.IrrigationDecision {
 		return nil
 	}
 	return &pb.IrrigationDecision{
-		Id:         d.UUID,
+		Id:         d.ID,
 		TenantId:   d.TenantID,
 		ZoneId:     d.ZoneID,
 		FieldId:    d.FieldID,
@@ -772,7 +772,7 @@ func waterUsageLogToProto(w *domain.WaterUsageLog) *pb.WaterUsageLog {
 		return nil
 	}
 	return &pb.WaterUsageLog{
-		Id:           w.UUID,
+		Id:           w.ID,
 		TenantId:     w.TenantID,
 		ZoneId:       w.ZoneID,
 		ControllerId: w.ControllerID,

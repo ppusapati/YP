@@ -186,11 +186,8 @@ type PestSpecies struct {
 	Version             int64           `json:"version" db:"version"`
 }
 
-// GetID returns the primary key.
-func (p *PestSpecies) GetID() int64 { return p.ID }
-
-// GetUUID returns the ULID identifier.
-func (p *PestSpecies) GetUUID() string { return p.UUID }
+// GetID returns the ULID identifier.
+func (p *PestSpecies) GetID() string { return p.ID }
 
 // PestPrediction is the main pest risk prediction entity.
 type PestPrediction struct {
@@ -198,7 +195,7 @@ type PestPrediction struct {
 	TenantID                 string          `json:"tenant_id" db:"tenant_id"`
 	FarmID                   string          `json:"farm_id" db:"farm_id"`
 	FieldID                  string          `json:"field_id" db:"field_id"`
-	PestSpeciesID            int64           `json:"pest_species_id" db:"pest_species_id"`
+	PestSpeciesID            string          `json:"pest_species_id" db:"pest_species_id"`
 	PestSpeciesUUID          string          `json:"pest_species_uuid" db:"pest_species_uuid"`
 	PredictionDate           time.Time       `json:"prediction_date" db:"prediction_date"`
 	RiskLevel                RiskLevel       `json:"risk_level" db:"risk_level"`
@@ -220,21 +217,18 @@ type PestPrediction struct {
 	Version                  int64           `json:"version" db:"version"`
 }
 
-// GetID returns the primary key.
-func (p *PestPrediction) GetID() int64 { return p.ID }
-
-// GetUUID returns the ULID identifier.
-func (p *PestPrediction) GetUUID() string { return p.UUID }
+// GetID returns the ULID identifier.
+func (p *PestPrediction) GetID() string { return p.ID }
 
 // PestAlert represents an early-warning alert for pest risk.
 type PestAlert struct {
 	models.BaseModel
 	TenantID        string      `json:"tenant_id" db:"tenant_id"`
-	PredictionID    int64       `json:"prediction_id" db:"prediction_id"`
+	PredictionID    string      `json:"prediction_id" db:"prediction_id"`
 	PredictionUUID  string      `json:"prediction_uuid" db:"prediction_uuid"`
 	FarmID          string      `json:"farm_id" db:"farm_id"`
 	FieldID         string      `json:"field_id" db:"field_id"`
-	PestSpeciesID   int64       `json:"pest_species_id" db:"pest_species_id"`
+	PestSpeciesID   string      `json:"pest_species_id" db:"pest_species_id"`
 	PestSpeciesUUID string      `json:"pest_species_uuid" db:"pest_species_uuid"`
 	RiskLevel       RiskLevel   `json:"risk_level" db:"risk_level"`
 	Status          AlertStatus `json:"status" db:"status"`
@@ -245,11 +239,8 @@ type PestAlert struct {
 	Version         int64       `json:"version" db:"version"`
 }
 
-// GetID returns the primary key.
-func (a *PestAlert) GetID() int64 { return a.ID }
-
-// GetUUID returns the ULID identifier.
-func (a *PestAlert) GetUUID() string { return a.UUID }
+// GetID returns the ULID identifier.
+func (a *PestAlert) GetID() string { return a.ID }
 
 // PestObservation records a field observation of pest activity.
 type PestObservation struct {
@@ -257,7 +248,7 @@ type PestObservation struct {
 	TenantID        string      `json:"tenant_id" db:"tenant_id"`
 	FarmID          string      `json:"farm_id" db:"farm_id"`
 	FieldID         string      `json:"field_id" db:"field_id"`
-	PestSpeciesID   int64       `json:"pest_species_id" db:"pest_species_id"`
+	PestSpeciesID   string      `json:"pest_species_id" db:"pest_species_id"`
 	PestSpeciesUUID string      `json:"pest_species_uuid" db:"pest_species_uuid"`
 	PestCount       int         `json:"pest_count" db:"pest_count"`
 	DamageLevel     DamageLevel `json:"damage_level" db:"damage_level"`
@@ -271,11 +262,8 @@ type PestObservation struct {
 	Version         int64       `json:"version" db:"version"`
 }
 
-// GetID returns the primary key.
-func (o *PestObservation) GetID() int64 { return o.ID }
-
-// GetUUID returns the ULID identifier.
-func (o *PestObservation) GetUUID() string { return o.UUID }
+// GetID returns the ULID identifier.
+func (o *PestObservation) GetID() string { return o.ID }
 
 // PestTreatment records an applied treatment.
 type PestTreatment struct {
@@ -283,9 +271,9 @@ type PestTreatment struct {
 	TenantID            string        `json:"tenant_id" db:"tenant_id"`
 	FarmID              string        `json:"farm_id" db:"farm_id"`
 	FieldID             string        `json:"field_id" db:"field_id"`
-	PestSpeciesID       int64         `json:"pest_species_id" db:"pest_species_id"`
+	PestSpeciesID       string        `json:"pest_species_id" db:"pest_species_id"`
 	PestSpeciesUUID     string        `json:"pest_species_uuid" db:"pest_species_uuid"`
-	PredictionID        *int64        `json:"prediction_id,omitempty" db:"prediction_id"`
+	PredictionID        *string       `json:"prediction_id,omitempty" db:"prediction_id"`
 	PredictionUUID      *string       `json:"prediction_uuid,omitempty" db:"prediction_uuid"`
 	TreatmentType       TreatmentType `json:"treatment_type" db:"treatment_type"`
 	ProductName         string        `json:"product_name" db:"product_name"`
@@ -299,17 +287,14 @@ type PestTreatment struct {
 	Version             int64         `json:"version" db:"version"`
 }
 
-// GetID returns the primary key.
-func (t *PestTreatment) GetID() int64 { return t.ID }
-
-// GetUUID returns the ULID identifier.
-func (t *PestTreatment) GetUUID() string { return t.UUID }
+// GetID returns the ULID identifier.
+func (t *PestTreatment) GetID() string { return t.ID }
 
 // PestRiskMap represents a geographic risk map for a region.
 type PestRiskMap struct {
 	models.BaseModel
 	TenantID        string    `json:"tenant_id" db:"tenant_id"`
-	PestSpeciesID   int64     `json:"pest_species_id" db:"pest_species_id"`
+	PestSpeciesID   string    `json:"pest_species_id" db:"pest_species_id"`
 	PestSpeciesUUID string    `json:"pest_species_uuid" db:"pest_species_uuid"`
 	Region          string    `json:"region" db:"region"`
 	OverallRiskLevel RiskLevel `json:"overall_risk_level" db:"overall_risk_level"`
@@ -319,11 +304,8 @@ type PestRiskMap struct {
 	Version         int64     `json:"version" db:"version"`
 }
 
-// GetID returns the primary key.
-func (m *PestRiskMap) GetID() int64 { return m.ID }
-
-// GetUUID returns the ULID identifier.
-func (m *PestRiskMap) GetUUID() string { return m.UUID }
+// GetID returns the ULID identifier.
+func (m *PestRiskMap) GetID() string { return m.ID }
 
 // ---------------------------------------------------------------------------
 // Request parameter structs

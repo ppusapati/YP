@@ -62,12 +62,12 @@ func (r *soilRepository) exec(ctx context.Context, sql string, args ...any) (int
 // ---------------------------------------------------------------------------
 
 func (r *soilRepository) CreateSoil(ctx context.Context, entity *domain.Soil) (*domain.Soil, error) {
-	entity.UUID = ulid.NewString()
+	entity.ID = ulid.NewString()
 	row := r.queryRow(ctx,
 		`INSERT INTO soil_samples (id, tenant_id, field_id, farm_id, notes, texture, is_active, created_by)
 		VALUES ($1,$2,'','',$3,$4,true,$5)
 		RETURNING id, tenant_id, notes, texture, is_active, created_by, created_at, version`,
-		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
+		entity.ID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	return scanSoil(row)
 }
@@ -98,12 +98,12 @@ func (r *soilRepository) UpdateSoil(ctx context.Context, entity *domain.Soil) (*
 		updated_by=$3, updated_at=NOW(), version=version+1
 		WHERE id=$4 AND tenant_id=$5 AND deleted_at IS NULL
 		RETURNING id, tenant_id, notes, texture, is_active, created_by, created_at, version`,
-		entity.Name, string(entity.Status), entity.UpdatedBy, entity.UUID, entity.TenantID,
+		entity.Name, string(entity.Status), entity.UpdatedBy, entity.ID, entity.TenantID,
 	)
 	e, err := scanSoil(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("SOIL_NOT_FOUND", fmt.Sprintf("soil not found: %s", entity.UUID))
+			return nil, errors.NotFound("SOIL_NOT_FOUND", fmt.Sprintf("soil not found: %s", entity.ID))
 		}
 		return nil, errors.InternalServer("DB_ERROR", err.Error())
 	}
@@ -139,7 +139,7 @@ func (r *soilRepository) CheckSoilNameExists(ctx context.Context, name, tenantID
 func scanSoil(row pgx.Row) (*domain.Soil, error) {
 	e := &domain.Soil{}
 	err := row.Scan(
-		&e.UUID, &e.TenantID, &e.Name, &e.Status,
+		&e.ID, &e.TenantID, &e.Name, &e.Status,
 		&e.IsActive, &e.CreatedBy, &e.CreatedAt, &e.Version,
 	)
 	return e, err
@@ -150,8 +150,8 @@ func scanSoil(row pgx.Row) (*domain.Soil, error) {
 // ---------------------------------------------------------------------------
 
 func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.SoilSample) (*domain.SoilSample, error) {
-	if sample.UUID == "" {
-		sample.UUID = ulid.NewString()
+	if sample.ID == "" {
+		sample.ID = ulid.NewString()
 	}
 	query := `
 		INSERT INTO soil_samples (
@@ -182,7 +182,7 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 	var result domain.SoilSample
 	var texture string
 	err := r.queryRow(ctx, query,
-		sample.UUID, sample.TenantID, sample.FieldID, sample.FarmID,
+		sample.ID, sample.TenantID, sample.FieldID, sample.FarmID,
 		sample.Latitude, sample.Longitude, sample.SampleDepthCm, sample.CollectionDate,
 		sample.PH, sample.OrganicMatterPct, sample.NitrogenPPM, sample.PhosphorusPPM, sample.PotassiumPPM,
 		sample.CalciumPPM, sample.MagnesiumPPM, sample.SulfurPPM, sample.IronPPM, sample.ManganesePPM,
@@ -190,7 +190,7 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 		string(sample.Texture), sample.BulkDensity, sample.CationExchangeCapacity, sample.ElectricalConductivity,
 		sample.CollectedBy, sample.Notes, sample.CreatedBy,
 	).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.Latitude, &result.Longitude,
 		&result.SampleDepthCm, &result.CollectionDate,
 		&result.PH, &result.OrganicMatterPct, &result.NitrogenPPM, &result.PhosphorusPPM, &result.PotassiumPPM,
@@ -224,7 +224,7 @@ func (r *soilRepository) GetSoilSampleByUUID(ctx context.Context, uuid, tenantID
 	var result domain.SoilSample
 	var texture string
 	err := r.queryRow(ctx, query, uuid, tenantID).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.Latitude, &result.Longitude,
 		&result.SampleDepthCm, &result.CollectionDate,
 		&result.PH, &result.OrganicMatterPct, &result.NitrogenPPM, &result.PhosphorusPPM, &result.PotassiumPPM,
@@ -288,7 +288,7 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 		var s domain.SoilSample
 		var texture string
 		if err := rows.Scan(
-			&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
+			&s.ID, &s.TenantID, &s.FieldID, &s.FarmID,
 			&s.Latitude, &s.Longitude,
 			&s.SampleDepthCm, &s.CollectionDate,
 			&s.PH, &s.OrganicMatterPct, &s.NitrogenPPM, &s.PhosphorusPPM, &s.PotassiumPPM,
@@ -332,8 +332,8 @@ func (r *soilRepository) DeleteSoilSample(ctx context.Context, uuid, tenantID st
 // ---------------------------------------------------------------------------
 
 func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domain.SoilAnalysis) (*domain.SoilAnalysis, error) {
-	if analysis.UUID == "" {
-		analysis.UUID = ulid.NewString()
+	if analysis.ID == "" {
+		analysis.ID = ulid.NewString()
 	}
 	query := `
 		INSERT INTO soil_analyses (
@@ -350,11 +350,11 @@ func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domai
 	var result domain.SoilAnalysis
 	var status, healthCat string
 	err := r.queryRow(ctx, query,
-		analysis.UUID, analysis.TenantID, analysis.SampleID, analysis.FieldID, analysis.FarmID,
+		analysis.ID, analysis.TenantID, analysis.SampleID, analysis.FieldID, analysis.FarmID,
 		string(analysis.Status), analysis.AnalysisType, analysis.SoilHealthScore, string(analysis.HealthCategory),
 		analysis.Recommendations, analysis.AnalyzedBy, analysis.AnalyzedAt, analysis.Summary, analysis.CreatedBy,
 	).Scan(
-		&result.UUID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
 		&status, &result.AnalysisType, &result.SoilHealthScore, &healthCat,
 		&result.Recommendations, &result.AnalyzedBy, &result.AnalyzedAt, &result.Summary,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -380,7 +380,7 @@ func (r *soilRepository) GetSoilAnalysisByUUID(ctx context.Context, uuid, tenant
 	var result domain.SoilAnalysis
 	var status, healthCat string
 	err := r.queryRow(ctx, query, uuid, tenantID).Scan(
-		&result.UUID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
 		&status, &result.AnalysisType, &result.SoilHealthScore, &healthCat,
 		&result.Recommendations, &result.AnalyzedBy, &result.AnalyzedAt, &result.Summary,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -438,7 +438,7 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 		var a domain.SoilAnalysis
 		var status, healthCat string
 		if err := rows.Scan(
-			&a.UUID, &a.TenantID, &a.SampleID, &a.FieldID, &a.FarmID,
+			&a.ID, &a.TenantID, &a.SampleID, &a.FieldID, &a.FarmID,
 			&status, &a.AnalysisType, &a.SoilHealthScore, &healthCat,
 			&a.Recommendations, &a.AnalyzedBy, &a.AnalyzedAt, &a.Summary,
 			&a.IsActive, &a.CreatedBy, &a.CreatedAt, &a.UpdatedBy, &a.UpdatedAt, &a.Version,
@@ -477,8 +477,8 @@ func (r *soilRepository) UpdateSoilAnalysisStatus(ctx context.Context, uuid stri
 // ---------------------------------------------------------------------------
 
 func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.SoilMap) (*domain.SoilMap, error) {
-	if soilMap.UUID == "" {
-		soilMap.UUID = ulid.NewString()
+	if soilMap.ID == "" {
+		soilMap.ID = ulid.NewString()
 	}
 	query := `
 		INSERT INTO soil_maps (
@@ -493,11 +493,11 @@ func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.Soil
 
 	var result domain.SoilMap
 	err := r.queryRow(ctx, query,
-		soilMap.UUID, soilMap.TenantID, soilMap.FieldID, soilMap.FarmID, soilMap.MapType,
+		soilMap.ID, soilMap.TenantID, soilMap.FieldID, soilMap.FarmID, soilMap.MapType,
 		soilMap.CRS, soilMap.Resolution, soilMap.BboxMinLat, soilMap.BboxMinLng, soilMap.BboxMaxLat, soilMap.BboxMaxLng,
 		soilMap.GeneratedBy, soilMap.GeneratedAt, soilMap.CreatedBy,
 	).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
 		&result.CRS, &result.Resolution, &result.BboxMinLat, &result.BboxMinLng, &result.BboxMaxLat, &result.BboxMaxLng,
 		&result.GeneratedBy, &result.GeneratedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -523,7 +523,7 @@ func (r *soilRepository) GetSoilMapByFieldAndType(ctx context.Context, fieldID, 
 
 	var result domain.SoilMap
 	err := r.queryRow(ctx, query, fieldID, tenantID, mapType).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
 		&result.CRS, &result.Resolution, &result.BboxMinLat, &result.BboxMinLng, &result.BboxMaxLat, &result.BboxMaxLng,
 		&result.GeneratedBy, &result.GeneratedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -543,8 +543,8 @@ func (r *soilRepository) GetSoilMapByFieldAndType(ctx context.Context, fieldID, 
 // ---------------------------------------------------------------------------
 
 func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domain.SoilNutrient) (*domain.SoilNutrient, error) {
-	if nutrient.UUID == "" {
-		nutrient.UUID = ulid.NewString()
+	if nutrient.ID == "" {
+		nutrient.ID = ulid.NewString()
 	}
 	query := `
 		INSERT INTO soil_nutrients (
@@ -558,11 +558,11 @@ func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domai
 	var result domain.SoilNutrient
 	var level string
 	err := r.queryRow(ctx, query,
-		nutrient.UUID, nutrient.TenantID, nutrient.SampleID, nutrient.NutrientName,
+		nutrient.ID, nutrient.TenantID, nutrient.SampleID, nutrient.NutrientName,
 		nutrient.ValuePPM, string(nutrient.Level), nutrient.OptimalMin, nutrient.OptimalMax,
 		nutrient.Unit, nutrient.CreatedBy,
 	).Scan(
-		&result.UUID, &result.TenantID, &result.SampleID, &result.NutrientName,
+		&result.ID, &result.TenantID, &result.SampleID, &result.NutrientName,
 		&result.ValuePPM, &level, &result.OptimalMin, &result.OptimalMax, &result.Unit,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt,
 	)
@@ -596,7 +596,7 @@ func (r *soilRepository) ListNutrientsBySample(ctx context.Context, sampleID, te
 		var n domain.SoilNutrient
 		var level string
 		if err := rows.Scan(
-			&n.UUID, &n.TenantID, &n.SampleID, &n.NutrientName,
+			&n.ID, &n.TenantID, &n.SampleID, &n.NutrientName,
 			&n.ValuePPM, &level, &n.OptimalMin, &n.OptimalMax, &n.Unit,
 			&n.IsActive, &n.CreatedBy, &n.CreatedAt,
 		); err != nil {
@@ -629,8 +629,8 @@ func (r *soilRepository) BatchCreateNutrients(ctx context.Context, nutrients []d
 // ---------------------------------------------------------------------------
 
 func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domain.SoilHealthScore) (*domain.SoilHealthScore, error) {
-	if score.UUID == "" {
-		score.UUID = ulid.NewString()
+	if score.ID == "" {
+		score.ID = ulid.NewString()
 	}
 	query := `
 		INSERT INTO soil_health_scores (
@@ -646,11 +646,11 @@ func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domai
 	var result domain.SoilHealthScore
 	var category string
 	err := r.queryRow(ctx, query,
-		score.UUID, score.TenantID, score.FieldID, score.FarmID,
+		score.ID, score.TenantID, score.FieldID, score.FarmID,
 		score.OverallScore, string(score.Category), score.PhysicalScore, score.ChemicalScore, score.BiologicalScore,
 		score.Recommendations, score.AssessedAt, score.CreatedBy,
 	).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.OverallScore, &category, &result.PhysicalScore, &result.ChemicalScore, &result.BiologicalScore,
 		&result.Recommendations, &result.AssessedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -678,7 +678,7 @@ func (r *soilRepository) GetLatestSoilHealthScore(ctx context.Context, fieldID, 
 	var result domain.SoilHealthScore
 	var category string
 	err := r.queryRow(ctx, query, fieldID, tenantID).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.OverallScore, &category, &result.PhysicalScore, &result.ChemicalScore, &result.BiologicalScore,
 		&result.Recommendations, &result.AssessedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -710,20 +710,20 @@ func (r *soilRepository) UpdateSoilHealthScore(ctx context.Context, score *domai
 	var result domain.SoilHealthScore
 	var category string
 	err := r.queryRow(ctx, query,
-		score.UUID, score.TenantID,
+		score.ID, score.TenantID,
 		score.OverallScore, string(score.Category),
 		score.PhysicalScore, score.ChemicalScore, score.BiologicalScore,
 		score.Recommendations, score.AssessedAt,
 		score.UpdatedBy,
 	).Scan(
-		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.ID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.OverallScore, &category, &result.PhysicalScore, &result.ChemicalScore, &result.BiologicalScore,
 		&result.Recommendations, &result.AssessedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("HEALTH_SCORE_NOT_FOUND", fmt.Sprintf("soil health score %s not found", score.UUID))
+			return nil, errors.NotFound("HEALTH_SCORE_NOT_FOUND", fmt.Sprintf("soil health score %s not found", score.ID))
 		}
 		r.log.Errorw("msg", "UpdateSoilHealthScore failed", "error", err)
 		return nil, errors.InternalServer("UPDATE_HEALTH_SCORE_FAILED", fmt.Sprintf("failed to update soil health score: %v", err))
@@ -767,7 +767,7 @@ func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID,
 		var s domain.SoilHealthScore
 		var category string
 		if err := rows.Scan(
-			&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
+			&s.ID, &s.TenantID, &s.FieldID, &s.FarmID,
 			&s.OverallScore, &category, &s.PhysicalScore, &s.ChemicalScore, &s.BiologicalScore,
 			&s.Recommendations, &s.AssessedAt,
 			&s.IsActive, &s.CreatedBy, &s.CreatedAt, &s.UpdatedBy, &s.UpdatedAt, &s.Version,

@@ -316,7 +316,7 @@ func soilSampleToProto(s *domain.SoilSample) *pb.SoilSample {
 		return nil
 	}
 	return &pb.SoilSample{
-		Id:       s.UUID,
+		Id:       s.ID,
 		TenantId: s.TenantID,
 		FieldId:  s.FieldID,
 		FarmId:   s.FarmID,
@@ -384,7 +384,7 @@ func soilSampleFromCreateRequest(req *pb.CreateSoilSampleRequest, uuid, userID s
 		Notes:                  req.Notes,
 		Version:                1,
 	}
-	s.UUID = uuid
+	s.ID = uuid
 	s.CreatedBy = userID
 	s.IsActive = true
 
@@ -412,7 +412,7 @@ func soilAnalysisToProto(a *domain.SoilAnalysis) *pb.SoilAnalysis {
 		return nil
 	}
 	return &pb.SoilAnalysis{
-		Id:              a.UUID,
+		Id:              a.ID,
 		TenantId:        a.TenantID,
 		SampleId:        a.SampleID,
 		FieldId:         a.FieldID,
@@ -448,7 +448,7 @@ func soilMapToProto(m *domain.SoilMap) *pb.SoilMap {
 		return nil
 	}
 	return &pb.SoilMap{
-		Id:         m.UUID,
+		Id:         m.ID,
 		TenantId:   m.TenantID,
 		FieldId:    m.FieldID,
 		FarmId:     m.FarmID,
@@ -481,7 +481,7 @@ func soilNutrientToProto(n *domain.SoilNutrient) *pb.SoilNutrient {
 		return nil
 	}
 	return &pb.SoilNutrient{
-		Id:           n.UUID,
+		Id:           n.ID,
 		TenantId:     n.TenantID,
 		SampleId:     n.SampleID,
 		NutrientName: n.NutrientName,
@@ -511,7 +511,7 @@ func soilHealthScoreToProto(h *domain.SoilHealthScore) *pb.SoilHealthScore {
 		return nil
 	}
 	return &pb.SoilHealthScore{
-		Id:              h.UUID,
+		Id:              h.ID,
 		TenantId:        h.TenantID,
 		FieldId:         h.FieldID,
 		FarmId:          h.FarmID,

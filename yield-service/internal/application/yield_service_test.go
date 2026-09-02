@@ -65,9 +65,8 @@ func newMockYieldRepo() *mockYieldRepo {
 }
 
 func (m *mockYieldRepo) CreatePrediction(_ context.Context, p *domain.YieldPrediction) (*domain.YieldPrediction, error) {
-	p.UUID = "prediction-uuid-001"
-	p.ID = 1
-	m.predictions[p.UUID] = p
+	p.ID = "prediction-uuid-001"
+	m.predictions[p.ID] = p
 	return p, nil
 }
 
@@ -90,9 +89,8 @@ func (m *mockYieldRepo) ListPredictions(_ context.Context, params domain.ListPre
 }
 
 func (m *mockYieldRepo) CreateYieldRecord(_ context.Context, r *domain.YieldRecord) (*domain.YieldRecord, error) {
-	r.UUID = "record-uuid-001"
-	r.ID = 1
-	m.yieldRecords[r.UUID] = r
+	r.ID = "record-uuid-001"
+	m.yieldRecords[r.ID] = r
 	return r, nil
 }
 
@@ -107,9 +105,8 @@ func (m *mockYieldRepo) ListYieldRecords(_ context.Context, params domain.YieldH
 }
 
 func (m *mockYieldRepo) CreateHarvestPlan(_ context.Context, p *domain.HarvestPlan) (*domain.HarvestPlan, error) {
-	p.UUID = "plan-uuid-001"
-	p.ID = 1
-	m.harvestPlans[p.UUID] = p
+	p.ID = "plan-uuid-001"
+	m.harvestPlans[p.ID] = p
 	return p, nil
 }
 
@@ -276,7 +273,7 @@ func TestPredictYield_HappyPath(t *testing.T) {
 	assert.Equal(t, domain.PredictionModelVersion, created.PredictionModelVersion)
 	assert.Greater(t, created.PredictedYieldKgPerHectare, 0.0)
 	assert.Greater(t, created.PredictionConfidencePct, 0.0)
-	assert.Equal(t, "prediction-uuid-001", created.UUID)
+	assert.Equal(t, "prediction-uuid-001", created.ID)
 
 	// Event published.
 	assert.Len(t, pub.published, 1)
@@ -383,7 +380,7 @@ func TestGetPrediction_HappyPath(t *testing.T) {
 		CropID:  "wheat",
 	}
 	repo.predictions["pred-001"].TenantID = "tenant-1"
-	repo.predictions["pred-001"].UUID = "pred-001"
+	repo.predictions["pred-001"].ID = "pred-001"
 
 	pred, err := svc.GetPrediction(ctx, "pred-001")
 	require.NoError(t, err)
@@ -429,10 +426,10 @@ func TestListPredictions_HappyPath(t *testing.T) {
 
 	repo.predictions["p1"] = &domain.YieldPrediction{FarmID: "farm-001"}
 	repo.predictions["p1"].TenantID = "tenant-1"
-	repo.predictions["p1"].UUID = "p1"
+	repo.predictions["p1"].ID = "p1"
 	repo.predictions["p2"] = &domain.YieldPrediction{FarmID: "farm-001"}
 	repo.predictions["p2"].TenantID = "tenant-1"
-	repo.predictions["p2"].UUID = "p2"
+	repo.predictions["p2"].ID = "p2"
 
 	predictions, total, err := svc.ListPredictions(ctx, domain.ListPredictionsParams{})
 	require.NoError(t, err)
@@ -472,7 +469,7 @@ func TestRecordYield_HappyPath(t *testing.T) {
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Equal(t, 600.0, created.ProfitPerHectare)
-	assert.Equal(t, "record-uuid-001", created.UUID)
+	assert.Equal(t, "record-uuid-001", created.ID)
 
 	assert.Len(t, pub.published, 1)
 }
@@ -535,7 +532,7 @@ func TestGetYieldHistory_HappyPath(t *testing.T) {
 
 	repo.yieldRecords["r1"] = &domain.YieldRecord{FarmID: "farm-001"}
 	repo.yieldRecords["r1"].TenantID = "tenant-1"
-	repo.yieldRecords["r1"].UUID = "r1"
+	repo.yieldRecords["r1"].ID = "r1"
 
 	records, total, err := svc.GetYieldHistory(ctx, domain.YieldHistoryParams{})
 	require.NoError(t, err)
@@ -571,7 +568,7 @@ func TestCreateHarvestPlan_HappyPath(t *testing.T) {
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Equal(t, "HARVEST_PLAN_STATUS_DRAFT", created.Status)
-	assert.Equal(t, "plan-uuid-001", created.UUID)
+	assert.Equal(t, "plan-uuid-001", created.ID)
 
 	assert.Len(t, pub.published, 1)
 }
@@ -637,7 +634,7 @@ func TestGetHarvestPlan_HappyPath(t *testing.T) {
 		CropID: "wheat",
 	}
 	repo.harvestPlans["plan-001"].TenantID = "tenant-1"
-	repo.harvestPlans["plan-001"].UUID = "plan-001"
+	repo.harvestPlans["plan-001"].ID = "plan-001"
 
 	plan, err := svc.GetHarvestPlan(ctx, "plan-001")
 	require.NoError(t, err)
@@ -682,7 +679,7 @@ func TestListHarvestPlans_HappyPath(t *testing.T) {
 
 	repo.harvestPlans["hp1"] = &domain.HarvestPlan{FarmID: "farm-001"}
 	repo.harvestPlans["hp1"].TenantID = "tenant-1"
-	repo.harvestPlans["hp1"].UUID = "hp1"
+	repo.harvestPlans["hp1"].ID = "hp1"
 
 	plans, total, err := svc.ListHarvestPlans(ctx, domain.ListHarvestPlansParams{})
 	require.NoError(t, err)
