@@ -160,7 +160,7 @@ impl DemoWeights {
 /// architecture. Only available when compiled with the `onnx` feature.
 #[cfg(feature = "onnx")]
 struct OnnxModel {
-    session: ort::session::Session,
+    session: std::sync::Mutex<ort::session::Session>,
     num_classes: usize,
     num_severity_classes: usize,
     input_size: u32,
@@ -181,39 +181,37 @@ impl OnnxModel {
             .commit_from_file(path)
             .map_err(|e| ModelError::LoadError(format!("Failed to load ONNX model from '{path}': {e}")))?;
 
-        Ok(Self { session, num_classes, num_severity_classes, input_size })
+        Ok(Self { session: std::sync::Mutex::new(session), num_classes, num_severity_classes, input_size })
     }
 
     fn forward(&self, input: &[f32]) -> Result<ModelOutput, ModelError> {
         let size = self.input_size as usize;
-        let input_array = ndarray::Array4::from_shape_vec(
-            (1, 3, size, size),
-            input.to_vec(),
-        ).map_err(|e| ModelError::InferenceError(format!("Input shape error: {e}")))?;
+        let input_tensor = ort::value::Tensor::from_array(
+            ([1usize, 3, size, size], input.to_vec()),
+        ).map_err(|e| ModelError::InferenceError(format!("Failed to create input tensor: {e}")))?;
 
-        let outputs = self.session.run(
-            ort::inputs![input_array]
-                .map_err(|e| ModelError::InferenceError(format!("Failed to create inputs: {e}")))?,
-        ).map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
+        let mut session = self.session.lock()
+            .map_err(|e| ModelError::InferenceError(format!("Session lock poisoned: {e}")))?;
+        let outputs = session.run(ort::inputs![input_tensor])
+            .map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
 
         // First output: classification logits [1, num_classes]
-        let cls_tensor = outputs[0]
+        let (_, cls_data) = outputs[0]
             .try_extract_tensor::<f32>()
             .map_err(|e| ModelError::InferenceError(format!("Failed to extract classification output: {e}")))?;
-        let classification_logits: Vec<f32> = cls_tensor.iter().copied().take(self.num_classes).collect();
+        let classification_logits: Vec<f32> = cls_data.iter().copied().take(self.num_classes).collect();
 
         // Second output: severity logits [1, num_classes, num_severity_classes]
         let severity_logits = if outputs.len() > 1 {
-            let sev_tensor = outputs[1]
+            let (_, sev_data) = outputs[1]
                 .try_extract_tensor::<f32>()
                 .map_err(|e| ModelError::InferenceError(format!("Failed to extract severity output: {e}")))?;
-            let flat: Vec<f32> = sev_tensor.iter().copied().collect();
             let mut sev = Vec::with_capacity(self.num_classes);
             for c in 0..self.num_classes {
                 let start = c * self.num_severity_classes;
                 let end = start + self.num_severity_classes;
-                if end <= flat.len() {
-                    sev.push(flat[start..end].to_vec());
+                if end <= sev_data.len() {
+                    sev.push(sev_data[start..end].to_vec());
                 } else {
                     // Pad with zeros if model output is smaller than expected
                     sev.push(vec![0.0; self.num_severity_classes]);

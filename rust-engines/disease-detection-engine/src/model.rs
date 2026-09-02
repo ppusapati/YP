@@ -127,7 +127,7 @@ impl DemoWeights {
 /// Only available when compiled with the `onnx` feature.
 #[cfg(feature = "onnx")]
 struct OnnxModel {
-    session: ort::session::Session,
+    session: std::sync::Mutex<ort::session::Session>,
     num_classes: usize,
     input_size: u32,
     segmentation_enabled: bool,
@@ -150,7 +150,7 @@ impl OnnxModel {
             .map_err(|e| ModelError::LoadError(format!("Failed to load ONNX model from '{path}': {e}")))?;
 
         Ok(Self {
-            session,
+            session: std::sync::Mutex::new(session),
             num_classes,
             input_size,
             segmentation_enabled,
@@ -161,32 +161,30 @@ impl OnnxModel {
     /// and optional segmentation logits.
     fn forward(&self, input: &[f32]) -> Result<ModelOutput, ModelError> {
         let size = self.input_size as usize;
-        let input_array = ndarray::Array4::from_shape_vec(
-            (1, 3, size, size),
-            input.to_vec(),
-        ).map_err(|e| ModelError::InferenceError(format!("Input shape error: {e}")))?;
+        let input_tensor = ort::value::Tensor::from_array(
+            ([1usize, 3, size, size], input.to_vec()),
+        ).map_err(|e| ModelError::InferenceError(format!("Failed to create input tensor: {e}")))?;
 
-        let outputs = self.session.run(
-            ort::inputs![input_array]
-                .map_err(|e| ModelError::InferenceError(format!("Failed to create inputs: {e}")))?,
-        ).map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
+        let mut session = self.session.lock()
+            .map_err(|e| ModelError::InferenceError(format!("Session lock poisoned: {e}")))?;
+        let outputs = session.run(ort::inputs![input_tensor])
+            .map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
 
         // First output: classification logits [1, num_classes]
-        let cls_tensor = outputs[0]
+        let (_, cls_data) = outputs[0]
             .try_extract_tensor::<f32>()
             .map_err(|e| ModelError::InferenceError(format!("Failed to extract classification output: {e}")))?;
-        let classification_logits: Vec<f32> = cls_tensor.iter().copied().take(self.num_classes).collect();
+        let classification_logits: Vec<f32> = cls_data.iter().copied().take(self.num_classes).collect();
 
         // Second output (optional): segmentation logits [1, 1, H, W]
         let (segmentation_logits, segmentation_size) = if self.segmentation_enabled && outputs.len() > 1 {
-            let seg_tensor = outputs[1]
+            let (seg_shape, seg_data) = outputs[1]
                 .try_extract_tensor::<f32>()
                 .map_err(|e| ModelError::InferenceError(format!("Failed to extract segmentation output: {e}")))?;
-            let shape = seg_tensor.shape();
-            let seg_h = if shape.len() >= 3 { shape[shape.len() - 2] } else { size };
-            let seg_w = if shape.len() >= 2 { shape[shape.len() - 1] } else { size };
-            let seg_data: Vec<f32> = seg_tensor.iter().copied().collect();
-            (Some(seg_data), Some((seg_h, seg_w)))
+            let dims: &[i64] = &*seg_shape;
+            let seg_h = if dims.len() >= 3 { dims[dims.len() - 2] as usize } else { size };
+            let seg_w = if dims.len() >= 2 { dims[dims.len() - 1] as usize } else { size };
+            (Some(seg_data.to_vec()), Some((seg_h, seg_w)))
         } else {
             (None, None)
         };

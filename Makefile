@@ -1,4 +1,4 @@
-.PHONY: all build test lint vet proto clean help
+.PHONY: all build test lint vet proto clean help api-docs
 
 SERVICES := farm-service field-service crop-service sensor-service \
             irrigation-service soil-service yield-service \
@@ -48,6 +48,9 @@ clean: ## Remove build artifacts
 	@for svc in $(SERVICES); do \
 		rm -f $$svc/cmd/server/server; \
 	done
+
+api-docs: ## Regenerate OpenAPI specs from proto definitions
+	./scripts/generate-api-docs.sh
 
 docker-%: ## Build Docker image for a service (e.g., make docker-farm-service)
 	docker build --build-arg SERVICE=$* -t yieldpoint/$*:dev .

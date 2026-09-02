@@ -88,7 +88,7 @@ impl DemoWeights {
 /// Only available when compiled with the `onnx` feature.
 #[cfg(feature = "onnx")]
 struct OnnxModel {
-    session: ort::session::Session,
+    session: std::sync::Mutex<ort::session::Session>,
     num_classes: usize,
     input_size: u32,
     with_bbox: bool,
@@ -109,35 +109,33 @@ impl OnnxModel {
             .commit_from_file(path)
             .map_err(|e| ModelError::LoadError(format!("Failed to load ONNX model from '{path}': {e}")))?;
 
-        Ok(Self { session, num_classes, input_size, with_bbox })
+        Ok(Self { session: std::sync::Mutex::new(session), num_classes, input_size, with_bbox })
     }
 
     fn forward(&self, input: &[f32]) -> Result<ModelOutput, ModelError> {
         let size = self.input_size as usize;
-        let input_array = ndarray::Array4::from_shape_vec(
-            (1, 3, size, size),
-            input.to_vec(),
-        ).map_err(|e| ModelError::InferenceError(format!("Input shape error: {e}")))?;
+        let input_tensor = ort::value::Tensor::from_array(
+            ([1usize, 3, size, size], input.to_vec()),
+        ).map_err(|e| ModelError::InferenceError(format!("Failed to create input tensor: {e}")))?;
 
-        let outputs = self.session.run(
-            ort::inputs![input_array]
-                .map_err(|e| ModelError::InferenceError(format!("Failed to create inputs: {e}")))?,
-        ).map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
+        let mut session = self.session.lock()
+            .map_err(|e| ModelError::InferenceError(format!("Session lock poisoned: {e}")))?;
+        let outputs = session.run(ort::inputs![input_tensor])
+            .map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
 
         // First output: classification logits [1, num_classes]
-        let cls_tensor = outputs[0]
+        let (_, cls_data) = outputs[0]
             .try_extract_tensor::<f32>()
             .map_err(|e| ModelError::InferenceError(format!("Failed to extract classification output: {e}")))?;
-        let classification_logits: Vec<f32> = cls_tensor.iter().copied().take(self.num_classes).collect();
+        let classification_logits: Vec<f32> = cls_data.iter().copied().take(self.num_classes).collect();
 
         // Second output (optional): bounding box [1, 4]
         let bbox = if self.with_bbox && outputs.len() > 1 {
-            let bbox_tensor = outputs[1]
+            let (_, bbox_data) = outputs[1]
                 .try_extract_tensor::<f32>()
                 .map_err(|e| ModelError::InferenceError(format!("Failed to extract bbox output: {e}")))?;
-            let vals: Vec<f32> = bbox_tensor.iter().copied().take(4).collect();
-            if vals.len() == 4 {
-                Some([vals[0], vals[1], vals[2], vals[3]])
+            if bbox_data.len() >= 4 {
+                Some([bbox_data[0], bbox_data[1], bbox_data[2], bbox_data[3]])
             } else {
                 None
             }
