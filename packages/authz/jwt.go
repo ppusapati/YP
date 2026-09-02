@@ -101,6 +101,26 @@ func getJWTSecret() ([]byte, error) {
 	return []byte(secret), nil
 }
 
+// SignJWT creates a signed JWT string from the given claims.
+func SignJWT(claims *CustomClaims) (string, error) {
+	secret, err := getJWTSecret()
+	if err != nil {
+		return "", fmt.Errorf("failed to get JWT secret: %w", err)
+	}
+
+	if jwtConfig != nil {
+		jwtConfig.mu.RLock()
+		iss := jwtConfig.issuer
+		jwtConfig.mu.RUnlock()
+		if iss != "" && claims.Issuer == "" {
+			claims.Issuer = iss
+		}
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(secret)
+}
+
 // ParseJWT parses the token and returns claims.
 // It pins the signing method to HS256 and validates issuer, audience,
 // expiry, and required claims (sub, tenant_id, role).

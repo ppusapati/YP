@@ -1,6 +1,8 @@
 # YieldPoint — Local Development Stack
 # Usage: docker compose up -d
-# Ports: postgres 5432, kafka 9092, Go services 8081-8091, ai-gateway 50051
+# Ports: api-gateway 8080, postgres 5432, kafka 9092, ai-gateway 50051
+# All client traffic enters through the api-gateway on port 8080.
+# Individual service ports (8081-8092) are still exposed for debugging.
 
 x-go-service: &go-service
   build:
@@ -71,6 +73,30 @@ services:
       retries: 10
     volumes:
       - kafkadata:/var/lib/kafka/data
+
+  # ── API Gateway (single entry point) ───────────────────────────────────────
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    depends_on:
+      farm-service:
+        condition: service_healthy
+      field-service:
+        condition: service_healthy
+      crop-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   # ── Go Agriculture Services ───────────────────────────────────────────────
 
@@ -247,6 +273,18 @@ services:
       FARM_SERVICE_URL: http://farm-service:8080
       CROP_SERVICE_URL: http://crop-service:8080
       TRACEABILITY_SERVICE_URL: http://traceability-service:8080
+
+  auth-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: auth-service
+    ports:
+      - "8093:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${AUTH_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/auth_service?sslmode=disable}
 
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 

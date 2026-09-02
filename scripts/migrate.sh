@@ -22,6 +22,7 @@ SERVICES=(
   satellite-service
   traceability-service
   commerce-service
+  auth-service
 )
 
 DB_USER="${POSTGRES_USER:-yieldpoint}"

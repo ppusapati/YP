@@ -1,0 +1,95 @@
+{
+	admin off
+	auto_https off
+}
+
+:{$GATEWAY_PORT:8080} {
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+
+	# ── CORS ────────────────────────────────────────────────────────────────
+	header {
+		Access-Control-Allow-Origin  {$CORS_ORIGIN:*}
+		Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+		Access-Control-Allow-Headers "Authorization, Content-Type, Connect-Protocol-Version, Connect-Timeout-Ms, Grpc-Timeout, X-Grpc-Web, X-User-Agent, X-Tenant-ID"
+		Access-Control-Expose-Headers "Grpc-Status, Grpc-Message, Grpc-Status-Details-Bin"
+		Access-Control-Max-Age 86400
+	}
+
+	@options method OPTIONS
+	handle @options {
+		respond 204
+	}
+
+	# ── Health probe ────────────────────────────────────────────────────────
+	handle /health {
+		respond `{"status":"ok","service":"api-gateway"}` 200
+	}
+
+	handle /ready {
+		respond `{"status":"ready","service":"api-gateway"}` 200
+	}
+
+	# ── ConnectRPC service routing ──────────────────────────────────────────
+
+	handle /agriculture.farm.v1.FarmService/* {
+		reverse_proxy farm-service:8080
+	}
+
+	handle /agriculture.field.v1.FieldService/* {
+		reverse_proxy field-service:8080
+	}
+
+	handle /agriculture.crop.v1.CropService/* {
+		reverse_proxy crop-service:8080
+	}
+
+	handle /agriculture.sensor.v1.SensorService/* {
+		reverse_proxy sensor-service:8080
+	}
+
+	handle /agriculture.irrigation.v1.IrrigationService/* {
+		reverse_proxy irrigation-service:8080
+	}
+
+	handle /agriculture.soil.v1.SoilService/* {
+		reverse_proxy soil-service:8080
+	}
+
+	handle /agriculture.yield.v1.YieldService/* {
+		reverse_proxy yield-service:8080
+	}
+
+	handle /agriculture.pest.v1.PestPredictionService/* {
+		reverse_proxy pest-prediction-service:8080
+	}
+
+	handle /agriculture.diagnosis.v1.PlantDiagnosisService/* {
+		reverse_proxy plant-diagnosis-service:8080
+	}
+
+	handle /agriculture.satellite.v1.SatelliteService/* {
+		reverse_proxy satellite-service:8080
+	}
+
+	handle /agriculture.traceability.v1.TraceabilityService/* {
+		reverse_proxy traceability-service:8080
+	}
+
+	handle /agriculture.commerce.v1.CommerceService/* {
+		reverse_proxy commerce-service:8080
+	}
+
+	# ── Auth endpoints ──────────────────────────────────────────────────────
+	handle /auth/* {
+		reverse_proxy auth-service:8080
+	}
+
+	# ── Catch-all ───────────────────────────────────────────────────────────
+	handle {
+		respond `{"error":"not_found","message":"no route matched"}` 404
+	}
+}
