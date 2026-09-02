@@ -35,4 +35,17 @@ type TraceabilityService interface {
 
 	// Compliance
 	GenerateComplianceReport(ctx context.Context, input domain.GenerateComplianceReportInput) (*domain.ComplianceReport, error)
+	GetComplianceReport(ctx context.Context, id string) (*domain.ComplianceReport, error)
+	ListComplianceReports(ctx context.Context, filter domain.ListComplianceReportsFilter) ([]domain.ComplianceReport, int32, error)
+
+	// Quality Checkpoints
+	CreateQualityCheckpoint(ctx context.Context, input domain.CreateQualityCheckpointInput) (*domain.QualityCheckpoint, error)
+	GetQualityCheckpoint(ctx context.Context, id string) (*domain.QualityCheckpoint, error)
+	ListQualityCheckpoints(ctx context.Context, filter domain.ListQualityCheckpointsFilter) ([]domain.QualityCheckpoint, int32, error)
+
+	// Record Update
+	UpdateRecord(ctx context.Context, id string, input domain.UpdateRecordInput) (*domain.TraceabilityRecord, error)
+
+	// Certification Revocation
+	RevokeCertification(ctx context.Context, id, reason string) (*domain.Certification, error)
 }

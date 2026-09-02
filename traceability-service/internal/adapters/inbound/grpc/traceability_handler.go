@@ -317,6 +317,181 @@ func (h *TraceabilityHandler) GenerateComplianceReport(ctx context.Context, req 
 	return connect.NewResponse(&pb.GenerateComplianceReportResponse{Report: complianceReportToProto(report)}), nil
 }
 
+// --- Quality Checkpoints ---
+
+// CreateQualityCheckpoint handles creation of a quality checkpoint.
+func (h *TraceabilityHandler) CreateQualityCheckpoint(ctx context.Context, req *connect.Request[pb.CreateQualityCheckpointRequest]) (*connect.Response[pb.CreateQualityCheckpointResponse], error) {
+	inspectedAt := time.Now()
+	if req.Msg.GetInspectedAt() != nil {
+		inspectedAt = req.Msg.GetInspectedAt().AsTime()
+	}
+
+	var supplyChainEventID *string
+	if v := req.Msg.GetSupplyChainEventId(); v != "" {
+		supplyChainEventID = &v
+	}
+	var measurementValue *float64
+	if v := req.Msg.GetMeasurementValue(); v != 0 {
+		measurementValue = &v
+	}
+	var measurementUnit *string
+	if v := req.Msg.GetMeasurementUnit(); v != "" {
+		measurementUnit = &v
+	}
+	var minThreshold *float64
+	if v := req.Msg.GetMinThreshold(); v != 0 {
+		minThreshold = &v
+	}
+	var maxThreshold *float64
+	if v := req.Msg.GetMaxThreshold(); v != 0 {
+		maxThreshold = &v
+	}
+	var notes *string
+	if v := req.Msg.GetNotes(); v != "" {
+		notes = &v
+	}
+
+	input := domain.CreateQualityCheckpointInput{
+		RecordID:           req.Msg.GetRecordId(),
+		SupplyChainEventID: supplyChainEventID,
+		CheckType:          qualityCheckTypeProtoToDomain(req.Msg.GetCheckType()),
+		Result:             qualityCheckResultProtoToDomain(req.Msg.GetResult()),
+		InspectorName:      req.Msg.GetInspectorName(),
+		InspectedAt:        inspectedAt,
+		Location:           req.Msg.GetLocation(),
+		MeasurementValue:   measurementValue,
+		MeasurementUnit:    measurementUnit,
+		MinThreshold:       minThreshold,
+		MaxThreshold:       maxThreshold,
+		Notes:              notes,
+		EvidenceURLs:       req.Msg.GetEvidenceUrls(),
+		Metadata:           req.Msg.GetMetadata(),
+	}
+	checkpoint, err := h.svc.CreateQualityCheckpoint(ctx, input)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.CreateQualityCheckpointResponse{Checkpoint: qualityCheckpointToProto(checkpoint)}), nil
+}
+
+// GetQualityCheckpoint retrieves a quality checkpoint by ID.
+func (h *TraceabilityHandler) GetQualityCheckpoint(ctx context.Context, req *connect.Request[pb.GetQualityCheckpointRequest]) (*connect.Response[pb.GetQualityCheckpointResponse], error) {
+	checkpoint, err := h.svc.GetQualityCheckpoint(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.GetQualityCheckpointResponse{Checkpoint: qualityCheckpointToProto(checkpoint)}), nil
+}
+
+// ListQualityCheckpoints lists quality checkpoints with filtering.
+func (h *TraceabilityHandler) ListQualityCheckpoints(ctx context.Context, req *connect.Request[pb.ListQualityCheckpointsRequest]) (*connect.Response[pb.ListQualityCheckpointsResponse], error) {
+	filter := domain.ListQualityCheckpointsFilter{
+		RecordID:   req.Msg.GetRecordId(),
+		PageSize:   req.Msg.GetPageSize(),
+		PageOffset: pageTokenToOffset(req.Msg.GetPageToken()),
+	}
+	if req.Msg.GetCheckType() != pb.QualityCheckType_QUALITY_CHECK_TYPE_UNSPECIFIED {
+		filter.CheckType = string(qualityCheckTypeProtoToDomain(req.Msg.GetCheckType()))
+	}
+	if req.Msg.GetResult() != pb.QualityCheckResult_QUALITY_CHECK_RESULT_UNSPECIFIED {
+		filter.Result = string(qualityCheckResultProtoToDomain(req.Msg.GetResult()))
+	}
+
+	checkpoints, total, err := h.svc.ListQualityCheckpoints(ctx, filter)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.QualityCheckpoint, 0, len(checkpoints))
+	for i := range checkpoints {
+		protos = append(protos, qualityCheckpointToProto(&checkpoints[i]))
+	}
+	resp := &pb.ListQualityCheckpointsResponse{
+		Checkpoints: protos,
+		TotalCount:  total,
+	}
+	if nextOffset := filter.PageOffset + filter.PageSize; int32(nextOffset) < total {
+		resp.NextPageToken = strconv.FormatInt(int64(nextOffset), 10)
+	}
+	return connect.NewResponse(resp), nil
+}
+
+// --- Record Update ---
+
+// UpdateRecord updates a traceability record's fields.
+func (h *TraceabilityHandler) UpdateRecord(ctx context.Context, req *connect.Request[pb.UpdateRecordRequest]) (*connect.Response[pb.UpdateRecordResponse], error) {
+	var input domain.UpdateRecordInput
+	if v := req.Msg.GetOriginCountry(); v != "" {
+		input.OriginCountry = &v
+	}
+	if v := req.Msg.GetOriginRegion(); v != "" {
+		input.OriginRegion = &v
+	}
+	if v := req.Msg.GetSeedSource(); v != "" {
+		input.SeedSource = &v
+	}
+	input.PlantingDate = tsToTimePtr(req.Msg.GetPlantingDate())
+	input.HarvestDate = tsToTimePtr(req.Msg.GetHarvestDate())
+	input.ProcessingDate = tsToTimePtr(req.Msg.GetProcessingDate())
+	input.PackagingDate = tsToTimePtr(req.Msg.GetPackagingDate())
+	input.Metadata = req.Msg.GetMetadata()
+
+	record, err := h.svc.UpdateRecord(ctx, req.Msg.GetId(), input)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.UpdateRecordResponse{Record: recordToProto(record)}), nil
+}
+
+// --- Certification Revocation ---
+
+// RevokeCertification revokes an active certification.
+func (h *TraceabilityHandler) RevokeCertification(ctx context.Context, req *connect.Request[pb.RevokeCertificationRequest]) (*connect.Response[pb.RevokeCertificationResponse], error) {
+	cert, err := h.svc.RevokeCertification(ctx, req.Msg.GetId(), req.Msg.GetReason())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.RevokeCertificationResponse{Certification: certToProto(cert)}), nil
+}
+
+// --- Compliance Report Retrieval ---
+
+// GetComplianceReport retrieves a compliance report by ID.
+func (h *TraceabilityHandler) GetComplianceReport(ctx context.Context, req *connect.Request[pb.GetComplianceReportRequest]) (*connect.Response[pb.GetComplianceReportResponse], error) {
+	report, err := h.svc.GetComplianceReport(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.GetComplianceReportResponse{Report: complianceReportToProto(report)}), nil
+}
+
+// ListComplianceReports lists compliance reports with filtering.
+func (h *TraceabilityHandler) ListComplianceReports(ctx context.Context, req *connect.Request[pb.ListComplianceReportsRequest]) (*connect.Response[pb.ListComplianceReportsResponse], error) {
+	filter := domain.ListComplianceReportsFilter{
+		RecordID:   req.Msg.GetRecordId(),
+		PageSize:   req.Msg.GetPageSize(),
+		PageOffset: pageTokenToOffset(req.Msg.GetPageToken()),
+	}
+
+	reports, total, err := h.svc.ListComplianceReports(ctx, filter)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.ComplianceReport, 0, len(reports))
+	for i := range reports {
+		protos = append(protos, complianceReportToProto(&reports[i]))
+	}
+	resp := &pb.ListComplianceReportsResponse{
+		Reports:    protos,
+		TotalCount: total,
+	}
+	if nextOffset := filter.PageOffset + filter.PageSize; int32(nextOffset) < total {
+		resp.NextPageToken = strconv.FormatInt(int64(nextOffset), 10)
+	}
+	return connect.NewResponse(resp), nil
+}
+
 // ===================================================================
 // Proto-to-Domain and Domain-to-Proto conversion helpers
 // ===================================================================
@@ -647,6 +822,109 @@ func complianceStatusProtoToDomainString(s pb.ComplianceStatus) string {
 	default:
 		return ""
 	}
+}
+
+// --- Enum conversion: Quality Check Type ---
+
+var qualityCheckTypeToProto = map[domain.QualityCheckType]pb.QualityCheckType{
+	domain.QualityCheckTypeVisual:      pb.QualityCheckType_QUALITY_CHECK_TYPE_VISUAL,
+	domain.QualityCheckTypeLab:         pb.QualityCheckType_QUALITY_CHECK_TYPE_LAB,
+	domain.QualityCheckTypeTemperature: pb.QualityCheckType_QUALITY_CHECK_TYPE_TEMPERATURE,
+	domain.QualityCheckTypeMoisture:    pb.QualityCheckType_QUALITY_CHECK_TYPE_MOISTURE,
+	domain.QualityCheckTypeWeight:      pb.QualityCheckType_QUALITY_CHECK_TYPE_WEIGHT,
+	domain.QualityCheckTypeSensory:     pb.QualityCheckType_QUALITY_CHECK_TYPE_SENSORY,
+	domain.QualityCheckTypeOther:       pb.QualityCheckType_QUALITY_CHECK_TYPE_OTHER,
+}
+
+var qualityCheckTypeToDomain = map[pb.QualityCheckType]domain.QualityCheckType{
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_VISUAL:      domain.QualityCheckTypeVisual,
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_LAB:         domain.QualityCheckTypeLab,
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_TEMPERATURE: domain.QualityCheckTypeTemperature,
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_MOISTURE:    domain.QualityCheckTypeMoisture,
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_WEIGHT:      domain.QualityCheckTypeWeight,
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_SENSORY:     domain.QualityCheckTypeSensory,
+	pb.QualityCheckType_QUALITY_CHECK_TYPE_OTHER:       domain.QualityCheckTypeOther,
+}
+
+func qualityCheckTypeDomainToProto(t domain.QualityCheckType) pb.QualityCheckType {
+	if v, ok := qualityCheckTypeToProto[t]; ok {
+		return v
+	}
+	return pb.QualityCheckType_QUALITY_CHECK_TYPE_UNSPECIFIED
+}
+
+func qualityCheckTypeProtoToDomain(t pb.QualityCheckType) domain.QualityCheckType {
+	if v, ok := qualityCheckTypeToDomain[t]; ok {
+		return v
+	}
+	return ""
+}
+
+// --- Enum conversion: Quality Check Result ---
+
+var qualityCheckResultToProto = map[domain.QualityCheckResult]pb.QualityCheckResult{
+	domain.QualityCheckResultPass: pb.QualityCheckResult_QUALITY_CHECK_RESULT_PASS,
+	domain.QualityCheckResultFail: pb.QualityCheckResult_QUALITY_CHECK_RESULT_FAIL,
+}
+
+var qualityCheckResultToDomain = map[pb.QualityCheckResult]domain.QualityCheckResult{
+	pb.QualityCheckResult_QUALITY_CHECK_RESULT_PASS: domain.QualityCheckResultPass,
+	pb.QualityCheckResult_QUALITY_CHECK_RESULT_FAIL: domain.QualityCheckResultFail,
+}
+
+func qualityCheckResultDomainToProto(r domain.QualityCheckResult) pb.QualityCheckResult {
+	if v, ok := qualityCheckResultToProto[r]; ok {
+		return v
+	}
+	return pb.QualityCheckResult_QUALITY_CHECK_RESULT_UNSPECIFIED
+}
+
+func qualityCheckResultProtoToDomain(r pb.QualityCheckResult) domain.QualityCheckResult {
+	if v, ok := qualityCheckResultToDomain[r]; ok {
+		return v
+	}
+	return ""
+}
+
+// --- Quality Checkpoint conversion ---
+
+func qualityCheckpointToProto(qc *domain.QualityCheckpoint) *pb.QualityCheckpoint {
+	if qc == nil {
+		return nil
+	}
+	proto := &pb.QualityCheckpoint{
+		Id:               qc.ID,
+		TenantId:         qc.TenantID,
+		RecordId:         qc.RecordID,
+		CheckType:        qualityCheckTypeDomainToProto(qc.CheckType),
+		Result:           qualityCheckResultDomainToProto(qc.Result),
+		InspectorId:      qc.InspectorID,
+		InspectorName:    qc.InspectorName,
+		InspectedAt:      timeToTs(qc.InspectedAt),
+		Location:         qc.Location,
+		EvidenceUrls:     qc.EvidenceURLs,
+		Metadata:         metadataJSONToMap(qc.Metadata),
+		CreatedAt:        timeToTs(qc.CreatedAt),
+	}
+	if qc.SupplyChainEventID != nil {
+		proto.SupplyChainEventId = *qc.SupplyChainEventID
+	}
+	if qc.MeasurementValue != nil {
+		proto.MeasurementValue = *qc.MeasurementValue
+	}
+	if qc.MeasurementUnit != nil {
+		proto.MeasurementUnit = *qc.MeasurementUnit
+	}
+	if qc.MinThreshold != nil {
+		proto.MinThreshold = *qc.MinThreshold
+	}
+	if qc.MaxThreshold != nil {
+		proto.MaxThreshold = *qc.MaxThreshold
+	}
+	if qc.Notes != nil {
+		proto.Notes = *qc.Notes
+	}
+	return proto
 }
 
 // --- Metadata conversion ---

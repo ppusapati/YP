@@ -3,6 +3,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -777,4 +778,315 @@ func (r *traceabilityRepository) GetLatestComplianceReport(ctx context.Context, 
 		return nil, errors.Internal("failed to get latest compliance report: %v", err)
 	}
 	return &result, nil
+}
+
+func (r *traceabilityRepository) ListComplianceReports(ctx context.Context, filter domain.ListComplianceReportsFilter, tenantID string) ([]domain.ComplianceReport, int32, error) {
+	baseWhere := `WHERE tenant_id = $1`
+	args := []interface{}{tenantID}
+	argIdx := 2
+
+	if filter.RecordID != "" {
+		baseWhere += fmt.Sprintf(" AND record_id = $%d", argIdx)
+		args = append(args, filter.RecordID)
+		argIdx++
+	}
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM compliance_reports %s", baseWhere)
+	var totalCount int32
+	err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, errors.Internal("failed to count compliance reports: %v", err)
+	}
+
+	pageSize := filter.PageSize
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	listQuery := fmt.Sprintf(`SELECT id, tenant_id, record_id, status, report_type,
+		findings, recommendations, auditor, audit_date,
+		next_audit_date, compliance_score, metadata, created_at
+	FROM compliance_reports %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, baseWhere, argIdx, argIdx+1)
+	args = append(args, pageSize, filter.PageOffset)
+
+	rows, err := r.pool.Query(ctx, listQuery, args...)
+	if err != nil {
+		return nil, 0, errors.Internal("failed to list compliance reports: %v", err)
+	}
+	defer rows.Close()
+
+	var reports []domain.ComplianceReport
+	for rows.Next() {
+		var rp domain.ComplianceReport
+		if err := rows.Scan(
+			&rp.ID, &rp.TenantID, &rp.RecordID, &rp.Status, &rp.ReportType,
+			&rp.Findings, &rp.Recommendations, &rp.Auditor, &rp.AuditDate,
+			&rp.NextAuditDate, &rp.ComplianceScore, &rp.Metadata, &rp.CreatedAt,
+		); err != nil {
+			return nil, 0, errors.Internal("failed to scan compliance report: %v", err)
+		}
+		reports = append(reports, rp)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, errors.Internal("row iteration error: %v", err)
+	}
+	return reports, totalCount, nil
+}
+
+// --- Quality Checkpoints ---
+
+func (r *traceabilityRepository) scanQualityCheckpoint(row pgx.Row) (*domain.QualityCheckpoint, error) {
+	var qc domain.QualityCheckpoint
+	err := row.Scan(
+		&qc.ID, &qc.TenantID, &qc.RecordID, &qc.SupplyChainEventID,
+		&qc.CheckType, &qc.Result, &qc.InspectorID, &qc.InspectorName,
+		&qc.InspectedAt, &qc.Location,
+		&qc.MeasurementValue, &qc.MeasurementUnit,
+		&qc.MinThreshold, &qc.MaxThreshold,
+		&qc.Notes, &qc.EvidenceURLs, &qc.Metadata, &qc.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &qc, nil
+}
+
+func (r *traceabilityRepository) CreateQualityCheckpoint(ctx context.Context, checkpoint *domain.QualityCheckpoint) (*domain.QualityCheckpoint, error) {
+	query := `INSERT INTO quality_checkpoints (
+		id, tenant_id, record_id, supply_chain_event_id,
+		check_type, result, inspector_id, inspector_name,
+		inspected_at, location,
+		measurement_value, measurement_unit,
+		min_threshold, max_threshold,
+		notes, evidence_urls, metadata, created_at
+	) VALUES (
+		$1, $2, $3, $4,
+		$5, $6, $7, $8,
+		$9, $10,
+		$11, $12,
+		$13, $14,
+		$15, $16, $17, $18
+	) RETURNING id, tenant_id, record_id, supply_chain_event_id,
+		check_type, result, inspector_id, inspector_name,
+		inspected_at, location,
+		measurement_value, measurement_unit,
+		min_threshold, max_threshold,
+		notes, evidence_urls, metadata, created_at`
+
+	result, err := r.scanQualityCheckpoint(r.pool.QueryRow(ctx, query,
+		checkpoint.ID, checkpoint.TenantID, checkpoint.RecordID, checkpoint.SupplyChainEventID,
+		string(checkpoint.CheckType), string(checkpoint.Result), checkpoint.InspectorID, checkpoint.InspectorName,
+		checkpoint.InspectedAt, checkpoint.Location,
+		checkpoint.MeasurementValue, checkpoint.MeasurementUnit,
+		checkpoint.MinThreshold, checkpoint.MaxThreshold,
+		checkpoint.Notes, checkpoint.EvidenceURLs, checkpoint.Metadata, checkpoint.CreatedAt,
+	))
+	if err != nil {
+		r.log.Errorw("msg", "failed to create quality checkpoint", "error", err)
+		return nil, errors.Internal("failed to create quality checkpoint: %v", err)
+	}
+	return result, nil
+}
+
+func (r *traceabilityRepository) GetQualityCheckpoint(ctx context.Context, id, tenantID string) (*domain.QualityCheckpoint, error) {
+	query := `SELECT id, tenant_id, record_id, supply_chain_event_id,
+		check_type, result, inspector_id, inspector_name,
+		inspected_at, location,
+		measurement_value, measurement_unit,
+		min_threshold, max_threshold,
+		notes, evidence_urls, metadata, created_at
+	FROM quality_checkpoints WHERE id = $1 AND tenant_id = $2`
+
+	result, err := r.scanQualityCheckpoint(r.pool.QueryRow(ctx, query, id, tenantID))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("CHECKPOINT_NOT_FOUND", fmt.Sprintf("quality checkpoint %s not found", id))
+		}
+		r.log.Errorw("msg", "failed to get quality checkpoint", "error", err)
+		return nil, errors.Internal("failed to get quality checkpoint: %v", err)
+	}
+	return result, nil
+}
+
+func (r *traceabilityRepository) ListQualityCheckpoints(ctx context.Context, filter domain.ListQualityCheckpointsFilter, tenantID string) ([]domain.QualityCheckpoint, int32, error) {
+	baseWhere := `WHERE tenant_id = $1`
+	args := []interface{}{tenantID}
+	argIdx := 2
+
+	if filter.RecordID != "" {
+		baseWhere += fmt.Sprintf(" AND record_id = $%d", argIdx)
+		args = append(args, filter.RecordID)
+		argIdx++
+	}
+	if filter.CheckType != "" {
+		baseWhere += fmt.Sprintf(" AND check_type = $%d", argIdx)
+		args = append(args, filter.CheckType)
+		argIdx++
+	}
+	if filter.Result != "" {
+		baseWhere += fmt.Sprintf(" AND result = $%d", argIdx)
+		args = append(args, filter.Result)
+		argIdx++
+	}
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM quality_checkpoints %s", baseWhere)
+	var totalCount int32
+	err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, errors.Internal("failed to count quality checkpoints: %v", err)
+	}
+
+	pageSize := filter.PageSize
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	listQuery := fmt.Sprintf(`SELECT id, tenant_id, record_id, supply_chain_event_id,
+		check_type, result, inspector_id, inspector_name,
+		inspected_at, location,
+		measurement_value, measurement_unit,
+		min_threshold, max_threshold,
+		notes, evidence_urls, metadata, created_at
+	FROM quality_checkpoints %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, baseWhere, argIdx, argIdx+1)
+	args = append(args, pageSize, filter.PageOffset)
+
+	rows, err := r.pool.Query(ctx, listQuery, args...)
+	if err != nil {
+		return nil, 0, errors.Internal("failed to list quality checkpoints: %v", err)
+	}
+	defer rows.Close()
+
+	var checkpoints []domain.QualityCheckpoint
+	for rows.Next() {
+		var qc domain.QualityCheckpoint
+		if err := rows.Scan(
+			&qc.ID, &qc.TenantID, &qc.RecordID, &qc.SupplyChainEventID,
+			&qc.CheckType, &qc.Result, &qc.InspectorID, &qc.InspectorName,
+			&qc.InspectedAt, &qc.Location,
+			&qc.MeasurementValue, &qc.MeasurementUnit,
+			&qc.MinThreshold, &qc.MaxThreshold,
+			&qc.Notes, &qc.EvidenceURLs, &qc.Metadata, &qc.CreatedAt,
+		); err != nil {
+			return nil, 0, errors.Internal("failed to scan quality checkpoint: %v", err)
+		}
+		checkpoints = append(checkpoints, qc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, errors.Internal("row iteration error: %v", err)
+	}
+	return checkpoints, totalCount, nil
+}
+
+// --- Record Update ---
+
+func (r *traceabilityRepository) UpdateRecord(ctx context.Context, id, tenantID string, input domain.UpdateRecordInput, updatedBy string) (*domain.TraceabilityRecord, error) {
+	setClauses := []string{"updated_by = $3", "updated_at = NOW()", "version = version + 1"}
+	args := []interface{}{id, tenantID, updatedBy}
+	argIdx := 4
+
+	if input.OriginCountry != nil {
+		setClauses = append(setClauses, fmt.Sprintf("origin_country = $%d", argIdx))
+		args = append(args, *input.OriginCountry)
+		argIdx++
+	}
+	if input.OriginRegion != nil {
+		setClauses = append(setClauses, fmt.Sprintf("origin_region = $%d", argIdx))
+		args = append(args, *input.OriginRegion)
+		argIdx++
+	}
+	if input.SeedSource != nil {
+		setClauses = append(setClauses, fmt.Sprintf("seed_source = $%d", argIdx))
+		args = append(args, *input.SeedSource)
+		argIdx++
+	}
+	if input.PlantingDate != nil {
+		setClauses = append(setClauses, fmt.Sprintf("planting_date = $%d", argIdx))
+		args = append(args, input.PlantingDate)
+		argIdx++
+	}
+	if input.HarvestDate != nil {
+		setClauses = append(setClauses, fmt.Sprintf("harvest_date = $%d", argIdx))
+		args = append(args, input.HarvestDate)
+		argIdx++
+	}
+	if input.ProcessingDate != nil {
+		setClauses = append(setClauses, fmt.Sprintf("processing_date = $%d", argIdx))
+		args = append(args, input.ProcessingDate)
+		argIdx++
+	}
+	if input.PackagingDate != nil {
+		setClauses = append(setClauses, fmt.Sprintf("packaging_date = $%d", argIdx))
+		args = append(args, input.PackagingDate)
+		argIdx++
+	}
+	if len(input.Metadata) > 0 {
+		metaJSON, _ := json.Marshal(input.Metadata)
+		setClauses = append(setClauses, fmt.Sprintf("metadata = $%d", argIdx))
+		args = append(args, metaJSON)
+		argIdx++
+	}
+
+	query := fmt.Sprintf(`UPDATE traceability_records SET %s
+		WHERE id = $1 AND tenant_id = $2
+		RETURNING id, tenant_id, farm_id, field_id, crop_id, batch_number,
+			product_type, origin_country, origin_region, seed_source,
+			planting_date, harvest_date, processing_date, packaging_date,
+			qr_code_data, blockchain_hash, chain_of_custody, compliance_status,
+			metadata, version, created_by, updated_by, created_at, updated_at`,
+		joinStrings(setClauses, ", "))
+
+	var result domain.TraceabilityRecord
+	err := r.pool.QueryRow(ctx, query, args...).Scan(
+		&result.ID, &result.TenantID, &result.FarmID, &result.FieldID, &result.CropID, &result.BatchNumber,
+		&result.ProductType, &result.OriginCountry, &result.OriginRegion, &result.SeedSource,
+		&result.PlantingDate, &result.HarvestDate, &result.ProcessingDate, &result.PackagingDate,
+		&result.QRCodeData, &result.BlockchainHash, &result.ChainOfCustody, &result.ComplianceStatus,
+		&result.Metadata, &result.Version, &result.CreatedBy, &result.UpdatedBy, &result.CreatedAt, &result.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("RECORD_NOT_FOUND", fmt.Sprintf("traceability record %s not found", id))
+		}
+		r.log.Errorw("msg", "failed to update traceability record", "error", err)
+		return nil, errors.Internal("failed to update traceability record: %v", err)
+	}
+	return &result, nil
+}
+
+// --- Certification Revocation ---
+
+func (r *traceabilityRepository) RevokeCertification(ctx context.Context, id, tenantID, reason string) (*domain.Certification, error) {
+	_ = reason // reason is logged / audited at the service layer; the DB stores status only
+	query := `UPDATE certifications
+		SET status = 'REVOKED', updated_at = NOW(), version = version + 1
+		WHERE id = $1 AND tenant_id = $2
+		RETURNING id, tenant_id, record_id, cert_type, cert_number, issued_by,
+			issued_date, expiry_date, status, verified_by, verified_at,
+			metadata, version, created_at, updated_at`
+
+	var result domain.Certification
+	err := r.pool.QueryRow(ctx, query, id, tenantID).Scan(
+		&result.ID, &result.TenantID, &result.RecordID, &result.CertType, &result.CertNumber, &result.IssuedBy,
+		&result.IssuedDate, &result.ExpiryDate, &result.Status, &result.VerifiedBy, &result.VerifiedAt,
+		&result.Metadata, &result.Version, &result.CreatedAt, &result.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("CERTIFICATION_NOT_FOUND", fmt.Sprintf("certification %s not found", id))
+		}
+		return nil, errors.Internal("failed to revoke certification: %v", err)
+	}
+	return &result, nil
+}
+
+// joinStrings concatenates strings with a separator (avoids importing strings for one call).
+func joinStrings(parts []string, sep string) string {
+	if len(parts) == 0 {
+		return ""
+	}
+	result := parts[0]
+	for _, p := range parts[1:] {
+		result += sep + p
+	}
+	return result
 }
