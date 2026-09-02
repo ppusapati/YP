@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
@@ -63,7 +64,7 @@ func (gc *GRPCCheck) Check(ctx context.Context) (*healthcheck.CheckResult, error
 	// Connect to gRPC server
 	address := fmt.Sprintf("%s:%d", gc.Host, gc.Port)
 	conn, err := grpc.DialContext(ctx, address,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 	)
 	result.Duration = time.Since(start)
