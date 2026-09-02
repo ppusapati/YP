@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: traceability.proto
 
-package v1
+package traceabilityv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -3287,7 +3287,7 @@ const file_traceability_proto_rawDesc = "" +
 	"\vListBatches\x12/.agriculture.traceability.v1.ListBatchesRequest\x1a0.agriculture.traceability.v1.ListBatchesResponse\x12y\n" +
 	"\x0eGenerateQRCode\x122.agriculture.traceability.v1.GenerateQRCodeRequest\x1a3.agriculture.traceability.v1.GenerateQRCodeResponse\x12s\n" +
 	"\fVerifyQRCode\x120.agriculture.traceability.v1.VerifyQRCodeRequest\x1a1.agriculture.traceability.v1.VerifyQRCodeResponse\x12\x97\x01\n" +
-	"\x18GenerateComplianceReport\x12<.agriculture.traceability.v1.GenerateComplianceReportRequest\x1a=.agriculture.traceability.v1.GenerateComplianceReportResponseB9Z7p9e.in/samavaya/agriculture/traceability-service/api/v1b\x06proto3"
+	"\x18GenerateComplianceReport\x12<.agriculture.traceability.v1.GenerateComplianceReportRequest\x1a=.agriculture.traceability.v1.GenerateComplianceReportResponseBHZFp9e.in/samavaya/agriculture/traceability-service/api/v1;traceabilityv1b\x06proto3"
 
 var (
 	file_traceability_proto_rawDescOnce sync.Once

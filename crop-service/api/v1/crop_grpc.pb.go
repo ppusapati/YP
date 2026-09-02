@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: crop.proto
 
-package v1
+package cropv1
 
 import (
 	context "context"

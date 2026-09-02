@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: diagnosis.proto
 
-package v1
+package plantdiagnosisv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -2367,7 +2367,7 @@ const file_diagnosis_proto_rawDesc = "" +
 	"\fListDiseases\x12-.agriculture.diagnosis.v1.ListDiseasesRequest\x1a..agriculture.diagnosis.v1.ListDiseasesResponse\x12v\n" +
 	"\x0fIdentifySpecies\x120.agriculture.diagnosis.v1.IdentifySpeciesRequest\x1a1.agriculture.diagnosis.v1.IdentifySpeciesResponse\x12\x91\x01\n" +
 	"\x18DetectNutrientDeficiency\x129.agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest\x1a:.agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse\x12y\n" +
-	"\x10DetectPestDamage\x121.agriculture.diagnosis.v1.DetectPestDamageRequest\x1a2.agriculture.diagnosis.v1.DetectPestDamageResponseB<Z:p9e.in/samavaya/agriculture/plant-diagnosis-service/api/v1b\x06proto3"
+	"\x10DetectPestDamage\x121.agriculture.diagnosis.v1.DetectPestDamageRequest\x1a2.agriculture.diagnosis.v1.DetectPestDamageResponseBMZKp9e.in/samavaya/agriculture/plant-diagnosis-service/api/v1;plantdiagnosisv1b\x06proto3"
 
 var (
 	file_diagnosis_proto_rawDescOnce sync.Once

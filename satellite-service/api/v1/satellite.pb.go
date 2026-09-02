@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: satellite.proto
 
-package v1
+package satellitev1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -2295,7 +2295,7 @@ const file_satellite_proto_rawDesc = "" +
 	"\x10DetectCropStress\x121.agriculture.satellite.v1.DetectCropStressRequest\x1a2.agriculture.satellite.v1.DetectCropStressResponse\x12\x82\x01\n" +
 	"\x13GetTemporalAnalysis\x124.agriculture.satellite.v1.GetTemporalAnalysisRequest\x1a5.agriculture.satellite.v1.GetTemporalAnalysisResponse\x12g\n" +
 	"\n" +
-	"ListAlerts\x12+.agriculture.satellite.v1.ListAlertsRequest\x1a,.agriculture.satellite.v1.ListAlertsResponseB6Z4p9e.in/samavaya/agriculture/satellite-service/api/v1b\x06proto3"
+	"ListAlerts\x12+.agriculture.satellite.v1.ListAlertsRequest\x1a,.agriculture.satellite.v1.ListAlertsResponseBBZ@p9e.in/samavaya/agriculture/satellite-service/api/v1;satellitev1b\x06proto3"
 
 var (
 	file_satellite_proto_rawDescOnce sync.Once

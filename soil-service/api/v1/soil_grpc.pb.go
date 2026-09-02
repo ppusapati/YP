@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: soil.proto
 
-package v1
+package soilv1
 
 import (
 	context "context"

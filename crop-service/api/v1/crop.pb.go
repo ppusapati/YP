@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: crop.proto
 
-package v1
+package cropv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -2355,7 +2355,7 @@ const file_crop_proto_rawDesc = "" +
 	"\rListVarieties\x12).agriculture.crop.v1.ListVarietiesRequest\x1a*.agriculture.crop.v1.ListVarietiesResponse\x12l\n" +
 	"\x0fGetGrowthStages\x12+.agriculture.crop.v1.GetGrowthStagesRequest\x1a,.agriculture.crop.v1.GetGrowthStagesResponse\x12x\n" +
 	"\x13GetCropRequirements\x12/.agriculture.crop.v1.GetCropRequirementsRequest\x1a0.agriculture.crop.v1.GetCropRequirementsResponse\x12\x81\x01\n" +
-	"\x16GenerateRecommendation\x122.agriculture.crop.v1.GenerateRecommendationRequest\x1a3.agriculture.crop.v1.GenerateRecommendationResponseB1Z/p9e.in/samavaya/agriculture/crop-service/api/v1b\x06proto3"
+	"\x16GenerateRecommendation\x122.agriculture.crop.v1.GenerateRecommendationRequest\x1a3.agriculture.crop.v1.GenerateRecommendationResponseB8Z6p9e.in/samavaya/agriculture/crop-service/api/v1;cropv1b\x06proto3"
 
 var (
 	file_crop_proto_rawDescOnce sync.Once

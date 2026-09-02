@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: sensor.proto
 
-package v1
+package sensorv1
 
 import (
 	context "context"

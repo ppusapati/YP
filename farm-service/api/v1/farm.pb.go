@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: farm.proto
 
-package v1
+package farmv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -3161,7 +3161,7 @@ const file_farm_proto_rawDesc = "" +
 	"\x14UpdateManagementUnit\x120.agriculture.farm.v1.UpdateManagementUnitRequest\x1a1.agriculture.farm.v1.UpdateManagementUnitResponse\x12{\n" +
 	"\x14DeleteManagementUnit\x120.agriculture.farm.v1.DeleteManagementUnitRequest\x1a1.agriculture.farm.v1.DeleteManagementUnitResponse\x12u\n" +
 	"\x12AssignFieldsToUnit\x12..agriculture.farm.v1.AssignFieldsToUnitRequest\x1a/.agriculture.farm.v1.AssignFieldsToUnitResponse\x12{\n" +
-	"\x14RemoveFieldsFromUnit\x120.agriculture.farm.v1.RemoveFieldsFromUnitRequest\x1a1.agriculture.farm.v1.RemoveFieldsFromUnitResponseB1Z/p9e.in/samavaya/agriculture/farm-service/api/v1b\x06proto3"
+	"\x14RemoveFieldsFromUnit\x120.agriculture.farm.v1.RemoveFieldsFromUnitRequest\x1a1.agriculture.farm.v1.RemoveFieldsFromUnitResponseB8Z6p9e.in/samavaya/agriculture/farm-service/api/v1;farmv1b\x06proto3"
 
 var (
 	file_farm_proto_rawDescOnce sync.Once

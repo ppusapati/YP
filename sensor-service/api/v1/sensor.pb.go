@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: sensor.proto
 
-package v1
+package sensorv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -3196,7 +3196,7 @@ const file_sensor_proto_rawDesc = "" +
 	"ListAlerts\x12(.agriculture.sensor.v1.ListAlertsRequest\x1a).agriculture.sensor.v1.ListAlertsResponse\x12s\n" +
 	"\x10AcknowledgeAlert\x12..agriculture.sensor.v1.AcknowledgeAlertRequest\x1a/.agriculture.sensor.v1.AcknowledgeAlertResponse\x12s\n" +
 	"\x10GetSensorNetwork\x12..agriculture.sensor.v1.GetSensorNetworkRequest\x1a/.agriculture.sensor.v1.GetSensorNetworkResponse\x12p\n" +
-	"\x0fCalibrateSensor\x12-.agriculture.sensor.v1.CalibrateSensorRequest\x1a..agriculture.sensor.v1.CalibrateSensorResponseB3Z1p9e.in/samavaya/agriculture/sensor-service/api/v1b\x06proto3"
+	"\x0fCalibrateSensor\x12-.agriculture.sensor.v1.CalibrateSensorRequest\x1a..agriculture.sensor.v1.CalibrateSensorResponseB<Z:p9e.in/samavaya/agriculture/sensor-service/api/v1;sensorv1b\x06proto3"
 
 var (
 	file_sensor_proto_rawDescOnce sync.Once

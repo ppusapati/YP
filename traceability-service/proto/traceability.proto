@@ -1,6 +1,6 @@
 syntax = "proto3";
 package agriculture.traceability.v1;
-option go_package = "p9e.in/samavaya/agriculture/traceability-service/api/v1";
+option go_package = "p9e.in/samavaya/agriculture/traceability-service/api/v1;traceabilityv1";
 
 import "google/protobuf/timestamp.proto";
 

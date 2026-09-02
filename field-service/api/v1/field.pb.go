@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: field.proto
 
-package v1
+package fieldv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -4302,7 +4302,7 @@ const file_field_proto_rawDesc = "" +
 	"\x0eListCropCycles\x12+.agriculture.field.v1.ListCropCyclesRequest\x1a,.agriculture.field.v1.ListCropCyclesResponse\x12n\n" +
 	"\x0fUpdateCropCycle\x12,.agriculture.field.v1.UpdateCropCycleRequest\x1a-.agriculture.field.v1.UpdateCropCycleResponse\x12q\n" +
 	"\x10LogActivityEvent\x12-.agriculture.field.v1.LogActivityEventRequest\x1a..agriculture.field.v1.LogActivityEventResponse\x12w\n" +
-	"\x12ListActivityEvents\x12/.agriculture.field.v1.ListActivityEventsRequest\x1a0.agriculture.field.v1.ListActivityEventsResponseB2Z0p9e.in/samavaya/agriculture/field-service/api/v1b\x06proto3"
+	"\x12ListActivityEvents\x12/.agriculture.field.v1.ListActivityEventsRequest\x1a0.agriculture.field.v1.ListActivityEventsResponseB:Z8p9e.in/samavaya/agriculture/field-service/api/v1;fieldv1b\x06proto3"
 
 var (
 	file_field_proto_rawDescOnce sync.Once

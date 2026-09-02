@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: traceability.proto
 
-package v1
+package traceabilityv1
 
 import (
 	context "context"

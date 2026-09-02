@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: field.proto
 
-package v1
+package fieldv1
 
 import (
 	context "context"

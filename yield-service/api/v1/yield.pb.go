@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: yield.proto
 
-package v1
+package yieldv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -2726,7 +2726,7 @@ const file_yield_proto_rawDesc = "" +
 	"\x0eGetHarvestPlan\x12+.agriculture.yield.v1.GetHarvestPlanRequest\x1a,.agriculture.yield.v1.GetHarvestPlanResponse\x12q\n" +
 	"\x10ListHarvestPlans\x12-.agriculture.yield.v1.ListHarvestPlansRequest\x1a..agriculture.yield.v1.ListHarvestPlansResponse\x12w\n" +
 	"\x12GetCropPerformance\x12/.agriculture.yield.v1.GetCropPerformanceRequest\x1a0.agriculture.yield.v1.GetCropPerformanceResponse\x12h\n" +
-	"\rCompareYields\x12*.agriculture.yield.v1.CompareYieldsRequest\x1a+.agriculture.yield.v1.CompareYieldsResponseB2Z0p9e.in/samavaya/agriculture/yield-service/api/v1b\x06proto3"
+	"\rCompareYields\x12*.agriculture.yield.v1.CompareYieldsRequest\x1a+.agriculture.yield.v1.CompareYieldsResponseB:Z8p9e.in/samavaya/agriculture/yield-service/api/v1;yieldv1b\x06proto3"
 
 var (
 	file_yield_proto_rawDescOnce sync.Once

@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: farm.proto
 
-package v1
+package farmv1
 
 import (
 	context "context"

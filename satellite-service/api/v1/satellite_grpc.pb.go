@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: satellite.proto
 
-package v1
+package satellitev1
 
 import (
 	context "context"

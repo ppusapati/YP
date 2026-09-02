@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: irrigation.proto
 
-package v1
+package irrigationv1
 
 import (
 	context "context"
