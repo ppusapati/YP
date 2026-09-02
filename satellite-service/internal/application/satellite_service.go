@@ -67,6 +67,15 @@ func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.Sat
 	if image.FieldID == "" {
 		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
 	}
+	if image.CloudCoverPct < 0 || image.CloudCoverPct > 100 {
+		return nil, errors.BadRequest("INVALID_CLOUD_COVER", "cloud_cover_pct must be between 0 and 100")
+	}
+	if image.ResolutionMeters < 0 {
+		return nil, errors.BadRequest("INVALID_RESOLUTION", "resolution_meters must be non-negative")
+	}
+	if image.Bbox != nil && !image.Bbox.IsValid() {
+		return nil, errors.BadRequest("INVALID_BBOX", "bounding box coordinates are invalid")
+	}
 
 	image.TenantID = tenantID
 	image.ProcessingStatus = domain.ProcessingStatusPending
