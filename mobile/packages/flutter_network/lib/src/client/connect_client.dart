@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
+import '../interceptors/auth_interceptor.dart';
 import 'api_config.dart';
 
 /// The type signature for request interceptors.
@@ -142,6 +143,15 @@ class ConnectClient {
   /// Adds a [ResponseInterceptor] to the chain.
   void addResponseInterceptor(ResponseInterceptor interceptor) {
     _responseInterceptors.add(interceptor);
+  }
+
+  /// Wires an [AuthInterceptor] with both its request and response
+  /// interceptors, and provides it a request executor so it can retry
+  /// requests after a successful 401 token refresh.
+  void addAuthInterceptor(AuthInterceptor interceptor) {
+    interceptor.requestExecutor = _executeSingle;
+    addRequestInterceptor(interceptor.interceptRequest);
+    addResponseInterceptor(interceptor.interceptResponse);
   }
 
   /// Removes a previously added [RequestInterceptor].

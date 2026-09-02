@@ -10,11 +10,14 @@ typedef TokenReader = Future<String?> Function();
 /// the new access token.
 typedef TokenRefresher = Future<String?> Function();
 
+/// Signature for a function that re-executes a single HTTP request.
+typedef RequestExecutor = Future<ConnectResponse> Function(ConnectRequest request);
+
 /// JWT authentication interceptor for ConnectRPC requests.
 ///
 /// Injects the `Authorization: Bearer <token>` header on every outgoing
 /// request. When a 401 response is received, it attempts a single token
-/// refresh and retries the original request.
+/// refresh and retries the original request with the new token.
 ///
 /// Usage:
 /// ```dart
@@ -37,6 +40,10 @@ class AuthInterceptor {
   /// Refreshes the access token when the current one is expired or rejected.
   final TokenRefresher tokenRefresher;
 
+  /// Optional executor for retrying requests after a token refresh.
+  /// Set by [ConnectClient] when the interceptor is registered.
+  RequestExecutor? requestExecutor;
+
   static final _log = Logger('AuthInterceptor');
 
   /// Tracks whether a token refresh is already in flight to avoid
@@ -54,9 +61,8 @@ class AuthInterceptor {
 
   /// Response interceptor that triggers a token refresh on 401 responses.
   ///
-  /// After a successful refresh the caller should retry the request. This
-  /// interceptor updates the stored token but does not re-execute the
-  /// request itself — the retry logic in [ConnectClient] handles that.
+  /// After a successful refresh, retries the original request with the new
+  /// token. If no [requestExecutor] is set, returns the original 401.
   Future<ConnectResponse> interceptResponse(ConnectResponse response) async {
     if (response.statusCode != 401) {
       return response;
@@ -71,7 +77,14 @@ class AuthInterceptor {
       return response;
     }
 
-    _log.info('Token refreshed successfully');
+    _log.info('Token refreshed — retrying original request');
+
+    if (requestExecutor != null && response.request != null) {
+      final retryRequest = response.request!;
+      retryRequest.headers['Authorization'] = 'Bearer $newToken';
+      return requestExecutor!(retryRequest);
+    }
+
     return response;
   }
 

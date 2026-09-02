@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_auth/flutter_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_ui_core/flutter_ui_core.dart';
@@ -29,6 +30,9 @@ class AgronomistApp extends ConsumerWidget {
 
     return MultiBlocProvider(
       providers: [
+        BlocProvider<AuthBloc>.value(
+          value: ref.read(authBlocProvider)..add(const AuthCheckRequested()),
+        ),
         BlocProvider(
           create: (context) => FarmBloc(
             getFarms: ref.read(getFarmsUseCaseProvider),

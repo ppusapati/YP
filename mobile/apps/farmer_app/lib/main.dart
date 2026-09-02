@@ -107,6 +107,14 @@ Future<void> main() async {
     ),
   );
 
+  // ─── Log environment ─────────────────────────────────────────────
+  Logger('App').info(
+    'API target: '
+    '${const bool.fromEnvironment('API_USE_TLS', defaultValue: true) ? "https" : "http"}://'
+    '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'api.yieldpoint.io')}'
+    ':${const int.fromEnvironment('API_PORT', defaultValue: 443)}',
+  );
+
   // ─── Run app ─────────────────────────────────────────────────────
   runApp(
     ProviderScope(
