@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"p9e.in/samavaya/packages/errors"
+	"p9e.in/samavaya/packages/geojson"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
@@ -302,6 +303,9 @@ func (s *fieldService) SetFieldBoundary(ctx context.Context, params domain.SetBo
 	}
 	if params.Polygon == "" {
 		return nil, errors.BadRequest("MISSING_POLYGON", "polygon is required")
+	}
+	if err := geojson.ValidatePolygon(params.Polygon); err != nil {
+		return nil, errors.BadRequest("INVALID_POLYGON", fmt.Sprintf("invalid polygon: %v", err))
 	}
 
 	exists, err := s.repo.CheckFieldExists(ctx, params.FieldID, tenantID)

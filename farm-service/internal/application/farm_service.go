@@ -14,6 +14,7 @@ import (
 
 	"p9e.in/samavaya/packages/convert/ptr"
 	"p9e.in/samavaya/packages/errors"
+	"p9e.in/samavaya/packages/geojson"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
@@ -315,8 +316,8 @@ func (s *farmService) SetFarmBoundary(ctx context.Context, farmUUID, geoJSON str
 	if userID == "" {
 		userID = "system"
 	}
-	if !json.Valid([]byte(geoJSON)) {
-		return nil, errors.BadRequest("INVALID_GEOJSON", "GeoJSON must be valid JSON")
+	if err := geojson.ValidatePolygon(geoJSON); err != nil {
+		return nil, errors.BadRequest("INVALID_GEOJSON", fmt.Sprintf("invalid GeoJSON: %v", err))
 	}
 
 	farm, err := s.repo.GetFarmByUUID(ctx, farmUUID, tenantID)
