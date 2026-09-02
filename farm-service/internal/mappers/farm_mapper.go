@@ -449,3 +449,99 @@ func FarmsToProto(farms []domain.Farm) []*pb.Farm {
 	}
 	return result
 }
+
+// ---- Management Unit enum conversions ----
+
+func ProtoManagementUnitTypeToDomain(t pb.ManagementUnitType) domain.ManagementUnitType {
+	switch t {
+	case pb.ManagementUnitType_UNIT_TYPE_ZONE:
+		return domain.ManagementUnitTypeZone
+	case pb.ManagementUnitType_UNIT_TYPE_BLOCK:
+		return domain.ManagementUnitTypeBlock
+	case pb.ManagementUnitType_UNIT_TYPE_SECTION:
+		return domain.ManagementUnitTypeSection
+	case pb.ManagementUnitType_UNIT_TYPE_PLOT:
+		return domain.ManagementUnitTypePlot
+	default:
+		return domain.ManagementUnitTypeUnspecified
+	}
+}
+
+func DomainManagementUnitTypeToProto(t domain.ManagementUnitType) pb.ManagementUnitType {
+	switch t {
+	case domain.ManagementUnitTypeZone:
+		return pb.ManagementUnitType_UNIT_TYPE_ZONE
+	case domain.ManagementUnitTypeBlock:
+		return pb.ManagementUnitType_UNIT_TYPE_BLOCK
+	case domain.ManagementUnitTypeSection:
+		return pb.ManagementUnitType_UNIT_TYPE_SECTION
+	case domain.ManagementUnitTypePlot:
+		return pb.ManagementUnitType_UNIT_TYPE_PLOT
+	default:
+		return pb.ManagementUnitType_UNIT_TYPE_UNSPECIFIED
+	}
+}
+
+func ProtoManagementUnitStatusToDomain(s pb.ManagementUnitStatus) domain.ManagementUnitStatus {
+	switch s {
+	case pb.ManagementUnitStatus_UNIT_STATUS_ACTIVE:
+		return domain.ManagementUnitStatusActive
+	case pb.ManagementUnitStatus_UNIT_STATUS_INACTIVE:
+		return domain.ManagementUnitStatusInactive
+	case pb.ManagementUnitStatus_UNIT_STATUS_ARCHIVED:
+		return domain.ManagementUnitStatusArchived
+	default:
+		return domain.ManagementUnitStatusUnspecified
+	}
+}
+
+func DomainManagementUnitStatusToProto(s domain.ManagementUnitStatus) pb.ManagementUnitStatus {
+	switch s {
+	case domain.ManagementUnitStatusActive:
+		return pb.ManagementUnitStatus_UNIT_STATUS_ACTIVE
+	case domain.ManagementUnitStatusInactive:
+		return pb.ManagementUnitStatus_UNIT_STATUS_INACTIVE
+	case domain.ManagementUnitStatusArchived:
+		return pb.ManagementUnitStatus_UNIT_STATUS_ARCHIVED
+	default:
+		return pb.ManagementUnitStatus_UNIT_STATUS_UNSPECIFIED
+	}
+}
+
+// ---- Management Unit domain <-> proto conversions ----
+
+func ManagementUnitToProto(u *domain.ManagementUnit) *pb.ManagementUnit {
+	if u == nil {
+		return nil
+	}
+	unit := &pb.ManagementUnit{
+		Id:              u.ID,
+		TenantId:        u.TenantID,
+		FarmId:          u.FarmID,
+		ParentUnitId:    ptr.Deref(u.ParentUnitID),
+		Name:            u.Name,
+		Description:     ptr.Deref(u.Description),
+		UnitType:        DomainManagementUnitTypeToProto(u.UnitType),
+		AreaHectares:    ptr.Deref(u.AreaHectares),
+		BoundaryGeojson: ptr.Deref(u.BoundaryGeoJSON),
+		ManagerId:       ptr.Deref(u.ManagerID),
+		Status:          DomainManagementUnitStatusToProto(u.Status),
+		FieldIds:        u.FieldIDs,
+		Version:         u.Version,
+		CreatedBy:       u.CreatedBy,
+		CreatedAt:       timestamppb.New(u.CreatedAt),
+		UpdatedAt:       timestamppb.New(u.UpdatedAt),
+	}
+	return unit
+}
+
+func ManagementUnitsToProto(units []domain.ManagementUnit) []*pb.ManagementUnit {
+	if units == nil {
+		return nil
+	}
+	result := make([]*pb.ManagementUnit, len(units))
+	for i := range units {
+		result[i] = ManagementUnitToProto(&units[i])
+	}
+	return result
+}

@@ -2,16 +2,30 @@ package domain
 
 import "fmt"
 
-// ErrSatelliteNotFound is returned when a satellite cannot be located.
-type ErrSatelliteNotFound struct{ UUID string }
+// ErrImageNotFound is returned when a satellite image cannot be located.
+type ErrImageNotFound struct{ ID string }
 
-func (e ErrSatelliteNotFound) Error() string {
-	return fmt.Sprintf("satellite not found: %s", e.UUID)
+func (e ErrImageNotFound) Error() string {
+	return fmt.Sprintf("satellite image not found: %s", e.ID)
 }
 
-// ErrSatelliteNameExists is returned when a duplicate name is detected.
-type ErrSatelliteNameExists struct{ Name string }
+// ErrVegetationIndexNotFound is returned when a vegetation index record cannot be located.
+type ErrVegetationIndexNotFound struct{ ID string }
 
-func (e ErrSatelliteNameExists) Error() string {
-	return fmt.Sprintf("satellite with name %q already exists", e.Name)
+func (e ErrVegetationIndexNotFound) Error() string {
+	return fmt.Sprintf("vegetation index not found: %s", e.ID)
+}
+
+// ErrAlertNotFound is returned when a crop stress alert cannot be located.
+type ErrAlertNotFound struct{ ID string }
+
+func (e ErrAlertNotFound) Error() string {
+	return fmt.Sprintf("crop stress alert not found: %s", e.ID)
+}
+
+// ErrTaskNotFound is returned when a satellite task cannot be located.
+type ErrTaskNotFound struct{ ID string }
+
+func (e ErrTaskNotFound) Error() string {
+	return fmt.Sprintf("satellite task not found: %s", e.ID)
 }

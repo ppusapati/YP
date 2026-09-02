@@ -4,8 +4,13 @@ package grpc
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"strconv"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
@@ -32,50 +37,773 @@ func NewPestHandler(svc inbound.PestService, log p9log.Logger) *PestHandler {
 	}
 }
 
-// PredictPestRisk handles pest risk prediction requests.
+// ---------------------------------------------------------------------------
+// 1. PredictPestRisk
+// ---------------------------------------------------------------------------
+
 func (h *PestHandler) PredictPestRisk(ctx context.Context, req *connect.Request[pb.PredictPestRiskRequest]) (*connect.Response[pb.PredictPestRiskResponse], error) {
 	h.log.Infow("msg", "PredictPestRisk request", "tenant_id", p9context.TenantID(ctx))
+
 	if req.Msg.GetCropType() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "crop_type is required")
 	}
-	entity := &domain.Pest{Name: req.Msg.GetCropType()}
-	created, err := h.svc.CreatePest(ctx, entity)
+
+	params := &domain.PredictPestRiskParams{
+		FarmID:        req.Msg.GetFarmId(),
+		FieldID:       req.Msg.GetFieldId(),
+		PestSpeciesID: req.Msg.GetPestSpeciesId(),
+		CropType:      req.Msg.GetCropType(),
+		Latitude:      req.Msg.GetLatitude(),
+		Longitude:     req.Msg.GetLongitude(),
+	}
+
+	if req.Msg.GetWeather() != nil {
+		params.Weather = domain.WeatherFactors{
+			TemperatureCelsius: req.Msg.GetWeather().GetTemperatureCelsius(),
+			HumidityPct:        req.Msg.GetWeather().GetHumidityPct(),
+			RainfallMm:         req.Msg.GetWeather().GetRainfallMm(),
+			WindSpeedKmh:       req.Msg.GetWeather().GetWindSpeedKmh(),
+		}
+	}
+
+	if req.Msg.GetGrowthStage() != pb.GrowthStage_GROWTH_STAGE_UNSPECIFIED {
+		gs := protoGrowthStageToDomain(req.Msg.GetGrowthStage())
+		params.GrowthStage = &gs
+	}
+
+	prediction, err := h.svc.PredictPestRisk(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.PredictPestRiskResponse{Prediction: pestToProto(created)}), nil
+
+	return connect.NewResponse(&pb.PredictPestRiskResponse{
+		Prediction: predictionToProto(prediction),
+	}), nil
 }
 
-// GetPrediction handles get prediction requests.
+// ---------------------------------------------------------------------------
+// 2. GetPrediction
+// ---------------------------------------------------------------------------
+
 func (h *PestHandler) GetPrediction(ctx context.Context, req *connect.Request[pb.GetPredictionRequest]) (*connect.Response[pb.GetPredictionResponse], error) {
 	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
-	entity, err := h.svc.GetPest(ctx, req.Msg.GetId())
+
+	prediction, err := h.svc.GetPrediction(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.GetPredictionResponse{Prediction: pestToProto(entity)}), nil
+
+	return connect.NewResponse(&pb.GetPredictionResponse{
+		Prediction: predictionToProto(prediction),
+	}), nil
 }
 
-// ListPredictions handles list predictions requests.
+// ---------------------------------------------------------------------------
+// 3. ListPredictions
+// ---------------------------------------------------------------------------
+
 func (h *PestHandler) ListPredictions(ctx context.Context, req *connect.Request[pb.ListPredictionsRequest]) (*connect.Response[pb.ListPredictionsResponse], error) {
-	params := domain.ListPestPredictionParams{PageSize: req.Msg.GetPageSize()}
-	entities, total, err := h.svc.ListPestPredictions(ctx, params)
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.ListPredictionsParams{
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   offset,
+	}
+	if v := req.Msg.GetFarmId(); v != "" {
+		params.FarmID = &v
+	}
+	if v := req.Msg.GetFieldId(); v != "" {
+		params.FieldID = &v
+	}
+	if v := req.Msg.GetPestSpeciesId(); v != "" {
+		params.PestSpeciesID = &v
+	}
+	if req.Msg.GetMinRiskLevel() != pb.RiskLevel_RISK_LEVEL_UNSPECIFIED {
+		rl := protoRiskLevelToDomain(req.Msg.GetMinRiskLevel())
+		params.MinRiskLevel = &rl
+	}
+
+	predictions, total, err := h.svc.ListPredictions(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.PestPrediction, 0, len(entities))
-	for i := range entities {
-		protos = append(protos, pestToProto(&entities[i]))
+
+	protos := make([]*pb.PestPrediction, 0, len(predictions))
+	for i := range predictions {
+		protos = append(protos, predictionToProto(&predictions[i]))
 	}
-	return connect.NewResponse(&pb.ListPredictionsResponse{Predictions: protos, TotalCount: total}), nil
+
+	nextToken := computeNextPageToken(offset, int32(len(predictions)), params.PageSize, total)
+
+	return connect.NewResponse(&pb.ListPredictionsResponse{
+		Predictions:   protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
 }
 
-func pestToProto(e *domain.Pest) *pb.PestPrediction {
-	return &pb.PestPrediction{
-		Id:       e.UUID,
-		TenantId: e.TenantID,
-		CropType: e.Name,
+// ---------------------------------------------------------------------------
+// 4. ReportObservation
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) ReportObservation(ctx context.Context, req *connect.Request[pb.ReportObservationRequest]) (*connect.Response[pb.ReportObservationResponse], error) {
+	obs := &domain.PestObservation{
+		FarmID:          req.Msg.GetFarmId(),
+		FieldID:         req.Msg.GetFieldId(),
+		PestSpeciesUUID: req.Msg.GetPestSpeciesId(),
+		PestCount:       int(req.Msg.GetPestCount()),
+		DamageLevel:     protoDamageLevelToDomain(req.Msg.GetDamageLevel()),
 	}
+
+	if v := req.Msg.GetTrapType(); v != "" {
+		obs.TrapType = &v
+	}
+	if v := req.Msg.GetImageUrl(); v != "" {
+		obs.ImageURL = &v
+	}
+	if v := req.Msg.GetLatitude(); v != 0 {
+		obs.Latitude = &v
+	}
+	if v := req.Msg.GetLongitude(); v != 0 {
+		obs.Longitude = &v
+	}
+	if v := req.Msg.GetNotes(); v != "" {
+		obs.Notes = &v
+	}
+
+	created, err := h.svc.ReportObservation(ctx, obs)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.ReportObservationResponse{
+		Observation: observationToProto(created),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 5. ListObservations
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) ListObservations(ctx context.Context, req *connect.Request[pb.ListObservationsRequest]) (*connect.Response[pb.ListObservationsResponse], error) {
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.ListObservationsParams{
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   offset,
+	}
+	if v := req.Msg.GetFarmId(); v != "" {
+		params.FarmID = &v
+	}
+	if v := req.Msg.GetFieldId(); v != "" {
+		params.FieldID = &v
+	}
+	if v := req.Msg.GetPestSpeciesId(); v != "" {
+		params.PestSpeciesID = &v
+	}
+
+	observations, total, err := h.svc.ListObservations(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.PestObservation, 0, len(observations))
+	for i := range observations {
+		protos = append(protos, observationToProto(&observations[i]))
+	}
+
+	nextToken := computeNextPageToken(offset, int32(len(observations)), params.PageSize, total)
+
+	return connect.NewResponse(&pb.ListObservationsResponse{
+		Observations:  protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 6. GetPestSpecies
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) GetPestSpecies(ctx context.Context, req *connect.Request[pb.GetPestSpeciesRequest]) (*connect.Response[pb.GetPestSpeciesResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+
+	species, err := h.svc.GetPestSpecies(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetPestSpeciesResponse{
+		Species: speciesToProto(species),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 7. ListPestSpecies
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) ListPestSpecies(ctx context.Context, req *connect.Request[pb.ListPestSpeciesRequest]) (*connect.Response[pb.ListPestSpeciesResponse], error) {
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.ListPestSpeciesParams{
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   offset,
+	}
+	if v := req.Msg.GetSearch(); v != "" {
+		params.Search = &v
+	}
+	if v := req.Msg.GetCropType(); v != "" {
+		params.CropType = &v
+	}
+
+	species, total, err := h.svc.ListPestSpecies(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.PestSpecies, 0, len(species))
+	for i := range species {
+		protos = append(protos, speciesToProto(&species[i]))
+	}
+
+	nextToken := computeNextPageToken(offset, int32(len(species)), params.PageSize, total)
+
+	return connect.NewResponse(&pb.ListPestSpeciesResponse{
+		Species:       protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 8. GetTreatmentPlan
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) GetTreatmentPlan(ctx context.Context, req *connect.Request[pb.GetTreatmentPlanRequest]) (*connect.Response[pb.GetTreatmentPlanResponse], error) {
+	if req.Msg.GetPredictionId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "prediction_id is required")
+	}
+
+	prediction, err := h.svc.GetTreatmentPlan(ctx, req.Msg.GetPredictionId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	predProto := predictionToProto(prediction)
+
+	// Extract treatments from the prediction
+	var treatments []*pb.RecommendedTreatment
+	if predProto.GetRecommendedTreatments() != nil {
+		treatments = predProto.GetRecommendedTreatments()
+	}
+
+	return connect.NewResponse(&pb.GetTreatmentPlanResponse{
+		Prediction: predProto,
+		Treatments: treatments,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 9. GetRiskMap
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) GetRiskMap(ctx context.Context, req *connect.Request[pb.GetRiskMapRequest]) (*connect.Response[pb.GetRiskMapResponse], error) {
+	if req.Msg.GetPestSpeciesId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "pest_species_id is required")
+	}
+	if req.Msg.GetRegion() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "region is required")
+	}
+
+	riskMap, err := h.svc.GetRiskMap(ctx, req.Msg.GetPestSpeciesId(), req.Msg.GetRegion())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetRiskMapResponse{
+		RiskMap: riskMapToProto(riskMap),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 10. ListAlerts
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) ListAlerts(ctx context.Context, req *connect.Request[pb.ListAlertsRequest]) (*connect.Response[pb.ListAlertsResponse], error) {
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.ListAlertsParams{
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   offset,
+	}
+	if v := req.Msg.GetFarmId(); v != "" {
+		params.FarmID = &v
+	}
+	if v := req.Msg.GetFieldId(); v != "" {
+		params.FieldID = &v
+	}
+	if req.Msg.GetStatus() != pb.AlertStatus_ALERT_STATUS_UNSPECIFIED {
+		s := protoAlertStatusToDomain(req.Msg.GetStatus())
+		params.Status = &s
+	}
+	if req.Msg.GetMinRiskLevel() != pb.RiskLevel_RISK_LEVEL_UNSPECIFIED {
+		rl := protoRiskLevelToDomain(req.Msg.GetMinRiskLevel())
+		params.MinRiskLevel = &rl
+	}
+
+	alerts, total, err := h.svc.ListAlerts(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.PestAlert, 0, len(alerts))
+	for i := range alerts {
+		protos = append(protos, alertToProto(&alerts[i]))
+	}
+
+	nextToken := computeNextPageToken(offset, int32(len(alerts)), params.PageSize, total)
+
+	return connect.NewResponse(&pb.ListAlertsResponse{
+		Alerts:        protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 11. AcknowledgeAlert
+// ---------------------------------------------------------------------------
+
+func (h *PestHandler) AcknowledgeAlert(ctx context.Context, req *connect.Request[pb.AcknowledgeAlertRequest]) (*connect.Response[pb.AcknowledgeAlertResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+
+	alert, err := h.svc.AcknowledgeAlert(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.AcknowledgeAlertResponse{
+		Alert: alertToProto(alert),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// Domain -> Proto converters
+// ---------------------------------------------------------------------------
+
+func predictionToProto(p *domain.PestPrediction) *pb.PestPrediction {
+	if p == nil {
+		return nil
+	}
+
+	pred := &pb.PestPrediction{
+		Id:                        p.UUID,
+		TenantId:                  p.TenantID,
+		FarmId:                    p.FarmID,
+		FieldId:                   p.FieldID,
+		PestSpeciesId:             p.PestSpeciesUUID,
+		PredictionDate:            timestamppb.New(p.PredictionDate),
+		RiskLevel:                 domainRiskLevelToProto(p.RiskLevel),
+		RiskScore:                 int32(p.RiskScore),
+		ConfidencePct:             p.ConfidencePct,
+		CropType:                  p.CropType,
+		GeographicRiskFactor:      p.GeographicRiskFactor,
+		HistoricalOccurrenceCount: int32(p.HistoricalOccurrenceCount),
+		Version:                   p.Version,
+		CreatedBy:                 p.CreatedBy,
+		CreatedAt:                 timestamppb.New(p.CreatedAt),
+	}
+
+	// Weather factors
+	if p.TemperatureCelsius != nil || p.HumidityPct != nil || p.RainfallMm != nil || p.WindSpeedKmh != nil {
+		pred.WeatherFactors = &pb.WeatherFactors{}
+		if p.TemperatureCelsius != nil {
+			pred.WeatherFactors.TemperatureCelsius = *p.TemperatureCelsius
+		}
+		if p.HumidityPct != nil {
+			pred.WeatherFactors.HumidityPct = *p.HumidityPct
+		}
+		if p.RainfallMm != nil {
+			pred.WeatherFactors.RainfallMm = *p.RainfallMm
+		}
+		if p.WindSpeedKmh != nil {
+			pred.WeatherFactors.WindSpeedKmh = *p.WindSpeedKmh
+		}
+	}
+
+	if p.GrowthStage != nil {
+		pred.GrowthStage = domainGrowthStageToProto(*p.GrowthStage)
+	}
+
+	if p.PredictedOnsetDate != nil {
+		pred.PredictedOnsetDate = timestamppb.New(*p.PredictedOnsetDate)
+	}
+	if p.PredictedPeakDate != nil {
+		pred.PredictedPeakDate = timestamppb.New(*p.PredictedPeakDate)
+	}
+	if p.TreatmentWindowStart != nil {
+		pred.TreatmentWindowStart = timestamppb.New(*p.TreatmentWindowStart)
+	}
+	if p.TreatmentWindowEnd != nil {
+		pred.TreatmentWindowEnd = timestamppb.New(*p.TreatmentWindowEnd)
+	}
+	if p.UpdatedAt != nil {
+		pred.UpdatedAt = timestamppb.New(*p.UpdatedAt)
+	}
+
+	// Recommended treatments from JSONB
+	if len(p.RecommendedTreatments) > 0 {
+		var treatments []domain.RecommendedTreatment
+		if err := json.Unmarshal(p.RecommendedTreatments, &treatments); err == nil {
+			pred.RecommendedTreatments = make([]*pb.RecommendedTreatment, len(treatments))
+			for i, t := range treatments {
+				pred.RecommendedTreatments[i] = &pb.RecommendedTreatment{
+					TreatmentType:     domainTreatmentTypeToProto(t.TreatmentType),
+					ProductName:       t.ProductName,
+					ApplicationRate:   t.ApplicationRate,
+					ApplicationMethod: t.ApplicationMethod,
+					Timing:            t.Timing,
+					SafetyInterval:    t.SafetyInterval,
+				}
+			}
+		}
+	}
+
+	return pred
+}
+
+func alertToProto(a *domain.PestAlert) *pb.PestAlert {
+	if a == nil {
+		return nil
+	}
+
+	alert := &pb.PestAlert{
+		Id:            a.UUID,
+		TenantId:      a.TenantID,
+		PredictionId:  a.PredictionUUID,
+		FarmId:        a.FarmID,
+		FieldId:       a.FieldID,
+		PestSpeciesId: a.PestSpeciesUUID,
+		RiskLevel:     domainRiskLevelToProto(a.RiskLevel),
+		Status:        domainAlertStatusToProto(a.Status),
+		Title:         a.Title,
+		Message:       a.Message,
+		Version:       a.Version,
+		CreatedAt:     timestamppb.New(a.CreatedAt),
+	}
+
+	if a.AcknowledgedAt != nil {
+		alert.AcknowledgedAt = timestamppb.New(*a.AcknowledgedAt)
+	}
+	if a.AcknowledgedBy != nil {
+		alert.AcknowledgedBy = *a.AcknowledgedBy
+	}
+	if a.UpdatedAt != nil {
+		alert.UpdatedAt = timestamppb.New(*a.UpdatedAt)
+	}
+
+	return alert
+}
+
+func observationToProto(o *domain.PestObservation) *pb.PestObservation {
+	if o == nil {
+		return nil
+	}
+
+	obs := &pb.PestObservation{
+		Id:            o.UUID,
+		TenantId:      o.TenantID,
+		FarmId:        o.FarmID,
+		FieldId:       o.FieldID,
+		PestSpeciesId: o.PestSpeciesUUID,
+		PestCount:     int32(o.PestCount),
+		DamageLevel:   domainDamageLevelToProto(o.DamageLevel),
+		ObservedBy:    o.ObservedBy,
+		ObservedAt:    timestamppb.New(o.ObservedAt),
+		Version:       o.Version,
+		CreatedAt:     timestamppb.New(o.CreatedAt),
+	}
+
+	if o.TrapType != nil {
+		obs.TrapType = *o.TrapType
+	}
+	if o.ImageURL != nil {
+		obs.ImageUrl = *o.ImageURL
+	}
+	if o.Latitude != nil {
+		obs.Latitude = *o.Latitude
+	}
+	if o.Longitude != nil {
+		obs.Longitude = *o.Longitude
+	}
+	if o.Notes != nil {
+		obs.Notes = *o.Notes
+	}
+	if o.UpdatedAt != nil {
+		obs.UpdatedAt = timestamppb.New(*o.UpdatedAt)
+	}
+
+	return obs
+}
+
+func speciesToProto(s *domain.PestSpecies) *pb.PestSpecies {
+	if s == nil {
+		return nil
+	}
+
+	species := &pb.PestSpecies{
+		Id:             s.UUID,
+		TenantId:       s.TenantID,
+		CommonName:     s.CommonName,
+		ScientificName: s.ScientificName,
+		Version:        s.Version,
+		CreatedAt:      timestamppb.New(s.CreatedAt),
+	}
+
+	if s.Family != nil {
+		species.Family = *s.Family
+	}
+	if s.Description != nil {
+		species.Description = *s.Description
+	}
+	if s.ImageURL != nil {
+		species.ImageUrl = *s.ImageURL
+	}
+	if s.UpdatedAt != nil {
+		species.UpdatedAt = timestamppb.New(*s.UpdatedAt)
+	}
+
+	if len(s.AffectedCrops) > 0 {
+		var crops []string
+		_ = json.Unmarshal(s.AffectedCrops, &crops)
+		species.AffectedCrops = crops
+	}
+	if len(s.FavorableConditions) > 0 {
+		var conditions []string
+		_ = json.Unmarshal(s.FavorableConditions, &conditions)
+		species.FavorableConditions = conditions
+	}
+
+	return species
+}
+
+func riskMapToProto(m *domain.PestRiskMap) *pb.PestRiskMap {
+	if m == nil {
+		return nil
+	}
+
+	rm := &pb.PestRiskMap{
+		Id:               m.UUID,
+		TenantId:         m.TenantID,
+		PestSpeciesId:    m.PestSpeciesUUID,
+		Region:           m.Region,
+		OverallRiskLevel: domainRiskLevelToProto(m.OverallRiskLevel),
+		Geojson:          m.GeoJSON,
+		ValidFrom:        timestamppb.New(m.ValidFrom),
+		ValidUntil:       timestamppb.New(m.ValidUntil),
+		Version:          m.Version,
+		CreatedAt:        timestamppb.New(m.CreatedAt),
+	}
+
+	if m.UpdatedAt != nil {
+		rm.UpdatedAt = timestamppb.New(*m.UpdatedAt)
+	}
+
+	return rm
+}
+
+// ---------------------------------------------------------------------------
+// Enum converters: Proto <-> Domain
+// ---------------------------------------------------------------------------
+
+func domainRiskLevelToProto(r domain.RiskLevel) pb.RiskLevel {
+	switch r {
+	case domain.RiskLevelNone:
+		return pb.RiskLevel_RISK_LEVEL_NONE
+	case domain.RiskLevelLow:
+		return pb.RiskLevel_RISK_LEVEL_LOW
+	case domain.RiskLevelModerate:
+		return pb.RiskLevel_RISK_LEVEL_MODERATE
+	case domain.RiskLevelHigh:
+		return pb.RiskLevel_RISK_LEVEL_HIGH
+	case domain.RiskLevelCritical:
+		return pb.RiskLevel_RISK_LEVEL_CRITICAL
+	default:
+		return pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+	}
+}
+
+func protoRiskLevelToDomain(r pb.RiskLevel) domain.RiskLevel {
+	switch r {
+	case pb.RiskLevel_RISK_LEVEL_NONE:
+		return domain.RiskLevelNone
+	case pb.RiskLevel_RISK_LEVEL_LOW:
+		return domain.RiskLevelLow
+	case pb.RiskLevel_RISK_LEVEL_MODERATE:
+		return domain.RiskLevelModerate
+	case pb.RiskLevel_RISK_LEVEL_HIGH:
+		return domain.RiskLevelHigh
+	case pb.RiskLevel_RISK_LEVEL_CRITICAL:
+		return domain.RiskLevelCritical
+	default:
+		return domain.RiskLevelUnspecified
+	}
+}
+
+func domainTreatmentTypeToProto(t domain.TreatmentType) pb.TreatmentType {
+	switch t {
+	case domain.TreatmentTypeChemical:
+		return pb.TreatmentType_TREATMENT_TYPE_CHEMICAL
+	case domain.TreatmentTypeBiological:
+		return pb.TreatmentType_TREATMENT_TYPE_BIOLOGICAL
+	case domain.TreatmentTypeCultural:
+		return pb.TreatmentType_TREATMENT_TYPE_CULTURAL
+	case domain.TreatmentTypeMechanical:
+		return pb.TreatmentType_TREATMENT_TYPE_MECHANICAL
+	default:
+		return pb.TreatmentType_TREATMENT_TYPE_UNSPECIFIED
+	}
+}
+
+func domainAlertStatusToProto(s domain.AlertStatus) pb.AlertStatus {
+	switch s {
+	case domain.AlertStatusActive:
+		return pb.AlertStatus_ALERT_STATUS_ACTIVE
+	case domain.AlertStatusAcknowledged:
+		return pb.AlertStatus_ALERT_STATUS_ACKNOWLEDGED
+	case domain.AlertStatusResolved:
+		return pb.AlertStatus_ALERT_STATUS_RESOLVED
+	case domain.AlertStatusExpired:
+		return pb.AlertStatus_ALERT_STATUS_EXPIRED
+	default:
+		return pb.AlertStatus_ALERT_STATUS_UNSPECIFIED
+	}
+}
+
+func protoAlertStatusToDomain(s pb.AlertStatus) domain.AlertStatus {
+	switch s {
+	case pb.AlertStatus_ALERT_STATUS_ACTIVE:
+		return domain.AlertStatusActive
+	case pb.AlertStatus_ALERT_STATUS_ACKNOWLEDGED:
+		return domain.AlertStatusAcknowledged
+	case pb.AlertStatus_ALERT_STATUS_RESOLVED:
+		return domain.AlertStatusResolved
+	case pb.AlertStatus_ALERT_STATUS_EXPIRED:
+		return domain.AlertStatusExpired
+	default:
+		return domain.AlertStatusUnspecified
+	}
+}
+
+func domainDamageLevelToProto(d domain.DamageLevel) pb.DamageLevel {
+	switch d {
+	case domain.DamageLevelNone:
+		return pb.DamageLevel_DAMAGE_LEVEL_NONE
+	case domain.DamageLevelLight:
+		return pb.DamageLevel_DAMAGE_LEVEL_LIGHT
+	case domain.DamageLevelModerate:
+		return pb.DamageLevel_DAMAGE_LEVEL_MODERATE
+	case domain.DamageLevelSevere:
+		return pb.DamageLevel_DAMAGE_LEVEL_SEVERE
+	case domain.DamageLevelDevastating:
+		return pb.DamageLevel_DAMAGE_LEVEL_DEVASTATING
+	default:
+		return pb.DamageLevel_DAMAGE_LEVEL_UNSPECIFIED
+	}
+}
+
+func protoDamageLevelToDomain(d pb.DamageLevel) domain.DamageLevel {
+	switch d {
+	case pb.DamageLevel_DAMAGE_LEVEL_NONE:
+		return domain.DamageLevelNone
+	case pb.DamageLevel_DAMAGE_LEVEL_LIGHT:
+		return domain.DamageLevelLight
+	case pb.DamageLevel_DAMAGE_LEVEL_MODERATE:
+		return domain.DamageLevelModerate
+	case pb.DamageLevel_DAMAGE_LEVEL_SEVERE:
+		return domain.DamageLevelSevere
+	case pb.DamageLevel_DAMAGE_LEVEL_DEVASTATING:
+		return domain.DamageLevelDevastating
+	default:
+		return domain.DamageLevelUnspecified
+	}
+}
+
+func domainGrowthStageToProto(g domain.GrowthStage) pb.GrowthStage {
+	switch g {
+	case domain.GrowthStageGermination:
+		return pb.GrowthStage_GROWTH_STAGE_GERMINATION
+	case domain.GrowthStageSeedling:
+		return pb.GrowthStage_GROWTH_STAGE_SEEDLING
+	case domain.GrowthStageVegetative:
+		return pb.GrowthStage_GROWTH_STAGE_VEGETATIVE
+	case domain.GrowthStageFlowering:
+		return pb.GrowthStage_GROWTH_STAGE_FLOWERING
+	case domain.GrowthStageFruiting:
+		return pb.GrowthStage_GROWTH_STAGE_FRUITING
+	case domain.GrowthStageMaturation:
+		return pb.GrowthStage_GROWTH_STAGE_MATURATION
+	case domain.GrowthStageHarvest:
+		return pb.GrowthStage_GROWTH_STAGE_HARVEST
+	default:
+		return pb.GrowthStage_GROWTH_STAGE_UNSPECIFIED
+	}
+}
+
+func protoGrowthStageToDomain(g pb.GrowthStage) domain.GrowthStage {
+	switch g {
+	case pb.GrowthStage_GROWTH_STAGE_GERMINATION:
+		return domain.GrowthStageGermination
+	case pb.GrowthStage_GROWTH_STAGE_SEEDLING:
+		return domain.GrowthStageSeedling
+	case pb.GrowthStage_GROWTH_STAGE_VEGETATIVE:
+		return domain.GrowthStageVegetative
+	case pb.GrowthStage_GROWTH_STAGE_FLOWERING:
+		return domain.GrowthStageFlowering
+	case pb.GrowthStage_GROWTH_STAGE_FRUITING:
+		return domain.GrowthStageFruiting
+	case pb.GrowthStage_GROWTH_STAGE_MATURATION:
+		return domain.GrowthStageMaturation
+	case pb.GrowthStage_GROWTH_STAGE_HARVEST:
+		return domain.GrowthStageHarvest
+	default:
+		return domain.GrowthStageUnspecified
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Pagination helpers
+// ---------------------------------------------------------------------------
+
+func decodePageToken(token string) int32 {
+	if token == "" {
+		return 0
+	}
+	b, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return 0
+	}
+	v, err := strconv.ParseInt(string(b), 10, 32)
+	if err != nil {
+		return 0
+	}
+	return int32(v)
+}
+
+func encodePageToken(offset int32) string {
+	return base64.StdEncoding.EncodeToString([]byte(strconv.FormatInt(int64(offset), 10)))
+}
+
+func computeNextPageToken(currentOffset, resultCount, _ /* pageSize */, totalCount int32) string {
+	nextOffset := currentOffset + resultCount
+	if resultCount == 0 || nextOffset >= totalCount {
+		return ""
+	}
+	return encodePageToken(nextOffset)
 }

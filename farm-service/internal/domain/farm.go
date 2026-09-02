@@ -171,3 +171,71 @@ type TransferOwnershipParams struct {
 	ToPhone             string
 	OwnershipPercentage float64
 }
+
+// ManagementUnitType represents the hierarchical category of a management unit.
+type ManagementUnitType string
+
+const (
+	ManagementUnitTypeUnspecified ManagementUnitType = ""
+	ManagementUnitTypeZone       ManagementUnitType = "UNIT_TYPE_ZONE"
+	ManagementUnitTypeBlock      ManagementUnitType = "UNIT_TYPE_BLOCK"
+	ManagementUnitTypeSection    ManagementUnitType = "UNIT_TYPE_SECTION"
+	ManagementUnitTypePlot       ManagementUnitType = "UNIT_TYPE_PLOT"
+)
+
+func (t ManagementUnitType) IsValid() bool {
+	switch t {
+	case ManagementUnitTypeZone, ManagementUnitTypeBlock, ManagementUnitTypeSection, ManagementUnitTypePlot:
+		return true
+	}
+	return false
+}
+
+// ManagementUnitStatus represents the operational status of a management unit.
+type ManagementUnitStatus string
+
+const (
+	ManagementUnitStatusUnspecified ManagementUnitStatus = ""
+	ManagementUnitStatusActive     ManagementUnitStatus = "UNIT_STATUS_ACTIVE"
+	ManagementUnitStatusInactive   ManagementUnitStatus = "UNIT_STATUS_INACTIVE"
+	ManagementUnitStatusArchived   ManagementUnitStatus = "UNIT_STATUS_ARCHIVED"
+)
+
+func (s ManagementUnitStatus) IsValid() bool {
+	switch s {
+	case ManagementUnitStatusActive, ManagementUnitStatusInactive, ManagementUnitStatusArchived:
+		return true
+	}
+	return false
+}
+
+// ManagementUnit represents a farm subdivision (zone, block, section, plot).
+type ManagementUnit struct {
+	ID              string               `json:"id"`
+	TenantID        string               `json:"tenant_id"`
+	FarmID          string               `json:"farm_id"`
+	ParentUnitID    *string              `json:"parent_unit_id,omitempty"`
+	Name            string               `json:"name"`
+	Description     *string              `json:"description,omitempty"`
+	UnitType        ManagementUnitType   `json:"unit_type"`
+	AreaHectares    *float64             `json:"area_hectares,omitempty"`
+	BoundaryGeoJSON *string              `json:"boundary_geojson,omitempty"`
+	ManagerID       *string              `json:"manager_id,omitempty"`
+	Status          ManagementUnitStatus `json:"status"`
+	Version         int64                `json:"version"`
+	CreatedBy       string               `json:"created_by"`
+	UpdatedBy       *string              `json:"updated_by,omitempty"`
+	CreatedAt       time.Time            `json:"created_at"`
+	UpdatedAt       time.Time            `json:"updated_at"`
+	DeletedAt       *time.Time           `json:"deleted_at,omitempty"`
+
+	FieldIDs []string `json:"field_ids,omitempty"`
+}
+
+// ListManagementUnitsParams holds filter and pagination parameters.
+type ListManagementUnitsParams struct {
+	TenantID string
+	FarmID   string
+	PageSize int32
+	Offset   int32
+}

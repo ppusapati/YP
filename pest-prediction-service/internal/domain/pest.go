@@ -50,11 +50,11 @@ func (r RiskLevel) Severity() int {
 // RiskLevelFromScore converts a numeric risk score (0-100) to a RiskLevel.
 func RiskLevelFromScore(score int) RiskLevel {
 	switch {
-	case score <= 10:
+	case score <= 20:
 		return RiskLevelNone
-	case score <= 30:
+	case score <= 40:
 		return RiskLevelLow
-	case score <= 55:
+	case score <= 60:
 		return RiskLevelModerate
 	case score <= 80:
 		return RiskLevelHigh

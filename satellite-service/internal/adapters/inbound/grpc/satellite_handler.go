@@ -4,8 +4,10 @@ package grpc
 
 import (
 	"context"
+	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
@@ -32,52 +34,555 @@ func NewSatelliteHandler(svc inbound.SatelliteService, log p9log.Logger) *Satell
 	}
 }
 
-// RequestImagery handles imagery request requests.
+// ---------------------------------------------------------------------------
+// RPC 1: RequestImagery
+// ---------------------------------------------------------------------------
+
 func (h *SatelliteHandler) RequestImagery(ctx context.Context, req *connect.Request[pb.RequestImageryRequest]) (*connect.Response[pb.RequestImageryResponse], error) {
 	h.log.Infow("msg", "RequestImagery request", "tenant_id", p9context.TenantID(ctx))
+
 	if req.Msg.GetFieldId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
 	}
-	entity := &domain.Satellite{Name: req.Msg.GetFieldId()}
-	created, err := h.svc.CreateSatellite(ctx, entity)
+
+	image := &domain.SatelliteImage{
+		FieldID:           req.Msg.GetFieldId(),
+		FarmID:            req.Msg.GetFarmId(),
+		SatelliteProvider: providerFromProto(req.Msg.GetSatelliteProvider()),
+		CloudCoverPct:     req.Msg.GetMaxCloudCoverPct(),
+		ResolutionMeters:  req.Msg.GetResolutionMeters(),
+		Bands:             bandsFromProto(req.Msg.GetBands()),
+		Bbox:              bboxFromProto(req.Msg.GetBbox()),
+	}
+
+	task, err := h.svc.RequestImagery(ctx, image)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.RequestImageryResponse{Task: &pb.SatelliteTask{
-		Id:       created.UUID,
-		TenantId: created.TenantID,
-	}}), nil
+
+	return connect.NewResponse(&pb.RequestImageryResponse{
+		Task:    taskToProto(task),
+		Message: "Imagery acquisition task created successfully",
+	}), nil
 }
 
-// GetImage handles get image requests.
+// ---------------------------------------------------------------------------
+// RPC 2: GetImage
+// ---------------------------------------------------------------------------
+
 func (h *SatelliteHandler) GetImage(ctx context.Context, req *connect.Request[pb.GetImageRequest]) (*connect.Response[pb.GetImageResponse], error) {
 	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
-	entity, err := h.svc.GetSatellite(ctx, req.Msg.GetId())
+
+	image, err := h.svc.GetImage(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.GetImageResponse{Image: satelliteToProto(entity)}), nil
+
+	return connect.NewResponse(&pb.GetImageResponse{
+		Image: imageToProto(image),
+	}), nil
 }
 
-// ListImages handles list images requests.
+// ---------------------------------------------------------------------------
+// RPC 3: ListImages
+// ---------------------------------------------------------------------------
+
 func (h *SatelliteHandler) ListImages(ctx context.Context, req *connect.Request[pb.ListImagesRequest]) (*connect.Response[pb.ListImagesResponse], error) {
-	params := domain.ListSatelliteParams{PageSize: req.Msg.GetPageSize()}
-	entities, total, err := h.svc.ListSatellites(ctx, params)
+	params := domain.ListImagesParams{
+		FieldID:  req.Msg.GetFieldId(),
+		FarmID:   req.Msg.GetFarmId(),
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   req.Msg.GetPageOffset(),
+	}
+
+	images, total, err := h.svc.ListImages(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.SatelliteImage, 0, len(entities))
-	for i := range entities {
-		protos = append(protos, satelliteToProto(&entities[i]))
+
+	protos := make([]*pb.SatelliteImage, 0, len(images))
+	for i := range images {
+		protos = append(protos, imageToProto(&images[i]))
 	}
-	return connect.NewResponse(&pb.ListImagesResponse{Images: protos, TotalCount: total}), nil
+
+	return connect.NewResponse(&pb.ListImagesResponse{
+		Images:     protos,
+		TotalCount: total,
+	}), nil
 }
 
-func satelliteToProto(e *domain.Satellite) *pb.SatelliteImage {
+// ---------------------------------------------------------------------------
+// RPC 4: ComputeNDVI
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) ComputeNDVI(ctx context.Context, req *connect.Request[pb.ComputeIndexRequest]) (*connect.Response[pb.ComputeIndexResponse], error) {
+	return h.computeIndex(ctx, req, "NDVI")
+}
+
+// ---------------------------------------------------------------------------
+// RPC 5: ComputeNDWI
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) ComputeNDWI(ctx context.Context, req *connect.Request[pb.ComputeIndexRequest]) (*connect.Response[pb.ComputeIndexResponse], error) {
+	return h.computeIndex(ctx, req, "NDWI")
+}
+
+// ---------------------------------------------------------------------------
+// RPC 6: ComputeEVI
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) ComputeEVI(ctx context.Context, req *connect.Request[pb.ComputeIndexRequest]) (*connect.Response[pb.ComputeIndexResponse], error) {
+	return h.computeIndex(ctx, req, "EVI")
+}
+
+func (h *SatelliteHandler) computeIndex(ctx context.Context, req *connect.Request[pb.ComputeIndexRequest], indexType string) (*connect.Response[pb.ComputeIndexResponse], error) {
+	if req.Msg.GetImageId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "image_id is required")
+	}
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+
+	idx, err := h.svc.ComputeVegetationIndex(ctx, req.Msg.GetImageId(), req.Msg.GetFieldId(), indexType)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.ComputeIndexResponse{
+		Index:   vegetationIndexToProto(idx),
+		Message: indexType + " computation completed successfully",
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// RPC 7: GetVegetationIndices
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) GetVegetationIndices(ctx context.Context, req *connect.Request[pb.GetVegetationIndicesRequest]) (*connect.Response[pb.GetVegetationIndicesResponse], error) {
+	params := domain.GetVegetationIndicesParams{
+		ImageID:   req.Msg.GetImageId(),
+		FieldID:   req.Msg.GetFieldId(),
+		IndexType: req.Msg.GetIndexType(),
+	}
+
+	indices, err := h.svc.GetVegetationIndices(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.VegetationIndex, 0, len(indices))
+	for i := range indices {
+		protos = append(protos, vegetationIndexToProto(&indices[i]))
+	}
+
+	return connect.NewResponse(&pb.GetVegetationIndicesResponse{
+		Indices: protos,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// RPC 8: DetectCropStress
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) DetectCropStress(ctx context.Context, req *connect.Request[pb.DetectCropStressRequest]) (*connect.Response[pb.DetectCropStressResponse], error) {
+	if req.Msg.GetImageId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "image_id is required")
+	}
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+
+	alert, err := h.svc.DetectCropStress(ctx, req.Msg.GetImageId(), req.Msg.GetFieldId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.DetectCropStressResponse{
+		Alert:   alertToProto(alert),
+		Message: "Crop stress detection completed",
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// RPC 9: GetTemporalAnalysis
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) GetTemporalAnalysis(ctx context.Context, req *connect.Request[pb.GetTemporalAnalysisRequest]) (*connect.Response[pb.GetTemporalAnalysisResponse], error) {
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	if req.Msg.GetIndexType() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "index_type is required")
+	}
+
+	params := domain.TemporalAnalysisParams{
+		FieldID:   req.Msg.GetFieldId(),
+		IndexType: req.Msg.GetIndexType(),
+		StartDate: timeFromProto(req.Msg.GetStartDate()),
+		EndDate:   timeFromProto(req.Msg.GetEndDate()),
+	}
+
+	analysis, err := h.svc.GetTemporalAnalysis(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetTemporalAnalysisResponse{
+		Analysis: temporalAnalysisToProto(analysis),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// RPC 10: ListAlerts
+// ---------------------------------------------------------------------------
+
+func (h *SatelliteHandler) ListAlerts(ctx context.Context, req *connect.Request[pb.ListAlertsRequest]) (*connect.Response[pb.ListAlertsResponse], error) {
+	params := domain.ListAlertsParams{
+		FieldID:  req.Msg.GetFieldId(),
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   req.Msg.GetPageOffset(),
+	}
+
+	alerts, total, err := h.svc.ListAlerts(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.CropStressAlert, 0, len(alerts))
+	for i := range alerts {
+		protos = append(protos, alertToProto(&alerts[i]))
+	}
+
+	return connect.NewResponse(&pb.ListAlertsResponse{
+		Alerts:     protos,
+		TotalCount: total,
+	}), nil
+}
+
+// ===========================================================================
+// Inline proto <-> domain mapping helpers
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// SatelliteProvider
+// ---------------------------------------------------------------------------
+
+func providerFromProto(p pb.SatelliteProvider) domain.SatelliteProvider {
+	switch p {
+	case pb.SatelliteProvider_SATELLITE_PROVIDER_SENTINEL2:
+		return domain.SatelliteProviderSentinel2
+	case pb.SatelliteProvider_SATELLITE_PROVIDER_LANDSAT8:
+		return domain.SatelliteProviderLandsat8
+	case pb.SatelliteProvider_SATELLITE_PROVIDER_PLANET:
+		return domain.SatelliteProviderPlanet
+	case pb.SatelliteProvider_SATELLITE_PROVIDER_CUSTOM:
+		return domain.SatelliteProviderCustom
+	default:
+		return domain.SatelliteProviderSentinel2
+	}
+}
+
+func providerToProto(p domain.SatelliteProvider) pb.SatelliteProvider {
+	switch p {
+	case domain.SatelliteProviderSentinel2:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_SENTINEL2
+	case domain.SatelliteProviderLandsat8:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_LANDSAT8
+	case domain.SatelliteProviderPlanet:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_PLANET
+	case domain.SatelliteProviderCustom:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_CUSTOM
+	default:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SpectralBand
+// ---------------------------------------------------------------------------
+
+func bandFromProto(b pb.SpectralBand) string {
+	switch b {
+	case pb.SpectralBand_SPECTRAL_BAND_RED:
+		return "RED"
+	case pb.SpectralBand_SPECTRAL_BAND_GREEN:
+		return "GREEN"
+	case pb.SpectralBand_SPECTRAL_BAND_BLUE:
+		return "BLUE"
+	case pb.SpectralBand_SPECTRAL_BAND_NIR:
+		return "NIR"
+	case pb.SpectralBand_SPECTRAL_BAND_SWIR:
+		return "SWIR"
+	case pb.SpectralBand_SPECTRAL_BAND_REDEDGE:
+		return "REDEDGE"
+	default:
+		return ""
+	}
+}
+
+func bandsFromProto(bands []pb.SpectralBand) []string {
+	out := make([]string, 0, len(bands))
+	for _, b := range bands {
+		if s := bandFromProto(b); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func bandToProto(b string) pb.SpectralBand {
+	switch b {
+	case "RED":
+		return pb.SpectralBand_SPECTRAL_BAND_RED
+	case "GREEN":
+		return pb.SpectralBand_SPECTRAL_BAND_GREEN
+	case "BLUE":
+		return pb.SpectralBand_SPECTRAL_BAND_BLUE
+	case "NIR":
+		return pb.SpectralBand_SPECTRAL_BAND_NIR
+	case "SWIR":
+		return pb.SpectralBand_SPECTRAL_BAND_SWIR
+	case "REDEDGE":
+		return pb.SpectralBand_SPECTRAL_BAND_REDEDGE
+	default:
+		return pb.SpectralBand_SPECTRAL_BAND_UNSPECIFIED
+	}
+}
+
+func bandsToProto(bands []string) []pb.SpectralBand {
+	out := make([]pb.SpectralBand, 0, len(bands))
+	for _, b := range bands {
+		v := bandToProto(b)
+		if v != pb.SpectralBand_SPECTRAL_BAND_UNSPECIFIED {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// ---------------------------------------------------------------------------
+// ProcessingStatus
+// ---------------------------------------------------------------------------
+
+func statusToProto(s domain.ProcessingStatus) pb.ProcessingStatus {
+	switch s {
+	case domain.ProcessingStatusPending:
+		return pb.ProcessingStatus_PROCESSING_STATUS_PENDING
+	case domain.ProcessingStatusProcessing:
+		return pb.ProcessingStatus_PROCESSING_STATUS_PROCESSING
+	case domain.ProcessingStatusCompleted:
+		return pb.ProcessingStatus_PROCESSING_STATUS_COMPLETED
+	case domain.ProcessingStatusFailed:
+		return pb.ProcessingStatus_PROCESSING_STATUS_FAILED
+	default:
+		return pb.ProcessingStatus_PROCESSING_STATUS_UNSPECIFIED
+	}
+}
+
+// ---------------------------------------------------------------------------
+// StressType
+// ---------------------------------------------------------------------------
+
+func stressTypeToProto(s domain.StressType) pb.StressType {
+	switch s {
+	case domain.StressTypeWater:
+		return pb.StressType_STRESS_TYPE_WATER
+	case domain.StressTypeNutrient:
+		return pb.StressType_STRESS_TYPE_NUTRIENT
+	case domain.StressTypeDisease:
+		return pb.StressType_STRESS_TYPE_DISEASE
+	case domain.StressTypePest:
+		return pb.StressType_STRESS_TYPE_PEST
+	default:
+		return pb.StressType_STRESS_TYPE_UNSPECIFIED
+	}
+}
+
+// ---------------------------------------------------------------------------
+// BoundingBox
+// ---------------------------------------------------------------------------
+
+func bboxFromProto(b *pb.BoundingBox) *domain.BoundingBox {
+	if b == nil {
+		return nil
+	}
+	return &domain.BoundingBox{
+		MinLat: b.GetMinLat(), MinLon: b.GetMinLon(),
+		MaxLat: b.GetMaxLat(), MaxLon: b.GetMaxLon(),
+	}
+}
+
+func bboxToProto(b *domain.BoundingBox) *pb.BoundingBox {
+	if b == nil {
+		return nil
+	}
+	return &pb.BoundingBox{
+		MinLat: b.MinLat, MinLon: b.MinLon,
+		MaxLat: b.MaxLat, MaxLon: b.MaxLon,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Timestamp helpers
+// ---------------------------------------------------------------------------
+
+func timeToProto(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
+}
+
+func optTimeToProto(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
+}
+
+func timeFromProto(t *timestamppb.Timestamp) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return t.AsTime()
+}
+
+// ---------------------------------------------------------------------------
+// Domain -> Proto: SatelliteImage
+// ---------------------------------------------------------------------------
+
+func imageToProto(img *domain.SatelliteImage) *pb.SatelliteImage {
+	if img == nil {
+		return nil
+	}
 	return &pb.SatelliteImage{
-		Id:       e.UUID,
-		TenantId: e.TenantID,
+		Id:                img.UUID,
+		TenantId:          img.TenantID,
+		FieldId:           img.FieldID,
+		FarmId:            img.FarmID,
+		SatelliteProvider: providerToProto(img.SatelliteProvider),
+		AcquisitionDate:   timeToProto(img.AcquisitionDate),
+		CloudCoverPct:     img.CloudCoverPct,
+		ResolutionMeters:  img.ResolutionMeters,
+		Bands:             bandsToProto(img.Bands),
+		Bbox:              bboxToProto(img.Bbox),
+		ImageUrl:          img.ImageURL,
+		ProcessingStatus:  statusToProto(img.ProcessingStatus),
+		Version:           img.Version,
+		CreatedAt:         timeToProto(img.CreatedAt),
+		UpdatedAt:         optTimeToProto(img.UpdatedAt),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Domain -> Proto: VegetationIndex
+// ---------------------------------------------------------------------------
+
+func vegetationIndexToProto(idx *domain.VegetationIndex) *pb.VegetationIndex {
+	if idx == nil {
+		return nil
+	}
+	return &pb.VegetationIndex{
+		Id:         idx.UUID,
+		TenantId:   idx.TenantID,
+		ImageId:    idx.ImageID,
+		FieldId:    idx.FieldID,
+		IndexType:  string(idx.IndexType),
+		MinValue:   idx.MinValue,
+		MaxValue:   idx.MaxValue,
+		MeanValue:  idx.MeanValue,
+		StdDev:     idx.StdDev,
+		RasterUrl:  idx.RasterURL,
+		ComputedAt: timeToProto(idx.ComputedAt),
+		Version:    idx.Version,
+		CreatedAt:  timeToProto(idx.CreatedAt),
+		UpdatedAt:  optTimeToProto(idx.UpdatedAt),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Domain -> Proto: CropStressAlert
+// ---------------------------------------------------------------------------
+
+func alertToProto(a *domain.CropStressAlert) *pb.CropStressAlert {
+	if a == nil {
+		return nil
+	}
+	return &pb.CropStressAlert{
+		Id:              a.UUID,
+		TenantId:        a.TenantID,
+		FieldId:         a.FieldID,
+		ImageId:         a.ImageID,
+		StressDetected:  a.StressDetected,
+		StressType:      stressTypeToProto(a.StressType),
+		StressSeverity:  a.StressSeverity,
+		AffectedAreaPct: a.AffectedAreaPct,
+		Description:     a.Description,
+		Recommendation:  a.Recommendation,
+		AffectedBbox:    bboxToProto(a.AffectedBbox),
+		Version:         a.Version,
+		DetectedAt:      timeToProto(a.DetectedAt),
+		CreatedAt:       timeToProto(a.CreatedAt),
+		UpdatedAt:       optTimeToProto(a.UpdatedAt),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Domain -> Proto: SatelliteTask
+// ---------------------------------------------------------------------------
+
+func taskToProto(t *domain.SatelliteTask) *pb.SatelliteTask {
+	if t == nil {
+		return nil
+	}
+	return &pb.SatelliteTask{
+		Id:           t.UUID,
+		TenantId:     t.TenantID,
+		FieldId:      t.FieldID,
+		TaskType:     t.TaskType,
+		Status:       statusToProto(t.Status),
+		InputImageId: t.InputImageID,
+		ResultId:     t.ResultID,
+		ErrorMessage: t.ErrorMessage,
+		RetryCount:   t.RetryCount,
+		Version:      t.Version,
+		CreatedAt:    timeToProto(t.CreatedAt),
+		UpdatedAt:    optTimeToProto(t.UpdatedAt),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Domain -> Proto: TemporalAnalysis
+// ---------------------------------------------------------------------------
+
+func temporalAnalysisToProto(a *domain.TemporalAnalysis) *pb.TemporalAnalysis {
+	if a == nil {
+		return nil
+	}
+	dps := make([]*pb.TemporalDataPoint, len(a.DataPoints))
+	for i, dp := range a.DataPoints {
+		dps[i] = &pb.TemporalDataPoint{
+			Date:      timeToProto(dp.Date),
+			MeanValue: dp.MeanValue,
+			MinValue:  dp.MinValue,
+			MaxValue:  dp.MaxValue,
+		}
+	}
+	return &pb.TemporalAnalysis{
+		Id:             a.UUID,
+		TenantId:       a.TenantID,
+		FieldId:        a.FieldID,
+		IndexType:      string(a.IndexType),
+		StartDate:      timeToProto(a.StartDate),
+		EndDate:        timeToProto(a.EndDate),
+		DataPoints:     dps,
+		TrendSlope:     a.TrendSlope,
+		TrendDirection: string(a.TrendDirection),
+		ChangePct:      a.ChangePct,
+		Version:        a.Version,
+		CreatedAt:      timeToProto(a.CreatedAt),
+		UpdatedAt:      optTimeToProto(a.UpdatedAt),
 	}
 }

@@ -11,13 +11,22 @@ import (
 
 // SatelliteRepository is the secondary port for satellite persistence.
 type SatelliteRepository interface {
-	CreateSatellite(ctx context.Context, entity *domain.Satellite) (*domain.Satellite, error)
-	GetSatelliteByUUID(ctx context.Context, uuid, tenantID string) (*domain.Satellite, error)
-	ListSatellites(ctx context.Context, params domain.ListSatelliteParams) ([]domain.Satellite, int32, error)
-	UpdateSatellite(ctx context.Context, entity *domain.Satellite) (*domain.Satellite, error)
-	DeleteSatellite(ctx context.Context, uuid, tenantID, deletedBy string) error
-	CheckSatelliteExists(ctx context.Context, uuid, tenantID string) (bool, error)
-	CheckSatelliteNameExists(ctx context.Context, name, tenantID string) (bool, error)
+	// Images
+	CreateImage(ctx context.Context, img *domain.SatelliteImage) (*domain.SatelliteImage, error)
+	GetImageByID(ctx context.Context, id, tenantID string) (*domain.SatelliteImage, error)
+	ListImages(ctx context.Context, params domain.ListImagesParams) ([]domain.SatelliteImage, int32, error)
+
+	// Vegetation Indices
+	CreateVegetationIndex(ctx context.Context, idx *domain.VegetationIndex) (*domain.VegetationIndex, error)
+	GetVegetationIndices(ctx context.Context, params domain.GetVegetationIndicesParams) ([]domain.VegetationIndex, error)
+	GetVegetationIndicesForTemporal(ctx context.Context, params domain.TemporalAnalysisParams) ([]domain.VegetationIndex, error)
+
+	// Alerts
+	CreateAlert(ctx context.Context, alert *domain.CropStressAlert) (*domain.CropStressAlert, error)
+	ListAlerts(ctx context.Context, params domain.ListAlertsParams) ([]domain.CropStressAlert, int32, error)
+
+	// Tasks
+	CreateTask(ctx context.Context, task *domain.SatelliteTask) (*domain.SatelliteTask, error)
 
 	WithTx(tx pgx.Tx) SatelliteRepository
 }

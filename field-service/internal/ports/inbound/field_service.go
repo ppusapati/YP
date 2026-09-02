@@ -20,4 +20,12 @@ type FieldService interface {
 	SegmentField(ctx context.Context, params domain.SegmentFieldParams) ([]domain.FieldSegment, error)
 	GetFieldSegments(ctx context.Context, fieldID string) ([]domain.FieldSegment, error)
 	GetCropHistory(ctx context.Context, params domain.CropHistoryParams) ([]domain.CropAssignment, int32, error)
+
+	CreateCropCycle(ctx context.Context, cycle *domain.CropCycle) (*domain.CropCycle, error)
+	GetCropCycle(ctx context.Context, id string) (*domain.CropCycle, error)
+	ListCropCycles(ctx context.Context, params domain.ListCropCyclesParams) ([]domain.CropCycle, int32, error)
+	UpdateCropCycle(ctx context.Context, cycle *domain.CropCycle) (*domain.CropCycle, error)
+
+	LogActivityEvent(ctx context.Context, event *domain.ActivityEvent) (*domain.ActivityEvent, error)
+	ListActivityEvents(ctx context.Context, params domain.ListActivityEventsParams) ([]domain.ActivityEvent, int32, error)
 }

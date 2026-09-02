@@ -26,5 +26,13 @@ type FieldRepository interface {
 	GetFieldSegments(ctx context.Context, fieldID, tenantID string) ([]domain.FieldSegment, error)
 	DeleteFieldSegments(ctx context.Context, fieldID, tenantID string) error
 
+	CreateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error)
+	GetCropCycleByID(ctx context.Context, id, tenantID string) (*domain.CropCycle, error)
+	ListCropCycles(ctx context.Context, params domain.ListCropCyclesParams) ([]domain.CropCycle, int32, error)
+	UpdateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error)
+
+	CreateActivityEvent(ctx context.Context, e *domain.ActivityEvent) (*domain.ActivityEvent, error)
+	ListActivityEvents(ctx context.Context, params domain.ListActivityEventsParams) ([]domain.ActivityEvent, int32, error)
+
 	WithTx(tx pgx.Tx) FieldRepository
 }

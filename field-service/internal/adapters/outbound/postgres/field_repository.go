@@ -382,3 +382,248 @@ func nullIfEmpty(s string) *string {
 	}
 	return &s
 }
+
+// ---------------------------------------------------------------------------
+// crop_cycles
+// ---------------------------------------------------------------------------
+
+const cropCycleColumns = `id, tenant_id, field_id, crop_id, crop_assignment_id,
+season, cycle_year, name,
+planned_planting_date, actual_planting_date, planned_harvest_date, actual_harvest_date,
+status, target_yield_per_hectare, actual_yield_per_hectare, yield_unit,
+total_input_cost, total_revenue, currency, notes,
+version, created_by, updated_by, created_at, updated_at, deleted_at`
+
+func (r *fieldRepository) CreateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error) {
+	c.ID = ulid.NewString()
+	row := r.queryRow(ctx,
+		`INSERT INTO crop_cycles (id, tenant_id, field_id, crop_id, crop_assignment_id,
+season, cycle_year, name, planned_planting_date, planned_harvest_date,
+status, target_yield_per_hectare, yield_unit, notes, created_by)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+RETURNING `+cropCycleColumns,
+		c.ID, c.TenantID, c.FieldID, c.CropID, c.CropAssignmentID,
+		c.Season, c.CycleYear, c.Name,
+		c.PlannedPlantingDate, c.PlannedHarvestDate,
+		string(c.Status), c.TargetYieldPerHectare, c.YieldUnit, c.Notes, c.CreatedBy,
+	)
+	return scanCropCycle(row)
+}
+
+func (r *fieldRepository) GetCropCycleByID(ctx context.Context, id, tenantID string) (*domain.CropCycle, error) {
+	row := r.queryRow(ctx,
+		`SELECT `+cropCycleColumns+` FROM crop_cycles WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		id, tenantID,
+	)
+	cc, err := scanCropCycle(row)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("CYCLE_NOT_FOUND", fmt.Sprintf("crop cycle not found: %s", id))
+		}
+		return nil, errors.InternalServer("DB_ERROR", err.Error())
+	}
+	return cc, nil
+}
+
+func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.ListCropCyclesParams) ([]domain.CropCycle, int32, error) {
+	var total int32
+	err := r.queryRow(ctx,
+		`SELECT COUNT(*)::int FROM crop_cycles
+		 WHERE tenant_id=$1 AND field_id=$2 AND deleted_at IS NULL
+		   AND ($3::varchar IS NULL OR status=$3)`,
+		params.TenantID, params.FieldID, nilIfEmptyCycleStatus(params.Status),
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count crop cycles: %v", err))
+	}
+
+	rows, err := r.query(ctx,
+		`SELECT `+cropCycleColumns+` FROM crop_cycles
+		 WHERE tenant_id=$1 AND field_id=$2 AND deleted_at IS NULL
+		   AND ($3::varchar IS NULL OR status=$3)
+		 ORDER BY cycle_year DESC, created_at DESC
+		 LIMIT $4 OFFSET $5`,
+		params.TenantID, params.FieldID, nilIfEmptyCycleStatus(params.Status),
+		params.PageSize, params.Offset,
+	)
+	if err != nil {
+		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list crop cycles: %v", err))
+	}
+	defer rows.Close()
+
+	var out []domain.CropCycle
+	for rows.Next() {
+		cc, err := scanCropCycle(rows)
+		if err != nil {
+			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		}
+		out = append(out, *cc)
+	}
+	return out, total, nil
+}
+
+func (r *fieldRepository) UpdateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error) {
+	row := r.queryRow(ctx,
+		`UPDATE crop_cycles SET
+			status = COALESCE(NULLIF($3,''), status),
+			actual_planting_date = COALESCE($4, actual_planting_date),
+			actual_harvest_date = COALESCE($5, actual_harvest_date),
+			actual_yield_per_hectare = COALESCE($6, actual_yield_per_hectare),
+			total_input_cost = COALESCE($7, total_input_cost),
+			total_revenue = COALESCE($8, total_revenue),
+			notes = COALESCE($9, notes),
+			updated_by = $10,
+			version = version + 1
+		WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL
+		RETURNING `+cropCycleColumns,
+		c.ID, c.TenantID,
+		nilIfEmptyCycleStatusVal(c.Status),
+		c.ActualPlantingDate, c.ActualHarvestDate,
+		c.ActualYieldPerHectare,
+		nilIfZeroInt64(c.TotalInputCost), nilIfZeroInt64(c.TotalRevenue),
+		c.Notes, c.UpdatedBy,
+	)
+	cc, err := scanCropCycle(row)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("CYCLE_NOT_FOUND", fmt.Sprintf("crop cycle not found: %s", c.ID))
+		}
+		return nil, errors.InternalServer("DB_ERROR", err.Error())
+	}
+	return cc, nil
+}
+
+func scanCropCycle(row pgx.Row) (*domain.CropCycle, error) {
+	c := &domain.CropCycle{}
+	err := row.Scan(
+		&c.ID, &c.TenantID, &c.FieldID, &c.CropID, &c.CropAssignmentID,
+		&c.Season, &c.CycleYear, &c.Name,
+		&c.PlannedPlantingDate, &c.ActualPlantingDate, &c.PlannedHarvestDate, &c.ActualHarvestDate,
+		&c.Status, &c.TargetYieldPerHectare, &c.ActualYieldPerHectare, &c.YieldUnit,
+		&c.TotalInputCost, &c.TotalRevenue, &c.Currency, &c.Notes,
+		&c.Version, &c.CreatedBy, &c.UpdatedBy, &c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
+	)
+	return c, err
+}
+
+func nilIfEmptyCycleStatus(s *domain.CropCycleStatus) interface{} {
+	if s == nil || *s == domain.CropCycleStatusUnspecified {
+		return nil
+	}
+	return string(*s)
+}
+
+func nilIfEmptyCycleStatusVal(s domain.CropCycleStatus) interface{} {
+	if s == domain.CropCycleStatusUnspecified {
+		return nil
+	}
+	return string(s)
+}
+
+func nilIfZeroInt64(v int64) interface{} {
+	if v == 0 {
+		return nil
+	}
+	return v
+}
+
+// ---------------------------------------------------------------------------
+// activity_events
+// ---------------------------------------------------------------------------
+
+const activityEventColumns = `id, tenant_id, field_id, crop_cycle_id, performed_by,
+activity_type, category, started_at, completed_at, duration_minutes,
+description, notes, metadata,
+input_product_id, input_quantity, input_unit, input_cost, currency,
+area_hectares,
+weather_temp_celsius, weather_humidity_pct, weather_wind_speed_kmh, weather_conditions,
+created_at`
+
+func (r *fieldRepository) CreateActivityEvent(ctx context.Context, e *domain.ActivityEvent) (*domain.ActivityEvent, error) {
+	e.ID = ulid.NewString()
+	row := r.queryRow(ctx,
+		`INSERT INTO activity_events (id, tenant_id, field_id, crop_cycle_id, performed_by,
+activity_type, category, started_at, completed_at, duration_minutes,
+description, notes,
+input_product_id, input_quantity, input_unit, input_cost, currency,
+area_hectares)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+RETURNING `+activityEventColumns,
+		e.ID, e.TenantID, e.FieldID, e.CropCycleID, e.PerformedBy,
+		e.ActivityType, string(e.Category), e.StartedAt, e.CompletedAt, e.DurationMinutes,
+		e.Description, e.Notes,
+		e.InputProductID, e.InputQuantity, e.InputUnit, e.InputCost, e.Currency,
+		e.AreaHectares,
+	)
+	return scanActivityEvent(row)
+}
+
+func (r *fieldRepository) ListActivityEvents(ctx context.Context, params domain.ListActivityEventsParams) ([]domain.ActivityEvent, int32, error) {
+	var total int32
+	err := r.queryRow(ctx,
+		`SELECT COUNT(*)::int FROM activity_events
+		 WHERE tenant_id=$1 AND field_id=$2
+		   AND ($3::varchar IS NULL OR crop_cycle_id=$3)
+		   AND ($4::varchar IS NULL OR category=$4)`,
+		params.TenantID, params.FieldID,
+		nilIfEmptyStr(params.CropCycleID), nilIfEmptyCategory(params.Category),
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count activity events: %v", err))
+	}
+
+	rows, err := r.query(ctx,
+		`SELECT `+activityEventColumns+` FROM activity_events
+		 WHERE tenant_id=$1 AND field_id=$2
+		   AND ($3::varchar IS NULL OR crop_cycle_id=$3)
+		   AND ($4::varchar IS NULL OR category=$4)
+		 ORDER BY started_at DESC
+		 LIMIT $5 OFFSET $6`,
+		params.TenantID, params.FieldID,
+		nilIfEmptyStr(params.CropCycleID), nilIfEmptyCategory(params.Category),
+		params.PageSize, params.Offset,
+	)
+	if err != nil {
+		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list activity events: %v", err))
+	}
+	defer rows.Close()
+
+	var out []domain.ActivityEvent
+	for rows.Next() {
+		e, err := scanActivityEvent(rows)
+		if err != nil {
+			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		}
+		out = append(out, *e)
+	}
+	return out, total, nil
+}
+
+func scanActivityEvent(row pgx.Row) (*domain.ActivityEvent, error) {
+	e := &domain.ActivityEvent{}
+	var metadata interface{}
+	err := row.Scan(
+		&e.ID, &e.TenantID, &e.FieldID, &e.CropCycleID, &e.PerformedBy,
+		&e.ActivityType, &e.Category, &e.StartedAt, &e.CompletedAt, &e.DurationMinutes,
+		&e.Description, &e.Notes, &metadata,
+		&e.InputProductID, &e.InputQuantity, &e.InputUnit, &e.InputCost, &e.Currency,
+		&e.AreaHectares,
+		&e.WeatherTempC, &e.WeatherHumidity, &e.WeatherWindSpeed, &e.WeatherConditions,
+		&e.CreatedAt,
+	)
+	return e, err
+}
+
+func nilIfEmptyStr(s *string) interface{} {
+	if s == nil || *s == "" {
+		return nil
+	}
+	return *s
+}
+
+func nilIfEmptyCategory(c *domain.ActivityCategory) interface{} {
+	if c == nil || *c == domain.ActivityCategoryUnspecified {
+		return nil
+	}
+	return string(*c)
+}

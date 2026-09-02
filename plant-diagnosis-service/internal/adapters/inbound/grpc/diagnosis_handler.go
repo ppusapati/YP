@@ -4,8 +4,11 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
@@ -16,6 +19,8 @@ import (
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/domain"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ports/inbound"
 )
+
+const placeholderModelVersion = "v0.1.0-placeholder"
 
 // DiagnosisHandler is the ConnectRPC inbound adapter.
 type DiagnosisHandler struct {
@@ -32,49 +37,566 @@ func NewDiagnosisHandler(svc inbound.DiagnosisService, log p9log.Logger) *Diagno
 	}
 }
 
-// SubmitDiagnosis handles diagnosis submission requests.
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. SubmitDiagnosis
+// ─────────────────────────────────────────────────────────────────────────────
+
 func (h *DiagnosisHandler) SubmitDiagnosis(ctx context.Context, req *connect.Request[pb.SubmitDiagnosisRequest]) (*connect.Response[pb.SubmitDiagnosisResponse], error) {
 	h.log.Infow("msg", "SubmitDiagnosis request", "tenant_id", p9context.TenantID(ctx))
+
 	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	entity := &domain.Diagnosis{Name: req.Msg.GetFarmId()}
-	created, err := h.svc.CreateDiagnosis(ctx, entity)
+
+	// Proto -> domain
+	domReq := &domain.DiagnosisRequest{
+		FarmID:         req.Msg.GetFarmId(),
+		FieldID:        stringPtrOrNil(req.Msg.GetFieldId()),
+		PlantSpeciesID: stringPtrOrNil(req.Msg.GetPlantSpeciesId()),
+		Notes:          stringPtrOrNil(req.Msg.GetNotes()),
+		Images:         protoImageInputsToDomain(req.Msg.GetImages()),
+	}
+
+	created, err := h.svc.SubmitDiagnosis(ctx, domReq)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.SubmitDiagnosisResponse{Diagnosis: diagnosisToProto(created)}), nil
+
+	return connect.NewResponse(&pb.SubmitDiagnosisResponse{
+		Diagnosis: diagnosisRequestToProto(created),
+	}), nil
 }
 
-// GetDiagnosis handles get requests.
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. GetDiagnosis
+// ─────────────────────────────────────────────────────────────────────────────
+
 func (h *DiagnosisHandler) GetDiagnosis(ctx context.Context, req *connect.Request[pb.GetDiagnosisRequest]) (*connect.Response[pb.GetDiagnosisResponse], error) {
 	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
+
 	entity, err := h.svc.GetDiagnosis(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.GetDiagnosisResponse{Diagnosis: diagnosisToProto(entity)}), nil
+
+	return connect.NewResponse(&pb.GetDiagnosisResponse{
+		Diagnosis: diagnosisRequestToProto(entity),
+	}), nil
 }
 
-// ListDiagnoses handles list requests.
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. ListDiagnoses
+// ─────────────────────────────────────────────────────────────────────────────
+
 func (h *DiagnosisHandler) ListDiagnoses(ctx context.Context, req *connect.Request[pb.ListDiagnosesRequest]) (*connect.Response[pb.ListDiagnosesResponse], error) {
-	params := domain.ListPlantDiagnosisParams{PageSize: req.Msg.GetPageSize()}
-	entities, total, err := h.svc.ListPlantDiagnoses(ctx, params)
+	params := domain.ListDiagnosesParams{
+		FarmID:   req.Msg.GetFarmId(),
+		FieldID:  req.Msg.GetFieldId(),
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   req.Msg.GetPageOffset(),
+		SortBy:   req.Msg.GetSortBy(),
+		SortDesc: req.Msg.GetSortDesc(),
+	}
+
+	if req.Msg.GetStatus() != pb.DiagnosisStatus_DIAGNOSIS_STATUS_UNSPECIFIED {
+		s := protoDiagnosisStatusToDomain(req.Msg.GetStatus())
+		params.Status = &s
+	}
+
+	entities, total, err := h.svc.ListDiagnoses(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
+
 	protos := make([]*pb.DiagnosisRequest, 0, len(entities))
 	for i := range entities {
-		protos = append(protos, diagnosisToProto(&entities[i]))
+		protos = append(protos, diagnosisRequestToProto(&entities[i]))
 	}
-	return connect.NewResponse(&pb.ListDiagnosesResponse{Diagnoses: protos, TotalCount: total}), nil
+
+	return connect.NewResponse(&pb.ListDiagnosesResponse{
+		Diagnoses:  protos,
+		TotalCount: total,
+	}), nil
 }
 
-func diagnosisToProto(e *domain.Diagnosis) *pb.DiagnosisRequest {
-	return &pb.DiagnosisRequest{
-		Id:       e.UUID,
-		TenantId: e.TenantID,
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. GetDiseaseInfo
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (h *DiagnosisHandler) GetDiseaseInfo(ctx context.Context, req *connect.Request[pb.GetDiseaseInfoRequest]) (*connect.Response[pb.GetDiseaseInfoResponse], error) {
+	if req.Msg.GetDiseaseId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "disease_id is required")
 	}
+
+	disease, err := h.svc.GetDiseaseInfo(ctx, req.Msg.GetDiseaseId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetDiseaseInfoResponse{
+		Disease: diseaseInfoToProto(disease),
+	}), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. ListDiseases
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (h *DiagnosisHandler) ListDiseases(ctx context.Context, req *connect.Request[pb.ListDiseasesRequest]) (*connect.Response[pb.ListDiseasesResponse], error) {
+	params := domain.ListDiseasesParams{
+		SearchTerm: req.Msg.GetSearchTerm(),
+		PageSize:   req.Msg.GetPageSize(),
+		Offset:     req.Msg.GetPageOffset(),
+	}
+
+	diseases, total, err := h.svc.ListDiseases(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.DiseaseInfo, 0, len(diseases))
+	for i := range diseases {
+		protos = append(protos, diseaseInfoToProto(&diseases[i]))
+	}
+
+	return connect.NewResponse(&pb.ListDiseasesResponse{
+		Diseases:   protos,
+		TotalCount: total,
+	}), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. GetTreatmentPlan
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (h *DiagnosisHandler) GetTreatmentPlan(ctx context.Context, req *connect.Request[pb.GetTreatmentPlanRequest]) (*connect.Response[pb.GetTreatmentPlanResponse], error) {
+	if req.Msg.GetDiagnosisId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "diagnosis_id is required")
+	}
+
+	plan, err := h.svc.GetTreatmentPlan(ctx, req.Msg.GetDiagnosisId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetTreatmentPlanResponse{
+		TreatmentPlan: treatmentPlanToProto(plan),
+	}), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. IdentifySpecies
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (h *DiagnosisHandler) IdentifySpecies(ctx context.Context, req *connect.Request[pb.IdentifySpeciesRequest]) (*connect.Response[pb.IdentifySpeciesResponse], error) {
+	images := protoImageInputsToDomain(req.Msg.GetImages())
+
+	species, err := h.svc.IdentifySpecies(ctx, images)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protoSpecies := make([]*pb.PlantSpecies, 0, len(species))
+	for _, s := range species {
+		protoSpecies = append(protoSpecies, &pb.PlantSpecies{
+			Id:             s.ID,
+			CommonName:     s.CommonName,
+			ScientificName: s.ScientificName,
+			Family:         s.Family,
+			Confidence:     s.Confidence,
+		})
+	}
+
+	return connect.NewResponse(&pb.IdentifySpeciesResponse{
+		Species:          protoSpecies,
+		AiModelVersion:   placeholderModelVersion,
+		ProcessingTimeMs: 0,
+	}), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. DetectNutrientDeficiency
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (h *DiagnosisHandler) DetectNutrientDeficiency(ctx context.Context, req *connect.Request[pb.DetectNutrientDeficiencyRequest]) (*connect.Response[pb.DetectNutrientDeficiencyResponse], error) {
+	images := protoImageInputsToDomain(req.Msg.GetImages())
+
+	deficiencies, err := h.svc.DetectNutrientDeficiency(ctx, req.Msg.GetPlantSpeciesId(), images)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.NutrientDeficiency, 0, len(deficiencies))
+	for _, d := range deficiencies {
+		protos = append(protos, &pb.NutrientDeficiency{
+			Nutrient:               d.Nutrient,
+			ConfidenceScore:        d.ConfidenceScore,
+			Severity:               domainSeverityToProto(d.Severity),
+			Description:            d.Description,
+			VisualSymptoms:         d.VisualSymptoms,
+			RecommendedFertilizers: d.RecommendedFertilizers,
+			ApplicationMethod:      d.ApplicationMethod,
+		})
+	}
+
+	return connect.NewResponse(&pb.DetectNutrientDeficiencyResponse{
+		Deficiencies:     protos,
+		AiModelVersion:   placeholderModelVersion,
+		ProcessingTimeMs: 0,
+	}), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. DetectPestDamage
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (h *DiagnosisHandler) DetectPestDamage(ctx context.Context, req *connect.Request[pb.DetectPestDamageRequest]) (*connect.Response[pb.DetectPestDamageResponse], error) {
+	images := protoImageInputsToDomain(req.Msg.GetImages())
+
+	pests, err := h.svc.DetectPestDamage(ctx, req.Msg.GetPlantSpeciesId(), images)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.PestDamage, 0, len(pests))
+	for _, p := range pests {
+		protos = append(protos, &pb.PestDamage{
+			PestId:          p.PestID,
+			PestName:        p.PestName,
+			ScientificName:  p.ScientificName,
+			ConfidenceScore: p.ConfidenceScore,
+			DamageLevel:     domainSeverityToProto(p.DamageLevel),
+			Description:     p.Description,
+			DamagePattern:   p.DamagePattern,
+			ControlMethods:  p.ControlMethods,
+		})
+	}
+
+	return connect.NewResponse(&pb.DetectPestDamageResponse{
+		Pests:            protos,
+		AiModelVersion:   placeholderModelVersion,
+		ProcessingTimeMs: 0,
+	}), nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline mapping helpers: Proto -> Domain
+// ─────────────────────────────────────────────────────────────────────────────
+
+func protoImageInputsToDomain(inputs []*pb.ImageInput) []domain.DiagnosisImage {
+	out := make([]domain.DiagnosisImage, 0, len(inputs))
+	for _, in := range inputs {
+		out = append(out, domain.DiagnosisImage{
+			ImageURL:  in.GetImageUrl(),
+			ImageType: protoImageTypeToString(in.GetImageType()),
+			MimeType:  in.GetMimeType(),
+		})
+	}
+	return out
+}
+
+func protoDiagnosisStatusToDomain(s pb.DiagnosisStatus) domain.DiagnosisStatus {
+	switch s {
+	case pb.DiagnosisStatus_DIAGNOSIS_STATUS_PENDING:
+		return domain.DiagnosisStatusPending
+	case pb.DiagnosisStatus_DIAGNOSIS_STATUS_ANALYZING:
+		return domain.DiagnosisStatusAnalyzing
+	case pb.DiagnosisStatus_DIAGNOSIS_STATUS_COMPLETED:
+		return domain.DiagnosisStatusCompleted
+	case pb.DiagnosisStatus_DIAGNOSIS_STATUS_FAILED:
+		return domain.DiagnosisStatusFailed
+	default:
+		return domain.DiagnosisStatusPending
+	}
+}
+
+func protoImageTypeToString(t pb.ImageType) string {
+	switch t {
+	case pb.ImageType_IMAGE_TYPE_LEAF:
+		return string(domain.ImageTypeLeaf)
+	case pb.ImageType_IMAGE_TYPE_STEM:
+		return string(domain.ImageTypeStem)
+	case pb.ImageType_IMAGE_TYPE_FRUIT:
+		return string(domain.ImageTypeFruit)
+	case pb.ImageType_IMAGE_TYPE_WHOLE_PLANT:
+		return string(domain.ImageTypeWholePlant)
+	case pb.ImageType_IMAGE_TYPE_ROOT:
+		return string(domain.ImageTypeRoot)
+	default:
+		return string(domain.ImageTypeLeaf)
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline mapping helpers: Domain -> Proto
+// ─────────────────────────────────────────────────────────────────────────────
+
+func diagnosisRequestToProto(d *domain.DiagnosisRequest) *pb.DiagnosisRequest {
+	if d == nil {
+		return nil
+	}
+
+	out := &pb.DiagnosisRequest{
+		Id:             d.ID,
+		TenantId:       d.TenantID,
+		FarmId:         d.FarmID,
+		FieldId:        derefString(d.FieldID),
+		PlantSpeciesId: derefString(d.PlantSpeciesID),
+		Status:         domainDiagnosisStatusToProto(d.Status),
+		Notes:          derefString(d.Notes),
+		CreatedBy:      d.CreatedBy,
+		CreatedAt:      timestamppb.New(d.CreatedAt),
+		UpdatedAt:      timestamppb.New(d.UpdatedAt),
+		Version:        d.Version,
+	}
+
+	// Map images.
+	out.Images = make([]*pb.DiagnosisImage, 0, len(d.Images))
+	for _, img := range d.Images {
+		out.Images = append(out.Images, &pb.DiagnosisImage{
+			ImageUrl:  img.ImageURL,
+			ImageType: stringToProtoImageType(img.ImageType),
+			MimeType:  img.MimeType,
+		})
+	}
+
+	// Map result if present.
+	if d.Result != nil {
+		out.Result = diagnosisResultToProto(d.Result)
+	}
+
+	return out
+}
+
+func diagnosisResultToProto(r *domain.DiagnosisResult) *pb.DiagnosisResult {
+	if r == nil {
+		return nil
+	}
+
+	out := &pb.DiagnosisResult{
+		Id:                       r.ID,
+		DiagnosisRequestId:       r.DiagnosisRequestID,
+		AiModelVersion:           r.AIModelVersion,
+		ProcessingTimeMs:         r.ProcessingTimeMs,
+		OverallHealthScore:       derefFloat64(r.OverallHealthScore),
+		Summary:                  derefString(r.Summary),
+		TreatmentRecommendations: r.TreatmentRecommendations,
+		CreatedAt:                timestamppb.New(r.CreatedAt),
+	}
+
+	// Identified species (JSONB -> single object).
+	if len(r.IdentifiedSpecies) > 0 {
+		var sp domain.PlantSpecies
+		if json.Unmarshal(r.IdentifiedSpecies, &sp) == nil && sp.CommonName != "" {
+			out.IdentifiedSpecies = &pb.PlantSpecies{
+				Id:             sp.ID,
+				CommonName:     sp.CommonName,
+				ScientificName: sp.ScientificName,
+				Family:         sp.Family,
+				Confidence:     sp.Confidence,
+			}
+		}
+	}
+
+	// Detected diseases (JSONB array).
+	if len(r.DetectedDiseases) > 0 {
+		var diseases []domain.DetectedDisease
+		if json.Unmarshal(r.DetectedDiseases, &diseases) == nil {
+			for _, d := range diseases {
+				out.DetectedDiseases = append(out.DetectedDiseases, &pb.DiseaseInfo{
+					DiseaseId:        d.DiseaseID,
+					DiseaseName:      d.DiseaseName,
+					ScientificName:   d.ScientificName,
+					ConfidenceScore:  d.ConfidenceScore,
+					Severity:         domainSeverityToProto(d.Severity),
+					Description:      d.Description,
+					Symptoms:         d.Symptoms,
+					TreatmentOptions: d.TreatmentOptions,
+					Prevention:       d.Prevention,
+				})
+			}
+		}
+	}
+
+	// Nutrient deficiencies (JSONB array).
+	if len(r.NutrientDeficiencies) > 0 {
+		var deficiencies []domain.NutrientDeficiency
+		if json.Unmarshal(r.NutrientDeficiencies, &deficiencies) == nil {
+			for _, n := range deficiencies {
+				out.NutrientDeficiencies = append(out.NutrientDeficiencies, &pb.NutrientDeficiency{
+					Nutrient:               n.Nutrient,
+					ConfidenceScore:        n.ConfidenceScore,
+					Severity:               domainSeverityToProto(n.Severity),
+					Description:            n.Description,
+					VisualSymptoms:         n.VisualSymptoms,
+					RecommendedFertilizers: n.RecommendedFertilizers,
+					ApplicationMethod:      n.ApplicationMethod,
+				})
+			}
+		}
+	}
+
+	// Pest damage (JSONB array).
+	if len(r.PestDamage) > 0 {
+		var pests []domain.PestDamage
+		if json.Unmarshal(r.PestDamage, &pests) == nil {
+			for _, p := range pests {
+				out.PestDamage = append(out.PestDamage, &pb.PestDamage{
+					PestId:          p.PestID,
+					PestName:        p.PestName,
+					ScientificName:  p.ScientificName,
+					ConfidenceScore: p.ConfidenceScore,
+					DamageLevel:     domainSeverityToProto(p.DamageLevel),
+					Description:     p.Description,
+					DamagePattern:   p.DamagePattern,
+					ControlMethods:  p.ControlMethods,
+				})
+			}
+		}
+	}
+
+	return out
+}
+
+func diseaseInfoToProto(d *domain.DiseaseInfo) *pb.DiseaseInfo {
+	if d == nil {
+		return nil
+	}
+	return &pb.DiseaseInfo{
+		DiseaseId:        d.ID,
+		DiseaseName:      d.DiseaseName,
+		ScientificName:   derefString(d.ScientificName),
+		ConfidenceScore:  d.ConfidenceScore,
+		Severity:         domainSeverityStringToProto(d.Severity),
+		Description:      derefString(d.Description),
+		Symptoms:         derefString(d.Symptoms),
+		TreatmentOptions: d.TreatmentOptions,
+		Prevention:       derefString(d.Prevention),
+	}
+}
+
+func treatmentPlanToProto(tp *domain.TreatmentPlan) *pb.TreatmentPlan {
+	if tp == nil {
+		return nil
+	}
+
+	out := &pb.TreatmentPlan{
+		Id:            tp.ID,
+		DiagnosisId:   tp.DiagnosisID,
+		Title:         tp.Title,
+		Description:   derefString(tp.Description),
+		Priority:      domainSeverityStringToProto(tp.Priority),
+		EstimatedCost: derefString(tp.EstimatedCost),
+		EstimatedDays: derefInt32(tp.EstimatedDays),
+		CreatedAt:     timestamppb.New(tp.CreatedAt),
+	}
+
+	// Steps (JSONB -> proto).
+	var steps []domain.TreatmentStep
+	if len(tp.Steps) > 0 {
+		_ = json.Unmarshal(tp.Steps, &steps)
+	}
+	out.Steps = make([]*pb.TreatmentStep, 0, len(steps))
+	for _, s := range steps {
+		out.Steps = append(out.Steps, &pb.TreatmentStep{
+			StepNumber:   s.StepNumber,
+			Action:       s.Action,
+			Product:      s.Product,
+			Dosage:       s.Dosage,
+			Frequency:    s.Frequency,
+			Notes:        s.Notes,
+			DurationDays: s.DurationDays,
+		})
+	}
+
+	return out
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enum mapping helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+func domainDiagnosisStatusToProto(s domain.DiagnosisStatus) pb.DiagnosisStatus {
+	switch s {
+	case domain.DiagnosisStatusPending:
+		return pb.DiagnosisStatus_DIAGNOSIS_STATUS_PENDING
+	case domain.DiagnosisStatusAnalyzing:
+		return pb.DiagnosisStatus_DIAGNOSIS_STATUS_ANALYZING
+	case domain.DiagnosisStatusCompleted:
+		return pb.DiagnosisStatus_DIAGNOSIS_STATUS_COMPLETED
+	case domain.DiagnosisStatusFailed:
+		return pb.DiagnosisStatus_DIAGNOSIS_STATUS_FAILED
+	default:
+		return pb.DiagnosisStatus_DIAGNOSIS_STATUS_UNSPECIFIED
+	}
+}
+
+func domainSeverityToProto(s domain.SeverityLevel) pb.Severity {
+	switch s {
+	case domain.SeverityMild:
+		return pb.Severity_SEVERITY_MILD
+	case domain.SeverityModerate:
+		return pb.Severity_SEVERITY_MODERATE
+	case domain.SeveritySevere:
+		return pb.Severity_SEVERITY_SEVERE
+	case domain.SeverityCritical:
+		return pb.Severity_SEVERITY_CRITICAL
+	default:
+		return pb.Severity_SEVERITY_UNSPECIFIED
+	}
+}
+
+func domainSeverityStringToProto(s string) pb.Severity {
+	return domainSeverityToProto(domain.SeverityLevel(s))
+}
+
+func stringToProtoImageType(s string) pb.ImageType {
+	switch domain.ImageType(s) {
+	case domain.ImageTypeLeaf:
+		return pb.ImageType_IMAGE_TYPE_LEAF
+	case domain.ImageTypeStem:
+		return pb.ImageType_IMAGE_TYPE_STEM
+	case domain.ImageTypeFruit:
+		return pb.ImageType_IMAGE_TYPE_FRUIT
+	case domain.ImageTypeWholePlant:
+		return pb.ImageType_IMAGE_TYPE_WHOLE_PLANT
+	case domain.ImageTypeRoot:
+		return pb.ImageType_IMAGE_TYPE_ROOT
+	default:
+		return pb.ImageType_IMAGE_TYPE_UNSPECIFIED
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pointer helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+func stringPtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func derefString(p *string) string {
+	if p != nil {
+		return *p
+	}
+	return ""
+}
+
+func derefFloat64(p *float64) float64 {
+	if p != nil {
+		return *p
+	}
+	return 0
+}
+
+func derefInt32(p *int32) int32 {
+	if p != nil {
+		return *p
+	}
+	return 0
 }

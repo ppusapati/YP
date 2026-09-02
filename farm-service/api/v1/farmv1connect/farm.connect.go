@@ -52,6 +52,27 @@ const (
 	// FarmServiceTransferOwnershipProcedure is the fully-qualified name of the FarmService's
 	// TransferOwnership RPC.
 	FarmServiceTransferOwnershipProcedure = "/agriculture.farm.v1.FarmService/TransferOwnership"
+	// FarmServiceCreateManagementUnitProcedure is the fully-qualified name of the FarmService's
+	// CreateManagementUnit RPC.
+	FarmServiceCreateManagementUnitProcedure = "/agriculture.farm.v1.FarmService/CreateManagementUnit"
+	// FarmServiceGetManagementUnitProcedure is the fully-qualified name of the FarmService's
+	// GetManagementUnit RPC.
+	FarmServiceGetManagementUnitProcedure = "/agriculture.farm.v1.FarmService/GetManagementUnit"
+	// FarmServiceListManagementUnitsProcedure is the fully-qualified name of the FarmService's
+	// ListManagementUnits RPC.
+	FarmServiceListManagementUnitsProcedure = "/agriculture.farm.v1.FarmService/ListManagementUnits"
+	// FarmServiceUpdateManagementUnitProcedure is the fully-qualified name of the FarmService's
+	// UpdateManagementUnit RPC.
+	FarmServiceUpdateManagementUnitProcedure = "/agriculture.farm.v1.FarmService/UpdateManagementUnit"
+	// FarmServiceDeleteManagementUnitProcedure is the fully-qualified name of the FarmService's
+	// DeleteManagementUnit RPC.
+	FarmServiceDeleteManagementUnitProcedure = "/agriculture.farm.v1.FarmService/DeleteManagementUnit"
+	// FarmServiceAssignFieldsToUnitProcedure is the fully-qualified name of the FarmService's
+	// AssignFieldsToUnit RPC.
+	FarmServiceAssignFieldsToUnitProcedure = "/agriculture.farm.v1.FarmService/AssignFieldsToUnit"
+	// FarmServiceRemoveFieldsFromUnitProcedure is the fully-qualified name of the FarmService's
+	// RemoveFieldsFromUnit RPC.
+	FarmServiceRemoveFieldsFromUnitProcedure = "/agriculture.farm.v1.FarmService/RemoveFieldsFromUnit"
 )
 
 // FarmServiceClient is a client for the agriculture.farm.v1.FarmService service.
@@ -72,6 +93,20 @@ type FarmServiceClient interface {
 	GetFarmBoundary(context.Context, *connect.Request[v1.GetFarmBoundaryRequest]) (*connect.Response[v1.GetFarmBoundaryResponse], error)
 	// TransferOwnership transfers ownership of a farm between users.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
+	// CreateManagementUnit creates a new management unit.
+	CreateManagementUnit(context.Context, *connect.Request[v1.CreateManagementUnitRequest]) (*connect.Response[v1.CreateManagementUnitResponse], error)
+	// GetManagementUnit retrieves a management unit by ID.
+	GetManagementUnit(context.Context, *connect.Request[v1.GetManagementUnitRequest]) (*connect.Response[v1.GetManagementUnitResponse], error)
+	// ListManagementUnits lists management units with filtering and pagination.
+	ListManagementUnits(context.Context, *connect.Request[v1.ListManagementUnitsRequest]) (*connect.Response[v1.ListManagementUnitsResponse], error)
+	// UpdateManagementUnit updates an existing management unit.
+	UpdateManagementUnit(context.Context, *connect.Request[v1.UpdateManagementUnitRequest]) (*connect.Response[v1.UpdateManagementUnitResponse], error)
+	// DeleteManagementUnit deletes a management unit.
+	DeleteManagementUnit(context.Context, *connect.Request[v1.DeleteManagementUnitRequest]) (*connect.Response[v1.DeleteManagementUnitResponse], error)
+	// AssignFieldsToUnit assigns fields to a management unit.
+	AssignFieldsToUnit(context.Context, *connect.Request[v1.AssignFieldsToUnitRequest]) (*connect.Response[v1.AssignFieldsToUnitResponse], error)
+	// RemoveFieldsFromUnit removes fields from a management unit.
+	RemoveFieldsFromUnit(context.Context, *connect.Request[v1.RemoveFieldsFromUnitRequest]) (*connect.Response[v1.RemoveFieldsFromUnitResponse], error)
 }
 
 // NewFarmServiceClient constructs a client for the agriculture.farm.v1.FarmService service. By
@@ -133,19 +168,68 @@ func NewFarmServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(farmServiceMethods.ByName("TransferOwnership")),
 			connect.WithClientOptions(opts...),
 		),
+		createManagementUnit: connect.NewClient[v1.CreateManagementUnitRequest, v1.CreateManagementUnitResponse](
+			httpClient,
+			baseURL+FarmServiceCreateManagementUnitProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("CreateManagementUnit")),
+			connect.WithClientOptions(opts...),
+		),
+		getManagementUnit: connect.NewClient[v1.GetManagementUnitRequest, v1.GetManagementUnitResponse](
+			httpClient,
+			baseURL+FarmServiceGetManagementUnitProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("GetManagementUnit")),
+			connect.WithClientOptions(opts...),
+		),
+		listManagementUnits: connect.NewClient[v1.ListManagementUnitsRequest, v1.ListManagementUnitsResponse](
+			httpClient,
+			baseURL+FarmServiceListManagementUnitsProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("ListManagementUnits")),
+			connect.WithClientOptions(opts...),
+		),
+		updateManagementUnit: connect.NewClient[v1.UpdateManagementUnitRequest, v1.UpdateManagementUnitResponse](
+			httpClient,
+			baseURL+FarmServiceUpdateManagementUnitProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("UpdateManagementUnit")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteManagementUnit: connect.NewClient[v1.DeleteManagementUnitRequest, v1.DeleteManagementUnitResponse](
+			httpClient,
+			baseURL+FarmServiceDeleteManagementUnitProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("DeleteManagementUnit")),
+			connect.WithClientOptions(opts...),
+		),
+		assignFieldsToUnit: connect.NewClient[v1.AssignFieldsToUnitRequest, v1.AssignFieldsToUnitResponse](
+			httpClient,
+			baseURL+FarmServiceAssignFieldsToUnitProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("AssignFieldsToUnit")),
+			connect.WithClientOptions(opts...),
+		),
+		removeFieldsFromUnit: connect.NewClient[v1.RemoveFieldsFromUnitRequest, v1.RemoveFieldsFromUnitResponse](
+			httpClient,
+			baseURL+FarmServiceRemoveFieldsFromUnitProcedure,
+			connect.WithSchema(farmServiceMethods.ByName("RemoveFieldsFromUnit")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // farmServiceClient implements FarmServiceClient.
 type farmServiceClient struct {
-	createFarm        *connect.Client[v1.CreateFarmRequest, v1.CreateFarmResponse]
-	getFarm           *connect.Client[v1.GetFarmRequest, v1.GetFarmResponse]
-	listFarms         *connect.Client[v1.ListFarmsRequest, v1.ListFarmsResponse]
-	updateFarm        *connect.Client[v1.UpdateFarmRequest, v1.UpdateFarmResponse]
-	deleteFarm        *connect.Client[v1.DeleteFarmRequest, v1.DeleteFarmResponse]
-	setFarmBoundary   *connect.Client[v1.SetFarmBoundaryRequest, v1.SetFarmBoundaryResponse]
-	getFarmBoundary   *connect.Client[v1.GetFarmBoundaryRequest, v1.GetFarmBoundaryResponse]
-	transferOwnership *connect.Client[v1.TransferOwnershipRequest, v1.TransferOwnershipResponse]
+	createFarm           *connect.Client[v1.CreateFarmRequest, v1.CreateFarmResponse]
+	getFarm              *connect.Client[v1.GetFarmRequest, v1.GetFarmResponse]
+	listFarms            *connect.Client[v1.ListFarmsRequest, v1.ListFarmsResponse]
+	updateFarm           *connect.Client[v1.UpdateFarmRequest, v1.UpdateFarmResponse]
+	deleteFarm           *connect.Client[v1.DeleteFarmRequest, v1.DeleteFarmResponse]
+	setFarmBoundary      *connect.Client[v1.SetFarmBoundaryRequest, v1.SetFarmBoundaryResponse]
+	getFarmBoundary      *connect.Client[v1.GetFarmBoundaryRequest, v1.GetFarmBoundaryResponse]
+	transferOwnership    *connect.Client[v1.TransferOwnershipRequest, v1.TransferOwnershipResponse]
+	createManagementUnit *connect.Client[v1.CreateManagementUnitRequest, v1.CreateManagementUnitResponse]
+	getManagementUnit    *connect.Client[v1.GetManagementUnitRequest, v1.GetManagementUnitResponse]
+	listManagementUnits  *connect.Client[v1.ListManagementUnitsRequest, v1.ListManagementUnitsResponse]
+	updateManagementUnit *connect.Client[v1.UpdateManagementUnitRequest, v1.UpdateManagementUnitResponse]
+	deleteManagementUnit *connect.Client[v1.DeleteManagementUnitRequest, v1.DeleteManagementUnitResponse]
+	assignFieldsToUnit   *connect.Client[v1.AssignFieldsToUnitRequest, v1.AssignFieldsToUnitResponse]
+	removeFieldsFromUnit *connect.Client[v1.RemoveFieldsFromUnitRequest, v1.RemoveFieldsFromUnitResponse]
 }
 
 // CreateFarm calls agriculture.farm.v1.FarmService.CreateFarm.
@@ -188,6 +272,41 @@ func (c *farmServiceClient) TransferOwnership(ctx context.Context, req *connect.
 	return c.transferOwnership.CallUnary(ctx, req)
 }
 
+// CreateManagementUnit calls agriculture.farm.v1.FarmService.CreateManagementUnit.
+func (c *farmServiceClient) CreateManagementUnit(ctx context.Context, req *connect.Request[v1.CreateManagementUnitRequest]) (*connect.Response[v1.CreateManagementUnitResponse], error) {
+	return c.createManagementUnit.CallUnary(ctx, req)
+}
+
+// GetManagementUnit calls agriculture.farm.v1.FarmService.GetManagementUnit.
+func (c *farmServiceClient) GetManagementUnit(ctx context.Context, req *connect.Request[v1.GetManagementUnitRequest]) (*connect.Response[v1.GetManagementUnitResponse], error) {
+	return c.getManagementUnit.CallUnary(ctx, req)
+}
+
+// ListManagementUnits calls agriculture.farm.v1.FarmService.ListManagementUnits.
+func (c *farmServiceClient) ListManagementUnits(ctx context.Context, req *connect.Request[v1.ListManagementUnitsRequest]) (*connect.Response[v1.ListManagementUnitsResponse], error) {
+	return c.listManagementUnits.CallUnary(ctx, req)
+}
+
+// UpdateManagementUnit calls agriculture.farm.v1.FarmService.UpdateManagementUnit.
+func (c *farmServiceClient) UpdateManagementUnit(ctx context.Context, req *connect.Request[v1.UpdateManagementUnitRequest]) (*connect.Response[v1.UpdateManagementUnitResponse], error) {
+	return c.updateManagementUnit.CallUnary(ctx, req)
+}
+
+// DeleteManagementUnit calls agriculture.farm.v1.FarmService.DeleteManagementUnit.
+func (c *farmServiceClient) DeleteManagementUnit(ctx context.Context, req *connect.Request[v1.DeleteManagementUnitRequest]) (*connect.Response[v1.DeleteManagementUnitResponse], error) {
+	return c.deleteManagementUnit.CallUnary(ctx, req)
+}
+
+// AssignFieldsToUnit calls agriculture.farm.v1.FarmService.AssignFieldsToUnit.
+func (c *farmServiceClient) AssignFieldsToUnit(ctx context.Context, req *connect.Request[v1.AssignFieldsToUnitRequest]) (*connect.Response[v1.AssignFieldsToUnitResponse], error) {
+	return c.assignFieldsToUnit.CallUnary(ctx, req)
+}
+
+// RemoveFieldsFromUnit calls agriculture.farm.v1.FarmService.RemoveFieldsFromUnit.
+func (c *farmServiceClient) RemoveFieldsFromUnit(ctx context.Context, req *connect.Request[v1.RemoveFieldsFromUnitRequest]) (*connect.Response[v1.RemoveFieldsFromUnitResponse], error) {
+	return c.removeFieldsFromUnit.CallUnary(ctx, req)
+}
+
 // FarmServiceHandler is an implementation of the agriculture.farm.v1.FarmService service.
 type FarmServiceHandler interface {
 	// CreateFarm registers a new farm.
@@ -206,6 +325,20 @@ type FarmServiceHandler interface {
 	GetFarmBoundary(context.Context, *connect.Request[v1.GetFarmBoundaryRequest]) (*connect.Response[v1.GetFarmBoundaryResponse], error)
 	// TransferOwnership transfers ownership of a farm between users.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
+	// CreateManagementUnit creates a new management unit.
+	CreateManagementUnit(context.Context, *connect.Request[v1.CreateManagementUnitRequest]) (*connect.Response[v1.CreateManagementUnitResponse], error)
+	// GetManagementUnit retrieves a management unit by ID.
+	GetManagementUnit(context.Context, *connect.Request[v1.GetManagementUnitRequest]) (*connect.Response[v1.GetManagementUnitResponse], error)
+	// ListManagementUnits lists management units with filtering and pagination.
+	ListManagementUnits(context.Context, *connect.Request[v1.ListManagementUnitsRequest]) (*connect.Response[v1.ListManagementUnitsResponse], error)
+	// UpdateManagementUnit updates an existing management unit.
+	UpdateManagementUnit(context.Context, *connect.Request[v1.UpdateManagementUnitRequest]) (*connect.Response[v1.UpdateManagementUnitResponse], error)
+	// DeleteManagementUnit deletes a management unit.
+	DeleteManagementUnit(context.Context, *connect.Request[v1.DeleteManagementUnitRequest]) (*connect.Response[v1.DeleteManagementUnitResponse], error)
+	// AssignFieldsToUnit assigns fields to a management unit.
+	AssignFieldsToUnit(context.Context, *connect.Request[v1.AssignFieldsToUnitRequest]) (*connect.Response[v1.AssignFieldsToUnitResponse], error)
+	// RemoveFieldsFromUnit removes fields from a management unit.
+	RemoveFieldsFromUnit(context.Context, *connect.Request[v1.RemoveFieldsFromUnitRequest]) (*connect.Response[v1.RemoveFieldsFromUnitResponse], error)
 }
 
 // NewFarmServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -263,6 +396,48 @@ func NewFarmServiceHandler(svc FarmServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(farmServiceMethods.ByName("TransferOwnership")),
 		connect.WithHandlerOptions(opts...),
 	)
+	farmServiceCreateManagementUnitHandler := connect.NewUnaryHandler(
+		FarmServiceCreateManagementUnitProcedure,
+		svc.CreateManagementUnit,
+		connect.WithSchema(farmServiceMethods.ByName("CreateManagementUnit")),
+		connect.WithHandlerOptions(opts...),
+	)
+	farmServiceGetManagementUnitHandler := connect.NewUnaryHandler(
+		FarmServiceGetManagementUnitProcedure,
+		svc.GetManagementUnit,
+		connect.WithSchema(farmServiceMethods.ByName("GetManagementUnit")),
+		connect.WithHandlerOptions(opts...),
+	)
+	farmServiceListManagementUnitsHandler := connect.NewUnaryHandler(
+		FarmServiceListManagementUnitsProcedure,
+		svc.ListManagementUnits,
+		connect.WithSchema(farmServiceMethods.ByName("ListManagementUnits")),
+		connect.WithHandlerOptions(opts...),
+	)
+	farmServiceUpdateManagementUnitHandler := connect.NewUnaryHandler(
+		FarmServiceUpdateManagementUnitProcedure,
+		svc.UpdateManagementUnit,
+		connect.WithSchema(farmServiceMethods.ByName("UpdateManagementUnit")),
+		connect.WithHandlerOptions(opts...),
+	)
+	farmServiceDeleteManagementUnitHandler := connect.NewUnaryHandler(
+		FarmServiceDeleteManagementUnitProcedure,
+		svc.DeleteManagementUnit,
+		connect.WithSchema(farmServiceMethods.ByName("DeleteManagementUnit")),
+		connect.WithHandlerOptions(opts...),
+	)
+	farmServiceAssignFieldsToUnitHandler := connect.NewUnaryHandler(
+		FarmServiceAssignFieldsToUnitProcedure,
+		svc.AssignFieldsToUnit,
+		connect.WithSchema(farmServiceMethods.ByName("AssignFieldsToUnit")),
+		connect.WithHandlerOptions(opts...),
+	)
+	farmServiceRemoveFieldsFromUnitHandler := connect.NewUnaryHandler(
+		FarmServiceRemoveFieldsFromUnitProcedure,
+		svc.RemoveFieldsFromUnit,
+		connect.WithSchema(farmServiceMethods.ByName("RemoveFieldsFromUnit")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.farm.v1.FarmService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case FarmServiceCreateFarmProcedure:
@@ -281,6 +456,20 @@ func NewFarmServiceHandler(svc FarmServiceHandler, opts ...connect.HandlerOption
 			farmServiceGetFarmBoundaryHandler.ServeHTTP(w, r)
 		case FarmServiceTransferOwnershipProcedure:
 			farmServiceTransferOwnershipHandler.ServeHTTP(w, r)
+		case FarmServiceCreateManagementUnitProcedure:
+			farmServiceCreateManagementUnitHandler.ServeHTTP(w, r)
+		case FarmServiceGetManagementUnitProcedure:
+			farmServiceGetManagementUnitHandler.ServeHTTP(w, r)
+		case FarmServiceListManagementUnitsProcedure:
+			farmServiceListManagementUnitsHandler.ServeHTTP(w, r)
+		case FarmServiceUpdateManagementUnitProcedure:
+			farmServiceUpdateManagementUnitHandler.ServeHTTP(w, r)
+		case FarmServiceDeleteManagementUnitProcedure:
+			farmServiceDeleteManagementUnitHandler.ServeHTTP(w, r)
+		case FarmServiceAssignFieldsToUnitProcedure:
+			farmServiceAssignFieldsToUnitHandler.ServeHTTP(w, r)
+		case FarmServiceRemoveFieldsFromUnitProcedure:
+			farmServiceRemoveFieldsFromUnitHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -320,4 +509,32 @@ func (UnimplementedFarmServiceHandler) GetFarmBoundary(context.Context, *connect
 
 func (UnimplementedFarmServiceHandler) TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.TransferOwnership is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) CreateManagementUnit(context.Context, *connect.Request[v1.CreateManagementUnitRequest]) (*connect.Response[v1.CreateManagementUnitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.CreateManagementUnit is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) GetManagementUnit(context.Context, *connect.Request[v1.GetManagementUnitRequest]) (*connect.Response[v1.GetManagementUnitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.GetManagementUnit is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) ListManagementUnits(context.Context, *connect.Request[v1.ListManagementUnitsRequest]) (*connect.Response[v1.ListManagementUnitsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.ListManagementUnits is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) UpdateManagementUnit(context.Context, *connect.Request[v1.UpdateManagementUnitRequest]) (*connect.Response[v1.UpdateManagementUnitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.UpdateManagementUnit is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) DeleteManagementUnit(context.Context, *connect.Request[v1.DeleteManagementUnitRequest]) (*connect.Response[v1.DeleteManagementUnitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.DeleteManagementUnit is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) AssignFieldsToUnit(context.Context, *connect.Request[v1.AssignFieldsToUnitRequest]) (*connect.Response[v1.AssignFieldsToUnitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.AssignFieldsToUnit is not implemented"))
+}
+
+func (UnimplementedFarmServiceHandler) RemoveFieldsFromUnit(context.Context, *connect.Request[v1.RemoveFieldsFromUnitRequest]) (*connect.Response[v1.RemoveFieldsFromUnitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.farm.v1.FarmService.RemoveFieldsFromUnit is not implemented"))
 }

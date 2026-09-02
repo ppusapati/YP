@@ -286,6 +286,231 @@ func (h *FieldHandler) GetCropHistory(ctx context.Context, req *connect.Request[
 }
 
 // ---------------------------------------------------------------------------
+// Crop Cycle RPCs
+// ---------------------------------------------------------------------------
+
+func (h *FieldHandler) CreateCropCycle(ctx context.Context, req *connect.Request[pb.CreateCropCycleRequest]) (*connect.Response[pb.CreateCropCycleResponse], error) {
+	h.log.Infow("msg", "CreateCropCycle request", "field_id", req.Msg.GetFieldId())
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	if req.Msg.GetCropId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "crop_id is required")
+	}
+	if req.Msg.GetSeason() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "season is required")
+	}
+	if req.Msg.GetCycleYear() <= 0 {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "cycle_year must be positive")
+	}
+
+	cycle := &domain.CropCycle{
+		FieldID:   req.Msg.GetFieldId(),
+		CropID:    req.Msg.GetCropId(),
+		Season:    req.Msg.GetSeason(),
+		CycleYear: req.Msg.GetCycleYear(),
+	}
+	if req.Msg.GetName() != "" {
+		s := req.Msg.GetName()
+		cycle.Name = &s
+	}
+	if req.Msg.GetPlannedPlantingDate() != nil {
+		t := req.Msg.GetPlannedPlantingDate().AsTime()
+		cycle.PlannedPlantingDate = &t
+	}
+	if req.Msg.GetPlannedHarvestDate() != nil {
+		t := req.Msg.GetPlannedHarvestDate().AsTime()
+		cycle.PlannedHarvestDate = &t
+	}
+	if req.Msg.GetTargetYieldPerHectare() != 0 {
+		f := req.Msg.GetTargetYieldPerHectare()
+		cycle.TargetYieldPerHectare = &f
+	}
+	if req.Msg.GetYieldUnit() != "" {
+		s := req.Msg.GetYieldUnit()
+		cycle.YieldUnit = &s
+	}
+	if req.Msg.GetNotes() != "" {
+		s := req.Msg.GetNotes()
+		cycle.Notes = &s
+	}
+
+	created, err := h.svc.CreateCropCycle(ctx, cycle)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.CreateCropCycleResponse{Cycle: cropCycleToProto(created)}), nil
+}
+
+func (h *FieldHandler) GetCropCycle(ctx context.Context, req *connect.Request[pb.GetCropCycleRequest]) (*connect.Response[pb.GetCropCycleResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+	cycle, err := h.svc.GetCropCycle(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.GetCropCycleResponse{Cycle: cropCycleToProto(cycle)}), nil
+}
+
+func (h *FieldHandler) ListCropCycles(ctx context.Context, req *connect.Request[pb.ListCropCyclesRequest]) (*connect.Response[pb.ListCropCyclesResponse], error) {
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	params := domain.ListCropCyclesParams{
+		FieldID:  req.Msg.GetFieldId(),
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   req.Msg.GetPageOffset(),
+	}
+	if req.Msg.GetStatus() != pb.CropCycleStatus_CYCLE_STATUS_UNSPECIFIED {
+		s := protoCropCycleStatusToDomain(req.Msg.GetStatus())
+		params.Status = &s
+	}
+	cycles, total, err := h.svc.ListCropCycles(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	protos := make([]*pb.CropCycle, 0, len(cycles))
+	for i := range cycles {
+		protos = append(protos, cropCycleToProto(&cycles[i]))
+	}
+	return connect.NewResponse(&pb.ListCropCyclesResponse{Cycles: protos, TotalCount: total}), nil
+}
+
+func (h *FieldHandler) UpdateCropCycle(ctx context.Context, req *connect.Request[pb.UpdateCropCycleRequest]) (*connect.Response[pb.UpdateCropCycleResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+	cycle := &domain.CropCycle{ID: req.Msg.GetId()}
+	if req.Msg.GetStatus() != pb.CropCycleStatus_CYCLE_STATUS_UNSPECIFIED {
+		cycle.Status = protoCropCycleStatusToDomain(req.Msg.GetStatus())
+	}
+	if req.Msg.GetActualPlantingDate() != nil {
+		t := req.Msg.GetActualPlantingDate().AsTime()
+		cycle.ActualPlantingDate = &t
+	}
+	if req.Msg.GetActualHarvestDate() != nil {
+		t := req.Msg.GetActualHarvestDate().AsTime()
+		cycle.ActualHarvestDate = &t
+	}
+	if req.Msg.GetActualYieldPerHectare() != 0 {
+		f := req.Msg.GetActualYieldPerHectare()
+		cycle.ActualYieldPerHectare = &f
+	}
+	cycle.TotalInputCost = req.Msg.GetTotalInputCost()
+	cycle.TotalRevenue = req.Msg.GetTotalRevenue()
+	if req.Msg.GetNotes() != "" {
+		s := req.Msg.GetNotes()
+		cycle.Notes = &s
+	}
+
+	updated, err := h.svc.UpdateCropCycle(ctx, cycle)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.UpdateCropCycleResponse{Cycle: cropCycleToProto(updated)}), nil
+}
+
+// ---------------------------------------------------------------------------
+// Activity Event RPCs
+// ---------------------------------------------------------------------------
+
+func (h *FieldHandler) LogActivityEvent(ctx context.Context, req *connect.Request[pb.LogActivityEventRequest]) (*connect.Response[pb.LogActivityEventResponse], error) {
+	h.log.Infow("msg", "LogActivityEvent request", "field_id", req.Msg.GetFieldId())
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	if req.Msg.GetActivityType() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "activity_type is required")
+	}
+	if req.Msg.GetStartedAt() == nil {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "started_at is required")
+	}
+
+	event := &domain.ActivityEvent{
+		FieldID:      req.Msg.GetFieldId(),
+		ActivityType: req.Msg.GetActivityType(),
+		Category:     protoActivityCategoryToDomain(req.Msg.GetCategory()),
+		StartedAt:    req.Msg.GetStartedAt().AsTime(),
+		InputCost:    req.Msg.GetInputCost(),
+	}
+	if req.Msg.GetCropCycleId() != "" {
+		s := req.Msg.GetCropCycleId()
+		event.CropCycleID = &s
+	}
+	if req.Msg.GetCompletedAt() != nil {
+		t := req.Msg.GetCompletedAt().AsTime()
+		event.CompletedAt = &t
+	}
+	if req.Msg.GetDurationMinutes() != 0 {
+		d := req.Msg.GetDurationMinutes()
+		event.DurationMinutes = &d
+	}
+	if req.Msg.GetDescription() != "" {
+		s := req.Msg.GetDescription()
+		event.Description = &s
+	}
+	if req.Msg.GetNotes() != "" {
+		s := req.Msg.GetNotes()
+		event.Notes = &s
+	}
+	if req.Msg.GetInputProductId() != "" {
+		s := req.Msg.GetInputProductId()
+		event.InputProductID = &s
+	}
+	if req.Msg.GetInputQuantity() != 0 {
+		f := req.Msg.GetInputQuantity()
+		event.InputQuantity = &f
+	}
+	if req.Msg.GetInputUnit() != "" {
+		s := req.Msg.GetInputUnit()
+		event.InputUnit = &s
+	}
+	if req.Msg.GetCurrency() != "" {
+		event.Currency = req.Msg.GetCurrency()
+	}
+	if req.Msg.GetAreaHectares() != 0 {
+		f := req.Msg.GetAreaHectares()
+		event.AreaHectares = &f
+	}
+
+	created, err := h.svc.LogActivityEvent(ctx, event)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.LogActivityEventResponse{Event: activityEventToProto(created)}), nil
+}
+
+func (h *FieldHandler) ListActivityEvents(ctx context.Context, req *connect.Request[pb.ListActivityEventsRequest]) (*connect.Response[pb.ListActivityEventsResponse], error) {
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	params := domain.ListActivityEventsParams{
+		FieldID:  req.Msg.GetFieldId(),
+		PageSize: req.Msg.GetPageSize(),
+		Offset:   req.Msg.GetPageOffset(),
+	}
+	if req.Msg.GetCropCycleId() != "" {
+		s := req.Msg.GetCropCycleId()
+		params.CropCycleID = &s
+	}
+	if req.Msg.GetCategory() != pb.ActivityCategory_CATEGORY_UNSPECIFIED {
+		c := protoActivityCategoryToDomain(req.Msg.GetCategory())
+		params.Category = &c
+	}
+
+	events, total, err := h.svc.ListActivityEvents(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	protos := make([]*pb.ActivityEvent, 0, len(events))
+	for i := range events {
+		protos = append(protos, activityEventToProto(&events[i]))
+	}
+	return connect.NewResponse(&pb.ListActivityEventsResponse{Events: protos, TotalCount: total}), nil
+}
+
+// ---------------------------------------------------------------------------
 // Proto ↔ Domain converters
 // ---------------------------------------------------------------------------
 
@@ -631,5 +856,218 @@ func protoFieldStatusToDomain(s pb.FieldStatus) domain.FieldStatus {
 		return domain.FieldStatusRetired
 	default:
 		return domain.FieldStatusUnspecified
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Crop Cycle converters
+// ---------------------------------------------------------------------------
+
+func cropCycleToProto(c *domain.CropCycle) *pb.CropCycle {
+	if c == nil {
+		return nil
+	}
+	out := &pb.CropCycle{
+		Id:              c.ID,
+		TenantId:        c.TenantID,
+		FieldId:         c.FieldID,
+		CropId:          c.CropID,
+		Season:          c.Season,
+		CycleYear:       c.CycleYear,
+		Status:          domainCropCycleStatusToProto(c.Status),
+		TotalInputCost:  c.TotalInputCost,
+		TotalRevenue:    c.TotalRevenue,
+		Currency:        c.Currency,
+		Version:         c.Version,
+		CreatedBy:       c.CreatedBy,
+	}
+	if c.CropAssignmentID != nil {
+		out.CropAssignmentId = *c.CropAssignmentID
+	}
+	if c.Name != nil {
+		out.Name = *c.Name
+	}
+	if c.PlannedPlantingDate != nil {
+		out.PlannedPlantingDate = timestamppb.New(*c.PlannedPlantingDate)
+	}
+	if c.ActualPlantingDate != nil {
+		out.ActualPlantingDate = timestamppb.New(*c.ActualPlantingDate)
+	}
+	if c.PlannedHarvestDate != nil {
+		out.PlannedHarvestDate = timestamppb.New(*c.PlannedHarvestDate)
+	}
+	if c.ActualHarvestDate != nil {
+		out.ActualHarvestDate = timestamppb.New(*c.ActualHarvestDate)
+	}
+	if c.TargetYieldPerHectare != nil {
+		out.TargetYieldPerHectare = *c.TargetYieldPerHectare
+	}
+	if c.ActualYieldPerHectare != nil {
+		out.ActualYieldPerHectare = *c.ActualYieldPerHectare
+	}
+	if c.YieldUnit != nil {
+		out.YieldUnit = *c.YieldUnit
+	}
+	if c.Notes != nil {
+		out.Notes = *c.Notes
+	}
+	if !c.CreatedAt.IsZero() {
+		out.CreatedAt = timestamppb.New(c.CreatedAt)
+	}
+	if !c.UpdatedAt.IsZero() {
+		out.UpdatedAt = timestamppb.New(c.UpdatedAt)
+	}
+	return out
+}
+
+func domainCropCycleStatusToProto(s domain.CropCycleStatus) pb.CropCycleStatus {
+	switch s {
+	case domain.CropCycleStatusPlanned:
+		return pb.CropCycleStatus_CYCLE_STATUS_PLANNED
+	case domain.CropCycleStatusActive:
+		return pb.CropCycleStatus_CYCLE_STATUS_ACTIVE
+	case domain.CropCycleStatusHarvesting:
+		return pb.CropCycleStatus_CYCLE_STATUS_HARVESTING
+	case domain.CropCycleStatusCompleted:
+		return pb.CropCycleStatus_CYCLE_STATUS_COMPLETED
+	case domain.CropCycleStatusAbandoned:
+		return pb.CropCycleStatus_CYCLE_STATUS_ABANDONED
+	default:
+		return pb.CropCycleStatus_CYCLE_STATUS_UNSPECIFIED
+	}
+}
+
+func protoCropCycleStatusToDomain(s pb.CropCycleStatus) domain.CropCycleStatus {
+	switch s {
+	case pb.CropCycleStatus_CYCLE_STATUS_PLANNED:
+		return domain.CropCycleStatusPlanned
+	case pb.CropCycleStatus_CYCLE_STATUS_ACTIVE:
+		return domain.CropCycleStatusActive
+	case pb.CropCycleStatus_CYCLE_STATUS_HARVESTING:
+		return domain.CropCycleStatusHarvesting
+	case pb.CropCycleStatus_CYCLE_STATUS_COMPLETED:
+		return domain.CropCycleStatusCompleted
+	case pb.CropCycleStatus_CYCLE_STATUS_ABANDONED:
+		return domain.CropCycleStatusAbandoned
+	default:
+		return domain.CropCycleStatusUnspecified
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Activity Event converters
+// ---------------------------------------------------------------------------
+
+func activityEventToProto(e *domain.ActivityEvent) *pb.ActivityEvent {
+	if e == nil {
+		return nil
+	}
+	out := &pb.ActivityEvent{
+		Id:           e.ID,
+		TenantId:     e.TenantID,
+		FieldId:      e.FieldID,
+		PerformedBy:  e.PerformedBy,
+		ActivityType: e.ActivityType,
+		Category:     domainActivityCategoryToProto(e.Category),
+		StartedAt:    timestamppb.New(e.StartedAt),
+		InputCost:    e.InputCost,
+		Currency:     e.Currency,
+	}
+	if e.CropCycleID != nil {
+		out.CropCycleId = *e.CropCycleID
+	}
+	if e.CompletedAt != nil {
+		out.CompletedAt = timestamppb.New(*e.CompletedAt)
+	}
+	if e.DurationMinutes != nil {
+		out.DurationMinutes = *e.DurationMinutes
+	}
+	if e.Description != nil {
+		out.Description = *e.Description
+	}
+	if e.Notes != nil {
+		out.Notes = *e.Notes
+	}
+	if e.InputProductID != nil {
+		out.InputProductId = *e.InputProductID
+	}
+	if e.InputQuantity != nil {
+		out.InputQuantity = *e.InputQuantity
+	}
+	if e.InputUnit != nil {
+		out.InputUnit = *e.InputUnit
+	}
+	if e.AreaHectares != nil {
+		out.AreaHectares = *e.AreaHectares
+	}
+	if e.WeatherTempC != nil {
+		out.WeatherTempCelsius = *e.WeatherTempC
+	}
+	if e.WeatherHumidity != nil {
+		out.WeatherHumidityPct = *e.WeatherHumidity
+	}
+	if e.WeatherWindSpeed != nil {
+		out.WeatherWindSpeedKmh = *e.WeatherWindSpeed
+	}
+	if e.WeatherConditions != nil {
+		out.WeatherConditions = *e.WeatherConditions
+	}
+	if !e.CreatedAt.IsZero() {
+		out.CreatedAt = timestamppb.New(e.CreatedAt)
+	}
+	return out
+}
+
+func domainActivityCategoryToProto(c domain.ActivityCategory) pb.ActivityCategory {
+	switch c {
+	case domain.ActivityCategoryLandPrep:
+		return pb.ActivityCategory_CATEGORY_LAND_PREP
+	case domain.ActivityCategoryPlanting:
+		return pb.ActivityCategory_CATEGORY_PLANTING
+	case domain.ActivityCategoryIrrigation:
+		return pb.ActivityCategory_CATEGORY_IRRIGATION
+	case domain.ActivityCategoryFertilization:
+		return pb.ActivityCategory_CATEGORY_FERTILIZATION
+	case domain.ActivityCategoryPestControl:
+		return pb.ActivityCategory_CATEGORY_PEST_CONTROL
+	case domain.ActivityCategoryScouting:
+		return pb.ActivityCategory_CATEGORY_SCOUTING
+	case domain.ActivityCategoryHarvesting:
+		return pb.ActivityCategory_CATEGORY_HARVESTING
+	case domain.ActivityCategoryPostHarvest:
+		return pb.ActivityCategory_CATEGORY_POST_HARVEST
+	case domain.ActivityCategorySoilSampling:
+		return pb.ActivityCategory_CATEGORY_SOIL_SAMPLING
+	case domain.ActivityCategoryMaintenance:
+		return pb.ActivityCategory_CATEGORY_MAINTENANCE
+	default:
+		return pb.ActivityCategory_CATEGORY_UNSPECIFIED
+	}
+}
+
+func protoActivityCategoryToDomain(c pb.ActivityCategory) domain.ActivityCategory {
+	switch c {
+	case pb.ActivityCategory_CATEGORY_LAND_PREP:
+		return domain.ActivityCategoryLandPrep
+	case pb.ActivityCategory_CATEGORY_PLANTING:
+		return domain.ActivityCategoryPlanting
+	case pb.ActivityCategory_CATEGORY_IRRIGATION:
+		return domain.ActivityCategoryIrrigation
+	case pb.ActivityCategory_CATEGORY_FERTILIZATION:
+		return domain.ActivityCategoryFertilization
+	case pb.ActivityCategory_CATEGORY_PEST_CONTROL:
+		return domain.ActivityCategoryPestControl
+	case pb.ActivityCategory_CATEGORY_SCOUTING:
+		return domain.ActivityCategoryScouting
+	case pb.ActivityCategory_CATEGORY_HARVESTING:
+		return domain.ActivityCategoryHarvesting
+	case pb.ActivityCategory_CATEGORY_POST_HARVEST:
+		return domain.ActivityCategoryPostHarvest
+	case pb.ActivityCategory_CATEGORY_SOIL_SAMPLING:
+		return domain.ActivityCategorySoilSampling
+	case pb.ActivityCategory_CATEGORY_MAINTENANCE:
+		return domain.ActivityCategoryMaintenance
+	default:
+		return domain.ActivityCategoryUnspecified
 	}
 }

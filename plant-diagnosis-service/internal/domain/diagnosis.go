@@ -3,8 +3,6 @@ package domain
 import (
 	"encoding/json"
 	"time"
-
-	"p9e.in/samavaya/packages/models"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,28 +22,30 @@ const (
 type DiagnosisStatus string
 
 const (
-	DiagnosisStatusPending   DiagnosisStatus = "PENDING"
-	DiagnosisStatusAnalyzing DiagnosisStatus = "ANALYZING"
-	DiagnosisStatusCompleted DiagnosisStatus = "COMPLETED"
-	DiagnosisStatusFailed    DiagnosisStatus = "FAILED"
+	DiagnosisStatusPending   DiagnosisStatus = "DIAGNOSIS_STATUS_PENDING"
+	DiagnosisStatusAnalyzing DiagnosisStatus = "DIAGNOSIS_STATUS_ANALYZING"
+	DiagnosisStatusCompleted DiagnosisStatus = "DIAGNOSIS_STATUS_COMPLETED"
+	DiagnosisStatusFailed    DiagnosisStatus = "DIAGNOSIS_STATUS_FAILED"
 )
 
 type SeverityLevel string
 
 const (
-	SeverityMild     SeverityLevel = "MILD"
-	SeverityModerate SeverityLevel = "MODERATE"
-	SeveritySevere   SeverityLevel = "SEVERE"
-	SeverityCritical SeverityLevel = "CRITICAL"
+	SeverityUnspecified SeverityLevel = "SEVERITY_UNSPECIFIED"
+	SeverityMild        SeverityLevel = "SEVERITY_MILD"
+	SeverityModerate    SeverityLevel = "SEVERITY_MODERATE"
+	SeveritySevere      SeverityLevel = "SEVERITY_SEVERE"
+	SeverityCritical    SeverityLevel = "SEVERITY_CRITICAL"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Domain models
+// Core domain models
 // ─────────────────────────────────────────────────────────────────────────────
 
 // DiagnosisRequest is the aggregate root for plant diagnosis submissions.
+// Maps to the diagnosis_requests table (id CHAR(26), images JSONB).
 type DiagnosisRequest struct {
-	models.BaseModel
+	ID             string          `json:"id" db:"id"`
 	TenantID       string          `json:"tenant_id" db:"tenant_id"`
 	FarmID         string          `json:"farm_id" db:"farm_id"`
 	FieldID        *string         `json:"field_id" db:"field_id"`
@@ -53,59 +53,59 @@ type DiagnosisRequest struct {
 	Status         DiagnosisStatus `json:"status" db:"status"`
 	Notes          *string         `json:"notes" db:"notes"`
 	Version        int32           `json:"version" db:"version"`
+	CreatedBy      string          `json:"created_by" db:"created_by"`
+	CreatedAt      time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at" db:"updated_at"`
 
-	// Loaded relations (not directly from DB row)
+	// Images are stored as JSONB in the DB row; decoded into this slice.
 	Images []DiagnosisImage `json:"images,omitempty" db:"-"`
+
+	// Result is optionally joined from diagnosis_results.
 	Result *DiagnosisResult `json:"result,omitempty" db:"-"`
 }
 
-// DiagnosisImage represents an image attached to a diagnosis request.
+// DiagnosisImage represents a single image stored inside the JSONB images
+// column of diagnosis_requests.
 type DiagnosisImage struct {
-	ID                 int64     `json:"id" db:"id"`
-	UUID               string    `json:"uuid" db:"uuid"`
-	DiagnosisRequestID int64     `json:"diagnosis_request_id" db:"diagnosis_request_id"`
-	ImageURL           string    `json:"image_url" db:"image_url"`
-	ImageType          string    `json:"image_type" db:"image_type"`
-	SizeBytes          *int64    `json:"size_bytes" db:"size_bytes"`
-	MimeType           *string   `json:"mime_type" db:"mime_type"`
-	Checksum           *string   `json:"checksum" db:"checksum"`
-	UploadedAt         time.Time `json:"uploaded_at" db:"uploaded_at"`
+	ImageURL  string `json:"image_url"`
+	ImageType string `json:"image_type"`
+	MimeType  string `json:"mime_type,omitempty"`
 }
 
 // DiagnosisResult holds the AI inference output for a diagnosis request.
+// Maps to the diagnosis_results table.
 type DiagnosisResult struct {
-	ID                       int64           `json:"id" db:"id"`
-	UUID                     string          `json:"uuid" db:"uuid"`
-	DiagnosisRequestID       int64           `json:"diagnosis_request_id" db:"diagnosis_request_id"`
-	IdentifiedSpeciesID      *string         `json:"identified_species_id" db:"identified_species_id"`
-	IdentifiedSpeciesName    *string         `json:"identified_species_name" db:"identified_species_name"`
-	IdentifiedSpeciesConf    *float64        `json:"identified_species_conf" db:"identified_species_conf"`
+	ID                       string          `json:"id" db:"id"`
+	TenantID                 string          `json:"tenant_id" db:"tenant_id"`
+	DiagnosisRequestID       string          `json:"diagnosis_request_id" db:"diagnosis_request_id"`
+	IdentifiedSpecies        json.RawMessage `json:"identified_species" db:"identified_species"`
 	DetectedDiseases         json.RawMessage `json:"detected_diseases" db:"detected_diseases"`
 	NutrientDeficiencies     json.RawMessage `json:"nutrient_deficiencies" db:"nutrient_deficiencies"`
 	PestDamage               json.RawMessage `json:"pest_damage" db:"pest_damage"`
-	TreatmentRecommendations json.RawMessage `json:"treatment_recommendations" db:"treatment_recommendations"`
+	TreatmentRecommendations []string        `json:"treatment_recommendations" db:"treatment_recommendations"`
 	AIModelVersion           string          `json:"ai_model_version" db:"ai_model_version"`
 	ProcessingTimeMs         int64           `json:"processing_time_ms" db:"processing_time_ms"`
 	OverallHealthScore       *float64        `json:"overall_health_score" db:"overall_health_score"`
 	Summary                  *string         `json:"summary" db:"summary"`
 	CreatedAt                time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt                time.Time       `json:"updated_at" db:"updated_at"`
 }
 
-// DetectedDisease is the JSON-serialised disease detection result.
-type DetectedDisease struct {
-	DiseaseID        string        `json:"disease_id"`
-	DiseaseName      string        `json:"disease_name"`
-	ScientificName   string        `json:"scientific_name,omitempty"`
-	ConfidenceScore  float64       `json:"confidence_score"`
-	Severity         SeverityLevel `json:"severity"`
-	Description      string        `json:"description,omitempty"`
-	Symptoms         string        `json:"symptoms,omitempty"`
-	TreatmentOptions []string      `json:"treatment_options,omitempty"`
-	Prevention       string        `json:"prevention,omitempty"`
+// ─────────────────────────────────────────────────────────────────────────────
+// Detection / AI result value objects
+// ─────────────────────────────────────────────────────────────────────────────
+
+// PlantSpecies represents a plant species identification result.
+type PlantSpecies struct {
+	ID             string  `json:"id"`
+	CommonName     string  `json:"common_name"`
+	ScientificName string  `json:"scientific_name"`
+	Family         string  `json:"family,omitempty"`
+	Confidence     float64 `json:"confidence"`
 }
 
-// DetectedNutrientDeficiency is the JSON-serialised nutrient deficiency result.
-type DetectedNutrientDeficiency struct {
+// NutrientDeficiency represents a detected nutrient deficiency.
+type NutrientDeficiency struct {
 	Nutrient               string        `json:"nutrient"`
 	ConfidenceScore        float64       `json:"confidence_score"`
 	Severity               SeverityLevel `json:"severity"`
@@ -115,8 +115,8 @@ type DetectedNutrientDeficiency struct {
 	ApplicationMethod      string        `json:"application_method,omitempty"`
 }
 
-// DetectedPestDamage is the JSON-serialised pest damage result.
-type DetectedPestDamage struct {
+// PestDamage represents detected pest damage.
+type PestDamage struct {
 	PestID          string        `json:"pest_id"`
 	PestName        string        `json:"pest_name"`
 	ScientificName  string        `json:"scientific_name,omitempty"`
@@ -127,54 +127,24 @@ type DetectedPestDamage struct {
 	ControlMethods  []string      `json:"control_methods,omitempty"`
 }
 
-// IdentifiedSpecies represents the species identification result.
-type IdentifiedSpecies struct {
-	ID             string  `json:"id"`
-	CommonName     string  `json:"common_name"`
-	ScientificName string  `json:"scientific_name"`
-	Family         string  `json:"family,omitempty"`
-	Confidence     float64 `json:"confidence"`
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Catalog models (reference data)
+// Reference data models
 // ─────────────────────────────────────────────────────────────────────────────
 
-// DiseaseCatalog represents a known plant disease in the reference catalog.
-type DiseaseCatalog struct {
-	models.BaseModel
-	TenantID         string          `json:"tenant_id" db:"tenant_id"`
-	DiseaseName      string          `json:"disease_name" db:"disease_name"`
-	ScientificName   *string         `json:"scientific_name" db:"scientific_name"`
-	Description      *string         `json:"description" db:"description"`
-	Symptoms         *string         `json:"symptoms" db:"symptoms"`
-	TreatmentOptions json.RawMessage `json:"treatment_options" db:"treatment_options"`
-	Prevention       *string         `json:"prevention" db:"prevention"`
-	AffectedSpecies  json.RawMessage `json:"affected_species" db:"affected_species"`
-}
-
-// NutrientDeficiencyCatalog represents a known nutrient deficiency.
-type NutrientDeficiencyCatalog struct {
-	models.BaseModel
-	TenantID               string          `json:"tenant_id" db:"tenant_id"`
-	Nutrient               string          `json:"nutrient" db:"nutrient"`
-	Description            *string         `json:"description" db:"description"`
-	VisualSymptoms         *string         `json:"visual_symptoms" db:"visual_symptoms"`
-	RecommendedFertilizers json.RawMessage `json:"recommended_fertilizers" db:"recommended_fertilizers"`
-	ApplicationMethod      *string         `json:"application_method" db:"application_method"`
-	AffectedSpecies        json.RawMessage `json:"affected_species" db:"affected_species"`
-}
-
-// PestCatalog represents a known pest in the reference catalog.
-type PestCatalog struct {
-	models.BaseModel
-	TenantID        string          `json:"tenant_id" db:"tenant_id"`
-	PestName        string          `json:"pest_name" db:"pest_name"`
-	ScientificName  *string         `json:"scientific_name" db:"scientific_name"`
-	Description     *string         `json:"description" db:"description"`
-	DamagePattern   *string         `json:"damage_pattern" db:"damage_pattern"`
-	ControlMethods  json.RawMessage `json:"control_methods" db:"control_methods"`
-	AffectedSpecies json.RawMessage `json:"affected_species" db:"affected_species"`
+// DiseaseInfo represents a known plant disease in the diseases reference table.
+type DiseaseInfo struct {
+	ID               string    `json:"id" db:"id"`
+	TenantID         string    `json:"tenant_id" db:"tenant_id"`
+	DiseaseName      string    `json:"disease_name" db:"disease_name"`
+	ScientificName   *string   `json:"scientific_name" db:"scientific_name"`
+	ConfidenceScore  float64   `json:"confidence_score" db:"confidence_score"`
+	Severity         string    `json:"severity" db:"severity"`
+	Description      *string   `json:"description" db:"description"`
+	Symptoms         *string   `json:"symptoms" db:"symptoms"`
+	TreatmentOptions []string  `json:"treatment_options" db:"treatment_options"`
+	Prevention       *string   `json:"prevention" db:"prevention"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -182,15 +152,19 @@ type PestCatalog struct {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // TreatmentPlan is a generated action plan for a diagnosis.
+// Maps to the treatment_plans table.
 type TreatmentPlan struct {
-	models.BaseModel
-	DiagnosisRequestID int64           `json:"diagnosis_request_id" db:"diagnosis_request_id"`
-	Title              string          `json:"title" db:"title"`
-	Description        *string         `json:"description" db:"description"`
-	Priority           string          `json:"priority" db:"priority"`
-	Steps              json.RawMessage `json:"steps" db:"steps"`
-	EstimatedCost      *string         `json:"estimated_cost" db:"estimated_cost"`
-	EstimatedDays      *int32          `json:"estimated_days" db:"estimated_days"`
+	ID            string          `json:"id" db:"id"`
+	TenantID      string          `json:"tenant_id" db:"tenant_id"`
+	DiagnosisID   string          `json:"diagnosis_id" db:"diagnosis_id"`
+	Title         string          `json:"title" db:"title"`
+	Description   *string         `json:"description" db:"description"`
+	Priority      string          `json:"priority" db:"priority"`
+	Steps         json.RawMessage `json:"steps" db:"steps"`
+	EstimatedCost *string         `json:"estimated_cost" db:"estimated_cost"`
+	EstimatedDays *int32          `json:"estimated_days" db:"estimated_days"`
+	CreatedAt     time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at" db:"updated_at"`
 }
 
 // TreatmentStep is a single step in a treatment plan (JSON within Steps).
@@ -205,7 +179,31 @@ type TreatmentStep struct {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI pipeline models
+// Query parameter types
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ListDiagnosesParams holds filter and pagination parameters for listing diagnosis requests.
+type ListDiagnosesParams struct {
+	TenantID string
+	FarmID   string
+	FieldID  string
+	Status   *DiagnosisStatus
+	PageSize int32
+	Offset   int32
+	SortBy   string
+	SortDesc bool
+}
+
+// ListDiseasesParams holds filter and pagination parameters for listing diseases.
+type ListDiseasesParams struct {
+	TenantID   string
+	SearchTerm string
+	PageSize   int32
+	Offset     int32
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI pipeline models (used by internal/ai package)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // AIInferenceRequest is sent to the Python AI inference service.
@@ -219,15 +217,28 @@ type AIInferenceRequest struct {
 
 // AIInferenceResponse is received from the Python AI inference service.
 type AIInferenceResponse struct {
-	RequestID            string                       `json:"request_id"`
-	Species              *IdentifiedSpecies           `json:"species,omitempty"`
-	Diseases             []DetectedDisease            `json:"diseases,omitempty"`
-	NutrientDeficiencies []DetectedNutrientDeficiency `json:"nutrient_deficiencies,omitempty"`
-	PestDamage           []DetectedPestDamage         `json:"pest_damage,omitempty"`
-	OverallHealthScore   float64                      `json:"overall_health_score"`
-	Summary              string                       `json:"summary"`
-	ModelVersion         string                       `json:"model_version"`
-	ProcessingTimeMs     int64                        `json:"processing_time_ms"`
+	RequestID            string               `json:"request_id"`
+	Species              *PlantSpecies        `json:"species,omitempty"`
+	Diseases             []DetectedDisease    `json:"diseases,omitempty"`
+	NutrientDeficiencies []NutrientDeficiency `json:"nutrient_deficiencies,omitempty"`
+	PestDamage           []PestDamage         `json:"pest_damage,omitempty"`
+	OverallHealthScore   float64              `json:"overall_health_score"`
+	Summary              string               `json:"summary"`
+	ModelVersion         string               `json:"model_version"`
+	ProcessingTimeMs     int64                `json:"processing_time_ms"`
+}
+
+// DetectedDisease is the JSON-serialised disease detection result stored in diagnosis_results.
+type DetectedDisease struct {
+	DiseaseID        string        `json:"disease_id"`
+	DiseaseName      string        `json:"disease_name"`
+	ScientificName   string        `json:"scientific_name,omitempty"`
+	ConfidenceScore  float64       `json:"confidence_score"`
+	Severity         SeverityLevel `json:"severity"`
+	Description      string        `json:"description,omitempty"`
+	Symptoms         string        `json:"symptoms,omitempty"`
+	TreatmentOptions []string      `json:"treatment_options,omitempty"`
+	Prevention       string        `json:"prevention,omitempty"`
 }
 
 // ImagePreprocessResult is returned by the Rust preprocessing engine.
@@ -235,25 +246,4 @@ type ImagePreprocessResult struct {
 	RequestID     string                 `json:"request_id"`
 	ProcessedURLs []string               `json:"processed_urls"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-}
-
-// DiagnosisStatusActive represents the active status for a diagnosis entity in the ports CRUD layer.
-const DiagnosisStatusActive DiagnosisStatus = "ACTIVE"
-
-// Diagnosis is the aggregate root used by the ports layer for CRUD operations.
-type Diagnosis struct {
-	models.BaseModel
-	TenantID string          `json:"tenant_id" db:"tenant_id"`
-	Name     string          `json:"name" db:"name"`
-	Status   DiagnosisStatus `json:"status" db:"status"`
-	Version  int64           `json:"version" db:"version"`
-}
-
-// ListPlantDiagnosisParams holds filter and pagination parameters for listing diagnoses via the ports layer.
-type ListPlantDiagnosisParams struct {
-	TenantID string
-	Status   *DiagnosisStatus
-	Search   *string
-	PageSize int32
-	Offset   int32
 }

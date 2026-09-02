@@ -4,8 +4,13 @@ package grpc
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
+	"strconv"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
@@ -32,49 +37,655 @@ func NewYieldHandler(svc inbound.YieldService, log p9log.Logger) *YieldHandler {
 	}
 }
 
-// PredictYield handles yield prediction requests.
+// ---------------------------------------------------------------------------
+// 1. PredictYield
+// ---------------------------------------------------------------------------
+
 func (h *YieldHandler) PredictYield(ctx context.Context, req *connect.Request[pb.PredictYieldRequest]) (*connect.Response[pb.PredictYieldResponse], error) {
 	h.log.Infow("msg", "PredictYield request", "tenant_id", p9context.TenantID(ctx))
+
 	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	entity := &domain.Yield{Name: req.Msg.GetFarmId()}
-	created, err := h.svc.CreateYield(ctx, entity)
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	if req.Msg.GetCropId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "crop_id is required")
+	}
+	if req.Msg.GetSeason() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "season is required")
+	}
+	if req.Msg.GetYear() <= 0 {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "year must be positive")
+	}
+
+	prediction := &domain.YieldPrediction{
+		FarmID:  req.Msg.GetFarmId(),
+		FieldID: req.Msg.GetFieldId(),
+		CropID:  req.Msg.GetCropId(),
+		Season:  req.Msg.GetSeason(),
+		Year:    req.Msg.GetYear(),
+	}
+
+	if f := req.Msg.GetYieldFactors(); f != nil {
+		prediction.SoilQualityScore = f.GetSoilQualityScore()
+		prediction.WeatherScore = f.GetWeatherScore()
+		prediction.IrrigationScore = f.GetIrrigationScore()
+		prediction.PestPressureScore = f.GetPestPressureScore()
+		prediction.NutrientScore = f.GetNutrientScore()
+		prediction.ManagementScore = f.GetManagementScore()
+	}
+
+	created, err := h.svc.PredictYield(ctx, prediction)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.PredictYieldResponse{Prediction: yieldToProto(created)}), nil
+
+	return connect.NewResponse(&pb.PredictYieldResponse{
+		Prediction: predictionToProto(created),
+	}), nil
 }
 
-// GetPrediction handles get prediction requests.
+// ---------------------------------------------------------------------------
+// 2. GetPrediction
+// ---------------------------------------------------------------------------
+
 func (h *YieldHandler) GetPrediction(ctx context.Context, req *connect.Request[pb.GetPredictionRequest]) (*connect.Response[pb.GetPredictionResponse], error) {
 	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
-	entity, err := h.svc.GetYield(ctx, req.Msg.GetId())
+
+	prediction, err := h.svc.GetPrediction(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	return connect.NewResponse(&pb.GetPredictionResponse{Prediction: yieldToProto(entity)}), nil
+
+	return connect.NewResponse(&pb.GetPredictionResponse{
+		Prediction: predictionToProto(prediction),
+	}), nil
 }
 
-// ListPredictions handles list predictions requests.
+// ---------------------------------------------------------------------------
+// 3. ListPredictions
+// ---------------------------------------------------------------------------
+
 func (h *YieldHandler) ListPredictions(ctx context.Context, req *connect.Request[pb.ListPredictionsRequest]) (*connect.Response[pb.ListPredictionsResponse], error) {
-	params := domain.ListYieldParams{PageSize: req.Msg.GetPageSize()}
-	entities, total, err := h.svc.ListYields(ctx, params)
+	pageSize := req.Msg.GetPageSize()
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.ListPredictionsParams{
+		FarmID:   req.Msg.GetFarmId(),
+		FieldID:  req.Msg.GetFieldId(),
+		CropID:   req.Msg.GetCropId(),
+		Season:   req.Msg.GetSeason(),
+		Year:     req.Msg.GetYear(),
+		Status:   predictionStatusToString(req.Msg.GetStatus()),
+		PageSize: pageSize,
+		Offset:   offset,
+	}
+
+	predictions, total, err := h.svc.ListPredictions(ctx, params)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
-	protos := make([]*pb.YieldPrediction, 0, len(entities))
-	for i := range entities {
-		protos = append(protos, yieldToProto(&entities[i]))
+
+	protos := make([]*pb.YieldPrediction, 0, len(predictions))
+	for i := range predictions {
+		protos = append(protos, predictionToProto(&predictions[i]))
 	}
-	return connect.NewResponse(&pb.ListPredictionsResponse{Predictions: protos, TotalCount: total}), nil
+
+	nextToken := encodeNextPageToken(offset, params.PageSize, total)
+
+	return connect.NewResponse(&pb.ListPredictionsResponse{
+		Predictions:   protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
 }
 
-func yieldToProto(e *domain.Yield) *pb.YieldPrediction {
-	return &pb.YieldPrediction{
-		Id:       e.UUID,
-		TenantId: e.TenantID,
+// ---------------------------------------------------------------------------
+// 4. RecordYield
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) RecordYield(ctx context.Context, req *connect.Request[pb.RecordYieldRequest]) (*connect.Response[pb.RecordYieldResponse], error) {
+	h.log.Infow("msg", "RecordYield request", "tenant_id", p9context.TenantID(ctx))
+
+	if req.Msg.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
+	}
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	if req.Msg.GetCropId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "crop_id is required")
+	}
+	if req.Msg.GetSeason() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "season is required")
+	}
+	if req.Msg.GetYear() <= 0 {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "year must be positive")
+	}
+
+	record := &domain.YieldRecord{
+		FarmID:                     req.Msg.GetFarmId(),
+		FieldID:                    req.Msg.GetFieldId(),
+		CropID:                     req.Msg.GetCropId(),
+		Season:                     req.Msg.GetSeason(),
+		Year:                       req.Msg.GetYear(),
+		ActualYieldKgPerHectare:    req.Msg.GetActualYieldKgPerHectare(),
+		TotalAreaHarvestedHectares: req.Msg.GetTotalAreaHarvestedHectares(),
+		TotalYieldKg:               req.Msg.GetTotalYieldKg(),
+		HarvestQualityGrade:        harvestQualityGradeToString(req.Msg.GetHarvestQualityGrade()),
+		MoistureContentPct:         req.Msg.GetMoistureContentPct(),
+		RevenuePerHectare:          req.Msg.GetRevenuePerHectare(),
+		CostPerHectare:             req.Msg.GetCostPerHectare(),
+	}
+
+	if hd := req.Msg.GetHarvestDate(); hd != nil {
+		t := hd.AsTime()
+		record.HarvestDate = &t
+	}
+
+	if pid := req.Msg.GetPredictionId(); pid != "" {
+		record.PredictionID = &pid
+	}
+
+	created, err := h.svc.RecordYield(ctx, record)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.RecordYieldResponse{
+		Record: recordToProto(created),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 5. GetYieldHistory
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) GetYieldHistory(ctx context.Context, req *connect.Request[pb.GetYieldHistoryRequest]) (*connect.Response[pb.GetYieldHistoryResponse], error) {
+	pageSize := req.Msg.GetPageSize()
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.YieldHistoryParams{
+		FarmID:   req.Msg.GetFarmId(),
+		FieldID:  req.Msg.GetFieldId(),
+		CropID:   req.Msg.GetCropId(),
+		FromYear: req.Msg.GetFromYear(),
+		ToYear:   req.Msg.GetToYear(),
+		PageSize: pageSize,
+		Offset:   offset,
+	}
+
+	records, total, err := h.svc.GetYieldHistory(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.YieldRecord, 0, len(records))
+	for i := range records {
+		protos = append(protos, recordToProto(&records[i]))
+	}
+
+	nextToken := encodeNextPageToken(offset, params.PageSize, total)
+
+	return connect.NewResponse(&pb.GetYieldHistoryResponse{
+		Records:       protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 6. CreateHarvestPlan
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) CreateHarvestPlan(ctx context.Context, req *connect.Request[pb.CreateHarvestPlanRequest]) (*connect.Response[pb.CreateHarvestPlanResponse], error) {
+	h.log.Infow("msg", "CreateHarvestPlan request", "tenant_id", p9context.TenantID(ctx))
+
+	if req.Msg.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
+	}
+	if req.Msg.GetFieldId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	}
+	if req.Msg.GetCropId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "crop_id is required")
+	}
+
+	plan := &domain.HarvestPlan{
+		FarmID:            req.Msg.GetFarmId(),
+		FieldID:           req.Msg.GetFieldId(),
+		CropID:            req.Msg.GetCropId(),
+		Season:            req.Msg.GetSeason(),
+		Year:              req.Msg.GetYear(),
+		EstimatedYieldKg:  req.Msg.GetEstimatedYieldKg(),
+		TotalAreaHectares: req.Msg.GetTotalAreaHectares(),
+	}
+
+	if psd := req.Msg.GetPlannedStartDate(); psd != nil {
+		plan.PlannedStartDate = psd.AsTime()
+	}
+	if ped := req.Msg.GetPlannedEndDate(); ped != nil {
+		plan.PlannedEndDate = ped.AsTime()
+	}
+	if notes := req.Msg.GetNotes(); notes != "" {
+		plan.Notes = &notes
+	}
+
+	created, err := h.svc.CreateHarvestPlan(ctx, plan)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.CreateHarvestPlanResponse{
+		Plan: harvestPlanToProto(created),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 7. GetHarvestPlan
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) GetHarvestPlan(ctx context.Context, req *connect.Request[pb.GetHarvestPlanRequest]) (*connect.Response[pb.GetHarvestPlanResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+
+	plan, err := h.svc.GetHarvestPlan(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetHarvestPlanResponse{
+		Plan: harvestPlanToProto(plan),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 8. ListHarvestPlans
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) ListHarvestPlans(ctx context.Context, req *connect.Request[pb.ListHarvestPlansRequest]) (*connect.Response[pb.ListHarvestPlansResponse], error) {
+	pageSize := req.Msg.GetPageSize()
+	offset := decodePageToken(req.Msg.GetPageToken())
+
+	params := domain.ListHarvestPlansParams{
+		FarmID:   req.Msg.GetFarmId(),
+		FieldID:  req.Msg.GetFieldId(),
+		CropID:   req.Msg.GetCropId(),
+		Season:   req.Msg.GetSeason(),
+		Year:     req.Msg.GetYear(),
+		Status:   harvestPlanStatusToString(req.Msg.GetStatus()),
+		PageSize: pageSize,
+		Offset:   offset,
+	}
+
+	plans, total, err := h.svc.ListHarvestPlans(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	protos := make([]*pb.HarvestPlan, 0, len(plans))
+	for i := range plans {
+		protos = append(protos, harvestPlanToProto(&plans[i]))
+	}
+
+	nextToken := encodeNextPageToken(offset, params.PageSize, total)
+
+	return connect.NewResponse(&pb.ListHarvestPlansResponse{
+		Plans:         protos,
+		NextPageToken: nextToken,
+		TotalCount:    total,
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 9. GetCropPerformance
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) GetCropPerformance(ctx context.Context, req *connect.Request[pb.GetCropPerformanceRequest]) (*connect.Response[pb.GetCropPerformanceResponse], error) {
+	if req.Msg.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
+	}
+
+	params := domain.CropPerformanceParams{
+		FarmID:  req.Msg.GetFarmId(),
+		FieldID: req.Msg.GetFieldId(),
+		CropID:  req.Msg.GetCropId(),
+		Season:  req.Msg.GetSeason(),
+		Year:    req.Msg.GetYear(),
+	}
+
+	perf, err := h.svc.GetCropPerformance(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.GetCropPerformanceResponse{
+		Performance: cropPerformanceToProto(perf),
+	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// 10. CompareYields
+// ---------------------------------------------------------------------------
+
+func (h *YieldHandler) CompareYields(ctx context.Context, req *connect.Request[pb.CompareYieldsRequest]) (*connect.Response[pb.CompareYieldsResponse], error) {
+	if req.Msg.GetFarmId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
+	}
+	if req.Msg.GetYearA() <= 0 || req.Msg.GetYearB() <= 0 {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "year_a and year_b must be positive")
+	}
+
+	params := domain.CompareYieldsParams{
+		FarmID:  req.Msg.GetFarmId(),
+		FieldID: req.Msg.GetFieldId(),
+		CropID:  req.Msg.GetCropId(),
+		YearA:   req.Msg.GetYearA(),
+		SeasonA: req.Msg.GetSeasonA(),
+		YearB:   req.Msg.GetYearB(),
+		SeasonB: req.Msg.GetSeasonB(),
+	}
+
+	perfA, perfB, err := h.svc.CompareYields(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+
+	yieldDiff := perfA.ActualYieldKgPerHectare - perfB.ActualYieldKgPerHectare
+	var yieldDiffPct float64
+	if perfB.ActualYieldKgPerHectare > 0 {
+		yieldDiffPct = yieldDiff / perfB.ActualYieldKgPerHectare * 100
+	}
+	profitDiff := perfA.ProfitPerHectare - perfB.ProfitPerHectare
+
+	return connect.NewResponse(&pb.CompareYieldsResponse{
+		PerformanceA:                cropPerformanceToProto(perfA),
+		PerformanceB:                cropPerformanceToProto(perfB),
+		YieldDifferenceKgPerHectare: yieldDiff,
+		YieldDifferencePct:          yieldDiffPct,
+		ProfitDifferencePerHectare:  profitDiff,
+	}), nil
+}
+
+// ===========================================================================
+// Proto conversion helpers
+// ===========================================================================
+
+func predictionToProto(p *domain.YieldPrediction) *pb.YieldPrediction {
+	if p == nil {
+		return nil
+	}
+	proto := &pb.YieldPrediction{
+		Id:                         p.UUID,
+		TenantId:                   p.TenantID,
+		FarmId:                     p.FarmID,
+		FieldId:                    p.FieldID,
+		CropId:                     p.CropID,
+		Season:                     p.Season,
+		Year:                       p.Year,
+		PredictedYieldKgPerHectare: p.PredictedYieldKgPerHectare,
+		PredictionConfidencePct:    p.PredictionConfidencePct,
+		PredictionModelVersion:     p.PredictionModelVersion,
+		YieldFactors: &pb.YieldFactors{
+			SoilQualityScore:  p.SoilQualityScore,
+			WeatherScore:      p.WeatherScore,
+			IrrigationScore:   p.IrrigationScore,
+			PestPressureScore: p.PestPressureScore,
+			NutrientScore:     p.NutrientScore,
+			ManagementScore:   p.ManagementScore,
+		},
+		Status:    stringToPredictionStatus(p.Status),
+		CreatedBy: p.CreatedBy,
+		Version:   p.Version,
+		CreatedAt: timestamppb.New(p.CreatedAt),
+	}
+	if p.UpdatedBy != nil {
+		proto.UpdatedBy = *p.UpdatedBy
+	}
+	if p.UpdatedAt != nil {
+		proto.UpdatedAt = timestamppb.New(*p.UpdatedAt)
+	}
+	return proto
+}
+
+func recordToProto(r *domain.YieldRecord) *pb.YieldRecord {
+	if r == nil {
+		return nil
+	}
+	proto := &pb.YieldRecord{
+		Id:                         r.UUID,
+		TenantId:                   r.TenantID,
+		FarmId:                     r.FarmID,
+		FieldId:                    r.FieldID,
+		CropId:                     r.CropID,
+		Season:                     r.Season,
+		Year:                       r.Year,
+		ActualYieldKgPerHectare:    r.ActualYieldKgPerHectare,
+		TotalAreaHarvestedHectares: r.TotalAreaHarvestedHectares,
+		TotalYieldKg:               r.TotalYieldKg,
+		HarvestQualityGrade:        stringToHarvestQualityGrade(r.HarvestQualityGrade),
+		MoistureContentPct:         r.MoistureContentPct,
+		RevenuePerHectare:          r.RevenuePerHectare,
+		CostPerHectare:             r.CostPerHectare,
+		ProfitPerHectare:           r.ProfitPerHectare,
+		CreatedBy:                  r.CreatedBy,
+		Version:                    r.Version,
+		CreatedAt:                  timestamppb.New(r.CreatedAt),
+	}
+	if r.HarvestDate != nil {
+		proto.HarvestDate = timestamppb.New(*r.HarvestDate)
+	}
+	if r.PredictionID != nil {
+		proto.PredictionId = *r.PredictionID
+	}
+	if r.UpdatedBy != nil {
+		proto.UpdatedBy = *r.UpdatedBy
+	}
+	if r.UpdatedAt != nil {
+		proto.UpdatedAt = timestamppb.New(*r.UpdatedAt)
+	}
+	return proto
+}
+
+func harvestPlanToProto(p *domain.HarvestPlan) *pb.HarvestPlan {
+	if p == nil {
+		return nil
+	}
+	proto := &pb.HarvestPlan{
+		Id:                p.UUID,
+		TenantId:          p.TenantID,
+		FarmId:            p.FarmID,
+		FieldId:           p.FieldID,
+		CropId:            p.CropID,
+		Season:            p.Season,
+		Year:              p.Year,
+		PlannedStartDate:  timestamppb.New(p.PlannedStartDate),
+		PlannedEndDate:    timestamppb.New(p.PlannedEndDate),
+		EstimatedYieldKg:  p.EstimatedYieldKg,
+		TotalAreaHectares: p.TotalAreaHectares,
+		Status:            stringToHarvestPlanStatus(p.Status),
+		CreatedBy:         p.CreatedBy,
+		Version:           p.Version,
+		CreatedAt:         timestamppb.New(p.CreatedAt),
+	}
+	if p.Notes != nil {
+		proto.Notes = *p.Notes
+	}
+	if p.UpdatedBy != nil {
+		proto.UpdatedBy = *p.UpdatedBy
+	}
+	if p.UpdatedAt != nil {
+		proto.UpdatedAt = timestamppb.New(*p.UpdatedAt)
+	}
+	return proto
+}
+
+func cropPerformanceToProto(cp *domain.CropPerformance) *pb.CropPerformance {
+	if cp == nil {
+		return nil
+	}
+	proto := &pb.CropPerformance{
+		Id:                           cp.UUID,
+		TenantId:                     cp.TenantID,
+		FarmId:                       cp.FarmID,
+		FieldId:                      cp.FieldID,
+		CropId:                       cp.CropID,
+		Season:                       cp.Season,
+		Year:                         cp.Year,
+		ActualYieldKgPerHectare:      cp.ActualYieldKgPerHectare,
+		PredictedYieldKgPerHectare:   cp.PredictedYieldKgPerHectare,
+		YieldVariancePct:             cp.YieldVariancePct,
+		ComparisonToRegionalAvgPct:   cp.ComparisonToRegionalAvgPct,
+		ComparisonToHistoricalAvgPct: cp.ComparisonToHistoricalAvgPct,
+		RevenuePerHectare:            cp.RevenuePerHectare,
+		CostPerHectare:               cp.CostPerHectare,
+		ProfitPerHectare:             cp.ProfitPerHectare,
+		YieldFactors: &pb.YieldFactors{
+			SoilQualityScore:  cp.SoilQualityScore,
+			WeatherScore:      cp.WeatherScore,
+			IrrigationScore:   cp.IrrigationScore,
+			PestPressureScore: cp.PestPressureScore,
+			NutrientScore:     cp.NutrientScore,
+			ManagementScore:   cp.ManagementScore,
+		},
+		Version:   cp.Version,
+		CreatedAt: timestamppb.New(cp.CreatedAt),
+	}
+	if cp.UpdatedAt != nil {
+		proto.UpdatedAt = timestamppb.New(*cp.UpdatedAt)
+	}
+	return proto
+}
+
+// ===========================================================================
+// Enum mappers
+// ===========================================================================
+
+func predictionStatusToString(s pb.PredictionStatus) string {
+	switch s {
+	case pb.PredictionStatus_PREDICTION_STATUS_PENDING:
+		return "PREDICTION_STATUS_PENDING"
+	case pb.PredictionStatus_PREDICTION_STATUS_COMPLETED:
+		return "PREDICTION_STATUS_COMPLETED"
+	case pb.PredictionStatus_PREDICTION_STATUS_FAILED:
+		return "PREDICTION_STATUS_FAILED"
+	case pb.PredictionStatus_PREDICTION_STATUS_SUPERSEDED:
+		return "PREDICTION_STATUS_SUPERSEDED"
+	default:
+		return ""
 	}
 }
+
+func stringToPredictionStatus(s string) pb.PredictionStatus {
+	switch s {
+	case "PREDICTION_STATUS_PENDING":
+		return pb.PredictionStatus_PREDICTION_STATUS_PENDING
+	case "PREDICTION_STATUS_COMPLETED":
+		return pb.PredictionStatus_PREDICTION_STATUS_COMPLETED
+	case "PREDICTION_STATUS_FAILED":
+		return pb.PredictionStatus_PREDICTION_STATUS_FAILED
+	case "PREDICTION_STATUS_SUPERSEDED":
+		return pb.PredictionStatus_PREDICTION_STATUS_SUPERSEDED
+	default:
+		return pb.PredictionStatus_PREDICTION_STATUS_UNSPECIFIED
+	}
+}
+
+func harvestQualityGradeToString(g pb.HarvestQualityGrade) string {
+	switch g {
+	case pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_A:
+		return "HARVEST_QUALITY_GRADE_A"
+	case pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_B:
+		return "HARVEST_QUALITY_GRADE_B"
+	case pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_C:
+		return "HARVEST_QUALITY_GRADE_C"
+	case pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_D:
+		return "HARVEST_QUALITY_GRADE_D"
+	default:
+		return "HARVEST_QUALITY_GRADE_UNSPECIFIED"
+	}
+}
+
+func stringToHarvestQualityGrade(s string) pb.HarvestQualityGrade {
+	switch s {
+	case "HARVEST_QUALITY_GRADE_A":
+		return pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_A
+	case "HARVEST_QUALITY_GRADE_B":
+		return pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_B
+	case "HARVEST_QUALITY_GRADE_C":
+		return pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_C
+	case "HARVEST_QUALITY_GRADE_D":
+		return pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_D
+	default:
+		return pb.HarvestQualityGrade_HARVEST_QUALITY_GRADE_UNSPECIFIED
+	}
+}
+
+func harvestPlanStatusToString(s pb.HarvestPlanStatus) string {
+	switch s {
+	case pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_DRAFT:
+		return "HARVEST_PLAN_STATUS_DRAFT"
+	case pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_SCHEDULED:
+		return "HARVEST_PLAN_STATUS_SCHEDULED"
+	case pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_IN_PROGRESS:
+		return "HARVEST_PLAN_STATUS_IN_PROGRESS"
+	case pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_COMPLETED:
+		return "HARVEST_PLAN_STATUS_COMPLETED"
+	case pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_CANCELLED:
+		return "HARVEST_PLAN_STATUS_CANCELLED"
+	default:
+		return ""
+	}
+}
+
+func stringToHarvestPlanStatus(s string) pb.HarvestPlanStatus {
+	switch s {
+	case "HARVEST_PLAN_STATUS_DRAFT":
+		return pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_DRAFT
+	case "HARVEST_PLAN_STATUS_SCHEDULED":
+		return pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_SCHEDULED
+	case "HARVEST_PLAN_STATUS_IN_PROGRESS":
+		return pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_IN_PROGRESS
+	case "HARVEST_PLAN_STATUS_COMPLETED":
+		return pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_COMPLETED
+	case "HARVEST_PLAN_STATUS_CANCELLED":
+		return pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_CANCELLED
+	default:
+		return pb.HarvestPlanStatus_HARVEST_PLAN_STATUS_UNSPECIFIED
+	}
+}
+
+// ===========================================================================
+// Pagination helpers
+// ===========================================================================
+
+// decodePageToken decodes a base64 offset page token. Returns 0 if empty/invalid.
+func decodePageToken(token string) int32 {
+	if token == "" {
+		return 0
+	}
+	decoded, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return 0
+	}
+	v, err := strconv.ParseInt(string(decoded), 10, 32)
+	if err != nil {
+		return 0
+	}
+	return int32(v)
+}
+
+// encodeNextPageToken returns a base64-encoded offset token, or "" if no more pages.
+func encodeNextPageToken(currentOffset, pageSize, total int32) string {
+	next := currentOffset + pageSize
+	if next >= total {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", next)))
+}
+
