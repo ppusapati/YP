@@ -1,0 +1,496 @@
+openapi: 3.0.3
+info:
+  title: Irrigation Service API
+  description: |
+    Irrigation schedule management, AI-driven decisions, zone/controller management,
+    and water usage reporting for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8084
+    description: Local development
+tags:
+  - name: Schedules
+    description: Irrigation schedule management
+  - name: AI
+    description: AI-driven irrigation decisions
+  - name: Zones
+    description: Irrigation zone management
+  - name: Controllers
+    description: Water controller management
+  - name: Control
+    description: Real-time irrigation control
+  - name: Reporting
+    description: Water usage and history reporting
+
+paths:
+  /agriculture.irrigation.v1.IrrigationService/CreateSchedule:
+    post:
+      tags: [Schedules]
+      summary: Create an irrigation schedule
+      operationId: CreateSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schedule:
+                  type: object
+                  description: IrrigationSchedule object
+      responses:
+        '200':
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schedule:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/GetSchedule:
+    post:
+      tags: [Schedules]
+      summary: Get a schedule by ID
+      operationId: GetSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Schedule retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schedule:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/ListSchedules:
+    post:
+      tags: [Schedules]
+      summary: List irrigation schedules with filtering
+      operationId: ListSchedules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldId:
+                  type: string
+                farmId:
+                  type: string
+                zoneId:
+                  type: string
+                status:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Schedules listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schedules:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.irrigation.v1.IrrigationService/UpdateSchedule:
+    post:
+      tags: [Schedules]
+      summary: Update an irrigation schedule
+      operationId: UpdateSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schedule:
+                  type: object
+      responses:
+        '200':
+          description: Schedule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schedule:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/DeleteSchedule:
+    post:
+      tags: [Schedules]
+      summary: Delete an irrigation schedule
+      operationId: DeleteSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Schedule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /agriculture.irrigation.v1.IrrigationService/GenerateIrrigationDecision:
+    post:
+      tags: [AI]
+      summary: Generate an AI-driven irrigation decision
+      operationId: GenerateIrrigationDecision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zoneId:
+                  type: string
+                fieldId:
+                  type: string
+                inputs:
+                  type: object
+                  properties:
+                    soilMoisture:
+                      type: number
+                      format: double
+                    temperature:
+                      type: number
+                      format: double
+                    humidity:
+                      type: number
+                      format: double
+                    rainfallForecastMm:
+                      type: number
+                      format: double
+                    windSpeed:
+                      type: number
+                      format: double
+                    cropType:
+                      type: string
+                    growthStage:
+                      type: string
+                    evapotranspirationMm:
+                      type: number
+                      format: double
+      responses:
+        '200':
+          description: Decision generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  decision:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/CreateZone:
+    post:
+      tags: [Zones]
+      summary: Create an irrigation zone
+      operationId: CreateZone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zone:
+                  type: object
+      responses:
+        '200':
+          description: Zone created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zone:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/ListZones:
+    post:
+      tags: [Zones]
+      summary: List irrigation zones
+      operationId: ListZones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldId:
+                  type: string
+                farmId:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Zones listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zones:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.irrigation.v1.IrrigationService/RegisterController:
+    post:
+      tags: [Controllers]
+      summary: Register a water controller device
+      operationId: RegisterController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                controller:
+                  type: object
+      responses:
+        '200':
+          description: Controller registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  controller:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/ListControllers:
+    post:
+      tags: [Controllers]
+      summary: List water controllers
+      operationId: ListControllers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zoneId:
+                  type: string
+                fieldId:
+                  type: string
+                status:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Controllers listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  controllers:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.irrigation.v1.IrrigationService/TriggerIrrigation:
+    post:
+      tags: [Control]
+      summary: Trigger an irrigation event
+      operationId: TriggerIrrigation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scheduleId:
+                  type: string
+                controllerId:
+                  type: string
+                zoneId:
+                  type: string
+                durationMinutes:
+                  type: integer
+                  format: int32
+                waterQuantityLiters:
+                  type: number
+                  format: double
+      responses:
+        '200':
+          description: Irrigation triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/StopIrrigation:
+    post:
+      tags: [Control]
+      summary: Stop an active irrigation event
+      operationId: StopIrrigation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventId:
+                  type: string
+                controllerId:
+                  type: string
+      responses:
+        '200':
+          description: Irrigation stopped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: object
+
+  /agriculture.irrigation.v1.IrrigationService/GetWaterUsage:
+    post:
+      tags: [Reporting]
+      summary: Get water usage statistics
+      operationId: GetWaterUsage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zoneId:
+                  type: string
+                fieldId:
+                  type: string
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Water usage data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      type: object
+                  totalLiters:
+                    type: number
+                    format: double
+
+  /agriculture.irrigation.v1.IrrigationService/GetIrrigationHistory:
+    post:
+      tags: [Reporting]
+      summary: Get irrigation event history
+      operationId: GetIrrigationHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zoneId:
+                  type: string
+                fieldId:
+                  type: string
+                scheduleId:
+                  type: string
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Irrigation history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32

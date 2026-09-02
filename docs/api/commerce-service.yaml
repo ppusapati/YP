@@ -1,0 +1,391 @@
+openapi: 3.0.3
+info:
+  title: Commerce Service API
+  description: |
+    Marketplace listings and order management for the YieldPoint agriculture platform.
+    Enables farmers to list produce and buyers to place orders.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8092
+    description: Local development
+tags:
+  - name: Listings
+    description: Marketplace listing management
+  - name: Orders
+    description: Order management
+
+paths:
+  /agriculture.commerce.v1.CommerceService/CreateListing:
+    post:
+      tags: [Listings]
+      summary: Create a new marketplace listing
+      operationId: CreateListing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                cropId:
+                  type: string
+                productName:
+                  type: string
+                productType:
+                  type: string
+                description:
+                  type: string
+                quantityAvailable:
+                  type: number
+                  format: double
+                quantityUnit:
+                  type: string
+                pricePerUnitPaise:
+                  type: string
+                  format: int64
+                currency:
+                  type: string
+                minOrderQuantity:
+                  type: number
+                  format: double
+                qualityGrade:
+                  type: string
+                traceabilityRecordId:
+                  type: string
+                location:
+                  type: string
+                region:
+                  type: string
+                imageUrls:
+                  type: array
+                  items:
+                    type: string
+                availableFrom:
+                  type: string
+                  format: date-time
+                availableTo:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Listing created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/GetListing:
+    post:
+      tags: [Listings]
+      summary: Get a listing by ID
+      operationId: GetListing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Listing retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/ListListings:
+    post:
+      tags: [Listings]
+      summary: List marketplace listings with filtering
+      operationId: ListListings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                cropId:
+                  type: string
+                productType:
+                  type: string
+                region:
+                  type: string
+                status:
+                  type: string
+                  enum: [LISTING_STATUS_DRAFT, LISTING_STATUS_ACTIVE, LISTING_STATUS_SOLD_OUT, LISTING_STATUS_EXPIRED, LISTING_STATUS_CANCELLED]
+                search:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Listings listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listings:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.commerce.v1.CommerceService/UpdateListing:
+    post:
+      tags: [Listings]
+      summary: Update a marketplace listing
+      operationId: UpdateListing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                productName:
+                  type: string
+                description:
+                  type: string
+                quantityAvailable:
+                  type: number
+                  format: double
+                pricePerUnitPaise:
+                  type: string
+                  format: int64
+                minOrderQuantity:
+                  type: number
+                  format: double
+                qualityGrade:
+                  type: string
+                imageUrls:
+                  type: array
+                  items:
+                    type: string
+                availableTo:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Listing updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/CancelListing:
+    post:
+      tags: [Listings]
+      summary: Cancel a marketplace listing
+      operationId: CancelListing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Listing cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/PlaceOrder:
+    post:
+      tags: [Orders]
+      summary: Place an order for a listing
+      operationId: PlaceOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId:
+                  type: string
+                quantity:
+                  type: number
+                  format: double
+                deliveryMethod:
+                  type: string
+                deliveryAddress:
+                  type: string
+                deliveryNotes:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/GetOrder:
+    post:
+      tags: [Orders]
+      summary: Get an order by ID
+      operationId: GetOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Order retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/ListOrders:
+    post:
+      tags: [Orders]
+      summary: List orders with filtering
+      operationId: ListOrders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId:
+                  type: string
+                buyerId:
+                  type: string
+                sellerId:
+                  type: string
+                status:
+                  type: string
+                  enum: [ORDER_STATUS_PENDING, ORDER_STATUS_CONFIRMED, ORDER_STATUS_PROCESSING, ORDER_STATUS_SHIPPED, ORDER_STATUS_DELIVERED, ORDER_STATUS_COMPLETED, ORDER_STATUS_CANCELLED, ORDER_STATUS_DISPUTED]
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Orders listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.commerce.v1.CommerceService/UpdateOrderStatus:
+    post:
+      tags: [Orders]
+      summary: Update order status
+      operationId: UpdateOrderStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                status:
+                  type: string
+                  enum: [ORDER_STATUS_PENDING, ORDER_STATUS_CONFIRMED, ORDER_STATUS_PROCESSING, ORDER_STATUS_SHIPPED, ORDER_STATUS_DELIVERED, ORDER_STATUS_COMPLETED, ORDER_STATUS_CANCELLED, ORDER_STATUS_DISPUTED]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Order status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object
+
+  /agriculture.commerce.v1.CommerceService/UpdatePaymentStatus:
+    post:
+      tags: [Orders]
+      summary: Update payment status of an order
+      operationId: UpdatePaymentStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                paymentStatus:
+                  type: string
+                  enum: [PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED]
+                paymentReference:
+                  type: string
+      responses:
+        '200':
+          description: Payment status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: object

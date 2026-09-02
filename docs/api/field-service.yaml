@@ -1,0 +1,997 @@
+openapi: 3.0.3
+info:
+  title: Field Service API
+  description: |
+    Field management, crop cycles, activity tracking, and evidence management
+    for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8081
+    description: Local development
+tags:
+  - name: Fields
+    description: Field CRUD and boundary operations
+  - name: CropCycles
+    description: Crop cycle management
+  - name: Activities
+    description: Activity event logging
+  - name: Evidence
+    description: Activity evidence attachments
+
+paths:
+  /agriculture.field.v1.FieldService/CreateField:
+    post:
+      tags: [Fields]
+      summary: Create a new field
+      operationId: CreateField
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFieldRequest'
+      responses:
+        '200':
+          description: Field created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFieldResponse'
+
+  /agriculture.field.v1.FieldService/GetField:
+    post:
+      tags: [Fields]
+      summary: Get a field by ID
+      operationId: GetField
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFieldRequest'
+      responses:
+        '200':
+          description: Field retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFieldResponse'
+
+  /agriculture.field.v1.FieldService/ListFields:
+    post:
+      tags: [Fields]
+      summary: List fields with filtering and pagination
+      operationId: ListFields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListFieldsRequest'
+      responses:
+        '200':
+          description: Fields listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListFieldsResponse'
+
+  /agriculture.field.v1.FieldService/UpdateField:
+    post:
+      tags: [Fields]
+      summary: Update a field
+      operationId: UpdateField
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFieldRequest'
+      responses:
+        '200':
+          description: Field updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateFieldResponse'
+
+  /agriculture.field.v1.FieldService/DeleteField:
+    post:
+      tags: [Fields]
+      summary: Delete a field
+      operationId: DeleteField
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteFieldRequest'
+      responses:
+        '200':
+          description: Field deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteFieldResponse'
+
+  /agriculture.field.v1.FieldService/SetFieldBoundary:
+    post:
+      tags: [Fields]
+      summary: Set or update a field boundary polygon
+      operationId: SetFieldBoundary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetFieldBoundaryRequest'
+      responses:
+        '200':
+          description: Boundary set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetFieldBoundaryResponse'
+
+  /agriculture.field.v1.FieldService/AssignCrop:
+    post:
+      tags: [Fields]
+      summary: Assign a crop to a field
+      operationId: AssignCrop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignCropRequest'
+      responses:
+        '200':
+          description: Crop assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignCropResponse'
+
+  /agriculture.field.v1.FieldService/ListFieldsByFarm:
+    post:
+      tags: [Fields]
+      summary: List all fields for a specific farm
+      operationId: ListFieldsByFarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListFieldsByFarmRequest'
+      responses:
+        '200':
+          description: Fields listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListFieldsByFarmResponse'
+
+  /agriculture.field.v1.FieldService/SegmentField:
+    post:
+      tags: [Fields]
+      summary: Divide a field into segments
+      operationId: SegmentField
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SegmentFieldRequest'
+      responses:
+        '200':
+          description: Field segmented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentFieldResponse'
+
+  /agriculture.field.v1.FieldService/GetFieldSegments:
+    post:
+      tags: [Fields]
+      summary: Get segments of a field
+      operationId: GetFieldSegments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFieldSegmentsRequest'
+      responses:
+        '200':
+          description: Segments retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFieldSegmentsResponse'
+
+  /agriculture.field.v1.FieldService/GetCropHistory:
+    post:
+      tags: [Fields]
+      summary: Get crop assignment history for a field
+      operationId: GetCropHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCropHistoryRequest'
+      responses:
+        '200':
+          description: Crop history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCropHistoryResponse'
+
+  /agriculture.field.v1.FieldService/CreateCropCycle:
+    post:
+      tags: [CropCycles]
+      summary: Create a new crop cycle
+      operationId: CreateCropCycle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCropCycleRequest'
+      responses:
+        '200':
+          description: Crop cycle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCropCycleResponse'
+
+  /agriculture.field.v1.FieldService/GetCropCycle:
+    post:
+      tags: [CropCycles]
+      summary: Get a crop cycle by ID
+      operationId: GetCropCycle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCropCycleRequest'
+      responses:
+        '200':
+          description: Crop cycle retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCropCycleResponse'
+
+  /agriculture.field.v1.FieldService/ListCropCycles:
+    post:
+      tags: [CropCycles]
+      summary: List crop cycles with filtering
+      operationId: ListCropCycles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListCropCyclesRequest'
+      responses:
+        '200':
+          description: Crop cycles listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCropCyclesResponse'
+
+  /agriculture.field.v1.FieldService/UpdateCropCycle:
+    post:
+      tags: [CropCycles]
+      summary: Update a crop cycle
+      operationId: UpdateCropCycle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCropCycleRequest'
+      responses:
+        '200':
+          description: Crop cycle updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateCropCycleResponse'
+
+  /agriculture.field.v1.FieldService/LogActivityEvent:
+    post:
+      tags: [Activities]
+      summary: Log a field activity event
+      operationId: LogActivityEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogActivityEventRequest'
+      responses:
+        '200':
+          description: Activity event logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogActivityEventResponse'
+
+  /agriculture.field.v1.FieldService/ListActivityEvents:
+    post:
+      tags: [Activities]
+      summary: List activity events with filtering
+      operationId: ListActivityEvents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListActivityEventsRequest'
+      responses:
+        '200':
+          description: Activity events listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListActivityEventsResponse'
+
+  /agriculture.field.v1.FieldService/AddActivityEvidence:
+    post:
+      tags: [Evidence]
+      summary: Add evidence (photo, document, video) to an activity event
+      operationId: AddActivityEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddActivityEvidenceRequest'
+      responses:
+        '200':
+          description: Evidence added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddActivityEvidenceResponse'
+
+  /agriculture.field.v1.FieldService/ListActivityEvidence:
+    post:
+      tags: [Evidence]
+      summary: List evidence for an activity event
+      operationId: ListActivityEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListActivityEvidenceRequest'
+      responses:
+        '200':
+          description: Evidence listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListActivityEvidenceResponse'
+
+  /agriculture.field.v1.FieldService/DeleteActivityEvidence:
+    post:
+      tags: [Evidence]
+      summary: Delete an evidence attachment
+      operationId: DeleteActivityEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteActivityEvidenceRequest'
+      responses:
+        '200':
+          description: Evidence deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteActivityEvidenceResponse'
+
+components:
+  schemas:
+    GeoPoint:
+      type: object
+      properties:
+        longitude:
+          type: number
+          format: double
+        latitude:
+          type: number
+          format: double
+
+    GeoPolygon:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeoPoint'
+
+    Field:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        farmId:
+          type: string
+        name:
+          type: string
+        areaHectares:
+          type: number
+          format: double
+        boundary:
+          $ref: '#/components/schemas/GeoPolygon'
+        currentCropId:
+          type: string
+        plantingDate:
+          type: string
+          format: date-time
+        expectedHarvestDate:
+          type: string
+          format: date-time
+        growthStage:
+          type: string
+        soilType:
+          type: string
+        irrigationType:
+          type: string
+        fieldType:
+          type: string
+        status:
+          type: string
+        elevationMeters:
+          type: number
+          format: double
+        slopeDegrees:
+          type: number
+          format: double
+        aspectDirection:
+          type: string
+        createdBy:
+          type: string
+        updatedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: string
+          format: int64
+
+    CreateFieldRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        name:
+          type: string
+        areaHectares:
+          type: number
+          format: double
+        boundary:
+          $ref: '#/components/schemas/GeoPolygon'
+        fieldType:
+          type: string
+        soilType:
+          type: string
+        irrigationType:
+          type: string
+        elevationMeters:
+          type: number
+          format: double
+        slopeDegrees:
+          type: number
+          format: double
+        aspectDirection:
+          type: string
+
+    CreateFieldResponse:
+      type: object
+      properties:
+        field:
+          $ref: '#/components/schemas/Field'
+
+    GetFieldRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetFieldResponse:
+      type: object
+      properties:
+        field:
+          $ref: '#/components/schemas/Field'
+
+    ListFieldsRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+        farmId:
+          type: string
+        status:
+          type: string
+        fieldType:
+          type: string
+        search:
+          type: string
+
+    ListFieldsResponse:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+        totalCount:
+          type: integer
+          format: int32
+
+    UpdateFieldRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        areaHectares:
+          type: number
+          format: double
+        fieldType:
+          type: string
+        soilType:
+          type: string
+        irrigationType:
+          type: string
+        status:
+          type: string
+        elevationMeters:
+          type: number
+          format: double
+        slopeDegrees:
+          type: number
+          format: double
+        aspectDirection:
+          type: string
+        growthStage:
+          type: string
+        updateMask:
+          type: string
+
+    UpdateFieldResponse:
+      type: object
+      properties:
+        field:
+          $ref: '#/components/schemas/Field'
+
+    DeleteFieldRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    DeleteFieldResponse:
+      type: object
+
+    SetFieldBoundaryRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        polygon:
+          $ref: '#/components/schemas/GeoPolygon'
+        source:
+          type: string
+
+    SetFieldBoundaryResponse:
+      type: object
+      properties:
+        boundary:
+          type: object
+          properties:
+            id:
+              type: string
+            fieldId:
+              type: string
+            polygon:
+              $ref: '#/components/schemas/GeoPolygon'
+            areaHectares:
+              type: number
+              format: double
+            perimeterMeters:
+              type: number
+              format: double
+            source:
+              type: string
+            recordedAt:
+              type: string
+              format: date-time
+            createdAt:
+              type: string
+              format: date-time
+
+    AssignCropRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        cropId:
+          type: string
+        cropVariety:
+          type: string
+        plantingDate:
+          type: string
+          format: date-time
+        expectedHarvestDate:
+          type: string
+          format: date-time
+        season:
+          type: string
+        notes:
+          type: string
+
+    AssignCropResponse:
+      type: object
+      properties:
+        assignment:
+          type: object
+
+    ListFieldsByFarmRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListFieldsByFarmResponse:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+        totalCount:
+          type: integer
+          format: int32
+
+    SegmentFieldRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        segments:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              boundary:
+                $ref: '#/components/schemas/GeoPolygon'
+              areaHectares:
+                type: number
+                format: double
+              soilType:
+                type: string
+              notes:
+                type: string
+
+    SegmentFieldResponse:
+      type: object
+      properties:
+        segments:
+          type: array
+          items:
+            type: object
+
+    GetFieldSegmentsRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+
+    GetFieldSegmentsResponse:
+      type: object
+      properties:
+        segments:
+          type: array
+          items:
+            type: object
+
+    GetCropHistoryRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    GetCropHistoryResponse:
+      type: object
+      properties:
+        assignments:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    CreateCropCycleRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        cropId:
+          type: string
+        season:
+          type: string
+        cycleYear:
+          type: integer
+          format: int32
+        name:
+          type: string
+        plannedPlantingDate:
+          type: string
+          format: date-time
+        plannedHarvestDate:
+          type: string
+          format: date-time
+        targetYieldPerHectare:
+          type: number
+          format: double
+        yieldUnit:
+          type: string
+        notes:
+          type: string
+
+    CreateCropCycleResponse:
+      type: object
+      properties:
+        cycle:
+          type: object
+
+    GetCropCycleRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetCropCycleResponse:
+      type: object
+      properties:
+        cycle:
+          type: object
+
+    ListCropCyclesRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        status:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListCropCyclesResponse:
+      type: object
+      properties:
+        cycles:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    UpdateCropCycleRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        actualPlantingDate:
+          type: string
+          format: date-time
+        actualHarvestDate:
+          type: string
+          format: date-time
+        actualYieldPerHectare:
+          type: number
+          format: double
+        totalInputCost:
+          type: string
+          format: int64
+        totalRevenue:
+          type: string
+          format: int64
+        notes:
+          type: string
+        updateMask:
+          type: string
+
+    UpdateCropCycleResponse:
+      type: object
+      properties:
+        cycle:
+          type: object
+
+    LogActivityEventRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        cropCycleId:
+          type: string
+        activityType:
+          type: string
+        category:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+          format: int32
+        description:
+          type: string
+        notes:
+          type: string
+        inputProductId:
+          type: string
+        inputQuantity:
+          type: number
+          format: double
+        inputUnit:
+          type: string
+        inputCost:
+          type: string
+          format: int64
+        currency:
+          type: string
+        areaHectares:
+          type: number
+          format: double
+
+    LogActivityEventResponse:
+      type: object
+      properties:
+        event:
+          type: object
+
+    ListActivityEventsRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        cropCycleId:
+          type: string
+        category:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListActivityEventsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    AddActivityEvidenceRequest:
+      type: object
+      properties:
+        activityEventId:
+          type: string
+        evidenceType:
+          type: string
+        fileUrl:
+          type: string
+        fileName:
+          type: string
+        fileSizeBytes:
+          type: string
+          format: int64
+        mimeType:
+          type: string
+        thumbnailUrl:
+          type: string
+        caption:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        capturedAt:
+          type: string
+          format: date-time
+
+    AddActivityEvidenceResponse:
+      type: object
+      properties:
+        evidence:
+          type: object
+
+    ListActivityEvidenceRequest:
+      type: object
+      properties:
+        activityEventId:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListActivityEvidenceResponse:
+      type: object
+      properties:
+        evidence:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    DeleteActivityEvidenceRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    DeleteActivityEvidenceResponse:
+      type: object

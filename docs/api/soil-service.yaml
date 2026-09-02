@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info:
+  title: Soil Service API
+  description: |
+    Soil sample management, analysis, health scoring, nutrient tracking, and report generation
+    for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8085
+    description: Local development
+tags:
+  - name: Samples
+    description: Soil sample management
+  - name: Analysis
+    description: Soil analysis operations
+  - name: Health
+    description: Soil health and nutrient assessment
+  - name: Reports
+    description: Soil report generation
+
+paths:
+  /agriculture.soil.v1.SoilService/CreateSoilSample:
+    post:
+      tags: [Samples]
+      summary: Create a new soil sample with lab results
+      operationId: CreateSoilSample
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSoilSampleRequest'
+      responses:
+        '200':
+          description: Sample created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sample:
+                    type: object
+
+  /agriculture.soil.v1.SoilService/GetSoilSample:
+    post:
+      tags: [Samples]
+      summary: Get a soil sample by ID
+      operationId: GetSoilSample
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                tenantId:
+                  type: string
+      responses:
+        '200':
+          description: Sample retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sample:
+                    type: object
+
+  /agriculture.soil.v1.SoilService/ListSoilSamples:
+    post:
+      tags: [Samples]
+      summary: List soil samples with filtering
+      operationId: ListSoilSamples
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantId:
+                  type: string
+                fieldId:
+                  type: string
+                farmId:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Samples listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  samples:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+                  hasNext:
+                    type: boolean
+
+  /agriculture.soil.v1.SoilService/AnalyzeSoil:
+    post:
+      tags: [Analysis]
+      summary: Trigger soil analysis for a sample
+      operationId: AnalyzeSoil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sampleId:
+                  type: string
+                tenantId:
+                  type: string
+                analysisType:
+                  type: string
+      responses:
+        '200':
+          description: Analysis started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis:
+                    type: object
+
+  /agriculture.soil.v1.SoilService/ListSoilAnalyses:
+    post:
+      tags: [Analysis]
+      summary: List soil analyses
+      operationId: ListSoilAnalyses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantId:
+                  type: string
+                fieldId:
+                  type: string
+                farmId:
+                  type: string
+                sampleId:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Analyses listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analyses:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+                  hasNext:
+                    type: boolean
+
+  /agriculture.soil.v1.SoilService/GetSoilMap:
+    post:
+      tags: [Analysis]
+      summary: Get a soil property map for a field
+      operationId: GetSoilMap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldId:
+                  type: string
+                tenantId:
+                  type: string
+                mapType:
+                  type: string
+      responses:
+        '200':
+          description: Soil map retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soilMap:
+                    type: object
+
+  /agriculture.soil.v1.SoilService/GetSoilHealth:
+    post:
+      tags: [Health]
+      summary: Get soil health score for a field
+      operationId: GetSoilHealth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldId:
+                  type: string
+                tenantId:
+                  type: string
+      responses:
+        '200':
+          description: Soil health score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  healthScore:
+                    type: object
+
+  /agriculture.soil.v1.SoilService/GetNutrientLevels:
+    post:
+      tags: [Health]
+      summary: Get nutrient levels for a soil sample
+      operationId: GetNutrientLevels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sampleId:
+                  type: string
+                tenantId:
+                  type: string
+      responses:
+        '200':
+          description: Nutrient levels retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nutrients:
+                    type: array
+                    items:
+                      type: object
+
+  /agriculture.soil.v1.SoilService/GenerateSoilReport:
+    post:
+      tags: [Reports]
+      summary: Generate a comprehensive soil report for a field
+      operationId: GenerateSoilReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldId:
+                  type: string
+                tenantId:
+                  type: string
+                farmId:
+                  type: string
+      responses:
+        '200':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    type: object
+
+components:
+  schemas:
+    CreateSoilSampleRequest:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        fieldId:
+          type: string
+        farmId:
+          type: string
+        sampleLocation:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+        sampleDepthCm:
+          type: number
+          format: double
+        collectionDate:
+          type: string
+          format: date-time
+        pH:
+          type: number
+          format: double
+        organicMatterPct:
+          type: number
+          format: double
+        nitrogenPpm:
+          type: number
+          format: double
+        phosphorusPpm:
+          type: number
+          format: double
+        potassiumPpm:
+          type: number
+          format: double
+        calciumPpm:
+          type: number
+          format: double
+        magnesiumPpm:
+          type: number
+          format: double
+        sulfurPpm:
+          type: number
+          format: double
+        ironPpm:
+          type: number
+          format: double
+        manganesePpm:
+          type: number
+          format: double
+        zincPpm:
+          type: number
+          format: double
+        copperPpm:
+          type: number
+          format: double
+        boronPpm:
+          type: number
+          format: double
+        moisturePct:
+          type: number
+          format: double
+        texture:
+          type: string
+        bulkDensity:
+          type: number
+          format: double
+        cationExchangeCapacity:
+          type: number
+          format: double
+        electricalConductivity:
+          type: number
+          format: double
+        notes:
+          type: string
