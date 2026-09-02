@@ -627,3 +627,78 @@ func nilIfEmptyCategory(c *domain.ActivityCategory) interface{} {
 	}
 	return string(*c)
 }
+
+// ---------------------------------------------------------------------------
+// activity_evidence
+// ---------------------------------------------------------------------------
+
+const activityEvidenceColumns = `id, tenant_id, activity_event_id, evidence_type,
+file_url, file_name, file_size_bytes, mime_type, thumbnail_url, caption,
+latitude, longitude, captured_at, captured_by, created_at`
+
+func (r *fieldRepository) CreateActivityEvidence(ctx context.Context, e *domain.ActivityEvidence) (*domain.ActivityEvidence, error) {
+	e.ID = ulid.NewString()
+	row := r.queryRow(ctx,
+		`INSERT INTO activity_evidence (id, tenant_id, activity_event_id, evidence_type,
+file_url, file_name, file_size_bytes, mime_type, thumbnail_url, caption,
+latitude, longitude, captured_at, captured_by)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+RETURNING `+activityEvidenceColumns,
+		e.ID, e.TenantID, e.ActivityEventID, string(e.EvidenceType),
+		e.FileURL, e.FileName, e.FileSizeBytes, e.MimeType, e.ThumbnailURL, e.Caption,
+		e.Latitude, e.Longitude, e.CapturedAt, e.CapturedBy,
+	)
+	return scanActivityEvidence(row)
+}
+
+func (r *fieldRepository) ListActivityEvidence(ctx context.Context, params domain.ListActivityEvidenceParams) ([]domain.ActivityEvidence, int32, error) {
+	var total int32
+	err := r.queryRow(ctx,
+		`SELECT COUNT(*)::int FROM activity_evidence
+		 WHERE tenant_id=$1 AND activity_event_id=$2`,
+		params.TenantID, params.ActivityEventID,
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count activity evidence: %v", err))
+	}
+
+	rows, err := r.query(ctx,
+		`SELECT `+activityEvidenceColumns+` FROM activity_evidence
+		 WHERE tenant_id=$1 AND activity_event_id=$2
+		 ORDER BY created_at DESC
+		 LIMIT $3 OFFSET $4`,
+		params.TenantID, params.ActivityEventID,
+		params.PageSize, params.Offset,
+	)
+	if err != nil {
+		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list activity evidence: %v", err))
+	}
+	defer rows.Close()
+
+	var out []domain.ActivityEvidence
+	for rows.Next() {
+		e, err := scanActivityEvidence(rows)
+		if err != nil {
+			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		}
+		out = append(out, *e)
+	}
+	return out, total, nil
+}
+
+func (r *fieldRepository) DeleteActivityEvidence(ctx context.Context, id, tenantID string) error {
+	return r.exec(ctx,
+		`DELETE FROM activity_evidence WHERE id=$1 AND tenant_id=$2`,
+		id, tenantID,
+	)
+}
+
+func scanActivityEvidence(row pgx.Row) (*domain.ActivityEvidence, error) {
+	e := &domain.ActivityEvidence{}
+	err := row.Scan(
+		&e.ID, &e.TenantID, &e.ActivityEventID, &e.EvidenceType,
+		&e.FileURL, &e.FileName, &e.FileSizeBytes, &e.MimeType, &e.ThumbnailURL, &e.Caption,
+		&e.Latitude, &e.Longitude, &e.CapturedAt, &e.CapturedBy, &e.CreatedAt,
+	)
+	return e, err
+}

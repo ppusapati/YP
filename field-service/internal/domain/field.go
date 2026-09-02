@@ -337,3 +337,40 @@ type ListActivityEventsParams struct {
 	PageSize    int32
 	Offset      int32
 }
+
+// EvidenceType classifies activity evidence attachments.
+type EvidenceType string
+
+const (
+	EvidenceTypePhoto    EvidenceType = "EVIDENCE_TYPE_PHOTO"
+	EvidenceTypeDocument EvidenceType = "EVIDENCE_TYPE_DOCUMENT"
+	EvidenceTypeVideo    EvidenceType = "EVIDENCE_TYPE_VIDEO"
+	EvidenceTypeAudio    EvidenceType = "EVIDENCE_TYPE_AUDIO"
+	EvidenceTypeOther    EvidenceType = "EVIDENCE_TYPE_OTHER"
+)
+
+// ActivityEvidence is a photo, document, or other attachment linked to an activity event.
+type ActivityEvidence struct {
+	ID              string       `json:"id"`
+	TenantID        string       `json:"tenant_id"`
+	ActivityEventID string       `json:"activity_event_id"`
+	EvidenceType    EvidenceType `json:"evidence_type"`
+	FileURL         string       `json:"file_url"`
+	FileName        *string      `json:"file_name,omitempty"`
+	FileSizeBytes   *int64       `json:"file_size_bytes,omitempty"`
+	MimeType        *string      `json:"mime_type,omitempty"`
+	ThumbnailURL    *string      `json:"thumbnail_url,omitempty"`
+	Caption         *string      `json:"caption,omitempty"`
+	Latitude        *float64     `json:"latitude,omitempty"`
+	Longitude       *float64     `json:"longitude,omitempty"`
+	CapturedAt      *time.Time   `json:"captured_at,omitempty"`
+	CapturedBy      string       `json:"captured_by"`
+	CreatedAt       time.Time    `json:"created_at"`
+}
+
+type ListActivityEvidenceParams struct {
+	TenantID        string
+	ActivityEventID string
+	PageSize        int32
+	Offset          int32
+}

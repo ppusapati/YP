@@ -470,6 +470,72 @@ message ListActivityEventsResponse {
 }
 
 // -----------------------------------------------------------------------------
+// Activity Evidence
+// -----------------------------------------------------------------------------
+
+enum EvidenceType {
+  EVIDENCE_TYPE_UNSPECIFIED = 0;
+  EVIDENCE_TYPE_PHOTO       = 1;
+  EVIDENCE_TYPE_DOCUMENT    = 2;
+  EVIDENCE_TYPE_VIDEO       = 3;
+  EVIDENCE_TYPE_AUDIO       = 4;
+  EVIDENCE_TYPE_OTHER       = 5;
+}
+
+message ActivityEvidence {
+  string                     id                = 1;
+  string                     tenant_id         = 2;
+  string                     activity_event_id = 3;
+  EvidenceType               evidence_type     = 4;
+  string                     file_url          = 5;
+  string                     file_name         = 6;
+  int64                      file_size_bytes   = 7;
+  string                     mime_type         = 8;
+  string                     thumbnail_url     = 9;
+  string                     caption           = 10;
+  double                     latitude          = 11;
+  double                     longitude         = 12;
+  google.protobuf.Timestamp  captured_at       = 13;
+  string                     captured_by       = 14;
+  google.protobuf.Timestamp  created_at        = 15;
+}
+
+message AddActivityEvidenceRequest {
+  string                     activity_event_id = 1;
+  EvidenceType               evidence_type     = 2;
+  string                     file_url          = 3;
+  string                     file_name         = 4;
+  int64                      file_size_bytes   = 5;
+  string                     mime_type         = 6;
+  string                     thumbnail_url     = 7;
+  string                     caption           = 8;
+  double                     latitude          = 9;
+  double                     longitude         = 10;
+  google.protobuf.Timestamp  captured_at       = 11;
+}
+
+message AddActivityEvidenceResponse {
+  ActivityEvidence evidence = 1;
+}
+
+message ListActivityEvidenceRequest {
+  string activity_event_id = 1;
+  int32  page_size         = 2;
+  int32  page_offset       = 3;
+}
+
+message ListActivityEvidenceResponse {
+  repeated ActivityEvidence evidence    = 1;
+  int32                     total_count = 2;
+}
+
+message DeleteActivityEvidenceRequest {
+  string id = 1;
+}
+
+message DeleteActivityEvidenceResponse {}
+
+// -----------------------------------------------------------------------------
 // Service
 // -----------------------------------------------------------------------------
 
@@ -496,4 +562,9 @@ service FieldService {
   // Activity Events
   rpc LogActivityEvent  (LogActivityEventRequest)   returns (LogActivityEventResponse);
   rpc ListActivityEvents(ListActivityEventsRequest) returns (ListActivityEventsResponse);
+
+  // Activity Evidence
+  rpc AddActivityEvidence   (AddActivityEvidenceRequest)    returns (AddActivityEvidenceResponse);
+  rpc ListActivityEvidence  (ListActivityEvidenceRequest)   returns (ListActivityEvidenceResponse);
+  rpc DeleteActivityEvidence(DeleteActivityEvidenceRequest) returns (DeleteActivityEvidenceResponse);
 }

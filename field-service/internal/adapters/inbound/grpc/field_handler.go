@@ -511,6 +511,95 @@ func (h *FieldHandler) ListActivityEvents(ctx context.Context, req *connect.Requ
 }
 
 // ---------------------------------------------------------------------------
+// Activity Evidence RPCs
+// ---------------------------------------------------------------------------
+
+func (h *FieldHandler) AddActivityEvidence(ctx context.Context, req *connect.Request[pb.AddActivityEvidenceRequest]) (*connect.Response[pb.AddActivityEvidenceResponse], error) {
+	h.log.Infow("msg", "AddActivityEvidence request", "activity_event_id", req.Msg.GetActivityEventId())
+	if req.Msg.GetActivityEventId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "activity_event_id is required")
+	}
+	if req.Msg.GetFileUrl() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "file_url is required")
+	}
+
+	evidence := &domain.ActivityEvidence{
+		ActivityEventID: req.Msg.GetActivityEventId(),
+		EvidenceType:    protoEvidenceTypeToDomain(req.Msg.GetEvidenceType()),
+		FileURL:         req.Msg.GetFileUrl(),
+	}
+	if req.Msg.GetFileName() != "" {
+		s := req.Msg.GetFileName()
+		evidence.FileName = &s
+	}
+	if req.Msg.GetFileSizeBytes() != 0 {
+		v := req.Msg.GetFileSizeBytes()
+		evidence.FileSizeBytes = &v
+	}
+	if req.Msg.GetMimeType() != "" {
+		s := req.Msg.GetMimeType()
+		evidence.MimeType = &s
+	}
+	if req.Msg.GetThumbnailUrl() != "" {
+		s := req.Msg.GetThumbnailUrl()
+		evidence.ThumbnailURL = &s
+	}
+	if req.Msg.GetCaption() != "" {
+		s := req.Msg.GetCaption()
+		evidence.Caption = &s
+	}
+	if req.Msg.GetLatitude() != 0 {
+		f := req.Msg.GetLatitude()
+		evidence.Latitude = &f
+	}
+	if req.Msg.GetLongitude() != 0 {
+		f := req.Msg.GetLongitude()
+		evidence.Longitude = &f
+	}
+	if req.Msg.GetCapturedAt() != nil {
+		t := req.Msg.GetCapturedAt().AsTime()
+		evidence.CapturedAt = &t
+	}
+
+	created, err := h.svc.AddActivityEvidence(ctx, evidence)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.AddActivityEvidenceResponse{Evidence: activityEvidenceToProto(created)}), nil
+}
+
+func (h *FieldHandler) ListActivityEvidence(ctx context.Context, req *connect.Request[pb.ListActivityEvidenceRequest]) (*connect.Response[pb.ListActivityEvidenceResponse], error) {
+	if req.Msg.GetActivityEventId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "activity_event_id is required")
+	}
+	params := domain.ListActivityEvidenceParams{
+		ActivityEventID: req.Msg.GetActivityEventId(),
+		PageSize:        req.Msg.GetPageSize(),
+		Offset:          req.Msg.GetPageOffset(),
+	}
+
+	evidence, total, err := h.svc.ListActivityEvidence(ctx, params)
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	protos := make([]*pb.ActivityEvidence, 0, len(evidence))
+	for i := range evidence {
+		protos = append(protos, activityEvidenceToProto(&evidence[i]))
+	}
+	return connect.NewResponse(&pb.ListActivityEvidenceResponse{Evidence: protos, TotalCount: total}), nil
+}
+
+func (h *FieldHandler) DeleteActivityEvidence(ctx context.Context, req *connect.Request[pb.DeleteActivityEvidenceRequest]) (*connect.Response[pb.DeleteActivityEvidenceResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
+	}
+	if err := h.svc.DeleteActivityEvidence(ctx, req.Msg.GetId()); err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.DeleteActivityEvidenceResponse{}), nil
+}
+
+// ---------------------------------------------------------------------------
 // Proto ↔ Domain converters
 // ---------------------------------------------------------------------------
 
@@ -1069,5 +1158,85 @@ func protoActivityCategoryToDomain(c pb.ActivityCategory) domain.ActivityCategor
 		return domain.ActivityCategoryMaintenance
 	default:
 		return domain.ActivityCategoryUnspecified
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Activity Evidence converters
+// ---------------------------------------------------------------------------
+
+func activityEvidenceToProto(e *domain.ActivityEvidence) *pb.ActivityEvidence {
+	if e == nil {
+		return nil
+	}
+	out := &pb.ActivityEvidence{
+		Id:              e.ID,
+		TenantId:        e.TenantID,
+		ActivityEventId: e.ActivityEventID,
+		EvidenceType:    domainEvidenceTypeToProto(e.EvidenceType),
+		FileUrl:         e.FileURL,
+		CapturedBy:      e.CapturedBy,
+	}
+	if e.FileName != nil {
+		out.FileName = *e.FileName
+	}
+	if e.FileSizeBytes != nil {
+		out.FileSizeBytes = *e.FileSizeBytes
+	}
+	if e.MimeType != nil {
+		out.MimeType = *e.MimeType
+	}
+	if e.ThumbnailURL != nil {
+		out.ThumbnailUrl = *e.ThumbnailURL
+	}
+	if e.Caption != nil {
+		out.Caption = *e.Caption
+	}
+	if e.Latitude != nil {
+		out.Latitude = *e.Latitude
+	}
+	if e.Longitude != nil {
+		out.Longitude = *e.Longitude
+	}
+	if e.CapturedAt != nil {
+		out.CapturedAt = timestamppb.New(*e.CapturedAt)
+	}
+	if !e.CreatedAt.IsZero() {
+		out.CreatedAt = timestamppb.New(e.CreatedAt)
+	}
+	return out
+}
+
+func domainEvidenceTypeToProto(et domain.EvidenceType) pb.EvidenceType {
+	switch et {
+	case domain.EvidenceTypePhoto:
+		return pb.EvidenceType_EVIDENCE_TYPE_PHOTO
+	case domain.EvidenceTypeDocument:
+		return pb.EvidenceType_EVIDENCE_TYPE_DOCUMENT
+	case domain.EvidenceTypeVideo:
+		return pb.EvidenceType_EVIDENCE_TYPE_VIDEO
+	case domain.EvidenceTypeAudio:
+		return pb.EvidenceType_EVIDENCE_TYPE_AUDIO
+	case domain.EvidenceTypeOther:
+		return pb.EvidenceType_EVIDENCE_TYPE_OTHER
+	default:
+		return pb.EvidenceType_EVIDENCE_TYPE_UNSPECIFIED
+	}
+}
+
+func protoEvidenceTypeToDomain(et pb.EvidenceType) domain.EvidenceType {
+	switch et {
+	case pb.EvidenceType_EVIDENCE_TYPE_PHOTO:
+		return domain.EvidenceTypePhoto
+	case pb.EvidenceType_EVIDENCE_TYPE_DOCUMENT:
+		return domain.EvidenceTypeDocument
+	case pb.EvidenceType_EVIDENCE_TYPE_VIDEO:
+		return domain.EvidenceTypeVideo
+	case pb.EvidenceType_EVIDENCE_TYPE_AUDIO:
+		return domain.EvidenceTypeAudio
+	case pb.EvidenceType_EVIDENCE_TYPE_OTHER:
+		return domain.EvidenceTypeOther
+	default:
+		return domain.EvidenceTypeOther
 	}
 }
