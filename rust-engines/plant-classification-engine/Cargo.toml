@@ -4,12 +4,17 @@ version = "0.1.0"
 edition = "2021"
 description = "ResNet50 plant classification engine with 38 PlantVillage classes"
 
+[features]
+default = []
+onnx = ["ort"]
+
 [dependencies]
 ndarray = { version = "0.16", features = ["rayon"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 rayon = "1.10"
+ort = { version = "2.0.0-rc.13", optional = true }
 
 [dev-dependencies]
 approx = "0.5"

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::model::{ClassificationModel, ClassificationModelConfig, ModelError};
 use crate::preprocess::ImageBuffer;
-use crate::types::{ClassificationResult, ConfidenceLevel, PlantSpecies, SpeciesCandidate};
+use crate::types::{ClassificationResult, PlantClass, TopKPrediction};
 
 /// Configuration for the classification pipeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,45 +67,41 @@ impl PlantClassifier {
         let output = self.model.infer_image(image)?;
         let probs = softmax(&output.logits);
 
-        let mut candidates: Vec<SpeciesCandidate> = Vec::new();
+        let mut predictions: Vec<TopKPrediction> = Vec::new();
 
         for (idx, &prob) in probs.iter().enumerate() {
-            if let Some(species) = PlantSpecies::from_index(idx) {
+            if let Some(class) = PlantClass::from_index(idx) {
                 if prob >= self.config.min_confidence {
-                    candidates.push(SpeciesCandidate {
-                        species,
-                        confidence: prob,
-                        confidence_level: ConfidenceLevel::from_score(prob),
-                        scientific_name: species.scientific_name().to_string(),
+                    predictions.push(TopKPrediction {
+                        class,
+                        probability: prob,
                     });
                 }
             }
         }
 
-        // Sort by confidence descending
-        candidates.sort_by(|a, b| {
-            b.confidence
-                .partial_cmp(&a.confidence)
+        // Sort by probability descending
+        predictions.sort_by(|a, b| {
+            b.probability
+                .partial_cmp(&a.probability)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Apply top-k
-        if self.config.top_k > 0 && candidates.len() > self.config.top_k {
-            candidates.truncate(self.config.top_k);
+        if self.config.top_k > 0 && predictions.len() > self.config.top_k {
+            predictions.truncate(self.config.top_k);
         }
 
-        let (predicted_species, confidence, confidence_level) = if let Some(top) = candidates.first()
-        {
-            (top.species, top.confidence, top.confidence_level)
+        let (predicted_class, confidence) = if let Some(top) = predictions.first() {
+            (top.class, top.probability)
         } else {
-            (PlantSpecies::Apple, 0.0, ConfidenceLevel::Low)
+            (PlantClass::AppleAppleScab, 0.0)
         };
 
         Ok(ClassificationResult {
-            candidates,
-            predicted_species,
+            predicted_class,
             confidence,
-            confidence_level,
+            top_k: predictions,
         })
     }
 
@@ -138,7 +134,7 @@ mod tests {
         let result = classifier.classify(&img).unwrap();
         assert!(result.confidence >= 0.0);
         assert!(result.confidence <= 1.0);
-        assert!(!result.candidates.is_empty());
+        assert!(!result.top_k.is_empty());
     }
 
     #[test]
@@ -164,6 +160,6 @@ mod tests {
         let classifier = PlantClassifier::with_defaults().unwrap();
         let img = make_test_image(300, 300);
         let result = classifier.classify(&img).unwrap();
-        assert!(result.candidates.len() <= 5);
+        assert!(result.top_k.len() <= 5);
     }
 }

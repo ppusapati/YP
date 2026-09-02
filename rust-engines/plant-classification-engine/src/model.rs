@@ -1,7 +1,7 @@
 //! Model session for plant classification.
 
-use ndarray::Array3;
 use thiserror::Error;
+use serde::{Deserialize, Serialize};
 
 use crate::preprocess::{ImageBuffer, PreprocessConfig, PreprocessError, preprocess_image};
 use crate::types::NUM_CLASSES;
@@ -10,8 +10,12 @@ use crate::types::NUM_CLASSES;
 pub enum ModelError {
     #[error("Model not loaded")]
     NotLoaded,
+    #[error("Model load error: {0}")]
+    LoadError(String),
     #[error("Preprocessing error: {0}")]
     PreprocessError(#[from] PreprocessError),
+    #[error("Inference error: {0}")]
+    InferenceError(String),
 }
 
 #[derive(Debug, Clone)]
@@ -49,38 +53,173 @@ impl DemoWeights {
     }
 }
 
-/// Plant classification model session.
-pub struct PlantClassificationModel {
+/// ONNX Runtime model wrapper for plant classification.
+///
+/// Loads and runs inference on an ONNX-exported ResNet50 model.
+/// Only available when compiled with the `onnx` feature.
+#[cfg(feature = "onnx")]
+struct OnnxModel {
+    session: ort::session::Session,
     num_classes: usize,
-    preprocess: PreprocessConfig,
-    weights: Option<DemoWeights>,
+    input_size: u32,
+}
+
+#[cfg(feature = "onnx")]
+impl OnnxModel {
+    fn load(path: &str, num_classes: usize, input_size: u32) -> Result<Self, ModelError> {
+        let session = ort::session::Session::builder()
+            .map_err(|e| ModelError::LoadError(format!("Failed to create session builder: {e}")))?
+            .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)
+            .map_err(|e| ModelError::LoadError(format!("Failed to set optimization level: {e}")))?
+            .commit_from_file(path)
+            .map_err(|e| ModelError::LoadError(format!("Failed to load ONNX model from '{path}': {e}")))?;
+
+        Ok(Self { session, num_classes, input_size })
+    }
+
+    fn forward(&self, input: &[f32]) -> Result<Vec<f32>, ModelError> {
+        let size = self.input_size as usize;
+        let input_array = ndarray::Array4::from_shape_vec(
+            (1, 3, size, size),
+            input.to_vec(),
+        ).map_err(|e| ModelError::InferenceError(format!("Input shape error: {e}")))?;
+
+        let outputs = self.session.run(
+            ort::inputs![input_array]
+                .map_err(|e| ModelError::InferenceError(format!("Failed to create inputs: {e}")))?,
+        ).map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
+
+        let cls_tensor = outputs[0]
+            .try_extract_tensor::<f32>()
+            .map_err(|e| ModelError::InferenceError(format!("Failed to extract output: {e}")))?;
+        let logits: Vec<f32> = cls_tensor.iter().copied().take(self.num_classes).collect();
+
+        Ok(logits)
+    }
+}
+
+/// Configuration for the classification model.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClassificationModelConfig {
+    /// Number of plant species classes.
+    pub num_classes: usize,
+    /// Input image size.
+    pub input_size: u32,
+    /// Maximum batch size.
+    pub max_batch_size: usize,
+    /// Preprocessing configuration.
+    #[serde(skip)]
+    pub preprocess: PreprocessConfig,
+}
+
+impl Default for ClassificationModelConfig {
+    fn default() -> Self {
+        Self {
+            num_classes: NUM_CLASSES,
+            input_size: 224,
+            max_batch_size: 16,
+            preprocess: PreprocessConfig::default(),
+        }
+    }
+}
+
+/// Raw output from model inference.
+#[derive(Debug, Clone)]
+pub struct ModelOutput {
+    /// Classification logits, shape (num_classes,).
+    pub logits: Vec<f32>,
+}
+
+/// Selects the active inference backend.
+enum ModelBackend {
+    /// Deterministic demo weights for testing.
+    Demo(DemoWeights),
+    /// ONNX Runtime session for production inference.
+    #[cfg(feature = "onnx")]
+    Onnx(OnnxModel),
+}
+
+/// Plant classification model session.
+pub struct ClassificationModel {
+    config: ClassificationModelConfig,
+    backend: Option<ModelBackend>,
     is_loaded: bool,
 }
 
-impl PlantClassificationModel {
-    pub fn new(num_classes: usize) -> Self {
+impl ClassificationModel {
+    /// Create a new model session with the given config.
+    pub fn new(config: ClassificationModelConfig) -> Self {
         Self {
-            num_classes,
-            preprocess: PreprocessConfig::default(),
-            weights: None,
+            config,
+            backend: None,
             is_loaded: false,
         }
     }
 
+    /// Load model from a file path.
+    ///
+    /// When compiled with the `onnx` feature, attempts to load an ONNX model
+    /// first. If the file does not exist or loading fails, falls back to
+    /// `DemoWeights` with a warning printed to stderr.
+    pub fn load(&mut self, #[allow(unused)] path: &str) -> Result<(), ModelError> {
+        #[cfg(feature = "onnx")]
+        {
+            match OnnxModel::load(path, self.config.num_classes, self.config.input_size) {
+                Ok(onnx) => {
+                    eprintln!("[plant-classification] Loaded ONNX model from '{path}'");
+                    self.backend = Some(ModelBackend::Onnx(onnx));
+                    self.is_loaded = true;
+                    return Ok(());
+                }
+                Err(e) => {
+                    eprintln!(
+                        "[plant-classification] WARNING: Failed to load ONNX model from '{path}': {e}. \
+                         Falling back to demo weights."
+                    );
+                }
+            }
+        }
+
+        #[cfg(not(feature = "onnx"))]
+        {
+            eprintln!(
+                "[plant-classification] ONNX feature not enabled; using demo weights \
+                 (compile with --features onnx to load real models)."
+            );
+        }
+
+        self.backend = Some(ModelBackend::Demo(DemoWeights::init(self.config.num_classes)));
+        self.is_loaded = true;
+        Ok(())
+    }
+
+    /// Load a demo model for testing.
     pub fn load_demo(&mut self) -> Result<(), ModelError> {
-        self.weights = Some(DemoWeights::init(self.num_classes));
+        self.backend = Some(ModelBackend::Demo(DemoWeights::init(self.config.num_classes)));
         self.is_loaded = true;
         Ok(())
     }
 
     pub fn is_loaded(&self) -> bool { self.is_loaded }
 
-    /// Run inference, returning raw logits.
-    pub fn infer_image(&self, image: &ImageBuffer) -> Result<Vec<f32>, ModelError> {
-        let weights = self.weights.as_ref().ok_or(ModelError::NotLoaded)?;
-        let tensor = preprocess_image(image, &self.preprocess)?;
+    /// Get the model configuration.
+    pub fn config(&self) -> &ClassificationModelConfig {
+        &self.config
+    }
+
+    /// Run inference, returning a `ModelOutput` containing raw logits.
+    pub fn infer_image(&self, image: &ImageBuffer) -> Result<ModelOutput, ModelError> {
+        let backend = self.backend.as_ref().ok_or(ModelError::NotLoaded)?;
+        let tensor = preprocess_image(image, &self.config.preprocess)?;
         let flat: Vec<f32> = tensor.iter().cloned().collect();
-        Ok(weights.forward(&flat))
+
+        let logits = match backend {
+            ModelBackend::Demo(weights) => weights.forward(&flat),
+            #[cfg(feature = "onnx")]
+            ModelBackend::Onnx(onnx) => onnx.forward(&flat)?,
+        };
+
+        Ok(ModelOutput { logits })
     }
 }
 
@@ -90,10 +229,21 @@ mod tests {
 
     #[test]
     fn test_model() {
-        let mut model = PlantClassificationModel::new(NUM_CLASSES);
+        let mut model = ClassificationModel::new(ClassificationModelConfig::default());
         model.load_demo().unwrap();
         let img = ImageBuffer::from_rgb(vec![128; 300 * 300 * 3], 300, 300).unwrap();
-        let logits = model.infer_image(&img).unwrap();
-        assert_eq!(logits.len(), NUM_CLASSES);
+        let output = model.infer_image(&img).unwrap();
+        assert_eq!(output.logits.len(), NUM_CLASSES);
+    }
+
+    #[test]
+    fn test_load_fallback_to_demo() {
+        let mut model = ClassificationModel::new(ClassificationModelConfig::default());
+        model.load("/nonexistent/model.onnx").unwrap();
+        assert!(model.is_loaded());
+
+        let img = ImageBuffer::from_rgb(vec![128; 300 * 300 * 3], 300, 300).unwrap();
+        let output = model.infer_image(&img).unwrap();
+        assert_eq!(output.logits.len(), NUM_CLASSES);
     }
 }

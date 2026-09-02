@@ -154,10 +154,97 @@ impl DemoWeights {
     }
 }
 
+/// ONNX Runtime model wrapper for nutrient deficiency detection.
+///
+/// Loads and runs inference on an ONNX-exported DenseNet-121 with dual-head
+/// architecture. Only available when compiled with the `onnx` feature.
+#[cfg(feature = "onnx")]
+struct OnnxModel {
+    session: ort::session::Session,
+    num_classes: usize,
+    num_severity_classes: usize,
+    input_size: u32,
+}
+
+#[cfg(feature = "onnx")]
+impl OnnxModel {
+    fn load(
+        path: &str,
+        num_classes: usize,
+        num_severity_classes: usize,
+        input_size: u32,
+    ) -> Result<Self, ModelError> {
+        let session = ort::session::Session::builder()
+            .map_err(|e| ModelError::LoadError(format!("Failed to create session builder: {e}")))?
+            .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)
+            .map_err(|e| ModelError::LoadError(format!("Failed to set optimization level: {e}")))?
+            .commit_from_file(path)
+            .map_err(|e| ModelError::LoadError(format!("Failed to load ONNX model from '{path}': {e}")))?;
+
+        Ok(Self { session, num_classes, num_severity_classes, input_size })
+    }
+
+    fn forward(&self, input: &[f32]) -> Result<ModelOutput, ModelError> {
+        let size = self.input_size as usize;
+        let input_array = ndarray::Array4::from_shape_vec(
+            (1, 3, size, size),
+            input.to_vec(),
+        ).map_err(|e| ModelError::InferenceError(format!("Input shape error: {e}")))?;
+
+        let outputs = self.session.run(
+            ort::inputs![input_array]
+                .map_err(|e| ModelError::InferenceError(format!("Failed to create inputs: {e}")))?,
+        ).map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
+
+        // First output: classification logits [1, num_classes]
+        let cls_tensor = outputs[0]
+            .try_extract_tensor::<f32>()
+            .map_err(|e| ModelError::InferenceError(format!("Failed to extract classification output: {e}")))?;
+        let classification_logits: Vec<f32> = cls_tensor.iter().copied().take(self.num_classes).collect();
+
+        // Second output: severity logits [1, num_classes, num_severity_classes]
+        let severity_logits = if outputs.len() > 1 {
+            let sev_tensor = outputs[1]
+                .try_extract_tensor::<f32>()
+                .map_err(|e| ModelError::InferenceError(format!("Failed to extract severity output: {e}")))?;
+            let flat: Vec<f32> = sev_tensor.iter().copied().collect();
+            let mut sev = Vec::with_capacity(self.num_classes);
+            for c in 0..self.num_classes {
+                let start = c * self.num_severity_classes;
+                let end = start + self.num_severity_classes;
+                if end <= flat.len() {
+                    sev.push(flat[start..end].to_vec());
+                } else {
+                    // Pad with zeros if model output is smaller than expected
+                    sev.push(vec![0.0; self.num_severity_classes]);
+                }
+            }
+            sev
+        } else {
+            // If no severity output, return zeros
+            vec![vec![0.0; self.num_severity_classes]; self.num_classes]
+        };
+
+        Ok(ModelOutput {
+            classification_logits,
+            severity_logits,
+        })
+    }
+}
+
+/// Selects the active inference backend.
+enum ModelBackend {
+    /// Deterministic demo weights for testing.
+    Demo(DemoWeights),
+    /// ONNX Runtime session for production inference.
+    #[cfg(feature = "onnx")]
+    Onnx(OnnxModel),
+}
+
 /// Nutrient deficiency detection model session.
 pub struct DeficiencyModel {
     config: DeficiencyModelConfig,
-    weights: Option<DemoWeights>,
+    backend: Option<ModelBackend>,
     is_loaded: bool,
 }
 
@@ -166,9 +253,55 @@ impl DeficiencyModel {
     pub fn new(config: DeficiencyModelConfig) -> Self {
         Self {
             config,
-            weights: None,
+            backend: None,
             is_loaded: false,
         }
+    }
+
+    /// Load model from a file path.
+    ///
+    /// When compiled with the `onnx` feature, attempts to load an ONNX model
+    /// first. If the file does not exist or loading fails, falls back to
+    /// `DemoWeights` with a warning printed to stderr.
+    pub fn load(&mut self, #[allow(unused)] path: &str) -> Result<(), ModelError> {
+        #[cfg(feature = "onnx")]
+        {
+            match OnnxModel::load(
+                path,
+                self.config.num_classes,
+                self.config.num_severity_classes,
+                self.config.input_size,
+            ) {
+                Ok(onnx) => {
+                    eprintln!("[nutrient-deficiency] Loaded ONNX model from '{path}'");
+                    self.backend = Some(ModelBackend::Onnx(onnx));
+                    self.is_loaded = true;
+                    return Ok(());
+                }
+                Err(e) => {
+                    eprintln!(
+                        "[nutrient-deficiency] WARNING: Failed to load ONNX model from '{path}': {e}. \
+                         Falling back to demo weights."
+                    );
+                }
+            }
+        }
+
+        #[cfg(not(feature = "onnx"))]
+        {
+            eprintln!(
+                "[nutrient-deficiency] ONNX feature not enabled; using demo weights \
+                 (compile with --features onnx to load real models)."
+            );
+        }
+
+        let weights = DemoWeights::init(
+            self.config.num_classes,
+            self.config.num_severity_classes,
+        );
+        self.backend = Some(ModelBackend::Demo(weights));
+        self.is_loaded = true;
+        Ok(())
     }
 
     /// Load a demo model for testing.
@@ -177,7 +310,7 @@ impl DeficiencyModel {
             self.config.num_classes,
             self.config.num_severity_classes,
         );
-        self.weights = Some(weights);
+        self.backend = Some(ModelBackend::Demo(weights));
         self.is_loaded = true;
         Ok(())
     }
@@ -194,15 +327,21 @@ impl DeficiencyModel {
 
     /// Run inference on a raw image.
     pub fn infer_image(&self, image: &ImageBuffer) -> Result<ModelOutput, ModelError> {
-        let weights = self.weights.as_ref().ok_or(ModelError::NotLoaded)?;
+        let backend = self.backend.as_ref().ok_or(ModelError::NotLoaded)?;
         let tensor = preprocess_image(image, &self.config.preprocess)?;
         let flat: Vec<f32> = tensor.iter().cloned().collect();
-        let (cls_logits, sev_logits) = weights.forward(&flat);
 
-        Ok(ModelOutput {
-            classification_logits: cls_logits,
-            severity_logits: sev_logits,
-        })
+        match backend {
+            ModelBackend::Demo(weights) => {
+                let (cls_logits, sev_logits) = weights.forward(&flat);
+                Ok(ModelOutput {
+                    classification_logits: cls_logits,
+                    severity_logits: sev_logits,
+                })
+            }
+            #[cfg(feature = "onnx")]
+            ModelBackend::Onnx(onnx) => onnx.forward(&flat),
+        }
     }
 }
 
@@ -234,5 +373,17 @@ mod tests {
         let model = DeficiencyModel::new(DeficiencyModelConfig::default());
         let img = make_test_image(100, 100);
         assert!(model.infer_image(&img).is_err());
+    }
+
+    #[test]
+    fn test_load_fallback_to_demo() {
+        let mut model = DeficiencyModel::new(DeficiencyModelConfig::default());
+        model.load("/nonexistent/model.onnx").unwrap();
+        assert!(model.is_loaded());
+
+        let img = make_test_image(300, 300);
+        let output = model.infer_image(&img).unwrap();
+        assert_eq!(output.classification_logits.len(), NUM_NUTRIENT_CLASSES);
+        assert_eq!(output.severity_logits.len(), NUM_NUTRIENT_CLASSES);
     }
 }
