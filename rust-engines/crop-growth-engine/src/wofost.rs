@@ -1,5 +1,6 @@
 use crate::types::{CropParams, DailyWeather};
 use crate::ode::StateVec;
+use crate::photosynthesis::{canopy_photosynthesis, co2_to_biomass};
 
 // State vector indices
 pub const IDX_BIOMASS: usize = 0;
@@ -39,8 +40,30 @@ pub fn growth_derivatives(
     let f_rad = radiation_interception(lai, params.k_ext);
     let water_stress = (soil_moisture / 100.0).min(1.0);
 
-    // Biomass accumulation: RUE * intercepted radiation * stress factors
-    let d_biomass = params.rue * weather.radiation * f_rad * temp_f * water_stress;
+    // Biomass accumulation: Farquhar photosynthesis when configured, RUE fallback
+    let d_biomass = if let Some(ref photo_config) = params.photosynthesis {
+        // Farquhar-von Caemmerer-Berry mechanistic photosynthesis model.
+        // Convert day_length (hours) to seconds for the canopy model.
+        let day_seconds = weather.day_length * 3600.0;
+        let co2_ppm = photo_config.default_co2_ppm;
+        let humidity = photo_config.default_humidity;
+        let result = canopy_photosynthesis(
+            &photo_config.farquhar,
+            &photo_config.canopy,
+            lai,
+            weather.temperature,
+            weather.radiation,
+            co2_ppm,
+            humidity,
+            day_seconds,
+        );
+        // Convert g CO2/m^2/day to g dry matter/m^2/day, then apply water stress
+        co2_to_biomass(result.daily_assimilation_g, photo_config.growth_efficiency)
+            * water_stress
+    } else {
+        // Original RUE model: RUE * intercepted radiation * stress factors
+        params.rue * weather.radiation * f_rad * temp_f * water_stress
+    };
 
     // LAI growth: proportional to biomass growth during vegetative phase
     let d_lai = if dvs < 1.0 && lai < params.max_lai {

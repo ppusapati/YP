@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::photosynthesis::PhotosynthesisConfig;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum GrowthStage {
     Germination,
@@ -49,6 +51,11 @@ pub struct CropParams {
     pub dvs_maturity: f64,
     pub water_use_efficiency: f64,
     pub harvest_index: f64,
+    /// Optional Farquhar photosynthesis model configuration.
+    /// When present, overrides the RUE-based biomass accumulation in
+    /// growth_derivatives with the mechanistic FvCB model.
+    #[serde(default)]
+    pub photosynthesis: Option<PhotosynthesisConfig>,
 }
 
 impl Default for CropParams {
@@ -69,6 +76,7 @@ impl Default for CropParams {
             dvs_maturity: 1600.0,
             water_use_efficiency: 4.0,
             harvest_index: 0.45,
+            photosynthesis: None,
         }
     }
 }
