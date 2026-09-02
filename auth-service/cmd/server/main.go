@@ -19,6 +19,7 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/ratelimit/algorithms"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -61,11 +62,15 @@ func main() {
 		log.Fatalf("migration failed: %v", err)
 	}
 
+	// 10 login attempts per IP per second, burst of 20 — tight enough to slow
+	// brute-force while generous enough for legitimate use.
+	loginLimiter := algorithms.NewTokenBucketLimiter(20, 10)
+
 	h := &authHandler{pool: pool, logger: zapLogger}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/auth/login", h.handleLogin)
-	mux.HandleFunc("/auth/refresh", h.handleRefresh)
+	mux.HandleFunc("/auth/login", rateLimitByIP(loginLimiter, h.handleLogin))
+	mux.HandleFunc("/auth/refresh", rateLimitByIP(loginLimiter, h.handleRefresh))
 	mux.HandleFunc("/auth/me", h.handleMe)
 	mux.HandleFunc("/auth/logout", h.handleLogout)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
@@ -85,6 +90,10 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MB
 	}
 
 	quit := make(chan os.Signal, 1)
@@ -110,6 +119,27 @@ func main() {
 type authHandler struct {
 	pool   *pgxpool.Pool
 	logger *zap.Logger
+}
+
+func rateLimitByIP(limiter *algorithms.TokenBucketLimiter, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ip := r.RemoteAddr
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			if i := strings.Index(xff, ","); i > 0 {
+				ip = strings.TrimSpace(xff[:i])
+			} else {
+				ip = strings.TrimSpace(xff)
+			}
+		}
+		allowed, _ := limiter.Allow(r.Context(), ip)
+		if !allowed {
+			w.Header().Set("Retry-After", "1")
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many requests"})
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB
+		next(w, r)
+	}
 }
 
 // POST /auth/login  { "email": "...", "password": "..." }
