@@ -3,7 +3,8 @@
 SERVICES := farm-service field-service crop-service sensor-service \
             irrigation-service soil-service yield-service \
             pest-prediction-service plant-diagnosis-service \
-            satellite-service traceability-service commerce-service
+            satellite-service traceability-service commerce-service \
+            auth-service
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -35,7 +36,12 @@ test-packages: ## Run shared package tests only
 lint: ## Run golangci-lint
 	golangci-lint run --timeout=5m
 
-proto: ## Regenerate protobuf code
+tools: ## Install pinned protoc-gen-* tools from tools.go
+	go install connectrpc.com/connect/cmd/protoc-gen-connect-go
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go install google.golang.org/protobuf/cmd/protoc-gen-go
+
+proto: ## Regenerate protobuf code (run 'make tools' first)
 	buf generate
 
 proto-check: ## Check proto freshness
