@@ -137,6 +137,45 @@ type SpeciesClassificationResult struct {
 	ProcessingTimeMs int64
 }
 
+// PrescriptionResult contains the AI-generated prescription output.
+type PrescriptionResult struct {
+	RequestID              string
+	FieldID                string
+	Prescriptions          []PrescriptionMap
+	EstimatedCostSavingsPct float64
+	EstimatedYieldGainPct  float64
+	ProcessingTimeMs       int64
+}
+
+// PrescriptionMap represents a single prescription type result.
+type PrescriptionMap struct {
+	PrescriptionType string
+	Rates            []float64
+	Unit             string
+	TotalAmount      float64
+	ZoneSummaries    []PrescriptionZone
+}
+
+// PrescriptionZone summarises a zone within a prescription map.
+type PrescriptionZone struct {
+	Zone        string
+	CellCount   int32
+	AreaHa      float64
+	MeanRate    float64
+	MinRate     float64
+	MaxRate     float64
+	TotalAmount float64
+}
+
+// PrescriptionInput holds the parameters needed for prescription generation.
+type PrescriptionInput struct {
+	FieldID           string
+	CropType          string
+	TargetYieldKgHa   float64
+	PrescriptionTypes []string
+	DiagnosisSummary  string
+}
+
 // ImageInput describes an image to send to the AI gateway.
 type ImageInput struct {
 	ImageURL  string
@@ -243,6 +282,35 @@ func (c *AIClient) ClassifyPlant(ctx context.Context, requestID string, images [
 		c.logger.Errorw("msg", "AI ClassifyPlant failed", "request_id", requestID, "error", err)
 		return nil, err
 	}
+
+	return result, nil
+}
+
+// GeneratePrescription sends diagnosis context to the AI Gateway for treatment prescription generation.
+func (c *AIClient) GeneratePrescription(ctx context.Context, requestID string, input PrescriptionInput) (*PrescriptionResult, error) {
+	var result *PrescriptionResult
+
+	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
+		resp, err := callGeneratePrescription(cbCtx, c.conn, requestID, input)
+		if err != nil {
+			return fmt.Errorf("GeneratePrescription RPC failed: %w", err)
+		}
+		result = resp
+		return nil
+	})
+
+	if err != nil {
+		c.logger.Errorw("msg", "AI GeneratePrescription failed", "request_id", requestID, "error", err)
+		return nil, err
+	}
+
+	c.logger.Infow("msg", "AI GeneratePrescription completed",
+		"request_id", requestID,
+		"prescriptions", len(result.Prescriptions),
+		"cost_savings_pct", result.EstimatedCostSavingsPct,
+		"yield_gain_pct", result.EstimatedYieldGainPct,
+		"processing_ms", result.ProcessingTimeMs,
+	)
 
 	return result, nil
 }
