@@ -224,6 +224,14 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		userID = "system"
 	}
 
+	exists, err := s.cropClient.CropExists(ctx, params.CropID, tenantID)
+	if err != nil {
+		return nil, errors.InternalServer("CROP_CHECK_FAILED", fmt.Sprintf("failed to verify crop: %v", err))
+	}
+	if !exists {
+		return nil, errors.NotFound("CROP_NOT_FOUND", "crop does not exist")
+	}
+
 	field, err := s.repo.GetFieldByUUID(ctx, params.FieldUUID, tenantID)
 	if err != nil {
 		return nil, err

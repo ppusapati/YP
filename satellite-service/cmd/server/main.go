@@ -142,7 +142,7 @@ func main() {
 	})
 
 	serverCfg := connectserver.DefaultServerConfig(port)
-	wrapped := connectserver.WrapWithH2C(connectserver.WrapWithCORS(mux, serverCfg.AllowedOrigins))
+	wrapped := connectserver.WrapAll(mux, serverCfg)
 	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
 
 	// ── Outbox relay (background) ────────────────────────────────────────

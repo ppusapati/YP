@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"p9e.in/samavaya/packages/connect/interceptors"
+	"p9e.in/samavaya/packages/middleware"
 	"p9e.in/samavaya/packages/p9log"
 )
 
@@ -33,17 +34,33 @@ type ServerConfig struct {
 
 	// IdleTimeout is the timeout for idle connections
 	IdleTimeout time.Duration
+
+	// MaxRequestBodySize limits request body size in bytes (0 = no limit).
+	MaxRequestBodySize int64
+
+	// RateLimitEnabled enables per-IP rate limiting.
+	RateLimitEnabled bool
+
+	// RateLimitPerSecond is the sustained request rate per client IP.
+	RateLimitPerSecond float64
+
+	// RateLimitBurst is the maximum burst size per client IP.
+	RateLimitBurst float64
 }
 
 // DefaultServerConfig returns a ServerConfig with sensible defaults.
 func DefaultServerConfig(port string) ServerConfig {
 	return ServerConfig{
-		Port:              port,
-		AllowedOrigins:    []string{"*"},
-		ReadHeaderTimeout: 30 * time.Second,
-		ReadTimeout:       60 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		Port:               port,
+		AllowedOrigins:     []string{"*"},
+		ReadHeaderTimeout:  30 * time.Second,
+		ReadTimeout:        60 * time.Second,
+		WriteTimeout:       60 * time.Second,
+		IdleTimeout:        120 * time.Second,
+		MaxRequestBodySize: 10 << 20, // 10 MB
+		RateLimitEnabled:   true,
+		RateLimitPerSecond: 100,
+		RateLimitBurst:     200,
 	}
 }
 
@@ -189,6 +206,36 @@ func NewHTTPServer(cfg ServerConfig, handler http.Handler) *http.Server {
 // WrapWithH2C wraps the handler with h2c for HTTP/2 without TLS.
 func WrapWithH2C(handler http.Handler) http.Handler {
 	return h2c.NewHandler(handler, &http2.Server{})
+}
+
+// WrapWithMaxBody limits the request body to maxBytes. A zero or negative
+// value means no limit.
+func WrapWithMaxBody(handler http.Handler, maxBytes int64) http.Handler {
+	if maxBytes <= 0 {
+		return handler
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+		handler.ServeHTTP(w, r)
+	})
+}
+
+// WrapWithRateLimit wraps the handler with per-IP token-bucket rate limiting.
+func WrapWithRateLimit(handler http.Handler, cfg ServerConfig) http.Handler {
+	return middleware.RateLimitMiddleware(middleware.RateLimitConfig{
+		RequestsPerSecond: cfg.RateLimitPerSecond,
+		BurstSize:         cfg.RateLimitBurst,
+		Enabled:           cfg.RateLimitEnabled,
+	})(handler)
+}
+
+// WrapAll applies the standard middleware stack in the correct order:
+// rate limit -> max body -> CORS -> h2c.
+func WrapAll(handler http.Handler, cfg ServerConfig) http.Handler {
+	h := WrapWithCORS(handler, cfg.AllowedOrigins)
+	h = WrapWithMaxBody(h, cfg.MaxRequestBodySize)
+	h = WrapWithRateLimit(h, cfg)
+	return WrapWithH2C(h)
 }
 
 // WrapWithCORS wraps the handler with CORS middleware.

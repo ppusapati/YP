@@ -5,3 +5,7 @@ dist
 .svelte-kit
 .claude/
 target/
+
+# Go build artifacts
+*-service/server
+

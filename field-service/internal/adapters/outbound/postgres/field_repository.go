@@ -225,6 +225,12 @@ func (r *fieldRepository) SetFieldBoundary(ctx context.Context, b *domain.FieldB
 	row := r.queryRow(ctx,
 		`INSERT INTO field_boundaries (id, tenant_id, field_id, polygon, area_hectares, perimeter_meters, source, recorded_at)
 VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
+ON CONFLICT (tenant_id, field_id) WHERE deleted_at IS NULL
+DO UPDATE SET polygon = EXCLUDED.polygon,
+              area_hectares = EXCLUDED.area_hectares,
+              perimeter_meters = EXCLUDED.perimeter_meters,
+              source = EXCLUDED.source,
+              recorded_at = EXCLUDED.recorded_at
 RETURNING id, tenant_id, field_id, polygon::text, area_hectares, perimeter_meters, source, recorded_at, created_at`,
 		b.ID, b.TenantID, b.FieldID, b.Polygon, b.AreaHectares, b.PerimeterMeters, b.Source, b.RecordedAt,
 	)
@@ -232,7 +238,7 @@ RETURNING id, tenant_id, field_id, polygon::text, area_hectares, perimeter_meter
 	err := row.Scan(&out.ID, &out.TenantID, &out.FieldID, &out.Polygon,
 		&out.AreaHectares, &out.PerimeterMeters, &out.Source, &out.RecordedAt, &out.CreatedAt)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to insert boundary: %v", err))
+		return nil, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to upsert boundary: %v", err))
 	}
 	return out, nil
 }
