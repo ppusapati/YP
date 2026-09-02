@@ -44,6 +44,7 @@ jobs:
           - satellite-service
           - traceability-service
           - commerce-service
+          - auth-service
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -90,7 +91,8 @@ jobs:
             ./plant-diagnosis-service/... \
             ./satellite-service/... \
             ./traceability-service/... \
-            ./commerce-service/...
+            ./commerce-service/... \
+            ./auth-service/...
 
   proto-check:
     name: Proto freshness
