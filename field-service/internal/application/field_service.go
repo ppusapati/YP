@@ -13,6 +13,7 @@ import (
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
+	"p9e.in/samavaya/packages/uow"
 
 	"p9e.in/samavaya/agriculture/field-service/internal/domain"
 	"p9e.in/samavaya/agriculture/field-service/internal/ports/inbound"
@@ -368,13 +369,21 @@ func (s *fieldService) SegmentField(ctx context.Context, params domain.SegmentFi
 		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", params.FieldID))
 	}
 
-	if err := s.repo.DeleteFieldSegments(ctx, params.FieldID, tenantID); err != nil {
-		return nil, err
-	}
-
-	segments, err := s.repo.CreateFieldSegments(ctx, params.FieldID, tenantID, params.Segments)
-	if err != nil {
-		return nil, err
+	var segments []domain.FieldSegment
+	txErr := uow.WithTransaction(ctx, s.pool, func(u uow.UnitOfWork) error {
+		txRepo := s.repo.WithTx(u.Tx())
+		if err := txRepo.DeleteFieldSegments(ctx, params.FieldID, tenantID); err != nil {
+			return err
+		}
+		created, err := txRepo.CreateFieldSegments(ctx, params.FieldID, tenantID, params.Segments)
+		if err != nil {
+			return err
+		}
+		segments = created
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
 	}
 
 	s.emitEvent(ctx, "agriculture.field.segmented", params.FieldID, map[string]interface{}{

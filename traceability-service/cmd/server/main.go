@@ -155,7 +155,7 @@ func main() {
 
 	// ── Admin server (health + metrics) ──────────────────────────────────────
 	adminPort := adminPortFrom(port)
-	adminMux := middleware.NewHealthMux(serviceName)
+	adminMux := middleware.NewHealthMux(serviceName, pool)
 	adminSrv := &http.Server{
 		Addr:              ":" + adminPort,
 		Handler:           adminMux,
