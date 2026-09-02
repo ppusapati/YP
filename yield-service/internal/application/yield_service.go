@@ -33,6 +33,7 @@ type yieldService struct {
 	irrigationClient outbound.IrrigationClient
 	pestClient       outbound.PestClient
 	cropClient       outbound.CropClient
+	farmClient       outbound.FarmClient
 	pool             *pgxpool.Pool
 	log              *p9log.Helper
 }
@@ -46,6 +47,7 @@ func NewYieldService(
 	irrigationClient outbound.IrrigationClient,
 	pestClient outbound.PestClient,
 	cropClient outbound.CropClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.YieldService {
@@ -57,6 +59,7 @@ func NewYieldService(
 		irrigationClient: irrigationClient,
 		pestClient:       pestClient,
 		cropClient:       cropClient,
+		farmClient:       farmClient,
 		pool:             pool,
 		log:              p9log.NewHelper(p9log.With(log, "component", "YieldService")),
 	}

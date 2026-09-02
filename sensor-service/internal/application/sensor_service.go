@@ -30,6 +30,7 @@ type sensorService struct {
 	repo        outbound.SensorRepository
 	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
 }
@@ -39,6 +40,7 @@ func NewSensorService(
 	repo outbound.SensorRepository,
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) *sensorService {
@@ -46,6 +48,7 @@ func NewSensorService(
 		repo:        repo,
 		pub:         pub,
 		fieldClient: fieldClient,
+		farmClient:  farmClient,
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "SensorService")),
 	}

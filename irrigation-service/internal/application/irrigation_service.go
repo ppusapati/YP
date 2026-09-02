@@ -29,6 +29,7 @@ type irrigationService struct {
 	repo        outbound.IrrigationRepository
 	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
 }
@@ -38,6 +39,7 @@ func NewIrrigationService(
 	repo outbound.IrrigationRepository,
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) *irrigationService {
@@ -45,6 +47,7 @@ func NewIrrigationService(
 		repo:        repo,
 		pub:         pub,
 		fieldClient: fieldClient,
+		farmClient:  farmClient,
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "IrrigationService")),
 	}

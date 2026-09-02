@@ -50,6 +50,7 @@ func main() {
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	port := envOr("PORT", "8080")
 	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8082")
+	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -81,7 +82,8 @@ func main() {
 	repo := postgresadapter.NewSoilRepository(pool, logger)
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
-	svc := application.NewSoilService(repo, pub, fieldClient, pool, logger)
+	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	svc := application.NewSoilService(repo, pub, fieldClient, farmClient, pool, logger)
 
 	// Inbound adapter
 	handler := grpcadapter.NewSoilHandler(svc, logger)

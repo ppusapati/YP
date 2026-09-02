@@ -30,6 +30,7 @@ type soilService struct {
 	repo        outbound.SoilRepository
 	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
 }
@@ -40,6 +41,7 @@ func NewSoilService(
 	repo outbound.SoilRepository,
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) *soilService {
@@ -47,6 +49,7 @@ func NewSoilService(
 		repo:        repo,
 		pub:         pub,
 		fieldClient: fieldClient,
+		farmClient:  farmClient,
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "SoilService")),
 	}

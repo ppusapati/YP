@@ -30,6 +30,7 @@ type diagnosisService struct {
 	repo        outbound.DiagnosisRepository
 	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
 }
@@ -39,6 +40,7 @@ func NewDiagnosisService(
 	repo outbound.DiagnosisRepository,
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.DiagnosisService {
@@ -46,6 +48,7 @@ func NewDiagnosisService(
 		repo:        repo,
 		pub:         pub,
 		fieldClient: fieldClient,
+		farmClient:  farmClient,
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "DiagnosisService")),
 	}

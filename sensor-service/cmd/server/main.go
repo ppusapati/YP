@@ -49,6 +49,7 @@ func main() {
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/sensor_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8082")
+	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -80,9 +81,10 @@ func main() {
 	repo := postgresadapter.NewSensorRepository(pool, logger)
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
-	svc := application.NewSensorService(repo, pub, fieldClient, pool, logger)
+	svc := application.NewSensorService(repo, pub, fieldClient, farmClient, pool, logger)
 
 	// Inbound adapters
 	handler := grpcadapter.NewSensorHandler(svc, logger)

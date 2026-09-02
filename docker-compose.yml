@@ -123,6 +123,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SENSOR_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/sensor_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   irrigation-service:
     <<: *go-service
@@ -135,6 +137,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/irrigation_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   soil-service:
     <<: *go-service
@@ -147,6 +151,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SOIL_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   yield-service:
     <<: *go-service
@@ -164,6 +170,7 @@ services:
       IRRIGATION_SERVICE_URL: http://irrigation-service:8080
       PEST_PREDICTION_SERVICE_URL: http://pest-prediction-service:8080
       CROP_SERVICE_URL: http://crop-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   pest-prediction-service:
     <<: *go-service
@@ -178,6 +185,7 @@ services:
       DATABASE_URL: ${PEST_PREDICTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/pest_prediction_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       SENSOR_SERVICE_URL: http://sensor-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   plant-diagnosis-service:
     <<: *go-service
@@ -191,6 +199,7 @@ services:
       <<: *go-env
       DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/plant_diagnosis_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   satellite-service:
     <<: *go-service

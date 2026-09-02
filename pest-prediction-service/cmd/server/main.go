@@ -51,6 +51,7 @@ func main() {
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8081")
 	sensorServiceURL := envOr("SENSOR_SERVICE_URL", "http://localhost:8082")
+	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -83,11 +84,13 @@ func main() {
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	sensorClient := clientsadapter.NewSensorClient(sensorServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(sensorServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
 	svc := application.NewPestService(repo, pub,
 		fieldClient,
 		sensorClient,
+		farmClient,
 		pool, logger)
 
 	// Inbound adapters
