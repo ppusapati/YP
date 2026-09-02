@@ -18,6 +18,7 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/middleware"
@@ -90,7 +91,8 @@ func main() {
 
 	// Outbound adapters
 	repo := postgresadapter.NewDiagnosisRepository(pool, logger)
-	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+	outboxPub := outbox.NewPublisher(pool, zapLogger)
+	kafkaPub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
@@ -106,7 +108,7 @@ func main() {
 	}
 
 	// Application service
-	svc := application.NewDiagnosisService(repo, pub,
+	svc := application.NewDiagnosisService(repo, outboxPub,
 		fieldClient,
 		farmClient,
 		pool, logger, diagAIClient)
@@ -154,6 +156,12 @@ func main() {
 	serverCfg := connectserver.DefaultServerConfig(port)
 	wrapped := connectserver.WrapWithH2C(connectserver.WrapWithCORS(mux, serverCfg.AllowedOrigins))
 	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
+
+	// ── Outbox relay (background) ────────────────────────────────────────
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
+	go relay.Run(relayCtx)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

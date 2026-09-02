@@ -20,6 +20,7 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/outbox"
 	connectclient "p9e.in/samavaya/packages/connect/client"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
@@ -98,14 +99,15 @@ func main() {
 
 	// ── Outbound adapters ────────────────────────────────────────────────────
 	repo := postgresadapter.NewTraceabilityRepository(pool, logger)
-	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+	outboxPub := outbox.NewPublisher(pool, zapLogger)
+	kafkaPub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	yieldClient := clientsadapter.NewYieldClient(yieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(yieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	cropClient := clientsadapter.NewCropClient(cropServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(cropServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// ── Application service (core) ───────────────────────────────────────────
-	svc := application.NewTraceabilityService(repo, pub, farmClient, fieldClient, yieldClient, cropClient, pool, logger)
+	svc := application.NewTraceabilityService(repo, outboxPub, farmClient, fieldClient, yieldClient, cropClient, pool, logger)
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────
 	handler := grpcadapter.NewTraceabilityHandler(svc, logger)
@@ -165,6 +167,12 @@ func main() {
 			log.Printf("admin server error: %v", err)
 		}
 	}()
+
+	// ── Outbox relay (background) ────────────────────────────────────────
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
+	go relay.Run(relayCtx)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

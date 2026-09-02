@@ -19,6 +19,7 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/middleware"
@@ -91,10 +92,11 @@ func main() {
 
 	// -- Outbound adapters --
 	repo := postgresadapter.NewCommerceRepository(pool, logger)
-	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+	outboxPub := outbox.NewPublisher(pool, zapLogger)
+	kafkaPub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 
 	// -- Application service (core) --
-	svc := application.NewCommerceService(repo, pub, logger)
+	svc := application.NewCommerceService(repo, outboxPub, logger)
 
 	// -- Inbound adapters --
 	handler := grpcadapter.NewCommerceHandler(svc, logger)
@@ -154,6 +156,12 @@ func main() {
 			log.Printf("admin server error: %v", err)
 		}
 	}()
+
+	// ── Outbox relay (background) ────────────────────────────────────────
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
+	go relay.Run(relayCtx)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
