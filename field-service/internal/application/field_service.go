@@ -29,6 +29,7 @@ type fieldService struct {
 	repo       outbound.FieldRepository
 	pub        outbound.EventPublisher
 	farmClient outbound.FarmClient
+	cropClient outbound.CropClient
 	pool       *pgxpool.Pool
 	log        *p9log.Helper
 }
@@ -37,6 +38,7 @@ func NewFieldService(
 	repo outbound.FieldRepository,
 	pub outbound.EventPublisher,
 	farmClient outbound.FarmClient,
+	cropClient outbound.CropClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.FieldService {
@@ -44,6 +46,7 @@ func NewFieldService(
 		repo:       repo,
 		pub:        pub,
 		farmClient: farmClient,
+		cropClient: cropClient,
 		pool:       pool,
 		log:        p9log.NewHelper(p9log.With(log, "component", "FieldService")),
 	}

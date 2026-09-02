@@ -98,6 +98,7 @@ services:
       <<: *go-env
       DATABASE_URL: ${FIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/field_service?sslmode=disable}
       FARM_SERVICE_URL: http://farm-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
 
   crop-service:
     <<: *go-service
@@ -162,6 +163,7 @@ services:
       SOIL_SERVICE_URL: http://soil-service:8080
       IRRIGATION_SERVICE_URL: http://irrigation-service:8080
       PEST_PREDICTION_SERVICE_URL: http://pest-prediction-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
 
   pest-prediction-service:
     <<: *go-service
@@ -218,6 +220,7 @@ services:
       FARM_SERVICE_URL: http://farm-service:8080
       FIELD_SERVICE_URL: http://field-service:8080
       YIELD_SERVICE_URL: http://yield-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
 
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 

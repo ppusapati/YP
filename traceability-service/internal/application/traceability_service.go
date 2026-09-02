@@ -38,6 +38,7 @@ type traceabilityService struct {
 	farmClient  outbound.FarmClient
 	fieldClient outbound.FieldClient
 	yieldClient outbound.YieldClient
+	cropClient  outbound.CropClient
 	pool        *pgxpool.Pool // reserved for future transactional operations
 	log         *p9log.Helper
 }
@@ -51,6 +52,7 @@ func NewTraceabilityService(
 	farmClient outbound.FarmClient,
 	fieldClient outbound.FieldClient,
 	yieldClient outbound.YieldClient,
+	cropClient outbound.CropClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.TraceabilityService {
@@ -60,6 +62,7 @@ func NewTraceabilityService(
 		farmClient:  farmClient,
 		fieldClient: fieldClient,
 		yieldClient: yieldClient,
+		cropClient:  cropClient,
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
 	}

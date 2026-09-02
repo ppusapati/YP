@@ -50,6 +50,7 @@ func main() {
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/field_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
+	cropServiceURL := envOr("CROP_SERVICE_URL", "http://localhost:8083")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -81,9 +82,10 @@ func main() {
 	repo := postgresadapter.NewFieldRepository(pool, logger)
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	cropClient := clientsadapter.NewCropClient(cropServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(cropServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
-	svc := application.NewFieldService(repo, pub, farmClient, pool, logger)
+	svc := application.NewFieldService(repo, pub, farmClient, cropClient, pool, logger)
 
 	// Inbound adapters
 	handler := grpcadapter.NewFieldHandler(svc, logger)

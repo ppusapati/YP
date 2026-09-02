@@ -56,6 +56,7 @@ func main() {
 	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8082")
 	yieldServiceURL := envOr("YIELD_SERVICE_URL", "http://localhost:8087")
+	cropServiceURL := envOr("CROP_SERVICE_URL", "http://localhost:8083")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -90,9 +91,10 @@ func main() {
 	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	yieldClient := clientsadapter.NewYieldClient(yieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(yieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	cropClient := clientsadapter.NewCropClient(cropServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(cropServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// ── Application service (core) ───────────────────────────────────────────
-	svc := application.NewTraceabilityService(repo, pub, farmClient, fieldClient, yieldClient, pool, logger)
+	svc := application.NewTraceabilityService(repo, pub, farmClient, fieldClient, yieldClient, cropClient, pool, logger)
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────
 	handler := grpcadapter.NewTraceabilityHandler(svc, logger)
