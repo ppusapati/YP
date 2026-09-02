@@ -32,11 +32,80 @@ pub struct NutrientProfile {
     pub nitrogen: f64,
     pub phosphorus: f64,
     pub potassium: f64,
+    /// NH4-N concentration (mg/kg). Split from the aggregate `nitrogen` field
+    /// so biogeochemistry can track ammonium and nitrate separately.
+    #[serde(default = "default_nh4")]
+    pub nh4: f64,
+    /// NO3-N concentration (mg/kg).
+    #[serde(default = "default_no3")]
+    pub no3: f64,
+    /// Organic nitrogen pool (mg/kg).
+    #[serde(default = "default_organic_n")]
+    pub organic_n: f64,
+    /// Organic carbon pool (mg/kg).
+    #[serde(default = "default_organic_c")]
+    pub organic_c: f64,
+    /// Soil pH.
+    #[serde(default = "default_ph")]
+    pub ph: f64,
 }
+
+fn default_nh4() -> f64 { 5.0 }
+fn default_no3() -> f64 { 15.0 }
+fn default_organic_n() -> f64 { 200.0 }
+fn default_organic_c() -> f64 { 20_000.0 }
+fn default_ph() -> f64 { 6.5 }
 
 impl Default for NutrientProfile {
     fn default() -> Self {
-        Self { nitrogen: 50.0, phosphorus: 20.0, potassium: 30.0 }
+        Self {
+            nitrogen: 50.0,
+            phosphorus: 20.0,
+            potassium: 30.0,
+            nh4: default_nh4(),
+            no3: default_no3(),
+            organic_n: default_organic_n(),
+            organic_c: default_organic_c(),
+            ph: default_ph(),
+        }
+    }
+}
+
+/// Physical and chemical properties of a soil layer, used by the
+/// biogeochemistry and soil-physics modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SoilLayerProperties {
+    /// Clay mass fraction (0-1).
+    pub clay_fraction: f64,
+    /// Total porosity (m^3/m^3).
+    pub porosity: f64,
+    /// Field capacity (m^3/m^3).
+    pub field_capacity: f64,
+    /// Saturated hydraulic conductivity (m/day).
+    pub k_sat: f64,
+    /// Soil pH.
+    pub ph: f64,
+}
+
+impl Default for SoilLayerProperties {
+    fn default() -> Self {
+        Self {
+            clay_fraction: 0.25,
+            porosity: 0.45,
+            field_capacity: 0.30,
+            k_sat: 0.5,
+            ph: 6.5,
+        }
+    }
+}
+
+impl SoilLayerProperties {
+    /// Freundlich K_f for phosphorus sorption, adjusted by clay and pH
+    /// (matches the Julia `phosphorus_sorption` helper).
+    pub fn kf_phosphorus(&self) -> f64 {
+        let kf_base = 0.5;
+        let kf_adj = kf_base * (self.clay_fraction / 0.25) * (1.0 + 0.1 * (7.0 - self.ph));
+        f64::max(0.01, kf_adj)
     }
 }
 
