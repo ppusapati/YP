@@ -231,6 +231,21 @@ services:
       YIELD_SERVICE_URL: http://yield-service:8080
       CROP_SERVICE_URL: http://crop-service:8080
 
+  commerce-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: commerce-service
+    ports:
+      - "8092:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${COMMERCE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/commerce_service?sslmode=disable}
+      FARM_SERVICE_URL: http://farm-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
+      TRACEABILITY_SERVICE_URL: http://traceability-service:8080
+
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 
   ai-gateway:
