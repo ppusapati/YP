@@ -97,6 +97,7 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${FIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/field_service?sslmode=disable}
+      FARM_SERVICE_URL: http://farm-service:8080
 
   crop-service:
     <<: *go-service
@@ -157,6 +158,10 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${YIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/yield_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      SOIL_SERVICE_URL: http://soil-service:8080
+      IRRIGATION_SERVICE_URL: http://irrigation-service:8080
+      PEST_PREDICTION_SERVICE_URL: http://pest-prediction-service:8080
 
   pest-prediction-service:
     <<: *go-service
@@ -169,6 +174,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${PEST_PREDICTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/pest_prediction_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      SENSOR_SERVICE_URL: http://sensor-service:8080
 
   plant-diagnosis-service:
     <<: *go-service
@@ -181,6 +188,7 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/plant_diagnosis_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
 
   satellite-service:
     <<: *go-service
@@ -193,6 +201,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SATELLITE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   traceability-service:
     <<: *go-service
