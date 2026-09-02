@@ -121,7 +121,7 @@ func (h *CropHandler) UpdateCrop(ctx context.Context, req *connect.Request[pb.Up
 		RotationGroup:           req.Msg.GetRotationGroup(),
 		Version:                 int64(req.Msg.GetVersion()),
 	}
-	entity.UUID = req.Msg.GetId()
+	entity.ID = req.Msg.GetId()
 
 	updated, err := h.svc.UpdateCrop(ctx, entity)
 	if err != nil {
@@ -333,7 +333,7 @@ func cropToProto(c *domain.Crop) *pb.Crop {
 	}
 
 	crop := &pb.Crop{
-		Id:                      c.UUID,
+		Id:                      c.ID,
 		TenantId:                c.TenantID,
 		Name:                    c.Name,
 		ScientificName:          c.ScientificName,
@@ -379,7 +379,7 @@ func cropVarietyToProto(v *domain.CropVariety) *pb.CropVariety {
 	}
 
 	variety := &pb.CropVariety{
-		Id:                         v.UUID,
+		Id:                         v.ID,
 		Name:                       v.Name,
 		Description:                v.Description,
 		MaturityDays:               v.MaturityDays,
@@ -404,7 +404,7 @@ func growthStageToProto(gs *domain.CropGrowthStage) *pb.GrowthStage {
 	}
 
 	stage := &pb.GrowthStage{
-		Id:                   gs.UUID,
+		Id:                   gs.ID,
 		Name:                 gs.Name,
 		StageOrder:           gs.StageOrder,
 		DurationDays:         gs.DurationDays,
@@ -429,7 +429,7 @@ func cropRequirementsToProto(r *domain.CropRequirements) *pb.CropRequirements {
 	}
 
 	req := &pb.CropRequirements{
-		Id:                       r.UUID,
+		Id:                       r.ID,
 		OptimalTempMin:           r.OptimalTempMin,
 		OptimalTempMax:           r.OptimalTempMax,
 		OptimalHumidityMin:       r.OptimalHumidityMin,
@@ -458,7 +458,7 @@ func cropRecommendationToProto(r *domain.CropRecommendation) *pb.CropRecommendat
 	}
 
 	rec := &pb.CropRecommendation{
-		Id:                    r.UUID,
+		Id:                    r.ID,
 		TenantId:              r.TenantID,
 		RecommendationType:    r.RecommendationType,
 		Title:                 r.Title,

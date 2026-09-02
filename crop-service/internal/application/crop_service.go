@@ -81,10 +81,10 @@ func (s *cropService) CreateCrop(ctx context.Context, entity *domain.Crop) (*dom
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.crop.created", created.UUID, map[string]interface{}{
-		"crop_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.crop.created", created.ID, map[string]interface{}{
+		"crop_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "crop created", "uuid", created.UUID)
+	s.log.Infow("msg", "crop created", "uuid", created.ID)
 	return created, nil
 }
 
@@ -121,19 +121,19 @@ func (s *cropService) UpdateCrop(ctx context.Context, entity *domain.Crop) (*dom
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if entity.UUID == "" {
+	if entity.ID == "" {
 		return nil, errors.BadRequest("MISSING_ID", "crop ID is required")
 	}
 	if userID == "" {
 		userID = "system"
 	}
 
-	exists, err := s.repo.CheckCropExists(ctx, entity.UUID, tenantID)
+	exists, err := s.repo.CheckCropExists(ctx, entity.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NotFound("CROP_NOT_FOUND", fmt.Sprintf("crop not found: %s", entity.UUID))
+		return nil, errors.NotFound("CROP_NOT_FOUND", fmt.Sprintf("crop not found: %s", entity.ID))
 	}
 
 	entity.TenantID = tenantID
@@ -145,8 +145,8 @@ func (s *cropService) UpdateCrop(ctx context.Context, entity *domain.Crop) (*dom
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.crop.updated", updated.UUID, map[string]interface{}{
-		"crop_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.crop.updated", updated.ID, map[string]interface{}{
+		"crop_id": updated.ID, "tenant_id": tenantID,
 	})
 	return updated, nil
 }
@@ -190,7 +190,7 @@ func (s *cropService) AddVariety(ctx context.Context, variety *domain.CropVariet
 	if strings.TrimSpace(variety.Name) == "" {
 		return nil, errors.BadRequest("INVALID_VARIETY_NAME", "variety name is required")
 	}
-	if variety.CropID <= 0 {
+	if variety.CropID == "" {
 		return nil, errors.BadRequest("INVALID_CROP_ID", "a valid crop_id is required to add a variety")
 	}
 	if userID == "" {
@@ -200,8 +200,8 @@ func (s *cropService) AddVariety(ctx context.Context, variety *domain.CropVariet
 		variety.TenantID = tenantID
 	}
 
-	if variety.UUID == "" {
-		variety.UUID = ulid.NewString()
+	if variety.ID == "" {
+		variety.ID = ulid.NewString()
 	}
 	variety.IsActive = true
 	variety.CreatedBy = userID
@@ -211,8 +211,8 @@ func (s *cropService) AddVariety(ctx context.Context, variety *domain.CropVariet
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.crop.variety_added", created.UUID, map[string]interface{}{
-		"variety_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.crop.variety_added", created.ID, map[string]interface{}{
+		"variety_id": created.ID,
 		"crop_id":    created.CropID,
 		"tenant_id":  created.TenantID,
 	})
@@ -290,7 +290,7 @@ func (s *cropService) GenerateRecommendation(ctx context.Context, input *domain.
 	requirements, _ := s.repo.GetCropRequirementsByCropID(ctx, crop.ID, input.TenantID)
 
 	rec := s.buildRecommendation(crop, requirements, input)
-	rec.UUID = ulid.NewString()
+	rec.ID = ulid.NewString()
 	rec.CreatedBy = p9context.UserID(ctx)
 	rec.IsActive = true
 
@@ -299,8 +299,8 @@ func (s *cropService) GenerateRecommendation(ctx context.Context, input *domain.
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.crop.recommendation_generated", created.UUID, map[string]interface{}{
-		"recommendation_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.crop.recommendation_generated", created.ID, map[string]interface{}{
+		"recommendation_id": created.ID,
 		"crop_id":           input.CropID,
 		"tenant_id":         input.TenantID,
 		"type":              input.RecommendationType,
