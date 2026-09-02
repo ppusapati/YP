@@ -29,7 +29,7 @@ impl Default for DetectorConfig {
     }
 }
 
-/// Sigmoid activation.
+/// Sigmoid activation for multi-label classification.
 fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
@@ -67,31 +67,27 @@ impl DeficiencyDetector {
             .map(|&l| sigmoid(l))
             .collect();
 
-        // Apply sigmoid to severity logits (ordinal cumulative probabilities)
-        let sev_probs: Vec<Vec<f32>> = output
-            .severity_logits
-            .iter()
-            .map(|thresholds| thresholds.iter().map(|&l| sigmoid(l)).collect())
-            .collect();
-
         let mut deficiencies = Vec::new();
 
         for (idx, &prob) in cls_probs.iter().enumerate() {
             if prob >= self.config.confidence_threshold {
                 if let Some(nutrient) = Nutrient::from_index(idx) {
-                    let ordinal_probs = if idx < sev_probs.len() {
-                        sev_probs[idx].clone()
+                    let sev_logits = if idx < output.severity_logits.len() {
+                        &output.severity_logits[idx]
                     } else {
-                        vec![0.0; 3]
+                        &vec![0.0; 4]
                     };
 
-                    let severity = DeficiencySeverity::from_ordinal_probs(&ordinal_probs);
+                    // Apply softmax to severity logits, then argmax to get severity class
+                    let (severity, severity_probs) =
+                        DeficiencySeverity::from_softmax_logits(sev_logits);
 
                     deficiencies.push(NutrientDeficiency {
                         nutrient,
                         confidence: prob,
                         severity,
-                        ordinal_probs,
+                        severity_probs,
+                        recommendation: nutrient.recommendation().to_string(),
                     });
                 }
             }
