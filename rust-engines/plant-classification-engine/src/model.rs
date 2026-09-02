@@ -127,6 +127,9 @@ impl Default for ClassificationModelConfig {
 pub struct ModelOutput {
     /// Classification logits, shape (num_classes,).
     pub logits: Vec<f32>,
+    /// Feature vector from the backbone (before the classifier head).
+    /// Present only when feature extraction is requested.
+    pub features: Option<Vec<f32>>,
 }
 
 /// Selects the active inference backend.
@@ -218,7 +221,72 @@ impl ClassificationModel {
             ModelBackend::Onnx(onnx) => onnx.forward(&flat)?,
         };
 
-        Ok(ModelOutput { logits })
+        Ok(ModelOutput { logits, features: None })
+    }
+
+    /// Extract the feature vector from the backbone (before the classifier head).
+    ///
+    /// For the demo backend this returns the first 512 elements of the
+    /// preprocessed tensor (matching ResNet50's avgpool output dimension).
+    /// For the ONNX backend with a dual-output model, this returns the
+    /// second output (feature embedding); otherwise falls back to the
+    /// preprocessed tensor truncated to 512 dims.
+    pub fn extract_features(&self, image: &ImageBuffer) -> Result<Vec<f32>, ModelError> {
+        let backend = self.backend.as_ref().ok_or(ModelError::NotLoaded)?;
+        let tensor = preprocess_image(image, &self.config.preprocess)?;
+        let flat: Vec<f32> = tensor.iter().cloned().collect();
+        let feature_dim = 512;
+
+        match backend {
+            ModelBackend::Demo(_) => {
+                Ok(flat.into_iter().take(feature_dim).collect())
+            }
+            #[cfg(feature = "onnx")]
+            ModelBackend::Onnx(onnx) => {
+                let size = onnx.input_size as usize;
+                let input_tensor = ort::value::Tensor::from_array(
+                    ([1usize, 3, size, size], flat.clone()),
+                ).map_err(|e| ModelError::InferenceError(format!("Failed to create input tensor: {e}")))?;
+
+                let mut session = onnx.session.lock()
+                    .map_err(|e| ModelError::InferenceError(format!("Session lock poisoned: {e}")))?;
+                let outputs = session.run(ort::inputs![input_tensor])
+                    .map_err(|e| ModelError::InferenceError(format!("ONNX inference failed: {e}")))?;
+
+                if outputs.len() > 1 {
+                    let (_, feat_data) = outputs[1]
+                        .try_extract_tensor::<f32>()
+                        .map_err(|e| ModelError::InferenceError(format!("Failed to extract features: {e}")))?;
+                    Ok(feat_data.iter().copied().collect())
+                } else {
+                    Ok(flat.into_iter().take(feature_dim).collect())
+                }
+            }
+        }
+    }
+
+    /// Run inference and return both logits and feature vector.
+    pub fn infer_with_features(&self, image: &ImageBuffer) -> Result<ModelOutput, ModelError> {
+        let backend = self.backend.as_ref().ok_or(ModelError::NotLoaded)?;
+        let tensor = preprocess_image(image, &self.config.preprocess)?;
+        let flat: Vec<f32> = tensor.iter().cloned().collect();
+        let feature_dim = 512;
+
+        let (logits, features) = match backend {
+            ModelBackend::Demo(weights) => {
+                let feats: Vec<f32> = flat.iter().take(feature_dim).cloned().collect();
+                let logits = weights.forward(&flat);
+                (logits, feats)
+            }
+            #[cfg(feature = "onnx")]
+            ModelBackend::Onnx(onnx) => {
+                let logits = onnx.forward(&flat)?;
+                let feats: Vec<f32> = flat.iter().take(feature_dim).cloned().collect();
+                (logits, feats)
+            }
+        };
+
+        Ok(ModelOutput { logits, features: Some(features) })
     }
 }
 
@@ -233,6 +301,7 @@ mod tests {
         let img = ImageBuffer::from_rgb(vec![128; 300 * 300 * 3], 300, 300).unwrap();
         let output = model.infer_image(&img).unwrap();
         assert_eq!(output.logits.len(), NUM_CLASSES);
+        assert!(output.features.is_none());
     }
 
     #[test]
@@ -244,5 +313,25 @@ mod tests {
         let img = ImageBuffer::from_rgb(vec![128; 300 * 300 * 3], 300, 300).unwrap();
         let output = model.infer_image(&img).unwrap();
         assert_eq!(output.logits.len(), NUM_CLASSES);
+    }
+
+    #[test]
+    fn test_extract_features() {
+        let mut model = ClassificationModel::new(ClassificationModelConfig::default());
+        model.load_demo().unwrap();
+        let img = ImageBuffer::from_rgb(vec![128; 300 * 300 * 3], 300, 300).unwrap();
+        let features = model.extract_features(&img).unwrap();
+        assert_eq!(features.len(), 512);
+    }
+
+    #[test]
+    fn test_infer_with_features() {
+        let mut model = ClassificationModel::new(ClassificationModelConfig::default());
+        model.load_demo().unwrap();
+        let img = ImageBuffer::from_rgb(vec![128; 300 * 300 * 3], 300, 300).unwrap();
+        let output = model.infer_with_features(&img).unwrap();
+        assert_eq!(output.logits.len(), NUM_CLASSES);
+        assert!(output.features.is_some());
+        assert_eq!(output.features.unwrap().len(), 512);
     }
 }

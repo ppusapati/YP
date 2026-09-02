@@ -113,6 +113,61 @@ pub fn preprocess_batch(
     images.par_iter().map(|img| preprocess_image(img, config)).collect()
 }
 
+/// Horizontal flip of an image buffer.
+pub fn horizontal_flip(image: &ImageBuffer) -> ImageBuffer {
+    let w = image.width;
+    let h = image.height;
+    let mut data = vec![0u8; image.data.len()];
+    for row in 0..h {
+        for col in 0..w {
+            let src = ((row * w + col) * 3) as usize;
+            let dst = ((row * w + (w - 1 - col)) * 3) as usize;
+            data[dst] = image.data[src];
+            data[dst + 1] = image.data[src + 1];
+            data[dst + 2] = image.data[src + 2];
+        }
+    }
+    ImageBuffer { data, width: w, height: h }
+}
+
+/// Crop a region from an image buffer.
+pub fn crop(image: &ImageBuffer, x: u32, y: u32, crop_w: u32, crop_h: u32) -> ImageBuffer {
+    let cw = crop_w.min(image.width - x.min(image.width));
+    let ch = crop_h.min(image.height - y.min(image.height));
+    if cw == 0 || ch == 0 {
+        return ImageBuffer { data: vec![], width: 0, height: 0 };
+    }
+    let mut data = Vec::with_capacity((cw * ch * 3) as usize);
+    for row in y..y + ch {
+        let start = ((row * image.width + x) * 3) as usize;
+        let end = start + (cw * 3) as usize;
+        data.extend_from_slice(&image.data[start..end]);
+    }
+    ImageBuffer { data, width: cw, height: ch }
+}
+
+/// Generate TTA (Test-Time Augmentation) views of an image.
+///
+/// Returns: [original, horizontal flip, top-left crop, top-right crop, bottom-left crop, center crop].
+/// Each crop covers 90% of the image to preserve most context while shifting focus.
+pub fn tta_augment(image: &ImageBuffer) -> Vec<ImageBuffer> {
+    let w = image.width;
+    let h = image.height;
+    let crop_w = (w as f32 * 0.9) as u32;
+    let crop_h = (h as f32 * 0.9) as u32;
+    let margin_x = w - crop_w;
+    let margin_y = h - crop_h;
+
+    vec![
+        image.clone(),
+        horizontal_flip(image),
+        crop(image, 0, 0, crop_w, crop_h),
+        crop(image, margin_x, 0, crop_w, crop_h),
+        crop(image, 0, margin_y, crop_w, crop_h),
+        crop(image, margin_x / 2, margin_y / 2, crop_w, crop_h),
+    ]
+}
+
 /// Bilinear interpolation resize.
 fn bilinear_resize(image: &ImageBuffer, target_w: u32, target_h: u32) -> ImageBuffer {
     let src_w = image.width as f64;
@@ -184,5 +239,42 @@ mod tests {
     fn test_invalid_buffer() {
         let result = ImageBuffer::from_rgb(vec![0u8; 10], 100, 100);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_horizontal_flip() {
+        let mut data = vec![0u8; 2 * 2 * 3];
+        // Pixel (0,0) = red, pixel (0,1) = blue
+        data[0] = 255; data[1] = 0; data[2] = 0;
+        data[3] = 0; data[4] = 0; data[5] = 255;
+        let img = ImageBuffer { data, width: 2, height: 2 };
+        let flipped = super::horizontal_flip(&img);
+        // After flip: pixel (0,0) should be blue, pixel (0,1) should be red
+        assert_eq!(flipped.pixel(0, 0, 2), 255); // blue channel
+        assert_eq!(flipped.pixel(0, 1, 0), 255); // red channel
+    }
+
+    #[test]
+    fn test_crop() {
+        let img = make_test_image(100, 100);
+        let cropped = super::crop(&img, 10, 10, 50, 50);
+        assert_eq!(cropped.width, 50);
+        assert_eq!(cropped.height, 50);
+        assert_eq!(cropped.data.len(), 50 * 50 * 3);
+    }
+
+    #[test]
+    fn test_tta_augment_count() {
+        let img = make_test_image(300, 300);
+        let views = super::tta_augment(&img);
+        assert_eq!(views.len(), 6);
+        // First view is the original
+        assert_eq!(views[0].width, 300);
+        assert_eq!(views[0].height, 300);
+        // Remaining views are either flips or crops
+        assert_eq!(views[1].width, 300); // horizontal flip same size
+        let crop_size = (300.0 * 0.9) as u32;
+        assert_eq!(views[2].width, crop_size);
+        assert_eq!(views[2].height, crop_size);
     }
 }
