@@ -115,6 +115,44 @@ jobs:
           git diff --exit-code -- '*.pb.go' '*.connect.go' || \
             (echo "Proto generated code is stale — run 'buf generate' and commit" && exit 1)
 
+  rust-engines:
+    name: Rust engines check & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.82"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust-engines
+      - name: Cargo check
+        working-directory: rust-engines
+        run: cargo check --workspace
+      - name: Cargo test
+        working-directory: rust-engines
+        run: cargo test --workspace
+
+  rust-ai-gateway:
+    name: Rust AI gateway check & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.82"
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ai-gateway
+      - name: Cargo check
+        working-directory: ai-gateway
+        run: cargo check
+      - name: Cargo test
+        working-directory: ai-gateway
+        run: cargo test
+
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
@@ -133,4 +171,17 @@ jobs:
           docker build \
             --build-arg SERVICE=${{ matrix.service }} \
             -t yieldpoint/${{ matrix.service }}:ci \
+            .
+
+  docker-build-ai-gateway:
+    name: Docker build (ai-gateway)
+    runs-on: ubuntu-latest
+    needs: [rust-ai-gateway]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build AI Gateway Docker image
+        run: |
+          docker build \
+            -f ai-gateway/Dockerfile \
+            -t yieldpoint/ai-gateway:ci \
             .

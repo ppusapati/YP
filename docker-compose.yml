@@ -200,6 +200,7 @@ services:
       DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/plant_diagnosis_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   satellite-service:
     <<: *go-service
@@ -214,6 +215,7 @@ services:
       DATABASE_URL: ${SATELLITE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   traceability-service:
     <<: *go-service
@@ -255,6 +257,8 @@ services:
     restart: unless-stopped
     ports:
       - "50051:50051"
+    environment:
+      RUST_LOG: ai_gateway=info
     healthcheck:
       test: ["CMD-SHELL", "true"]
       interval: 30s
