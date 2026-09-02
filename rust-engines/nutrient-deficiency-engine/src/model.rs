@@ -5,12 +5,11 @@
 //! head (3 severity thresholds). This implementation provides deterministic
 //! demo weights for testing.
 
-use ndarray::Array3;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::preprocess::{ImageBuffer, PreprocessConfig, PreprocessError, preprocess_image};
-use crate::types::{NUM_NUTRIENT_CLASSES, NUM_SEVERITY_THRESHOLDS};
+use crate::types::{NUM_NUTRIENT_CLASSES, NUM_SEVERITY_CLASSES};
 
 /// Errors from model operations.
 #[derive(Debug, Error)]
@@ -33,8 +32,8 @@ pub enum ModelError {
 pub struct DeficiencyModelConfig {
     /// Number of nutrient classes.
     pub num_classes: usize,
-    /// Number of ordinal severity thresholds.
-    pub num_severity_thresholds: usize,
+    /// Number of severity classes (None, Mild, Moderate, Severe).
+    pub num_severity_classes: usize,
     /// Input image size.
     pub input_size: u32,
     /// Maximum batch size.
@@ -48,7 +47,7 @@ impl Default for DeficiencyModelConfig {
     fn default() -> Self {
         Self {
             num_classes: NUM_NUTRIENT_CLASSES,
-            num_severity_thresholds: NUM_SEVERITY_THRESHOLDS,
+            num_severity_classes: NUM_SEVERITY_CLASSES,
             input_size: 224,
             max_batch_size: 16,
             preprocess: PreprocessConfig::default(),
@@ -61,8 +60,8 @@ impl Default for DeficiencyModelConfig {
 pub struct ModelOutput {
     /// Classification logits for each nutrient, shape (num_classes,).
     pub classification_logits: Vec<f32>,
-    /// Ordinal regression logits per nutrient, shape (num_classes, num_severity_thresholds).
-    /// Each row contains logits for [P(>=Mild), P(>=Moderate), P(>=Severe)].
+    /// Severity classification logits per nutrient, shape (num_classes, num_severity_classes).
+    /// Each row contains logits for [None, Mild, Moderate, Severe].
     pub severity_logits: Vec<Vec<f32>>,
 }
 
@@ -176,7 +175,7 @@ impl DeficiencyModel {
     pub fn load_demo(&mut self) -> Result<(), ModelError> {
         let weights = DemoWeights::init(
             self.config.num_classes,
-            self.config.num_severity_thresholds,
+            self.config.num_severity_classes,
         );
         self.weights = Some(weights);
         self.is_loaded = true;
@@ -226,7 +225,7 @@ mod tests {
         assert_eq!(output.classification_logits.len(), NUM_NUTRIENT_CLASSES);
         assert_eq!(output.severity_logits.len(), NUM_NUTRIENT_CLASSES);
         for sev in &output.severity_logits {
-            assert_eq!(sev.len(), NUM_SEVERITY_THRESHOLDS);
+            assert_eq!(sev.len(), NUM_SEVERITY_CLASSES);
         }
     }
 

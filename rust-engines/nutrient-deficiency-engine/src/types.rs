@@ -17,8 +17,8 @@ pub enum Nutrient {
     Magnesium = 4,
     Sulfur = 5,
     Iron = 6,
-    Manganese = 7,
-    Zinc = 8,
+    Zinc = 7,
+    Manganese = 8,
     Boron = 9,
 }
 
@@ -29,8 +29,8 @@ impl Nutrient {
     /// All nutrient variants in index order.
     pub const ALL: [Nutrient; NUM_NUTRIENT_CLASSES] = [
         Self::Nitrogen, Self::Phosphorus, Self::Potassium, Self::Calcium,
-        Self::Magnesium, Self::Sulfur, Self::Iron, Self::Manganese,
-        Self::Zinc, Self::Boron,
+        Self::Magnesium, Self::Sulfur, Self::Iron, Self::Zinc,
+        Self::Manganese, Self::Boron,
     ];
 
     /// Human-readable display name.
@@ -87,14 +87,31 @@ impl Nutrient {
     pub fn index(&self) -> usize {
         *self as usize
     }
+
+    /// Supplementation recommendation for this nutrient deficiency.
+    ///
+    /// Returns a treatment plan string matching the Python `SUPPLEMENTATION_MAP`.
+    pub fn recommendation(&self) -> &'static str {
+        match self {
+            Self::Nitrogen => "Apply urea at 50-100 kg/ha or ammonium sulfate. Split application recommended.",
+            Self::Phosphorus => "Apply triple superphosphate or DAP at 40-80 kg/ha.",
+            Self::Potassium => "Apply muriate of potash (KCl) at 50-100 kg/ha.",
+            Self::Calcium => "Apply gypsum or agricultural lime at 1-2 tonnes/ha.",
+            Self::Magnesium => "Apply dolomitic limestone or Epsom salt foliar spray.",
+            Self::Sulfur => "Apply elemental sulfur or gypsum at 20-40 kg/ha.",
+            Self::Iron => "Apply chelated iron (Fe-EDDHA) foliar spray at 0.5-1%.",
+            Self::Zinc => "Apply zinc sulfate at 10-25 kg/ha or chelated zinc foliar spray.",
+            Self::Manganese => "Apply manganese sulfate at 5-15 kg/ha or foliar spray at 0.5%.",
+            Self::Boron => "Apply borax at 5-15 kg/ha. Caution: narrow margin between deficiency and toxicity.",
+        }
+    }
 }
 
-/// Ordinal severity level for nutrient deficiency.
+/// Severity level for nutrient deficiency.
 ///
-/// Derived via ordinal regression: the model outputs cumulative
-/// probabilities for P(severity >= Mild), P(severity >= Moderate),
-/// P(severity >= Severe), and the severity is the highest threshold
-/// exceeded at 0.5.
+/// Derived via softmax + argmax: the model outputs 4 logits
+/// (one per severity class), softmax converts them to probabilities,
+/// and argmax selects the predicted class.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum DeficiencySeverity {
     None = 0,
@@ -103,23 +120,43 @@ pub enum DeficiencySeverity {
     Severe = 3,
 }
 
-/// Number of ordinal severity thresholds (Mild, Moderate, Severe).
-pub const NUM_SEVERITY_THRESHOLDS: usize = 3;
+/// Number of severity classes (None, Mild, Moderate, Severe).
+pub const NUM_SEVERITY_CLASSES: usize = 4;
 
 impl DeficiencySeverity {
-    /// Determine severity from ordinal regression cumulative probabilities.
+    /// All severity variants in index order.
+    pub const ALL: [DeficiencySeverity; NUM_SEVERITY_CLASSES] = [
+        Self::None,
+        Self::Mild,
+        Self::Moderate,
+        Self::Severe,
+    ];
+
+    /// Determine severity from softmax logits via argmax.
     ///
-    /// `cumulative_probs` should have 3 values:
-    ///   [P(sev >= Mild), P(sev >= Moderate), P(sev >= Severe)]
-    pub fn from_ordinal_probs(cumulative_probs: &[f32]) -> Self {
-        if cumulative_probs.len() >= 3 && cumulative_probs[2] >= 0.5 {
-            Self::Severe
-        } else if cumulative_probs.len() >= 2 && cumulative_probs[1] >= 0.5 {
-            Self::Moderate
-        } else if !cumulative_probs.is_empty() && cumulative_probs[0] >= 0.5 {
-            Self::Mild
-        } else {
-            Self::None
+    /// `logits` should have 4 values corresponding to [None, Mild, Moderate, Severe].
+    /// Softmax is applied internally to convert logits to probabilities,
+    /// then argmax selects the predicted severity class.
+    pub fn from_softmax_logits(logits: &[f32]) -> (Self, Vec<f32>) {
+        let probs = softmax(logits);
+        let argmax_idx = probs
+            .iter()
+            .enumerate()
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(i, _)| i)
+            .unwrap_or(0);
+        let severity = Self::from_index(argmax_idx);
+        (severity, probs)
+    }
+
+    /// Get severity from a class index (0-3).
+    pub fn from_index(idx: usize) -> Self {
+        match idx {
+            0 => Self::None,
+            1 => Self::Mild,
+            2 => Self::Moderate,
+            3 => Self::Severe,
+            _ => Self::None,
         }
     }
 
@@ -152,6 +189,17 @@ impl DeficiencySeverity {
     }
 }
 
+/// Compute softmax over a slice of logits.
+fn softmax(logits: &[f32]) -> Vec<f32> {
+    if logits.is_empty() {
+        return vec![];
+    }
+    let max_logit = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let exps: Vec<f32> = logits.iter().map(|&l| (l - max_logit).exp()).collect();
+    let sum: f32 = exps.iter().sum();
+    exps.iter().map(|&e| e / sum).collect()
+}
+
 /// Result for a single detected nutrient deficiency.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NutrientDeficiency {
@@ -159,10 +207,12 @@ pub struct NutrientDeficiency {
     pub nutrient: Nutrient,
     /// Detection confidence (0.0-1.0).
     pub confidence: f32,
-    /// Deficiency severity from ordinal regression.
+    /// Deficiency severity from softmax classification.
     pub severity: DeficiencySeverity,
-    /// Cumulative ordinal probabilities [P(>=Mild), P(>=Moderate), P(>=Severe)].
-    pub ordinal_probs: Vec<f32>,
+    /// Softmax probabilities for each severity class [None, Mild, Moderate, Severe].
+    pub severity_probs: Vec<f32>,
+    /// Supplementation recommendation for this nutrient deficiency.
+    pub recommendation: String,
 }
 
 /// Complete deficiency detection result for one image.
@@ -204,23 +254,25 @@ mod tests {
     }
 
     #[test]
-    fn test_severity_from_ordinal_probs() {
-        assert_eq!(
-            DeficiencySeverity::from_ordinal_probs(&[0.9, 0.8, 0.6]),
-            DeficiencySeverity::Severe
-        );
-        assert_eq!(
-            DeficiencySeverity::from_ordinal_probs(&[0.9, 0.7, 0.3]),
-            DeficiencySeverity::Moderate
-        );
-        assert_eq!(
-            DeficiencySeverity::from_ordinal_probs(&[0.6, 0.3, 0.1]),
-            DeficiencySeverity::Mild
-        );
-        assert_eq!(
-            DeficiencySeverity::from_ordinal_probs(&[0.2, 0.1, 0.05]),
-            DeficiencySeverity::None
-        );
+    fn test_severity_from_softmax_logits() {
+        // Highest logit at index 3 (Severe)
+        let (sev, probs) = DeficiencySeverity::from_softmax_logits(&[-1.0, 0.0, 1.0, 3.0]);
+        assert_eq!(sev, DeficiencySeverity::Severe);
+        assert_eq!(probs.len(), 4);
+        let sum: f32 = probs.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-5);
+
+        // Highest logit at index 2 (Moderate)
+        let (sev, _) = DeficiencySeverity::from_softmax_logits(&[-1.0, 0.0, 3.0, 1.0]);
+        assert_eq!(sev, DeficiencySeverity::Moderate);
+
+        // Highest logit at index 1 (Mild)
+        let (sev, _) = DeficiencySeverity::from_softmax_logits(&[-1.0, 3.0, 0.0, 1.0]);
+        assert_eq!(sev, DeficiencySeverity::Mild);
+
+        // Highest logit at index 0 (None)
+        let (sev, _) = DeficiencySeverity::from_softmax_logits(&[5.0, 0.0, 1.0, 1.0]);
+        assert_eq!(sev, DeficiencySeverity::None);
     }
 
     #[test]
@@ -236,5 +288,29 @@ mod tests {
         assert_eq!(Nutrient::Nitrogen.symbol(), "N");
         assert_eq!(Nutrient::Potassium.symbol(), "K");
         assert_eq!(Nutrient::Iron.symbol(), "Fe");
+    }
+
+    #[test]
+    fn test_nutrient_index_order() {
+        // Must match Python: N=0, P=1, K=2, Ca=3, Mg=4, S=5, Fe=6, Zn=7, Mn=8, B=9
+        assert_eq!(Nutrient::Nitrogen.index(), 0);
+        assert_eq!(Nutrient::Phosphorus.index(), 1);
+        assert_eq!(Nutrient::Potassium.index(), 2);
+        assert_eq!(Nutrient::Calcium.index(), 3);
+        assert_eq!(Nutrient::Magnesium.index(), 4);
+        assert_eq!(Nutrient::Sulfur.index(), 5);
+        assert_eq!(Nutrient::Iron.index(), 6);
+        assert_eq!(Nutrient::Zinc.index(), 7);
+        assert_eq!(Nutrient::Manganese.index(), 8);
+        assert_eq!(Nutrient::Boron.index(), 9);
+    }
+
+    #[test]
+    fn test_recommendations() {
+        assert!(Nutrient::Nitrogen.recommendation().contains("urea"));
+        assert!(Nutrient::Phosphorus.recommendation().contains("superphosphate"));
+        assert!(Nutrient::Potassium.recommendation().contains("KCl"));
+        assert!(Nutrient::Iron.recommendation().contains("Fe-EDDHA"));
+        assert!(Nutrient::Boron.recommendation().contains("borax"));
     }
 }

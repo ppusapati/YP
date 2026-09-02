@@ -81,10 +81,20 @@ const (
 	// FieldServiceListActivityEventsProcedure is the fully-qualified name of the FieldService's
 	// ListActivityEvents RPC.
 	FieldServiceListActivityEventsProcedure = "/agriculture.field.v1.FieldService/ListActivityEvents"
+	// FieldServiceAddActivityEvidenceProcedure is the fully-qualified name of the FieldService's
+	// AddActivityEvidence RPC.
+	FieldServiceAddActivityEvidenceProcedure = "/agriculture.field.v1.FieldService/AddActivityEvidence"
+	// FieldServiceListActivityEvidenceProcedure is the fully-qualified name of the FieldService's
+	// ListActivityEvidence RPC.
+	FieldServiceListActivityEvidenceProcedure = "/agriculture.field.v1.FieldService/ListActivityEvidence"
+	// FieldServiceDeleteActivityEvidenceProcedure is the fully-qualified name of the FieldService's
+	// DeleteActivityEvidence RPC.
+	FieldServiceDeleteActivityEvidenceProcedure = "/agriculture.field.v1.FieldService/DeleteActivityEvidence"
 )
 
 // FieldServiceClient is a client for the agriculture.field.v1.FieldService service.
 type FieldServiceClient interface {
+	// Field CRUD
 	CreateField(context.Context, *connect.Request[v1.CreateFieldRequest]) (*connect.Response[v1.CreateFieldResponse], error)
 	GetField(context.Context, *connect.Request[v1.GetFieldRequest]) (*connect.Response[v1.GetFieldResponse], error)
 	ListFields(context.Context, *connect.Request[v1.ListFieldsRequest]) (*connect.Response[v1.ListFieldsResponse], error)
@@ -96,12 +106,18 @@ type FieldServiceClient interface {
 	SegmentField(context.Context, *connect.Request[v1.SegmentFieldRequest]) (*connect.Response[v1.SegmentFieldResponse], error)
 	GetFieldSegments(context.Context, *connect.Request[v1.GetFieldSegmentsRequest]) (*connect.Response[v1.GetFieldSegmentsResponse], error)
 	GetCropHistory(context.Context, *connect.Request[v1.GetCropHistoryRequest]) (*connect.Response[v1.GetCropHistoryResponse], error)
+	// Crop Cycles
 	CreateCropCycle(context.Context, *connect.Request[v1.CreateCropCycleRequest]) (*connect.Response[v1.CreateCropCycleResponse], error)
 	GetCropCycle(context.Context, *connect.Request[v1.GetCropCycleRequest]) (*connect.Response[v1.GetCropCycleResponse], error)
 	ListCropCycles(context.Context, *connect.Request[v1.ListCropCyclesRequest]) (*connect.Response[v1.ListCropCyclesResponse], error)
 	UpdateCropCycle(context.Context, *connect.Request[v1.UpdateCropCycleRequest]) (*connect.Response[v1.UpdateCropCycleResponse], error)
+	// Activity Events
 	LogActivityEvent(context.Context, *connect.Request[v1.LogActivityEventRequest]) (*connect.Response[v1.LogActivityEventResponse], error)
 	ListActivityEvents(context.Context, *connect.Request[v1.ListActivityEventsRequest]) (*connect.Response[v1.ListActivityEventsResponse], error)
+	// Activity Evidence
+	AddActivityEvidence(context.Context, *connect.Request[v1.AddActivityEvidenceRequest]) (*connect.Response[v1.AddActivityEvidenceResponse], error)
+	ListActivityEvidence(context.Context, *connect.Request[v1.ListActivityEvidenceRequest]) (*connect.Response[v1.ListActivityEvidenceResponse], error)
+	DeleteActivityEvidence(context.Context, *connect.Request[v1.DeleteActivityEvidenceRequest]) (*connect.Response[v1.DeleteActivityEvidenceResponse], error)
 }
 
 // NewFieldServiceClient constructs a client for the agriculture.field.v1.FieldService service. By
@@ -217,28 +233,49 @@ func NewFieldServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(fieldServiceMethods.ByName("ListActivityEvents")),
 			connect.WithClientOptions(opts...),
 		),
+		addActivityEvidence: connect.NewClient[v1.AddActivityEvidenceRequest, v1.AddActivityEvidenceResponse](
+			httpClient,
+			baseURL+FieldServiceAddActivityEvidenceProcedure,
+			connect.WithSchema(fieldServiceMethods.ByName("AddActivityEvidence")),
+			connect.WithClientOptions(opts...),
+		),
+		listActivityEvidence: connect.NewClient[v1.ListActivityEvidenceRequest, v1.ListActivityEvidenceResponse](
+			httpClient,
+			baseURL+FieldServiceListActivityEvidenceProcedure,
+			connect.WithSchema(fieldServiceMethods.ByName("ListActivityEvidence")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteActivityEvidence: connect.NewClient[v1.DeleteActivityEvidenceRequest, v1.DeleteActivityEvidenceResponse](
+			httpClient,
+			baseURL+FieldServiceDeleteActivityEvidenceProcedure,
+			connect.WithSchema(fieldServiceMethods.ByName("DeleteActivityEvidence")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // fieldServiceClient implements FieldServiceClient.
 type fieldServiceClient struct {
-	createField      *connect.Client[v1.CreateFieldRequest, v1.CreateFieldResponse]
-	getField         *connect.Client[v1.GetFieldRequest, v1.GetFieldResponse]
-	listFields       *connect.Client[v1.ListFieldsRequest, v1.ListFieldsResponse]
-	updateField      *connect.Client[v1.UpdateFieldRequest, v1.UpdateFieldResponse]
-	deleteField      *connect.Client[v1.DeleteFieldRequest, v1.DeleteFieldResponse]
-	setFieldBoundary *connect.Client[v1.SetFieldBoundaryRequest, v1.SetFieldBoundaryResponse]
-	assignCrop       *connect.Client[v1.AssignCropRequest, v1.AssignCropResponse]
-	listFieldsByFarm *connect.Client[v1.ListFieldsByFarmRequest, v1.ListFieldsByFarmResponse]
-	segmentField     *connect.Client[v1.SegmentFieldRequest, v1.SegmentFieldResponse]
-	getFieldSegments *connect.Client[v1.GetFieldSegmentsRequest, v1.GetFieldSegmentsResponse]
-	getCropHistory     *connect.Client[v1.GetCropHistoryRequest, v1.GetCropHistoryResponse]
-	createCropCycle    *connect.Client[v1.CreateCropCycleRequest, v1.CreateCropCycleResponse]
-	getCropCycle       *connect.Client[v1.GetCropCycleRequest, v1.GetCropCycleResponse]
-	listCropCycles     *connect.Client[v1.ListCropCyclesRequest, v1.ListCropCyclesResponse]
-	updateCropCycle    *connect.Client[v1.UpdateCropCycleRequest, v1.UpdateCropCycleResponse]
-	logActivityEvent   *connect.Client[v1.LogActivityEventRequest, v1.LogActivityEventResponse]
-	listActivityEvents *connect.Client[v1.ListActivityEventsRequest, v1.ListActivityEventsResponse]
+	createField            *connect.Client[v1.CreateFieldRequest, v1.CreateFieldResponse]
+	getField               *connect.Client[v1.GetFieldRequest, v1.GetFieldResponse]
+	listFields             *connect.Client[v1.ListFieldsRequest, v1.ListFieldsResponse]
+	updateField            *connect.Client[v1.UpdateFieldRequest, v1.UpdateFieldResponse]
+	deleteField            *connect.Client[v1.DeleteFieldRequest, v1.DeleteFieldResponse]
+	setFieldBoundary       *connect.Client[v1.SetFieldBoundaryRequest, v1.SetFieldBoundaryResponse]
+	assignCrop             *connect.Client[v1.AssignCropRequest, v1.AssignCropResponse]
+	listFieldsByFarm       *connect.Client[v1.ListFieldsByFarmRequest, v1.ListFieldsByFarmResponse]
+	segmentField           *connect.Client[v1.SegmentFieldRequest, v1.SegmentFieldResponse]
+	getFieldSegments       *connect.Client[v1.GetFieldSegmentsRequest, v1.GetFieldSegmentsResponse]
+	getCropHistory         *connect.Client[v1.GetCropHistoryRequest, v1.GetCropHistoryResponse]
+	createCropCycle        *connect.Client[v1.CreateCropCycleRequest, v1.CreateCropCycleResponse]
+	getCropCycle           *connect.Client[v1.GetCropCycleRequest, v1.GetCropCycleResponse]
+	listCropCycles         *connect.Client[v1.ListCropCyclesRequest, v1.ListCropCyclesResponse]
+	updateCropCycle        *connect.Client[v1.UpdateCropCycleRequest, v1.UpdateCropCycleResponse]
+	logActivityEvent       *connect.Client[v1.LogActivityEventRequest, v1.LogActivityEventResponse]
+	listActivityEvents     *connect.Client[v1.ListActivityEventsRequest, v1.ListActivityEventsResponse]
+	addActivityEvidence    *connect.Client[v1.AddActivityEvidenceRequest, v1.AddActivityEvidenceResponse]
+	listActivityEvidence   *connect.Client[v1.ListActivityEvidenceRequest, v1.ListActivityEvidenceResponse]
+	deleteActivityEvidence *connect.Client[v1.DeleteActivityEvidenceRequest, v1.DeleteActivityEvidenceResponse]
 }
 
 // CreateField calls agriculture.field.v1.FieldService.CreateField.
@@ -326,8 +363,24 @@ func (c *fieldServiceClient) ListActivityEvents(ctx context.Context, req *connec
 	return c.listActivityEvents.CallUnary(ctx, req)
 }
 
+// AddActivityEvidence calls agriculture.field.v1.FieldService.AddActivityEvidence.
+func (c *fieldServiceClient) AddActivityEvidence(ctx context.Context, req *connect.Request[v1.AddActivityEvidenceRequest]) (*connect.Response[v1.AddActivityEvidenceResponse], error) {
+	return c.addActivityEvidence.CallUnary(ctx, req)
+}
+
+// ListActivityEvidence calls agriculture.field.v1.FieldService.ListActivityEvidence.
+func (c *fieldServiceClient) ListActivityEvidence(ctx context.Context, req *connect.Request[v1.ListActivityEvidenceRequest]) (*connect.Response[v1.ListActivityEvidenceResponse], error) {
+	return c.listActivityEvidence.CallUnary(ctx, req)
+}
+
+// DeleteActivityEvidence calls agriculture.field.v1.FieldService.DeleteActivityEvidence.
+func (c *fieldServiceClient) DeleteActivityEvidence(ctx context.Context, req *connect.Request[v1.DeleteActivityEvidenceRequest]) (*connect.Response[v1.DeleteActivityEvidenceResponse], error) {
+	return c.deleteActivityEvidence.CallUnary(ctx, req)
+}
+
 // FieldServiceHandler is an implementation of the agriculture.field.v1.FieldService service.
 type FieldServiceHandler interface {
+	// Field CRUD
 	CreateField(context.Context, *connect.Request[v1.CreateFieldRequest]) (*connect.Response[v1.CreateFieldResponse], error)
 	GetField(context.Context, *connect.Request[v1.GetFieldRequest]) (*connect.Response[v1.GetFieldResponse], error)
 	ListFields(context.Context, *connect.Request[v1.ListFieldsRequest]) (*connect.Response[v1.ListFieldsResponse], error)
@@ -339,12 +392,18 @@ type FieldServiceHandler interface {
 	SegmentField(context.Context, *connect.Request[v1.SegmentFieldRequest]) (*connect.Response[v1.SegmentFieldResponse], error)
 	GetFieldSegments(context.Context, *connect.Request[v1.GetFieldSegmentsRequest]) (*connect.Response[v1.GetFieldSegmentsResponse], error)
 	GetCropHistory(context.Context, *connect.Request[v1.GetCropHistoryRequest]) (*connect.Response[v1.GetCropHistoryResponse], error)
+	// Crop Cycles
 	CreateCropCycle(context.Context, *connect.Request[v1.CreateCropCycleRequest]) (*connect.Response[v1.CreateCropCycleResponse], error)
 	GetCropCycle(context.Context, *connect.Request[v1.GetCropCycleRequest]) (*connect.Response[v1.GetCropCycleResponse], error)
 	ListCropCycles(context.Context, *connect.Request[v1.ListCropCyclesRequest]) (*connect.Response[v1.ListCropCyclesResponse], error)
 	UpdateCropCycle(context.Context, *connect.Request[v1.UpdateCropCycleRequest]) (*connect.Response[v1.UpdateCropCycleResponse], error)
+	// Activity Events
 	LogActivityEvent(context.Context, *connect.Request[v1.LogActivityEventRequest]) (*connect.Response[v1.LogActivityEventResponse], error)
 	ListActivityEvents(context.Context, *connect.Request[v1.ListActivityEventsRequest]) (*connect.Response[v1.ListActivityEventsResponse], error)
+	// Activity Evidence
+	AddActivityEvidence(context.Context, *connect.Request[v1.AddActivityEvidenceRequest]) (*connect.Response[v1.AddActivityEvidenceResponse], error)
+	ListActivityEvidence(context.Context, *connect.Request[v1.ListActivityEvidenceRequest]) (*connect.Response[v1.ListActivityEvidenceResponse], error)
+	DeleteActivityEvidence(context.Context, *connect.Request[v1.DeleteActivityEvidenceRequest]) (*connect.Response[v1.DeleteActivityEvidenceResponse], error)
 }
 
 // NewFieldServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -456,6 +515,24 @@ func NewFieldServiceHandler(svc FieldServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(fieldServiceMethods.ByName("ListActivityEvents")),
 		connect.WithHandlerOptions(opts...),
 	)
+	fieldServiceAddActivityEvidenceHandler := connect.NewUnaryHandler(
+		FieldServiceAddActivityEvidenceProcedure,
+		svc.AddActivityEvidence,
+		connect.WithSchema(fieldServiceMethods.ByName("AddActivityEvidence")),
+		connect.WithHandlerOptions(opts...),
+	)
+	fieldServiceListActivityEvidenceHandler := connect.NewUnaryHandler(
+		FieldServiceListActivityEvidenceProcedure,
+		svc.ListActivityEvidence,
+		connect.WithSchema(fieldServiceMethods.ByName("ListActivityEvidence")),
+		connect.WithHandlerOptions(opts...),
+	)
+	fieldServiceDeleteActivityEvidenceHandler := connect.NewUnaryHandler(
+		FieldServiceDeleteActivityEvidenceProcedure,
+		svc.DeleteActivityEvidence,
+		connect.WithSchema(fieldServiceMethods.ByName("DeleteActivityEvidence")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.field.v1.FieldService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case FieldServiceCreateFieldProcedure:
@@ -492,6 +569,12 @@ func NewFieldServiceHandler(svc FieldServiceHandler, opts ...connect.HandlerOpti
 			fieldServiceLogActivityEventHandler.ServeHTTP(w, r)
 		case FieldServiceListActivityEventsProcedure:
 			fieldServiceListActivityEventsHandler.ServeHTTP(w, r)
+		case FieldServiceAddActivityEvidenceProcedure:
+			fieldServiceAddActivityEvidenceHandler.ServeHTTP(w, r)
+		case FieldServiceListActivityEvidenceProcedure:
+			fieldServiceListActivityEvidenceHandler.ServeHTTP(w, r)
+		case FieldServiceDeleteActivityEvidenceProcedure:
+			fieldServiceDeleteActivityEvidenceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -567,4 +650,16 @@ func (UnimplementedFieldServiceHandler) LogActivityEvent(context.Context, *conne
 
 func (UnimplementedFieldServiceHandler) ListActivityEvents(context.Context, *connect.Request[v1.ListActivityEventsRequest]) (*connect.Response[v1.ListActivityEventsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.field.v1.FieldService.ListActivityEvents is not implemented"))
+}
+
+func (UnimplementedFieldServiceHandler) AddActivityEvidence(context.Context, *connect.Request[v1.AddActivityEvidenceRequest]) (*connect.Response[v1.AddActivityEvidenceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.field.v1.FieldService.AddActivityEvidence is not implemented"))
+}
+
+func (UnimplementedFieldServiceHandler) ListActivityEvidence(context.Context, *connect.Request[v1.ListActivityEvidenceRequest]) (*connect.Response[v1.ListActivityEvidenceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.field.v1.FieldService.ListActivityEvidence is not implemented"))
+}
+
+func (UnimplementedFieldServiceHandler) DeleteActivityEvidence(context.Context, *connect.Request[v1.DeleteActivityEvidenceRequest]) (*connect.Response[v1.DeleteActivityEvidenceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.field.v1.FieldService.DeleteActivityEvidence is not implemented"))
 }

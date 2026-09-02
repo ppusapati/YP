@@ -1,6 +1,6 @@
 syntax = "proto3";
 package agriculture.traceability.v1;
-option go_package = "p9e.in/samavaya/agriculture/traceability-service/api/v1";
+option go_package = "p9e.in/samavaya/agriculture/traceability-service/api/v1;traceabilityv1";
 
 import "google/protobuf/timestamp.proto";
 
@@ -337,6 +337,133 @@ message GenerateComplianceReportResponse {
   ComplianceReport report = 1;
 }
 
+// QualityCheckType classifies quality inspections.
+enum QualityCheckType {
+  QUALITY_CHECK_TYPE_UNSPECIFIED = 0;
+  QUALITY_CHECK_TYPE_VISUAL      = 1;
+  QUALITY_CHECK_TYPE_LAB         = 2;
+  QUALITY_CHECK_TYPE_TEMPERATURE = 3;
+  QUALITY_CHECK_TYPE_MOISTURE    = 4;
+  QUALITY_CHECK_TYPE_WEIGHT      = 5;
+  QUALITY_CHECK_TYPE_SENSORY     = 6;
+  QUALITY_CHECK_TYPE_OTHER       = 7;
+}
+
+enum QualityCheckResult {
+  QUALITY_CHECK_RESULT_UNSPECIFIED = 0;
+  QUALITY_CHECK_RESULT_PASS        = 1;
+  QUALITY_CHECK_RESULT_FAIL        = 2;
+}
+
+message QualityCheckpoint {
+  string                     id                      = 1;
+  string                     tenant_id               = 2;
+  string                     record_id               = 3;
+  string                     supply_chain_event_id   = 4;
+  QualityCheckType           check_type              = 5;
+  QualityCheckResult         result                  = 6;
+  string                     inspector_id            = 7;
+  string                     inspector_name          = 8;
+  google.protobuf.Timestamp  inspected_at            = 9;
+  string                     location                = 10;
+  double                     measurement_value       = 11;
+  string                     measurement_unit        = 12;
+  double                     min_threshold           = 13;
+  double                     max_threshold           = 14;
+  string                     notes                   = 15;
+  repeated string            evidence_urls           = 16;
+  map<string, string>        metadata                = 17;
+  google.protobuf.Timestamp  created_at              = 18;
+}
+
+message CreateQualityCheckpointRequest {
+  string                     record_id               = 1;
+  string                     supply_chain_event_id   = 2;
+  QualityCheckType           check_type              = 3;
+  QualityCheckResult         result                  = 4;
+  string                     inspector_name          = 5;
+  google.protobuf.Timestamp  inspected_at            = 6;
+  string                     location                = 7;
+  double                     measurement_value       = 8;
+  string                     measurement_unit        = 9;
+  double                     min_threshold           = 10;
+  double                     max_threshold           = 11;
+  string                     notes                   = 12;
+  repeated string            evidence_urls           = 13;
+  map<string, string>        metadata                = 14;
+}
+
+message CreateQualityCheckpointResponse {
+  QualityCheckpoint checkpoint = 1;
+}
+
+message GetQualityCheckpointRequest {
+  string id = 1;
+}
+
+message GetQualityCheckpointResponse {
+  QualityCheckpoint checkpoint = 1;
+}
+
+message ListQualityCheckpointsRequest {
+  string             record_id  = 1;
+  QualityCheckType   check_type = 2;
+  QualityCheckResult result     = 3;
+  int32              page_size  = 4;
+  string             page_token = 5;
+}
+
+message ListQualityCheckpointsResponse {
+  repeated QualityCheckpoint checkpoints     = 1;
+  string                     next_page_token = 2;
+  int32                      total_count     = 3;
+}
+
+message UpdateRecordRequest {
+  string                     id              = 1;
+  string                     origin_country  = 2;
+  string                     origin_region   = 3;
+  string                     seed_source     = 4;
+  google.protobuf.Timestamp  planting_date   = 5;
+  google.protobuf.Timestamp  harvest_date    = 6;
+  google.protobuf.Timestamp  processing_date = 7;
+  google.protobuf.Timestamp  packaging_date  = 8;
+  map<string, string>        metadata        = 9;
+}
+
+message UpdateRecordResponse {
+  TraceabilityRecord record = 1;
+}
+
+message RevokeCertificationRequest {
+  string id     = 1;
+  string reason = 2;
+}
+
+message RevokeCertificationResponse {
+  Certification certification = 1;
+}
+
+message GetComplianceReportRequest {
+  string id = 1;
+}
+
+message GetComplianceReportResponse {
+  ComplianceReport report = 1;
+}
+
+message ListComplianceReportsRequest {
+  string record_id  = 1;
+  int32  page_size  = 2;
+  string page_token = 3;
+}
+
+message ListComplianceReportsResponse {
+  repeated ComplianceReport reports         = 1;
+  string                    next_page_token = 2;
+  int32                     total_count     = 3;
+}
+
 // TraceabilityService provides end-to-end organic traceability from seed to shelf.
 service TraceabilityService {
   // CreateRecord creates a new traceability record.
@@ -369,4 +496,19 @@ service TraceabilityService {
   rpc VerifyQRCode(VerifyQRCodeRequest) returns (VerifyQRCodeResponse);
   // GenerateComplianceReport generates a compliance report for a record.
   rpc GenerateComplianceReport(GenerateComplianceReportRequest) returns (GenerateComplianceReportResponse);
+
+  // Quality Checkpoints
+  rpc CreateQualityCheckpoint(CreateQualityCheckpointRequest) returns (CreateQualityCheckpointResponse);
+  rpc GetQualityCheckpoint(GetQualityCheckpointRequest) returns (GetQualityCheckpointResponse);
+  rpc ListQualityCheckpoints(ListQualityCheckpointsRequest) returns (ListQualityCheckpointsResponse);
+
+  // Record updates
+  rpc UpdateRecord(UpdateRecordRequest) returns (UpdateRecordResponse);
+
+  // Certification lifecycle
+  rpc RevokeCertification(RevokeCertificationRequest) returns (RevokeCertificationResponse);
+
+  // Compliance report retrieval
+  rpc GetComplianceReport(GetComplianceReportRequest) returns (GetComplianceReportResponse);
+  rpc ListComplianceReports(ListComplianceReportsRequest) returns (ListComplianceReportsResponse);
 }

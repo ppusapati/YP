@@ -27,28 +27,31 @@ const (
 )
 
 type soilService struct {
-	repo outbound.SoilRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	repo        outbound.SoilRepository
+	pub         outbound.EventPublisher
+	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewSoilService creates a new application-layer SoilService.
 // Deprecated: use services.NewSoilService with deps.ServiceDeps instead.
-// The fieldClient parameter is accepted for backward compatibility with main.go wiring.
 func NewSoilService(
 	repo outbound.SoilRepository,
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) *soilService {
-	_ = fieldClient // not used in this implementation
 	return &soilService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "SoilService")),
+		repo:        repo,
+		pub:         pub,
+		fieldClient: fieldClient,
+		farmClient:  farmClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "SoilService")),
 	}
 }
 

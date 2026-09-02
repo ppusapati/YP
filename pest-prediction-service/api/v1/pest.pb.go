@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: pest.proto
 
-package v1
+package pestpredictionv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -3082,7 +3082,7 @@ const file_pest_proto_rawDesc = "" +
 	"GetRiskMap\x12&.agriculture.pest.v1.GetRiskMapRequest\x1a'.agriculture.pest.v1.GetRiskMapResponse\x12]\n" +
 	"\n" +
 	"ListAlerts\x12&.agriculture.pest.v1.ListAlertsRequest\x1a'.agriculture.pest.v1.ListAlertsResponse\x12o\n" +
-	"\x10AcknowledgeAlert\x12,.agriculture.pest.v1.AcknowledgeAlertRequest\x1a-.agriculture.pest.v1.AcknowledgeAlertResponseB<Z:p9e.in/samavaya/agriculture/pest-prediction-service/api/v1b\x06proto3"
+	"\x10AcknowledgeAlert\x12,.agriculture.pest.v1.AcknowledgeAlertRequest\x1a-.agriculture.pest.v1.AcknowledgeAlertResponseBMZKp9e.in/samavaya/agriculture/pest-prediction-service/api/v1;pestpredictionv1b\x06proto3"
 
 var (
 	file_pest_proto_rawDescOnce sync.Once

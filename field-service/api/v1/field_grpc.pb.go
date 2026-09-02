@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: field.proto
 
-package v1
+package fieldv1
 
 import (
 	context "context"
@@ -19,23 +19,26 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FieldService_CreateField_FullMethodName        = "/agriculture.field.v1.FieldService/CreateField"
-	FieldService_GetField_FullMethodName           = "/agriculture.field.v1.FieldService/GetField"
-	FieldService_ListFields_FullMethodName         = "/agriculture.field.v1.FieldService/ListFields"
-	FieldService_UpdateField_FullMethodName        = "/agriculture.field.v1.FieldService/UpdateField"
-	FieldService_DeleteField_FullMethodName        = "/agriculture.field.v1.FieldService/DeleteField"
-	FieldService_SetFieldBoundary_FullMethodName   = "/agriculture.field.v1.FieldService/SetFieldBoundary"
-	FieldService_AssignCrop_FullMethodName         = "/agriculture.field.v1.FieldService/AssignCrop"
-	FieldService_ListFieldsByFarm_FullMethodName   = "/agriculture.field.v1.FieldService/ListFieldsByFarm"
-	FieldService_SegmentField_FullMethodName       = "/agriculture.field.v1.FieldService/SegmentField"
-	FieldService_GetFieldSegments_FullMethodName   = "/agriculture.field.v1.FieldService/GetFieldSegments"
-	FieldService_GetCropHistory_FullMethodName     = "/agriculture.field.v1.FieldService/GetCropHistory"
-	FieldService_CreateCropCycle_FullMethodName    = "/agriculture.field.v1.FieldService/CreateCropCycle"
-	FieldService_GetCropCycle_FullMethodName       = "/agriculture.field.v1.FieldService/GetCropCycle"
-	FieldService_ListCropCycles_FullMethodName     = "/agriculture.field.v1.FieldService/ListCropCycles"
-	FieldService_UpdateCropCycle_FullMethodName    = "/agriculture.field.v1.FieldService/UpdateCropCycle"
-	FieldService_LogActivityEvent_FullMethodName   = "/agriculture.field.v1.FieldService/LogActivityEvent"
-	FieldService_ListActivityEvents_FullMethodName = "/agriculture.field.v1.FieldService/ListActivityEvents"
+	FieldService_CreateField_FullMethodName            = "/agriculture.field.v1.FieldService/CreateField"
+	FieldService_GetField_FullMethodName               = "/agriculture.field.v1.FieldService/GetField"
+	FieldService_ListFields_FullMethodName             = "/agriculture.field.v1.FieldService/ListFields"
+	FieldService_UpdateField_FullMethodName            = "/agriculture.field.v1.FieldService/UpdateField"
+	FieldService_DeleteField_FullMethodName            = "/agriculture.field.v1.FieldService/DeleteField"
+	FieldService_SetFieldBoundary_FullMethodName       = "/agriculture.field.v1.FieldService/SetFieldBoundary"
+	FieldService_AssignCrop_FullMethodName             = "/agriculture.field.v1.FieldService/AssignCrop"
+	FieldService_ListFieldsByFarm_FullMethodName       = "/agriculture.field.v1.FieldService/ListFieldsByFarm"
+	FieldService_SegmentField_FullMethodName           = "/agriculture.field.v1.FieldService/SegmentField"
+	FieldService_GetFieldSegments_FullMethodName       = "/agriculture.field.v1.FieldService/GetFieldSegments"
+	FieldService_GetCropHistory_FullMethodName         = "/agriculture.field.v1.FieldService/GetCropHistory"
+	FieldService_CreateCropCycle_FullMethodName        = "/agriculture.field.v1.FieldService/CreateCropCycle"
+	FieldService_GetCropCycle_FullMethodName           = "/agriculture.field.v1.FieldService/GetCropCycle"
+	FieldService_ListCropCycles_FullMethodName         = "/agriculture.field.v1.FieldService/ListCropCycles"
+	FieldService_UpdateCropCycle_FullMethodName        = "/agriculture.field.v1.FieldService/UpdateCropCycle"
+	FieldService_LogActivityEvent_FullMethodName       = "/agriculture.field.v1.FieldService/LogActivityEvent"
+	FieldService_ListActivityEvents_FullMethodName     = "/agriculture.field.v1.FieldService/ListActivityEvents"
+	FieldService_AddActivityEvidence_FullMethodName    = "/agriculture.field.v1.FieldService/AddActivityEvidence"
+	FieldService_ListActivityEvidence_FullMethodName   = "/agriculture.field.v1.FieldService/ListActivityEvidence"
+	FieldService_DeleteActivityEvidence_FullMethodName = "/agriculture.field.v1.FieldService/DeleteActivityEvidence"
 )
 
 // FieldServiceClient is the client API for FieldService service.
@@ -62,6 +65,10 @@ type FieldServiceClient interface {
 	// Activity Events
 	LogActivityEvent(ctx context.Context, in *LogActivityEventRequest, opts ...grpc.CallOption) (*LogActivityEventResponse, error)
 	ListActivityEvents(ctx context.Context, in *ListActivityEventsRequest, opts ...grpc.CallOption) (*ListActivityEventsResponse, error)
+	// Activity Evidence
+	AddActivityEvidence(ctx context.Context, in *AddActivityEvidenceRequest, opts ...grpc.CallOption) (*AddActivityEvidenceResponse, error)
+	ListActivityEvidence(ctx context.Context, in *ListActivityEvidenceRequest, opts ...grpc.CallOption) (*ListActivityEvidenceResponse, error)
+	DeleteActivityEvidence(ctx context.Context, in *DeleteActivityEvidenceRequest, opts ...grpc.CallOption) (*DeleteActivityEvidenceResponse, error)
 }
 
 type fieldServiceClient struct {
@@ -242,6 +249,36 @@ func (c *fieldServiceClient) ListActivityEvents(ctx context.Context, in *ListAct
 	return out, nil
 }
 
+func (c *fieldServiceClient) AddActivityEvidence(ctx context.Context, in *AddActivityEvidenceRequest, opts ...grpc.CallOption) (*AddActivityEvidenceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddActivityEvidenceResponse)
+	err := c.cc.Invoke(ctx, FieldService_AddActivityEvidence_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) ListActivityEvidence(ctx context.Context, in *ListActivityEvidenceRequest, opts ...grpc.CallOption) (*ListActivityEvidenceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListActivityEvidenceResponse)
+	err := c.cc.Invoke(ctx, FieldService_ListActivityEvidence_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fieldServiceClient) DeleteActivityEvidence(ctx context.Context, in *DeleteActivityEvidenceRequest, opts ...grpc.CallOption) (*DeleteActivityEvidenceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteActivityEvidenceResponse)
+	err := c.cc.Invoke(ctx, FieldService_DeleteActivityEvidence_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FieldServiceServer is the server API for FieldService service.
 // All implementations must embed UnimplementedFieldServiceServer
 // for forward compatibility.
@@ -266,6 +303,10 @@ type FieldServiceServer interface {
 	// Activity Events
 	LogActivityEvent(context.Context, *LogActivityEventRequest) (*LogActivityEventResponse, error)
 	ListActivityEvents(context.Context, *ListActivityEventsRequest) (*ListActivityEventsResponse, error)
+	// Activity Evidence
+	AddActivityEvidence(context.Context, *AddActivityEvidenceRequest) (*AddActivityEvidenceResponse, error)
+	ListActivityEvidence(context.Context, *ListActivityEvidenceRequest) (*ListActivityEvidenceResponse, error)
+	DeleteActivityEvidence(context.Context, *DeleteActivityEvidenceRequest) (*DeleteActivityEvidenceResponse, error)
 	mustEmbedUnimplementedFieldServiceServer()
 }
 
@@ -326,6 +367,15 @@ func (UnimplementedFieldServiceServer) LogActivityEvent(context.Context, *LogAct
 }
 func (UnimplementedFieldServiceServer) ListActivityEvents(context.Context, *ListActivityEventsRequest) (*ListActivityEventsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListActivityEvents not implemented")
+}
+func (UnimplementedFieldServiceServer) AddActivityEvidence(context.Context, *AddActivityEvidenceRequest) (*AddActivityEvidenceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddActivityEvidence not implemented")
+}
+func (UnimplementedFieldServiceServer) ListActivityEvidence(context.Context, *ListActivityEvidenceRequest) (*ListActivityEvidenceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListActivityEvidence not implemented")
+}
+func (UnimplementedFieldServiceServer) DeleteActivityEvidence(context.Context, *DeleteActivityEvidenceRequest) (*DeleteActivityEvidenceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteActivityEvidence not implemented")
 }
 func (UnimplementedFieldServiceServer) mustEmbedUnimplementedFieldServiceServer() {}
 func (UnimplementedFieldServiceServer) testEmbeddedByValue()                      {}
@@ -654,6 +704,60 @@ func _FieldService_ListActivityEvents_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FieldService_AddActivityEvidence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddActivityEvidenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).AddActivityEvidence(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_AddActivityEvidence_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).AddActivityEvidence(ctx, req.(*AddActivityEvidenceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_ListActivityEvidence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListActivityEvidenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).ListActivityEvidence(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_ListActivityEvidence_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).ListActivityEvidence(ctx, req.(*ListActivityEvidenceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FieldService_DeleteActivityEvidence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteActivityEvidenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FieldServiceServer).DeleteActivityEvidence(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FieldService_DeleteActivityEvidence_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FieldServiceServer).DeleteActivityEvidence(ctx, req.(*DeleteActivityEvidenceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FieldService_ServiceDesc is the grpc.ServiceDesc for FieldService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -728,6 +832,18 @@ var FieldService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListActivityEvents",
 			Handler:    _FieldService_ListActivityEvents_Handler,
+		},
+		{
+			MethodName: "AddActivityEvidence",
+			Handler:    _FieldService_AddActivityEvidence_Handler,
+		},
+		{
+			MethodName: "ListActivityEvidence",
+			Handler:    _FieldService_ListActivityEvidence_Handler,
+		},
+		{
+			MethodName: "DeleteActivityEvidence",
+			Handler:    _FieldService_DeleteActivityEvidence_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

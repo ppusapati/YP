@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: soil.proto
 
-package v1
+package soilv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -2818,7 +2818,7 @@ const file_soil_proto_rawDesc = "" +
 	"GetSoilMap\x12&.agriculture.soil.v1.GetSoilMapRequest\x1a'.agriculture.soil.v1.GetSoilMapResponse\x12f\n" +
 	"\rGetSoilHealth\x12).agriculture.soil.v1.GetSoilHealthRequest\x1a*.agriculture.soil.v1.GetSoilHealthResponse\x12r\n" +
 	"\x11GetNutrientLevels\x12-.agriculture.soil.v1.GetNutrientLevelsRequest\x1a..agriculture.soil.v1.GetNutrientLevelsResponse\x12u\n" +
-	"\x12GenerateSoilReport\x12..agriculture.soil.v1.GenerateSoilReportRequest\x1a/.agriculture.soil.v1.GenerateSoilReportResponseB1Z/p9e.in/samavaya/agriculture/soil-service/api/v1b\x06proto3"
+	"\x12GenerateSoilReport\x12..agriculture.soil.v1.GenerateSoilReportRequest\x1a/.agriculture.soil.v1.GenerateSoilReportResponseB8Z6p9e.in/samavaya/agriculture/soil-service/api/v1;soilv1b\x06proto3"
 
 var (
 	file_soil_proto_rawDescOnce sync.Once

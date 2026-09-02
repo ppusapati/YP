@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: pest.proto
 
-package v1
+package pestpredictionv1
 
 import (
 	context "context"

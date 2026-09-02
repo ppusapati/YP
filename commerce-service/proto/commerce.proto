@@ -1,0 +1,239 @@
+syntax = "proto3";
+package agriculture.commerce.v1;
+option go_package = "p9e.in/samavaya/agriculture/commerce-service/api/v1;commercev1";
+
+import "google/protobuf/timestamp.proto";
+
+// ListingStatus tracks the lifecycle of a marketplace listing.
+enum ListingStatus {
+  LISTING_STATUS_UNSPECIFIED = 0;
+  LISTING_STATUS_DRAFT       = 1;
+  LISTING_STATUS_ACTIVE      = 2;
+  LISTING_STATUS_SOLD_OUT    = 3;
+  LISTING_STATUS_EXPIRED     = 4;
+  LISTING_STATUS_CANCELLED   = 5;
+}
+
+// OrderStatus tracks the lifecycle of an order.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING     = 1;
+  ORDER_STATUS_CONFIRMED   = 2;
+  ORDER_STATUS_PROCESSING  = 3;
+  ORDER_STATUS_SHIPPED     = 4;
+  ORDER_STATUS_DELIVERED   = 5;
+  ORDER_STATUS_COMPLETED   = 6;
+  ORDER_STATUS_CANCELLED   = 7;
+  ORDER_STATUS_DISPUTED    = 8;
+}
+
+// PaymentStatus tracks payment state.
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_PENDING     = 1;
+  PAYMENT_STATUS_PAID        = 2;
+  PAYMENT_STATUS_REFUNDED    = 3;
+}
+
+// MarketplaceListing is a produce listing posted by a farmer.
+message MarketplaceListing {
+  string                     id                       = 1;
+  string                     tenant_id                = 2;
+  string                     farm_id                  = 3;
+  string                     crop_id                  = 4;
+  string                     product_name             = 5;
+  string                     product_type             = 6;
+  string                     description              = 7;
+  double                     quantity_available        = 8;
+  string                     quantity_unit             = 9;
+  int64                      price_per_unit_paise      = 10;
+  string                     currency                 = 11;
+  double                     min_order_quantity        = 12;
+  string                     quality_grade            = 13;
+  string                     traceability_record_id   = 14;
+  ListingStatus              status                   = 15;
+  string                     location                 = 16;
+  string                     region                   = 17;
+  repeated string            image_urls               = 18;
+  google.protobuf.Timestamp  available_from           = 19;
+  google.protobuf.Timestamp  available_to             = 20;
+  string                     created_by               = 21;
+  int64                      version                  = 22;
+  google.protobuf.Timestamp  created_at               = 23;
+  google.protobuf.Timestamp  updated_at               = 24;
+}
+
+// Order represents a purchase order.
+message Order {
+  string                     id                       = 1;
+  string                     tenant_id                = 2;
+  string                     listing_id               = 3;
+  string                     buyer_id                 = 4;
+  string                     seller_id                = 5;
+  double                     quantity                 = 6;
+  string                     quantity_unit             = 7;
+  int64                      unit_price_paise          = 8;
+  int64                      total_amount_paise        = 9;
+  string                     currency                 = 10;
+  OrderStatus                status                   = 11;
+  PaymentStatus              payment_status           = 12;
+  string                     payment_reference        = 13;
+  string                     delivery_method          = 14;
+  string                     delivery_address         = 15;
+  string                     delivery_notes           = 16;
+  google.protobuf.Timestamp  estimated_delivery_date  = 17;
+  google.protobuf.Timestamp  actual_delivery_date     = 18;
+  string                     notes                    = 19;
+  string                     created_by               = 20;
+  int64                      version                  = 21;
+  google.protobuf.Timestamp  created_at               = 22;
+  google.protobuf.Timestamp  updated_at               = 23;
+}
+
+// ----- Listing RPCs -----
+
+message CreateListingRequest {
+  string                     farm_id                  = 1;
+  string                     crop_id                  = 2;
+  string                     product_name             = 3;
+  string                     product_type             = 4;
+  string                     description              = 5;
+  double                     quantity_available        = 6;
+  string                     quantity_unit             = 7;
+  int64                      price_per_unit_paise      = 8;
+  string                     currency                 = 9;
+  double                     min_order_quantity        = 10;
+  string                     quality_grade            = 11;
+  string                     traceability_record_id   = 12;
+  string                     location                 = 13;
+  string                     region                   = 14;
+  repeated string            image_urls               = 15;
+  google.protobuf.Timestamp  available_from           = 16;
+  google.protobuf.Timestamp  available_to             = 17;
+}
+
+message CreateListingResponse {
+  MarketplaceListing listing = 1;
+}
+
+message GetListingRequest {
+  string id = 1;
+}
+
+message GetListingResponse {
+  MarketplaceListing listing = 1;
+}
+
+message ListListingsRequest {
+  string        farm_id      = 1;
+  string        crop_id      = 2;
+  string        product_type = 3;
+  string        region       = 4;
+  ListingStatus status       = 5;
+  string        search       = 6;
+  int32         page_size    = 7;
+  int32         page_offset  = 8;
+}
+
+message ListListingsResponse {
+  repeated MarketplaceListing listings    = 1;
+  int32                       total_count = 2;
+}
+
+message UpdateListingRequest {
+  string                     id                       = 1;
+  string                     product_name             = 2;
+  string                     description              = 3;
+  double                     quantity_available        = 4;
+  int64                      price_per_unit_paise      = 5;
+  double                     min_order_quantity        = 6;
+  string                     quality_grade            = 7;
+  repeated string            image_urls               = 8;
+  google.protobuf.Timestamp  available_to             = 9;
+}
+
+message UpdateListingResponse {
+  MarketplaceListing listing = 1;
+}
+
+message CancelListingRequest {
+  string id = 1;
+}
+
+message CancelListingResponse {
+  MarketplaceListing listing = 1;
+}
+
+// ----- Order RPCs -----
+
+message PlaceOrderRequest {
+  string listing_id       = 1;
+  double quantity          = 2;
+  string delivery_method   = 3;
+  string delivery_address  = 4;
+  string delivery_notes    = 5;
+  string notes             = 6;
+}
+
+message PlaceOrderResponse {
+  Order order = 1;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+message ListOrdersRequest {
+  string      listing_id   = 1;
+  string      buyer_id     = 2;
+  string      seller_id    = 3;
+  OrderStatus status       = 4;
+  int32       page_size    = 5;
+  int32       page_offset  = 6;
+}
+
+message ListOrdersResponse {
+  repeated Order orders      = 1;
+  int32          total_count = 2;
+}
+
+message UpdateOrderStatusRequest {
+  string      id     = 1;
+  OrderStatus status = 2;
+  string      notes  = 3;
+}
+
+message UpdateOrderStatusResponse {
+  Order order = 1;
+}
+
+message UpdatePaymentStatusRequest {
+  string        id                = 1;
+  PaymentStatus payment_status    = 2;
+  string        payment_reference = 3;
+}
+
+message UpdatePaymentStatusResponse {
+  Order order = 1;
+}
+
+// CommerceService handles marketplace listings and order management.
+service CommerceService {
+  // Listings
+  rpc CreateListing(CreateListingRequest)   returns (CreateListingResponse);
+  rpc GetListing(GetListingRequest)         returns (GetListingResponse);
+  rpc ListListings(ListListingsRequest)     returns (ListListingsResponse);
+  rpc UpdateListing(UpdateListingRequest)   returns (UpdateListingResponse);
+  rpc CancelListing(CancelListingRequest)   returns (CancelListingResponse);
+
+  // Orders
+  rpc PlaceOrder(PlaceOrderRequest)                     returns (PlaceOrderResponse);
+  rpc GetOrder(GetOrderRequest)                         returns (GetOrderResponse);
+  rpc ListOrders(ListOrdersRequest)                     returns (ListOrdersResponse);
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest)       returns (UpdateOrderStatusResponse);
+  rpc UpdatePaymentStatus(UpdatePaymentStatusRequest)   returns (UpdatePaymentStatusResponse);
+}

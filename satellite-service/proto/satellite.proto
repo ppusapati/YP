@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package agriculture.satellite.v1;
 
-option go_package = "p9e.in/samavaya/agriculture/satellite-service/api/v1";
+option go_package = "p9e.in/samavaya/agriculture/satellite-service/api/v1;satellitev1";
 
 import "google/protobuf/timestamp.proto";
 

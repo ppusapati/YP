@@ -44,4 +44,16 @@ type TraceabilityRepository interface {
 	GetComplianceReport(ctx context.Context, id, tenantID string) (*domain.ComplianceReport, error)
 	GetComplianceReportsByRecord(ctx context.Context, recordID, tenantID string) ([]domain.ComplianceReport, error)
 	GetLatestComplianceReport(ctx context.Context, recordID, tenantID string) (*domain.ComplianceReport, error)
+	ListComplianceReports(ctx context.Context, filter domain.ListComplianceReportsFilter, tenantID string) ([]domain.ComplianceReport, int32, error)
+
+	// Quality Checkpoints
+	CreateQualityCheckpoint(ctx context.Context, checkpoint *domain.QualityCheckpoint) (*domain.QualityCheckpoint, error)
+	GetQualityCheckpoint(ctx context.Context, id, tenantID string) (*domain.QualityCheckpoint, error)
+	ListQualityCheckpoints(ctx context.Context, filter domain.ListQualityCheckpointsFilter, tenantID string) ([]domain.QualityCheckpoint, int32, error)
+
+	// Record Update
+	UpdateRecord(ctx context.Context, id, tenantID string, input domain.UpdateRecordInput, updatedBy string) (*domain.TraceabilityRecord, error)
+
+	// Certification Revocation
+	RevokeCertification(ctx context.Context, id, tenantID, reason string) (*domain.Certification, error)
 }

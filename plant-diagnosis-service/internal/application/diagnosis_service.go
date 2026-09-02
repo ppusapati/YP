@@ -12,6 +12,7 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
 
+	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ai"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/domain"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ports/outbound"
@@ -30,8 +31,10 @@ type diagnosisService struct {
 	repo        outbound.DiagnosisRepository
 	pub         outbound.EventPublisher
 	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
+	aiClient    *ai.AIClient
 }
 
 // NewDiagnosisService creates a new application-layer DiagnosisService.
@@ -39,15 +42,19 @@ func NewDiagnosisService(
 	repo outbound.DiagnosisRepository,
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) inbound.DiagnosisService {
 	return &diagnosisService{
 		repo:        repo,
 		pub:         pub,
 		fieldClient: fieldClient,
+		farmClient:  farmClient,
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "DiagnosisService")),
+		aiClient:    aiClient,
 	}
 }
 
@@ -237,14 +244,48 @@ func (s *diagnosisService) generateSyntheticTreatmentPlan(tenantID, diagnosisID 
 // IdentifySpecies (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) IdentifySpecies(_ context.Context, _ []domain.DiagnosisImage) ([]domain.PlantSpecies, error) {
-	return []domain.PlantSpecies{
+func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.DiagnosisImage) ([]domain.PlantSpecies, error) {
+	syntheticResult := []domain.PlantSpecies{
 		{
 			ID:             ulid.NewString(),
 			CommonName:     "Unknown",
 			ScientificName: "Analysis pending",
 			Family:         "",
 			Confidence:     0.0,
+		},
+	}
+
+	if s.aiClient == nil {
+		return syntheticResult, nil
+	}
+
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+
+	aiImages := make([]ai.ImageInput, len(images))
+	for i, img := range images {
+		aiImages[i] = ai.ImageInput{
+			ImageURL:  img.ImageURL,
+			ImageType: img.ImageType,
+			MimeType:  img.MimeType,
+		}
+	}
+
+	result, err := s.aiClient.ClassifyPlant(ctx, requestID, aiImages)
+	if err != nil {
+		s.log.Warnw("msg", "AI ClassifyPlant failed, returning synthetic fallback", "error", err)
+		return syntheticResult, nil
+	}
+
+	return []domain.PlantSpecies{
+		{
+			ID:             result.SpeciesID,
+			CommonName:     result.CommonName,
+			ScientificName: result.ScientificName,
+			Family:         result.Family,
+			Confidence:     result.Confidence,
 		},
 	}, nil
 }
@@ -253,30 +294,109 @@ func (s *diagnosisService) IdentifySpecies(_ context.Context, _ []domain.Diagnos
 // DetectNutrientDeficiency (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) DetectNutrientDeficiency(_ context.Context, _ string, _ []domain.DiagnosisImage) ([]domain.NutrientDeficiency, error) {
-	return []domain.NutrientDeficiency{
+func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, error) {
+	syntheticResult := []domain.NutrientDeficiency{
 		{
 			Nutrient:        "Nitrogen",
 			ConfidenceScore: 0.5,
 			Severity:        domain.SeverityModerate,
 			Description:     "Possible nitrogen deficiency detected",
 		},
-	}, nil
+	}
+
+	if s.aiClient == nil {
+		return syntheticResult, nil
+	}
+
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+
+	aiImages := make([]ai.ImageInput, len(images))
+	for i, img := range images {
+		aiImages[i] = ai.ImageInput{
+			ImageURL:  img.ImageURL,
+			ImageType: img.ImageType,
+			MimeType:  img.MimeType,
+		}
+	}
+
+	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID)
+	if err != nil {
+		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed, returning synthetic fallback", "error", err)
+		return syntheticResult, nil
+	}
+
+	deficiencies := make([]domain.NutrientDeficiency, len(result.Deficiencies))
+	for i, d := range result.Deficiencies {
+		deficiencies[i] = domain.NutrientDeficiency{
+			Nutrient:               d.Nutrient,
+			ConfidenceScore:        d.ConfidenceScore,
+			Severity:               domain.SeverityLevel(d.Severity),
+			Description:            d.Description,
+			VisualSymptoms:         d.VisualSymptoms,
+			RecommendedFertilizers: d.RecommendedFertilizers,
+			ApplicationMethod:      d.ApplicationMethod,
+		}
+	}
+
+	return deficiencies, nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DetectPestDamage (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) DetectPestDamage(_ context.Context, _ string, _ []domain.DiagnosisImage) ([]domain.PestDamage, error) {
-	return []domain.PestDamage{
+func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, error) {
+	syntheticResult := []domain.PestDamage{
 		{
 			PestID:          ulid.NewString(),
 			PestName:        "Analysis pending",
 			ConfidenceScore: 0.0,
 			DamageLevel:     domain.SeverityUnspecified,
 		},
-	}, nil
+	}
+
+	if s.aiClient == nil {
+		return syntheticResult, nil
+	}
+
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+
+	aiImages := make([]ai.ImageInput, len(images))
+	for i, img := range images {
+		aiImages[i] = ai.ImageInput{
+			ImageURL:  img.ImageURL,
+			ImageType: img.ImageType,
+			MimeType:  img.MimeType,
+		}
+	}
+
+	result, err := s.aiClient.DetectPests(ctx, requestID, aiImages, speciesID)
+	if err != nil {
+		s.log.Warnw("msg", "AI DetectPests failed, returning synthetic fallback", "error", err)
+		return syntheticResult, nil
+	}
+
+	pests := make([]domain.PestDamage, len(result.Pests))
+	for i, p := range result.Pests {
+		pests[i] = domain.PestDamage{
+			PestID:          p.PestID,
+			PestName:        p.PestName,
+			ScientificName:  p.ScientificName,
+			ConfidenceScore: p.ConfidenceScore,
+			DamageLevel:     domain.SeverityLevel(p.DamageLevel),
+			Description:     p.Description,
+			DamagePattern:   p.DamagePattern,
+			ControlMethods:  p.ControlMethods,
+		}
+	}
+
+	return pests, nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

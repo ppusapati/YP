@@ -1,21 +1,60 @@
 use crate::types::{SimConfig, SoilGrid};
+use crate::soil_physics;
 
+/// Run one explicit time-step of the advection-diffusion equation on a 2-D
+/// grid.  When `water_content` and `porosity` grids are provided the
+/// Millington-Quirk effective diffusion coefficient is used per-cell;
+/// otherwise the constant `config.diffusion_coeff` is used (backward
+/// compatible).
 pub fn diffusion_step(grid: &SoilGrid, config: &SimConfig) -> SoilGrid {
+    diffusion_step_full(grid, config, None, None, None)
+}
+
+/// Extended diffusion step that accepts optional per-cell soil physics grids.
+///
+/// * `water_content` -- volumetric water content (m^3/m^3) per cell
+/// * `porosity`      -- total porosity (m^3/m^3) per cell
+/// * `temperature`   -- soil temperature (deg C) per cell
+///
+/// When all three are `Some`, Millington-Quirk + Stokes-Einstein is applied
+/// with the default NO3 free-water diffusion coefficient.  When any is `None`
+/// the constant `config.diffusion_coeff` is used instead.
+pub fn diffusion_step_full(
+    grid: &SoilGrid,
+    config: &SimConfig,
+    water_content: Option<&SoilGrid>,
+    porosity: Option<&SoilGrid>,
+    temperature: Option<&SoilGrid>,
+) -> SoilGrid {
     let w = grid.width;
     let h = grid.height;
     let mut next = SoilGrid::new(w, h, 0.0);
 
     let dx = config.cell_size_m;
     let dt = config.time_step_s;
-    let d = config.diffusion_coeff;
     let vx = config.advection_vx;
     let vy = config.advection_vy;
 
-    let r = d * dt / (dx * dx);
+    let use_mq = water_content.is_some() && porosity.is_some() && temperature.is_some();
 
     for y in 0..h {
         for x in 0..w {
             let c = grid.get(x, y);
+
+            // Per-cell effective diffusion coefficient
+            let d = if use_mq {
+                let theta = water_content.unwrap().get(x, y);
+                let phi = porosity.unwrap().get(x, y);
+                let temp = temperature.unwrap().get(x, y);
+                // nutrient_effective_diffusion returns m^2/day; config uses
+                // seconds, so convert back: m^2/s = m^2/day / 86400
+                soil_physics::nutrient_effective_diffusion("no3", theta, temp, phi)
+                    / 86_400.0
+            } else {
+                config.diffusion_coeff
+            };
+
+            let r = d * dt / (dx * dx);
 
             let left = if x > 0 { grid.get(x - 1, y) } else { c };
             let right = if x + 1 < w { grid.get(x + 1, y) } else { c };

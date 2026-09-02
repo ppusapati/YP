@@ -29,6 +29,7 @@ type fieldService struct {
 	repo       outbound.FieldRepository
 	pub        outbound.EventPublisher
 	farmClient outbound.FarmClient
+	cropClient outbound.CropClient
 	pool       *pgxpool.Pool
 	log        *p9log.Helper
 }
@@ -37,6 +38,7 @@ func NewFieldService(
 	repo outbound.FieldRepository,
 	pub outbound.EventPublisher,
 	farmClient outbound.FarmClient,
+	cropClient outbound.CropClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.FieldService {
@@ -44,6 +46,7 @@ func NewFieldService(
 		repo:       repo,
 		pub:        pub,
 		farmClient: farmClient,
+		cropClient: cropClient,
 		pool:       pool,
 		log:        p9log.NewHelper(p9log.With(log, "component", "FieldService")),
 	}
@@ -566,6 +569,78 @@ func (s *fieldService) ListActivityEvents(ctx context.Context, params domain.Lis
 		params.PageSize = maxPageSize
 	}
 	return s.repo.ListActivityEvents(ctx, params)
+}
+
+// ---------------------------------------------------------------------------
+// Activity Evidence
+// ---------------------------------------------------------------------------
+
+func (s *fieldService) AddActivityEvidence(ctx context.Context, evidence *domain.ActivityEvidence) (*domain.ActivityEvidence, error) {
+	tenantID := p9context.TenantID(ctx)
+	userID := p9context.UserID(ctx)
+
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if evidence.ActivityEventID == "" {
+		return nil, errors.BadRequest("MISSING_ACTIVITY_EVENT_ID", "activity_event_id is required")
+	}
+	if evidence.FileURL == "" {
+		return nil, errors.BadRequest("MISSING_FILE_URL", "file_url is required")
+	}
+	if userID == "" {
+		userID = "system"
+	}
+
+	evidence.TenantID = tenantID
+	evidence.CapturedBy = userID
+
+	created, err := s.repo.CreateActivityEvidence(ctx, evidence)
+	if err != nil {
+		return nil, err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.activity.evidence.added", created.ID, map[string]interface{}{
+		"evidence_id": created.ID, "activity_event_id": created.ActivityEventID, "tenant_id": tenantID,
+	})
+	return created, nil
+}
+
+func (s *fieldService) ListActivityEvidence(ctx context.Context, params domain.ListActivityEvidenceParams) ([]domain.ActivityEvidence, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.ActivityEventID == "" {
+		return nil, 0, errors.BadRequest("MISSING_ACTIVITY_EVENT_ID", "activity_event_id is required")
+	}
+	params.TenantID = tenantID
+	if params.PageSize <= 0 {
+		params.PageSize = defaultPageSize
+	}
+	if params.PageSize > maxPageSize {
+		params.PageSize = maxPageSize
+	}
+	return s.repo.ListActivityEvidence(ctx, params)
+}
+
+func (s *fieldService) DeleteActivityEvidence(ctx context.Context, id string) error {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return errors.BadRequest("MISSING_EVIDENCE_ID", "evidence ID is required")
+	}
+
+	if err := s.repo.DeleteActivityEvidence(ctx, id, tenantID); err != nil {
+		return err
+	}
+
+	s.emitEvent(ctx, "agriculture.field.activity.evidence.deleted", id, map[string]interface{}{
+		"evidence_id": id, "tenant_id": tenantID,
+	})
+	return nil
 }
 
 // ---------------------------------------------------------------------------

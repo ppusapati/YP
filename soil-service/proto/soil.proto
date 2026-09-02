@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package agriculture.soil.v1;
 
-option go_package = "p9e.in/samavaya/agriculture/soil-service/api/v1";
+option go_package = "p9e.in/samavaya/agriculture/soil-service/api/v1;soilv1";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";

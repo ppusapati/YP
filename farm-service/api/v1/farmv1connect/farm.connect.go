@@ -77,35 +77,20 @@ const (
 
 // FarmServiceClient is a client for the agriculture.farm.v1.FarmService service.
 type FarmServiceClient interface {
-	// CreateFarm registers a new farm.
 	CreateFarm(context.Context, *connect.Request[v1.CreateFarmRequest]) (*connect.Response[v1.CreateFarmResponse], error)
-	// GetFarm retrieves a farm by ID.
 	GetFarm(context.Context, *connect.Request[v1.GetFarmRequest]) (*connect.Response[v1.GetFarmResponse], error)
-	// ListFarms lists farms with filtering and pagination.
 	ListFarms(context.Context, *connect.Request[v1.ListFarmsRequest]) (*connect.Response[v1.ListFarmsResponse], error)
-	// UpdateFarm updates an existing farm.
 	UpdateFarm(context.Context, *connect.Request[v1.UpdateFarmRequest]) (*connect.Response[v1.UpdateFarmResponse], error)
-	// DeleteFarm soft-deletes a farm.
 	DeleteFarm(context.Context, *connect.Request[v1.DeleteFarmRequest]) (*connect.Response[v1.DeleteFarmResponse], error)
-	// SetFarmBoundary sets or updates the geographic boundary of a farm.
 	SetFarmBoundary(context.Context, *connect.Request[v1.SetFarmBoundaryRequest]) (*connect.Response[v1.SetFarmBoundaryResponse], error)
-	// GetFarmBoundary retrieves the geographic boundary of a farm.
 	GetFarmBoundary(context.Context, *connect.Request[v1.GetFarmBoundaryRequest]) (*connect.Response[v1.GetFarmBoundaryResponse], error)
-	// TransferOwnership transfers ownership of a farm between users.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
-	// CreateManagementUnit creates a new management unit.
 	CreateManagementUnit(context.Context, *connect.Request[v1.CreateManagementUnitRequest]) (*connect.Response[v1.CreateManagementUnitResponse], error)
-	// GetManagementUnit retrieves a management unit by ID.
 	GetManagementUnit(context.Context, *connect.Request[v1.GetManagementUnitRequest]) (*connect.Response[v1.GetManagementUnitResponse], error)
-	// ListManagementUnits lists management units with filtering and pagination.
 	ListManagementUnits(context.Context, *connect.Request[v1.ListManagementUnitsRequest]) (*connect.Response[v1.ListManagementUnitsResponse], error)
-	// UpdateManagementUnit updates an existing management unit.
 	UpdateManagementUnit(context.Context, *connect.Request[v1.UpdateManagementUnitRequest]) (*connect.Response[v1.UpdateManagementUnitResponse], error)
-	// DeleteManagementUnit deletes a management unit.
 	DeleteManagementUnit(context.Context, *connect.Request[v1.DeleteManagementUnitRequest]) (*connect.Response[v1.DeleteManagementUnitResponse], error)
-	// AssignFieldsToUnit assigns fields to a management unit.
 	AssignFieldsToUnit(context.Context, *connect.Request[v1.AssignFieldsToUnitRequest]) (*connect.Response[v1.AssignFieldsToUnitResponse], error)
-	// RemoveFieldsFromUnit removes fields from a management unit.
 	RemoveFieldsFromUnit(context.Context, *connect.Request[v1.RemoveFieldsFromUnitRequest]) (*connect.Response[v1.RemoveFieldsFromUnitResponse], error)
 }
 
@@ -309,35 +294,20 @@ func (c *farmServiceClient) RemoveFieldsFromUnit(ctx context.Context, req *conne
 
 // FarmServiceHandler is an implementation of the agriculture.farm.v1.FarmService service.
 type FarmServiceHandler interface {
-	// CreateFarm registers a new farm.
 	CreateFarm(context.Context, *connect.Request[v1.CreateFarmRequest]) (*connect.Response[v1.CreateFarmResponse], error)
-	// GetFarm retrieves a farm by ID.
 	GetFarm(context.Context, *connect.Request[v1.GetFarmRequest]) (*connect.Response[v1.GetFarmResponse], error)
-	// ListFarms lists farms with filtering and pagination.
 	ListFarms(context.Context, *connect.Request[v1.ListFarmsRequest]) (*connect.Response[v1.ListFarmsResponse], error)
-	// UpdateFarm updates an existing farm.
 	UpdateFarm(context.Context, *connect.Request[v1.UpdateFarmRequest]) (*connect.Response[v1.UpdateFarmResponse], error)
-	// DeleteFarm soft-deletes a farm.
 	DeleteFarm(context.Context, *connect.Request[v1.DeleteFarmRequest]) (*connect.Response[v1.DeleteFarmResponse], error)
-	// SetFarmBoundary sets or updates the geographic boundary of a farm.
 	SetFarmBoundary(context.Context, *connect.Request[v1.SetFarmBoundaryRequest]) (*connect.Response[v1.SetFarmBoundaryResponse], error)
-	// GetFarmBoundary retrieves the geographic boundary of a farm.
 	GetFarmBoundary(context.Context, *connect.Request[v1.GetFarmBoundaryRequest]) (*connect.Response[v1.GetFarmBoundaryResponse], error)
-	// TransferOwnership transfers ownership of a farm between users.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
-	// CreateManagementUnit creates a new management unit.
 	CreateManagementUnit(context.Context, *connect.Request[v1.CreateManagementUnitRequest]) (*connect.Response[v1.CreateManagementUnitResponse], error)
-	// GetManagementUnit retrieves a management unit by ID.
 	GetManagementUnit(context.Context, *connect.Request[v1.GetManagementUnitRequest]) (*connect.Response[v1.GetManagementUnitResponse], error)
-	// ListManagementUnits lists management units with filtering and pagination.
 	ListManagementUnits(context.Context, *connect.Request[v1.ListManagementUnitsRequest]) (*connect.Response[v1.ListManagementUnitsResponse], error)
-	// UpdateManagementUnit updates an existing management unit.
 	UpdateManagementUnit(context.Context, *connect.Request[v1.UpdateManagementUnitRequest]) (*connect.Response[v1.UpdateManagementUnitResponse], error)
-	// DeleteManagementUnit deletes a management unit.
 	DeleteManagementUnit(context.Context, *connect.Request[v1.DeleteManagementUnitRequest]) (*connect.Response[v1.DeleteManagementUnitResponse], error)
-	// AssignFieldsToUnit assigns fields to a management unit.
 	AssignFieldsToUnit(context.Context, *connect.Request[v1.AssignFieldsToUnitRequest]) (*connect.Response[v1.AssignFieldsToUnitResponse], error)
-	// RemoveFieldsFromUnit removes fields from a management unit.
 	RemoveFieldsFromUnit(context.Context, *connect.Request[v1.RemoveFieldsFromUnitRequest]) (*connect.Response[v1.RemoveFieldsFromUnitResponse], error)
 }
 

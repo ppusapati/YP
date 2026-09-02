@@ -64,7 +64,7 @@ func (r *sensorRepository) exec(ctx context.Context, sql string, args ...any) er
 // Sensor CRUD
 // =============================================================================
 
-const sensorColumns = `id, uuid, tenant_id, field_id, farm_id, sensor_type, device_id,
+const sensorColumns = `id, tenant_id, field_id, farm_id, sensor_type, device_id,
 	manufacturer, model, firmware_version, latitude, longitude, elevation_m,
 	installation_date, last_reading_at, battery_level_pct, signal_strength_dbm,
 	status, protocol, reading_interval_seconds, metadata, version,
@@ -73,7 +73,7 @@ const sensorColumns = `id, uuid, tenant_id, field_id, farm_id, sensor_type, devi
 func scanSensor(row pgx.Row) (*domain.Sensor, error) {
 	s := &domain.Sensor{}
 	err := row.Scan(
-		&s.ID, &s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
+		&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
 		&s.SensorType, &s.DeviceID,
 		&s.Manufacturer, &s.Model, &s.FirmwareVersion,
 		&s.Latitude, &s.Longitude, &s.ElevationM,
@@ -92,18 +92,15 @@ func (r *sensorRepository) CreateSensor(ctx context.Context, entity *domain.Sens
 
 	query := `
 		INSERT INTO sensors (
-			uuid, tenant_id, field_id, farm_id, sensor_type, device_id,
+			id, tenant_id, field_id, farm_id, sensor_type, device_id,
 			manufacturer, model, firmware_version,
-			location, latitude, longitude, elevation_m,
+			latitude, longitude, elevation_m,
 			installation_date, battery_level_pct, signal_strength_dbm,
 			status, protocol, reading_interval_seconds, metadata,
 			version, is_active, created_by, created_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6,
 			$7, $8, $9,
-			CASE WHEN $10::float8 IS NOT NULL AND $11::float8 IS NOT NULL
-				THEN ST_SetSRID(ST_MakePoint($11, $10), 4326)
-				ELSE NULL END,
 			$10, $11, $12,
 			$13, $14, $15,
 			$16, $17, $18, $19,
@@ -130,7 +127,7 @@ func (r *sensorRepository) CreateSensor(ctx context.Context, entity *domain.Sens
 func (r *sensorRepository) GetSensorByUUID(ctx context.Context, uuid, tenantID string) (*domain.Sensor, error) {
 	query := `SELECT ` + sensorColumns + `
 		FROM sensors
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL`
+		WHERE id = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL`
 
 	row := r.queryRow(ctx, query, uuid, tenantID)
 	s, err := scanSensor(row)
@@ -232,11 +229,6 @@ func (r *sensorRepository) UpdateSensor(ctx context.Context, entity *domain.Sens
 			latitude = COALESCE($4, latitude),
 			longitude = COALESCE($5, longitude),
 			elevation_m = COALESCE($6, elevation_m),
-			location = CASE
-				WHEN $4::float8 IS NOT NULL AND $5::float8 IS NOT NULL
-				THEN ST_SetSRID(ST_MakePoint($5, $4), 4326)
-				ELSE location
-			END,
 			status = COALESCE(NULLIF($7, ''), status),
 			protocol = COALESCE(NULLIF($8, ''), protocol),
 			reading_interval_seconds = CASE WHEN $9 > 0 THEN $9 ELSE reading_interval_seconds END,
@@ -244,7 +236,7 @@ func (r *sensorRepository) UpdateSensor(ctx context.Context, entity *domain.Sens
 			version = version + 1,
 			updated_by = $11,
 			updated_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL
+		WHERE id = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL
 		RETURNING ` + sensorColumns
 
 	row := r.queryRow(ctx, query,
@@ -275,7 +267,7 @@ func (r *sensorRepository) DecommissionSensor(ctx context.Context, uuid, tenantI
 			version = version + 1,
 			updated_by = $3,
 			updated_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL
+		WHERE id = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL
 		RETURNING ` + sensorColumns
 
 	row := r.queryRow(ctx, query, uuid, tenantID, userID)
@@ -297,7 +289,7 @@ func (r *sensorRepository) UpdateSensorLastReading(ctx context.Context, uuid, te
 			battery_level_pct = COALESCE($4, battery_level_pct),
 			signal_strength_dbm = COALESCE($5, signal_strength_dbm),
 			updated_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2`
+		WHERE id = $1 AND tenant_id = $2`
 
 	if err := r.exec(ctx, query, uuid, tenantID, readingTime, batteryPct, signalDbm); err != nil {
 		r.log.Errorw("msg", "failed to update sensor last reading", "error", err)
@@ -310,13 +302,13 @@ func (r *sensorRepository) UpdateSensorLastReading(ctx context.Context, uuid, te
 // Sensor Readings
 // =============================================================================
 
-const readingColumns = `id, uuid, sensor_id, tenant_id, value, unit, recorded_at,
+const readingColumns = `id, sensor_id, tenant_id, value, unit, recorded_at,
 	quality, battery_level_pct, signal_strength_dbm, metadata, created_at`
 
 func scanReading(row pgx.Row) (*domain.SensorReading, error) {
 	rd := &domain.SensorReading{}
 	err := row.Scan(
-		&rd.ID, &rd.UUID, &rd.SensorID, &rd.TenantID,
+		&rd.UUID, &rd.SensorID, &rd.TenantID,
 		&rd.Value, &rd.Unit, &rd.RecordedAt,
 		&rd.Quality, &rd.BatteryLevelPct, &rd.SignalStrengthDbm,
 		&rd.Metadata, &rd.CreatedAt,
@@ -329,7 +321,7 @@ func (r *sensorRepository) CreateReading(ctx context.Context, reading *domain.Se
 
 	query := `
 		INSERT INTO sensor_readings (
-			uuid, sensor_id, tenant_id, value, unit, recorded_at,
+			id, sensor_id, tenant_id, value, unit, recorded_at,
 			quality, battery_level_pct, signal_strength_dbm, metadata, created_at
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
 		RETURNING ` + readingColumns
@@ -421,7 +413,7 @@ func (r *sensorRepository) GetReadingHistory(ctx context.Context, sensorID, tena
 // Sensor Alerts
 // =============================================================================
 
-const alertColumns = `id, uuid, sensor_id, tenant_id, field_id, sensor_type,
+const alertColumns = `id, sensor_id, tenant_id, field_id, sensor_type,
 	threshold, actual_value, condition, severity, message,
 	acknowledged, acknowledged_by, acknowledged_at,
 	is_active, created_by, created_at, updated_by, updated_at`
@@ -429,7 +421,7 @@ const alertColumns = `id, uuid, sensor_id, tenant_id, field_id, sensor_type,
 func scanAlert(row pgx.Row) (*domain.SensorAlert, error) {
 	a := &domain.SensorAlert{}
 	err := row.Scan(
-		&a.ID, &a.UUID, &a.SensorID, &a.TenantID,
+		&a.UUID, &a.SensorID, &a.TenantID,
 		&a.FieldID, &a.SensorType,
 		&a.Threshold, &a.ActualValue,
 		&a.Condition, &a.Severity, &a.Message,
@@ -445,7 +437,7 @@ func (r *sensorRepository) CreateAlert(ctx context.Context, alert *domain.Sensor
 
 	query := `
 		INSERT INTO sensor_alerts (
-			uuid, sensor_id, tenant_id, field_id, sensor_type,
+			id, sensor_id, tenant_id, field_id, sensor_type,
 			threshold, actual_value, condition, severity, message,
 			acknowledged, is_active, created_by, created_at
 		) VALUES (
@@ -533,7 +525,7 @@ func (r *sensorRepository) AcknowledgeAlert(ctx context.Context, uuid, tenantID,
 			acknowledged_at = NOW(),
 			updated_by = $3,
 			updated_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL
+		WHERE id = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL
 		RETURNING ` + alertColumns
 
 	row := r.queryRow(ctx, query, uuid, tenantID, userID)
@@ -576,14 +568,14 @@ func (r *sensorRepository) GetActiveAlertsForSensor(ctx context.Context, sensorI
 // Sensor Networks
 // =============================================================================
 
-const networkColumns = `id, uuid, tenant_id, farm_id, name, description, protocol,
+const networkColumns = `id, tenant_id, farm_id, name, description, protocol,
 	gateway_id, sensor_ids, total_sensors, active_sensors,
 	is_active, created_by, created_at, updated_by, updated_at`
 
 func scanNetwork(row pgx.Row) (*domain.SensorNetwork, error) {
 	n := &domain.SensorNetwork{}
 	err := row.Scan(
-		&n.ID, &n.UUID, &n.TenantID, &n.FarmID,
+		&n.UUID, &n.TenantID, &n.FarmID,
 		&n.Name, &n.Description, &n.Protocol,
 		&n.GatewayID, &n.SensorIDs, &n.TotalSensors, &n.ActiveSensors,
 		&n.IsActive, &n.CreatedBy, &n.CreatedAt,
@@ -595,7 +587,7 @@ func scanNetwork(row pgx.Row) (*domain.SensorNetwork, error) {
 func (r *sensorRepository) GetSensorNetworkByUUID(ctx context.Context, uuid, tenantID string) (*domain.SensorNetwork, error) {
 	query := `SELECT ` + networkColumns + `
 		FROM sensor_networks
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL`
+		WHERE id = $1 AND tenant_id = $2 AND is_active = true AND deleted_at IS NULL`
 
 	row := r.queryRow(ctx, query, uuid, tenantID)
 	n, err := scanNetwork(row)
@@ -629,14 +621,14 @@ func (r *sensorRepository) GetSensorNetworkByFarm(ctx context.Context, farmID, t
 // Sensor Calibrations
 // =============================================================================
 
-const calibrationColumns = `id, uuid, sensor_id, tenant_id, offset_value, scale_factor,
+const calibrationColumns = `id, sensor_id, tenant_id, offset_value, scale_factor,
 	calibration_date, next_calibration_date, calibrated_by, notes,
 	is_active, created_by, created_at`
 
 func scanCalibration(row pgx.Row) (*domain.SensorCalibration, error) {
 	c := &domain.SensorCalibration{}
 	err := row.Scan(
-		&c.ID, &c.UUID, &c.SensorID, &c.TenantID,
+		&c.UUID, &c.SensorID, &c.TenantID,
 		&c.OffsetValue, &c.ScaleFactor,
 		&c.CalibrationDate, &c.NextCalibrationDate,
 		&c.CalibratedBy, &c.Notes,
@@ -650,7 +642,7 @@ func (r *sensorRepository) CreateCalibration(ctx context.Context, cal *domain.Se
 
 	query := `
 		INSERT INTO sensor_calibrations (
-			uuid, sensor_id, tenant_id, offset_value, scale_factor,
+			id, sensor_id, tenant_id, offset_value, scale_factor,
 			calibration_date, next_calibration_date, calibrated_by, notes,
 			is_active, created_by, created_at
 		) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, true, $7, NOW())

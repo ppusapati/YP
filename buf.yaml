@@ -16,6 +16,7 @@ modules:
   - path: plant-diagnosis-service/proto
   - path: yield-service/proto
   - path: traceability-service/proto
+  - path: commerce-service/proto
   - path: satellite-ingestion-service/proto
   - path: satellite-processing-service/proto
   - path: satellite-analytics-service/proto

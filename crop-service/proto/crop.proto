@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package agriculture.crop.v1;
 
-option go_package = "p9e.in/samavaya/agriculture/crop-service/api/v1";
+option go_package = "p9e.in/samavaya/agriculture/crop-service/api/v1;cropv1";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/field_mask.proto";

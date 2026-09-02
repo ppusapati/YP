@@ -97,6 +97,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${FIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/field_service?sslmode=disable}
+      FARM_SERVICE_URL: http://farm-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
 
   crop-service:
     <<: *go-service
@@ -121,6 +123,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SENSOR_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/sensor_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   irrigation-service:
     <<: *go-service
@@ -133,6 +137,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/irrigation_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   soil-service:
     <<: *go-service
@@ -145,6 +151,8 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SOIL_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   yield-service:
     <<: *go-service
@@ -157,6 +165,12 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${YIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/yield_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      SOIL_SERVICE_URL: http://soil-service:8080
+      IRRIGATION_SERVICE_URL: http://irrigation-service:8080
+      PEST_PREDICTION_SERVICE_URL: http://pest-prediction-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   pest-prediction-service:
     <<: *go-service
@@ -169,6 +183,9 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${PEST_PREDICTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/pest_prediction_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      SENSOR_SERVICE_URL: http://sensor-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
 
   plant-diagnosis-service:
     <<: *go-service
@@ -181,6 +198,9 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/plant_diagnosis_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   satellite-service:
     <<: *go-service
@@ -193,6 +213,9 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SATELLITE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      FARM_SERVICE_URL: http://farm-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   traceability-service:
     <<: *go-service
@@ -205,6 +228,25 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${TRACEABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/traceability_service?sslmode=disable}
+      FARM_SERVICE_URL: http://farm-service:8080
+      FIELD_SERVICE_URL: http://field-service:8080
+      YIELD_SERVICE_URL: http://yield-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
+
+  commerce-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: commerce-service
+    ports:
+      - "8092:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${COMMERCE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/commerce_service?sslmode=disable}
+      FARM_SERVICE_URL: http://farm-service:8080
+      CROP_SERVICE_URL: http://crop-service:8080
+      TRACEABILITY_SERVICE_URL: http://traceability-service:8080
 
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 
@@ -215,6 +257,8 @@ services:
     restart: unless-stopped
     ports:
       - "50051:50051"
+    environment:
+      RUST_LOG: ai_gateway=info
     healthcheck:
       test: ["CMD-SHELL", "true"]
       interval: 30s

@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: irrigation.proto
 
-package v1
+package irrigationv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -3218,7 +3218,7 @@ const file_irrigation_proto_rawDesc = "" +
 	"\x11TriggerIrrigation\x123.agriculture.irrigation.v1.TriggerIrrigationRequest\x1a4.agriculture.irrigation.v1.TriggerIrrigationResponse\x12u\n" +
 	"\x0eStopIrrigation\x120.agriculture.irrigation.v1.StopIrrigationRequest\x1a1.agriculture.irrigation.v1.StopIrrigationResponse\x12r\n" +
 	"\rGetWaterUsage\x12/.agriculture.irrigation.v1.GetWaterUsageRequest\x1a0.agriculture.irrigation.v1.GetWaterUsageResponse\x12\x87\x01\n" +
-	"\x14GetIrrigationHistory\x126.agriculture.irrigation.v1.GetIrrigationHistoryRequest\x1a7.agriculture.irrigation.v1.GetIrrigationHistoryResponseB7Z5p9e.in/samavaya/agriculture/irrigation-service/api/v1b\x06proto3"
+	"\x14GetIrrigationHistory\x126.agriculture.irrigation.v1.GetIrrigationHistoryRequest\x1a7.agriculture.irrigation.v1.GetIrrigationHistoryResponseBDZBp9e.in/samavaya/agriculture/irrigation-service/api/v1;irrigationv1b\x06proto3"
 
 var (
 	file_irrigation_proto_rawDescOnce sync.Once

@@ -28,11 +28,13 @@ import (
 	grpcadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/inbound/grpc"
 
 	// Outbound adapters
+	clientsadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/clients"
 	kafkaadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/postgres"
 
 	// Application core
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/application"
+	connectclient "p9e.in/samavaya/packages/connect/client"
 )
 
 func main() {
@@ -52,6 +54,8 @@ func main() {
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/irrigation_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER") // optional; events are best-effort
 	port := envOr("PORT", "8080")
+	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8082")
+	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -83,8 +87,11 @@ func main() {
 	repo := postgresadapter.NewIrrigationRepository(pool, logger)
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 
+	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+
 	// ── Application service (core) ───────────────────────────────────────────
-	svc := application.NewIrrigationService(repo, pub, nil, pool, logger)
+	svc := application.NewIrrigationService(repo, pub, fieldClient, farmClient, pool, logger)
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────
 	handler := grpcadapter.NewIrrigationHandler(svc, logger)

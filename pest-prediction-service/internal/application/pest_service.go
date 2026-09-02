@@ -31,6 +31,7 @@ type pestService struct {
 	pub          outbound.EventPublisher
 	fieldClient  outbound.FieldClient
 	sensorClient outbound.SensorClient
+	farmClient   outbound.FarmClient
 	pool         *pgxpool.Pool
 	log          *p9log.Helper
 }
@@ -41,6 +42,7 @@ func NewPestService(
 	pub outbound.EventPublisher,
 	fieldClient outbound.FieldClient,
 	sensorClient outbound.SensorClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.PestService {
@@ -49,6 +51,7 @@ func NewPestService(
 		pub:          pub,
 		fieldClient:  fieldClient,
 		sensorClient: sensorClient,
+		farmClient:   farmClient,
 		pool:         pool,
 		log:          p9log.NewHelper(p9log.With(log, "component", "PestService")),
 	}

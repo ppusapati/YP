@@ -53,6 +53,8 @@ func main() {
 	soilServiceURL := envOr("SOIL_SERVICE_URL", "http://localhost:8082")
 	irrigationServiceURL := envOr("IRRIGATION_SERVICE_URL", "http://localhost:8083")
 	pestPredictionServiceURL := envOr("PEST_PREDICTION_SERVICE_URL", "http://localhost:8084")
+	cropServiceURL := envOr("CROP_SERVICE_URL", "http://localhost:8083")
+	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -87,6 +89,8 @@ func main() {
 	soilClient := clientsadapter.NewSoilClient(soilServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(soilServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	irrigationClient := clientsadapter.NewIrrigationClient(irrigationServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(irrigationServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	pestClient := clientsadapter.NewPestClient(pestPredictionServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(pestPredictionServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	cropClient := clientsadapter.NewCropClient(cropServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(cropServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
 	svc := application.NewYieldService(repo, pub,
@@ -94,6 +98,8 @@ func main() {
 		soilClient,
 		irrigationClient,
 		pestClient,
+		cropClient,
+		farmClient,
 		pool, logger)
 
 	// Inbound adapters

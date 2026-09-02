@@ -33,10 +33,14 @@ const (
 
 // traceabilityService implements inbound.TraceabilityService.
 type traceabilityService struct {
-	repo outbound.TraceabilityRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool // reserved for future transactional operations
-	log  *p9log.Helper
+	repo        outbound.TraceabilityRepository
+	pub         outbound.EventPublisher
+	farmClient  outbound.FarmClient
+	fieldClient outbound.FieldClient
+	yieldClient outbound.YieldClient
+	cropClient  outbound.CropClient
+	pool        *pgxpool.Pool // reserved for future transactional operations
+	log         *p9log.Helper
 }
 
 // NewTraceabilityService creates a new application-layer TraceabilityService.
@@ -45,14 +49,22 @@ type traceabilityService struct {
 func NewTraceabilityService(
 	repo outbound.TraceabilityRepository,
 	pub outbound.EventPublisher,
+	farmClient outbound.FarmClient,
+	fieldClient outbound.FieldClient,
+	yieldClient outbound.YieldClient,
+	cropClient outbound.CropClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.TraceabilityService {
 	return &traceabilityService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
+		repo:        repo,
+		pub:         pub,
+		farmClient:  farmClient,
+		fieldClient: fieldClient,
+		yieldClient: yieldClient,
+		cropClient:  cropClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
 	}
 }
 
@@ -723,6 +735,200 @@ func evaluateCompliance(
 	}
 
 	return findings, recommendations, score, status
+}
+
+// --- Quality Checkpoints ---
+
+func (s *traceabilityService) CreateQualityCheckpoint(ctx context.Context, input domain.CreateQualityCheckpointInput) (*domain.QualityCheckpoint, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if input.RecordID == "" {
+		return nil, errors.BadRequest("MISSING_RECORD_ID", "record_id is required")
+	}
+	if !domain.ValidQualityCheckTypes[input.CheckType] {
+		return nil, errors.BadRequest("INVALID_CHECK_TYPE", fmt.Sprintf("invalid quality check type: %s", input.CheckType))
+	}
+	if input.Result != domain.QualityCheckResultPass && input.Result != domain.QualityCheckResultFail {
+		return nil, errors.BadRequest("INVALID_RESULT", fmt.Sprintf("invalid quality check result: %s", input.Result))
+	}
+	if input.InspectorName == "" {
+		return nil, errors.BadRequest("MISSING_INSPECTOR_NAME", "inspector_name is required")
+	}
+	if input.InspectedAt.IsZero() {
+		return nil, errors.BadRequest("MISSING_INSPECTED_AT", "inspected_at is required")
+	}
+
+	// Verify record exists
+	if _, err := s.repo.GetRecord(ctx, input.RecordID, tenantID); err != nil {
+		return nil, err
+	}
+
+	userID := p9context.UserID(ctx)
+	now := time.Now()
+	metadata := metadataToJSON(input.Metadata)
+
+	var supplyChainEventID *string
+	if input.SupplyChainEventID != nil && *input.SupplyChainEventID != "" {
+		supplyChainEventID = input.SupplyChainEventID
+	}
+
+	checkpoint := &domain.QualityCheckpoint{
+		ID:                 ulid.NewString(),
+		TenantID:           tenantID,
+		RecordID:           input.RecordID,
+		SupplyChainEventID: supplyChainEventID,
+		CheckType:          input.CheckType,
+		Result:             input.Result,
+		InspectorID:        userID,
+		InspectorName:      input.InspectorName,
+		InspectedAt:        input.InspectedAt,
+		Location:           input.Location,
+		MeasurementValue:   input.MeasurementValue,
+		MeasurementUnit:    input.MeasurementUnit,
+		MinThreshold:       input.MinThreshold,
+		MaxThreshold:       input.MaxThreshold,
+		Notes:              input.Notes,
+		EvidenceURLs:       input.EvidenceURLs,
+		Metadata:           metadata,
+		CreatedAt:          now,
+	}
+
+	created, err := s.repo.CreateQualityCheckpoint(ctx, checkpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	s.publishEvent(ctx, "agriculture.traceability.quality_checkpoint.created", created.ID, map[string]interface{}{
+		"checkpoint_id": created.ID,
+		"record_id":     created.RecordID,
+		"check_type":    string(created.CheckType),
+		"result":        string(created.Result),
+		"inspector":     created.InspectorName,
+	})
+
+	s.log.Infow("msg", "created quality checkpoint", "checkpoint_id", created.ID, "record_id", input.RecordID, "check_type", input.CheckType)
+	return created, nil
+}
+
+func (s *traceabilityService) GetQualityCheckpoint(ctx context.Context, id string) (*domain.QualityCheckpoint, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_ID", "checkpoint id is required")
+	}
+	return s.repo.GetQualityCheckpoint(ctx, id, tenantID)
+}
+
+func (s *traceabilityService) ListQualityCheckpoints(ctx context.Context, filter domain.ListQualityCheckpointsFilter) ([]domain.QualityCheckpoint, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if filter.RecordID == "" {
+		return nil, 0, errors.BadRequest("MISSING_RECORD_ID", "record_id is required")
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = defaultPageSize
+	}
+	if filter.PageSize > maxPageSize {
+		filter.PageSize = maxPageSize
+	}
+	return s.repo.ListQualityCheckpoints(ctx, filter, tenantID)
+}
+
+// --- Record Update ---
+
+func (s *traceabilityService) UpdateRecord(ctx context.Context, id string, input domain.UpdateRecordInput) (*domain.TraceabilityRecord, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_ID", "record id is required")
+	}
+
+	userID := p9context.UserID(ctx)
+	updated, err := s.repo.UpdateRecord(ctx, id, tenantID, input, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.publishEvent(ctx, "agriculture.traceability.record.updated", updated.ID, map[string]interface{}{
+		"record_id": updated.ID,
+		"tenant_id": updated.TenantID,
+	})
+
+	s.log.Infow("msg", "updated traceability record", "record_id", updated.ID, "tenant_id", tenantID)
+	return updated, nil
+}
+
+// --- Certification Revocation ---
+
+func (s *traceabilityService) RevokeCertification(ctx context.Context, id, reason string) (*domain.Certification, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_ID", "certification id is required")
+	}
+
+	existing, err := s.repo.GetCertification(ctx, id, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if existing.Status != domain.CertificationStatusActive {
+		return nil, errors.BadRequest("INVALID_STATUS", fmt.Sprintf("certification is in %s status, only ACTIVE certifications can be revoked", existing.Status))
+	}
+
+	revoked, err := s.repo.RevokeCertification(ctx, id, tenantID, reason)
+	if err != nil {
+		return nil, err
+	}
+
+	s.publishEvent(ctx, "agriculture.traceability.certification.revoked", revoked.ID, map[string]interface{}{
+		"certification_id": revoked.ID,
+		"record_id":        revoked.RecordID,
+		"cert_type":        string(revoked.CertType),
+		"reason":           reason,
+	})
+
+	s.log.Infow("msg", "revoked certification", "certification_id", id, "reason", reason)
+	return revoked, nil
+}
+
+// --- Compliance Report Retrieval ---
+
+func (s *traceabilityService) GetComplianceReport(ctx context.Context, id string) (*domain.ComplianceReport, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_ID", "compliance report id is required")
+	}
+	return s.repo.GetComplianceReport(ctx, id, tenantID)
+}
+
+func (s *traceabilityService) ListComplianceReports(ctx context.Context, filter domain.ListComplianceReportsFilter) ([]domain.ComplianceReport, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if filter.RecordID == "" {
+		return nil, 0, errors.BadRequest("MISSING_RECORD_ID", "record_id is required")
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = defaultPageSize
+	}
+	if filter.PageSize > maxPageSize {
+		filter.PageSize = maxPageSize
+	}
+	return s.repo.ListComplianceReports(ctx, filter, tenantID)
 }
 
 // --- Helpers ---

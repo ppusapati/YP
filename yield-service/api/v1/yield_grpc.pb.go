@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: yield.proto
 
-package v1
+package yieldv1
 
 import (
 	context "context"

@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: diagnosis.proto
 
-package v1
+package plantdiagnosisv1
 
 import (
 	context "context"

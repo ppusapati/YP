@@ -27,24 +27,30 @@ const (
 )
 
 type sensorService struct {
-	repo outbound.SensorRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	repo        outbound.SensorRepository
+	pub         outbound.EventPublisher
+	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewSensorService creates a new application-layer SensorService.
 func NewSensorService(
 	repo outbound.SensorRepository,
 	pub outbound.EventPublisher,
+	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) *sensorService {
 	return &sensorService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "SensorService")),
+		repo:        repo,
+		pub:         pub,
+		fieldClient: fieldClient,
+		farmClient:  farmClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "SensorService")),
 	}
 }
 

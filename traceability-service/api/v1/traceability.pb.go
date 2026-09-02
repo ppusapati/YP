@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: traceability.proto
 
-package v1
+package traceabilityv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -265,6 +265,120 @@ func (x ComplianceStatus) Number() protoreflect.EnumNumber {
 // Deprecated: Use ComplianceStatus.Descriptor instead.
 func (ComplianceStatus) EnumDescriptor() ([]byte, []int) {
 	return file_traceability_proto_rawDescGZIP(), []int{3}
+}
+
+// QualityCheckType classifies quality inspections.
+type QualityCheckType int32
+
+const (
+	QualityCheckType_QUALITY_CHECK_TYPE_UNSPECIFIED QualityCheckType = 0
+	QualityCheckType_QUALITY_CHECK_TYPE_VISUAL      QualityCheckType = 1
+	QualityCheckType_QUALITY_CHECK_TYPE_LAB         QualityCheckType = 2
+	QualityCheckType_QUALITY_CHECK_TYPE_TEMPERATURE QualityCheckType = 3
+	QualityCheckType_QUALITY_CHECK_TYPE_MOISTURE    QualityCheckType = 4
+	QualityCheckType_QUALITY_CHECK_TYPE_WEIGHT      QualityCheckType = 5
+	QualityCheckType_QUALITY_CHECK_TYPE_SENSORY     QualityCheckType = 6
+	QualityCheckType_QUALITY_CHECK_TYPE_OTHER       QualityCheckType = 7
+)
+
+// Enum value maps for QualityCheckType.
+var (
+	QualityCheckType_name = map[int32]string{
+		0: "QUALITY_CHECK_TYPE_UNSPECIFIED",
+		1: "QUALITY_CHECK_TYPE_VISUAL",
+		2: "QUALITY_CHECK_TYPE_LAB",
+		3: "QUALITY_CHECK_TYPE_TEMPERATURE",
+		4: "QUALITY_CHECK_TYPE_MOISTURE",
+		5: "QUALITY_CHECK_TYPE_WEIGHT",
+		6: "QUALITY_CHECK_TYPE_SENSORY",
+		7: "QUALITY_CHECK_TYPE_OTHER",
+	}
+	QualityCheckType_value = map[string]int32{
+		"QUALITY_CHECK_TYPE_UNSPECIFIED": 0,
+		"QUALITY_CHECK_TYPE_VISUAL":      1,
+		"QUALITY_CHECK_TYPE_LAB":         2,
+		"QUALITY_CHECK_TYPE_TEMPERATURE": 3,
+		"QUALITY_CHECK_TYPE_MOISTURE":    4,
+		"QUALITY_CHECK_TYPE_WEIGHT":      5,
+		"QUALITY_CHECK_TYPE_SENSORY":     6,
+		"QUALITY_CHECK_TYPE_OTHER":       7,
+	}
+)
+
+func (x QualityCheckType) Enum() *QualityCheckType {
+	p := new(QualityCheckType)
+	*p = x
+	return p
+}
+
+func (x QualityCheckType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (QualityCheckType) Descriptor() protoreflect.EnumDescriptor {
+	return file_traceability_proto_enumTypes[4].Descriptor()
+}
+
+func (QualityCheckType) Type() protoreflect.EnumType {
+	return &file_traceability_proto_enumTypes[4]
+}
+
+func (x QualityCheckType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use QualityCheckType.Descriptor instead.
+func (QualityCheckType) EnumDescriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{4}
+}
+
+type QualityCheckResult int32
+
+const (
+	QualityCheckResult_QUALITY_CHECK_RESULT_UNSPECIFIED QualityCheckResult = 0
+	QualityCheckResult_QUALITY_CHECK_RESULT_PASS        QualityCheckResult = 1
+	QualityCheckResult_QUALITY_CHECK_RESULT_FAIL        QualityCheckResult = 2
+)
+
+// Enum value maps for QualityCheckResult.
+var (
+	QualityCheckResult_name = map[int32]string{
+		0: "QUALITY_CHECK_RESULT_UNSPECIFIED",
+		1: "QUALITY_CHECK_RESULT_PASS",
+		2: "QUALITY_CHECK_RESULT_FAIL",
+	}
+	QualityCheckResult_value = map[string]int32{
+		"QUALITY_CHECK_RESULT_UNSPECIFIED": 0,
+		"QUALITY_CHECK_RESULT_PASS":        1,
+		"QUALITY_CHECK_RESULT_FAIL":        2,
+	}
+)
+
+func (x QualityCheckResult) Enum() *QualityCheckResult {
+	p := new(QualityCheckResult)
+	*p = x
+	return p
+}
+
+func (x QualityCheckResult) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (QualityCheckResult) Descriptor() protoreflect.EnumDescriptor {
+	return file_traceability_proto_enumTypes[5].Descriptor()
+}
+
+func (QualityCheckResult) Type() protoreflect.EnumType {
+	return &file_traceability_proto_enumTypes[5]
+}
+
+func (x QualityCheckResult) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use QualityCheckResult.Descriptor instead.
+func (QualityCheckResult) EnumDescriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{5}
 }
 
 // SupplyChainEvent represents a single event in the supply chain.
@@ -2961,6 +3075,1058 @@ func (x *GenerateComplianceReportResponse) GetReport() *ComplianceReport {
 	return nil
 }
 
+type QualityCheckpoint struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId           string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	RecordId           string                 `protobuf:"bytes,3,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
+	SupplyChainEventId string                 `protobuf:"bytes,4,opt,name=supply_chain_event_id,json=supplyChainEventId,proto3" json:"supply_chain_event_id,omitempty"`
+	CheckType          QualityCheckType       `protobuf:"varint,5,opt,name=check_type,json=checkType,proto3,enum=agriculture.traceability.v1.QualityCheckType" json:"check_type,omitempty"`
+	Result             QualityCheckResult     `protobuf:"varint,6,opt,name=result,proto3,enum=agriculture.traceability.v1.QualityCheckResult" json:"result,omitempty"`
+	InspectorId        string                 `protobuf:"bytes,7,opt,name=inspector_id,json=inspectorId,proto3" json:"inspector_id,omitempty"`
+	InspectorName      string                 `protobuf:"bytes,8,opt,name=inspector_name,json=inspectorName,proto3" json:"inspector_name,omitempty"`
+	InspectedAt        *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=inspected_at,json=inspectedAt,proto3" json:"inspected_at,omitempty"`
+	Location           string                 `protobuf:"bytes,10,opt,name=location,proto3" json:"location,omitempty"`
+	MeasurementValue   float64                `protobuf:"fixed64,11,opt,name=measurement_value,json=measurementValue,proto3" json:"measurement_value,omitempty"`
+	MeasurementUnit    string                 `protobuf:"bytes,12,opt,name=measurement_unit,json=measurementUnit,proto3" json:"measurement_unit,omitempty"`
+	MinThreshold       float64                `protobuf:"fixed64,13,opt,name=min_threshold,json=minThreshold,proto3" json:"min_threshold,omitempty"`
+	MaxThreshold       float64                `protobuf:"fixed64,14,opt,name=max_threshold,json=maxThreshold,proto3" json:"max_threshold,omitempty"`
+	Notes              string                 `protobuf:"bytes,15,opt,name=notes,proto3" json:"notes,omitempty"`
+	EvidenceUrls       []string               `protobuf:"bytes,16,rep,name=evidence_urls,json=evidenceUrls,proto3" json:"evidence_urls,omitempty"`
+	Metadata           map[string]string      `protobuf:"bytes,17,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *QualityCheckpoint) Reset() {
+	*x = QualityCheckpoint{}
+	mi := &file_traceability_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QualityCheckpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QualityCheckpoint) ProtoMessage() {}
+
+func (x *QualityCheckpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QualityCheckpoint.ProtoReflect.Descriptor instead.
+func (*QualityCheckpoint) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *QualityCheckpoint) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetRecordId() string {
+	if x != nil {
+		return x.RecordId
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetSupplyChainEventId() string {
+	if x != nil {
+		return x.SupplyChainEventId
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetCheckType() QualityCheckType {
+	if x != nil {
+		return x.CheckType
+	}
+	return QualityCheckType_QUALITY_CHECK_TYPE_UNSPECIFIED
+}
+
+func (x *QualityCheckpoint) GetResult() QualityCheckResult {
+	if x != nil {
+		return x.Result
+	}
+	return QualityCheckResult_QUALITY_CHECK_RESULT_UNSPECIFIED
+}
+
+func (x *QualityCheckpoint) GetInspectorId() string {
+	if x != nil {
+		return x.InspectorId
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetInspectorName() string {
+	if x != nil {
+		return x.InspectorName
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetInspectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.InspectedAt
+	}
+	return nil
+}
+
+func (x *QualityCheckpoint) GetLocation() string {
+	if x != nil {
+		return x.Location
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetMeasurementValue() float64 {
+	if x != nil {
+		return x.MeasurementValue
+	}
+	return 0
+}
+
+func (x *QualityCheckpoint) GetMeasurementUnit() string {
+	if x != nil {
+		return x.MeasurementUnit
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetMinThreshold() float64 {
+	if x != nil {
+		return x.MinThreshold
+	}
+	return 0
+}
+
+func (x *QualityCheckpoint) GetMaxThreshold() float64 {
+	if x != nil {
+		return x.MaxThreshold
+	}
+	return 0
+}
+
+func (x *QualityCheckpoint) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetEvidenceUrls() []string {
+	if x != nil {
+		return x.EvidenceUrls
+	}
+	return nil
+}
+
+func (x *QualityCheckpoint) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *QualityCheckpoint) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type CreateQualityCheckpointRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	RecordId           string                 `protobuf:"bytes,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
+	SupplyChainEventId string                 `protobuf:"bytes,2,opt,name=supply_chain_event_id,json=supplyChainEventId,proto3" json:"supply_chain_event_id,omitempty"`
+	CheckType          QualityCheckType       `protobuf:"varint,3,opt,name=check_type,json=checkType,proto3,enum=agriculture.traceability.v1.QualityCheckType" json:"check_type,omitempty"`
+	Result             QualityCheckResult     `protobuf:"varint,4,opt,name=result,proto3,enum=agriculture.traceability.v1.QualityCheckResult" json:"result,omitempty"`
+	InspectorName      string                 `protobuf:"bytes,5,opt,name=inspector_name,json=inspectorName,proto3" json:"inspector_name,omitempty"`
+	InspectedAt        *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=inspected_at,json=inspectedAt,proto3" json:"inspected_at,omitempty"`
+	Location           string                 `protobuf:"bytes,7,opt,name=location,proto3" json:"location,omitempty"`
+	MeasurementValue   float64                `protobuf:"fixed64,8,opt,name=measurement_value,json=measurementValue,proto3" json:"measurement_value,omitempty"`
+	MeasurementUnit    string                 `protobuf:"bytes,9,opt,name=measurement_unit,json=measurementUnit,proto3" json:"measurement_unit,omitempty"`
+	MinThreshold       float64                `protobuf:"fixed64,10,opt,name=min_threshold,json=minThreshold,proto3" json:"min_threshold,omitempty"`
+	MaxThreshold       float64                `protobuf:"fixed64,11,opt,name=max_threshold,json=maxThreshold,proto3" json:"max_threshold,omitempty"`
+	Notes              string                 `protobuf:"bytes,12,opt,name=notes,proto3" json:"notes,omitempty"`
+	EvidenceUrls       []string               `protobuf:"bytes,13,rep,name=evidence_urls,json=evidenceUrls,proto3" json:"evidence_urls,omitempty"`
+	Metadata           map[string]string      `protobuf:"bytes,14,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CreateQualityCheckpointRequest) Reset() {
+	*x = CreateQualityCheckpointRequest{}
+	mi := &file_traceability_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateQualityCheckpointRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateQualityCheckpointRequest) ProtoMessage() {}
+
+func (x *CreateQualityCheckpointRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateQualityCheckpointRequest.ProtoReflect.Descriptor instead.
+func (*CreateQualityCheckpointRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *CreateQualityCheckpointRequest) GetRecordId() string {
+	if x != nil {
+		return x.RecordId
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetSupplyChainEventId() string {
+	if x != nil {
+		return x.SupplyChainEventId
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetCheckType() QualityCheckType {
+	if x != nil {
+		return x.CheckType
+	}
+	return QualityCheckType_QUALITY_CHECK_TYPE_UNSPECIFIED
+}
+
+func (x *CreateQualityCheckpointRequest) GetResult() QualityCheckResult {
+	if x != nil {
+		return x.Result
+	}
+	return QualityCheckResult_QUALITY_CHECK_RESULT_UNSPECIFIED
+}
+
+func (x *CreateQualityCheckpointRequest) GetInspectorName() string {
+	if x != nil {
+		return x.InspectorName
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetInspectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.InspectedAt
+	}
+	return nil
+}
+
+func (x *CreateQualityCheckpointRequest) GetLocation() string {
+	if x != nil {
+		return x.Location
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetMeasurementValue() float64 {
+	if x != nil {
+		return x.MeasurementValue
+	}
+	return 0
+}
+
+func (x *CreateQualityCheckpointRequest) GetMeasurementUnit() string {
+	if x != nil {
+		return x.MeasurementUnit
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetMinThreshold() float64 {
+	if x != nil {
+		return x.MinThreshold
+	}
+	return 0
+}
+
+func (x *CreateQualityCheckpointRequest) GetMaxThreshold() float64 {
+	if x != nil {
+		return x.MaxThreshold
+	}
+	return 0
+}
+
+func (x *CreateQualityCheckpointRequest) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetEvidenceUrls() []string {
+	if x != nil {
+		return x.EvidenceUrls
+	}
+	return nil
+}
+
+func (x *CreateQualityCheckpointRequest) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+type CreateQualityCheckpointResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Checkpoint    *QualityCheckpoint     `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateQualityCheckpointResponse) Reset() {
+	*x = CreateQualityCheckpointResponse{}
+	mi := &file_traceability_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateQualityCheckpointResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateQualityCheckpointResponse) ProtoMessage() {}
+
+func (x *CreateQualityCheckpointResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateQualityCheckpointResponse.ProtoReflect.Descriptor instead.
+func (*CreateQualityCheckpointResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *CreateQualityCheckpointResponse) GetCheckpoint() *QualityCheckpoint {
+	if x != nil {
+		return x.Checkpoint
+	}
+	return nil
+}
+
+type GetQualityCheckpointRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetQualityCheckpointRequest) Reset() {
+	*x = GetQualityCheckpointRequest{}
+	mi := &file_traceability_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetQualityCheckpointRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetQualityCheckpointRequest) ProtoMessage() {}
+
+func (x *GetQualityCheckpointRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetQualityCheckpointRequest.ProtoReflect.Descriptor instead.
+func (*GetQualityCheckpointRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GetQualityCheckpointRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetQualityCheckpointResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Checkpoint    *QualityCheckpoint     `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetQualityCheckpointResponse) Reset() {
+	*x = GetQualityCheckpointResponse{}
+	mi := &file_traceability_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetQualityCheckpointResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetQualityCheckpointResponse) ProtoMessage() {}
+
+func (x *GetQualityCheckpointResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetQualityCheckpointResponse.ProtoReflect.Descriptor instead.
+func (*GetQualityCheckpointResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *GetQualityCheckpointResponse) GetCheckpoint() *QualityCheckpoint {
+	if x != nil {
+		return x.Checkpoint
+	}
+	return nil
+}
+
+type ListQualityCheckpointsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RecordId      string                 `protobuf:"bytes,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
+	CheckType     QualityCheckType       `protobuf:"varint,2,opt,name=check_type,json=checkType,proto3,enum=agriculture.traceability.v1.QualityCheckType" json:"check_type,omitempty"`
+	Result        QualityCheckResult     `protobuf:"varint,3,opt,name=result,proto3,enum=agriculture.traceability.v1.QualityCheckResult" json:"result,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListQualityCheckpointsRequest) Reset() {
+	*x = ListQualityCheckpointsRequest{}
+	mi := &file_traceability_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListQualityCheckpointsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListQualityCheckpointsRequest) ProtoMessage() {}
+
+func (x *ListQualityCheckpointsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListQualityCheckpointsRequest.ProtoReflect.Descriptor instead.
+func (*ListQualityCheckpointsRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *ListQualityCheckpointsRequest) GetRecordId() string {
+	if x != nil {
+		return x.RecordId
+	}
+	return ""
+}
+
+func (x *ListQualityCheckpointsRequest) GetCheckType() QualityCheckType {
+	if x != nil {
+		return x.CheckType
+	}
+	return QualityCheckType_QUALITY_CHECK_TYPE_UNSPECIFIED
+}
+
+func (x *ListQualityCheckpointsRequest) GetResult() QualityCheckResult {
+	if x != nil {
+		return x.Result
+	}
+	return QualityCheckResult_QUALITY_CHECK_RESULT_UNSPECIFIED
+}
+
+func (x *ListQualityCheckpointsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListQualityCheckpointsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListQualityCheckpointsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Checkpoints   []*QualityCheckpoint   `protobuf:"bytes,1,rep,name=checkpoints,proto3" json:"checkpoints,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListQualityCheckpointsResponse) Reset() {
+	*x = ListQualityCheckpointsResponse{}
+	mi := &file_traceability_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListQualityCheckpointsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListQualityCheckpointsResponse) ProtoMessage() {}
+
+func (x *ListQualityCheckpointsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListQualityCheckpointsResponse.ProtoReflect.Descriptor instead.
+func (*ListQualityCheckpointsResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *ListQualityCheckpointsResponse) GetCheckpoints() []*QualityCheckpoint {
+	if x != nil {
+		return x.Checkpoints
+	}
+	return nil
+}
+
+func (x *ListQualityCheckpointsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *ListQualityCheckpointsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+type UpdateRecordRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OriginCountry  string                 `protobuf:"bytes,2,opt,name=origin_country,json=originCountry,proto3" json:"origin_country,omitempty"`
+	OriginRegion   string                 `protobuf:"bytes,3,opt,name=origin_region,json=originRegion,proto3" json:"origin_region,omitempty"`
+	SeedSource     string                 `protobuf:"bytes,4,opt,name=seed_source,json=seedSource,proto3" json:"seed_source,omitempty"`
+	PlantingDate   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=planting_date,json=plantingDate,proto3" json:"planting_date,omitempty"`
+	HarvestDate    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=harvest_date,json=harvestDate,proto3" json:"harvest_date,omitempty"`
+	ProcessingDate *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=processing_date,json=processingDate,proto3" json:"processing_date,omitempty"`
+	PackagingDate  *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=packaging_date,json=packagingDate,proto3" json:"packaging_date,omitempty"`
+	Metadata       map[string]string      `protobuf:"bytes,9,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UpdateRecordRequest) Reset() {
+	*x = UpdateRecordRequest{}
+	mi := &file_traceability_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRecordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRecordRequest) ProtoMessage() {}
+
+func (x *UpdateRecordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateRecordRequest.ProtoReflect.Descriptor instead.
+func (*UpdateRecordRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *UpdateRecordRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateRecordRequest) GetOriginCountry() string {
+	if x != nil {
+		return x.OriginCountry
+	}
+	return ""
+}
+
+func (x *UpdateRecordRequest) GetOriginRegion() string {
+	if x != nil {
+		return x.OriginRegion
+	}
+	return ""
+}
+
+func (x *UpdateRecordRequest) GetSeedSource() string {
+	if x != nil {
+		return x.SeedSource
+	}
+	return ""
+}
+
+func (x *UpdateRecordRequest) GetPlantingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PlantingDate
+	}
+	return nil
+}
+
+func (x *UpdateRecordRequest) GetHarvestDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.HarvestDate
+	}
+	return nil
+}
+
+func (x *UpdateRecordRequest) GetProcessingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ProcessingDate
+	}
+	return nil
+}
+
+func (x *UpdateRecordRequest) GetPackagingDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PackagingDate
+	}
+	return nil
+}
+
+func (x *UpdateRecordRequest) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+type UpdateRecordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Record        *TraceabilityRecord    `protobuf:"bytes,1,opt,name=record,proto3" json:"record,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateRecordResponse) Reset() {
+	*x = UpdateRecordResponse{}
+	mi := &file_traceability_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRecordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRecordResponse) ProtoMessage() {}
+
+func (x *UpdateRecordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateRecordResponse.ProtoReflect.Descriptor instead.
+func (*UpdateRecordResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *UpdateRecordResponse) GetRecord() *TraceabilityRecord {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
+type RevokeCertificationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeCertificationRequest) Reset() {
+	*x = RevokeCertificationRequest{}
+	mi := &file_traceability_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeCertificationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeCertificationRequest) ProtoMessage() {}
+
+func (x *RevokeCertificationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeCertificationRequest.ProtoReflect.Descriptor instead.
+func (*RevokeCertificationRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *RevokeCertificationRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RevokeCertificationRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type RevokeCertificationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Certification *Certification         `protobuf:"bytes,1,opt,name=certification,proto3" json:"certification,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeCertificationResponse) Reset() {
+	*x = RevokeCertificationResponse{}
+	mi := &file_traceability_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeCertificationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeCertificationResponse) ProtoMessage() {}
+
+func (x *RevokeCertificationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeCertificationResponse.ProtoReflect.Descriptor instead.
+func (*RevokeCertificationResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *RevokeCertificationResponse) GetCertification() *Certification {
+	if x != nil {
+		return x.Certification
+	}
+	return nil
+}
+
+type GetComplianceReportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetComplianceReportRequest) Reset() {
+	*x = GetComplianceReportRequest{}
+	mi := &file_traceability_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetComplianceReportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetComplianceReportRequest) ProtoMessage() {}
+
+func (x *GetComplianceReportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetComplianceReportRequest.ProtoReflect.Descriptor instead.
+func (*GetComplianceReportRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *GetComplianceReportRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetComplianceReportResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Report        *ComplianceReport      `protobuf:"bytes,1,opt,name=report,proto3" json:"report,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetComplianceReportResponse) Reset() {
+	*x = GetComplianceReportResponse{}
+	mi := &file_traceability_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetComplianceReportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetComplianceReportResponse) ProtoMessage() {}
+
+func (x *GetComplianceReportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetComplianceReportResponse.ProtoReflect.Descriptor instead.
+func (*GetComplianceReportResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *GetComplianceReportResponse) GetReport() *ComplianceReport {
+	if x != nil {
+		return x.Report
+	}
+	return nil
+}
+
+type ListComplianceReportsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RecordId      string                 `protobuf:"bytes,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListComplianceReportsRequest) Reset() {
+	*x = ListComplianceReportsRequest{}
+	mi := &file_traceability_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListComplianceReportsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListComplianceReportsRequest) ProtoMessage() {}
+
+func (x *ListComplianceReportsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListComplianceReportsRequest.ProtoReflect.Descriptor instead.
+func (*ListComplianceReportsRequest) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *ListComplianceReportsRequest) GetRecordId() string {
+	if x != nil {
+		return x.RecordId
+	}
+	return ""
+}
+
+func (x *ListComplianceReportsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListComplianceReportsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListComplianceReportsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reports       []*ComplianceReport    `protobuf:"bytes,1,rep,name=reports,proto3" json:"reports,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListComplianceReportsResponse) Reset() {
+	*x = ListComplianceReportsResponse{}
+	mi := &file_traceability_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListComplianceReportsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListComplianceReportsResponse) ProtoMessage() {}
+
+func (x *ListComplianceReportsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_traceability_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListComplianceReportsResponse.ProtoReflect.Descriptor instead.
+func (*ListComplianceReportsResponse) Descriptor() ([]byte, []int) {
+	return file_traceability_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *ListComplianceReportsResponse) GetReports() []*ComplianceReport {
+	if x != nil {
+		return x.Reports
+	}
+	return nil
+}
+
+func (x *ListComplianceReportsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *ListComplianceReportsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
 var File_traceability_proto protoreflect.FileDescriptor
 
 const file_traceability_proto_rawDesc = "" +
@@ -3239,7 +4405,110 @@ const file_traceability_proto_rawDesc = "" +
 	"reportType\x12\x18\n" +
 	"\aauditor\x18\x03 \x01(\tR\aauditor\"i\n" +
 	" GenerateComplianceReportResponse\x12E\n" +
-	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report*\xb9\x03\n" +
+	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report\"\xfb\x06\n" +
+	"\x11QualityCheckpoint\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x1b\n" +
+	"\trecord_id\x18\x03 \x01(\tR\brecordId\x121\n" +
+	"\x15supply_chain_event_id\x18\x04 \x01(\tR\x12supplyChainEventId\x12L\n" +
+	"\n" +
+	"check_type\x18\x05 \x01(\x0e2-.agriculture.traceability.v1.QualityCheckTypeR\tcheckType\x12G\n" +
+	"\x06result\x18\x06 \x01(\x0e2/.agriculture.traceability.v1.QualityCheckResultR\x06result\x12!\n" +
+	"\finspector_id\x18\a \x01(\tR\vinspectorId\x12%\n" +
+	"\x0einspector_name\x18\b \x01(\tR\rinspectorName\x12=\n" +
+	"\finspected_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vinspectedAt\x12\x1a\n" +
+	"\blocation\x18\n" +
+	" \x01(\tR\blocation\x12+\n" +
+	"\x11measurement_value\x18\v \x01(\x01R\x10measurementValue\x12)\n" +
+	"\x10measurement_unit\x18\f \x01(\tR\x0fmeasurementUnit\x12#\n" +
+	"\rmin_threshold\x18\r \x01(\x01R\fminThreshold\x12#\n" +
+	"\rmax_threshold\x18\x0e \x01(\x01R\fmaxThreshold\x12\x14\n" +
+	"\x05notes\x18\x0f \x01(\tR\x05notes\x12#\n" +
+	"\revidence_urls\x18\x10 \x03(\tR\fevidenceUrls\x12X\n" +
+	"\bmetadata\x18\x11 \x03(\v2<.agriculture.traceability.v1.QualityCheckpoint.MetadataEntryR\bmetadata\x129\n" +
+	"\n" +
+	"created_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8a\x06\n" +
+	"\x1eCreateQualityCheckpointRequest\x12\x1b\n" +
+	"\trecord_id\x18\x01 \x01(\tR\brecordId\x121\n" +
+	"\x15supply_chain_event_id\x18\x02 \x01(\tR\x12supplyChainEventId\x12L\n" +
+	"\n" +
+	"check_type\x18\x03 \x01(\x0e2-.agriculture.traceability.v1.QualityCheckTypeR\tcheckType\x12G\n" +
+	"\x06result\x18\x04 \x01(\x0e2/.agriculture.traceability.v1.QualityCheckResultR\x06result\x12%\n" +
+	"\x0einspector_name\x18\x05 \x01(\tR\rinspectorName\x12=\n" +
+	"\finspected_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vinspectedAt\x12\x1a\n" +
+	"\blocation\x18\a \x01(\tR\blocation\x12+\n" +
+	"\x11measurement_value\x18\b \x01(\x01R\x10measurementValue\x12)\n" +
+	"\x10measurement_unit\x18\t \x01(\tR\x0fmeasurementUnit\x12#\n" +
+	"\rmin_threshold\x18\n" +
+	" \x01(\x01R\fminThreshold\x12#\n" +
+	"\rmax_threshold\x18\v \x01(\x01R\fmaxThreshold\x12\x14\n" +
+	"\x05notes\x18\f \x01(\tR\x05notes\x12#\n" +
+	"\revidence_urls\x18\r \x03(\tR\fevidenceUrls\x12e\n" +
+	"\bmetadata\x18\x0e \x03(\v2I.agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
+	"\x1fCreateQualityCheckpointResponse\x12N\n" +
+	"\n" +
+	"checkpoint\x18\x01 \x01(\v2..agriculture.traceability.v1.QualityCheckpointR\n" +
+	"checkpoint\"-\n" +
+	"\x1bGetQualityCheckpointRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"n\n" +
+	"\x1cGetQualityCheckpointResponse\x12N\n" +
+	"\n" +
+	"checkpoint\x18\x01 \x01(\v2..agriculture.traceability.v1.QualityCheckpointR\n" +
+	"checkpoint\"\x8f\x02\n" +
+	"\x1dListQualityCheckpointsRequest\x12\x1b\n" +
+	"\trecord_id\x18\x01 \x01(\tR\brecordId\x12L\n" +
+	"\n" +
+	"check_type\x18\x02 \x01(\x0e2-.agriculture.traceability.v1.QualityCheckTypeR\tcheckType\x12G\n" +
+	"\x06result\x18\x03 \x01(\x0e2/.agriculture.traceability.v1.QualityCheckResultR\x06result\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x05 \x01(\tR\tpageToken\"\xbb\x01\n" +
+	"\x1eListQualityCheckpointsResponse\x12P\n" +
+	"\vcheckpoints\x18\x01 \x03(\v2..agriculture.traceability.v1.QualityCheckpointR\vcheckpoints\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
+	"\vtotal_count\x18\x03 \x01(\x05R\n" +
+	"totalCount\"\xb3\x04\n" +
+	"\x13UpdateRecordRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12%\n" +
+	"\x0eorigin_country\x18\x02 \x01(\tR\roriginCountry\x12#\n" +
+	"\rorigin_region\x18\x03 \x01(\tR\foriginRegion\x12\x1f\n" +
+	"\vseed_source\x18\x04 \x01(\tR\n" +
+	"seedSource\x12?\n" +
+	"\rplanting_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\fplantingDate\x12=\n" +
+	"\fharvest_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vharvestDate\x12C\n" +
+	"\x0fprocessing_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x0eprocessingDate\x12A\n" +
+	"\x0epackaging_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\rpackagingDate\x12Z\n" +
+	"\bmetadata\x18\t \x03(\v2>.agriculture.traceability.v1.UpdateRecordRequest.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
+	"\x14UpdateRecordResponse\x12G\n" +
+	"\x06record\x18\x01 \x01(\v2/.agriculture.traceability.v1.TraceabilityRecordR\x06record\"D\n" +
+	"\x1aRevokeCertificationRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"o\n" +
+	"\x1bRevokeCertificationResponse\x12P\n" +
+	"\rcertification\x18\x01 \x01(\v2*.agriculture.traceability.v1.CertificationR\rcertification\",\n" +
+	"\x1aGetComplianceReportRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"d\n" +
+	"\x1bGetComplianceReportResponse\x12E\n" +
+	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report\"w\n" +
+	"\x1cListComplianceReportsRequest\x12\x1b\n" +
+	"\trecord_id\x18\x01 \x01(\tR\brecordId\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"\xb1\x01\n" +
+	"\x1dListComplianceReportsResponse\x12G\n" +
+	"\areports\x18\x01 \x03(\v2-.agriculture.traceability.v1.ComplianceReportR\areports\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
+	"\vtotal_count\x18\x03 \x01(\x05R\n" +
+	"totalCount*\xb9\x03\n" +
 	"\x14SupplyChainEventType\x12'\n" +
 	"#SUPPLY_CHAIN_EVENT_TYPE_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSUPPLY_CHAIN_EVENT_TYPE_PLANTED\x10\x01\x12&\n" +
@@ -3271,7 +4540,20 @@ const file_traceability_proto_rawDesc = "" +
 	"\x1dCOMPLIANCE_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bCOMPLIANCE_STATUS_COMPLIANT\x10\x01\x12#\n" +
 	"\x1fCOMPLIANCE_STATUS_NON_COMPLIANT\x10\x02\x12$\n" +
-	" COMPLIANCE_STATUS_PENDING_REVIEW\x10\x032\xe4\x0e\n" +
+	" COMPLIANCE_STATUS_PENDING_REVIEW\x10\x03*\x93\x02\n" +
+	"\x10QualityCheckType\x12\"\n" +
+	"\x1eQUALITY_CHECK_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19QUALITY_CHECK_TYPE_VISUAL\x10\x01\x12\x1a\n" +
+	"\x16QUALITY_CHECK_TYPE_LAB\x10\x02\x12\"\n" +
+	"\x1eQUALITY_CHECK_TYPE_TEMPERATURE\x10\x03\x12\x1f\n" +
+	"\x1bQUALITY_CHECK_TYPE_MOISTURE\x10\x04\x12\x1d\n" +
+	"\x19QUALITY_CHECK_TYPE_WEIGHT\x10\x05\x12\x1e\n" +
+	"\x1aQUALITY_CHECK_TYPE_SENSORY\x10\x06\x12\x1c\n" +
+	"\x18QUALITY_CHECK_TYPE_OTHER\x10\a*x\n" +
+	"\x12QualityCheckResult\x12$\n" +
+	" QUALITY_CHECK_RESULT_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19QUALITY_CHECK_RESULT_PASS\x10\x01\x12\x1d\n" +
+	"\x19QUALITY_CHECK_RESULT_FAIL\x10\x022\xb9\x16\n" +
 	"\x13TraceabilityService\x12s\n" +
 	"\fCreateRecord\x120.agriculture.traceability.v1.CreateRecordRequest\x1a1.agriculture.traceability.v1.CreateRecordResponse\x12j\n" +
 	"\tGetRecord\x12-.agriculture.traceability.v1.GetRecordRequest\x1a..agriculture.traceability.v1.GetRecordResponse\x12p\n" +
@@ -3287,7 +4569,14 @@ const file_traceability_proto_rawDesc = "" +
 	"\vListBatches\x12/.agriculture.traceability.v1.ListBatchesRequest\x1a0.agriculture.traceability.v1.ListBatchesResponse\x12y\n" +
 	"\x0eGenerateQRCode\x122.agriculture.traceability.v1.GenerateQRCodeRequest\x1a3.agriculture.traceability.v1.GenerateQRCodeResponse\x12s\n" +
 	"\fVerifyQRCode\x120.agriculture.traceability.v1.VerifyQRCodeRequest\x1a1.agriculture.traceability.v1.VerifyQRCodeResponse\x12\x97\x01\n" +
-	"\x18GenerateComplianceReport\x12<.agriculture.traceability.v1.GenerateComplianceReportRequest\x1a=.agriculture.traceability.v1.GenerateComplianceReportResponseB9Z7p9e.in/samavaya/agriculture/traceability-service/api/v1b\x06proto3"
+	"\x18GenerateComplianceReport\x12<.agriculture.traceability.v1.GenerateComplianceReportRequest\x1a=.agriculture.traceability.v1.GenerateComplianceReportResponse\x12\x94\x01\n" +
+	"\x17CreateQualityCheckpoint\x12;.agriculture.traceability.v1.CreateQualityCheckpointRequest\x1a<.agriculture.traceability.v1.CreateQualityCheckpointResponse\x12\x8b\x01\n" +
+	"\x14GetQualityCheckpoint\x128.agriculture.traceability.v1.GetQualityCheckpointRequest\x1a9.agriculture.traceability.v1.GetQualityCheckpointResponse\x12\x91\x01\n" +
+	"\x16ListQualityCheckpoints\x12:.agriculture.traceability.v1.ListQualityCheckpointsRequest\x1a;.agriculture.traceability.v1.ListQualityCheckpointsResponse\x12s\n" +
+	"\fUpdateRecord\x120.agriculture.traceability.v1.UpdateRecordRequest\x1a1.agriculture.traceability.v1.UpdateRecordResponse\x12\x88\x01\n" +
+	"\x13RevokeCertification\x127.agriculture.traceability.v1.RevokeCertificationRequest\x1a8.agriculture.traceability.v1.RevokeCertificationResponse\x12\x88\x01\n" +
+	"\x13GetComplianceReport\x127.agriculture.traceability.v1.GetComplianceReportRequest\x1a8.agriculture.traceability.v1.GetComplianceReportResponse\x12\x8e\x01\n" +
+	"\x15ListComplianceReports\x129.agriculture.traceability.v1.ListComplianceReportsRequest\x1a:.agriculture.traceability.v1.ListComplianceReportsResponseBHZFp9e.in/samavaya/agriculture/traceability-service/api/v1;traceabilityv1b\x06proto3"
 
 var (
 	file_traceability_proto_rawDescOnce sync.Once
@@ -3301,160 +4590,217 @@ func file_traceability_proto_rawDescGZIP() []byte {
 	return file_traceability_proto_rawDescData
 }
 
-var file_traceability_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_traceability_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
+var file_traceability_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_traceability_proto_msgTypes = make([]protoimpl.MessageInfo, 61)
 var file_traceability_proto_goTypes = []any{
 	(SupplyChainEventType)(0),                // 0: agriculture.traceability.v1.SupplyChainEventType
 	(CertificationType)(0),                   // 1: agriculture.traceability.v1.CertificationType
 	(CertificationStatus)(0),                 // 2: agriculture.traceability.v1.CertificationStatus
 	(ComplianceStatus)(0),                    // 3: agriculture.traceability.v1.ComplianceStatus
-	(*SupplyChainEvent)(nil),                 // 4: agriculture.traceability.v1.SupplyChainEvent
-	(*Certification)(nil),                    // 5: agriculture.traceability.v1.Certification
-	(*BatchRecord)(nil),                      // 6: agriculture.traceability.v1.BatchRecord
-	(*QRCode)(nil),                           // 7: agriculture.traceability.v1.QRCode
-	(*ComplianceReport)(nil),                 // 8: agriculture.traceability.v1.ComplianceReport
-	(*TraceabilityRecord)(nil),               // 9: agriculture.traceability.v1.TraceabilityRecord
-	(*CreateRecordRequest)(nil),              // 10: agriculture.traceability.v1.CreateRecordRequest
-	(*CreateRecordResponse)(nil),             // 11: agriculture.traceability.v1.CreateRecordResponse
-	(*GetRecordRequest)(nil),                 // 12: agriculture.traceability.v1.GetRecordRequest
-	(*GetRecordResponse)(nil),                // 13: agriculture.traceability.v1.GetRecordResponse
-	(*ListRecordsRequest)(nil),               // 14: agriculture.traceability.v1.ListRecordsRequest
-	(*ListRecordsResponse)(nil),              // 15: agriculture.traceability.v1.ListRecordsResponse
-	(*AddSupplyChainEventRequest)(nil),       // 16: agriculture.traceability.v1.AddSupplyChainEventRequest
-	(*AddSupplyChainEventResponse)(nil),      // 17: agriculture.traceability.v1.AddSupplyChainEventResponse
-	(*GetSupplyChainRequest)(nil),            // 18: agriculture.traceability.v1.GetSupplyChainRequest
-	(*GetSupplyChainResponse)(nil),           // 19: agriculture.traceability.v1.GetSupplyChainResponse
-	(*CreateCertificationRequest)(nil),       // 20: agriculture.traceability.v1.CreateCertificationRequest
-	(*CreateCertificationResponse)(nil),      // 21: agriculture.traceability.v1.CreateCertificationResponse
-	(*GetCertificationRequest)(nil),          // 22: agriculture.traceability.v1.GetCertificationRequest
-	(*GetCertificationResponse)(nil),         // 23: agriculture.traceability.v1.GetCertificationResponse
-	(*ListCertificationsRequest)(nil),        // 24: agriculture.traceability.v1.ListCertificationsRequest
-	(*ListCertificationsResponse)(nil),       // 25: agriculture.traceability.v1.ListCertificationsResponse
-	(*VerifyCertificationRequest)(nil),       // 26: agriculture.traceability.v1.VerifyCertificationRequest
-	(*VerifyCertificationResponse)(nil),      // 27: agriculture.traceability.v1.VerifyCertificationResponse
-	(*CreateBatchRequest)(nil),               // 28: agriculture.traceability.v1.CreateBatchRequest
-	(*CreateBatchResponse)(nil),              // 29: agriculture.traceability.v1.CreateBatchResponse
-	(*GetBatchRequest)(nil),                  // 30: agriculture.traceability.v1.GetBatchRequest
-	(*GetBatchResponse)(nil),                 // 31: agriculture.traceability.v1.GetBatchResponse
-	(*ListBatchesRequest)(nil),               // 32: agriculture.traceability.v1.ListBatchesRequest
-	(*ListBatchesResponse)(nil),              // 33: agriculture.traceability.v1.ListBatchesResponse
-	(*GenerateQRCodeRequest)(nil),            // 34: agriculture.traceability.v1.GenerateQRCodeRequest
-	(*GenerateQRCodeResponse)(nil),           // 35: agriculture.traceability.v1.GenerateQRCodeResponse
-	(*VerifyQRCodeRequest)(nil),              // 36: agriculture.traceability.v1.VerifyQRCodeRequest
-	(*VerifyQRCodeResponse)(nil),             // 37: agriculture.traceability.v1.VerifyQRCodeResponse
-	(*GenerateComplianceReportRequest)(nil),  // 38: agriculture.traceability.v1.GenerateComplianceReportRequest
-	(*GenerateComplianceReportResponse)(nil), // 39: agriculture.traceability.v1.GenerateComplianceReportResponse
-	nil,                                      // 40: agriculture.traceability.v1.Certification.MetadataEntry
-	nil,                                      // 41: agriculture.traceability.v1.BatchRecord.MetadataEntry
-	nil,                                      // 42: agriculture.traceability.v1.ComplianceReport.MetadataEntry
-	nil,                                      // 43: agriculture.traceability.v1.TraceabilityRecord.MetadataEntry
-	nil,                                      // 44: agriculture.traceability.v1.CreateRecordRequest.MetadataEntry
-	nil,                                      // 45: agriculture.traceability.v1.CreateCertificationRequest.MetadataEntry
-	nil,                                      // 46: agriculture.traceability.v1.CreateBatchRequest.MetadataEntry
-	(*timestamppb.Timestamp)(nil),            // 47: google.protobuf.Timestamp
+	(QualityCheckType)(0),                    // 4: agriculture.traceability.v1.QualityCheckType
+	(QualityCheckResult)(0),                  // 5: agriculture.traceability.v1.QualityCheckResult
+	(*SupplyChainEvent)(nil),                 // 6: agriculture.traceability.v1.SupplyChainEvent
+	(*Certification)(nil),                    // 7: agriculture.traceability.v1.Certification
+	(*BatchRecord)(nil),                      // 8: agriculture.traceability.v1.BatchRecord
+	(*QRCode)(nil),                           // 9: agriculture.traceability.v1.QRCode
+	(*ComplianceReport)(nil),                 // 10: agriculture.traceability.v1.ComplianceReport
+	(*TraceabilityRecord)(nil),               // 11: agriculture.traceability.v1.TraceabilityRecord
+	(*CreateRecordRequest)(nil),              // 12: agriculture.traceability.v1.CreateRecordRequest
+	(*CreateRecordResponse)(nil),             // 13: agriculture.traceability.v1.CreateRecordResponse
+	(*GetRecordRequest)(nil),                 // 14: agriculture.traceability.v1.GetRecordRequest
+	(*GetRecordResponse)(nil),                // 15: agriculture.traceability.v1.GetRecordResponse
+	(*ListRecordsRequest)(nil),               // 16: agriculture.traceability.v1.ListRecordsRequest
+	(*ListRecordsResponse)(nil),              // 17: agriculture.traceability.v1.ListRecordsResponse
+	(*AddSupplyChainEventRequest)(nil),       // 18: agriculture.traceability.v1.AddSupplyChainEventRequest
+	(*AddSupplyChainEventResponse)(nil),      // 19: agriculture.traceability.v1.AddSupplyChainEventResponse
+	(*GetSupplyChainRequest)(nil),            // 20: agriculture.traceability.v1.GetSupplyChainRequest
+	(*GetSupplyChainResponse)(nil),           // 21: agriculture.traceability.v1.GetSupplyChainResponse
+	(*CreateCertificationRequest)(nil),       // 22: agriculture.traceability.v1.CreateCertificationRequest
+	(*CreateCertificationResponse)(nil),      // 23: agriculture.traceability.v1.CreateCertificationResponse
+	(*GetCertificationRequest)(nil),          // 24: agriculture.traceability.v1.GetCertificationRequest
+	(*GetCertificationResponse)(nil),         // 25: agriculture.traceability.v1.GetCertificationResponse
+	(*ListCertificationsRequest)(nil),        // 26: agriculture.traceability.v1.ListCertificationsRequest
+	(*ListCertificationsResponse)(nil),       // 27: agriculture.traceability.v1.ListCertificationsResponse
+	(*VerifyCertificationRequest)(nil),       // 28: agriculture.traceability.v1.VerifyCertificationRequest
+	(*VerifyCertificationResponse)(nil),      // 29: agriculture.traceability.v1.VerifyCertificationResponse
+	(*CreateBatchRequest)(nil),               // 30: agriculture.traceability.v1.CreateBatchRequest
+	(*CreateBatchResponse)(nil),              // 31: agriculture.traceability.v1.CreateBatchResponse
+	(*GetBatchRequest)(nil),                  // 32: agriculture.traceability.v1.GetBatchRequest
+	(*GetBatchResponse)(nil),                 // 33: agriculture.traceability.v1.GetBatchResponse
+	(*ListBatchesRequest)(nil),               // 34: agriculture.traceability.v1.ListBatchesRequest
+	(*ListBatchesResponse)(nil),              // 35: agriculture.traceability.v1.ListBatchesResponse
+	(*GenerateQRCodeRequest)(nil),            // 36: agriculture.traceability.v1.GenerateQRCodeRequest
+	(*GenerateQRCodeResponse)(nil),           // 37: agriculture.traceability.v1.GenerateQRCodeResponse
+	(*VerifyQRCodeRequest)(nil),              // 38: agriculture.traceability.v1.VerifyQRCodeRequest
+	(*VerifyQRCodeResponse)(nil),             // 39: agriculture.traceability.v1.VerifyQRCodeResponse
+	(*GenerateComplianceReportRequest)(nil),  // 40: agriculture.traceability.v1.GenerateComplianceReportRequest
+	(*GenerateComplianceReportResponse)(nil), // 41: agriculture.traceability.v1.GenerateComplianceReportResponse
+	(*QualityCheckpoint)(nil),                // 42: agriculture.traceability.v1.QualityCheckpoint
+	(*CreateQualityCheckpointRequest)(nil),   // 43: agriculture.traceability.v1.CreateQualityCheckpointRequest
+	(*CreateQualityCheckpointResponse)(nil),  // 44: agriculture.traceability.v1.CreateQualityCheckpointResponse
+	(*GetQualityCheckpointRequest)(nil),      // 45: agriculture.traceability.v1.GetQualityCheckpointRequest
+	(*GetQualityCheckpointResponse)(nil),     // 46: agriculture.traceability.v1.GetQualityCheckpointResponse
+	(*ListQualityCheckpointsRequest)(nil),    // 47: agriculture.traceability.v1.ListQualityCheckpointsRequest
+	(*ListQualityCheckpointsResponse)(nil),   // 48: agriculture.traceability.v1.ListQualityCheckpointsResponse
+	(*UpdateRecordRequest)(nil),              // 49: agriculture.traceability.v1.UpdateRecordRequest
+	(*UpdateRecordResponse)(nil),             // 50: agriculture.traceability.v1.UpdateRecordResponse
+	(*RevokeCertificationRequest)(nil),       // 51: agriculture.traceability.v1.RevokeCertificationRequest
+	(*RevokeCertificationResponse)(nil),      // 52: agriculture.traceability.v1.RevokeCertificationResponse
+	(*GetComplianceReportRequest)(nil),       // 53: agriculture.traceability.v1.GetComplianceReportRequest
+	(*GetComplianceReportResponse)(nil),      // 54: agriculture.traceability.v1.GetComplianceReportResponse
+	(*ListComplianceReportsRequest)(nil),     // 55: agriculture.traceability.v1.ListComplianceReportsRequest
+	(*ListComplianceReportsResponse)(nil),    // 56: agriculture.traceability.v1.ListComplianceReportsResponse
+	nil,                                      // 57: agriculture.traceability.v1.Certification.MetadataEntry
+	nil,                                      // 58: agriculture.traceability.v1.BatchRecord.MetadataEntry
+	nil,                                      // 59: agriculture.traceability.v1.ComplianceReport.MetadataEntry
+	nil,                                      // 60: agriculture.traceability.v1.TraceabilityRecord.MetadataEntry
+	nil,                                      // 61: agriculture.traceability.v1.CreateRecordRequest.MetadataEntry
+	nil,                                      // 62: agriculture.traceability.v1.CreateCertificationRequest.MetadataEntry
+	nil,                                      // 63: agriculture.traceability.v1.CreateBatchRequest.MetadataEntry
+	nil,                                      // 64: agriculture.traceability.v1.QualityCheckpoint.MetadataEntry
+	nil,                                      // 65: agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntry
+	nil,                                      // 66: agriculture.traceability.v1.UpdateRecordRequest.MetadataEntry
+	(*timestamppb.Timestamp)(nil),            // 67: google.protobuf.Timestamp
 }
 var file_traceability_proto_depIdxs = []int32{
-	0,  // 0: agriculture.traceability.v1.SupplyChainEvent.event_type:type_name -> agriculture.traceability.v1.SupplyChainEventType
-	47, // 1: agriculture.traceability.v1.SupplyChainEvent.timestamp:type_name -> google.protobuf.Timestamp
-	47, // 2: agriculture.traceability.v1.SupplyChainEvent.created_at:type_name -> google.protobuf.Timestamp
-	1,  // 3: agriculture.traceability.v1.Certification.cert_type:type_name -> agriculture.traceability.v1.CertificationType
-	47, // 4: agriculture.traceability.v1.Certification.issued_date:type_name -> google.protobuf.Timestamp
-	47, // 5: agriculture.traceability.v1.Certification.expiry_date:type_name -> google.protobuf.Timestamp
-	2,  // 6: agriculture.traceability.v1.Certification.status:type_name -> agriculture.traceability.v1.CertificationStatus
-	47, // 7: agriculture.traceability.v1.Certification.verified_at:type_name -> google.protobuf.Timestamp
-	40, // 8: agriculture.traceability.v1.Certification.metadata:type_name -> agriculture.traceability.v1.Certification.MetadataEntry
-	47, // 9: agriculture.traceability.v1.Certification.created_at:type_name -> google.protobuf.Timestamp
-	47, // 10: agriculture.traceability.v1.Certification.updated_at:type_name -> google.protobuf.Timestamp
-	47, // 11: agriculture.traceability.v1.BatchRecord.production_date:type_name -> google.protobuf.Timestamp
-	47, // 12: agriculture.traceability.v1.BatchRecord.expiry_date:type_name -> google.protobuf.Timestamp
-	41, // 13: agriculture.traceability.v1.BatchRecord.metadata:type_name -> agriculture.traceability.v1.BatchRecord.MetadataEntry
-	47, // 14: agriculture.traceability.v1.BatchRecord.created_at:type_name -> google.protobuf.Timestamp
-	47, // 15: agriculture.traceability.v1.BatchRecord.updated_at:type_name -> google.protobuf.Timestamp
-	47, // 16: agriculture.traceability.v1.QRCode.generated_at:type_name -> google.protobuf.Timestamp
-	47, // 17: agriculture.traceability.v1.QRCode.expires_at:type_name -> google.protobuf.Timestamp
-	3,  // 18: agriculture.traceability.v1.ComplianceReport.status:type_name -> agriculture.traceability.v1.ComplianceStatus
-	47, // 19: agriculture.traceability.v1.ComplianceReport.audit_date:type_name -> google.protobuf.Timestamp
-	47, // 20: agriculture.traceability.v1.ComplianceReport.next_audit_date:type_name -> google.protobuf.Timestamp
-	42, // 21: agriculture.traceability.v1.ComplianceReport.metadata:type_name -> agriculture.traceability.v1.ComplianceReport.MetadataEntry
-	47, // 22: agriculture.traceability.v1.ComplianceReport.created_at:type_name -> google.protobuf.Timestamp
-	47, // 23: agriculture.traceability.v1.TraceabilityRecord.planting_date:type_name -> google.protobuf.Timestamp
-	47, // 24: agriculture.traceability.v1.TraceabilityRecord.harvest_date:type_name -> google.protobuf.Timestamp
-	47, // 25: agriculture.traceability.v1.TraceabilityRecord.processing_date:type_name -> google.protobuf.Timestamp
-	47, // 26: agriculture.traceability.v1.TraceabilityRecord.packaging_date:type_name -> google.protobuf.Timestamp
-	4,  // 27: agriculture.traceability.v1.TraceabilityRecord.supply_chain_events:type_name -> agriculture.traceability.v1.SupplyChainEvent
-	5,  // 28: agriculture.traceability.v1.TraceabilityRecord.certifications:type_name -> agriculture.traceability.v1.Certification
-	3,  // 29: agriculture.traceability.v1.TraceabilityRecord.compliance_status:type_name -> agriculture.traceability.v1.ComplianceStatus
-	43, // 30: agriculture.traceability.v1.TraceabilityRecord.metadata:type_name -> agriculture.traceability.v1.TraceabilityRecord.MetadataEntry
-	47, // 31: agriculture.traceability.v1.TraceabilityRecord.created_at:type_name -> google.protobuf.Timestamp
-	47, // 32: agriculture.traceability.v1.TraceabilityRecord.updated_at:type_name -> google.protobuf.Timestamp
-	47, // 33: agriculture.traceability.v1.CreateRecordRequest.planting_date:type_name -> google.protobuf.Timestamp
-	47, // 34: agriculture.traceability.v1.CreateRecordRequest.harvest_date:type_name -> google.protobuf.Timestamp
-	47, // 35: agriculture.traceability.v1.CreateRecordRequest.processing_date:type_name -> google.protobuf.Timestamp
-	47, // 36: agriculture.traceability.v1.CreateRecordRequest.packaging_date:type_name -> google.protobuf.Timestamp
-	44, // 37: agriculture.traceability.v1.CreateRecordRequest.metadata:type_name -> agriculture.traceability.v1.CreateRecordRequest.MetadataEntry
-	9,  // 38: agriculture.traceability.v1.CreateRecordResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
-	9,  // 39: agriculture.traceability.v1.GetRecordResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
-	3,  // 40: agriculture.traceability.v1.ListRecordsRequest.compliance_status:type_name -> agriculture.traceability.v1.ComplianceStatus
-	9,  // 41: agriculture.traceability.v1.ListRecordsResponse.records:type_name -> agriculture.traceability.v1.TraceabilityRecord
-	0,  // 42: agriculture.traceability.v1.AddSupplyChainEventRequest.event_type:type_name -> agriculture.traceability.v1.SupplyChainEventType
-	47, // 43: agriculture.traceability.v1.AddSupplyChainEventRequest.timestamp:type_name -> google.protobuf.Timestamp
-	4,  // 44: agriculture.traceability.v1.AddSupplyChainEventResponse.event:type_name -> agriculture.traceability.v1.SupplyChainEvent
-	4,  // 45: agriculture.traceability.v1.GetSupplyChainResponse.events:type_name -> agriculture.traceability.v1.SupplyChainEvent
-	1,  // 46: agriculture.traceability.v1.CreateCertificationRequest.cert_type:type_name -> agriculture.traceability.v1.CertificationType
-	47, // 47: agriculture.traceability.v1.CreateCertificationRequest.issued_date:type_name -> google.protobuf.Timestamp
-	47, // 48: agriculture.traceability.v1.CreateCertificationRequest.expiry_date:type_name -> google.protobuf.Timestamp
-	45, // 49: agriculture.traceability.v1.CreateCertificationRequest.metadata:type_name -> agriculture.traceability.v1.CreateCertificationRequest.MetadataEntry
-	5,  // 50: agriculture.traceability.v1.CreateCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
-	5,  // 51: agriculture.traceability.v1.GetCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
-	1,  // 52: agriculture.traceability.v1.ListCertificationsRequest.cert_type:type_name -> agriculture.traceability.v1.CertificationType
-	2,  // 53: agriculture.traceability.v1.ListCertificationsRequest.status:type_name -> agriculture.traceability.v1.CertificationStatus
-	5,  // 54: agriculture.traceability.v1.ListCertificationsResponse.certifications:type_name -> agriculture.traceability.v1.Certification
-	5,  // 55: agriculture.traceability.v1.VerifyCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
-	47, // 56: agriculture.traceability.v1.CreateBatchRequest.production_date:type_name -> google.protobuf.Timestamp
-	47, // 57: agriculture.traceability.v1.CreateBatchRequest.expiry_date:type_name -> google.protobuf.Timestamp
-	46, // 58: agriculture.traceability.v1.CreateBatchRequest.metadata:type_name -> agriculture.traceability.v1.CreateBatchRequest.MetadataEntry
-	6,  // 59: agriculture.traceability.v1.CreateBatchResponse.batch:type_name -> agriculture.traceability.v1.BatchRecord
-	6,  // 60: agriculture.traceability.v1.GetBatchResponse.batch:type_name -> agriculture.traceability.v1.BatchRecord
-	6,  // 61: agriculture.traceability.v1.ListBatchesResponse.batches:type_name -> agriculture.traceability.v1.BatchRecord
-	7,  // 62: agriculture.traceability.v1.GenerateQRCodeResponse.qr_code:type_name -> agriculture.traceability.v1.QRCode
-	9,  // 63: agriculture.traceability.v1.VerifyQRCodeResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
-	6,  // 64: agriculture.traceability.v1.VerifyQRCodeResponse.batch:type_name -> agriculture.traceability.v1.BatchRecord
-	8,  // 65: agriculture.traceability.v1.GenerateComplianceReportResponse.report:type_name -> agriculture.traceability.v1.ComplianceReport
-	10, // 66: agriculture.traceability.v1.TraceabilityService.CreateRecord:input_type -> agriculture.traceability.v1.CreateRecordRequest
-	12, // 67: agriculture.traceability.v1.TraceabilityService.GetRecord:input_type -> agriculture.traceability.v1.GetRecordRequest
-	14, // 68: agriculture.traceability.v1.TraceabilityService.ListRecords:input_type -> agriculture.traceability.v1.ListRecordsRequest
-	16, // 69: agriculture.traceability.v1.TraceabilityService.AddSupplyChainEvent:input_type -> agriculture.traceability.v1.AddSupplyChainEventRequest
-	18, // 70: agriculture.traceability.v1.TraceabilityService.GetSupplyChain:input_type -> agriculture.traceability.v1.GetSupplyChainRequest
-	20, // 71: agriculture.traceability.v1.TraceabilityService.CreateCertification:input_type -> agriculture.traceability.v1.CreateCertificationRequest
-	22, // 72: agriculture.traceability.v1.TraceabilityService.GetCertification:input_type -> agriculture.traceability.v1.GetCertificationRequest
-	24, // 73: agriculture.traceability.v1.TraceabilityService.ListCertifications:input_type -> agriculture.traceability.v1.ListCertificationsRequest
-	26, // 74: agriculture.traceability.v1.TraceabilityService.VerifyCertification:input_type -> agriculture.traceability.v1.VerifyCertificationRequest
-	28, // 75: agriculture.traceability.v1.TraceabilityService.CreateBatch:input_type -> agriculture.traceability.v1.CreateBatchRequest
-	30, // 76: agriculture.traceability.v1.TraceabilityService.GetBatch:input_type -> agriculture.traceability.v1.GetBatchRequest
-	32, // 77: agriculture.traceability.v1.TraceabilityService.ListBatches:input_type -> agriculture.traceability.v1.ListBatchesRequest
-	34, // 78: agriculture.traceability.v1.TraceabilityService.GenerateQRCode:input_type -> agriculture.traceability.v1.GenerateQRCodeRequest
-	36, // 79: agriculture.traceability.v1.TraceabilityService.VerifyQRCode:input_type -> agriculture.traceability.v1.VerifyQRCodeRequest
-	38, // 80: agriculture.traceability.v1.TraceabilityService.GenerateComplianceReport:input_type -> agriculture.traceability.v1.GenerateComplianceReportRequest
-	11, // 81: agriculture.traceability.v1.TraceabilityService.CreateRecord:output_type -> agriculture.traceability.v1.CreateRecordResponse
-	13, // 82: agriculture.traceability.v1.TraceabilityService.GetRecord:output_type -> agriculture.traceability.v1.GetRecordResponse
-	15, // 83: agriculture.traceability.v1.TraceabilityService.ListRecords:output_type -> agriculture.traceability.v1.ListRecordsResponse
-	17, // 84: agriculture.traceability.v1.TraceabilityService.AddSupplyChainEvent:output_type -> agriculture.traceability.v1.AddSupplyChainEventResponse
-	19, // 85: agriculture.traceability.v1.TraceabilityService.GetSupplyChain:output_type -> agriculture.traceability.v1.GetSupplyChainResponse
-	21, // 86: agriculture.traceability.v1.TraceabilityService.CreateCertification:output_type -> agriculture.traceability.v1.CreateCertificationResponse
-	23, // 87: agriculture.traceability.v1.TraceabilityService.GetCertification:output_type -> agriculture.traceability.v1.GetCertificationResponse
-	25, // 88: agriculture.traceability.v1.TraceabilityService.ListCertifications:output_type -> agriculture.traceability.v1.ListCertificationsResponse
-	27, // 89: agriculture.traceability.v1.TraceabilityService.VerifyCertification:output_type -> agriculture.traceability.v1.VerifyCertificationResponse
-	29, // 90: agriculture.traceability.v1.TraceabilityService.CreateBatch:output_type -> agriculture.traceability.v1.CreateBatchResponse
-	31, // 91: agriculture.traceability.v1.TraceabilityService.GetBatch:output_type -> agriculture.traceability.v1.GetBatchResponse
-	33, // 92: agriculture.traceability.v1.TraceabilityService.ListBatches:output_type -> agriculture.traceability.v1.ListBatchesResponse
-	35, // 93: agriculture.traceability.v1.TraceabilityService.GenerateQRCode:output_type -> agriculture.traceability.v1.GenerateQRCodeResponse
-	37, // 94: agriculture.traceability.v1.TraceabilityService.VerifyQRCode:output_type -> agriculture.traceability.v1.VerifyQRCodeResponse
-	39, // 95: agriculture.traceability.v1.TraceabilityService.GenerateComplianceReport:output_type -> agriculture.traceability.v1.GenerateComplianceReportResponse
-	81, // [81:96] is the sub-list for method output_type
-	66, // [66:81] is the sub-list for method input_type
-	66, // [66:66] is the sub-list for extension type_name
-	66, // [66:66] is the sub-list for extension extendee
-	0,  // [0:66] is the sub-list for field type_name
+	0,   // 0: agriculture.traceability.v1.SupplyChainEvent.event_type:type_name -> agriculture.traceability.v1.SupplyChainEventType
+	67,  // 1: agriculture.traceability.v1.SupplyChainEvent.timestamp:type_name -> google.protobuf.Timestamp
+	67,  // 2: agriculture.traceability.v1.SupplyChainEvent.created_at:type_name -> google.protobuf.Timestamp
+	1,   // 3: agriculture.traceability.v1.Certification.cert_type:type_name -> agriculture.traceability.v1.CertificationType
+	67,  // 4: agriculture.traceability.v1.Certification.issued_date:type_name -> google.protobuf.Timestamp
+	67,  // 5: agriculture.traceability.v1.Certification.expiry_date:type_name -> google.protobuf.Timestamp
+	2,   // 6: agriculture.traceability.v1.Certification.status:type_name -> agriculture.traceability.v1.CertificationStatus
+	67,  // 7: agriculture.traceability.v1.Certification.verified_at:type_name -> google.protobuf.Timestamp
+	57,  // 8: agriculture.traceability.v1.Certification.metadata:type_name -> agriculture.traceability.v1.Certification.MetadataEntry
+	67,  // 9: agriculture.traceability.v1.Certification.created_at:type_name -> google.protobuf.Timestamp
+	67,  // 10: agriculture.traceability.v1.Certification.updated_at:type_name -> google.protobuf.Timestamp
+	67,  // 11: agriculture.traceability.v1.BatchRecord.production_date:type_name -> google.protobuf.Timestamp
+	67,  // 12: agriculture.traceability.v1.BatchRecord.expiry_date:type_name -> google.protobuf.Timestamp
+	58,  // 13: agriculture.traceability.v1.BatchRecord.metadata:type_name -> agriculture.traceability.v1.BatchRecord.MetadataEntry
+	67,  // 14: agriculture.traceability.v1.BatchRecord.created_at:type_name -> google.protobuf.Timestamp
+	67,  // 15: agriculture.traceability.v1.BatchRecord.updated_at:type_name -> google.protobuf.Timestamp
+	67,  // 16: agriculture.traceability.v1.QRCode.generated_at:type_name -> google.protobuf.Timestamp
+	67,  // 17: agriculture.traceability.v1.QRCode.expires_at:type_name -> google.protobuf.Timestamp
+	3,   // 18: agriculture.traceability.v1.ComplianceReport.status:type_name -> agriculture.traceability.v1.ComplianceStatus
+	67,  // 19: agriculture.traceability.v1.ComplianceReport.audit_date:type_name -> google.protobuf.Timestamp
+	67,  // 20: agriculture.traceability.v1.ComplianceReport.next_audit_date:type_name -> google.protobuf.Timestamp
+	59,  // 21: agriculture.traceability.v1.ComplianceReport.metadata:type_name -> agriculture.traceability.v1.ComplianceReport.MetadataEntry
+	67,  // 22: agriculture.traceability.v1.ComplianceReport.created_at:type_name -> google.protobuf.Timestamp
+	67,  // 23: agriculture.traceability.v1.TraceabilityRecord.planting_date:type_name -> google.protobuf.Timestamp
+	67,  // 24: agriculture.traceability.v1.TraceabilityRecord.harvest_date:type_name -> google.protobuf.Timestamp
+	67,  // 25: agriculture.traceability.v1.TraceabilityRecord.processing_date:type_name -> google.protobuf.Timestamp
+	67,  // 26: agriculture.traceability.v1.TraceabilityRecord.packaging_date:type_name -> google.protobuf.Timestamp
+	6,   // 27: agriculture.traceability.v1.TraceabilityRecord.supply_chain_events:type_name -> agriculture.traceability.v1.SupplyChainEvent
+	7,   // 28: agriculture.traceability.v1.TraceabilityRecord.certifications:type_name -> agriculture.traceability.v1.Certification
+	3,   // 29: agriculture.traceability.v1.TraceabilityRecord.compliance_status:type_name -> agriculture.traceability.v1.ComplianceStatus
+	60,  // 30: agriculture.traceability.v1.TraceabilityRecord.metadata:type_name -> agriculture.traceability.v1.TraceabilityRecord.MetadataEntry
+	67,  // 31: agriculture.traceability.v1.TraceabilityRecord.created_at:type_name -> google.protobuf.Timestamp
+	67,  // 32: agriculture.traceability.v1.TraceabilityRecord.updated_at:type_name -> google.protobuf.Timestamp
+	67,  // 33: agriculture.traceability.v1.CreateRecordRequest.planting_date:type_name -> google.protobuf.Timestamp
+	67,  // 34: agriculture.traceability.v1.CreateRecordRequest.harvest_date:type_name -> google.protobuf.Timestamp
+	67,  // 35: agriculture.traceability.v1.CreateRecordRequest.processing_date:type_name -> google.protobuf.Timestamp
+	67,  // 36: agriculture.traceability.v1.CreateRecordRequest.packaging_date:type_name -> google.protobuf.Timestamp
+	61,  // 37: agriculture.traceability.v1.CreateRecordRequest.metadata:type_name -> agriculture.traceability.v1.CreateRecordRequest.MetadataEntry
+	11,  // 38: agriculture.traceability.v1.CreateRecordResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
+	11,  // 39: agriculture.traceability.v1.GetRecordResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
+	3,   // 40: agriculture.traceability.v1.ListRecordsRequest.compliance_status:type_name -> agriculture.traceability.v1.ComplianceStatus
+	11,  // 41: agriculture.traceability.v1.ListRecordsResponse.records:type_name -> agriculture.traceability.v1.TraceabilityRecord
+	0,   // 42: agriculture.traceability.v1.AddSupplyChainEventRequest.event_type:type_name -> agriculture.traceability.v1.SupplyChainEventType
+	67,  // 43: agriculture.traceability.v1.AddSupplyChainEventRequest.timestamp:type_name -> google.protobuf.Timestamp
+	6,   // 44: agriculture.traceability.v1.AddSupplyChainEventResponse.event:type_name -> agriculture.traceability.v1.SupplyChainEvent
+	6,   // 45: agriculture.traceability.v1.GetSupplyChainResponse.events:type_name -> agriculture.traceability.v1.SupplyChainEvent
+	1,   // 46: agriculture.traceability.v1.CreateCertificationRequest.cert_type:type_name -> agriculture.traceability.v1.CertificationType
+	67,  // 47: agriculture.traceability.v1.CreateCertificationRequest.issued_date:type_name -> google.protobuf.Timestamp
+	67,  // 48: agriculture.traceability.v1.CreateCertificationRequest.expiry_date:type_name -> google.protobuf.Timestamp
+	62,  // 49: agriculture.traceability.v1.CreateCertificationRequest.metadata:type_name -> agriculture.traceability.v1.CreateCertificationRequest.MetadataEntry
+	7,   // 50: agriculture.traceability.v1.CreateCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
+	7,   // 51: agriculture.traceability.v1.GetCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
+	1,   // 52: agriculture.traceability.v1.ListCertificationsRequest.cert_type:type_name -> agriculture.traceability.v1.CertificationType
+	2,   // 53: agriculture.traceability.v1.ListCertificationsRequest.status:type_name -> agriculture.traceability.v1.CertificationStatus
+	7,   // 54: agriculture.traceability.v1.ListCertificationsResponse.certifications:type_name -> agriculture.traceability.v1.Certification
+	7,   // 55: agriculture.traceability.v1.VerifyCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
+	67,  // 56: agriculture.traceability.v1.CreateBatchRequest.production_date:type_name -> google.protobuf.Timestamp
+	67,  // 57: agriculture.traceability.v1.CreateBatchRequest.expiry_date:type_name -> google.protobuf.Timestamp
+	63,  // 58: agriculture.traceability.v1.CreateBatchRequest.metadata:type_name -> agriculture.traceability.v1.CreateBatchRequest.MetadataEntry
+	8,   // 59: agriculture.traceability.v1.CreateBatchResponse.batch:type_name -> agriculture.traceability.v1.BatchRecord
+	8,   // 60: agriculture.traceability.v1.GetBatchResponse.batch:type_name -> agriculture.traceability.v1.BatchRecord
+	8,   // 61: agriculture.traceability.v1.ListBatchesResponse.batches:type_name -> agriculture.traceability.v1.BatchRecord
+	9,   // 62: agriculture.traceability.v1.GenerateQRCodeResponse.qr_code:type_name -> agriculture.traceability.v1.QRCode
+	11,  // 63: agriculture.traceability.v1.VerifyQRCodeResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
+	8,   // 64: agriculture.traceability.v1.VerifyQRCodeResponse.batch:type_name -> agriculture.traceability.v1.BatchRecord
+	10,  // 65: agriculture.traceability.v1.GenerateComplianceReportResponse.report:type_name -> agriculture.traceability.v1.ComplianceReport
+	4,   // 66: agriculture.traceability.v1.QualityCheckpoint.check_type:type_name -> agriculture.traceability.v1.QualityCheckType
+	5,   // 67: agriculture.traceability.v1.QualityCheckpoint.result:type_name -> agriculture.traceability.v1.QualityCheckResult
+	67,  // 68: agriculture.traceability.v1.QualityCheckpoint.inspected_at:type_name -> google.protobuf.Timestamp
+	64,  // 69: agriculture.traceability.v1.QualityCheckpoint.metadata:type_name -> agriculture.traceability.v1.QualityCheckpoint.MetadataEntry
+	67,  // 70: agriculture.traceability.v1.QualityCheckpoint.created_at:type_name -> google.protobuf.Timestamp
+	4,   // 71: agriculture.traceability.v1.CreateQualityCheckpointRequest.check_type:type_name -> agriculture.traceability.v1.QualityCheckType
+	5,   // 72: agriculture.traceability.v1.CreateQualityCheckpointRequest.result:type_name -> agriculture.traceability.v1.QualityCheckResult
+	67,  // 73: agriculture.traceability.v1.CreateQualityCheckpointRequest.inspected_at:type_name -> google.protobuf.Timestamp
+	65,  // 74: agriculture.traceability.v1.CreateQualityCheckpointRequest.metadata:type_name -> agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntry
+	42,  // 75: agriculture.traceability.v1.CreateQualityCheckpointResponse.checkpoint:type_name -> agriculture.traceability.v1.QualityCheckpoint
+	42,  // 76: agriculture.traceability.v1.GetQualityCheckpointResponse.checkpoint:type_name -> agriculture.traceability.v1.QualityCheckpoint
+	4,   // 77: agriculture.traceability.v1.ListQualityCheckpointsRequest.check_type:type_name -> agriculture.traceability.v1.QualityCheckType
+	5,   // 78: agriculture.traceability.v1.ListQualityCheckpointsRequest.result:type_name -> agriculture.traceability.v1.QualityCheckResult
+	42,  // 79: agriculture.traceability.v1.ListQualityCheckpointsResponse.checkpoints:type_name -> agriculture.traceability.v1.QualityCheckpoint
+	67,  // 80: agriculture.traceability.v1.UpdateRecordRequest.planting_date:type_name -> google.protobuf.Timestamp
+	67,  // 81: agriculture.traceability.v1.UpdateRecordRequest.harvest_date:type_name -> google.protobuf.Timestamp
+	67,  // 82: agriculture.traceability.v1.UpdateRecordRequest.processing_date:type_name -> google.protobuf.Timestamp
+	67,  // 83: agriculture.traceability.v1.UpdateRecordRequest.packaging_date:type_name -> google.protobuf.Timestamp
+	66,  // 84: agriculture.traceability.v1.UpdateRecordRequest.metadata:type_name -> agriculture.traceability.v1.UpdateRecordRequest.MetadataEntry
+	11,  // 85: agriculture.traceability.v1.UpdateRecordResponse.record:type_name -> agriculture.traceability.v1.TraceabilityRecord
+	7,   // 86: agriculture.traceability.v1.RevokeCertificationResponse.certification:type_name -> agriculture.traceability.v1.Certification
+	10,  // 87: agriculture.traceability.v1.GetComplianceReportResponse.report:type_name -> agriculture.traceability.v1.ComplianceReport
+	10,  // 88: agriculture.traceability.v1.ListComplianceReportsResponse.reports:type_name -> agriculture.traceability.v1.ComplianceReport
+	12,  // 89: agriculture.traceability.v1.TraceabilityService.CreateRecord:input_type -> agriculture.traceability.v1.CreateRecordRequest
+	14,  // 90: agriculture.traceability.v1.TraceabilityService.GetRecord:input_type -> agriculture.traceability.v1.GetRecordRequest
+	16,  // 91: agriculture.traceability.v1.TraceabilityService.ListRecords:input_type -> agriculture.traceability.v1.ListRecordsRequest
+	18,  // 92: agriculture.traceability.v1.TraceabilityService.AddSupplyChainEvent:input_type -> agriculture.traceability.v1.AddSupplyChainEventRequest
+	20,  // 93: agriculture.traceability.v1.TraceabilityService.GetSupplyChain:input_type -> agriculture.traceability.v1.GetSupplyChainRequest
+	22,  // 94: agriculture.traceability.v1.TraceabilityService.CreateCertification:input_type -> agriculture.traceability.v1.CreateCertificationRequest
+	24,  // 95: agriculture.traceability.v1.TraceabilityService.GetCertification:input_type -> agriculture.traceability.v1.GetCertificationRequest
+	26,  // 96: agriculture.traceability.v1.TraceabilityService.ListCertifications:input_type -> agriculture.traceability.v1.ListCertificationsRequest
+	28,  // 97: agriculture.traceability.v1.TraceabilityService.VerifyCertification:input_type -> agriculture.traceability.v1.VerifyCertificationRequest
+	30,  // 98: agriculture.traceability.v1.TraceabilityService.CreateBatch:input_type -> agriculture.traceability.v1.CreateBatchRequest
+	32,  // 99: agriculture.traceability.v1.TraceabilityService.GetBatch:input_type -> agriculture.traceability.v1.GetBatchRequest
+	34,  // 100: agriculture.traceability.v1.TraceabilityService.ListBatches:input_type -> agriculture.traceability.v1.ListBatchesRequest
+	36,  // 101: agriculture.traceability.v1.TraceabilityService.GenerateQRCode:input_type -> agriculture.traceability.v1.GenerateQRCodeRequest
+	38,  // 102: agriculture.traceability.v1.TraceabilityService.VerifyQRCode:input_type -> agriculture.traceability.v1.VerifyQRCodeRequest
+	40,  // 103: agriculture.traceability.v1.TraceabilityService.GenerateComplianceReport:input_type -> agriculture.traceability.v1.GenerateComplianceReportRequest
+	43,  // 104: agriculture.traceability.v1.TraceabilityService.CreateQualityCheckpoint:input_type -> agriculture.traceability.v1.CreateQualityCheckpointRequest
+	45,  // 105: agriculture.traceability.v1.TraceabilityService.GetQualityCheckpoint:input_type -> agriculture.traceability.v1.GetQualityCheckpointRequest
+	47,  // 106: agriculture.traceability.v1.TraceabilityService.ListQualityCheckpoints:input_type -> agriculture.traceability.v1.ListQualityCheckpointsRequest
+	49,  // 107: agriculture.traceability.v1.TraceabilityService.UpdateRecord:input_type -> agriculture.traceability.v1.UpdateRecordRequest
+	51,  // 108: agriculture.traceability.v1.TraceabilityService.RevokeCertification:input_type -> agriculture.traceability.v1.RevokeCertificationRequest
+	53,  // 109: agriculture.traceability.v1.TraceabilityService.GetComplianceReport:input_type -> agriculture.traceability.v1.GetComplianceReportRequest
+	55,  // 110: agriculture.traceability.v1.TraceabilityService.ListComplianceReports:input_type -> agriculture.traceability.v1.ListComplianceReportsRequest
+	13,  // 111: agriculture.traceability.v1.TraceabilityService.CreateRecord:output_type -> agriculture.traceability.v1.CreateRecordResponse
+	15,  // 112: agriculture.traceability.v1.TraceabilityService.GetRecord:output_type -> agriculture.traceability.v1.GetRecordResponse
+	17,  // 113: agriculture.traceability.v1.TraceabilityService.ListRecords:output_type -> agriculture.traceability.v1.ListRecordsResponse
+	19,  // 114: agriculture.traceability.v1.TraceabilityService.AddSupplyChainEvent:output_type -> agriculture.traceability.v1.AddSupplyChainEventResponse
+	21,  // 115: agriculture.traceability.v1.TraceabilityService.GetSupplyChain:output_type -> agriculture.traceability.v1.GetSupplyChainResponse
+	23,  // 116: agriculture.traceability.v1.TraceabilityService.CreateCertification:output_type -> agriculture.traceability.v1.CreateCertificationResponse
+	25,  // 117: agriculture.traceability.v1.TraceabilityService.GetCertification:output_type -> agriculture.traceability.v1.GetCertificationResponse
+	27,  // 118: agriculture.traceability.v1.TraceabilityService.ListCertifications:output_type -> agriculture.traceability.v1.ListCertificationsResponse
+	29,  // 119: agriculture.traceability.v1.TraceabilityService.VerifyCertification:output_type -> agriculture.traceability.v1.VerifyCertificationResponse
+	31,  // 120: agriculture.traceability.v1.TraceabilityService.CreateBatch:output_type -> agriculture.traceability.v1.CreateBatchResponse
+	33,  // 121: agriculture.traceability.v1.TraceabilityService.GetBatch:output_type -> agriculture.traceability.v1.GetBatchResponse
+	35,  // 122: agriculture.traceability.v1.TraceabilityService.ListBatches:output_type -> agriculture.traceability.v1.ListBatchesResponse
+	37,  // 123: agriculture.traceability.v1.TraceabilityService.GenerateQRCode:output_type -> agriculture.traceability.v1.GenerateQRCodeResponse
+	39,  // 124: agriculture.traceability.v1.TraceabilityService.VerifyQRCode:output_type -> agriculture.traceability.v1.VerifyQRCodeResponse
+	41,  // 125: agriculture.traceability.v1.TraceabilityService.GenerateComplianceReport:output_type -> agriculture.traceability.v1.GenerateComplianceReportResponse
+	44,  // 126: agriculture.traceability.v1.TraceabilityService.CreateQualityCheckpoint:output_type -> agriculture.traceability.v1.CreateQualityCheckpointResponse
+	46,  // 127: agriculture.traceability.v1.TraceabilityService.GetQualityCheckpoint:output_type -> agriculture.traceability.v1.GetQualityCheckpointResponse
+	48,  // 128: agriculture.traceability.v1.TraceabilityService.ListQualityCheckpoints:output_type -> agriculture.traceability.v1.ListQualityCheckpointsResponse
+	50,  // 129: agriculture.traceability.v1.TraceabilityService.UpdateRecord:output_type -> agriculture.traceability.v1.UpdateRecordResponse
+	52,  // 130: agriculture.traceability.v1.TraceabilityService.RevokeCertification:output_type -> agriculture.traceability.v1.RevokeCertificationResponse
+	54,  // 131: agriculture.traceability.v1.TraceabilityService.GetComplianceReport:output_type -> agriculture.traceability.v1.GetComplianceReportResponse
+	56,  // 132: agriculture.traceability.v1.TraceabilityService.ListComplianceReports:output_type -> agriculture.traceability.v1.ListComplianceReportsResponse
+	111, // [111:133] is the sub-list for method output_type
+	89,  // [89:111] is the sub-list for method input_type
+	89,  // [89:89] is the sub-list for extension type_name
+	89,  // [89:89] is the sub-list for extension extendee
+	0,   // [0:89] is the sub-list for field type_name
 }
 
 func init() { file_traceability_proto_init() }
@@ -3467,8 +4813,8 @@ func file_traceability_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_traceability_proto_rawDesc), len(file_traceability_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   43,
+			NumEnums:      6,
+			NumMessages:   61,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

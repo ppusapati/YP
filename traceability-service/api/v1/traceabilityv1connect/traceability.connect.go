@@ -78,6 +78,27 @@ const (
 	// TraceabilityServiceGenerateComplianceReportProcedure is the fully-qualified name of the
 	// TraceabilityService's GenerateComplianceReport RPC.
 	TraceabilityServiceGenerateComplianceReportProcedure = "/agriculture.traceability.v1.TraceabilityService/GenerateComplianceReport"
+	// TraceabilityServiceCreateQualityCheckpointProcedure is the fully-qualified name of the
+	// TraceabilityService's CreateQualityCheckpoint RPC.
+	TraceabilityServiceCreateQualityCheckpointProcedure = "/agriculture.traceability.v1.TraceabilityService/CreateQualityCheckpoint"
+	// TraceabilityServiceGetQualityCheckpointProcedure is the fully-qualified name of the
+	// TraceabilityService's GetQualityCheckpoint RPC.
+	TraceabilityServiceGetQualityCheckpointProcedure = "/agriculture.traceability.v1.TraceabilityService/GetQualityCheckpoint"
+	// TraceabilityServiceListQualityCheckpointsProcedure is the fully-qualified name of the
+	// TraceabilityService's ListQualityCheckpoints RPC.
+	TraceabilityServiceListQualityCheckpointsProcedure = "/agriculture.traceability.v1.TraceabilityService/ListQualityCheckpoints"
+	// TraceabilityServiceUpdateRecordProcedure is the fully-qualified name of the TraceabilityService's
+	// UpdateRecord RPC.
+	TraceabilityServiceUpdateRecordProcedure = "/agriculture.traceability.v1.TraceabilityService/UpdateRecord"
+	// TraceabilityServiceRevokeCertificationProcedure is the fully-qualified name of the
+	// TraceabilityService's RevokeCertification RPC.
+	TraceabilityServiceRevokeCertificationProcedure = "/agriculture.traceability.v1.TraceabilityService/RevokeCertification"
+	// TraceabilityServiceGetComplianceReportProcedure is the fully-qualified name of the
+	// TraceabilityService's GetComplianceReport RPC.
+	TraceabilityServiceGetComplianceReportProcedure = "/agriculture.traceability.v1.TraceabilityService/GetComplianceReport"
+	// TraceabilityServiceListComplianceReportsProcedure is the fully-qualified name of the
+	// TraceabilityService's ListComplianceReports RPC.
+	TraceabilityServiceListComplianceReportsProcedure = "/agriculture.traceability.v1.TraceabilityService/ListComplianceReports"
 )
 
 // TraceabilityServiceClient is a client for the agriculture.traceability.v1.TraceabilityService
@@ -113,6 +134,17 @@ type TraceabilityServiceClient interface {
 	VerifyQRCode(context.Context, *connect.Request[v1.VerifyQRCodeRequest]) (*connect.Response[v1.VerifyQRCodeResponse], error)
 	// GenerateComplianceReport generates a compliance report for a record.
 	GenerateComplianceReport(context.Context, *connect.Request[v1.GenerateComplianceReportRequest]) (*connect.Response[v1.GenerateComplianceReportResponse], error)
+	// Quality Checkpoints
+	CreateQualityCheckpoint(context.Context, *connect.Request[v1.CreateQualityCheckpointRequest]) (*connect.Response[v1.CreateQualityCheckpointResponse], error)
+	GetQualityCheckpoint(context.Context, *connect.Request[v1.GetQualityCheckpointRequest]) (*connect.Response[v1.GetQualityCheckpointResponse], error)
+	ListQualityCheckpoints(context.Context, *connect.Request[v1.ListQualityCheckpointsRequest]) (*connect.Response[v1.ListQualityCheckpointsResponse], error)
+	// Record updates
+	UpdateRecord(context.Context, *connect.Request[v1.UpdateRecordRequest]) (*connect.Response[v1.UpdateRecordResponse], error)
+	// Certification lifecycle
+	RevokeCertification(context.Context, *connect.Request[v1.RevokeCertificationRequest]) (*connect.Response[v1.RevokeCertificationResponse], error)
+	// Compliance report retrieval
+	GetComplianceReport(context.Context, *connect.Request[v1.GetComplianceReportRequest]) (*connect.Response[v1.GetComplianceReportResponse], error)
+	ListComplianceReports(context.Context, *connect.Request[v1.ListComplianceReportsRequest]) (*connect.Response[v1.ListComplianceReportsResponse], error)
 }
 
 // NewTraceabilityServiceClient constructs a client for the
@@ -217,6 +249,48 @@ func NewTraceabilityServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(traceabilityServiceMethods.ByName("GenerateComplianceReport")),
 			connect.WithClientOptions(opts...),
 		),
+		createQualityCheckpoint: connect.NewClient[v1.CreateQualityCheckpointRequest, v1.CreateQualityCheckpointResponse](
+			httpClient,
+			baseURL+TraceabilityServiceCreateQualityCheckpointProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("CreateQualityCheckpoint")),
+			connect.WithClientOptions(opts...),
+		),
+		getQualityCheckpoint: connect.NewClient[v1.GetQualityCheckpointRequest, v1.GetQualityCheckpointResponse](
+			httpClient,
+			baseURL+TraceabilityServiceGetQualityCheckpointProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("GetQualityCheckpoint")),
+			connect.WithClientOptions(opts...),
+		),
+		listQualityCheckpoints: connect.NewClient[v1.ListQualityCheckpointsRequest, v1.ListQualityCheckpointsResponse](
+			httpClient,
+			baseURL+TraceabilityServiceListQualityCheckpointsProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("ListQualityCheckpoints")),
+			connect.WithClientOptions(opts...),
+		),
+		updateRecord: connect.NewClient[v1.UpdateRecordRequest, v1.UpdateRecordResponse](
+			httpClient,
+			baseURL+TraceabilityServiceUpdateRecordProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("UpdateRecord")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeCertification: connect.NewClient[v1.RevokeCertificationRequest, v1.RevokeCertificationResponse](
+			httpClient,
+			baseURL+TraceabilityServiceRevokeCertificationProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("RevokeCertification")),
+			connect.WithClientOptions(opts...),
+		),
+		getComplianceReport: connect.NewClient[v1.GetComplianceReportRequest, v1.GetComplianceReportResponse](
+			httpClient,
+			baseURL+TraceabilityServiceGetComplianceReportProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("GetComplianceReport")),
+			connect.WithClientOptions(opts...),
+		),
+		listComplianceReports: connect.NewClient[v1.ListComplianceReportsRequest, v1.ListComplianceReportsResponse](
+			httpClient,
+			baseURL+TraceabilityServiceListComplianceReportsProcedure,
+			connect.WithSchema(traceabilityServiceMethods.ByName("ListComplianceReports")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -237,6 +311,13 @@ type traceabilityServiceClient struct {
 	generateQRCode           *connect.Client[v1.GenerateQRCodeRequest, v1.GenerateQRCodeResponse]
 	verifyQRCode             *connect.Client[v1.VerifyQRCodeRequest, v1.VerifyQRCodeResponse]
 	generateComplianceReport *connect.Client[v1.GenerateComplianceReportRequest, v1.GenerateComplianceReportResponse]
+	createQualityCheckpoint  *connect.Client[v1.CreateQualityCheckpointRequest, v1.CreateQualityCheckpointResponse]
+	getQualityCheckpoint     *connect.Client[v1.GetQualityCheckpointRequest, v1.GetQualityCheckpointResponse]
+	listQualityCheckpoints   *connect.Client[v1.ListQualityCheckpointsRequest, v1.ListQualityCheckpointsResponse]
+	updateRecord             *connect.Client[v1.UpdateRecordRequest, v1.UpdateRecordResponse]
+	revokeCertification      *connect.Client[v1.RevokeCertificationRequest, v1.RevokeCertificationResponse]
+	getComplianceReport      *connect.Client[v1.GetComplianceReportRequest, v1.GetComplianceReportResponse]
+	listComplianceReports    *connect.Client[v1.ListComplianceReportsRequest, v1.ListComplianceReportsResponse]
 }
 
 // CreateRecord calls agriculture.traceability.v1.TraceabilityService.CreateRecord.
@@ -315,6 +396,44 @@ func (c *traceabilityServiceClient) GenerateComplianceReport(ctx context.Context
 	return c.generateComplianceReport.CallUnary(ctx, req)
 }
 
+// CreateQualityCheckpoint calls
+// agriculture.traceability.v1.TraceabilityService.CreateQualityCheckpoint.
+func (c *traceabilityServiceClient) CreateQualityCheckpoint(ctx context.Context, req *connect.Request[v1.CreateQualityCheckpointRequest]) (*connect.Response[v1.CreateQualityCheckpointResponse], error) {
+	return c.createQualityCheckpoint.CallUnary(ctx, req)
+}
+
+// GetQualityCheckpoint calls agriculture.traceability.v1.TraceabilityService.GetQualityCheckpoint.
+func (c *traceabilityServiceClient) GetQualityCheckpoint(ctx context.Context, req *connect.Request[v1.GetQualityCheckpointRequest]) (*connect.Response[v1.GetQualityCheckpointResponse], error) {
+	return c.getQualityCheckpoint.CallUnary(ctx, req)
+}
+
+// ListQualityCheckpoints calls
+// agriculture.traceability.v1.TraceabilityService.ListQualityCheckpoints.
+func (c *traceabilityServiceClient) ListQualityCheckpoints(ctx context.Context, req *connect.Request[v1.ListQualityCheckpointsRequest]) (*connect.Response[v1.ListQualityCheckpointsResponse], error) {
+	return c.listQualityCheckpoints.CallUnary(ctx, req)
+}
+
+// UpdateRecord calls agriculture.traceability.v1.TraceabilityService.UpdateRecord.
+func (c *traceabilityServiceClient) UpdateRecord(ctx context.Context, req *connect.Request[v1.UpdateRecordRequest]) (*connect.Response[v1.UpdateRecordResponse], error) {
+	return c.updateRecord.CallUnary(ctx, req)
+}
+
+// RevokeCertification calls agriculture.traceability.v1.TraceabilityService.RevokeCertification.
+func (c *traceabilityServiceClient) RevokeCertification(ctx context.Context, req *connect.Request[v1.RevokeCertificationRequest]) (*connect.Response[v1.RevokeCertificationResponse], error) {
+	return c.revokeCertification.CallUnary(ctx, req)
+}
+
+// GetComplianceReport calls agriculture.traceability.v1.TraceabilityService.GetComplianceReport.
+func (c *traceabilityServiceClient) GetComplianceReport(ctx context.Context, req *connect.Request[v1.GetComplianceReportRequest]) (*connect.Response[v1.GetComplianceReportResponse], error) {
+	return c.getComplianceReport.CallUnary(ctx, req)
+}
+
+// ListComplianceReports calls
+// agriculture.traceability.v1.TraceabilityService.ListComplianceReports.
+func (c *traceabilityServiceClient) ListComplianceReports(ctx context.Context, req *connect.Request[v1.ListComplianceReportsRequest]) (*connect.Response[v1.ListComplianceReportsResponse], error) {
+	return c.listComplianceReports.CallUnary(ctx, req)
+}
+
 // TraceabilityServiceHandler is an implementation of the
 // agriculture.traceability.v1.TraceabilityService service.
 type TraceabilityServiceHandler interface {
@@ -348,6 +467,17 @@ type TraceabilityServiceHandler interface {
 	VerifyQRCode(context.Context, *connect.Request[v1.VerifyQRCodeRequest]) (*connect.Response[v1.VerifyQRCodeResponse], error)
 	// GenerateComplianceReport generates a compliance report for a record.
 	GenerateComplianceReport(context.Context, *connect.Request[v1.GenerateComplianceReportRequest]) (*connect.Response[v1.GenerateComplianceReportResponse], error)
+	// Quality Checkpoints
+	CreateQualityCheckpoint(context.Context, *connect.Request[v1.CreateQualityCheckpointRequest]) (*connect.Response[v1.CreateQualityCheckpointResponse], error)
+	GetQualityCheckpoint(context.Context, *connect.Request[v1.GetQualityCheckpointRequest]) (*connect.Response[v1.GetQualityCheckpointResponse], error)
+	ListQualityCheckpoints(context.Context, *connect.Request[v1.ListQualityCheckpointsRequest]) (*connect.Response[v1.ListQualityCheckpointsResponse], error)
+	// Record updates
+	UpdateRecord(context.Context, *connect.Request[v1.UpdateRecordRequest]) (*connect.Response[v1.UpdateRecordResponse], error)
+	// Certification lifecycle
+	RevokeCertification(context.Context, *connect.Request[v1.RevokeCertificationRequest]) (*connect.Response[v1.RevokeCertificationResponse], error)
+	// Compliance report retrieval
+	GetComplianceReport(context.Context, *connect.Request[v1.GetComplianceReportRequest]) (*connect.Response[v1.GetComplianceReportResponse], error)
+	ListComplianceReports(context.Context, *connect.Request[v1.ListComplianceReportsRequest]) (*connect.Response[v1.ListComplianceReportsResponse], error)
 }
 
 // NewTraceabilityServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -447,6 +577,48 @@ func NewTraceabilityServiceHandler(svc TraceabilityServiceHandler, opts ...conne
 		connect.WithSchema(traceabilityServiceMethods.ByName("GenerateComplianceReport")),
 		connect.WithHandlerOptions(opts...),
 	)
+	traceabilityServiceCreateQualityCheckpointHandler := connect.NewUnaryHandler(
+		TraceabilityServiceCreateQualityCheckpointProcedure,
+		svc.CreateQualityCheckpoint,
+		connect.WithSchema(traceabilityServiceMethods.ByName("CreateQualityCheckpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
+	traceabilityServiceGetQualityCheckpointHandler := connect.NewUnaryHandler(
+		TraceabilityServiceGetQualityCheckpointProcedure,
+		svc.GetQualityCheckpoint,
+		connect.WithSchema(traceabilityServiceMethods.ByName("GetQualityCheckpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
+	traceabilityServiceListQualityCheckpointsHandler := connect.NewUnaryHandler(
+		TraceabilityServiceListQualityCheckpointsProcedure,
+		svc.ListQualityCheckpoints,
+		connect.WithSchema(traceabilityServiceMethods.ByName("ListQualityCheckpoints")),
+		connect.WithHandlerOptions(opts...),
+	)
+	traceabilityServiceUpdateRecordHandler := connect.NewUnaryHandler(
+		TraceabilityServiceUpdateRecordProcedure,
+		svc.UpdateRecord,
+		connect.WithSchema(traceabilityServiceMethods.ByName("UpdateRecord")),
+		connect.WithHandlerOptions(opts...),
+	)
+	traceabilityServiceRevokeCertificationHandler := connect.NewUnaryHandler(
+		TraceabilityServiceRevokeCertificationProcedure,
+		svc.RevokeCertification,
+		connect.WithSchema(traceabilityServiceMethods.ByName("RevokeCertification")),
+		connect.WithHandlerOptions(opts...),
+	)
+	traceabilityServiceGetComplianceReportHandler := connect.NewUnaryHandler(
+		TraceabilityServiceGetComplianceReportProcedure,
+		svc.GetComplianceReport,
+		connect.WithSchema(traceabilityServiceMethods.ByName("GetComplianceReport")),
+		connect.WithHandlerOptions(opts...),
+	)
+	traceabilityServiceListComplianceReportsHandler := connect.NewUnaryHandler(
+		TraceabilityServiceListComplianceReportsProcedure,
+		svc.ListComplianceReports,
+		connect.WithSchema(traceabilityServiceMethods.ByName("ListComplianceReports")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.traceability.v1.TraceabilityService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TraceabilityServiceCreateRecordProcedure:
@@ -479,6 +651,20 @@ func NewTraceabilityServiceHandler(svc TraceabilityServiceHandler, opts ...conne
 			traceabilityServiceVerifyQRCodeHandler.ServeHTTP(w, r)
 		case TraceabilityServiceGenerateComplianceReportProcedure:
 			traceabilityServiceGenerateComplianceReportHandler.ServeHTTP(w, r)
+		case TraceabilityServiceCreateQualityCheckpointProcedure:
+			traceabilityServiceCreateQualityCheckpointHandler.ServeHTTP(w, r)
+		case TraceabilityServiceGetQualityCheckpointProcedure:
+			traceabilityServiceGetQualityCheckpointHandler.ServeHTTP(w, r)
+		case TraceabilityServiceListQualityCheckpointsProcedure:
+			traceabilityServiceListQualityCheckpointsHandler.ServeHTTP(w, r)
+		case TraceabilityServiceUpdateRecordProcedure:
+			traceabilityServiceUpdateRecordHandler.ServeHTTP(w, r)
+		case TraceabilityServiceRevokeCertificationProcedure:
+			traceabilityServiceRevokeCertificationHandler.ServeHTTP(w, r)
+		case TraceabilityServiceGetComplianceReportProcedure:
+			traceabilityServiceGetComplianceReportHandler.ServeHTTP(w, r)
+		case TraceabilityServiceListComplianceReportsProcedure:
+			traceabilityServiceListComplianceReportsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -546,4 +732,32 @@ func (UnimplementedTraceabilityServiceHandler) VerifyQRCode(context.Context, *co
 
 func (UnimplementedTraceabilityServiceHandler) GenerateComplianceReport(context.Context, *connect.Request[v1.GenerateComplianceReportRequest]) (*connect.Response[v1.GenerateComplianceReportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.GenerateComplianceReport is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) CreateQualityCheckpoint(context.Context, *connect.Request[v1.CreateQualityCheckpointRequest]) (*connect.Response[v1.CreateQualityCheckpointResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.CreateQualityCheckpoint is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) GetQualityCheckpoint(context.Context, *connect.Request[v1.GetQualityCheckpointRequest]) (*connect.Response[v1.GetQualityCheckpointResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.GetQualityCheckpoint is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) ListQualityCheckpoints(context.Context, *connect.Request[v1.ListQualityCheckpointsRequest]) (*connect.Response[v1.ListQualityCheckpointsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.ListQualityCheckpoints is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) UpdateRecord(context.Context, *connect.Request[v1.UpdateRecordRequest]) (*connect.Response[v1.UpdateRecordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.UpdateRecord is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) RevokeCertification(context.Context, *connect.Request[v1.RevokeCertificationRequest]) (*connect.Response[v1.RevokeCertificationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.RevokeCertification is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) GetComplianceReport(context.Context, *connect.Request[v1.GetComplianceReportRequest]) (*connect.Response[v1.GetComplianceReportResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.GetComplianceReport is not implemented"))
+}
+
+func (UnimplementedTraceabilityServiceHandler) ListComplianceReports(context.Context, *connect.Request[v1.ListComplianceReportsRequest]) (*connect.Response[v1.ListComplianceReportsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.traceability.v1.TraceabilityService.ListComplianceReports is not implemented"))
 }

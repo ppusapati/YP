@@ -28,4 +28,8 @@ type FieldService interface {
 
 	LogActivityEvent(ctx context.Context, event *domain.ActivityEvent) (*domain.ActivityEvent, error)
 	ListActivityEvents(ctx context.Context, params domain.ListActivityEventsParams) ([]domain.ActivityEvent, int32, error)
+
+	AddActivityEvidence(ctx context.Context, evidence *domain.ActivityEvidence) (*domain.ActivityEvidence, error)
+	ListActivityEvidence(ctx context.Context, params domain.ListActivityEvidenceParams) ([]domain.ActivityEvidence, int32, error)
+	DeleteActivityEvidence(ctx context.Context, id string) error
 }
