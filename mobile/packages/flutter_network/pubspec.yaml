@@ -14,7 +14,6 @@ dependencies:
     sdk: flutter
   flutter_proto:
     path: ../flutter_proto
-  connectrpc: ^0.3.0
   protobuf: ^21.1.2
   http: ^1.2.2
   retry: ^3.1.2

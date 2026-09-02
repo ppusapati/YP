@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_ui_core/src/theme/app_theme.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart';
 
 import '../core/di/providers.dart';
 import '../core/routing/app_router.dart';
