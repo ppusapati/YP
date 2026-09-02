@@ -41,10 +41,18 @@ tools: ## Install pinned protoc-gen-* tools from tools.go
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go install google.golang.org/protobuf/cmd/protoc-gen-go
 
-proto: ## Regenerate protobuf code (run 'make tools' first)
+proto: ## Regenerate Go protobuf code (run 'make tools' first)
 	buf generate
 
-proto-check: ## Check proto freshness
+proto-web: ## Regenerate TypeScript proto types
+	cd web/packages/proto && bash generate.sh
+
+proto-mobile: ## Regenerate Dart proto types
+	cd mobile/packages/flutter_proto && buf generate
+
+proto-all: proto proto-web proto-mobile ## Regenerate all proto code (Go + TS + Dart)
+
+proto-check: ## Check proto freshness (CI gate)
 	buf generate
 	@git diff --quiet -- '*.pb.go' '*.connect.go' || \
 		(echo "Proto generated code is stale — run 'make proto' and commit" && exit 1)
