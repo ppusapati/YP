@@ -257,15 +257,14 @@ type AlertListFilter struct {
 	PageOffset         int32
 }
 
-// ListSensorParams holds filter and pagination parameters for listing sensors via the ports layer.
-type ListSensorParams struct {
-	TenantID   string
-	FieldID    *string
-	FarmID     *string
-	SensorType *SensorType
-	Status     *SensorStatus
-	Protocol   *SensorProtocol
-	Search     *string
-	PageSize   int32
-	Offset     int32
+// ReadingInput represents an individual reading in a batch ingest request.
+type ReadingInput struct {
+	SensorID          string
+	Value             float64
+	Unit              string
+	Timestamp         time.Time
+	Quality           ReadingQuality
+	BatteryLevelPct   *float64
+	SignalStrengthDbm *float64
+	Metadata          json.RawMessage
 }

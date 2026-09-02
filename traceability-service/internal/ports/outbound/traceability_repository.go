@@ -4,20 +4,44 @@ package outbound
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
-
 	"p9e.in/samavaya/agriculture/traceability-service/internal/domain"
 )
 
 // TraceabilityRepository is the secondary port for traceability persistence.
 type TraceabilityRepository interface {
-	CreateTraceability(ctx context.Context, entity *domain.Traceability) (*domain.Traceability, error)
-	GetTraceabilityByUUID(ctx context.Context, uuid, tenantID string) (*domain.Traceability, error)
-	ListTraceabilitys(ctx context.Context, params domain.ListTraceabilityParams) ([]domain.Traceability, int32, error)
-	UpdateTraceability(ctx context.Context, entity *domain.Traceability) (*domain.Traceability, error)
-	DeleteTraceability(ctx context.Context, uuid, tenantID, deletedBy string) error
-	CheckTraceabilityExists(ctx context.Context, uuid, tenantID string) (bool, error)
-	CheckTraceabilityNameExists(ctx context.Context, name, tenantID string) (bool, error)
+	// Traceability Records
+	CreateRecord(ctx context.Context, record *domain.TraceabilityRecord) (*domain.TraceabilityRecord, error)
+	GetRecord(ctx context.Context, id, tenantID string) (*domain.TraceabilityRecord, error)
+	ListRecords(ctx context.Context, tenantID string, filter domain.ListRecordsFilter) ([]domain.TraceabilityRecord, int64, error)
+	UpdateRecordCompliance(ctx context.Context, id, tenantID string, status domain.ComplianceStatusType, updatedBy string) (*domain.TraceabilityRecord, error)
+	UpdateRecordQR(ctx context.Context, id, tenantID, qrData, updatedBy string) (*domain.TraceabilityRecord, error)
+	AppendChainOfCustody(ctx context.Context, id, tenantID, custodyEntry, updatedBy string) (*domain.TraceabilityRecord, error)
 
-	WithTx(tx pgx.Tx) TraceabilityRepository
+	// Supply Chain Events
+	CreateSupplyChainEvent(ctx context.Context, event *domain.SupplyChainEvent) (*domain.SupplyChainEvent, error)
+	GetSupplyChainEventsByRecord(ctx context.Context, recordID string) ([]domain.SupplyChainEvent, error)
+
+	// Certifications
+	CreateCertification(ctx context.Context, cert *domain.Certification) (*domain.Certification, error)
+	GetCertification(ctx context.Context, id, tenantID string) (*domain.Certification, error)
+	ListCertifications(ctx context.Context, tenantID string, filter domain.ListCertificationsFilter) ([]domain.Certification, int64, error)
+	VerifyCertification(ctx context.Context, id, tenantID, verifiedBy string) (*domain.Certification, error)
+	GetCertificationsByRecord(ctx context.Context, recordID, tenantID string) ([]domain.Certification, error)
+	GetActiveCertificationsByRecord(ctx context.Context, recordID, tenantID string) ([]domain.Certification, error)
+
+	// Batch Records
+	CreateBatchRecord(ctx context.Context, batch *domain.BatchRecord) (*domain.BatchRecord, error)
+	GetBatchRecord(ctx context.Context, id, tenantID string) (*domain.BatchRecord, error)
+	ListBatchRecords(ctx context.Context, tenantID string, filter domain.ListBatchesFilter) ([]domain.BatchRecord, int64, error)
+
+	// QR Codes
+	CreateQRCode(ctx context.Context, qr *domain.QRCodeRecord) (*domain.QRCodeRecord, error)
+	GetQRCodeByData(ctx context.Context, qrData string) (*domain.QRCodeRecord, error)
+	GetQRCodesByRecord(ctx context.Context, recordID string) ([]domain.QRCodeRecord, error)
+
+	// Compliance Reports
+	CreateComplianceReport(ctx context.Context, report *domain.ComplianceReport) (*domain.ComplianceReport, error)
+	GetComplianceReport(ctx context.Context, id, tenantID string) (*domain.ComplianceReport, error)
+	GetComplianceReportsByRecord(ctx context.Context, recordID, tenantID string) ([]domain.ComplianceReport, error)
+	GetLatestComplianceReport(ctx context.Context, recordID, tenantID string) (*domain.ComplianceReport, error)
 }
