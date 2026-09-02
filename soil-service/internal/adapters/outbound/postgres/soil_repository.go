@@ -64,9 +64,9 @@ func (r *soilRepository) exec(ctx context.Context, sql string, args ...any) (int
 func (r *soilRepository) CreateSoil(ctx context.Context, entity *domain.Soil) (*domain.Soil, error) {
 	entity.UUID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO soil_samples (uuid, tenant_id, field_id, farm_id, notes, texture, is_active, created_by)
+		`INSERT INTO soil_samples (id, tenant_id, field_id, farm_id, notes, texture, is_active, created_by)
 		VALUES ($1,$2,'','',$3,$4,true,$5)
-		RETURNING uuid, tenant_id, notes, texture, is_active, created_by, created_at, version`,
+		RETURNING id, tenant_id, notes, texture, is_active, created_by, created_at, version`,
 		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	return scanSoil(row)
@@ -74,8 +74,8 @@ func (r *soilRepository) CreateSoil(ctx context.Context, entity *domain.Soil) (*
 
 func (r *soilRepository) GetSoilByUUID(ctx context.Context, uuid, tenantID string) (*domain.Soil, error) {
 	row := r.queryRow(ctx,
-		`SELECT uuid, tenant_id, notes, texture, is_active, created_by, created_at, version
-		FROM soil_samples WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		`SELECT id, tenant_id, notes, texture, is_active, created_by, created_at, version
+		FROM soil_samples WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		uuid, tenantID,
 	)
 	e, err := scanSoil(row)
@@ -96,8 +96,8 @@ func (r *soilRepository) UpdateSoil(ctx context.Context, entity *domain.Soil) (*
 	row := r.queryRow(ctx,
 		`UPDATE soil_samples SET notes=COALESCE(NULLIF($1,''),notes), texture=COALESCE(NULLIF($2,''),texture),
 		updated_by=$3, updated_at=NOW(), version=version+1
-		WHERE uuid=$4 AND tenant_id=$5 AND deleted_at IS NULL
-		RETURNING uuid, tenant_id, notes, texture, is_active, created_by, created_at, version`,
+		WHERE id=$4 AND tenant_id=$5 AND deleted_at IS NULL
+		RETURNING id, tenant_id, notes, texture, is_active, created_by, created_at, version`,
 		entity.Name, string(entity.Status), entity.UpdatedBy, entity.UUID, entity.TenantID,
 	)
 	e, err := scanSoil(row)
@@ -112,7 +112,7 @@ func (r *soilRepository) UpdateSoil(ctx context.Context, entity *domain.Soil) (*
 
 func (r *soilRepository) DeleteSoil(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	_, err := r.exec(ctx,
-		`UPDATE soil_samples SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE uuid=$2 AND tenant_id=$3`,
+		`UPDATE soil_samples SET deleted_at=NOW(), deleted_by=$1, is_active=false WHERE id=$2 AND tenant_id=$3`,
 		deletedBy, uuid, tenantID,
 	)
 	return err
@@ -121,7 +121,7 @@ func (r *soilRepository) DeleteSoil(ctx context.Context, uuid, tenantID, deleted
 func (r *soilRepository) CheckSoilExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	err := r.queryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM soil_samples WHERE uuid=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
+		`SELECT EXISTS(SELECT 1 FROM soil_samples WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL)`,
 		uuid, tenantID,
 	).Scan(&exists)
 	return exists, err
@@ -155,8 +155,8 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 	}
 	query := `
 		INSERT INTO soil_samples (
-			uuid, tenant_id, field_id, farm_id,
-			sample_location, sample_depth_cm, collection_date,
+			id, tenant_id, field_id, farm_id,
+			sample_latitude, sample_longitude, sample_depth_cm, collection_date,
 			ph, organic_matter_pct, nitrogen_ppm, phosphorus_ppm, potassium_ppm,
 			calcium_ppm, magnesium_ppm, sulfur_ppm, iron_ppm, manganese_ppm,
 			zinc_ppm, copper_ppm, boron_ppm, moisture_pct,
@@ -164,15 +164,14 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 			collected_by, notes, created_by
 		) VALUES (
 			$1, $2, $3, $4,
-			ST_SetSRID(ST_MakePoint($5, $6), 4326), $7, $8,
+			$5, $6, $7, $8,
 			$9, $10, $11, $12, $13,
 			$14, $15, $16, $17, $18,
 			$19, $20, $21, $22,
 			$23, $24, $25, $26,
 			$27, $28, $29
-		) RETURNING id, uuid, tenant_id, field_id, farm_id,
-			ST_Y(sample_location::geometry) AS latitude,
-			ST_X(sample_location::geometry) AS longitude,
+		) RETURNING id, tenant_id, field_id, farm_id,
+			sample_latitude, sample_longitude,
 			sample_depth_cm, collection_date,
 			ph, organic_matter_pct, nitrogen_ppm, phosphorus_ppm, potassium_ppm,
 			calcium_ppm, magnesium_ppm, sulfur_ppm, iron_ppm, manganese_ppm,
@@ -184,14 +183,14 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 	var texture string
 	err := r.queryRow(ctx, query,
 		sample.UUID, sample.TenantID, sample.FieldID, sample.FarmID,
-		sample.Longitude, sample.Latitude, sample.SampleDepthCm, sample.CollectionDate,
+		sample.Latitude, sample.Longitude, sample.SampleDepthCm, sample.CollectionDate,
 		sample.PH, sample.OrganicMatterPct, sample.NitrogenPPM, sample.PhosphorusPPM, sample.PotassiumPPM,
 		sample.CalciumPPM, sample.MagnesiumPPM, sample.SulfurPPM, sample.IronPPM, sample.ManganesePPM,
 		sample.ZincPPM, sample.CopperPPM, sample.BoronPPM, sample.MoisturePct,
 		string(sample.Texture), sample.BulkDensity, sample.CationExchangeCapacity, sample.ElectricalConductivity,
 		sample.CollectedBy, sample.Notes, sample.CreatedBy,
 	).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.Latitude, &result.Longitude,
 		&result.SampleDepthCm, &result.CollectionDate,
 		&result.PH, &result.OrganicMatterPct, &result.NitrogenPPM, &result.PhosphorusPPM, &result.PotassiumPPM,
@@ -211,9 +210,8 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 
 func (r *soilRepository) GetSoilSampleByUUID(ctx context.Context, uuid, tenantID string) (*domain.SoilSample, error) {
 	query := `
-		SELECT id, uuid, tenant_id, field_id, farm_id,
-			ST_Y(sample_location::geometry) AS latitude,
-			ST_X(sample_location::geometry) AS longitude,
+		SELECT id, tenant_id, field_id, farm_id,
+			sample_latitude, sample_longitude,
 			sample_depth_cm, collection_date,
 			ph, organic_matter_pct, nitrogen_ppm, phosphorus_ppm, potassium_ppm,
 			calcium_ppm, magnesium_ppm, sulfur_ppm, iron_ppm, manganese_ppm,
@@ -221,12 +219,12 @@ func (r *soilRepository) GetSoilSampleByUUID(ctx context.Context, uuid, tenantID
 			texture, bulk_density, cation_exchange_capacity, electrical_conductivity,
 			collected_by, notes, is_active, created_by, created_at, updated_by, updated_at, version
 		FROM soil_samples
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`
 
 	var result domain.SoilSample
 	var texture string
 	err := r.queryRow(ctx, query, uuid, tenantID).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.Latitude, &result.Longitude,
 		&result.SampleDepthCm, &result.CollectionDate,
 		&result.PH, &result.OrganicMatterPct, &result.NitrogenPPM, &result.PhosphorusPPM, &result.PotassiumPPM,
@@ -262,9 +260,8 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 	}
 
 	listQuery := `
-		SELECT id, uuid, tenant_id, field_id, farm_id,
-			ST_Y(sample_location::geometry) AS latitude,
-			ST_X(sample_location::geometry) AS longitude,
+		SELECT id, tenant_id, field_id, farm_id,
+			sample_latitude, sample_longitude,
 			sample_depth_cm, collection_date,
 			ph, organic_matter_pct, nitrogen_ppm, phosphorus_ppm, potassium_ppm,
 			calcium_ppm, magnesium_ppm, sulfur_ppm, iron_ppm, manganese_ppm,
@@ -291,7 +288,7 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 		var s domain.SoilSample
 		var texture string
 		if err := rows.Scan(
-			&s.ID, &s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
+			&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
 			&s.Latitude, &s.Longitude,
 			&s.SampleDepthCm, &s.CollectionDate,
 			&s.PH, &s.OrganicMatterPct, &s.NitrogenPPM, &s.PhosphorusPPM, &s.PotassiumPPM,
@@ -317,7 +314,7 @@ func (r *soilRepository) DeleteSoilSample(ctx context.Context, uuid, tenantID st
 	query := `
 		UPDATE soil_samples
 		SET is_active = FALSE, deleted_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`
 
 	affected, err := r.exec(ctx, query, uuid, tenantID)
 	if err != nil {
@@ -340,12 +337,12 @@ func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domai
 	}
 	query := `
 		INSERT INTO soil_analyses (
-			uuid, tenant_id, sample_id, field_id, farm_id,
+			id, tenant_id, sample_id, field_id, farm_id,
 			status, analysis_type, soil_health_score, health_category,
 			recommendations, analyzed_by, analyzed_at, summary, created_by
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-		) RETURNING id, uuid, tenant_id, sample_id, field_id, farm_id,
+		) RETURNING id, tenant_id, sample_id, field_id, farm_id,
 			status, analysis_type, soil_health_score, health_category,
 			recommendations, analyzed_by, analyzed_at, summary,
 			is_active, created_by, created_at, updated_by, updated_at, version`
@@ -357,7 +354,7 @@ func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domai
 		string(analysis.Status), analysis.AnalysisType, analysis.SoilHealthScore, string(analysis.HealthCategory),
 		analysis.Recommendations, analysis.AnalyzedBy, analysis.AnalyzedAt, analysis.Summary, analysis.CreatedBy,
 	).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
 		&status, &result.AnalysisType, &result.SoilHealthScore, &healthCat,
 		&result.Recommendations, &result.AnalyzedBy, &result.AnalyzedAt, &result.Summary,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -373,17 +370,17 @@ func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domai
 
 func (r *soilRepository) GetSoilAnalysisByUUID(ctx context.Context, uuid, tenantID string) (*domain.SoilAnalysis, error) {
 	query := `
-		SELECT id, uuid, tenant_id, sample_id, field_id, farm_id,
+		SELECT id, tenant_id, sample_id, field_id, farm_id,
 			status, analysis_type, soil_health_score, health_category,
 			recommendations, analyzed_by, analyzed_at, summary,
 			is_active, created_by, created_at, updated_by, updated_at, version
 		FROM soil_analyses
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`
 
 	var result domain.SoilAnalysis
 	var status, healthCat string
 	err := r.queryRow(ctx, query, uuid, tenantID).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.SampleID, &result.FieldID, &result.FarmID,
 		&status, &result.AnalysisType, &result.SoilHealthScore, &healthCat,
 		&result.Recommendations, &result.AnalyzedBy, &result.AnalyzedAt, &result.Summary,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -416,7 +413,7 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 	}
 
 	listQuery := `
-		SELECT id, uuid, tenant_id, sample_id, field_id, farm_id,
+		SELECT id, tenant_id, sample_id, field_id, farm_id,
 			status, analysis_type, soil_health_score, health_category,
 			recommendations, analyzed_by, analyzed_at, summary,
 			is_active, created_by, created_at, updated_by, updated_at, version
@@ -441,7 +438,7 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 		var a domain.SoilAnalysis
 		var status, healthCat string
 		if err := rows.Scan(
-			&a.ID, &a.UUID, &a.TenantID, &a.SampleID, &a.FieldID, &a.FarmID,
+			&a.UUID, &a.TenantID, &a.SampleID, &a.FieldID, &a.FarmID,
 			&status, &a.AnalysisType, &a.SoilHealthScore, &healthCat,
 			&a.Recommendations, &a.AnalyzedBy, &a.AnalyzedAt, &a.Summary,
 			&a.IsActive, &a.CreatedBy, &a.CreatedAt, &a.UpdatedBy, &a.UpdatedAt, &a.Version,
@@ -462,7 +459,7 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 func (r *soilRepository) UpdateSoilAnalysisStatus(ctx context.Context, uuid string, status domain.AnalysisStatus) error {
 	affected, err := r.exec(ctx,
 		`UPDATE soil_analyses SET status = $2, updated_at = NOW(), version = version + 1
-		WHERE uuid = $1 AND is_active = TRUE AND deleted_at IS NULL`,
+		WHERE id = $1 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, string(status),
 	)
 	if err != nil {
@@ -485,11 +482,11 @@ func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.Soil
 	}
 	query := `
 		INSERT INTO soil_maps (
-			uuid, tenant_id, field_id, farm_id, map_type,
+			id, tenant_id, field_id, farm_id, map_type,
 			crs, resolution, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng,
 			generated_by, generated_at, created_by
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-		RETURNING id, uuid, tenant_id, field_id, farm_id, map_type,
+		RETURNING id, tenant_id, field_id, farm_id, map_type,
 			crs, resolution, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng,
 			generated_by, generated_at,
 			is_active, created_by, created_at, updated_by, updated_at, version`
@@ -500,7 +497,7 @@ func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.Soil
 		soilMap.CRS, soilMap.Resolution, soilMap.BboxMinLat, soilMap.BboxMinLng, soilMap.BboxMaxLat, soilMap.BboxMaxLng,
 		soilMap.GeneratedBy, soilMap.GeneratedAt, soilMap.CreatedBy,
 	).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
 		&result.CRS, &result.Resolution, &result.BboxMinLat, &result.BboxMinLng, &result.BboxMaxLat, &result.BboxMaxLng,
 		&result.GeneratedBy, &result.GeneratedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -514,7 +511,7 @@ func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.Soil
 
 func (r *soilRepository) GetSoilMapByFieldAndType(ctx context.Context, fieldID, tenantID, mapType string) (*domain.SoilMap, error) {
 	query := `
-		SELECT id, uuid, tenant_id, field_id, farm_id, map_type,
+		SELECT id, tenant_id, field_id, farm_id, map_type,
 			crs, resolution, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng,
 			generated_by, generated_at,
 			is_active, created_by, created_at, updated_by, updated_at, version
@@ -526,7 +523,7 @@ func (r *soilRepository) GetSoilMapByFieldAndType(ctx context.Context, fieldID, 
 
 	var result domain.SoilMap
 	err := r.queryRow(ctx, query, fieldID, tenantID, mapType).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID, &result.MapType,
 		&result.CRS, &result.Resolution, &result.BboxMinLat, &result.BboxMinLng, &result.BboxMaxLat, &result.BboxMaxLng,
 		&result.GeneratedBy, &result.GeneratedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -551,10 +548,10 @@ func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domai
 	}
 	query := `
 		INSERT INTO soil_nutrients (
-			uuid, tenant_id, sample_id, nutrient_name,
+			id, tenant_id, sample_id, nutrient_name,
 			value_ppm, level, optimal_min, optimal_max, unit, created_by
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, uuid, tenant_id, sample_id, nutrient_name,
+		RETURNING id, tenant_id, sample_id, nutrient_name,
 			value_ppm, level, optimal_min, optimal_max, unit,
 			is_active, created_by, created_at`
 
@@ -565,7 +562,7 @@ func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domai
 		nutrient.ValuePPM, string(nutrient.Level), nutrient.OptimalMin, nutrient.OptimalMax,
 		nutrient.Unit, nutrient.CreatedBy,
 	).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.SampleID, &result.NutrientName,
+		&result.UUID, &result.TenantID, &result.SampleID, &result.NutrientName,
 		&result.ValuePPM, &level, &result.OptimalMin, &result.OptimalMax, &result.Unit,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt,
 	)
@@ -579,7 +576,7 @@ func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domai
 
 func (r *soilRepository) ListNutrientsBySample(ctx context.Context, sampleID, tenantID string) ([]domain.SoilNutrient, error) {
 	query := `
-		SELECT id, uuid, tenant_id, sample_id, nutrient_name,
+		SELECT id, tenant_id, sample_id, nutrient_name,
 			value_ppm, level, optimal_min, optimal_max, unit,
 			is_active, created_by, created_at
 		FROM soil_nutrients
@@ -599,7 +596,7 @@ func (r *soilRepository) ListNutrientsBySample(ctx context.Context, sampleID, te
 		var n domain.SoilNutrient
 		var level string
 		if err := rows.Scan(
-			&n.ID, &n.UUID, &n.TenantID, &n.SampleID, &n.NutrientName,
+			&n.UUID, &n.TenantID, &n.SampleID, &n.NutrientName,
 			&n.ValuePPM, &level, &n.OptimalMin, &n.OptimalMax, &n.Unit,
 			&n.IsActive, &n.CreatedBy, &n.CreatedAt,
 		); err != nil {
@@ -637,11 +634,11 @@ func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domai
 	}
 	query := `
 		INSERT INTO soil_health_scores (
-			uuid, tenant_id, field_id, farm_id,
+			id, tenant_id, field_id, farm_id,
 			overall_score, category, physical_score, chemical_score, biological_score,
 			recommendations, assessed_at, created_by
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id, uuid, tenant_id, field_id, farm_id,
+		RETURNING id, tenant_id, field_id, farm_id,
 			overall_score, category, physical_score, chemical_score, biological_score,
 			recommendations, assessed_at,
 			is_active, created_by, created_at, updated_by, updated_at, version`
@@ -653,7 +650,7 @@ func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domai
 		score.OverallScore, string(score.Category), score.PhysicalScore, score.ChemicalScore, score.BiologicalScore,
 		score.Recommendations, score.AssessedAt, score.CreatedBy,
 	).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.OverallScore, &category, &result.PhysicalScore, &result.ChemicalScore, &result.BiologicalScore,
 		&result.Recommendations, &result.AssessedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -668,7 +665,7 @@ func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domai
 
 func (r *soilRepository) GetLatestSoilHealthScore(ctx context.Context, fieldID, tenantID string) (*domain.SoilHealthScore, error) {
 	query := `
-		SELECT id, uuid, tenant_id, field_id, farm_id,
+		SELECT id, tenant_id, field_id, farm_id,
 			overall_score, category, physical_score, chemical_score, biological_score,
 			recommendations, assessed_at,
 			is_active, created_by, created_at, updated_by, updated_at, version
@@ -681,7 +678,7 @@ func (r *soilRepository) GetLatestSoilHealthScore(ctx context.Context, fieldID, 
 	var result domain.SoilHealthScore
 	var category string
 	err := r.queryRow(ctx, query, fieldID, tenantID).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.OverallScore, &category, &result.PhysicalScore, &result.ChemicalScore, &result.BiologicalScore,
 		&result.Recommendations, &result.AssessedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -704,8 +701,8 @@ func (r *soilRepository) UpdateSoilHealthScore(ctx context.Context, score *domai
 			physical_score = $5, chemical_score = $6, biological_score = $7,
 			recommendations = $8, assessed_at = $9,
 			updated_by = $10, updated_at = NOW(), version = version + 1
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL
-		RETURNING id, uuid, tenant_id, field_id, farm_id,
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL
+		RETURNING id, tenant_id, field_id, farm_id,
 			overall_score, category, physical_score, chemical_score, biological_score,
 			recommendations, assessed_at,
 			is_active, created_by, created_at, updated_by, updated_at, version`
@@ -717,9 +714,9 @@ func (r *soilRepository) UpdateSoilHealthScore(ctx context.Context, score *domai
 		score.OverallScore, string(score.Category),
 		score.PhysicalScore, score.ChemicalScore, score.BiologicalScore,
 		score.Recommendations, score.AssessedAt,
-		score.CreatedBy,
+		score.UpdatedBy,
 	).Scan(
-		&result.ID, &result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
+		&result.UUID, &result.TenantID, &result.FieldID, &result.FarmID,
 		&result.OverallScore, &category, &result.PhysicalScore, &result.ChemicalScore, &result.BiologicalScore,
 		&result.Recommendations, &result.AssessedAt,
 		&result.IsActive, &result.CreatedBy, &result.CreatedAt, &result.UpdatedBy, &result.UpdatedAt, &result.Version,
@@ -748,7 +745,7 @@ func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID,
 	}
 
 	query := `
-		SELECT id, uuid, tenant_id, field_id, farm_id,
+		SELECT id, tenant_id, field_id, farm_id,
 			overall_score, category, physical_score, chemical_score, biological_score,
 			recommendations, assessed_at,
 			is_active, created_by, created_at, updated_by, updated_at, version
@@ -770,7 +767,7 @@ func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID,
 		var s domain.SoilHealthScore
 		var category string
 		if err := rows.Scan(
-			&s.ID, &s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
+			&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID,
 			&s.OverallScore, &category, &s.PhysicalScore, &s.ChemicalScore, &s.BiologicalScore,
 			&s.Recommendations, &s.AssessedAt,
 			&s.IsActive, &s.CreatedBy, &s.CreatedAt, &s.UpdatedBy, &s.UpdatedAt, &s.Version,

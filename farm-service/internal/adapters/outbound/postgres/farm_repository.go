@@ -90,7 +90,7 @@ func (r *farmRepository) CreateFarm(ctx context.Context, farm *domain.Farm) (*do
 
 	row := r.queryRow(ctx, `
 		INSERT INTO farms (
-			uuid, tenant_id, name, description, total_area_hectares,
+			id, tenant_id, name, description, total_area_hectares,
 			latitude, longitude, elevation_meters, farm_type, status,
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at
@@ -100,7 +100,7 @@ func (r *farmRepository) CreateFarm(ctx context.Context, farm *domain.Farm) (*do
 			$11, $12, $13, $14, $15,
 			$16, 1, TRUE, $17, NOW()
 		)
-		RETURNING id, uuid, tenant_id, name, description, total_area_hectares,
+		RETURNING id, tenant_id, name, description, total_area_hectares,
 			latitude, longitude, elevation_meters, farm_type, status,
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at,
@@ -122,13 +122,13 @@ func (r *farmRepository) CreateFarm(ctx context.Context, farm *domain.Farm) (*do
 
 func (r *farmRepository) GetFarmByUUID(ctx context.Context, uuid, tenantID string) (*domain.Farm, error) {
 	row := r.queryRow(ctx, `
-		SELECT id, uuid, tenant_id, name, description, total_area_hectares,
+		SELECT id, tenant_id, name, description, total_area_hectares,
 			latitude, longitude, elevation_meters, farm_type, status,
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at
 		FROM farms
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, tenantID,
 	)
 	farm := &domain.Farm{}
@@ -148,11 +148,11 @@ func (r *farmRepository) ListFarms(ctx context.Context, params domain.ListFarmsP
 		SELECT COUNT(*) FROM farms
 		WHERE tenant_id = $1
 			AND is_active = TRUE AND deleted_at IS NULL
-			AND ($2::VARCHAR IS NULL OR farm_type = $2::farm_type)
-			AND ($3::VARCHAR IS NULL OR status = $3::farm_status)
+			AND ($2::VARCHAR IS NULL OR farm_type = $2)
+			AND ($3::VARCHAR IS NULL OR status = $3)
 			AND ($4::VARCHAR IS NULL OR region = $4)
 			AND ($5::VARCHAR IS NULL OR country = $5)
-			AND ($6::VARCHAR IS NULL OR climate_zone = $6::climate_zone)
+			AND ($6::VARCHAR IS NULL OR climate_zone = $6)
 			AND ($7::VARCHAR IS NULL OR name ILIKE '%' || $7 || '%')`,
 		params.TenantID,
 		nullableFarmType(params.FarmType), nullableFarmStatus(params.Status),
@@ -164,7 +164,7 @@ func (r *farmRepository) ListFarms(ctx context.Context, params domain.ListFarmsP
 	}
 
 	rows, err := r.query(ctx, `
-		SELECT id, uuid, tenant_id, name, description, total_area_hectares,
+		SELECT id, tenant_id, name, description, total_area_hectares,
 			latitude, longitude, elevation_meters, farm_type, status,
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at,
@@ -172,11 +172,11 @@ func (r *farmRepository) ListFarms(ctx context.Context, params domain.ListFarmsP
 		FROM farms
 		WHERE tenant_id = $1
 			AND is_active = TRUE AND deleted_at IS NULL
-			AND ($2::VARCHAR IS NULL OR farm_type = $2::farm_type)
-			AND ($3::VARCHAR IS NULL OR status = $3::farm_status)
+			AND ($2::VARCHAR IS NULL OR farm_type = $2)
+			AND ($3::VARCHAR IS NULL OR status = $3)
 			AND ($4::VARCHAR IS NULL OR region = $4)
 			AND ($5::VARCHAR IS NULL OR country = $5)
-			AND ($6::VARCHAR IS NULL OR climate_zone = $6::climate_zone)
+			AND ($6::VARCHAR IS NULL OR climate_zone = $6)
 			AND ($7::VARCHAR IS NULL OR name ILIKE '%' || $7 || '%')
 		ORDER BY created_at DESC LIMIT $8 OFFSET $9`,
 		params.TenantID,
@@ -216,10 +216,10 @@ func (r *farmRepository) UpdateFarm(ctx context.Context, farm *domain.Farm) (*do
 			latitude = COALESCE($6, latitude),
 			longitude = COALESCE($7, longitude),
 			elevation_meters = COALESCE($8, elevation_meters),
-			farm_type = COALESCE($9::farm_type, farm_type),
-			status = COALESCE($10::farm_status, status),
-			soil_type = COALESCE($11::soil_type, soil_type),
-			climate_zone = COALESCE($12::climate_zone, climate_zone),
+			farm_type = COALESCE($9, farm_type),
+			status = COALESCE($10, status),
+			soil_type = COALESCE($11, soil_type),
+			climate_zone = COALESCE($12, climate_zone),
 			address = COALESCE($13, address),
 			region = COALESCE($14, region),
 			country = COALESCE($15, country),
@@ -227,8 +227,8 @@ func (r *farmRepository) UpdateFarm(ctx context.Context, farm *domain.Farm) (*do
 			version = version + 1,
 			updated_by = $17,
 			updated_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL
-		RETURNING id, uuid, tenant_id, name, description, total_area_hectares,
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL
+		RETURNING id, tenant_id, name, description, total_area_hectares,
 			latitude, longitude, elevation_meters, farm_type, status,
 			soil_type, climate_zone, address, region, country,
 			metadata, version, is_active, created_by, created_at,
@@ -253,7 +253,7 @@ func (r *farmRepository) UpdateFarm(ctx context.Context, farm *domain.Farm) (*do
 func (r *farmRepository) DeleteFarm(ctx context.Context, uuid, tenantID, deletedBy string) error {
 	if err := r.exec(ctx, `
 		UPDATE farms SET is_active = FALSE, deleted_by = $3, deleted_at = NOW()
-		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
+		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, tenantID, deletedBy,
 	); err != nil {
 		return errors.InternalServer("FARM_DELETE_FAILED", fmt.Sprintf("failed to delete farm: %v", err))
@@ -264,7 +264,7 @@ func (r *farmRepository) DeleteFarm(ctx context.Context, uuid, tenantID, deleted
 func (r *farmRepository) CheckFarmExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	var exists bool
 	row := r.queryRow(ctx, `
-		SELECT EXISTS(SELECT 1 FROM farms WHERE uuid=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL)`,
+		SELECT EXISTS(SELECT 1 FROM farms WHERE id=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL)`,
 		uuid, tenantID)
 	if err := row.Scan(&exists); err != nil {
 		return false, errors.InternalServer("FARM_CHECK_FAILED", "failed to check farm exists")
@@ -292,14 +292,14 @@ func (r *farmRepository) CreateFarmBoundary(ctx context.Context, b *domain.FarmB
 
 	row := r.queryRow(ctx, `
 		INSERT INTO farm_boundaries (
-			uuid, farm_id, farm_uuid, tenant_id, geojson,
-			boundary, area_hectares, perimeter_meters,
+			id, farm_id, tenant_id, geojson,
+			area_hectares, perimeter_meters,
 			is_active, created_by, created_at
-		) VALUES ($1, $2, $3, $4, $5, ST_GeomFromGeoJSON($5), $6, $7, TRUE, $8, NOW())
-		RETURNING id, uuid, farm_id, farm_uuid, tenant_id, geojson,
+		) VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7, NOW())
+		RETURNING id, farm_id, tenant_id, geojson,
 			area_hectares, perimeter_meters, is_active,
 			created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
-		b.UUID, b.FarmID, b.FarmUUID, b.TenantID,
+		b.UUID, b.FarmUUID, b.TenantID,
 		b.GeoJSON, b.AreaHectares, b.PerimeterMeters, b.CreatedBy,
 	)
 	result := &domain.FarmBoundary{}
@@ -311,11 +311,11 @@ func (r *farmRepository) CreateFarmBoundary(ctx context.Context, b *domain.FarmB
 
 func (r *farmRepository) GetFarmBoundaryByFarmUUID(ctx context.Context, farmUUID, tenantID string) (*domain.FarmBoundary, error) {
 	row := r.queryRow(ctx, `
-		SELECT id, uuid, farm_id, farm_uuid, tenant_id, geojson,
+		SELECT id, farm_id, tenant_id, geojson,
 			area_hectares, perimeter_meters, is_active,
 			created_by, created_at, updated_by, updated_at, deleted_by, deleted_at
 		FROM farm_boundaries
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL`,
+		WHERE farm_id=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL`,
 		farmUUID, tenantID)
 	b := &domain.FarmBoundary{}
 	if err := scanBoundary(row, b); err != nil {
@@ -330,11 +330,11 @@ func (r *farmRepository) GetFarmBoundaryByFarmUUID(ctx context.Context, farmUUID
 func (r *farmRepository) UpdateFarmBoundary(ctx context.Context, b *domain.FarmBoundary) (*domain.FarmBoundary, error) {
 	row := r.queryRow(ctx, `
 		UPDATE farm_boundaries SET
-			geojson=$3, boundary=ST_GeomFromGeoJSON($3),
+			geojson=$3,
 			area_hectares=$4, perimeter_meters=$5,
 			updated_by=$6, updated_at=NOW()
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL
-		RETURNING id, uuid, farm_id, farm_uuid, tenant_id, geojson,
+		WHERE farm_id=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL
+		RETURNING id, farm_id, tenant_id, geojson,
 			area_hectares, perimeter_meters, is_active,
 			created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
 		b.FarmUUID, b.TenantID, b.GeoJSON, b.AreaHectares, b.PerimeterMeters, b.UpdatedBy,
@@ -352,7 +352,7 @@ func (r *farmRepository) UpdateFarmBoundary(ctx context.Context, b *domain.FarmB
 func (r *farmRepository) DeleteFarmBoundary(ctx context.Context, farmUUID, tenantID, deletedBy string) error {
 	return r.exec(ctx, `
 		UPDATE farm_boundaries SET is_active=FALSE, deleted_by=$3, deleted_at=NOW()
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL`,
+		WHERE farm_id=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL`,
 		farmUUID, tenantID, deletedBy)
 }
 
@@ -367,15 +367,15 @@ func (r *farmRepository) CreateFarmOwner(ctx context.Context, o *domain.FarmOwne
 	}
 	row := r.queryRow(ctx, `
 		INSERT INTO farm_owners (
-			uuid, farm_id, farm_uuid, tenant_id, user_id,
+			id, farm_id, tenant_id, user_id,
 			owner_name, email, phone, is_primary, ownership_percentage,
 			acquired_at, is_active, created_by, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE, $12, NOW())
-		RETURNING id, uuid, farm_id, farm_uuid, tenant_id, user_id,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE, $11, NOW())
+		RETURNING id, farm_id, tenant_id, user_id,
 			owner_name, email, phone, is_primary, ownership_percentage,
 			acquired_at, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at`,
-		o.UUID, o.FarmID, o.FarmUUID, o.TenantID, o.UserID,
+		o.UUID, o.FarmUUID, o.TenantID, o.UserID,
 		o.OwnerName, o.Email, o.Phone, o.IsPrimary, o.OwnershipPercentage,
 		o.AcquiredAt, o.CreatedBy,
 	)
@@ -388,12 +388,12 @@ func (r *farmRepository) CreateFarmOwner(ctx context.Context, o *domain.FarmOwne
 
 func (r *farmRepository) GetFarmOwnersByFarmUUID(ctx context.Context, farmUUID, tenantID string) ([]domain.FarmOwner, error) {
 	rows, err := r.query(ctx, `
-		SELECT id, uuid, farm_id, farm_uuid, tenant_id, user_id,
+		SELECT id, farm_id, tenant_id, user_id,
 			owner_name, email, phone, is_primary, ownership_percentage,
 			acquired_at, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at
 		FROM farm_owners
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL
+		WHERE farm_id=$1 AND tenant_id=$2 AND is_active=TRUE AND deleted_at IS NULL
 		ORDER BY is_primary DESC, created_at ASC`,
 		farmUUID, tenantID)
 	if err != nil {
@@ -414,12 +414,12 @@ func (r *farmRepository) GetFarmOwnersByFarmUUID(ctx context.Context, farmUUID, 
 
 func (r *farmRepository) GetFarmOwnerByUserID(ctx context.Context, farmUUID, tenantID, userID string) (*domain.FarmOwner, error) {
 	row := r.queryRow(ctx, `
-		SELECT id, uuid, farm_id, farm_uuid, tenant_id, user_id,
+		SELECT id, farm_id, tenant_id, user_id,
 			owner_name, email, phone, is_primary, ownership_percentage,
 			acquired_at, is_active, created_by, created_at,
 			updated_by, updated_at, deleted_by, deleted_at
 		FROM farm_owners
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND user_id=$3 AND is_active=TRUE AND deleted_at IS NULL`,
+		WHERE farm_id=$1 AND tenant_id=$2 AND user_id=$3 AND is_active=TRUE AND deleted_at IS NULL`,
 		farmUUID, tenantID, userID)
 	o := &domain.FarmOwner{}
 	if err := scanOwner(row, o); err != nil {
@@ -434,14 +434,14 @@ func (r *farmRepository) GetFarmOwnerByUserID(ctx context.Context, farmUUID, ten
 func (r *farmRepository) DeactivateFarmOwner(ctx context.Context, farmUUID, tenantID, userID, deletedBy string) error {
 	return r.exec(ctx, `
 		UPDATE farm_owners SET is_active=FALSE, deleted_by=$4, deleted_at=NOW()
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND user_id=$3 AND is_active=TRUE AND deleted_at IS NULL`,
+		WHERE farm_id=$1 AND tenant_id=$2 AND user_id=$3 AND is_active=TRUE AND deleted_at IS NULL`,
 		farmUUID, tenantID, userID, deletedBy)
 }
 
 func (r *farmRepository) ClearPrimaryOwner(ctx context.Context, farmUUID, tenantID, updatedBy string) error {
 	return r.exec(ctx, `
 		UPDATE farm_owners SET is_primary=FALSE, updated_by=$3, updated_at=NOW()
-		WHERE farm_uuid=$1 AND tenant_id=$2 AND is_primary=TRUE AND is_active=TRUE AND deleted_at IS NULL`,
+		WHERE farm_id=$1 AND tenant_id=$2 AND is_primary=TRUE AND is_active=TRUE AND deleted_at IS NULL`,
 		farmUUID, tenantID, updatedBy)
 }
 
@@ -451,7 +451,7 @@ func scanFarm(row pgx.Row, f *domain.Farm) error {
 	var farmType, status string
 	var soilType, climateZone *string
 	err := row.Scan(
-		&f.ID, &f.UUID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
+		&f.UUID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
 		&f.Latitude, &f.Longitude, &f.ElevationMeters, &farmType, &status,
 		&soilType, &climateZone, &f.Address, &f.Region, &f.Country,
 		&f.Metadata, &f.Version, &f.IsActive, &f.CreatedBy, &f.CreatedAt,
@@ -477,7 +477,7 @@ func scanFarmFromRows(rows pgx.Rows, f *domain.Farm) error {
 	var farmType, status string
 	var soilType, climateZone *string
 	err := rows.Scan(
-		&f.ID, &f.UUID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
+		&f.UUID, &f.TenantID, &f.Name, &f.Description, &f.TotalAreaHectares,
 		&f.Latitude, &f.Longitude, &f.ElevationMeters, &farmType, &status,
 		&soilType, &climateZone, &f.Address, &f.Region, &f.Country,
 		&f.Metadata, &f.Version, &f.IsActive, &f.CreatedBy, &f.CreatedAt,
@@ -501,7 +501,7 @@ func scanFarmFromRows(rows pgx.Rows, f *domain.Farm) error {
 
 func scanBoundary(row pgx.Row, b *domain.FarmBoundary) error {
 	return row.Scan(
-		&b.ID, &b.UUID, &b.FarmID, &b.FarmUUID, &b.TenantID, &b.GeoJSON,
+		&b.UUID, &b.FarmUUID, &b.TenantID, &b.GeoJSON,
 		&b.AreaHectares, &b.PerimeterMeters, &b.IsActive,
 		&b.CreatedBy, &b.CreatedAt, &b.UpdatedBy, &b.UpdatedAt, &b.DeletedBy, &b.DeletedAt,
 	)
@@ -511,7 +511,7 @@ func scanOwner(row pgx.Row, o *domain.FarmOwner) error {
 	var deletedBy *string
 	var deletedAt *time.Time
 	return row.Scan(
-		&o.ID, &o.UUID, &o.FarmID, &o.FarmUUID, &o.TenantID, &o.UserID,
+		&o.UUID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
 		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
@@ -522,7 +522,7 @@ func scanOwnerFromRows(rows pgx.Rows, o *domain.FarmOwner) error {
 	var deletedBy *string
 	var deletedAt *time.Time
 	return rows.Scan(
-		&o.ID, &o.UUID, &o.FarmID, &o.FarmUUID, &o.TenantID, &o.UserID,
+		&o.UUID, &o.FarmUUID, &o.TenantID, &o.UserID,
 		&o.OwnerName, &o.Email, &o.Phone, &o.IsPrimary, &o.OwnershipPercentage,
 		&o.AcquiredAt, &o.IsActive, &o.CreatedBy, &o.CreatedAt,
 		&o.UpdatedBy, &o.UpdatedAt, &deletedBy, &deletedAt,
