@@ -34,6 +34,13 @@ const (
 	TraceabilityService_GenerateQRCode_FullMethodName           = "/agriculture.traceability.v1.TraceabilityService/GenerateQRCode"
 	TraceabilityService_VerifyQRCode_FullMethodName             = "/agriculture.traceability.v1.TraceabilityService/VerifyQRCode"
 	TraceabilityService_GenerateComplianceReport_FullMethodName = "/agriculture.traceability.v1.TraceabilityService/GenerateComplianceReport"
+	TraceabilityService_CreateQualityCheckpoint_FullMethodName  = "/agriculture.traceability.v1.TraceabilityService/CreateQualityCheckpoint"
+	TraceabilityService_GetQualityCheckpoint_FullMethodName     = "/agriculture.traceability.v1.TraceabilityService/GetQualityCheckpoint"
+	TraceabilityService_ListQualityCheckpoints_FullMethodName   = "/agriculture.traceability.v1.TraceabilityService/ListQualityCheckpoints"
+	TraceabilityService_UpdateRecord_FullMethodName             = "/agriculture.traceability.v1.TraceabilityService/UpdateRecord"
+	TraceabilityService_RevokeCertification_FullMethodName      = "/agriculture.traceability.v1.TraceabilityService/RevokeCertification"
+	TraceabilityService_GetComplianceReport_FullMethodName      = "/agriculture.traceability.v1.TraceabilityService/GetComplianceReport"
+	TraceabilityService_ListComplianceReports_FullMethodName    = "/agriculture.traceability.v1.TraceabilityService/ListComplianceReports"
 )
 
 // TraceabilityServiceClient is the client API for TraceabilityService service.
@@ -72,6 +79,17 @@ type TraceabilityServiceClient interface {
 	VerifyQRCode(ctx context.Context, in *VerifyQRCodeRequest, opts ...grpc.CallOption) (*VerifyQRCodeResponse, error)
 	// GenerateComplianceReport generates a compliance report for a record.
 	GenerateComplianceReport(ctx context.Context, in *GenerateComplianceReportRequest, opts ...grpc.CallOption) (*GenerateComplianceReportResponse, error)
+	// Quality Checkpoints
+	CreateQualityCheckpoint(ctx context.Context, in *CreateQualityCheckpointRequest, opts ...grpc.CallOption) (*CreateQualityCheckpointResponse, error)
+	GetQualityCheckpoint(ctx context.Context, in *GetQualityCheckpointRequest, opts ...grpc.CallOption) (*GetQualityCheckpointResponse, error)
+	ListQualityCheckpoints(ctx context.Context, in *ListQualityCheckpointsRequest, opts ...grpc.CallOption) (*ListQualityCheckpointsResponse, error)
+	// Record updates
+	UpdateRecord(ctx context.Context, in *UpdateRecordRequest, opts ...grpc.CallOption) (*UpdateRecordResponse, error)
+	// Certification lifecycle
+	RevokeCertification(ctx context.Context, in *RevokeCertificationRequest, opts ...grpc.CallOption) (*RevokeCertificationResponse, error)
+	// Compliance report retrieval
+	GetComplianceReport(ctx context.Context, in *GetComplianceReportRequest, opts ...grpc.CallOption) (*GetComplianceReportResponse, error)
+	ListComplianceReports(ctx context.Context, in *ListComplianceReportsRequest, opts ...grpc.CallOption) (*ListComplianceReportsResponse, error)
 }
 
 type traceabilityServiceClient struct {
@@ -232,6 +250,76 @@ func (c *traceabilityServiceClient) GenerateComplianceReport(ctx context.Context
 	return out, nil
 }
 
+func (c *traceabilityServiceClient) CreateQualityCheckpoint(ctx context.Context, in *CreateQualityCheckpointRequest, opts ...grpc.CallOption) (*CreateQualityCheckpointResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateQualityCheckpointResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_CreateQualityCheckpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceabilityServiceClient) GetQualityCheckpoint(ctx context.Context, in *GetQualityCheckpointRequest, opts ...grpc.CallOption) (*GetQualityCheckpointResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetQualityCheckpointResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_GetQualityCheckpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceabilityServiceClient) ListQualityCheckpoints(ctx context.Context, in *ListQualityCheckpointsRequest, opts ...grpc.CallOption) (*ListQualityCheckpointsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListQualityCheckpointsResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_ListQualityCheckpoints_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceabilityServiceClient) UpdateRecord(ctx context.Context, in *UpdateRecordRequest, opts ...grpc.CallOption) (*UpdateRecordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateRecordResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_UpdateRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceabilityServiceClient) RevokeCertification(ctx context.Context, in *RevokeCertificationRequest, opts ...grpc.CallOption) (*RevokeCertificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeCertificationResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_RevokeCertification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceabilityServiceClient) GetComplianceReport(ctx context.Context, in *GetComplianceReportRequest, opts ...grpc.CallOption) (*GetComplianceReportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetComplianceReportResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_GetComplianceReport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceabilityServiceClient) ListComplianceReports(ctx context.Context, in *ListComplianceReportsRequest, opts ...grpc.CallOption) (*ListComplianceReportsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListComplianceReportsResponse)
+	err := c.cc.Invoke(ctx, TraceabilityService_ListComplianceReports_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TraceabilityServiceServer is the server API for TraceabilityService service.
 // All implementations must embed UnimplementedTraceabilityServiceServer
 // for forward compatibility.
@@ -268,6 +356,17 @@ type TraceabilityServiceServer interface {
 	VerifyQRCode(context.Context, *VerifyQRCodeRequest) (*VerifyQRCodeResponse, error)
 	// GenerateComplianceReport generates a compliance report for a record.
 	GenerateComplianceReport(context.Context, *GenerateComplianceReportRequest) (*GenerateComplianceReportResponse, error)
+	// Quality Checkpoints
+	CreateQualityCheckpoint(context.Context, *CreateQualityCheckpointRequest) (*CreateQualityCheckpointResponse, error)
+	GetQualityCheckpoint(context.Context, *GetQualityCheckpointRequest) (*GetQualityCheckpointResponse, error)
+	ListQualityCheckpoints(context.Context, *ListQualityCheckpointsRequest) (*ListQualityCheckpointsResponse, error)
+	// Record updates
+	UpdateRecord(context.Context, *UpdateRecordRequest) (*UpdateRecordResponse, error)
+	// Certification lifecycle
+	RevokeCertification(context.Context, *RevokeCertificationRequest) (*RevokeCertificationResponse, error)
+	// Compliance report retrieval
+	GetComplianceReport(context.Context, *GetComplianceReportRequest) (*GetComplianceReportResponse, error)
+	ListComplianceReports(context.Context, *ListComplianceReportsRequest) (*ListComplianceReportsResponse, error)
 	mustEmbedUnimplementedTraceabilityServiceServer()
 }
 
@@ -322,6 +421,27 @@ func (UnimplementedTraceabilityServiceServer) VerifyQRCode(context.Context, *Ver
 }
 func (UnimplementedTraceabilityServiceServer) GenerateComplianceReport(context.Context, *GenerateComplianceReportRequest) (*GenerateComplianceReportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GenerateComplianceReport not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) CreateQualityCheckpoint(context.Context, *CreateQualityCheckpointRequest) (*CreateQualityCheckpointResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateQualityCheckpoint not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) GetQualityCheckpoint(context.Context, *GetQualityCheckpointRequest) (*GetQualityCheckpointResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetQualityCheckpoint not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) ListQualityCheckpoints(context.Context, *ListQualityCheckpointsRequest) (*ListQualityCheckpointsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListQualityCheckpoints not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) UpdateRecord(context.Context, *UpdateRecordRequest) (*UpdateRecordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRecord not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) RevokeCertification(context.Context, *RevokeCertificationRequest) (*RevokeCertificationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeCertification not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) GetComplianceReport(context.Context, *GetComplianceReportRequest) (*GetComplianceReportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetComplianceReport not implemented")
+}
+func (UnimplementedTraceabilityServiceServer) ListComplianceReports(context.Context, *ListComplianceReportsRequest) (*ListComplianceReportsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListComplianceReports not implemented")
 }
 func (UnimplementedTraceabilityServiceServer) mustEmbedUnimplementedTraceabilityServiceServer() {}
 func (UnimplementedTraceabilityServiceServer) testEmbeddedByValue()                             {}
@@ -614,6 +734,132 @@ func _TraceabilityService_GenerateComplianceReport_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TraceabilityService_CreateQualityCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateQualityCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).CreateQualityCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_CreateQualityCheckpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).CreateQualityCheckpoint(ctx, req.(*CreateQualityCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceabilityService_GetQualityCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQualityCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).GetQualityCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_GetQualityCheckpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).GetQualityCheckpoint(ctx, req.(*GetQualityCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceabilityService_ListQualityCheckpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListQualityCheckpointsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).ListQualityCheckpoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_ListQualityCheckpoints_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).ListQualityCheckpoints(ctx, req.(*ListQualityCheckpointsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceabilityService_UpdateRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).UpdateRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_UpdateRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).UpdateRecord(ctx, req.(*UpdateRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceabilityService_RevokeCertification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeCertificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).RevokeCertification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_RevokeCertification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).RevokeCertification(ctx, req.(*RevokeCertificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceabilityService_GetComplianceReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetComplianceReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).GetComplianceReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_GetComplianceReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).GetComplianceReport(ctx, req.(*GetComplianceReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceabilityService_ListComplianceReports_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListComplianceReportsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceabilityServiceServer).ListComplianceReports(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceabilityService_ListComplianceReports_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceabilityServiceServer).ListComplianceReports(ctx, req.(*ListComplianceReportsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TraceabilityService_ServiceDesc is the grpc.ServiceDesc for TraceabilityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -680,6 +926,34 @@ var TraceabilityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateComplianceReport",
 			Handler:    _TraceabilityService_GenerateComplianceReport_Handler,
+		},
+		{
+			MethodName: "CreateQualityCheckpoint",
+			Handler:    _TraceabilityService_CreateQualityCheckpoint_Handler,
+		},
+		{
+			MethodName: "GetQualityCheckpoint",
+			Handler:    _TraceabilityService_GetQualityCheckpoint_Handler,
+		},
+		{
+			MethodName: "ListQualityCheckpoints",
+			Handler:    _TraceabilityService_ListQualityCheckpoints_Handler,
+		},
+		{
+			MethodName: "UpdateRecord",
+			Handler:    _TraceabilityService_UpdateRecord_Handler,
+		},
+		{
+			MethodName: "RevokeCertification",
+			Handler:    _TraceabilityService_RevokeCertification_Handler,
+		},
+		{
+			MethodName: "GetComplianceReport",
+			Handler:    _TraceabilityService_GetComplianceReport_Handler,
+		},
+		{
+			MethodName: "ListComplianceReports",
+			Handler:    _TraceabilityService_ListComplianceReports_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

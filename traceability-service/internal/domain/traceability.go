@@ -280,3 +280,103 @@ type ListBatchesFilter struct {
 	PageSize   int32
 	PageOffset int32
 }
+
+// QualityCheckType classifies quality inspections.
+type QualityCheckType string
+
+const (
+	QualityCheckTypeVisual      QualityCheckType = "VISUAL"
+	QualityCheckTypeLab         QualityCheckType = "LAB"
+	QualityCheckTypeTemperature QualityCheckType = "TEMPERATURE"
+	QualityCheckTypeMoisture    QualityCheckType = "MOISTURE"
+	QualityCheckTypeWeight      QualityCheckType = "WEIGHT"
+	QualityCheckTypeSensory     QualityCheckType = "SENSORY"
+	QualityCheckTypeOther       QualityCheckType = "OTHER"
+)
+
+// ValidQualityCheckTypes is the set of valid quality check types.
+var ValidQualityCheckTypes = map[QualityCheckType]bool{
+	QualityCheckTypeVisual:      true,
+	QualityCheckTypeLab:         true,
+	QualityCheckTypeTemperature: true,
+	QualityCheckTypeMoisture:    true,
+	QualityCheckTypeWeight:      true,
+	QualityCheckTypeSensory:     true,
+	QualityCheckTypeOther:       true,
+}
+
+// QualityCheckResult is PASS or FAIL.
+type QualityCheckResult string
+
+const (
+	QualityCheckResultPass QualityCheckResult = "PASS"
+	QualityCheckResultFail QualityCheckResult = "FAIL"
+)
+
+// QualityCheckpoint records a discrete quality inspection at a supply chain point.
+type QualityCheckpoint struct {
+	ID                string             `json:"id" db:"id"`
+	TenantID          string             `json:"tenant_id" db:"tenant_id"`
+	RecordID          string             `json:"record_id" db:"record_id"`
+	SupplyChainEventID *string           `json:"supply_chain_event_id,omitempty" db:"supply_chain_event_id"`
+	CheckType         QualityCheckType   `json:"check_type" db:"check_type"`
+	Result            QualityCheckResult `json:"result" db:"result"`
+	InspectorID       string             `json:"inspector_id" db:"inspector_id"`
+	InspectorName     string             `json:"inspector_name" db:"inspector_name"`
+	InspectedAt       time.Time          `json:"inspected_at" db:"inspected_at"`
+	Location          string             `json:"location" db:"location"`
+	MeasurementValue  *float64           `json:"measurement_value,omitempty" db:"measurement_value"`
+	MeasurementUnit   *string            `json:"measurement_unit,omitempty" db:"measurement_unit"`
+	MinThreshold      *float64           `json:"min_threshold,omitempty" db:"min_threshold"`
+	MaxThreshold      *float64           `json:"max_threshold,omitempty" db:"max_threshold"`
+	Notes             *string            `json:"notes,omitempty" db:"notes"`
+	EvidenceURLs      []string           `json:"evidence_urls" db:"evidence_urls"`
+	Metadata          json.RawMessage    `json:"metadata" db:"metadata"`
+	CreatedAt         time.Time          `json:"created_at" db:"created_at"`
+}
+
+// CreateQualityCheckpointInput is the input for creating a quality checkpoint.
+type CreateQualityCheckpointInput struct {
+	RecordID           string
+	SupplyChainEventID *string
+	CheckType          QualityCheckType
+	Result             QualityCheckResult
+	InspectorName      string
+	InspectedAt        time.Time
+	Location           string
+	MeasurementValue   *float64
+	MeasurementUnit    *string
+	MinThreshold       *float64
+	MaxThreshold       *float64
+	Notes              *string
+	EvidenceURLs       []string
+	Metadata           map[string]string
+}
+
+// ListQualityCheckpointsFilter holds filters for listing quality checkpoints.
+type ListQualityCheckpointsFilter struct {
+	RecordID  string
+	CheckType string
+	Result    string
+	PageSize  int32
+	PageOffset int32
+}
+
+// UpdateRecordInput is the input for updating a traceability record.
+type UpdateRecordInput struct {
+	OriginCountry  *string
+	OriginRegion   *string
+	SeedSource     *string
+	PlantingDate   *time.Time
+	HarvestDate    *time.Time
+	ProcessingDate *time.Time
+	PackagingDate  *time.Time
+	Metadata       map[string]string
+}
+
+// ListComplianceReportsFilter holds filters for listing compliance reports.
+type ListComplianceReportsFilter struct {
+	RecordID   string
+	PageSize   int32
+	PageOffset int32
+}
