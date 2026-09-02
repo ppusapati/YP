@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64
+          args: --timeout=5m
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - farm-service
+          - field-service
+          - crop-service
+          - sensor-service
+          - irrigation-service
+          - soil-service
+          - yield-service
+          - pest-prediction-service
+          - plant-diagnosis-service
+          - satellite-service
+          - traceability-service
+          - commerce-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build ${{ matrix.service }}
+        run: go build -trimpath ./${{ matrix.service }}/cmd/server
+      - name: Vet ${{ matrix.service }}
+        run: go vet ./${{ matrix.service }}/...
+
+  test-packages:
+    name: Test shared packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run package tests
+        run: go test -race -count=1 -timeout=5m ./packages/...
+
+  test-services:
+    name: Test services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run service tests
+        run: |
+          go test -race -count=1 -timeout=5m \
+            ./farm-service/... \
+            ./field-service/... \
+            ./crop-service/... \
+            ./sensor-service/... \
+            ./irrigation-service/... \
+            ./soil-service/... \
+            ./yield-service/... \
+            ./pest-prediction-service/... \
+            ./plant-diagnosis-service/... \
+            ./satellite-service/... \
+            ./traceability-service/... \
+            ./commerce-service/...
+
+  proto-check:
+    name: Proto freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - name: Install protoc plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+      - name: Generate and check for drift
+        run: |
+          buf generate
+          git diff --exit-code -- '*.pb.go' '*.connect.go' || \
+            (echo "Proto generated code is stale — run 'buf generate' and commit" && exit 1)
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - farm-service
+          - field-service
+          - crop-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg SERVICE=${{ matrix.service }} \
+            -t yieldpoint/${{ matrix.service }}:ci \
+            .
