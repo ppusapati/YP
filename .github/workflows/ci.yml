@@ -153,6 +153,37 @@ jobs:
         working-directory: ai-gateway
         run: cargo test
 
+  integration-test:
+    name: Integration tests (e2e)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    needs: [build]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: yieldpoint_test
+          POSTGRES_PASSWORD: yieldpoint_test
+          POSTGRES_DB: yieldpoint_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U yieldpoint_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run e2e integration tests
+        env:
+          DATABASE_URL: postgres://yieldpoint_test:yieldpoint_test@localhost:5433/yieldpoint_test?sslmode=disable
+        run: |
+          go test -tags=e2e -v -count=1 -timeout=5m ./tests/integration/...
+
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
