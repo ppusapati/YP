@@ -26,14 +26,14 @@ const (
 )
 
 type irrigationService struct {
-	repo outbound.IrrigationRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	repo        outbound.IrrigationRepository
+	pub         outbound.EventPublisher
+	fieldClient outbound.FieldClient
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
 }
 
 // NewIrrigationService creates a new application-layer IrrigationService.
-// The fieldClient parameter is accepted for backward compatibility with main.go wiring.
 func NewIrrigationService(
 	repo outbound.IrrigationRepository,
 	pub outbound.EventPublisher,
@@ -41,12 +41,12 @@ func NewIrrigationService(
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) *irrigationService {
-	_ = fieldClient // not used in this implementation
 	return &irrigationService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "IrrigationService")),
+		repo:        repo,
+		pub:         pub,
+		fieldClient: fieldClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "IrrigationService")),
 	}
 }
 

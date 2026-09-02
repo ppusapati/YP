@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
+	connectclient "p9e.in/samavaya/packages/connect/client"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/p9log"
@@ -28,6 +29,7 @@ import (
 	grpcadapter "p9e.in/samavaya/agriculture/traceability-service/internal/adapters/inbound/grpc"
 
 	// Outbound adapters
+	clientsadapter "p9e.in/samavaya/agriculture/traceability-service/internal/adapters/outbound/clients"
 	kafkaadapter "p9e.in/samavaya/agriculture/traceability-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/traceability-service/internal/adapters/outbound/postgres"
 
@@ -51,6 +53,9 @@ func main() {
 
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/traceability_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER") // optional; events are best-effort
+	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
+	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8082")
+	yieldServiceURL := envOr("YIELD_SERVICE_URL", "http://localhost:8087")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -82,9 +87,12 @@ func main() {
 	// ── Outbound adapters ────────────────────────────────────────────────────
 	repo := postgresadapter.NewTraceabilityRepository(pool, logger)
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
+	yieldClient := clientsadapter.NewYieldClient(yieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(yieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// ── Application service (core) ───────────────────────────────────────────
-	svc := application.NewTraceabilityService(repo, pub, pool, logger)
+	svc := application.NewTraceabilityService(repo, pub, farmClient, fieldClient, yieldClient, pool, logger)
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────
 	handler := grpcadapter.NewTraceabilityHandler(svc, logger)

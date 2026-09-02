@@ -215,6 +215,9 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${TRACEABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/traceability_service?sslmode=disable}
+      FARM_SERVICE_URL: http://farm-service:8080
+      FIELD_SERVICE_URL: http://field-service:8080
+      YIELD_SERVICE_URL: http://yield-service:8080
 
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 

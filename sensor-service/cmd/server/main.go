@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
+	connectclient "p9e.in/samavaya/packages/connect/client"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/p9log"
@@ -25,6 +26,7 @@ import (
 	sensorv1connect "p9e.in/samavaya/agriculture/sensor-service/api/v1/sensorv1connect"
 
 	grpcadapter "p9e.in/samavaya/agriculture/sensor-service/internal/adapters/inbound/grpc"
+	clientsadapter "p9e.in/samavaya/agriculture/sensor-service/internal/adapters/outbound/clients"
 	kafkaadapter "p9e.in/samavaya/agriculture/sensor-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/sensor-service/internal/adapters/outbound/postgres"
 	"p9e.in/samavaya/agriculture/sensor-service/internal/application"
@@ -46,6 +48,7 @@ func main() {
 
 	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/sensor_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	fieldServiceURL := envOr("FIELD_SERVICE_URL", "http://localhost:8082")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -76,9 +79,10 @@ func main() {
 	// Outbound adapters
 	repo := postgresadapter.NewSensorRepository(pool, logger)
 	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
-	svc := application.NewSensorService(repo, pub, pool, logger)
+	svc := application.NewSensorService(repo, pub, fieldClient, pool, logger)
 
 	// Inbound adapters
 	handler := grpcadapter.NewSensorHandler(svc, logger)

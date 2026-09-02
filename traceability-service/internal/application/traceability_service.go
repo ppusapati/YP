@@ -33,10 +33,13 @@ const (
 
 // traceabilityService implements inbound.TraceabilityService.
 type traceabilityService struct {
-	repo outbound.TraceabilityRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool // reserved for future transactional operations
-	log  *p9log.Helper
+	repo        outbound.TraceabilityRepository
+	pub         outbound.EventPublisher
+	farmClient  outbound.FarmClient
+	fieldClient outbound.FieldClient
+	yieldClient outbound.YieldClient
+	pool        *pgxpool.Pool // reserved for future transactional operations
+	log         *p9log.Helper
 }
 
 // NewTraceabilityService creates a new application-layer TraceabilityService.
@@ -45,14 +48,20 @@ type traceabilityService struct {
 func NewTraceabilityService(
 	repo outbound.TraceabilityRepository,
 	pub outbound.EventPublisher,
+	farmClient outbound.FarmClient,
+	fieldClient outbound.FieldClient,
+	yieldClient outbound.YieldClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 ) inbound.TraceabilityService {
 	return &traceabilityService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
+		repo:        repo,
+		pub:         pub,
+		farmClient:  farmClient,
+		fieldClient: fieldClient,
+		yieldClient: yieldClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "TraceabilityService")),
 	}
 }
 
