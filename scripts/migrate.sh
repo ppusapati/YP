@@ -21,6 +21,7 @@ SERVICES=(
   plant-diagnosis-service
   satellite-service
   traceability-service
+  commerce-service
 )
 
 DB_USER="${POSTGRES_USER:-yieldpoint}"
@@ -57,13 +58,13 @@ run_migrations() {
     for f in "$migration_dir"/*.up.sql; do
       [[ -f "$f" ]] || continue
       echo "  → $(basename "$f")"
-      psql "$dsn" -f "$f" 2>&1 | head -5
+      psql -v ON_ERROR_STOP=1 "$dsn" -f "$f"
     done
   elif [[ "$dir" == "down" ]]; then
     for f in $(ls -r "$migration_dir"/*.down.sql 2>/dev/null); do
       [[ -f "$f" ]] || continue
       echo "  → $(basename "$f")"
-      psql "$dsn" -f "$f" 2>&1 | head -5
+      psql -v ON_ERROR_STOP=1 "$dsn" -f "$f"
     done
   else
     echo "Unknown direction: $dir (use 'up' or 'down')"

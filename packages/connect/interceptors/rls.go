@@ -83,16 +83,20 @@ func RLSInterceptor(opts ...RLSInterceptorOption) connect.UnaryInterceptorFunc {
 }
 
 // setBranchLevelScope sets branch-level RLS scope (tenant + company + branch).
+// The X-Branch-ID header is only accepted if the user's JWT claims include that
+// branch, preventing cross-branch access via header manipulation.
 func setBranchLevelScope(ctx context.Context, req connect.AnyRequest, user *p9context.UserContext, requireBranch bool) context.Context {
 	branchID := user.BranchID
 
-	// Check for branch override from header
 	if branchHeader := req.Header().Get(BranchIDHeader); branchHeader != "" {
-		branchID = branchHeader
-		p9log.Context(ctx).Debugf("rls interceptor: using branch_id from header: %s", branchID)
+		if branchHeader == user.BranchID {
+			branchID = branchHeader
+		} else {
+			p9log.Context(ctx).Warnf("rls interceptor: ignoring X-Branch-ID header %q — does not match JWT branch %q",
+				branchHeader, user.BranchID)
+		}
 	}
 
-	// If branch is required but not provided, log warning
 	if requireBranch && branchID == "" {
 		p9log.Context(ctx).Warn("rls interceptor: branch_id required but not provided")
 	}

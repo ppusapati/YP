@@ -46,11 +46,12 @@ func (f *RLSFactory) Begin(ctx context.Context) (UnitOfWork, error) {
 }
 
 // setRLSVariables sets PostgreSQL session variables for RLS policies.
-// Uses SET LOCAL to scope variables to the current transaction only.
+// Uses set_config() with is_local=true to scope variables to the current transaction.
+// set_config is preferred over SET LOCAL because its parameters are properly
+// escaped by the driver, eliminating any SQL injection surface.
 func setRLSVariables(ctx context.Context, tx interface{ Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error) }, scope p9context.RLSScope) error {
-	// Always set tenant_id (may be empty for super-admin operations)
 	if scope.TenantID != "" {
-		if _, err := tx.Exec(ctx, "SET LOCAL app.tenant_id = $1", scope.TenantID); err != nil {
+		if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", scope.TenantID); err != nil {
 			return errors.InternalServer(
 				"RLS_TENANT_SET_FAILED",
 				fmt.Sprintf("Failed to set tenant_id: %v", err),
@@ -58,9 +59,8 @@ func setRLSVariables(ctx context.Context, tx interface{ Exec(context.Context, st
 		}
 	}
 
-	// Set company_id if present
 	if scope.CompanyID != "" {
-		if _, err := tx.Exec(ctx, "SET LOCAL app.company_id = $1", scope.CompanyID); err != nil {
+		if _, err := tx.Exec(ctx, "SELECT set_config('app.company_id', $1, true)", scope.CompanyID); err != nil {
 			return errors.InternalServer(
 				"RLS_COMPANY_SET_FAILED",
 				fmt.Sprintf("Failed to set company_id: %v", err),
@@ -68,9 +68,8 @@ func setRLSVariables(ctx context.Context, tx interface{ Exec(context.Context, st
 		}
 	}
 
-	// Set branch_id if present
 	if scope.BranchID != "" {
-		if _, err := tx.Exec(ctx, "SET LOCAL app.branch_id = $1", scope.BranchID); err != nil {
+		if _, err := tx.Exec(ctx, "SELECT set_config('app.branch_id', $1, true)", scope.BranchID); err != nil {
 			return errors.InternalServer(
 				"RLS_BRANCH_SET_FAILED",
 				fmt.Sprintf("Failed to set branch_id: %v", err),
@@ -88,49 +87,28 @@ func WithRLSTransaction(ctx context.Context, pool *pgxpool.Pool, fn func(uow Uni
 	return WithTx(ctx, factory, fn)
 }
 
-// SetRLSOnPool sets RLS session variables on a pooled connection for non-transactional reads.
-// This acquires a connection, sets variables, executes the function, and releases the connection.
-// Note: The session variables are reset when the connection is returned to the pool.
+// SetRLSOnPool executes a read-only function within a transaction that has
+// RLS session variables set. Using a transaction ensures that set_config
+// with is_local=true scopes the variables to the transaction, preventing
+// leakage to other connections when the connection returns to the pool.
 func SetRLSOnPool(ctx context.Context, pool *pgxpool.Pool, fn func(context.Context) error) error {
-	conn, err := pool.Acquire(ctx)
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return errors.InternalServer(
-			"POOL_ACQUIRE_FAILED",
-			fmt.Sprintf("Failed to acquire connection: %v", err),
+			"POOL_BEGIN_FAILED",
+			fmt.Sprintf("Failed to begin transaction: %v", err),
 		)
 	}
-	defer conn.Release()
+	defer tx.Rollback(ctx) //nolint:errcheck
 
-	// Extract RLS scope from context
 	scope := p9context.MustRLSScope(ctx)
-
-	// Set RLS variables using SET (not SET LOCAL, since no transaction)
-	if scope.TenantID != "" {
-		if _, err := conn.Exec(ctx, "SET app.tenant_id = $1", scope.TenantID); err != nil {
-			return errors.InternalServer(
-				"RLS_TENANT_SET_FAILED",
-				fmt.Sprintf("Failed to set tenant_id: %v", err),
-			)
-		}
+	if err := setRLSVariables(ctx, tx, scope); err != nil {
+		return err
 	}
 
-	if scope.CompanyID != "" {
-		if _, err := conn.Exec(ctx, "SET app.company_id = $1", scope.CompanyID); err != nil {
-			return errors.InternalServer(
-				"RLS_COMPANY_SET_FAILED",
-				fmt.Sprintf("Failed to set company_id: %v", err),
-			)
-		}
+	if err := fn(ctx); err != nil {
+		return err
 	}
 
-	if scope.BranchID != "" {
-		if _, err := conn.Exec(ctx, "SET app.branch_id = $1", scope.BranchID); err != nil {
-			return errors.InternalServer(
-				"RLS_BRANCH_SET_FAILED",
-				fmt.Sprintf("Failed to set branch_id: %v", err),
-			)
-		}
-	}
-
-	return fn(ctx)
+	return tx.Commit(ctx)
 }

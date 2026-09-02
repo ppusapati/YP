@@ -50,7 +50,7 @@ func main() {
 
 	// ── JWT ─────────────────────────────────────────────────────────────────
 	if err := authz.InitJWTFromEnv(); err != nil {
-		log.Printf("WARNING: JWT not configured: %v — auth interceptor will reject all requests", err)
+		log.Fatalf("JWT not configured: %v — refusing to start without authentication", err)
 	}
 	jwtValidator := interceptors.NewAuthzJWTValidator()
 
@@ -119,8 +119,6 @@ func main() {
 	const serviceName = "traceability-service"
 	path, traceabilityHandler := traceabilityv1connect.NewTraceabilityServiceHandler(handler,
 		connect.WithInterceptors(
-			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
 			middleware.MetricsInterceptor(serviceName),
 			middleware.TracingInterceptor(serviceName),
 		),
@@ -142,7 +140,8 @@ func main() {
 	})
 
 	serverCfg := connectserver.DefaultServerConfig(port)
-	srv := connectserver.NewHTTPServer(serverCfg, mux)
+	wrapped := connectserver.WrapWithH2C(connectserver.WrapWithCORS(mux, serverCfg.AllowedOrigins))
+	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
 
 	// ── Admin server (health + metrics) ──────────────────────────────────────
 	adminPort := adminPortFrom(port)

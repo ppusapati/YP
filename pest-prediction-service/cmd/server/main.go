@@ -19,6 +19,7 @@ import (
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
+	"p9e.in/samavaya/packages/middleware"
 	"p9e.in/samavaya/packages/p9log"
 
 	connectclient "p9e.in/samavaya/packages/connect/client"
@@ -43,7 +44,7 @@ func main() {
 
 	// ── JWT ─────────────────────────────────────────────────────────────────
 	if err := authz.InitJWTFromEnv(); err != nil {
-		log.Printf("WARNING: JWT not configured: %v — auth interceptor will reject all requests", err)
+		log.Fatalf("JWT not configured: %v — refusing to start without authentication", err)
 	}
 	jwtValidator := interceptors.NewAuthzJWTValidator()
 
@@ -110,10 +111,11 @@ func main() {
 	connectOpt := connectserver.NewConnectOption(mwCfg)
 
 	mux := http.NewServeMux()
+	const serviceName = "pest-prediction-service"
 	path, pestHandler := pestpredictionv1connect.NewPestPredictionServiceHandler(handler,
 		connect.WithInterceptors(
-			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
+			middleware.MetricsInterceptor(serviceName),
+			middleware.TracingInterceptor(serviceName),
 		),
 		connectOpt,
 	)
@@ -133,7 +135,8 @@ func main() {
 	})
 
 	serverCfg := connectserver.DefaultServerConfig(port)
-	srv := connectserver.NewHTTPServer(serverCfg, mux)
+	wrapped := connectserver.WrapWithH2C(connectserver.WrapWithCORS(mux, serverCfg.AllowedOrigins))
+	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

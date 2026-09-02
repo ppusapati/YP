@@ -27,7 +27,10 @@ func NewFieldClient(baseURL string, httpClient *http.Client, opts ...connect.Cli
 func (c *fieldClient) FieldExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	resp, err := c.client.GetField(ctx, connect.NewRequest(&fieldv1.GetFieldRequest{Id: uuid}))
 	if err != nil {
-		return false, nil
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetField() != nil, nil
 }

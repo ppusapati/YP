@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"p9e.in/samavaya/packages/api/v1/config"
 
@@ -26,9 +25,10 @@ type CustomClaims struct {
 
 // JWTConfig holds JWT configuration
 type JWTConfig struct {
-	secret []byte
-	issuer string
-	mu     sync.RWMutex
+	secret   []byte
+	issuer   string
+	audience string
+	mu       sync.RWMutex
 }
 
 var (
@@ -60,7 +60,7 @@ func InitJWTFromConfig(cfg *config.Security) error {
 }
 
 // InitJWTFromEnv initializes JWT configuration from environment variables.
-// Environment variable: JWT_SECRET (required), JWT_ISSUER (optional)
+// Environment variables: JWT_SECRET (required), JWT_ISSUER (optional), JWT_AUDIENCE (optional)
 func InitJWTFromEnv() error {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -76,6 +76,7 @@ func InitJWTFromEnv() error {
 
 	jwtConfig.secret = []byte(secret)
 	jwtConfig.issuer = os.Getenv("JWT_ISSUER")
+	jwtConfig.audience = os.Getenv("JWT_AUDIENCE")
 
 	return nil
 }
@@ -100,20 +101,40 @@ func getJWTSecret() ([]byte, error) {
 	return []byte(secret), nil
 }
 
-// ParseJWT parses the token and returns claims
+// ParseJWT parses the token and returns claims.
+// It pins the signing method to HS256 and validates issuer, audience,
+// expiry, and required claims (sub, tenant_id, role).
 func ParseJWT(tokenString string) (*CustomClaims, error) {
 	secret, err := getJWTSecret()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get JWT secret: %w", err)
 	}
 
+	parserOpts := []jwt.ParserOption{
+		jwt.WithValidMethods([]string{"HS256"}),
+		jwt.WithExpirationRequired(),
+	}
+
+	if jwtConfig != nil {
+		jwtConfig.mu.RLock()
+		iss := jwtConfig.issuer
+		aud := jwtConfig.audience
+		jwtConfig.mu.RUnlock()
+
+		if iss != "" {
+			parserOpts = append(parserOpts, jwt.WithIssuer(iss))
+		}
+		if aud != "" {
+			parserOpts = append(parserOpts, jwt.WithAudience(aud))
+		}
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if token.Method != jwt.SigningMethodHS256 {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return secret, nil
-	})
+	}, parserOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
@@ -123,8 +144,14 @@ func ParseJWT(tokenString string) (*CustomClaims, error) {
 		return nil, errors.New("invalid token or claims")
 	}
 
-	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
-		return nil, errors.New("token expired")
+	if claims.UserID == "" {
+		return nil, errors.New("token missing required claim: sub")
+	}
+	if claims.TenantID == "" {
+		return nil, errors.New("token missing required claim: tenant_id")
+	}
+	if claims.Role == "" {
+		return nil, errors.New("token missing required claim: role")
 	}
 
 	return claims, nil
