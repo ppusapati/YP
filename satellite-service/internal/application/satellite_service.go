@@ -177,43 +177,11 @@ func (s *satelliteService) ComputeVegetationIndex(ctx context.Context, imageID, 
 		return nil, err
 	}
 
-	// Generate synthetic index values based on index type.
-	var minVal, maxVal, meanVal, stdDev float64
-	switch idxType {
-	case domain.IndexTypeNDVI:
-		minVal, maxVal, meanVal, stdDev = 0.15, 0.85, 0.62, 0.12
-	case domain.IndexTypeNDWI:
-		minVal, maxVal, meanVal, stdDev = -0.35, 0.25, -0.05, 0.10
-	case domain.IndexTypeEVI:
-		minVal, maxVal, meanVal, stdDev = 0.10, 0.75, 0.45, 0.11
-	}
-
-	now := time.Now()
-	idx := &domain.VegetationIndex{
-		TenantID:   tenantID,
-		ImageID:    imageID,
-		FieldID:    fieldID,
-		IndexType:  idxType,
-		MinValue:   minVal,
-		MaxValue:   maxVal,
-		MeanValue:  meanVal,
-		StdDev:     stdDev,
-		RasterURL:  fmt.Sprintf("s3://satellite-rasters/%s/%s/%s.tif", tenantID, imageID, indexType),
-		ComputedAt: now,
-		Version:    1,
-	}
-
-	created, err := s.repo.CreateVegetationIndex(ctx, idx)
-	if err != nil {
-		return nil, err
-	}
-
-	s.emitEvent(ctx, "agriculture.satellite.index.computed", created.ID, map[string]interface{}{
-		"index_id": created.ID, "image_id": imageID, "index_type": indexType, "tenant_id": tenantID,
-	})
-	s.log.Infow("msg", "vegetation index computed", "index_id", created.ID, "index_type", indexType)
-
-	return created, nil
+	// No real satellite imagery processing engine is connected yet.
+	// Return an error rather than plausible-looking synthetic values
+	// that could mislead field-pilot users.
+	return nil, errors.BadRequest("MODEL_UNAVAILABLE",
+		"vegetation index computation is not yet available — satellite imagery processing engine not connected")
 }
 
 // ---------------------------------------------------------------------------
@@ -251,33 +219,8 @@ func (s *satelliteService) DetectCropStress(ctx context.Context, imageID, fieldI
 		return nil, err
 	}
 
-	// Generate synthetic stress detection (no stress for demo).
-	now := time.Now()
-	alert := &domain.CropStressAlert{
-		TenantID:        tenantID,
-		FieldID:         fieldID,
-		ImageID:         imageID,
-		StressDetected:  false,
-		StressType:      domain.StressTypeWater,
-		StressSeverity:  0.1,
-		AffectedAreaPct: 2.5,
-		Description:     "Automated crop stress analysis completed. No significant stress detected.",
-		Recommendation:  "Continue regular monitoring. Current crop health indicators are within normal range.",
-		DetectedAt:      now,
-		Version:         1,
-	}
-
-	created, err := s.repo.CreateAlert(ctx, alert)
-	if err != nil {
-		return nil, err
-	}
-
-	s.emitEvent(ctx, "agriculture.satellite.stress.detected", created.ID, map[string]interface{}{
-		"alert_id": created.ID, "image_id": imageID, "stress_detected": false, "tenant_id": tenantID,
-	})
-	s.log.Infow("msg", "crop stress detection completed", "alert_id", created.ID, "stress_detected", false)
-
-	return created, nil
+	return nil, errors.BadRequest("MODEL_UNAVAILABLE",
+		"crop stress detection is not yet available — satellite analysis engine not connected")
 }
 
 // ---------------------------------------------------------------------------

@@ -7,7 +7,6 @@ use std::time::Instant;
 
 use plant_ai_inference_engine::{
     preprocess_image, ImageBuffer, NormalizationParams, PreprocessConfig,
-    postprocess_classification, ClassificationOutput, TopKResult,
 };
 
 use crate::config::ModelPaths;
@@ -48,37 +47,17 @@ impl DiagnosisEngine {
             }
         }
 
-        // Run inference through the disease detection model.
-        // In production, this would load the ONNX/TFLite model and run actual inference.
-        // Here we demonstrate the pipeline structure with the engine wiring.
-        let diseases = vec![
-            proto::DiseaseDetection {
-                disease_id: "disease_placeholder".to_string(),
-                disease_name: "Inference pipeline connected".to_string(),
-                scientific_name: String::new(),
-                confidence_score: 0.0,
-                severity: "MILD".to_string(),
-                description: format!(
-                    "Preprocessed {} images through plant-ai-inference-engine",
-                    preprocessed_count
-                ),
-                symptoms: String::new(),
-                treatment_options: vec![],
-                prevention: String::new(),
-            },
-        ];
-
         let elapsed = start.elapsed();
 
         proto::DiagnoseImageResponse {
             request_id: request.request_id.clone(),
-            diseases,
-            overall_health_score: 0.85,
+            diseases: vec![],
+            overall_health_score: 0.0,
             summary: format!(
-                "Disease detection pipeline executed on {} images",
-                request.images.len()
+                "MODEL_UNAVAILABLE: preprocessed {} images but no inference model is loaded — disease detection disabled until an approved model is deployed",
+                preprocessed_count
             ),
-            model_version: self.model_paths.disease_detection_model.clone(),
+            model_version: "none".to_string(),
             processing_time_ms: elapsed.as_millis() as i64,
         }
     }
@@ -169,29 +148,12 @@ impl DiagnosisEngine {
             }
         }
 
-        // Classification inference would produce probability distribution over species.
-        // Use plant-ai-inference-engine's postprocessing to extract top-k results.
-        let dummy_logits = vec![0.1_f32; 100];
-        let top_k: Vec<TopKResult> = postprocess_classification(&dummy_logits, 1);
-
-        let species = if let Some(top) = top_k.first() {
-            Some(proto::PlantClassification {
-                species_id: format!("species_{}", top.class_index),
-                common_name: String::new(),
-                scientific_name: String::new(),
-                family: String::new(),
-                confidence: top.probability as f64,
-            })
-        } else {
-            None
-        };
-
         let elapsed = start.elapsed();
 
         proto::ClassifyPlantResponse {
             request_id: request.request_id.clone(),
-            species,
-            model_version: self.model_paths.plant_classification_model.clone(),
+            species: None,
+            model_version: "none".to_string(),
             processing_time_ms: elapsed.as_millis() as i64,
         }
     }
