@@ -156,6 +156,9 @@ type BatchRecord struct {
 	Version           int64           `json:"version" db:"version"`
 	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at" db:"updated_at"`
+	CropCycleID       *string         `json:"crop_cycle_id,omitempty" db:"crop_cycle_id"`
+	YieldRecordID     *string         `json:"yield_record_id,omitempty" db:"yield_record_id"`
+	WeightKg          float64         `json:"weight_kg" db:"weight_kg"`
 }
 
 // QRCodeRecord is the domain model for a QR code.
@@ -237,6 +240,9 @@ type CreateBatchInput struct {
 	StorageConditions string
 	QualityGrade      string
 	Metadata          map[string]string
+	CropCycleID       *string
+	YieldRecordID     *string
+	WeightKg          float64
 }
 
 // GenerateQRCodeInput is the input for generating a QR code.
@@ -333,12 +339,14 @@ type QualityCheckpoint struct {
 	EvidenceURLs      []string           `json:"evidence_urls" db:"evidence_urls"`
 	Metadata          json.RawMessage    `json:"metadata" db:"metadata"`
 	CreatedAt         time.Time          `json:"created_at" db:"created_at"`
+	BatchID           *string            `json:"batch_id,omitempty" db:"batch_id"`
 }
 
 // CreateQualityCheckpointInput is the input for creating a quality checkpoint.
 type CreateQualityCheckpointInput struct {
 	RecordID           string
 	SupplyChainEventID *string
+	BatchID            *string
 	CheckType          QualityCheckType
 	Result             QualityCheckResult
 	InspectorName      string

@@ -358,13 +358,17 @@ func (h *FieldHandler) GetCropCycle(ctx context.Context, req *connect.Request[pb
 }
 
 func (h *FieldHandler) ListCropCycles(ctx context.Context, req *connect.Request[pb.ListCropCyclesRequest]) (*connect.Response[pb.ListCropCyclesResponse], error) {
-	if req.Msg.GetFieldId() == "" {
-		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id is required")
+	if req.Msg.GetFieldId() == "" && req.Msg.GetManagementUnitId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "field_id or management_unit_id is required")
 	}
 	params := domain.ListCropCyclesParams{
 		FieldID:  req.Msg.GetFieldId(),
 		PageSize: req.Msg.GetPageSize(),
 		Offset:   req.Msg.GetPageOffset(),
+	}
+	if req.Msg.GetManagementUnitId() != "" {
+		s := req.Msg.GetManagementUnitId()
+		params.ManagementUnitID = &s
 	}
 	if req.Msg.GetStatus() != pb.CropCycleStatus_CYCLE_STATUS_UNSPECIFIED {
 		s := protoCropCycleStatusToDomain(req.Msg.GetStatus())
@@ -476,6 +480,22 @@ func (h *FieldHandler) LogActivityEvent(ctx context.Context, req *connect.Reques
 	if req.Msg.GetAreaHectares() != 0 {
 		f := req.Msg.GetAreaHectares()
 		event.AreaHectares = &f
+	}
+	if req.Msg.GetWeatherTempCelsius() != 0 {
+		f := req.Msg.GetWeatherTempCelsius()
+		event.WeatherTempC = &f
+	}
+	if req.Msg.GetWeatherHumidityPct() != 0 {
+		f := req.Msg.GetWeatherHumidityPct()
+		event.WeatherHumidity = &f
+	}
+	if req.Msg.GetWeatherWindSpeedKmh() != 0 {
+		f := req.Msg.GetWeatherWindSpeedKmh()
+		event.WeatherWindSpeed = &f
+	}
+	if req.Msg.GetWeatherConditions() != "" {
+		s := req.Msg.GetWeatherConditions()
+		event.WeatherConditions = &s
 	}
 
 	created, err := h.svc.LogActivityEvent(ctx, event)

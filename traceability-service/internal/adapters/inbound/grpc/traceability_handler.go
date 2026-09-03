@@ -226,6 +226,13 @@ func (h *TraceabilityHandler) CreateBatch(ctx context.Context, req *connect.Requ
 		StorageConditions: req.Msg.GetStorageConditions(),
 		QualityGrade:      req.Msg.GetQualityGrade(),
 		Metadata:          req.Msg.GetMetadata(),
+		WeightKg:          req.Msg.GetWeightKg(),
+	}
+	if v := req.Msg.GetCropCycleId(); v != "" {
+		input.CropCycleID = &v
+	}
+	if v := req.Msg.GetYieldRecordId(); v != "" {
+		input.YieldRecordID = &v
 	}
 	batch, err := h.svc.CreateBatch(ctx, input)
 	if err != nil {
@@ -351,9 +358,15 @@ func (h *TraceabilityHandler) CreateQualityCheckpoint(ctx context.Context, req *
 		notes = &v
 	}
 
+	var batchID *string
+	if v := req.Msg.GetBatchId(); v != "" {
+		batchID = &v
+	}
+
 	input := domain.CreateQualityCheckpointInput{
 		RecordID:           req.Msg.GetRecordId(),
 		SupplyChainEventID: supplyChainEventID,
+		BatchID:            batchID,
 		CheckType:          qualityCheckTypeProtoToDomain(req.Msg.GetCheckType()),
 		Result:             qualityCheckResultProtoToDomain(req.Msg.GetResult()),
 		InspectorName:      req.Msg.GetInspectorName(),
@@ -630,7 +643,7 @@ func batchToProto(b *domain.BatchRecord) *pb.BatchRecord {
 	if b == nil {
 		return nil
 	}
-	return &pb.BatchRecord{
+	out := &pb.BatchRecord{
 		Id:                b.ID,
 		TenantId:          b.TenantID,
 		RecordId:          b.RecordID,
@@ -645,7 +658,15 @@ func batchToProto(b *domain.BatchRecord) *pb.BatchRecord {
 		CreatedAt:         timeToTs(b.CreatedAt),
 		UpdatedAt:         timeToTs(b.UpdatedAt),
 		Version:           b.Version,
+		WeightKg:          b.WeightKg,
 	}
+	if b.CropCycleID != nil {
+		out.CropCycleId = *b.CropCycleID
+	}
+	if b.YieldRecordID != nil {
+		out.YieldRecordId = *b.YieldRecordID
+	}
+	return out
 }
 
 // --- QR Code conversion ---
@@ -923,6 +944,9 @@ func qualityCheckpointToProto(qc *domain.QualityCheckpoint) *pb.QualityCheckpoin
 	}
 	if qc.Notes != nil {
 		proto.Notes = *qc.Notes
+	}
+	if qc.BatchID != nil {
+		proto.BatchId = *qc.BatchID
 	}
 	return proto
 }

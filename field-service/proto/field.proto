@@ -365,10 +365,11 @@ message GetCropCycleResponse {
 }
 
 message ListCropCyclesRequest {
-  string           field_id    = 1;
-  CropCycleStatus  status      = 2;
-  int32            page_size   = 3;
-  int32            page_offset = 4;
+  string           field_id            = 1;
+  CropCycleStatus  status              = 2;
+  int32            page_size           = 3;
+  int32            page_offset         = 4;
+  string           management_unit_id  = 5;
 }
 
 message ListCropCyclesResponse {
@@ -452,6 +453,10 @@ message LogActivityEventRequest {
   int64                      input_cost             = 13;
   string                     currency               = 14;
   double                     area_hectares          = 15;
+  double                     weather_temp_celsius   = 16;
+  double                     weather_humidity_pct   = 17;
+  double                     weather_wind_speed_kmh = 18;
+  string                     weather_conditions     = 19;
 }
 
 message LogActivityEventResponse {

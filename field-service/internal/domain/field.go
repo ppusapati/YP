@@ -296,11 +296,12 @@ type CropCycle struct {
 }
 
 type ListCropCyclesParams struct {
-	TenantID string
-	FieldID  string
-	Status   *CropCycleStatus
-	PageSize int32
-	Offset   int32
+	TenantID         string
+	FieldID          string
+	ManagementUnitID *string
+	Status           *CropCycleStatus
+	PageSize         int32
+	Offset           int32
 }
 
 // ActivityEvent is an immutable log entry for actions taken on a field.

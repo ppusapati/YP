@@ -664,6 +664,9 @@ type BatchRecord struct {
 	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt         *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Version           int64                  `protobuf:"varint,14,opt,name=version,proto3" json:"version,omitempty"`
+	CropCycleId       string                 `protobuf:"bytes,15,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
+	YieldRecordId     string                 `protobuf:"bytes,16,opt,name=yield_record_id,json=yieldRecordId,proto3" json:"yield_record_id,omitempty"`
+	WeightKg          float64                `protobuf:"fixed64,17,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -792,6 +795,27 @@ func (x *BatchRecord) GetUpdatedAt() *timestamppb.Timestamp {
 func (x *BatchRecord) GetVersion() int64 {
 	if x != nil {
 		return x.Version
+	}
+	return 0
+}
+
+func (x *BatchRecord) GetCropCycleId() string {
+	if x != nil {
+		return x.CropCycleId
+	}
+	return ""
+}
+
+func (x *BatchRecord) GetYieldRecordId() string {
+	if x != nil {
+		return x.YieldRecordId
+	}
+	return ""
+}
+
+func (x *BatchRecord) GetWeightKg() float64 {
+	if x != nil {
+		return x.WeightKg
 	}
 	return 0
 }
@@ -2414,6 +2438,9 @@ type CreateBatchRequest struct {
 	StorageConditions string                 `protobuf:"bytes,7,opt,name=storage_conditions,json=storageConditions,proto3" json:"storage_conditions,omitempty"`
 	QualityGrade      string                 `protobuf:"bytes,8,opt,name=quality_grade,json=qualityGrade,proto3" json:"quality_grade,omitempty"`
 	Metadata          map[string]string      `protobuf:"bytes,9,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	CropCycleId       string                 `protobuf:"bytes,10,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
+	YieldRecordId     string                 `protobuf:"bytes,11,opt,name=yield_record_id,json=yieldRecordId,proto3" json:"yield_record_id,omitempty"`
+	WeightKg          float64                `protobuf:"fixed64,12,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2509,6 +2536,27 @@ func (x *CreateBatchRequest) GetMetadata() map[string]string {
 		return x.Metadata
 	}
 	return nil
+}
+
+func (x *CreateBatchRequest) GetCropCycleId() string {
+	if x != nil {
+		return x.CropCycleId
+	}
+	return ""
+}
+
+func (x *CreateBatchRequest) GetYieldRecordId() string {
+	if x != nil {
+		return x.YieldRecordId
+	}
+	return ""
+}
+
+func (x *CreateBatchRequest) GetWeightKg() float64 {
+	if x != nil {
+		return x.WeightKg
+	}
+	return 0
 }
 
 type CreateBatchResponse struct {
@@ -3095,6 +3143,7 @@ type QualityCheckpoint struct {
 	EvidenceUrls       []string               `protobuf:"bytes,16,rep,name=evidence_urls,json=evidenceUrls,proto3" json:"evidence_urls,omitempty"`
 	Metadata           map[string]string      `protobuf:"bytes,17,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	BatchId            string                 `protobuf:"bytes,19,opt,name=batch_id,json=batchId,proto3" json:"batch_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3255,10 +3304,18 @@ func (x *QualityCheckpoint) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *QualityCheckpoint) GetBatchId() string {
+	if x != nil {
+		return x.BatchId
+	}
+	return ""
+}
+
 type CreateQualityCheckpointRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	RecordId           string                 `protobuf:"bytes,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
 	SupplyChainEventId string                 `protobuf:"bytes,2,opt,name=supply_chain_event_id,json=supplyChainEventId,proto3" json:"supply_chain_event_id,omitempty"`
+	BatchId            string                 `protobuf:"bytes,15,opt,name=batch_id,json=batchId,proto3" json:"batch_id,omitempty"`
 	CheckType          QualityCheckType       `protobuf:"varint,3,opt,name=check_type,json=checkType,proto3,enum=agriculture.traceability.v1.QualityCheckType" json:"check_type,omitempty"`
 	Result             QualityCheckResult     `protobuf:"varint,4,opt,name=result,proto3,enum=agriculture.traceability.v1.QualityCheckResult" json:"result,omitempty"`
 	InspectorName      string                 `protobuf:"bytes,5,opt,name=inspector_name,json=inspectorName,proto3" json:"inspector_name,omitempty"`
@@ -3315,6 +3372,13 @@ func (x *CreateQualityCheckpointRequest) GetRecordId() string {
 func (x *CreateQualityCheckpointRequest) GetSupplyChainEventId() string {
 	if x != nil {
 		return x.SupplyChainEventId
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetBatchId() string {
+	if x != nil {
+		return x.BatchId
 	}
 	return ""
 }
@@ -4170,7 +4234,7 @@ const file_traceability_proto_rawDesc = "" +
 	"\aversion\x18\x0f \x01(\x03R\aversion\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa1\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8a\x06\n" +
 	"\vBatchRecord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x1b\n" +
@@ -4189,7 +4253,10 @@ const file_traceability_proto_rawDesc = "" +
 	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x18\n" +
-	"\aversion\x18\x0e \x01(\x03R\aversion\x1a;\n" +
+	"\aversion\x18\x0e \x01(\x03R\aversion\x12\"\n" +
+	"\rcrop_cycle_id\x18\x0f \x01(\tR\vcropCycleId\x12&\n" +
+	"\x0fyield_record_id\x18\x10 \x01(\tR\ryieldRecordId\x12\x1b\n" +
+	"\tweight_kg\x18\x11 \x01(\x01R\bweightKg\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbd\x02\n" +
@@ -4356,7 +4423,7 @@ const file_traceability_proto_rawDesc = "" +
 	"\vverified_by\x18\x02 \x01(\tR\n" +
 	"verifiedBy\"o\n" +
 	"\x1bVerifyCertificationResponse\x12P\n" +
-	"\rcertification\x18\x01 \x01(\v2*.agriculture.traceability.v1.CertificationR\rcertification\"\xf2\x03\n" +
+	"\rcertification\x18\x01 \x01(\v2*.agriculture.traceability.v1.CertificationR\rcertification\"\xdb\x04\n" +
 	"\x12CreateBatchRequest\x12\x1b\n" +
 	"\trecord_id\x18\x01 \x01(\tR\brecordId\x12!\n" +
 	"\fbatch_number\x18\x02 \x01(\tR\vbatchNumber\x12\x1a\n" +
@@ -4367,7 +4434,11 @@ const file_traceability_proto_rawDesc = "" +
 	"expiryDate\x12-\n" +
 	"\x12storage_conditions\x18\a \x01(\tR\x11storageConditions\x12#\n" +
 	"\rquality_grade\x18\b \x01(\tR\fqualityGrade\x12Y\n" +
-	"\bmetadata\x18\t \x03(\v2=.agriculture.traceability.v1.CreateBatchRequest.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\t \x03(\v2=.agriculture.traceability.v1.CreateBatchRequest.MetadataEntryR\bmetadata\x12\"\n" +
+	"\rcrop_cycle_id\x18\n" +
+	" \x01(\tR\vcropCycleId\x12&\n" +
+	"\x0fyield_record_id\x18\v \x01(\tR\ryieldRecordId\x12\x1b\n" +
+	"\tweight_kg\x18\f \x01(\x01R\bweightKg\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
@@ -4405,7 +4476,7 @@ const file_traceability_proto_rawDesc = "" +
 	"reportType\x12\x18\n" +
 	"\aauditor\x18\x03 \x01(\tR\aauditor\"i\n" +
 	" GenerateComplianceReportResponse\x12E\n" +
-	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report\"\xfb\x06\n" +
+	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report\"\x96\a\n" +
 	"\x11QualityCheckpoint\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x1b\n" +
@@ -4427,13 +4498,15 @@ const file_traceability_proto_rawDesc = "" +
 	"\revidence_urls\x18\x10 \x03(\tR\fevidenceUrls\x12X\n" +
 	"\bmetadata\x18\x11 \x03(\v2<.agriculture.traceability.v1.QualityCheckpoint.MetadataEntryR\bmetadata\x129\n" +
 	"\n" +
-	"created_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x1a;\n" +
+	"created_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x19\n" +
+	"\bbatch_id\x18\x13 \x01(\tR\abatchId\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8a\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x06\n" +
 	"\x1eCreateQualityCheckpointRequest\x12\x1b\n" +
 	"\trecord_id\x18\x01 \x01(\tR\brecordId\x121\n" +
-	"\x15supply_chain_event_id\x18\x02 \x01(\tR\x12supplyChainEventId\x12L\n" +
+	"\x15supply_chain_event_id\x18\x02 \x01(\tR\x12supplyChainEventId\x12\x19\n" +
+	"\bbatch_id\x18\x0f \x01(\tR\abatchId\x12L\n" +
 	"\n" +
 	"check_type\x18\x03 \x01(\x0e2-.agriculture.traceability.v1.QualityCheckTypeR\tcheckType\x12G\n" +
 	"\x06result\x18\x04 \x01(\x0e2/.agriculture.traceability.v1.QualityCheckResultR\x06result\x12%\n" +

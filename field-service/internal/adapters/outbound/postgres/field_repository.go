@@ -435,9 +435,12 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 	var total int32
 	err := r.queryRow(ctx,
 		`SELECT COUNT(*)::int FROM crop_cycles
-		 WHERE tenant_id=$1 AND field_id=$2 AND deleted_at IS NULL
-		   AND ($3::varchar IS NULL OR status=$3)`,
-		params.TenantID, params.FieldID, nilIfEmptyCycleStatus(params.Status),
+		 WHERE tenant_id=$1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR field_id=$2)
+		   AND ($3::varchar IS NULL OR status=$3)
+		   AND ($4::varchar IS NULL OR management_unit_id=$4)`,
+		params.TenantID, nilIfEmptyStr(ptrOrNil(params.FieldID)), nilIfEmptyCycleStatus(params.Status),
+		nilIfEmptyStr(params.ManagementUnitID),
 	).Scan(&total)
 	if err != nil {
 		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count crop cycles: %v", err))
@@ -445,11 +448,14 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 
 	rows, err := r.query(ctx,
 		`SELECT `+cropCycleColumns+` FROM crop_cycles
-		 WHERE tenant_id=$1 AND field_id=$2 AND deleted_at IS NULL
+		 WHERE tenant_id=$1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR field_id=$2)
 		   AND ($3::varchar IS NULL OR status=$3)
+		   AND ($4::varchar IS NULL OR management_unit_id=$4)
 		 ORDER BY cycle_year DESC, created_at DESC
-		 LIMIT $4 OFFSET $5`,
-		params.TenantID, params.FieldID, nilIfEmptyCycleStatus(params.Status),
+		 LIMIT $5 OFFSET $6`,
+		params.TenantID, nilIfEmptyStr(ptrOrNil(params.FieldID)), nilIfEmptyCycleStatus(params.Status),
+		nilIfEmptyStr(params.ManagementUnitID),
 		params.PageSize, params.Offset,
 	)
 	if err != nil {
@@ -618,6 +624,13 @@ func scanActivityEvent(row pgx.Row) (*domain.ActivityEvent, error) {
 		&e.CreatedAt,
 	)
 	return e, err
+}
+
+func ptrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func nilIfEmptyStr(s *string) interface{} {

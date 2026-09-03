@@ -229,6 +229,7 @@ type MarketplaceListing struct {
 	Version              int64                  `protobuf:"varint,22,opt,name=version,proto3" json:"version,omitempty"`
 	CreatedAt            *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt            *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	BatchId              string                 `protobuf:"bytes,25,opt,name=batch_id,json=batchId,proto3" json:"batch_id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -429,6 +430,13 @@ func (x *MarketplaceListing) GetUpdatedAt() *timestamppb.Timestamp {
 		return x.UpdatedAt
 	}
 	return nil
+}
+
+func (x *MarketplaceListing) GetBatchId() string {
+	if x != nil {
+		return x.BatchId
+	}
+	return ""
 }
 
 // Order represents a purchase order.
@@ -671,6 +679,7 @@ type CreateListingRequest struct {
 	ImageUrls            []string               `protobuf:"bytes,15,rep,name=image_urls,json=imageUrls,proto3" json:"image_urls,omitempty"`
 	AvailableFrom        *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=available_from,json=availableFrom,proto3" json:"available_from,omitempty"`
 	AvailableTo          *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=available_to,json=availableTo,proto3" json:"available_to,omitempty"`
+	BatchId              string                 `protobuf:"bytes,18,opt,name=batch_id,json=batchId,proto3" json:"batch_id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -822,6 +831,13 @@ func (x *CreateListingRequest) GetAvailableTo() *timestamppb.Timestamp {
 		return x.AvailableTo
 	}
 	return nil
+}
+
+func (x *CreateListingRequest) GetBatchId() string {
+	if x != nil {
+		return x.BatchId
+	}
+	return ""
 }
 
 type CreateListingResponse struct {
@@ -1912,7 +1928,7 @@ var File_commerce_proto protoreflect.FileDescriptor
 
 const file_commerce_proto_rawDesc = "" +
 	"\n" +
-	"\x0ecommerce.proto\x12\x17agriculture.commerce.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc9\a\n" +
+	"\x0ecommerce.proto\x12\x17agriculture.commerce.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe4\a\n" +
 	"\x12MarketplaceListing\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
@@ -1942,7 +1958,8 @@ const file_commerce_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xdc\a\n" +
+	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x19\n" +
+	"\bbatch_id\x18\x19 \x01(\tR\abatchId\"\xdc\a\n" +
 	"\x05Order\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x1d\n" +
@@ -1971,7 +1988,7 @@ const file_commerce_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xaf\x05\n" +
+	"updated_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xca\x05\n" +
 	"\x14CreateListingRequest\x12\x17\n" +
 	"\afarm_id\x18\x01 \x01(\tR\x06farmId\x12\x17\n" +
 	"\acrop_id\x18\x02 \x01(\tR\x06cropId\x12!\n" +
@@ -1991,7 +2008,8 @@ const file_commerce_proto_rawDesc = "" +
 	"\n" +
 	"image_urls\x18\x0f \x03(\tR\timageUrls\x12A\n" +
 	"\x0eavailable_from\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\ravailableFrom\x12=\n" +
-	"\favailable_to\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\vavailableTo\"^\n" +
+	"\favailable_to\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\vavailableTo\x12\x19\n" +
+	"\bbatch_id\x18\x12 \x01(\tR\abatchId\"^\n" +
 	"\x15CreateListingResponse\x12E\n" +
 	"\alisting\x18\x01 \x01(\v2+.agriculture.commerce.v1.MarketplaceListingR\alisting\"#\n" +
 	"\x11GetListingRequest\x12\x0e\n" +

@@ -90,6 +90,7 @@ func (s *commerceService) CreateListing(ctx context.Context, input domain.Create
 		MinOrderQuantity:     input.MinOrderQuantity,
 		QualityGrade:         input.QualityGrade,
 		TraceabilityRecordID: input.TraceabilityRecordID,
+		BatchID:              input.BatchID,
 		Status:               domain.ListingStatusDraft,
 		Location:             input.Location,
 		Region:               input.Region,
