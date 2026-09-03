@@ -81,6 +81,13 @@ type MiddlewareConfig struct {
 	// EnableRLS enables RLS scope interceptor
 	EnableRLS bool
 
+	// EnableAuthz enables role-based authorization interceptor (must be after Auth)
+	EnableAuthz bool
+
+	// AuthzOptions configures the authorization interceptor (per-procedure
+	// role overrides, default minimum role, etc.)
+	AuthzOptions []interceptors.AuthzOption
+
 	// EnableDB enables database pool resolution interceptor
 	EnableDB bool
 
@@ -116,6 +123,7 @@ func DefaultMiddlewareConfig() MiddlewareConfig {
 		EnableRequestID:      true,
 		EnableLogging:        true,
 		EnableAuth:           true,
+		EnableAuthz:          true,
 		EnableRLS:            true,
 		EnableDB:             true,
 		RLSLevel:             interceptors.ScopeLevelBranch,
@@ -171,7 +179,12 @@ func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 		chain = append(chain, interceptors.AuthInterceptor(cfg.JWTValidator, opts...))
 	}
 
-	// 6. RLS (sets scope based on user context, must be after auth)
+	// 6. Authorization (checks role against procedure, must be after auth)
+	if cfg.EnableAuthz {
+		chain = append(chain, interceptors.AuthzInterceptor(cfg.AuthzOptions...))
+	}
+
+	// 7. RLS (sets scope based on user context, must be after auth)
 	if cfg.EnableRLS {
 		switch cfg.RLSLevel {
 		case interceptors.ScopeLevelCompany:

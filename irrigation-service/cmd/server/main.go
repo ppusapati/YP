@@ -115,6 +115,7 @@ func main() {
 		DBPool:          pool,
 		EnableAuth:      true,
 		JWTValidator:    jwtValidator,
+		EnableAuthz:    true,
 		EnableRLS:       true,
 		RLSLevel:        interceptors.ScopeLevelTenant,
 	}

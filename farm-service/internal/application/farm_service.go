@@ -403,6 +403,12 @@ func (s *farmService) TransferOwnership(ctx context.Context, params domain.Trans
 		userID = "system"
 	}
 
+	role := p9context.UserRole(ctx)
+	if userID != params.FromUserID && role != "admin" && role != "manager" {
+		return nil, errors.Forbidden("NOT_AUTHORIZED",
+			"only the current owner or a manager/admin can transfer ownership")
+	}
+
 	farm, err := s.repo.GetFarmByUUID(ctx, params.FarmUUID, tenantID)
 	if err != nil {
 		return nil, err
