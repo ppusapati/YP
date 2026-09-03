@@ -1,0 +1,626 @@
+openapi: 3.0.3
+info:
+  title: Sensor Service API
+  description: |
+    IoT sensor lifecycle management, data ingestion, alerting, and calibration
+    for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8083
+    description: Local development
+tags:
+  - name: Sensors
+    description: Sensor lifecycle management
+  - name: DataIngestion
+    description: Sensor reading ingestion
+  - name: Alerting
+    description: Sensor alert management
+  - name: NetworkCalibration
+    description: Network and calibration operations
+
+paths:
+  /agriculture.sensor.v1.SensorService/RegisterSensor:
+    post:
+      tags: [Sensors]
+      summary: Register a new IoT sensor
+      operationId: RegisterSensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterSensorRequest'
+      responses:
+        '200':
+          description: Sensor registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterSensorResponse'
+
+  /agriculture.sensor.v1.SensorService/GetSensor:
+    post:
+      tags: [Sensors]
+      summary: Get a sensor by ID
+      operationId: GetSensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Sensor retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+
+  /agriculture.sensor.v1.SensorService/ListSensors:
+    post:
+      tags: [Sensors]
+      summary: List sensors with filtering
+      operationId: ListSensors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListSensorsRequest'
+      responses:
+        '200':
+          description: Sensors listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSensorsResponse'
+
+  /agriculture.sensor.v1.SensorService/UpdateSensor:
+    post:
+      tags: [Sensors]
+      summary: Update a sensor
+      operationId: UpdateSensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSensorRequest'
+      responses:
+        '200':
+          description: Sensor updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+
+  /agriculture.sensor.v1.SensorService/DecommissionSensor:
+    post:
+      tags: [Sensors]
+      summary: Decommission a sensor
+      operationId: DecommissionSensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Sensor decommissioned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorResponse'
+
+  /agriculture.sensor.v1.SensorService/IngestReading:
+    post:
+      tags: [DataIngestion]
+      summary: Ingest a single sensor reading
+      operationId: IngestReading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestReadingRequest'
+      responses:
+        '200':
+          description: Reading ingested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestReadingResponse'
+
+  /agriculture.sensor.v1.SensorService/BatchIngestReadings:
+    post:
+      tags: [DataIngestion]
+      summary: Ingest multiple sensor readings in batch
+      operationId: BatchIngestReadings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                readings:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/IngestReadingRequest'
+      responses:
+        '200':
+          description: Batch ingested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchIngestReadingsResponse'
+
+  /agriculture.sensor.v1.SensorService/GetLatestReading:
+    post:
+      tags: [DataIngestion]
+      summary: Get the latest reading for a sensor
+      operationId: GetLatestReading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sensorId:
+                  type: string
+      responses:
+        '200':
+          description: Latest reading
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reading:
+                    type: object
+
+  /agriculture.sensor.v1.SensorService/GetReadingHistory:
+    post:
+      tags: [DataIngestion]
+      summary: Get historical readings for a sensor
+      operationId: GetReadingHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetReadingHistoryRequest'
+      responses:
+        '200':
+          description: Reading history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetReadingHistoryResponse'
+
+  /agriculture.sensor.v1.SensorService/CreateAlert:
+    post:
+      tags: [Alerting]
+      summary: Create an alert rule for a sensor
+      operationId: CreateAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRequest'
+      responses:
+        '200':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alert:
+                    type: object
+
+  /agriculture.sensor.v1.SensorService/ListAlerts:
+    post:
+      tags: [Alerting]
+      summary: List sensor alerts
+      operationId: ListAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAlertsRequest'
+      responses:
+        '200':
+          description: Alerts listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAlertsResponse'
+
+  /agriculture.sensor.v1.SensorService/AcknowledgeAlert:
+    post:
+      tags: [Alerting]
+      summary: Acknowledge a sensor alert
+      operationId: AcknowledgeAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                acknowledgedBy:
+                  type: string
+      responses:
+        '200':
+          description: Alert acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alert:
+                    type: object
+
+  /agriculture.sensor.v1.SensorService/GetSensorNetwork:
+    post:
+      tags: [NetworkCalibration]
+      summary: Get sensor network details
+      operationId: GetSensorNetwork
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                farmId:
+                  type: string
+      responses:
+        '200':
+          description: Network retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  network:
+                    type: object
+
+  /agriculture.sensor.v1.SensorService/CalibrateSensor:
+    post:
+      tags: [NetworkCalibration]
+      summary: Calibrate a sensor
+      operationId: CalibrateSensor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalibrateSensorRequest'
+      responses:
+        '200':
+          description: Sensor calibrated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  calibration:
+                    type: object
+
+components:
+  schemas:
+    SensorType:
+      type: string
+      enum:
+        - SENSOR_TYPE_UNSPECIFIED
+        - SENSOR_TYPE_SOIL_MOISTURE
+        - SENSOR_TYPE_SOIL_PH
+        - SENSOR_TYPE_TEMPERATURE
+        - SENSOR_TYPE_HUMIDITY
+        - SENSOR_TYPE_RAINFALL
+        - SENSOR_TYPE_WIND_SPEED
+        - SENSOR_TYPE_WIND_DIRECTION
+        - SENSOR_TYPE_LIGHT_INTENSITY
+        - SENSOR_TYPE_LEAF_WETNESS
+
+    SensorStatus:
+      type: string
+      enum:
+        - SENSOR_STATUS_UNSPECIFIED
+        - SENSOR_STATUS_ACTIVE
+        - SENSOR_STATUS_INACTIVE
+        - SENSOR_STATUS_MAINTENANCE
+        - SENSOR_STATUS_DECOMMISSIONED
+
+    SensorProtocol:
+      type: string
+      enum:
+        - SENSOR_PROTOCOL_UNSPECIFIED
+        - SENSOR_PROTOCOL_MQTT
+        - SENSOR_PROTOCOL_LORAWAN
+        - SENSOR_PROTOCOL_ZIGBEE
+        - SENSOR_PROTOCOL_WIFI
+        - SENSOR_PROTOCOL_CELLULAR
+
+    GeoLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        elevationM:
+          type: number
+          format: double
+
+    RegisterSensorRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        farmId:
+          type: string
+        sensorType:
+          $ref: '#/components/schemas/SensorType'
+        deviceId:
+          type: string
+        manufacturer:
+          type: string
+        model:
+          type: string
+        firmwareVersion:
+          type: string
+        location:
+          $ref: '#/components/schemas/GeoLocation'
+        installationDate:
+          type: string
+          format: date-time
+        protocol:
+          $ref: '#/components/schemas/SensorProtocol'
+        readingIntervalSeconds:
+          type: integer
+          format: int32
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    RegisterSensorResponse:
+      type: object
+      properties:
+        sensor:
+          type: object
+
+    SensorResponse:
+      type: object
+      properties:
+        sensor:
+          type: object
+
+    ListSensorsRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        farmId:
+          type: string
+        sensorType:
+          $ref: '#/components/schemas/SensorType'
+        status:
+          $ref: '#/components/schemas/SensorStatus'
+        protocol:
+          $ref: '#/components/schemas/SensorProtocol'
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListSensorsResponse:
+      type: object
+      properties:
+        sensors:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    UpdateSensorRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        updateMask:
+          type: string
+        firmwareVersion:
+          type: string
+        location:
+          $ref: '#/components/schemas/GeoLocation'
+        status:
+          $ref: '#/components/schemas/SensorStatus'
+        protocol:
+          $ref: '#/components/schemas/SensorProtocol'
+        readingIntervalSeconds:
+          type: integer
+          format: int32
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    IngestReadingRequest:
+      type: object
+      properties:
+        sensorId:
+          type: string
+        value:
+          type: number
+          format: double
+        unit:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        quality:
+          type: string
+        batteryLevelPct:
+          type: number
+          format: double
+        signalStrengthDbm:
+          type: number
+          format: double
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    IngestReadingResponse:
+      type: object
+      properties:
+        reading:
+          type: object
+        alertTriggered:
+          type: boolean
+        alert:
+          type: object
+
+    BatchIngestReadingsResponse:
+      type: object
+      properties:
+        ingestedCount:
+          type: integer
+          format: int32
+        failedCount:
+          type: integer
+          format: int32
+        errors:
+          type: array
+          items:
+            type: string
+        alerts:
+          type: array
+          items:
+            type: object
+
+    GetReadingHistoryRequest:
+      type: object
+      properties:
+        sensorId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+        minQuality:
+          type: string
+
+    GetReadingHistoryResponse:
+      type: object
+      properties:
+        readings:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    CreateAlertRequest:
+      type: object
+      properties:
+        sensorId:
+          type: string
+        sensorType:
+          $ref: '#/components/schemas/SensorType'
+        threshold:
+          type: number
+          format: double
+        condition:
+          type: string
+          enum: [ALERT_CONDITION_GT, ALERT_CONDITION_LT, ALERT_CONDITION_EQ, ALERT_CONDITION_GTE, ALERT_CONDITION_LTE]
+        severity:
+          type: string
+          enum: [ALERT_SEVERITY_LOW, ALERT_SEVERITY_MEDIUM, ALERT_SEVERITY_HIGH, ALERT_SEVERITY_CRITICAL]
+        message:
+          type: string
+
+    ListAlertsRequest:
+      type: object
+      properties:
+        sensorId:
+          type: string
+        fieldId:
+          type: string
+        severity:
+          type: string
+        unacknowledgedOnly:
+          type: boolean
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListAlertsResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    CalibrateSensorRequest:
+      type: object
+      properties:
+        sensorId:
+          type: string
+        offset:
+          type: number
+          format: double
+        scaleFactor:
+          type: number
+          format: double
+        notes:
+          type: string
+        nextCalibrationDate:
+          type: string
+          format: date-time

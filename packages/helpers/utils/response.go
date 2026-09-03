@@ -11,65 +11,46 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-// CreateResponse constructs a generic OperationResponse.
-func CreateSuccessResponse(ctx context.Context, code int32, reason, message string,
-	data map[string]interface{}, id int64, uuid string) (*pbr.OperationResponse, error) {
-	if message == "" { // Use reason if message is not provided
-		message = reason
+// CreateSuccessResponse constructs a BaseResponse for a successful operation.
+func CreateSuccessResponse(ctx context.Context, reason pbr.CanonicalReason, message string,
+	data map[string]interface{}, id string) (*pbr.BaseResponse, error) {
+	if message == "" {
+		message = reason.String()
 	}
-	return &pbr.OperationResponse{
+	return &pbr.BaseResponse{
 		Status: &pbr.Status{
-			Code:    code,
-			Reason:  reason,
-			Message: localize.GetMsg(ctx, reason, message, data, nil),
+			Code:         int32(reason),
+			Reason:       reason,
+			DomainReason: reason.String(),
+			Message:      localize.GetMsg(ctx, reason.String(), message, data, nil),
 		},
-		Id:   wrapperspb.Int64(id),
-		Uuid: wrapperspb.String(uuid),
+		Id: wrapperspb.String(id),
 	}, nil
 }
 
-// CreateErrorResponse constructs an error response.
-func CreateErrorResponse(ctx context.Context, code int32, reason, message string, data map[string]interface{}) (*pbr.OperationResponse, error) {
-	if message == "" { // Use reason if message is not provided
-		message = reason
+// CreateErrorResponse constructs an error BaseResponse.
+func CreateErrorResponse(ctx context.Context, reason pbr.CanonicalReason, message string, data map[string]interface{}) (*pbr.BaseResponse, error) {
+	if message == "" {
+		message = reason.String()
 	}
-	// Add error to tracing
-	// tracing.AddSpanError(ctx, errors.Errorf(int(code), errorMessage, reason))
-
-	return &pbr.OperationResponse{
+	return &pbr.BaseResponse{
 		Status: &pbr.Status{
-			Code:    code,
-			Reason:  reason,
-			Message: localize.GetMsg(ctx, reason, message, data, nil),
+			Code:         int32(reason),
+			Reason:       reason,
+			DomainReason: reason.String(),
+			Message:      localize.GetMsg(ctx, reason.String(), message, data, nil),
 		},
-	}, errors.New(reason)
+	}, errors.New(reason.String())
 }
 
-func ErrorResponse[T models.Entity](ctx context.Context, message string, entity T, messageCode pbr.ErrorReason) (*pbr.OperationResponse, error) {
-	return CreateErrorResponse(ctx,
-		int32(messageCode),
-		message,
-		messageCode.String(),
-		map[string]interface{}{"Entity": entity},
-	)
+func ErrorResponse[T models.Entity](ctx context.Context, message string, entity T, messageCode pbr.CanonicalReason) (*pbr.BaseResponse, error) {
+	return CreateErrorResponse(ctx, messageCode, message, map[string]interface{}{"Entity": entity})
 }
 
-// Centralized success response
-
-func SuccessResponse[T models.Entity](ctx context.Context, message string, entity T, messageCode pbr.SuccessReason) (*pbr.OperationResponse, error) {
-	return CreateSuccessResponse(ctx,
-		int32(messageCode),
-		message,
-		messageCode.String(),
-		nil, entity.GetID(), entity.GetUUID(),
-	)
+func SuccessResponse[T models.Entity](ctx context.Context, message string, entity T, messageCode pbr.CanonicalReason) (*pbr.BaseResponse, error) {
+	return CreateSuccessResponse(ctx, messageCode, message, nil, entity.GetID())
 }
 
-func SuccessArrayResponse[T []*models.Entity](ctx context.Context, message string, entity []*T, messageCode pbr.SuccessReason) (*pbr.OperationResponse, error) {
-	return CreateSuccessResponse(ctx,
-		int32(messageCode),
-		message,
-		messageCode.String(),
-		nil, 0, "",
-	)
+func SuccessArrayResponse[T []*models.Entity](ctx context.Context, message string, entity []*T, messageCode pbr.CanonicalReason) (*pbr.BaseResponse, error) {
+	return CreateSuccessResponse(ctx, messageCode, message, nil, "")
 }

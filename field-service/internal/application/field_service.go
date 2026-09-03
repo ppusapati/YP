@@ -9,9 +9,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"p9e.in/samavaya/packages/errors"
+	"p9e.in/samavaya/packages/geojson"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
+	"p9e.in/samavaya/packages/uow"
 
 	"p9e.in/samavaya/agriculture/field-service/internal/domain"
 	"p9e.in/samavaya/agriculture/field-service/internal/ports/inbound"
@@ -102,10 +104,10 @@ func (s *fieldService) CreateField(ctx context.Context, field *domain.Field) (*d
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.created", created.UUID, map[string]interface{}{
-		"field_id": created.UUID, "farm_id": created.FarmID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.field.created", created.ID, map[string]interface{}{
+		"field_id": created.ID, "farm_id": created.FarmID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "field created", "uuid", created.UUID, "farm_id", created.FarmID)
+	s.log.Infow("msg", "field created", "uuid", created.ID, "farm_id", created.FarmID)
 	return created, nil
 }
 
@@ -142,7 +144,7 @@ func (s *fieldService) UpdateField(ctx context.Context, field *domain.Field) (*d
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if field.UUID == "" {
+	if field.ID == "" {
 		return nil, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
 	}
 	if field.Status != domain.FieldStatusUnspecified && !field.Status.IsValid() {
@@ -152,12 +154,12 @@ func (s *fieldService) UpdateField(ctx context.Context, field *domain.Field) (*d
 		userID = "system"
 	}
 
-	exists, err := s.repo.CheckFieldExists(ctx, field.UUID, tenantID)
+	exists, err := s.repo.CheckFieldExists(ctx, field.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.UUID))
+		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.ID))
 	}
 
 	field.TenantID = tenantID
@@ -169,8 +171,8 @@ func (s *fieldService) UpdateField(ctx context.Context, field *domain.Field) (*d
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.updated", updated.UUID, map[string]interface{}{
-		"field_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.field.updated", updated.ID, map[string]interface{}{
+		"field_id": updated.ID, "tenant_id": tenantID,
 	})
 	return updated, nil
 }
@@ -224,6 +226,14 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		userID = "system"
 	}
 
+	exists, err := s.cropClient.CropExists(ctx, params.CropID, tenantID)
+	if err != nil {
+		return nil, errors.InternalServer("CROP_CHECK_FAILED", fmt.Sprintf("failed to verify crop: %v", err))
+	}
+	if !exists {
+		return nil, errors.NotFound("CROP_NOT_FOUND", "crop does not exist")
+	}
+
 	field, err := s.repo.GetFieldByUUID(ctx, params.FieldUUID, tenantID)
 	if err != nil {
 		return nil, err
@@ -259,8 +269,8 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.UUID, map[string]interface{}{
-		"field_id": field.UUID, "crop_id": params.CropID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.ID, map[string]interface{}{
+		"field_id": field.ID, "crop_id": params.CropID, "tenant_id": tenantID,
 	})
 	return created, nil
 }
@@ -271,7 +281,7 @@ func (s *fieldService) GetFieldSummary(ctx context.Context, uuid string) (*domai
 		return nil, err
 	}
 	return &domain.FieldSummary{
-		UUID:     field.UUID,
+		UUID:     field.ID,
 		TenantID: field.TenantID,
 		FarmID:   field.FarmID,
 		Name:     field.Name,
@@ -294,6 +304,9 @@ func (s *fieldService) SetFieldBoundary(ctx context.Context, params domain.SetBo
 	}
 	if params.Polygon == "" {
 		return nil, errors.BadRequest("MISSING_POLYGON", "polygon is required")
+	}
+	if err := geojson.ValidatePolygon(params.Polygon); err != nil {
+		return nil, errors.BadRequest("INVALID_POLYGON", fmt.Sprintf("invalid polygon: %v", err))
 	}
 
 	exists, err := s.repo.CheckFieldExists(ctx, params.FieldID, tenantID)
@@ -356,13 +369,21 @@ func (s *fieldService) SegmentField(ctx context.Context, params domain.SegmentFi
 		return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", params.FieldID))
 	}
 
-	if err := s.repo.DeleteFieldSegments(ctx, params.FieldID, tenantID); err != nil {
-		return nil, err
-	}
-
-	segments, err := s.repo.CreateFieldSegments(ctx, params.FieldID, tenantID, params.Segments)
-	if err != nil {
-		return nil, err
+	var segments []domain.FieldSegment
+	txErr := uow.WithTransaction(ctx, s.pool, func(u uow.UnitOfWork) error {
+		txRepo := s.repo.WithTx(u.Tx())
+		if err := txRepo.DeleteFieldSegments(ctx, params.FieldID, tenantID); err != nil {
+			return err
+		}
+		created, err := txRepo.CreateFieldSegments(ctx, params.FieldID, tenantID, params.Segments)
+		if err != nil {
+			return err
+		}
+		segments = created
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
 	}
 
 	s.emitEvent(ctx, "agriculture.field.segmented", params.FieldID, map[string]interface{}{

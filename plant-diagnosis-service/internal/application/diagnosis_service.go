@@ -4,6 +4,7 @@ package application
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -11,6 +12,7 @@ import (
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
+	"p9e.in/samavaya/packages/urlsafe"
 
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ai"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/domain"
@@ -194,7 +196,7 @@ func (s *diagnosisService) GetTreatmentPlan(ctx context.Context, diagnosisID str
 	}
 
 	// Verify the diagnosis exists.
-	_, err := s.repo.GetDiagnosisRequestByID(ctx, diagnosisID, tenantID)
+	diag, err := s.repo.GetDiagnosisRequestByID(ctx, diagnosisID, tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +210,42 @@ func (s *diagnosisService) GetTreatmentPlan(ctx context.Context, diagnosisID str
 		return plan, nil
 	}
 
-	// Generate a synthetic placeholder plan.
+	// Attempt AI-generated prescription when the AI client is available.
+	if s.aiClient != nil {
+		requestID := p9context.RequestID(ctx)
+		if requestID == "" {
+			requestID = ulid.NewString()
+		}
+
+		fieldID := ""
+		if diag.FieldID != nil {
+			fieldID = *diag.FieldID
+		}
+		cropType := ""
+		if diag.PlantSpeciesID != nil {
+			cropType = *diag.PlantSpeciesID
+		}
+
+		input := ai.PrescriptionInput{
+			FieldID:           fieldID,
+			CropType:          cropType,
+			PrescriptionTypes: []string{"FERTILIZER", "IRRIGATION"},
+		}
+
+		result, aiErr := s.aiClient.GeneratePrescription(ctx, requestID, input)
+		if aiErr != nil {
+			s.log.Warnw("msg", "AI GeneratePrescription failed, falling back to synthetic plan", "diagnosis_id", diagnosisID, "error", aiErr)
+		} else {
+			aiPlan := s.mapPrescriptionToTreatmentPlan(tenantID, diagnosisID, result)
+			created, createErr := s.repo.CreateTreatmentPlan(ctx, aiPlan)
+			if createErr != nil {
+				return nil, createErr
+			}
+			return created, nil
+		}
+	}
+
+	// Fall back to synthetic placeholder plan.
 	syntheticPlan := s.generateSyntheticTreatmentPlan(tenantID, diagnosisID)
 	created, err := s.repo.CreateTreatmentPlan(ctx, syntheticPlan)
 	if err != nil {
@@ -240,6 +277,46 @@ func (s *diagnosisService) generateSyntheticTreatmentPlan(tenantID, diagnosisID 
 	}
 }
 
+// mapPrescriptionToTreatmentPlan converts an AI GeneratePrescription result
+// into the domain TreatmentPlan model.
+func (s *diagnosisService) mapPrescriptionToTreatmentPlan(tenantID, diagnosisID string, result *ai.PrescriptionResult) *domain.TreatmentPlan {
+	steps := make([]domain.TreatmentStep, 0, len(result.Prescriptions))
+	var totalAmount float64
+
+	for i, rx := range result.Prescriptions {
+		step := domain.TreatmentStep{
+			StepNumber: int32(i + 1),
+			Action:     fmt.Sprintf("Apply %s prescription", rx.PrescriptionType),
+			Product:    rx.PrescriptionType,
+			Dosage:     fmt.Sprintf("%.2f %s total", rx.TotalAmount, rx.Unit),
+		}
+		if len(rx.ZoneSummaries) > 0 {
+			step.Notes = fmt.Sprintf("Variable-rate across %d zone(s); mean rate %.2f %s",
+				len(rx.ZoneSummaries), rx.ZoneSummaries[0].MeanRate, rx.Unit)
+		}
+		steps = append(steps, step)
+		totalAmount += rx.TotalAmount
+	}
+
+	stepsJSON, _ := json.Marshal(steps)
+
+	desc := fmt.Sprintf("AI-generated prescription plan (est. cost savings %.1f%%, yield gain %.1f%%)",
+		result.EstimatedCostSavingsPct, result.EstimatedYieldGainPct)
+	cost := fmt.Sprintf("%.2f total units", totalAmount)
+	days := int32(len(result.Prescriptions) * 7)
+
+	return &domain.TreatmentPlan{
+		TenantID:      tenantID,
+		DiagnosisID:   diagnosisID,
+		Title:         "AI-Generated Treatment Plan",
+		Description:   &desc,
+		Priority:      string(domain.SeverityModerate),
+		Steps:         stepsJSON,
+		EstimatedCost: &cost,
+		EstimatedDays: &days,
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // IdentifySpecies (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -253,6 +330,12 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 			Family:         "",
 			Confidence:     0.0,
 		},
+	}
+
+	for _, img := range images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
 	}
 
 	if s.aiClient == nil {
@@ -302,6 +385,12 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 			Severity:        domain.SeverityModerate,
 			Description:     "Possible nitrogen deficiency detected",
 		},
+	}
+
+	for _, img := range images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
 	}
 
 	if s.aiClient == nil {
@@ -356,6 +445,12 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 			ConfidenceScore: 0.0,
 			DamageLevel:     domain.SeverityUnspecified,
 		},
+	}
+
+	for _, img := range images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
 	}
 
 	if s.aiClient == nil {

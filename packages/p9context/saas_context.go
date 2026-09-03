@@ -80,9 +80,14 @@ func TenantIDFromConnectionInfo(ctx context.Context) string {
 	return info.TenantID
 }
 
-// TenantID is a convenience alias for TenantIDFromConnectionInfo
-// Retrieves the tenant ID from the connection info stored in context
-// Returns empty string if not present
+// TenantID returns the authenticated tenant ID.
+// It reads from the JWT-validated UserContext first (set by AuthInterceptor),
+// falling back to ConnectionInfo only when UserContext is absent.
+// This ensures tenant identity is sourced from verified JWT claims, not
+// unverified headers.
 func TenantID(ctx context.Context) string {
+	if id := UserTenantID(ctx); id != "" {
+		return id
+	}
 	return TenantIDFromConnectionInfo(ctx)
 }

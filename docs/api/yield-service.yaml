@@ -1,0 +1,466 @@
+openapi: 3.0.3
+info:
+  title: Yield Service API
+  description: |
+    Yield prediction, harvest recording, harvest planning, crop performance analytics,
+    and season comparison for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8086
+    description: Local development
+tags:
+  - name: Predictions
+    description: Yield prediction operations
+  - name: Records
+    description: Harvest yield recording
+  - name: HarvestPlans
+    description: Harvest plan management
+  - name: Analytics
+    description: Crop performance analytics
+
+paths:
+  /agriculture.yield.v1.YieldService/PredictYield:
+    post:
+      tags: [Predictions]
+      summary: Generate a yield prediction using multi-factor analysis
+      operationId: PredictYield
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                season:
+                  type: string
+                year:
+                  type: integer
+                  format: int32
+                yieldFactors:
+                  type: object
+                  properties:
+                    soilQualityScore:
+                      type: number
+                      format: double
+                    weatherScore:
+                      type: number
+                      format: double
+                    irrigationScore:
+                      type: number
+                      format: double
+                    pestPressureScore:
+                      type: number
+                      format: double
+                    nutrientScore:
+                      type: number
+                      format: double
+                    managementScore:
+                      type: number
+                      format: double
+      responses:
+        '200':
+          description: Prediction generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction:
+                    type: object
+
+  /agriculture.yield.v1.YieldService/GetPrediction:
+    post:
+      tags: [Predictions]
+      summary: Get a yield prediction by ID
+      operationId: GetPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Prediction retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction:
+                    type: object
+
+  /agriculture.yield.v1.YieldService/ListPredictions:
+    post:
+      tags: [Predictions]
+      summary: List yield predictions with filtering and pagination
+      operationId: ListPredictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                season:
+                  type: string
+                year:
+                  type: integer
+                  format: int32
+                status:
+                  type: string
+                orderBy:
+                  type: string
+      responses:
+        '200':
+          description: Predictions listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predictions:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.yield.v1.YieldService/RecordYield:
+    post:
+      tags: [Records]
+      summary: Record an actual harvest yield
+      operationId: RecordYield
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                season:
+                  type: string
+                year:
+                  type: integer
+                  format: int32
+                actualYieldKgPerHectare:
+                  type: number
+                  format: double
+                totalAreaHarvestedHectares:
+                  type: number
+                  format: double
+                totalYieldKg:
+                  type: number
+                  format: double
+                harvestQualityGrade:
+                  type: string
+                moistureContentPct:
+                  type: number
+                  format: double
+                harvestDate:
+                  type: string
+                  format: date-time
+                revenuePerHectare:
+                  type: number
+                  format: double
+                costPerHectare:
+                  type: number
+                  format: double
+                predictionId:
+                  type: string
+      responses:
+        '200':
+          description: Yield recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record:
+                    type: object
+
+  /agriculture.yield.v1.YieldService/GetYieldHistory:
+    post:
+      tags: [Records]
+      summary: Get historical yield records
+      operationId: GetYieldHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                fromYear:
+                  type: integer
+                  format: int32
+                toYear:
+                  type: integer
+                  format: int32
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Yield history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.yield.v1.YieldService/CreateHarvestPlan:
+    post:
+      tags: [HarvestPlans]
+      summary: Create a new harvest plan
+      operationId: CreateHarvestPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                season:
+                  type: string
+                year:
+                  type: integer
+                  format: int32
+                plannedStartDate:
+                  type: string
+                  format: date-time
+                plannedEndDate:
+                  type: string
+                  format: date-time
+                estimatedYieldKg:
+                  type: number
+                  format: double
+                totalAreaHectares:
+                  type: number
+                  format: double
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Harvest plan created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: object
+
+  /agriculture.yield.v1.YieldService/GetHarvestPlan:
+    post:
+      tags: [HarvestPlans]
+      summary: Get a harvest plan by ID
+      operationId: GetHarvestPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Harvest plan retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: object
+
+  /agriculture.yield.v1.YieldService/ListHarvestPlans:
+    post:
+      tags: [HarvestPlans]
+      summary: List harvest plans with filtering
+      operationId: ListHarvestPlans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                season:
+                  type: string
+                year:
+                  type: integer
+                  format: int32
+                status:
+                  type: string
+                orderBy:
+                  type: string
+      responses:
+        '200':
+          description: Harvest plans listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.yield.v1.YieldService/GetCropPerformance:
+    post:
+      tags: [Analytics]
+      summary: Get crop performance analytics
+      operationId: GetCropPerformance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                season:
+                  type: string
+                year:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Performance data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  performance:
+                    type: object
+
+  /agriculture.yield.v1.YieldService/CompareYields:
+    post:
+      tags: [Analytics]
+      summary: Compare yield performance between two seasons or years
+      operationId: CompareYields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                yearA:
+                  type: integer
+                  format: int32
+                seasonA:
+                  type: string
+                yearB:
+                  type: integer
+                  format: int32
+                seasonB:
+                  type: string
+      responses:
+        '200':
+          description: Comparison result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  performanceA:
+                    type: object
+                  performanceB:
+                    type: object
+                  yieldDifferenceKgPerHectare:
+                    type: number
+                    format: double
+                  yieldDifferencePct:
+                    type: number
+                    format: double
+                  profitDifferencePerHectare:
+                    type: number
+                    format: double

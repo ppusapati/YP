@@ -27,7 +27,10 @@ func NewPestClient(baseURL string, httpClient *http.Client, opts ...connect.Clie
 func (c *pestClient) PestExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	resp, err := c.client.GetPrediction(ctx, connect.NewRequest(&pestpredictionv1.GetPredictionRequest{Id: uuid}))
 	if err != nil {
-		return false, nil
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetPrediction() != nil, nil
 }

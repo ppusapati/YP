@@ -67,9 +67,7 @@ func BuildWhereClause(ctx context.Context, criteria *models.SearchCriteria) (str
 		conditions["id"] = criteria.ID
 	}
 
-	if criteria.UUID != nil && criteria.UUID.Eq != nil {
-		conditions["uuid"] = criteria.UUID
-	}
+
 
 	// Handle search term
 	if criteria.SearchTerm != nil && criteria.SearchTerm.Eq != nil {

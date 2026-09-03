@@ -17,8 +17,11 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
+	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
+	"p9e.in/samavaya/packages/middleware"
 	"p9e.in/samavaya/packages/p9log"
 
 	connectclient "p9e.in/samavaya/packages/connect/client"
@@ -43,7 +46,7 @@ func main() {
 
 	// ── JWT ─────────────────────────────────────────────────────────────────
 	if err := authz.InitJWTFromEnv(); err != nil {
-		log.Printf("WARNING: JWT not configured: %v — auth interceptor will reject all requests", err)
+		log.Fatalf("JWT not configured: %v — refusing to start without authentication", err)
 	}
 	jwtValidator := interceptors.NewAuthzJWTValidator()
 
@@ -66,6 +69,13 @@ func main() {
 		log.Fatalf("database ping failed: %v", err)
 	}
 
+	// ── Auto-migrate ─────────────────────────────────────────────────────
+	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer migrateCancel()
+	if err := migrate.Up(migrateCtx, pool, os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
+
 	var kafkaProducer sarama.SyncProducer
 	if kafkaBroker != "" {
 		cfg := sarama.NewConfig()
@@ -80,12 +90,13 @@ func main() {
 
 	// Outbound adapters
 	repo := postgresadapter.NewSatelliteRepository(pool, logger)
-	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+	outboxPub := outbox.NewPublisher(pool, zapLogger)
+	kafkaPub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 	fieldClient := clientsadapter.NewFieldClient(fieldServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(fieldServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 	farmClient := clientsadapter.NewFarmClient(farmServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(farmServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
-	svc := application.NewSatelliteService(repo, pub,
+	svc := application.NewSatelliteService(repo, outboxPub,
 		fieldClient,
 		farmClient,
 		pool, logger)
@@ -107,10 +118,11 @@ func main() {
 	connectOpt := connectserver.NewConnectOption(mwCfg)
 
 	mux := http.NewServeMux()
+	const serviceName = "satellite-service"
 	path, satelliteHandler := satellitev1connect.NewSatelliteServiceHandler(handler,
 		connect.WithInterceptors(
-			interceptors.RequestIDInterceptor(),
-			interceptors.LoggingInterceptor(interceptors.WithLogger(p9log.NewHelper(logger))),
+			middleware.MetricsInterceptor(serviceName),
+			middleware.TracingInterceptor(serviceName),
 		),
 		connectOpt,
 	)
@@ -130,7 +142,14 @@ func main() {
 	})
 
 	serverCfg := connectserver.DefaultServerConfig(port)
-	srv := connectserver.NewHTTPServer(serverCfg, mux)
+	wrapped := connectserver.WrapAll(mux, serverCfg)
+	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
+
+	// ── Outbox relay (background) ────────────────────────────────────────
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
+	go relay.Run(relayCtx)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

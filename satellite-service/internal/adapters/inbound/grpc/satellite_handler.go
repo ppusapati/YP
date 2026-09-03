@@ -458,7 +458,7 @@ func imageToProto(img *domain.SatelliteImage) *pb.SatelliteImage {
 		return nil
 	}
 	return &pb.SatelliteImage{
-		Id:                img.UUID,
+		Id:                img.ID,
 		TenantId:          img.TenantID,
 		FieldId:           img.FieldID,
 		FarmId:            img.FarmID,
@@ -485,7 +485,7 @@ func vegetationIndexToProto(idx *domain.VegetationIndex) *pb.VegetationIndex {
 		return nil
 	}
 	return &pb.VegetationIndex{
-		Id:         idx.UUID,
+		Id:         idx.ID,
 		TenantId:   idx.TenantID,
 		ImageId:    idx.ImageID,
 		FieldId:    idx.FieldID,
@@ -511,7 +511,7 @@ func alertToProto(a *domain.CropStressAlert) *pb.CropStressAlert {
 		return nil
 	}
 	return &pb.CropStressAlert{
-		Id:              a.UUID,
+		Id:              a.ID,
 		TenantId:        a.TenantID,
 		FieldId:         a.FieldID,
 		ImageId:         a.ImageID,
@@ -538,7 +538,7 @@ func taskToProto(t *domain.SatelliteTask) *pb.SatelliteTask {
 		return nil
 	}
 	return &pb.SatelliteTask{
-		Id:           t.UUID,
+		Id:           t.ID,
 		TenantId:     t.TenantID,
 		FieldId:      t.FieldID,
 		TaskType:     t.TaskType,
@@ -571,7 +571,7 @@ func temporalAnalysisToProto(a *domain.TemporalAnalysis) *pb.TemporalAnalysis {
 		}
 	}
 	return &pb.TemporalAnalysis{
-		Id:             a.UUID,
+		Id:             a.ID,
 		TenantId:       a.TenantID,
 		FieldId:        a.FieldID,
 		IndexType:      string(a.IndexType),

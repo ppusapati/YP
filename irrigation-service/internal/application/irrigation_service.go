@@ -84,10 +84,10 @@ func (s *irrigationService) CreateIrrigation(ctx context.Context, entity *domain
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.irrigation.created", created.UUID, map[string]interface{}{
-		"irrigation_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.irrigation.created", created.ID, map[string]interface{}{
+		"irrigation_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "irrigation created", "uuid", created.UUID)
+	s.log.Infow("msg", "irrigation created", "uuid", created.ID)
 	return created, nil
 }
 
@@ -124,19 +124,19 @@ func (s *irrigationService) UpdateIrrigation(ctx context.Context, entity *domain
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if entity.UUID == "" {
+	if entity.ID == "" {
 		return nil, errors.BadRequest("MISSING_ID", "irrigation ID is required")
 	}
 	if userID == "" {
 		userID = "system"
 	}
 
-	exists, err := s.repo.CheckIrrigationExists(ctx, entity.UUID, tenantID)
+	exists, err := s.repo.CheckIrrigationExists(ctx, entity.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NotFound("IRRIGATION_NOT_FOUND", fmt.Sprintf("irrigation not found: %s", entity.UUID))
+		return nil, errors.NotFound("IRRIGATION_NOT_FOUND", fmt.Sprintf("irrigation not found: %s", entity.ID))
 	}
 
 	entity.TenantID = tenantID
@@ -148,8 +148,8 @@ func (s *irrigationService) UpdateIrrigation(ctx context.Context, entity *domain
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.irrigation.updated", updated.UUID, map[string]interface{}{
-		"irrigation_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.irrigation.updated", updated.ID, map[string]interface{}{
+		"irrigation_id": updated.ID, "tenant_id": tenantID,
 	})
 	return updated, nil
 }
@@ -223,8 +223,8 @@ func (s *irrigationService) CreateZone(ctx context.Context, zone *domain.Irrigat
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.irrigation.zone.created", created.UUID, map[string]interface{}{
-		"zone_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.irrigation.zone.created", created.ID, map[string]interface{}{
+		"zone_id": created.ID, "tenant_id": tenantID,
 	})
 	return created, nil
 }
@@ -377,8 +377,8 @@ func (s *irrigationService) CreateSchedule(ctx context.Context, sched *domain.Ir
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.irrigation.schedule.created", created.UUID, map[string]interface{}{
-		"schedule_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.irrigation.schedule.created", created.ID, map[string]interface{}{
+		"schedule_id": created.ID, "tenant_id": tenantID,
 	})
 	return created, nil
 }
@@ -423,19 +423,19 @@ func (s *irrigationService) UpdateSchedule(ctx context.Context, sched *domain.Ir
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if sched.UUID == "" {
+	if sched.ID == "" {
 		return nil, errors.BadRequest("MISSING_SCHEDULE_ID", "schedule ID is required")
 	}
 	if userID == "" {
 		userID = "system"
 	}
 
-	existing, err := s.repo.GetScheduleByUUID(ctx, sched.UUID)
+	existing, err := s.repo.GetScheduleByUUID(ctx, sched.ID)
 	if err != nil {
 		return nil, err
 	}
 	if existing == nil {
-		return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule not found: %s", sched.UUID))
+		return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule not found: %s", sched.ID))
 	}
 	if sched.DurationMinutes < 0 {
 		return nil, errors.BadRequest("INVALID_DURATION", "duration_minutes must be non-negative")
@@ -537,8 +537,8 @@ func (s *irrigationService) TriggerIrrigation(ctx context.Context, scheduleID st
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.irrigation.triggered", createdEvent.UUID, map[string]interface{}{
-		"event_id": createdEvent.UUID, "schedule_id": scheduleID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.irrigation.triggered", createdEvent.ID, map[string]interface{}{
+		"event_id": createdEvent.ID, "schedule_id": scheduleID, "tenant_id": tenantID,
 	})
 	return createdEvent, nil
 }

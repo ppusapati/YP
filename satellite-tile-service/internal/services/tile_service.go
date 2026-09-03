@@ -105,7 +105,7 @@ func (s *tileService) GenerateTileset(ctx context.Context, tileset *tilemodels.T
 		}
 		// If it failed or is queued, we can re-trigger by updating status
 		if existing.Status == tilemodels.TilesetStatusFailed || existing.Status == tilemodels.TilesetStatusQueued {
-			updated, err := s.repo.UpdateTilesetStatus(ctx, existing.UUID, tenantID, tilemodels.TilesetStatusQueued, nil, userID)
+			updated, err := s.repo.UpdateTilesetStatus(ctx, existing.ID, tenantID, tilemodels.TilesetStatusQueued, nil, userID)
 			if err != nil {
 				return nil, err
 			}
@@ -132,7 +132,7 @@ func (s *tileService) GenerateTileset(ctx context.Context, tileset *tilemodels.T
 	s.emitTileEvent(ctx, EventTypeTileGenerationStarted, created)
 
 	s.log.Infow("msg", "tileset generation started",
-		"uuid", created.UUID,
+		"uuid", created.ID,
 		"farm_id", created.FarmID,
 		"layer", string(created.Layer),
 		"format", string(created.Format),
@@ -278,8 +278,8 @@ func (s *tileService) emitTileEvent(ctx context.Context, eventType domain.EventT
 	aggregateID := ""
 	data := make(map[string]interface{})
 	if tileset != nil {
-		aggregateID = tileset.UUID
-		data["tileset_id"] = tileset.UUID
+		aggregateID = tileset.ID
+		data["tileset_id"] = tileset.ID
 		data["tenant_id"] = tileset.TenantID
 		data["farm_id"] = tileset.FarmID
 		data["processing_job_id"] = tileset.ProcessingJobID

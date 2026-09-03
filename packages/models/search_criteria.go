@@ -47,9 +47,8 @@ type DynamicFilter struct {
 
 // SearchCriteria provides a generic structure for search and filtering across different domains
 type SearchCriteria struct {
-	// Basic Identifier Filters
-	ID   *query.Int32FilterOperators  `json:"id,omitempty"`
-	UUID *query.StringFilterOperation `json:"uuid,omitempty"`
+	// Basic Identifier Filter
+	ID *query.StringFilterOperation `json:"id,omitempty"`
 
 	// Basic filters
 	Filters []Filter `json:"filters"`

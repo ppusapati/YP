@@ -18,7 +18,7 @@ func YieldPredictionToProto(m *models.YieldPrediction) *pb.YieldPrediction {
 		return nil
 	}
 	p := &pb.YieldPrediction{
-		Id:                         m.UUID,
+		Id:                         m.ID,
 		TenantId:                   m.TenantID,
 		FarmId:                     m.FarmID,
 		FieldId:                    m.FieldID,
@@ -58,7 +58,7 @@ func YieldRecordToProto(m *models.YieldRecord) *pb.YieldRecord {
 		return nil
 	}
 	r := &pb.YieldRecord{
-		Id:                         m.UUID,
+		Id:                         m.ID,
 		TenantId:                   m.TenantID,
 		FarmId:                     m.FarmID,
 		FieldId:                    m.FieldID,
@@ -105,7 +105,7 @@ func HarvestPlanToProto(m *models.HarvestPlan) *pb.HarvestPlan {
 		return nil
 	}
 	h := &pb.HarvestPlan{
-		Id:                m.UUID,
+		Id:                m.ID,
 		TenantId:          m.TenantID,
 		FarmId:            m.FarmID,
 		FieldId:           m.FieldID,
@@ -146,7 +146,7 @@ func CropPerformanceToProto(m *models.CropPerformance) *pb.CropPerformance {
 		return nil
 	}
 	cp := &pb.CropPerformance{
-		Id:                            m.UUID,
+		Id:                            m.ID,
 		TenantId:                      m.TenantID,
 		FarmId:                        m.FarmID,
 		FieldId:                       m.FieldID,

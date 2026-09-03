@@ -81,7 +81,7 @@ type ListCropParams struct {
 // CropVariety represents a specific variety of a crop.
 type CropVariety struct {
 	models.BaseModel
-	CropID                     int64   `json:"crop_id"`
+	CropID                     string  `json:"crop_id"`
 	TenantID                   string  `json:"tenant_id"`
 	Name                       string  `json:"name"`
 	Description                string  `json:"description"`
@@ -96,7 +96,7 @@ type CropVariety struct {
 // CropGrowthStage represents a growth stage in the lifecycle of a crop.
 type CropGrowthStage struct {
 	models.BaseModel
-	CropID               int64   `json:"crop_id"`
+	CropID               string  `json:"crop_id"`
 	TenantID             string  `json:"tenant_id"`
 	Name                 string  `json:"name"`
 	StageOrder           int32   `json:"stage_order"`
@@ -111,7 +111,7 @@ type CropGrowthStage struct {
 // CropRequirements captures the optimal growing conditions for a crop.
 type CropRequirements struct {
 	models.BaseModel
-	CropID                   int64   `json:"crop_id"`
+	CropID                   string  `json:"crop_id"`
 	TenantID                 string  `json:"tenant_id"`
 	OptimalTempMin           float64 `json:"optimal_temp_min"`
 	OptimalTempMax           float64 `json:"optimal_temp_max"`
@@ -130,7 +130,7 @@ type CropRequirements struct {
 // CropRecommendation represents an AI-generated recommendation for a crop.
 type CropRecommendation struct {
 	models.BaseModel
-	CropID                int64      `json:"crop_id"`
+	CropID                string     `json:"crop_id"`
 	TenantID              string     `json:"tenant_id"`
 	RecommendationType    string     `json:"recommendation_type"`
 	Title                 string     `json:"title"`

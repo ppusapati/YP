@@ -15,6 +15,7 @@ import (
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
+	"p9e.in/samavaya/packages/urlsafe"
 
 	"p9e.in/samavaya/agriculture/commerce-service/internal/domain"
 	"p9e.in/samavaya/agriculture/commerce-service/internal/ports/inbound"
@@ -68,6 +69,9 @@ func (s *commerceService) CreateListing(ctx context.Context, input domain.Create
 	}
 	if input.PricePerUnitPaise <= 0 {
 		return nil, errors.BadRequest("INVALID_PRICE", "price_per_unit_paise must be greater than 0")
+	}
+	if err := urlsafe.ValidateImageURLs(input.ImageURLs); err != nil {
+		return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
 	}
 
 	now := time.Now()
@@ -165,6 +169,11 @@ func (s *commerceService) UpdateListing(ctx context.Context, id string, input do
 
 	if existing.Status != domain.ListingStatusDraft && existing.Status != domain.ListingStatusActive {
 		return nil, errors.BadRequest("INVALID_STATUS", fmt.Sprintf("listing is in %s status, only DRAFT or ACTIVE listings can be updated", existing.Status))
+	}
+	if input.ImageURLs != nil {
+		if err := urlsafe.ValidateImageURLs(input.ImageURLs); err != nil {
+			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+		}
 	}
 
 	updated, err := s.repo.UpdateListing(ctx, id, tenantID, input, userID)

@@ -8,13 +8,13 @@ import (
 	"sync"
 
 	"p9e.in/samavaya/packages/api/v1/config"
+	"p9e.in/samavaya/packages/grpcdial"
 	"p9e.in/samavaya/packages/middleware/tenant"
 	"p9e.in/samavaya/packages/p9log"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Default CORS settings for when config is not provided
@@ -87,7 +87,7 @@ func (s *CustomHttpServer) RegisterService(
 	mux *runtime.ServeMux,
 	registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error,
 ) {
-	grpcDialOption := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	grpcDialOption := []grpc.DialOption{grpcdial.TransportCredentials()}
 
 	err := registerFunc(ctx, mux, endpoint, grpcDialOption)
 	if err != nil {

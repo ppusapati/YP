@@ -105,7 +105,7 @@ func (h *FieldHandler) UpdateField(ctx context.Context, req *connect.Request[pb.
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "id is required")
 	}
 	field := &domain.Field{}
-	field.UUID = req.Msg.GetId()
+	field.ID = req.Msg.GetId()
 	if req.Msg.GetName() != "" {
 		field.Name = req.Msg.GetName()
 	}
@@ -605,7 +605,7 @@ func (h *FieldHandler) DeleteActivityEvidence(ctx context.Context, req *connect.
 
 func fieldToProto(f *domain.Field) *pb.Field {
 	out := &pb.Field{
-		Id:              f.UUID,
+		Id:              f.ID,
 		TenantId:        f.TenantID,
 		FarmId:          f.FarmID,
 		Name:            f.Name,

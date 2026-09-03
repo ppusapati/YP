@@ -100,7 +100,7 @@ func (s *ingestionService) RequestIngestion(ctx context.Context, task *ingestion
 	s.emitIngestionEvent(ctx, EventTypeIngestionRequested, created, nil)
 
 	s.log.Infow("msg", "ingestion task created",
-		"uuid", created.UUID,
+		"uuid", created.ID,
 		"provider", created.Provider,
 		"farm_uuid", created.FarmUUID,
 		"tenant_id", tenantID,
@@ -266,12 +266,12 @@ func (s *ingestionService) emitIngestionEvent(ctx context.Context, eventType dom
 
 	aggregateID := ""
 	if task != nil {
-		aggregateID = task.UUID
+		aggregateID = task.ID
 	}
 
 	data := make(map[string]interface{})
 	if task != nil {
-		data["task_id"] = task.UUID
+		data["task_id"] = task.ID
 		data["tenant_id"] = task.TenantID
 		data["farm_id"] = task.FarmUUID
 		data["provider"] = string(task.Provider)

@@ -14,6 +14,7 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
 
+	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ai"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/domain"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/outbound"
@@ -34,6 +35,7 @@ type pestService struct {
 	farmClient   outbound.FarmClient
 	pool         *pgxpool.Pool
 	log          *p9log.Helper
+	aiClient     *ai.AIClient
 }
 
 // NewPestService creates a new application-layer PestService.
@@ -45,6 +47,7 @@ func NewPestService(
 	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) inbound.PestService {
 	return &pestService{
 		repo:         repo,
@@ -54,6 +57,7 @@ func NewPestService(
 		farmClient:   farmClient,
 		pool:         pool,
 		log:          p9log.NewHelper(p9log.With(log, "component", "PestService")),
+		aiClient:     aiClient,
 	}
 }
 
@@ -141,7 +145,7 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 	if riskLevel.Severity() >= domain.RiskLevelHigh.Severity() {
 		alert := &domain.PestAlert{
 			TenantID:        tenantID,
-			PredictionUUID:  created.UUID,
+			PredictionUUID:  created.ID,
 			FarmID:          params.FarmID,
 			FieldID:         params.FieldID,
 			PestSpeciesUUID: params.PestSpeciesID,
@@ -155,10 +159,10 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 		}
 	}
 
-	s.emitEvent(ctx, "agriculture.pest-prediction.predicted", created.UUID, map[string]interface{}{
-		"prediction_id": created.UUID, "tenant_id": tenantID, "risk_level": string(riskLevel),
+	s.emitEvent(ctx, "agriculture.pest-prediction.predicted", created.ID, map[string]interface{}{
+		"prediction_id": created.ID, "tenant_id": tenantID, "risk_level": string(riskLevel),
 	})
-	s.log.Infow("msg", "pest risk predicted", "uuid", created.UUID, "risk_level", riskLevel, "risk_score", riskScore)
+	s.log.Infow("msg", "pest risk predicted", "uuid", created.ID, "risk_level", riskLevel, "risk_score", riskScore)
 
 	return created, nil
 }
@@ -217,10 +221,10 @@ func (s *pestService) ReportObservation(ctx context.Context, obs *domain.PestObs
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.pest-prediction.observation.reported", created.UUID, map[string]interface{}{
-		"observation_id": created.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.pest-prediction.observation.reported", created.ID, map[string]interface{}{
+		"observation_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "observation reported", "uuid", created.UUID)
+	s.log.Infow("msg", "observation reported", "uuid", created.ID)
 
 	return created, nil
 }

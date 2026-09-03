@@ -127,7 +127,7 @@ func ProcessingJobToProto(j *procmodels.ProcessingJob) *pb.ProcessingJob {
 	}
 
 	job := &pb.ProcessingJob{
-		Id:                         j.UUID,
+		Id:                         j.ID,
 		TenantId:                   j.TenantID,
 		IngestionTaskId:            j.IngestionTaskUUID,
 		FarmId:                     j.FarmUUID,

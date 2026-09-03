@@ -78,12 +78,12 @@ func (r *irrigationRepository) userID(ctx context.Context) string {
 // =========================================================================
 
 func (r *irrigationRepository) CreateIrrigation(ctx context.Context, entity *domain.Irrigation) (*domain.Irrigation, error) {
-	entity.UUID = ulid.NewString()
+	entity.ID = ulid.NewString()
 	row := r.queryRow(ctx,
 		`INSERT INTO irrigation_schedules (id, tenant_id, name, status, version, created_by)
 		VALUES ($1,$2,$3,$4,1,$5)
 		RETURNING id, tenant_id, name, status, version, created_by, created_at`,
-		entity.UUID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
+		entity.ID, entity.TenantID, entity.Name, string(entity.Status), entity.CreatedBy,
 	)
 	result, err := scanIrrigation(row)
 	if err != nil {
@@ -165,12 +165,12 @@ func (r *irrigationRepository) UpdateIrrigation(ctx context.Context, entity *dom
 			updated_at = NOW()
 		WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL
 		RETURNING id, tenant_id, name, status, version, created_by, created_at`,
-		entity.UUID, entity.TenantID, entity.Name, string(entity.Status),
+		entity.ID, entity.TenantID, entity.Name, string(entity.Status),
 	)
 	e, err := scanIrrigation(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("IRRIGATION_NOT_FOUND", fmt.Sprintf("irrigation not found: %s", entity.UUID))
+			return nil, errors.NotFound("IRRIGATION_NOT_FOUND", fmt.Sprintf("irrigation not found: %s", entity.ID))
 		}
 		return nil, errors.InternalServer("IRRIGATION_UPDATE_FAILED", fmt.Sprintf("failed to update irrigation: %v", err))
 	}
@@ -215,7 +215,7 @@ func (r *irrigationRepository) CheckIrrigationNameExists(ctx context.Context, na
 func scanIrrigation(row pgx.Row) (*domain.Irrigation, error) {
 	e := &domain.Irrigation{}
 	var status string
-	err := row.Scan(&e.UUID, &e.TenantID, &e.Name, &status, &e.Version, &e.CreatedBy, &e.CreatedAt)
+	err := row.Scan(&e.ID, &e.TenantID, &e.Name, &status, &e.Version, &e.CreatedBy, &e.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func nullableStatus(status *domain.IrrigationStatus) interface{} {
 // =========================================================================
 
 func (r *irrigationRepository) CreateZone(ctx context.Context, zone *domain.IrrigationZone) (*domain.IrrigationZone, error) {
-	zone.UUID = ulid.NewString()
+	zone.ID = ulid.NewString()
 	zone.IsActive = true
 
 	row := r.queryRow(ctx, `
@@ -247,7 +247,7 @@ func (r *irrigationRepository) CreateZone(ctx context.Context, zone *domain.Irri
 		RETURNING id, tenant_id, field_id, farm_id, name, description,
 			area_hectares, soil_type, crop_type, crop_growth_stage,
 			latitude, longitude, is_active, created_at, updated_at`,
-		zone.UUID, zone.TenantID, zone.FieldID, zone.FarmID, zone.Name, zone.Description,
+		zone.ID, zone.TenantID, zone.FieldID, zone.FarmID, zone.Name, zone.Description,
 		zone.AreaHectares, zone.SoilType, zone.CropType, zone.CropGrowthStage,
 		zone.Latitude, zone.Longitude, zone.IsActive,
 	)
@@ -329,7 +329,7 @@ func (r *irrigationRepository) listZones(ctx context.Context, column, value stri
 func scanZone(row pgx.Row) (*domain.IrrigationZone, error) {
 	z := &domain.IrrigationZone{}
 	err := row.Scan(
-		&z.UUID, &z.TenantID, &z.FieldID, &z.FarmID,
+		&z.ID, &z.TenantID, &z.FieldID, &z.FarmID,
 		&z.Name, &z.Description, &z.AreaHectares, &z.SoilType,
 		&z.CropType, &z.CropGrowthStage, &z.Latitude, &z.Longitude,
 		&z.IsActive, &z.CreatedAt, &z.UpdatedAt,
@@ -342,7 +342,7 @@ func scanZone(row pgx.Row) (*domain.IrrigationZone, error) {
 // =========================================================================
 
 func (r *irrigationRepository) CreateController(ctx context.Context, ctrl *domain.WaterController) (*domain.WaterController, error) {
-	ctrl.UUID = ulid.NewString()
+	ctrl.ID = ulid.NewString()
 	ctrl.IsActive = true
 
 	row := r.queryRow(ctx, `
@@ -355,7 +355,7 @@ func (r *irrigationRepository) CreateController(ctx context.Context, ctrl *domai
 			firmware_version, controller_type, protocol, status, endpoint,
 			max_flow_rate_liters_per_hour, last_heartbeat, is_active,
 			created_by, created_at, updated_at`,
-		ctrl.UUID, ctrl.TenantID, ctrl.ZoneID, ctrl.FieldID, ctrl.FarmID,
+		ctrl.ID, ctrl.TenantID, ctrl.ZoneID, ctrl.FieldID, ctrl.FarmID,
 		ctrl.Name, ctrl.Model, ctrl.FirmwareVersion,
 		string(ctrl.ControllerType), string(ctrl.Protocol), string(ctrl.Status),
 		ctrl.Endpoint, ctrl.MaxFlowRateLitersPerHour, ctrl.IsActive, ctrl.CreatedBy,
@@ -457,7 +457,7 @@ func scanController(row pgx.Row) (*domain.WaterController, error) {
 	c := &domain.WaterController{}
 	var ctrlType, proto, status string
 	err := row.Scan(
-		&c.UUID, &c.TenantID, &c.ZoneID, &c.FieldID, &c.FarmID,
+		&c.ID, &c.TenantID, &c.ZoneID, &c.FieldID, &c.FarmID,
 		&c.Name, &c.Model, &c.FirmwareVersion,
 		&ctrlType, &proto, &status, &c.Endpoint,
 		&c.MaxFlowRateLitersPerHour, &c.LastHeartbeat, &c.IsActive,
@@ -477,7 +477,7 @@ func scanController(row pgx.Row) (*domain.WaterController, error) {
 // =========================================================================
 
 func (r *irrigationRepository) CreateSchedule(ctx context.Context, sched *domain.IrrigationSchedule) (*domain.IrrigationSchedule, error) {
-	sched.UUID = ulid.NewString()
+	sched.ID = ulid.NewString()
 	if sched.Status == "" {
 		sched.Status = domain.IrrigationStatusScheduled
 	}
@@ -495,7 +495,7 @@ func (r *irrigationRepository) CreateSchedule(ctx context.Context, sched *domain
 			water_quantity_liters, flow_rate_liters_per_hour, frequency,
 			soil_moisture_threshold_pct, weather_adjusted, crop_growth_stage,
 			status, version, created_by, created_at, updated_at`,
-		sched.UUID, sched.TenantID, sched.FieldID, sched.FarmID, sched.ZoneID, sched.ControllerID,
+		sched.ID, sched.TenantID, sched.FieldID, sched.FarmID, sched.ZoneID, sched.ControllerID,
 		sched.Name, sched.Description, string(sched.ScheduleType), sched.StartTime, sched.EndTime,
 		sched.DurationMinutes, sched.WaterQuantityLiters, sched.FlowRateLitersPerHour,
 		string(sched.Frequency), sched.SoilMoistureThresholdPct, sched.WeatherAdjusted,
@@ -595,7 +595,7 @@ func (r *irrigationRepository) UpdateSchedule(ctx context.Context, sched *domain
 			water_quantity_liters, flow_rate_liters_per_hour, frequency,
 			soil_moisture_threshold_pct, weather_adjusted, crop_growth_stage,
 			status, version, created_by, created_at, updated_at`,
-		sched.UUID, tenantID,
+		sched.ID, tenantID,
 		sched.Name, sched.Description, string(sched.ScheduleType),
 		sched.StartTime, sched.EndTime, sched.DurationMinutes,
 		sched.WaterQuantityLiters, sched.FlowRateLitersPerHour, string(sched.Frequency),
@@ -606,7 +606,7 @@ func (r *irrigationRepository) UpdateSchedule(ctx context.Context, sched *domain
 	result, err := scanSchedule(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule %s not found", sched.UUID))
+			return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule %s not found", sched.ID))
 		}
 		return nil, errors.InternalServer("SCHEDULE_UPDATE_FAILED", fmt.Sprintf("failed to update schedule: %v", err))
 	}
@@ -655,7 +655,7 @@ func scanSchedule(row pgx.Row) (*domain.IrrigationSchedule, error) {
 	s := &domain.IrrigationSchedule{}
 	var schedType, freq, status string
 	err := row.Scan(
-		&s.UUID, &s.TenantID, &s.FieldID, &s.FarmID, &s.ZoneID, &s.ControllerID,
+		&s.ID, &s.TenantID, &s.FieldID, &s.FarmID, &s.ZoneID, &s.ControllerID,
 		&s.Name, &s.Description,
 		&schedType, &s.StartTime, &s.EndTime, &s.DurationMinutes,
 		&s.WaterQuantityLiters, &s.FlowRateLitersPerHour, &freq,
@@ -676,7 +676,7 @@ func scanSchedule(row pgx.Row) (*domain.IrrigationSchedule, error) {
 // =========================================================================
 
 func (r *irrigationRepository) CreateEvent(ctx context.Context, evt *domain.IrrigationEvent) (*domain.IrrigationEvent, error) {
-	evt.UUID = ulid.NewString()
+	evt.ID = ulid.NewString()
 
 	row := r.queryRow(ctx, `
 		INSERT INTO irrigation_events (
@@ -687,7 +687,7 @@ func (r *irrigationRepository) CreateEvent(ctx context.Context, evt *domain.Irri
 		RETURNING id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
 			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at`,
-		evt.UUID, evt.TenantID, evt.ScheduleID, evt.ZoneID, evt.ControllerID,
+		evt.ID, evt.TenantID, evt.ScheduleID, evt.ZoneID, evt.ControllerID,
 		string(evt.Status), evt.StartedAt, evt.EndedAt,
 		evt.ActualDurationMinutes, evt.ActualWaterLiters,
 		evt.SoilMoistureBeforePct, evt.SoilMoistureAfterPct, evt.FailureReason,
@@ -799,7 +799,7 @@ func (r *irrigationRepository) UpdateEvent(ctx context.Context, evt *domain.Irri
 		RETURNING id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
 			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at`,
-		evt.UUID, tenantID,
+		evt.ID, tenantID,
 		string(evt.Status), evt.EndedAt, evt.ActualDurationMinutes,
 		evt.ActualWaterLiters, evt.SoilMoistureAfterPct, evt.FailureReason,
 	)
@@ -807,7 +807,7 @@ func (r *irrigationRepository) UpdateEvent(ctx context.Context, evt *domain.Irri
 	result, err := scanEvent(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("EVENT_NOT_FOUND", fmt.Sprintf("event %s not found", evt.UUID))
+			return nil, errors.NotFound("EVENT_NOT_FOUND", fmt.Sprintf("event %s not found", evt.ID))
 		}
 		return nil, errors.InternalServer("EVENT_UPDATE_FAILED", fmt.Sprintf("failed to update event: %v", err))
 	}
@@ -818,7 +818,7 @@ func scanEvent(row pgx.Row) (*domain.IrrigationEvent, error) {
 	e := &domain.IrrigationEvent{}
 	var status string
 	err := row.Scan(
-		&e.UUID, &e.TenantID, &e.ScheduleID, &e.ZoneID, &e.ControllerID,
+		&e.ID, &e.TenantID, &e.ScheduleID, &e.ZoneID, &e.ControllerID,
 		&status, &e.StartedAt, &e.EndedAt,
 		&e.ActualDurationMinutes, &e.ActualWaterLiters,
 		&e.SoilMoistureBeforePct, &e.SoilMoistureAfterPct,
@@ -836,7 +836,7 @@ func scanEvent(row pgx.Row) (*domain.IrrigationEvent, error) {
 // =========================================================================
 
 func (r *irrigationRepository) CreateDecision(ctx context.Context, dec *domain.IrrigationDecision) (*domain.IrrigationDecision, error) {
-	dec.UUID = ulid.NewString()
+	dec.ID = ulid.NewString()
 	if dec.DecidedAt.IsZero() {
 		dec.DecidedAt = time.Now()
 	}
@@ -858,7 +858,7 @@ func (r *irrigationRepository) CreateDecision(ctx context.Context, dec *domain.I
 			output_should_irrigate, output_water_quantity_liters,
 			output_duration_minutes, output_optimal_time, output_reasoning,
 			output_confidence_score, decided_at, applied, created_by, created_at`,
-		dec.UUID, dec.TenantID, dec.ZoneID, dec.FieldID, dec.ScheduleID,
+		dec.ID, dec.TenantID, dec.ZoneID, dec.FieldID, dec.ScheduleID,
 		dec.Inputs.SoilMoisture, dec.Inputs.Temperature, dec.Inputs.Humidity,
 		dec.Inputs.RainfallForecastMM, dec.Inputs.WindSpeed, dec.Inputs.CropType,
 		dec.Inputs.GrowthStage, dec.Inputs.EvapotranspirationMM,
@@ -893,7 +893,7 @@ func (r *irrigationRepository) MarkDecisionApplied(ctx context.Context, uuid str
 func scanDecision(row pgx.Row) (*domain.IrrigationDecision, error) {
 	d := &domain.IrrigationDecision{}
 	err := row.Scan(
-		&d.UUID, &d.TenantID, &d.ZoneID, &d.FieldID, &d.ScheduleID,
+		&d.ID, &d.TenantID, &d.ZoneID, &d.FieldID, &d.ScheduleID,
 		&d.Inputs.SoilMoisture, &d.Inputs.Temperature, &d.Inputs.Humidity,
 		&d.Inputs.RainfallForecastMM, &d.Inputs.WindSpeed, &d.Inputs.CropType,
 		&d.Inputs.GrowthStage, &d.Inputs.EvapotranspirationMM,
@@ -909,7 +909,7 @@ func scanDecision(row pgx.Row) (*domain.IrrigationDecision, error) {
 // =========================================================================
 
 func (r *irrigationRepository) CreateWaterUsageLog(ctx context.Context, wl *domain.WaterUsageLog) (*domain.WaterUsageLog, error) {
-	wl.UUID = ulid.NewString()
+	wl.ID = ulid.NewString()
 	if wl.RecordedAt.IsZero() {
 		wl.RecordedAt = time.Now()
 	}
@@ -921,7 +921,7 @@ func (r *irrigationRepository) CreateWaterUsageLog(ctx context.Context, wl *doma
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		RETURNING id, tenant_id, zone_id, controller_id, water_liters,
 			recorded_at, period_start, period_end, created_by, created_at`,
-		wl.UUID, wl.TenantID, wl.ZoneID, wl.ControllerID, wl.WaterLiters,
+		wl.ID, wl.TenantID, wl.ZoneID, wl.ControllerID, wl.WaterLiters,
 		wl.RecordedAt, wl.PeriodStart, wl.PeriodEnd, wl.CreatedBy,
 	)
 
@@ -977,7 +977,7 @@ func (r *irrigationRepository) SumWaterUsageByZone(ctx context.Context, zoneID s
 func scanWaterUsageLog(row pgx.Row) (*domain.WaterUsageLog, error) {
 	wl := &domain.WaterUsageLog{}
 	err := row.Scan(
-		&wl.UUID, &wl.TenantID, &wl.ZoneID, &wl.ControllerID,
+		&wl.ID, &wl.TenantID, &wl.ZoneID, &wl.ControllerID,
 		&wl.WaterLiters, &wl.RecordedAt, &wl.PeriodStart, &wl.PeriodEnd,
 		&wl.CreatedBy, &wl.CreatedAt,
 	)

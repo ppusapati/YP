@@ -1,0 +1,870 @@
+openapi: 3.0.3
+info:
+  title: Farm Service API
+  description: |
+    Farm management operations for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Farms
+    description: Farm CRUD operations
+  - name: Boundaries
+    description: Farm boundary management
+  - name: Ownership
+    description: Farm ownership transfer
+  - name: ManagementUnits
+    description: Farm management unit operations
+
+paths:
+  /agriculture.farm.v1.FarmService/CreateFarm:
+    post:
+      tags: [Farms]
+      summary: Create a new farm
+      operationId: CreateFarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFarmRequest'
+      responses:
+        '200':
+          description: Farm created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateFarmResponse'
+
+  /agriculture.farm.v1.FarmService/GetFarm:
+    post:
+      tags: [Farms]
+      summary: Get a farm by ID
+      operationId: GetFarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFarmRequest'
+      responses:
+        '200':
+          description: Farm retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFarmResponse'
+
+  /agriculture.farm.v1.FarmService/ListFarms:
+    post:
+      tags: [Farms]
+      summary: List farms with filtering and pagination
+      operationId: ListFarms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListFarmsRequest'
+      responses:
+        '200':
+          description: Farms listed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListFarmsResponse'
+
+  /agriculture.farm.v1.FarmService/UpdateFarm:
+    post:
+      tags: [Farms]
+      summary: Update a farm
+      operationId: UpdateFarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFarmRequest'
+      responses:
+        '200':
+          description: Farm updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateFarmResponse'
+
+  /agriculture.farm.v1.FarmService/DeleteFarm:
+    post:
+      tags: [Farms]
+      summary: Delete a farm
+      operationId: DeleteFarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteFarmRequest'
+      responses:
+        '200':
+          description: Farm deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteFarmResponse'
+
+  /agriculture.farm.v1.FarmService/SetFarmBoundary:
+    post:
+      tags: [Boundaries]
+      summary: Set or update a farm's geographic boundary
+      operationId: SetFarmBoundary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetFarmBoundaryRequest'
+      responses:
+        '200':
+          description: Boundary set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetFarmBoundaryResponse'
+
+  /agriculture.farm.v1.FarmService/GetFarmBoundary:
+    post:
+      tags: [Boundaries]
+      summary: Get a farm's geographic boundary
+      operationId: GetFarmBoundary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFarmBoundaryRequest'
+      responses:
+        '200':
+          description: Boundary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFarmBoundaryResponse'
+
+  /agriculture.farm.v1.FarmService/TransferOwnership:
+    post:
+      tags: [Ownership]
+      summary: Transfer farm ownership between users
+      operationId: TransferOwnership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferOwnershipRequest'
+      responses:
+        '200':
+          description: Ownership transferred successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferOwnershipResponse'
+
+  /agriculture.farm.v1.FarmService/CreateManagementUnit:
+    post:
+      tags: [ManagementUnits]
+      summary: Create a management unit within a farm
+      operationId: CreateManagementUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateManagementUnitRequest'
+      responses:
+        '200':
+          description: Management unit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateManagementUnitResponse'
+
+  /agriculture.farm.v1.FarmService/GetManagementUnit:
+    post:
+      tags: [ManagementUnits]
+      summary: Get a management unit by ID
+      operationId: GetManagementUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetManagementUnitRequest'
+      responses:
+        '200':
+          description: Management unit retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetManagementUnitResponse'
+
+  /agriculture.farm.v1.FarmService/ListManagementUnits:
+    post:
+      tags: [ManagementUnits]
+      summary: List management units for a farm
+      operationId: ListManagementUnits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListManagementUnitsRequest'
+      responses:
+        '200':
+          description: Management units listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListManagementUnitsResponse'
+
+  /agriculture.farm.v1.FarmService/UpdateManagementUnit:
+    post:
+      tags: [ManagementUnits]
+      summary: Update a management unit
+      operationId: UpdateManagementUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateManagementUnitRequest'
+      responses:
+        '200':
+          description: Management unit updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateManagementUnitResponse'
+
+  /agriculture.farm.v1.FarmService/DeleteManagementUnit:
+    post:
+      tags: [ManagementUnits]
+      summary: Delete a management unit
+      operationId: DeleteManagementUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteManagementUnitRequest'
+      responses:
+        '200':
+          description: Management unit deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteManagementUnitResponse'
+
+  /agriculture.farm.v1.FarmService/AssignFieldsToUnit:
+    post:
+      tags: [ManagementUnits]
+      summary: Assign fields to a management unit
+      operationId: AssignFieldsToUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignFieldsToUnitRequest'
+      responses:
+        '200':
+          description: Fields assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignFieldsToUnitResponse'
+
+  /agriculture.farm.v1.FarmService/RemoveFieldsFromUnit:
+    post:
+      tags: [ManagementUnits]
+      summary: Remove fields from a management unit
+      operationId: RemoveFieldsFromUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveFieldsFromUnitRequest'
+      responses:
+        '200':
+          description: Fields removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemoveFieldsFromUnitResponse'
+
+components:
+  schemas:
+    FarmLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        elevationMeters:
+          type: number
+          format: double
+
+    FarmBoundary:
+      type: object
+      properties:
+        id:
+          type: string
+        farmId:
+          type: string
+        geojson:
+          type: string
+          description: GeoJSON polygon representation of the farm boundary
+        areaHectares:
+          type: number
+          format: double
+        perimeterMeters:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FarmOwner:
+      type: object
+      properties:
+        id:
+          type: string
+        farmId:
+          type: string
+        userId:
+          type: string
+        ownerName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        isPrimary:
+          type: boolean
+        ownershipPercentage:
+          type: number
+          format: double
+        acquiredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FarmType:
+      type: string
+      enum:
+        - FARM_TYPE_UNSPECIFIED
+        - FARM_TYPE_CROP
+        - FARM_TYPE_LIVESTOCK
+        - FARM_TYPE_MIXED
+        - FARM_TYPE_AQUACULTURE
+
+    FarmStatus:
+      type: string
+      enum:
+        - FARM_STATUS_UNSPECIFIED
+        - FARM_STATUS_ACTIVE
+        - FARM_STATUS_INACTIVE
+        - FARM_STATUS_PENDING
+        - FARM_STATUS_SUSPENDED
+        - FARM_STATUS_ARCHIVED
+
+    SoilType:
+      type: string
+      enum:
+        - SOIL_TYPE_UNSPECIFIED
+        - SOIL_TYPE_CLAY
+        - SOIL_TYPE_SANDY
+        - SOIL_TYPE_LOAMY
+        - SOIL_TYPE_SILT
+        - SOIL_TYPE_PEAT
+        - SOIL_TYPE_CHALKY
+        - SOIL_TYPE_LATERITE
+        - SOIL_TYPE_BLACK
+        - SOIL_TYPE_RED
+        - SOIL_TYPE_ALLUVIAL
+
+    ClimateZone:
+      type: string
+      enum:
+        - CLIMATE_ZONE_UNSPECIFIED
+        - CLIMATE_ZONE_TROPICAL
+        - CLIMATE_ZONE_SUBTROPICAL
+        - CLIMATE_ZONE_ARID
+        - CLIMATE_ZONE_SEMIARID
+        - CLIMATE_ZONE_TEMPERATE
+        - CLIMATE_ZONE_CONTINENTAL
+        - CLIMATE_ZONE_POLAR
+        - CLIMATE_ZONE_MEDITERRANEAN
+        - CLIMATE_ZONE_MONSOON
+
+    Farm:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        totalAreaHectares:
+          type: number
+          format: double
+        location:
+          $ref: '#/components/schemas/FarmLocation'
+        farmType:
+          $ref: '#/components/schemas/FarmType'
+        status:
+          $ref: '#/components/schemas/FarmStatus'
+        soilType:
+          $ref: '#/components/schemas/SoilType'
+        climateZone:
+          $ref: '#/components/schemas/ClimateZone'
+        elevationMeters:
+          type: number
+          format: double
+        address:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        boundary:
+          $ref: '#/components/schemas/FarmBoundary'
+        owners:
+          type: array
+          items:
+            $ref: '#/components/schemas/FarmOwner'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        version:
+          type: string
+          format: int64
+        createdBy:
+          type: string
+        updatedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ManagementUnitType:
+      type: string
+      enum:
+        - UNIT_TYPE_UNSPECIFIED
+        - UNIT_TYPE_ZONE
+        - UNIT_TYPE_BLOCK
+        - UNIT_TYPE_SECTION
+        - UNIT_TYPE_PLOT
+
+    ManagementUnitStatus:
+      type: string
+      enum:
+        - UNIT_STATUS_UNSPECIFIED
+        - UNIT_STATUS_ACTIVE
+        - UNIT_STATUS_INACTIVE
+        - UNIT_STATUS_ARCHIVED
+
+    ManagementUnit:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        farmId:
+          type: string
+        parentUnitId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        unitType:
+          $ref: '#/components/schemas/ManagementUnitType'
+        areaHectares:
+          type: number
+          format: double
+        boundaryGeojson:
+          type: string
+        managerId:
+          type: string
+        status:
+          $ref: '#/components/schemas/ManagementUnitStatus'
+        fieldIds:
+          type: array
+          items:
+            type: string
+        version:
+          type: string
+          format: int64
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateFarmRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        totalAreaHectares:
+          type: number
+          format: double
+        location:
+          $ref: '#/components/schemas/FarmLocation'
+        farmType:
+          $ref: '#/components/schemas/FarmType'
+        soilType:
+          $ref: '#/components/schemas/SoilType'
+        climateZone:
+          $ref: '#/components/schemas/ClimateZone'
+        elevationMeters:
+          type: number
+          format: double
+        address:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        owner:
+          $ref: '#/components/schemas/FarmOwner'
+
+    CreateFarmResponse:
+      type: object
+      properties:
+        farm:
+          $ref: '#/components/schemas/Farm'
+
+    GetFarmRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetFarmResponse:
+      type: object
+      properties:
+        farm:
+          $ref: '#/components/schemas/Farm'
+
+    ListFarmsRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+        farmType:
+          $ref: '#/components/schemas/FarmType'
+        status:
+          $ref: '#/components/schemas/FarmStatus'
+        region:
+          type: string
+        country:
+          type: string
+        climateZone:
+          $ref: '#/components/schemas/ClimateZone'
+        search:
+          type: string
+        orderBy:
+          type: string
+
+    ListFarmsResponse:
+      type: object
+      properties:
+        farms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Farm'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    UpdateFarmRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        totalAreaHectares:
+          type: number
+          format: double
+        location:
+          $ref: '#/components/schemas/FarmLocation'
+        farmType:
+          $ref: '#/components/schemas/FarmType'
+        status:
+          $ref: '#/components/schemas/FarmStatus'
+        soilType:
+          $ref: '#/components/schemas/SoilType'
+        climateZone:
+          $ref: '#/components/schemas/ClimateZone'
+        elevationMeters:
+          type: number
+          format: double
+        address:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        updateMask:
+          type: string
+          description: FieldMask specifying which fields to update
+
+    UpdateFarmResponse:
+      type: object
+      properties:
+        farm:
+          $ref: '#/components/schemas/Farm'
+
+    DeleteFarmRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    DeleteFarmResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+    SetFarmBoundaryRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        geojson:
+          type: string
+
+    SetFarmBoundaryResponse:
+      type: object
+      properties:
+        boundary:
+          $ref: '#/components/schemas/FarmBoundary'
+
+    GetFarmBoundaryRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+
+    GetFarmBoundaryResponse:
+      type: object
+      properties:
+        boundary:
+          $ref: '#/components/schemas/FarmBoundary'
+
+    TransferOwnershipRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        toOwnerName:
+          type: string
+        toEmail:
+          type: string
+        toPhone:
+          type: string
+        ownershipPercentage:
+          type: number
+          format: double
+
+    TransferOwnershipResponse:
+      type: object
+      properties:
+        farm:
+          $ref: '#/components/schemas/Farm'
+
+    CreateManagementUnitRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        parentUnitId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        unitType:
+          $ref: '#/components/schemas/ManagementUnitType'
+        areaHectares:
+          type: number
+          format: double
+        boundaryGeojson:
+          type: string
+        managerId:
+          type: string
+        fieldIds:
+          type: array
+          items:
+            type: string
+
+    CreateManagementUnitResponse:
+      type: object
+      properties:
+        unit:
+          $ref: '#/components/schemas/ManagementUnit'
+
+    GetManagementUnitRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetManagementUnitResponse:
+      type: object
+      properties:
+        unit:
+          $ref: '#/components/schemas/ManagementUnit'
+
+    ListManagementUnitsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListManagementUnitsResponse:
+      type: object
+      properties:
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagementUnit'
+        totalCount:
+          type: integer
+          format: int32
+
+    UpdateManagementUnitRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/ManagementUnitStatus'
+        managerId:
+          type: string
+        areaHectares:
+          type: number
+          format: double
+        boundaryGeojson:
+          type: string
+        updateMask:
+          type: string
+          description: FieldMask specifying which fields to update
+
+    UpdateManagementUnitResponse:
+      type: object
+      properties:
+        unit:
+          $ref: '#/components/schemas/ManagementUnit'
+
+    DeleteManagementUnitRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    DeleteManagementUnitResponse:
+      type: object
+
+    AssignFieldsToUnitRequest:
+      type: object
+      properties:
+        managementUnitId:
+          type: string
+        fieldIds:
+          type: array
+          items:
+            type: string
+
+    AssignFieldsToUnitResponse:
+      type: object
+      properties:
+        unit:
+          $ref: '#/components/schemas/ManagementUnit'
+
+    RemoveFieldsFromUnitRequest:
+      type: object
+      properties:
+        managementUnitId:
+          type: string
+        fieldIds:
+          type: array
+          items:
+            type: string
+
+    RemoveFieldsFromUnitResponse:
+      type: object
+      properties:
+        unit:
+          $ref: '#/components/schemas/ManagementUnit'

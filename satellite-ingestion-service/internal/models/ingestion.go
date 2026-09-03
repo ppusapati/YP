@@ -102,13 +102,13 @@ type IngestionTask struct {
 }
 
 // GetID returns the primary key of the ingestion task.
-func (t *IngestionTask) GetID() int64 {
+func (t *IngestionTask) GetID() string {
 	return t.ID
 }
 
 // GetUUID returns the ULID identifier of the ingestion task.
 func (t *IngestionTask) GetUUID() string {
-	return t.UUID
+	return t.ID
 }
 
 // ListIngestionTasksParams holds the filter and pagination parameters for listing ingestion tasks.

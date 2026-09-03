@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"p9e.in/samavaya/packages/grpcdial"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -24,7 +24,7 @@ type AIClient struct {
 
 func NewAIClient(addr string, logger *p9log.Helper) (*AIClient, error) {
 	conn, err := grpc.NewClient(addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcdial.TransportCredentials(),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
 			Timeout:             10 * time.Second,

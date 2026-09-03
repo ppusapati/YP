@@ -27,7 +27,10 @@ func NewFarmClient(baseURL string, httpClient *http.Client, opts ...connect.Clie
 func (c *farmClient) FarmExists(ctx context.Context, farmUUID, tenantID string) (bool, error) {
 	resp, err := c.client.GetFarm(ctx, connect.NewRequest(&farmv1.GetFarmRequest{Id: farmUUID}))
 	if err != nil {
-		return false, nil // not found = doesn't exist
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetFarm() != nil, nil
 }

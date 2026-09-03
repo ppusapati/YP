@@ -118,7 +118,7 @@ func (s *vegetationIndexService) ComputeIndices(ctx context.Context, processingJ
 	s.emitComputeEvent(ctx, EventTypeComputeStarted, createdTask, nil)
 
 	s.log.Infow("msg", "compute task created",
-		"uuid", createdTask.UUID,
+		"uuid", createdTask.ID,
 		"processing_job_id", processingJobID,
 		"farm_id", farmID,
 		"index_types_count", len(indexTypes),
@@ -218,12 +218,12 @@ func (s *vegetationIndexService) emitComputeEvent(ctx context.Context, eventType
 
 	aggregateID := ""
 	if task != nil {
-		aggregateID = task.UUID
+		aggregateID = task.ID
 	}
 
 	data := make(map[string]interface{})
 	if task != nil {
-		data["compute_task_id"] = task.UUID
+		data["compute_task_id"] = task.ID
 		data["tenant_id"] = task.TenantID
 		data["processing_job_id"] = task.ProcessingJobUUID
 		data["farm_id"] = task.FarmUUID

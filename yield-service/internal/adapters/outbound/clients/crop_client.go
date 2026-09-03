@@ -27,7 +27,10 @@ func NewCropClient(baseURL string, httpClient *http.Client, opts ...connect.Clie
 func (c *cropClient) CropExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	resp, err := c.client.GetCrop(ctx, connect.NewRequest(&cropv1.GetCropRequest{Id: uuid}))
 	if err != nil {
-		return false, nil
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetCrop() != nil, nil
 }

@@ -137,7 +137,7 @@ const predictionColumns = `id, tenant_id, COALESCE(farm_id,''), COALESCE(field_i
 	recommended_treatments, version, COALESCE(created_by,''), created_at, updated_at`
 
 func (r *pestRepository) CreatePrediction(ctx context.Context, p *domain.PestPrediction) (*domain.PestPrediction, error) {
-	p.UUID = ulid.NewString()
+	p.ID = ulid.NewString()
 
 	treatmentsJSON := json.RawMessage("[]")
 	if len(p.RecommendedTreatments) > 0 {
@@ -167,7 +167,7 @@ func (r *pestRepository) CreatePrediction(ctx context.Context, p *domain.PestPre
 			$18,$19,$20,$21,
 			$22,$23
 		) RETURNING `+predictionColumns,
-		p.UUID, p.TenantID, p.FarmID, p.FieldID, p.PestSpeciesUUID,
+		p.ID, p.TenantID, p.FarmID, p.FieldID, p.PestSpeciesUUID,
 		p.PredictionDate, riskLevelToDB(p.RiskLevel), p.RiskScore, p.ConfidencePct,
 		p.CropType, gsStr, p.GeographicRiskFactor, p.HistoricalOccurrenceCount,
 		p.TemperatureCelsius, p.HumidityPct, p.RainfallMm, p.WindSpeedKmh,
@@ -278,7 +278,7 @@ func scanPrediction(row pgx.Row) (*domain.PestPrediction, error) {
 	var treatmentsRaw []byte
 
 	err := row.Scan(
-		&p.UUID, &p.TenantID, &p.FarmID, &p.FieldID,
+		&p.ID, &p.TenantID, &p.FarmID, &p.FieldID,
 		&p.PestSpeciesUUID, &predictionDate, &riskLevelStr, &p.RiskScore, &p.ConfidencePct,
 		&p.CropType, &growthStageStr, &p.GeographicRiskFactor, &p.HistoricalOccurrenceCount,
 		&p.TemperatureCelsius, &p.HumidityPct, &p.RainfallMm, &p.WindSpeedKmh,
@@ -313,7 +313,7 @@ func scanPredictionWithCount(rows pgx.Rows) (*domain.PestPrediction, int32, erro
 	var fullCount int32
 
 	err := rows.Scan(
-		&p.UUID, &p.TenantID, &p.FarmID, &p.FieldID,
+		&p.ID, &p.TenantID, &p.FarmID, &p.FieldID,
 		&p.PestSpeciesUUID, &predictionDate, &riskLevelStr, &p.RiskScore, &p.ConfidencePct,
 		&p.CropType, &growthStageStr, &p.GeographicRiskFactor, &p.HistoricalOccurrenceCount,
 		&p.TemperatureCelsius, &p.HumidityPct, &p.RainfallMm, &p.WindSpeedKmh,
@@ -350,7 +350,7 @@ const alertColumns = `id, tenant_id, COALESCE(prediction_id,''), COALESCE(farm_i
 	version, created_at, updated_at`
 
 func (r *pestRepository) CreateAlert(ctx context.Context, a *domain.PestAlert) (*domain.PestAlert, error) {
-	a.UUID = ulid.NewString()
+	a.ID = ulid.NewString()
 
 	row := r.queryRow(ctx,
 		`INSERT INTO pest_alerts (
@@ -358,7 +358,7 @@ func (r *pestRepository) CreateAlert(ctx context.Context, a *domain.PestAlert) (
 			risk_level, status, title, message
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		RETURNING `+alertColumns,
-		a.UUID, a.TenantID, a.PredictionUUID, a.FarmID, a.FieldID, a.PestSpeciesUUID,
+		a.ID, a.TenantID, a.PredictionUUID, a.FarmID, a.FieldID, a.PestSpeciesUUID,
 		riskLevelToDB(a.RiskLevel), alertStatusToDB(a.Status), a.Title, a.Message,
 	)
 
@@ -470,7 +470,7 @@ func scanAlert(row pgx.Row) (*domain.PestAlert, error) {
 	var updatedAt *time.Time
 
 	err := row.Scan(
-		&a.UUID, &a.TenantID, &a.PredictionUUID, &a.FarmID,
+		&a.ID, &a.TenantID, &a.PredictionUUID, &a.FarmID,
 		&a.FieldID, &a.PestSpeciesUUID, &riskLevelStr, &statusStr,
 		&a.Title, &a.Message, &a.AcknowledgedAt, &a.AcknowledgedBy,
 		&a.Version, &createdAt, &updatedAt,
@@ -495,7 +495,7 @@ func scanAlertWithCount(rows pgx.Rows) (*domain.PestAlert, int32, error) {
 	var fullCount int32
 
 	err := rows.Scan(
-		&a.UUID, &a.TenantID, &a.PredictionUUID, &a.FarmID,
+		&a.ID, &a.TenantID, &a.PredictionUUID, &a.FarmID,
 		&a.FieldID, &a.PestSpeciesUUID, &riskLevelStr, &statusStr,
 		&a.Title, &a.Message, &a.AcknowledgedAt, &a.AcknowledgedBy,
 		&a.Version, &createdAt, &updatedAt,
@@ -524,7 +524,7 @@ const observationColumns = `id, tenant_id, COALESCE(farm_id,''), COALESCE(field_
 	version, created_at, updated_at`
 
 func (r *pestRepository) CreateObservation(ctx context.Context, o *domain.PestObservation) (*domain.PestObservation, error) {
-	o.UUID = ulid.NewString()
+	o.ID = ulid.NewString()
 
 	row := r.queryRow(ctx,
 		`INSERT INTO pest_observations (
@@ -533,7 +533,7 @@ func (r *pestRepository) CreateObservation(ctx context.Context, o *domain.PestOb
 			latitude, longitude, notes, observed_by, observed_at
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 		RETURNING `+observationColumns,
-		o.UUID, o.TenantID, o.FarmID, o.FieldID, o.PestSpeciesUUID,
+		o.ID, o.TenantID, o.FarmID, o.FieldID, o.PestSpeciesUUID,
 		o.PestCount, damageLevelToDB(o.DamageLevel), o.TrapType, o.ImageURL,
 		o.Latitude, o.Longitude, o.Notes, o.ObservedBy, o.ObservedAt,
 	)
@@ -599,7 +599,7 @@ func scanObservation(row pgx.Row) (*domain.PestObservation, error) {
 	var updatedAt *time.Time
 
 	err := row.Scan(
-		&o.UUID, &o.TenantID, &o.FarmID, &o.FieldID,
+		&o.ID, &o.TenantID, &o.FarmID, &o.FieldID,
 		&o.PestSpeciesUUID, &o.PestCount, &damageLevelStr,
 		&o.TrapType, &o.ImageURL, &o.Latitude, &o.Longitude, &o.Notes,
 		&o.ObservedBy, &observedAt,
@@ -625,7 +625,7 @@ func scanObservationWithCount(rows pgx.Rows) (*domain.PestObservation, int32, er
 	var fullCount int32
 
 	err := rows.Scan(
-		&o.UUID, &o.TenantID, &o.FarmID, &o.FieldID,
+		&o.ID, &o.TenantID, &o.FarmID, &o.FieldID,
 		&o.PestSpeciesUUID, &o.PestCount, &damageLevelStr,
 		&o.TrapType, &o.ImageURL, &o.Latitude, &o.Longitude, &o.Notes,
 		&o.ObservedBy, &observedAt,
@@ -721,7 +721,7 @@ func scanSpecies(row pgx.Row) (*domain.PestSpecies, error) {
 	var affectedCrops, favorableConditions []string
 
 	err := row.Scan(
-		&s.UUID, &s.TenantID, &s.CommonName, &s.ScientificName,
+		&s.ID, &s.TenantID, &s.CommonName, &s.ScientificName,
 		&s.Family, &s.Description, &affectedCrops, &favorableConditions,
 		&s.ImageURL, &s.Version, &createdAt, &updatedAt,
 	)
@@ -752,7 +752,7 @@ func scanSpeciesWithCount(rows pgx.Rows) (*domain.PestSpecies, int32, error) {
 	var fullCount int32
 
 	err := rows.Scan(
-		&s.UUID, &s.TenantID, &s.CommonName, &s.ScientificName,
+		&s.ID, &s.TenantID, &s.CommonName, &s.ScientificName,
 		&s.Family, &s.Description, &affectedCrops, &favorableConditions,
 		&s.ImageURL, &s.Version, &createdAt, &updatedAt,
 		&fullCount,
@@ -811,7 +811,7 @@ func scanRiskMap(row pgx.Row) (*domain.PestRiskMap, error) {
 	var validFrom, validUntil time.Time
 
 	err := row.Scan(
-		&m.UUID, &m.TenantID, &m.PestSpeciesUUID, &m.Region,
+		&m.ID, &m.TenantID, &m.PestSpeciesUUID, &m.Region,
 		&riskLevelStr, &m.GeoJSON, &validFrom, &validUntil,
 		&m.Version, &createdAt, &updatedAt,
 	)

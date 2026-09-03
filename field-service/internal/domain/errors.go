@@ -3,9 +3,9 @@ package domain
 import "fmt"
 
 // ErrFieldNotFound is returned when a field cannot be located.
-type ErrFieldNotFound struct{ UUID string }
+type ErrFieldNotFound struct{ ID string }
 
-func (e ErrFieldNotFound) Error() string { return fmt.Sprintf("field not found: %s", e.UUID) }
+func (e ErrFieldNotFound) Error() string { return fmt.Sprintf("field not found: %s", e.ID) }
 
 // ErrFieldNameExists is returned when a duplicate field name exists in the same farm.
 type ErrFieldNameExists struct {
@@ -18,6 +18,6 @@ func (e ErrFieldNameExists) Error() string {
 }
 
 // ErrFarmNotFound is returned when the referenced farm does not exist.
-type ErrFarmNotFound struct{ UUID string }
+type ErrFarmNotFound struct{ ID string }
 
-func (e ErrFarmNotFound) Error() string { return fmt.Sprintf("farm not found: %s", e.UUID) }
+func (e ErrFarmNotFound) Error() string { return fmt.Sprintf("farm not found: %s", e.ID) }

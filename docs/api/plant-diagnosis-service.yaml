@@ -1,0 +1,350 @@
+openapi: 3.0.3
+info:
+  title: Plant Diagnosis Service API
+  description: |
+    AI-powered plant diagnosis including disease detection, nutrient deficiency analysis,
+    pest damage detection, species identification, and treatment planning
+    for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8088
+    description: Local development
+tags:
+  - name: Diagnosis
+    description: Plant diagnosis submission and retrieval
+  - name: Diseases
+    description: Disease information catalog
+  - name: Treatments
+    description: Treatment plan generation
+  - name: Detection
+    description: AI-powered detection endpoints
+
+paths:
+  /agriculture.diagnosis.v1.PlantDiagnosisService/SubmitDiagnosis:
+    post:
+      tags: [Diagnosis]
+      summary: Submit a new plant diagnosis request with images
+      operationId: SubmitDiagnosis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                plantSpeciesId:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      imageUrl:
+                        type: string
+                      imageType:
+                        type: string
+                        enum: [IMAGE_TYPE_LEAF, IMAGE_TYPE_STEM, IMAGE_TYPE_FRUIT, IMAGE_TYPE_WHOLE_PLANT, IMAGE_TYPE_ROOT]
+                      mimeType:
+                        type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Diagnosis submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diagnosis:
+                    type: object
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/GetDiagnosis:
+    post:
+      tags: [Diagnosis]
+      summary: Get a diagnosis by ID
+      operationId: GetDiagnosis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Diagnosis retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diagnosis:
+                    type: object
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/ListDiagnoses:
+    post:
+      tags: [Diagnosis]
+      summary: List diagnoses with filtering
+      operationId: ListDiagnoses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                status:
+                  type: string
+                  enum: [DIAGNOSIS_STATUS_PENDING, DIAGNOSIS_STATUS_ANALYZING, DIAGNOSIS_STATUS_COMPLETED, DIAGNOSIS_STATUS_FAILED]
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+                sortBy:
+                  type: string
+                sortDesc:
+                  type: boolean
+      responses:
+        '200':
+          description: Diagnoses listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diagnoses:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/GetDiseaseInfo:
+    post:
+      tags: [Diseases]
+      summary: Get disease information by ID
+      operationId: GetDiseaseInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                diseaseId:
+                  type: string
+      responses:
+        '200':
+          description: Disease info retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disease:
+                    type: object
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/ListDiseases:
+    post:
+      tags: [Diseases]
+      summary: List all known diseases
+      operationId: ListDiseases
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                searchTerm:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+      responses:
+        '200':
+          description: Diseases listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diseases:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/GetTreatmentPlan:
+    post:
+      tags: [Treatments]
+      summary: Get treatment plan for a diagnosis
+      operationId: GetTreatmentPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                diagnosisId:
+                  type: string
+      responses:
+        '200':
+          description: Treatment plan retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  treatmentPlan:
+                    type: object
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/IdentifySpecies:
+    post:
+      tags: [Detection]
+      summary: Identify plant species from images
+      operationId: IdentifySpecies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      imageUrl:
+                        type: string
+                      imageType:
+                        type: string
+                      mimeType:
+                        type: string
+      responses:
+        '200':
+          description: Species identified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  species:
+                    type: array
+                    items:
+                      type: object
+                  aiModelVersion:
+                    type: string
+                  processingTimeMs:
+                    type: string
+                    format: int64
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/DetectNutrientDeficiency:
+    post:
+      tags: [Detection]
+      summary: Detect nutrient deficiencies from plant images
+      operationId: DetectNutrientDeficiency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plantSpeciesId:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      imageUrl:
+                        type: string
+                      imageType:
+                        type: string
+                      mimeType:
+                        type: string
+      responses:
+        '200':
+          description: Deficiencies detected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deficiencies:
+                    type: array
+                    items:
+                      type: object
+                  aiModelVersion:
+                    type: string
+                  processingTimeMs:
+                    type: string
+                    format: int64
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/DetectPestDamage:
+    post:
+      tags: [Detection]
+      summary: Detect pest damage from plant images
+      operationId: DetectPestDamage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plantSpeciesId:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      imageUrl:
+                        type: string
+                      imageType:
+                        type: string
+                      mimeType:
+                        type: string
+      responses:
+        '200':
+          description: Pest damage detected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pests:
+                    type: array
+                    items:
+                      type: object
+                  aiModelVersion:
+                    type: string
+                  processingTimeMs:
+                    type: string
+                    format: int64

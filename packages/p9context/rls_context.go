@@ -40,19 +40,23 @@ func FromRLSScope(ctx context.Context) *RLSScope {
 }
 
 // MustRLSScope retrieves the RLS scope from context.
-// Falls back to tenant ID from connection info if RLS scope not explicitly set.
+// Falls back to authenticated user context if RLS scope not explicitly set.
 // Returns an empty scope if neither is available.
 func MustRLSScope(ctx context.Context) RLSScope {
 	if scope := FromRLSScope(ctx); scope != nil {
 		return *scope
 	}
 
-	// Fallback: try to get tenant ID from connection info
-	if tenantID := TenantID(ctx); tenantID != "" {
-		return RLSScope{TenantID: tenantID}
+	// Fallback: try to build scope from authenticated user context (JWT-validated)
+	if user, ok := FromUserContext(ctx); ok && user != nil && user.TenantID != "" {
+		return RLSScope{
+			TenantID:  user.TenantID,
+			CompanyID: user.CompanyID,
+			BranchID:  user.BranchID,
+		}
 	}
 
-	// Last resort: try from current tenant
+	// Last resort: try from current tenant (legacy path)
 	if tenant, ok := FromCurrentTenant(ctx); ok && tenant.GetId() != "" {
 		return RLSScope{TenantID: tenant.GetId()}
 	}

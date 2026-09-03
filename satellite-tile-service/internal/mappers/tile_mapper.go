@@ -127,7 +127,7 @@ func TilesetToProto(t *tilemodels.Tileset) *pb.Tileset {
 	}
 
 	tileset := &pb.Tileset{
-		Id:              t.UUID,
+		Id:              t.ID,
 		TenantId:        t.TenantID,
 		FarmId:          t.FarmID,
 		ProcessingJobId: t.ProcessingJobID,

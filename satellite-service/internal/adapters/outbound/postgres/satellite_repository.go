@@ -59,7 +59,7 @@ const imageColumns = `id, tenant_id, field_id, farm_id, satellite_provider,
 	image_url, processing_status, version, created_at, updated_at`
 
 func (r *satelliteRepository) CreateImage(ctx context.Context, img *domain.SatelliteImage) (*domain.SatelliteImage, error) {
-	img.UUID = ulid.NewString()
+	img.ID = ulid.NewString()
 
 	var bboxMinLat, bboxMinLon, bboxMaxLat, bboxMaxLon *float64
 	if img.Bbox != nil {
@@ -76,7 +76,7 @@ func (r *satelliteRepository) CreateImage(ctx context.Context, img *domain.Satel
 			image_url, processing_status)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		RETURNING `+imageColumns,
-		img.UUID, img.TenantID, img.FieldID, img.FarmID, string(img.SatelliteProvider),
+		img.ID, img.TenantID, img.FieldID, img.FarmID, string(img.SatelliteProvider),
 		img.AcquisitionDate, img.CloudCoverPct, img.ResolutionMeters, img.Bands,
 		bboxMinLat, bboxMinLon, bboxMaxLat, bboxMaxLon,
 		img.ImageURL, string(img.ProcessingStatus),
@@ -158,7 +158,7 @@ func scanImage(row pgx.Row) (*domain.SatelliteImage, error) {
 		imageURL                                       *string
 	)
 	err := row.Scan(
-		&img.UUID, &img.TenantID, &fieldID, &farmID,
+		&img.ID, &img.TenantID, &fieldID, &farmID,
 		&provider, &acquisitionDate,
 		&cloudCoverPct, &resolutionMeters, &img.Bands,
 		&bboxMinLat, &bboxMinLon, &bboxMaxLat, &bboxMaxLon,
@@ -208,14 +208,14 @@ const indexColumns = `id, tenant_id, image_id, field_id, index_type,
 	raster_url, computed_at, version, created_at, updated_at`
 
 func (r *satelliteRepository) CreateVegetationIndex(ctx context.Context, idx *domain.VegetationIndex) (*domain.VegetationIndex, error) {
-	idx.UUID = ulid.NewString()
+	idx.ID = ulid.NewString()
 
 	row := r.queryRow(ctx,
 		`INSERT INTO vegetation_indices (id, tenant_id, image_id, field_id, index_type,
 			min_value, max_value, mean_value, std_dev, raster_url, computed_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 		RETURNING `+indexColumns,
-		idx.UUID, idx.TenantID, idx.ImageID, idx.FieldID, string(idx.IndexType),
+		idx.ID, idx.TenantID, idx.ImageID, idx.FieldID, string(idx.IndexType),
 		idx.MinValue, idx.MaxValue, idx.MeanValue, idx.StdDev,
 		idx.RasterURL, idx.ComputedAt,
 	)
@@ -306,7 +306,7 @@ func scanVegetationIndex(row pgx.Row) (*domain.VegetationIndex, error) {
 		computedAt                     *time.Time
 	)
 	err := row.Scan(
-		&idx.UUID, &idx.TenantID, &imageID, &fieldID,
+		&idx.ID, &idx.TenantID, &imageID, &fieldID,
 		&indexType, &minVal, &maxVal, &meanVal, &stdDev,
 		&rasterURL, &computedAt, &idx.Version,
 		&idx.CreatedAt, &idx.UpdatedAt,
@@ -355,7 +355,7 @@ const alertColumns = `id, tenant_id, field_id, image_id,
 	detected_at, version, created_at, updated_at`
 
 func (r *satelliteRepository) CreateAlert(ctx context.Context, alert *domain.CropStressAlert) (*domain.CropStressAlert, error) {
-	alert.UUID = ulid.NewString()
+	alert.ID = ulid.NewString()
 
 	var abMinLat, abMinLon, abMaxLat, abMaxLon *float64
 	if alert.AffectedBbox != nil {
@@ -373,7 +373,7 @@ func (r *satelliteRepository) CreateAlert(ctx context.Context, alert *domain.Cro
 			detected_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		RETURNING `+alertColumns,
-		alert.UUID, alert.TenantID, alert.FieldID, alert.ImageID,
+		alert.ID, alert.TenantID, alert.FieldID, alert.ImageID,
 		alert.StressDetected, string(alert.StressType), alert.StressSeverity, alert.AffectedAreaPct,
 		alert.Description, alert.Recommendation,
 		abMinLat, abMinLon, abMaxLat, abMaxLon,
@@ -435,7 +435,7 @@ func scanAlert(row pgx.Row) (*domain.CropStressAlert, error) {
 		detectedAt                                     *time.Time
 	)
 	err := row.Scan(
-		&alert.UUID, &alert.TenantID, &fieldID, &imageID,
+		&alert.ID, &alert.TenantID, &fieldID, &imageID,
 		&alert.StressDetected, &stressType, &stressSeverity, &affectedAreaPct,
 		&description, &recommendation,
 		&abMinLat, &abMinLon, &abMaxLat, &abMaxLon,
@@ -486,14 +486,14 @@ const taskColumns = `id, tenant_id, field_id, task_type, status,
 	version, created_at, updated_at`
 
 func (r *satelliteRepository) CreateTask(ctx context.Context, task *domain.SatelliteTask) (*domain.SatelliteTask, error) {
-	task.UUID = ulid.NewString()
+	task.ID = ulid.NewString()
 
 	row := r.queryRow(ctx,
 		`INSERT INTO satellite_tasks (id, tenant_id, field_id, task_type, status,
 			input_image_id, result_id, error_message, retry_count)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		RETURNING `+taskColumns,
-		task.UUID, task.TenantID, task.FieldID, task.TaskType, string(task.Status),
+		task.ID, task.TenantID, task.FieldID, task.TaskType, string(task.Status),
 		task.InputImageID, task.ResultID, task.ErrorMessage, task.RetryCount,
 	)
 	return scanTask(row)
@@ -506,7 +506,7 @@ func scanTask(row pgx.Row) (*domain.SatelliteTask, error) {
 		fieldID, inputImageID, resultID, errorMessage *string
 	)
 	err := row.Scan(
-		&task.UUID, &task.TenantID, &fieldID, &task.TaskType, &status,
+		&task.ID, &task.TenantID, &fieldID, &task.TaskType, &status,
 		&inputImageID, &resultID, &errorMessage, &task.RetryCount,
 		&task.Version, &task.CreatedAt, &task.UpdatedAt,
 	)

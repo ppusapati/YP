@@ -67,6 +67,15 @@ func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.Sat
 	if image.FieldID == "" {
 		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
 	}
+	if image.CloudCoverPct < 0 || image.CloudCoverPct > 100 {
+		return nil, errors.BadRequest("INVALID_CLOUD_COVER", "cloud_cover_pct must be between 0 and 100")
+	}
+	if image.ResolutionMeters < 0 {
+		return nil, errors.BadRequest("INVALID_RESOLUTION", "resolution_meters must be non-negative")
+	}
+	if image.Bbox != nil && !image.Bbox.IsValid() {
+		return nil, errors.BadRequest("INVALID_BBOX", "bounding box coordinates are invalid")
+	}
 
 	image.TenantID = tenantID
 	image.ProcessingStatus = domain.ProcessingStatusPending
@@ -91,8 +100,8 @@ func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.Sat
 		FieldID:      image.FieldID,
 		TaskType:     "acquisition",
 		Status:       domain.ProcessingStatusPending,
-		InputImageID: createdImage.UUID,
-		ResultID:     createdImage.UUID,
+		InputImageID: createdImage.ID,
+		ResultID:     createdImage.ID,
 	}
 
 	createdTask, err := txRepo.CreateTask(ctx, task)
@@ -104,10 +113,10 @@ func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.Sat
 		return nil, errors.InternalServer("TX_COMMIT_FAILED", err.Error())
 	}
 
-	s.emitEvent(ctx, "agriculture.satellite.imagery.requested", createdImage.UUID, map[string]interface{}{
-		"image_id": createdImage.UUID, "task_id": createdTask.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.satellite.imagery.requested", createdImage.ID, map[string]interface{}{
+		"image_id": createdImage.ID, "task_id": createdTask.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "imagery requested", "image_id", createdImage.UUID, "task_id", createdTask.UUID)
+	s.log.Infow("msg", "imagery requested", "image_id", createdImage.ID, "task_id", createdTask.ID)
 
 	return createdTask, nil
 }
@@ -199,10 +208,10 @@ func (s *satelliteService) ComputeVegetationIndex(ctx context.Context, imageID, 
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.satellite.index.computed", created.UUID, map[string]interface{}{
-		"index_id": created.UUID, "image_id": imageID, "index_type": indexType, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.satellite.index.computed", created.ID, map[string]interface{}{
+		"index_id": created.ID, "image_id": imageID, "index_type": indexType, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "vegetation index computed", "index_id", created.UUID, "index_type", indexType)
+	s.log.Infow("msg", "vegetation index computed", "index_id", created.ID, "index_type", indexType)
 
 	return created, nil
 }
@@ -263,10 +272,10 @@ func (s *satelliteService) DetectCropStress(ctx context.Context, imageID, fieldI
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.satellite.stress.detected", created.UUID, map[string]interface{}{
-		"alert_id": created.UUID, "image_id": imageID, "stress_detected": false, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.satellite.stress.detected", created.ID, map[string]interface{}{
+		"alert_id": created.ID, "image_id": imageID, "stress_detected": false, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "crop stress detection completed", "alert_id", created.UUID, "stress_detected", false)
+	s.log.Infow("msg", "crop stress detection completed", "alert_id", created.ID, "stress_detected", false)
 
 	return created, nil
 }
@@ -328,7 +337,7 @@ func (s *satelliteService) GetTemporalAnalysis(ctx context.Context, params domai
 		ChangePct:      changePct,
 		Version:        1,
 	}
-	analysis.UUID = ulid.NewString()
+	analysis.ID = ulid.NewString()
 	analysis.CreatedAt = now
 
 	return analysis, nil

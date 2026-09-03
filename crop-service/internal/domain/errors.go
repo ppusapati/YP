@@ -3,10 +3,10 @@ package domain
 import "fmt"
 
 // ErrCropNotFound is returned when a crop cannot be located.
-type ErrCropNotFound struct{ UUID string }
+type ErrCropNotFound struct{ ID string }
 
 func (e ErrCropNotFound) Error() string {
-	return fmt.Sprintf("crop not found: %s", e.UUID)
+	return fmt.Sprintf("crop not found: %s", e.ID)
 }
 
 // ErrCropNameExists is returned when a duplicate name is detected.

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"p9e.in/samavaya/packages/grpcdial"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -30,7 +30,7 @@ type AIClient struct {
 // NewAIClient creates a new AI Gateway client for pest prediction.
 func NewAIClient(addr string, logger *p9log.Helper) (*AIClient, error) {
 	conn, err := grpc.NewClient(addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcdial.TransportCredentials(),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                10 * time.Second,
 			Timeout:             3 * time.Second,

@@ -3,10 +3,10 @@ package domain
 import "fmt"
 
 // ErrPestNotFound is returned when a pest cannot be located.
-type ErrPestNotFound struct{ UUID string }
+type ErrPestNotFound struct{ ID string }
 
 func (e ErrPestNotFound) Error() string {
-	return fmt.Sprintf("pest not found: %s", e.UUID)
+	return fmt.Sprintf("pest not found: %s", e.ID)
 }
 
 // ErrPestNameExists is returned when a duplicate name is detected.

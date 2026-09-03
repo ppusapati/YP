@@ -26,20 +26,17 @@ func ListEntity[
 	repoEntityFunc func(P) *models.SearchCriteria,
 	convertFunc func(T) ProtoT,
 	repoListFunc func(context.Context, *models.SearchCriteria) ([]T, error),
-) (*pbr.OperationResponse, []ProtoT, error) {
+) (*pbr.BaseResponse, []ProtoT, error) {
 	var zeroValue T
 	var zeroProtoT []ProtoT
 	entityType := hu.GetTypeName[T]()
 
-	// Start tracing
 	ctx, span := tracer.StartSpan(ctx, "List"+entityType)
 	defer span.End()
 	tracer.AddSpanTags(ctx, map[string]string{"operation": entityType + "_list"})
 
-	// Validate request
 	if err := hu.ValidateProto(req); err != nil {
-		errorResponse, err := hu.ErrorResponse(ctx, entityType+" validation failed", zeroValue, pbr.ErrorReason_VALIDATION_FAILED)
-
+		errorResponse, err := hu.ErrorResponse(ctx, entityType+" validation failed", zeroValue, pbr.CanonicalReason_VALIDATION_FAILED)
 		return errorResponse, zeroProtoT, err
 	}
 
@@ -50,17 +47,20 @@ func ListEntity[
 	recordMetric(metrics, entityType, "List", startTime, err == nil)
 
 	if err != nil {
-		errres, errs := hu.ErrorResponse(ctx, "Failed to list "+entityType, zeroValue, pbr.ErrorReason_INVALID_REQUEST)
+		errres, errs := hu.ErrorResponse(ctx, "Failed to list "+entityType, zeroValue, pbr.CanonicalReason_INVALID_REQUEST)
 		return errres, zeroProtoT, errs
 	}
 
-	// Convert entities to Protobuf
 	protoEntities := make([]ProtoT, len(entities))
 	for i, e := range entities {
 		protoEntities[i] = convertFunc(e)
 	}
 
-	r, e := hu.SuccessResponse(ctx, entityType+" listed successfully", models.Entity(entities[0]), pbr.SuccessReason_FOUND_SUCCESSFULLY)
+	if len(entities) == 0 {
+		r, e := hu.CreateSuccessResponse(ctx, pbr.CanonicalReason_FOUND_SUCCESSFULLY, entityType+" listed successfully", nil, "")
+		return r, protoEntities, e
+	}
 
+	r, e := hu.SuccessResponse(ctx, entityType+" listed successfully", entities[0], pbr.CanonicalReason_FOUND_SUCCESSFULLY)
 	return r, protoEntities, e
 }

@@ -27,7 +27,10 @@ func NewSensorClient(baseURL string, httpClient *http.Client, opts ...connect.Cl
 func (c *sensorClient) SensorExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	resp, err := c.client.GetSensor(ctx, connect.NewRequest(&sensorv1.GetSensorRequest{Id: uuid}))
 	if err != nil {
-		return false, nil
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetSensor() != nil, nil
 }

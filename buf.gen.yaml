@@ -1,5 +1,7 @@
 version: v2
 plugins:
+  # Pin exact versions to prevent drift between developers and CI.
+  # Update versions together with go.mod protobuf/connect dependencies.
   - local: protoc-gen-go
     out: .
     opt:

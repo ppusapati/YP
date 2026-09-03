@@ -13,6 +13,7 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
 
+	"p9e.in/samavaya/agriculture/yield-service/internal/ai"
 	"p9e.in/samavaya/agriculture/yield-service/internal/domain"
 	"p9e.in/samavaya/agriculture/yield-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/yield-service/internal/ports/outbound"
@@ -36,6 +37,7 @@ type yieldService struct {
 	farmClient       outbound.FarmClient
 	pool             *pgxpool.Pool
 	log              *p9log.Helper
+	aiClient         *ai.AIClient
 }
 
 // NewYieldService creates a new application-layer YieldService.
@@ -50,6 +52,7 @@ func NewYieldService(
 	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) inbound.YieldService {
 	return &yieldService{
 		repo:             repo,
@@ -62,6 +65,7 @@ func NewYieldService(
 		farmClient:       farmClient,
 		pool:             pool,
 		log:              p9log.NewHelper(p9log.With(log, "component", "YieldService")),
+		aiClient:         aiClient,
 	}
 }
 
@@ -99,23 +103,44 @@ func (s *yieldService) PredictYield(ctx context.Context, prediction *domain.Yiel
 	prediction.CreatedBy = userID
 	prediction.PredictionModelVersion = domain.PredictionModelVersion
 
-	// Compute predicted yield from factors and base crop yields.
-	baseYield, ok := domain.BaseCropYieldKgPerHectare[strings.ToLower(prediction.CropID)]
-	if !ok {
-		baseYield = domain.BaseCropYieldKgPerHectare["default"]
-	}
-
 	factors := prediction.GetYieldFactors()
-	weightedScore := factors.WeightedScore()
-	if weightedScore > 0 {
-		// Scale base yield by the weighted score (scores are 0-100, normalized to 0-1).
-		prediction.PredictedYieldKgPerHectare = baseYield * (weightedScore / 100.0)
-	} else {
-		prediction.PredictedYieldKgPerHectare = baseYield
+
+	if s.aiClient != nil {
+		requestID := p9context.RequestID(ctx)
+		if requestID == "" {
+			requestID = ulid.NewString()
+		}
+		aiFactors := ai.YieldFactorsInput{
+			SoilQualityScore:  factors.SoilQualityScore / 100.0,
+			WeatherScore:      factors.WeatherScore / 100.0,
+			IrrigationScore:   factors.IrrigationScore / 100.0,
+			PestPressureScore: factors.PestPressureScore / 100.0,
+			NutrientScore:     factors.NutrientScore / 100.0,
+			ManagementScore:   factors.ManagementScore / 100.0,
+		}
+		result, aiErr := s.aiClient.PredictYield(ctx, requestID, prediction.CropID, aiFactors, 1.0)
+		if aiErr != nil {
+			s.log.Warnw("msg", "AI PredictYield failed, falling back to formula", "error", aiErr)
+		} else {
+			prediction.PredictedYieldKgPerHectare = result.PredictedYieldKgPerHectare
+			prediction.PredictionConfidencePct = result.ConfidencePct
+			prediction.PredictionModelVersion = result.ModelVersion
+		}
 	}
 
-	// Compute confidence based on factor completeness.
-	prediction.PredictionConfidencePct = computeConfidence(factors)
+	if prediction.PredictedYieldKgPerHectare == 0 {
+		baseYield, ok := domain.BaseCropYieldKgPerHectare[strings.ToLower(prediction.CropID)]
+		if !ok {
+			baseYield = domain.BaseCropYieldKgPerHectare["default"]
+		}
+		weightedScore := factors.WeightedScore()
+		if weightedScore > 0 {
+			prediction.PredictedYieldKgPerHectare = baseYield * (weightedScore / 100.0)
+		} else {
+			prediction.PredictedYieldKgPerHectare = baseYield
+		}
+		prediction.PredictionConfidencePct = computeConfidence(factors)
+	}
 
 	prediction.Status = "PREDICTION_STATUS_COMPLETED"
 
@@ -124,14 +149,14 @@ func (s *yieldService) PredictYield(ctx context.Context, prediction *domain.Yiel
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.yield.prediction.created", created.UUID, map[string]interface{}{
-		"prediction_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.yield.prediction.created", created.ID, map[string]interface{}{
+		"prediction_id": created.ID,
 		"tenant_id":     tenantID,
 		"farm_id":       created.FarmID,
 		"field_id":      created.FieldID,
 		"crop_id":       created.CropID,
 	})
-	s.log.Infow("msg", "prediction created", "id", created.UUID)
+	s.log.Infow("msg", "prediction created", "id", created.ID)
 	return created, nil
 }
 
@@ -197,14 +222,14 @@ func (s *yieldService) RecordYield(ctx context.Context, record *domain.YieldReco
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.yield.record.created", created.UUID, map[string]interface{}{
-		"record_id": created.UUID,
+	s.emitEvent(ctx, "agriculture.yield.record.created", created.ID, map[string]interface{}{
+		"record_id": created.ID,
 		"tenant_id": tenantID,
 		"farm_id":   created.FarmID,
 		"field_id":  created.FieldID,
 		"crop_id":   created.CropID,
 	})
-	s.log.Infow("msg", "yield record created", "id", created.UUID)
+	s.log.Infow("msg", "yield record created", "id", created.ID)
 	return created, nil
 }
 
@@ -251,14 +276,14 @@ func (s *yieldService) CreateHarvestPlan(ctx context.Context, plan *domain.Harve
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.yield.harvest_plan.created", created.UUID, map[string]interface{}{
-		"plan_id":   created.UUID,
+	s.emitEvent(ctx, "agriculture.yield.harvest_plan.created", created.ID, map[string]interface{}{
+		"plan_id":   created.ID,
 		"tenant_id": tenantID,
 		"farm_id":   created.FarmID,
 		"field_id":  created.FieldID,
 		"crop_id":   created.CropID,
 	})
-	s.log.Infow("msg", "harvest plan created", "id", created.UUID)
+	s.log.Infow("msg", "harvest plan created", "id", created.ID)
 	return created, nil
 }
 

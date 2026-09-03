@@ -27,7 +27,10 @@ func NewYieldClient(baseURL string, httpClient *http.Client, opts ...connect.Cli
 func (c *yieldClient) YieldExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	resp, err := c.client.GetPrediction(ctx, connect.NewRequest(&yieldv1.GetPredictionRequest{Id: uuid}))
 	if err != nil {
-		return false, nil
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetPrediction() != nil, nil
 }

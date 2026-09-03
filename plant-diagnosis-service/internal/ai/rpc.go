@@ -17,6 +17,7 @@ const (
 	methodDetectPests               = "/agriculture.ai.v1.AIGatewayService/DetectPests"
 	methodDetectNutrientDeficiency  = "/agriculture.ai.v1.AIGatewayService/DetectNutrientDeficiency"
 	methodClassifyPlant             = "/agriculture.ai.v1.AIGatewayService/ClassifyPlant"
+	methodGeneratePrescription      = "/agriculture.ai.v1.AIGatewayService/GeneratePrescription"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,6 +208,38 @@ func callClassifyPlant(ctx context.Context, conn *grpc.ClientConn, requestID str
 	return parseSpeciesResult(respMsg), nil
 }
 
+// callGeneratePrescription performs the GeneratePrescription gRPC call.
+func callGeneratePrescription(ctx context.Context, conn *grpc.ClientConn, requestID string, input PrescriptionInput) (*PrescriptionResult, error) {
+	reqFields := map[string]*structpb.Value{
+		"request_id": structpb.NewStringValue(requestID),
+		"field_id":   structpb.NewStringValue(input.FieldID),
+	}
+
+	// Build crop requirements.
+	cropReqs, _ := structpb.NewStruct(map[string]interface{}{
+		"crop_type":          input.CropType,
+		"target_yield_kg_ha": input.TargetYieldKgHa,
+	})
+	reqFields["crop_requirements"] = structpb.NewStructValue(cropReqs)
+
+	// Prescription types.
+	typeValues := make([]*structpb.Value, 0, len(input.PrescriptionTypes))
+	for _, pt := range input.PrescriptionTypes {
+		typeValues = append(typeValues, structpb.NewStringValue(pt))
+	}
+	reqFields["prescription_types"] = structpb.NewListValue(&structpb.ListValue{Values: typeValues})
+
+	reqMsg := &structpb.Struct{Fields: reqFields}
+	respMsg := &structpb.Struct{}
+
+	err := conn.Invoke(ctx, methodGeneratePrescription, reqMsg, respMsg)
+	if err != nil {
+		return nil, fmt.Errorf("GeneratePrescription invoke failed: %w", err)
+	}
+
+	return parsePrescriptionResult(respMsg), nil
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Response parsers (structpb -> typed result)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -326,6 +359,63 @@ func parseSpeciesResult(resp *structpb.Struct) *SpeciesClassificationResult {
 			result.ScientificName = getStringField(ss, "scientific_name")
 			result.Family = getStringField(ss, "family")
 			result.Confidence = getNumberField(ss, "confidence")
+		}
+	}
+
+	return result
+}
+
+func parsePrescriptionResult(resp *structpb.Struct) *PrescriptionResult {
+	result := &PrescriptionResult{}
+	if resp == nil || resp.Fields == nil {
+		return result
+	}
+
+	result.RequestID = getStringField(resp, "request_id")
+	result.FieldID = getStringField(resp, "field_id")
+	result.EstimatedCostSavingsPct = getNumberField(resp, "estimated_cost_savings_pct")
+	result.EstimatedYieldGainPct = getNumberField(resp, "estimated_yield_gain_pct")
+	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
+
+	if rxList, ok := resp.Fields["prescriptions"]; ok {
+		if lv := rxList.GetListValue(); lv != nil {
+			for _, pv := range lv.Values {
+				if ps := pv.GetStructValue(); ps != nil {
+					pm := PrescriptionMap{
+						PrescriptionType: getStringField(ps, "prescription_type"),
+						Unit:             getStringField(ps, "unit"),
+						TotalAmount:      getNumberField(ps, "total_amount"),
+					}
+
+					if rateList, ok := ps.Fields["rates"]; ok {
+						if rlv := rateList.GetListValue(); rlv != nil {
+							for _, rv := range rlv.Values {
+								pm.Rates = append(pm.Rates, rv.GetNumberValue())
+							}
+						}
+					}
+
+					if zoneList, ok := ps.Fields["zone_summaries"]; ok {
+						if zlv := zoneList.GetListValue(); zlv != nil {
+							for _, zv := range zlv.Values {
+								if zs := zv.GetStructValue(); zs != nil {
+									pm.ZoneSummaries = append(pm.ZoneSummaries, PrescriptionZone{
+										Zone:        getStringField(zs, "zone"),
+										CellCount:   int32(getNumberField(zs, "cell_count")),
+										AreaHa:      getNumberField(zs, "area_ha"),
+										MeanRate:    getNumberField(zs, "mean_rate"),
+										MinRate:     getNumberField(zs, "min_rate"),
+										MaxRate:     getNumberField(zs, "max_rate"),
+										TotalAmount: getNumberField(zs, "total_amount"),
+									})
+								}
+							}
+						}
+					}
+
+					result.Prescriptions = append(result.Prescriptions, pm)
+				}
+			}
 		}
 	}
 

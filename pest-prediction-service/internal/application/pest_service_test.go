@@ -69,9 +69,8 @@ func newMockPestRepo() *mockPestRepo {
 }
 
 func (m *mockPestRepo) CreatePrediction(_ context.Context, p *domain.PestPrediction) (*domain.PestPrediction, error) {
-	p.UUID = "prediction-uuid-001"
-	p.ID = 1
-	m.predictions[p.UUID] = p
+	p.ID = "prediction-uuid-001"
+	m.predictions[p.ID] = p
 	return p, nil
 }
 
@@ -98,9 +97,8 @@ func (m *mockPestRepo) CountPredictionsBySpecies(_ context.Context, pestSpeciesI
 }
 
 func (m *mockPestRepo) CreateObservation(_ context.Context, o *domain.PestObservation) (*domain.PestObservation, error) {
-	o.UUID = "observation-uuid-001"
-	o.ID = 1
-	m.observations[o.UUID] = o
+	o.ID = "observation-uuid-001"
+	m.observations[o.ID] = o
 	return o, nil
 }
 
@@ -142,9 +140,8 @@ func (m *mockPestRepo) GetRiskMap(_ context.Context, pestSpeciesID, region, tena
 }
 
 func (m *mockPestRepo) CreateAlert(_ context.Context, a *domain.PestAlert) (*domain.PestAlert, error) {
-	a.UUID = "alert-uuid-001"
-	a.ID = 1
-	m.alerts[a.UUID] = a
+	a.ID = "alert-uuid-001"
+	m.alerts[a.ID] = a
 	return a, nil
 }
 
@@ -238,6 +235,7 @@ func newService() (*mockPestRepo, *mockEventPublisher, *pestService) {
 		&mockFarmClient{},
 		nil,
 		nopLogger{},
+		nil,
 	).(*pestService)
 	return repo, pub, svc
 }
@@ -266,7 +264,7 @@ func TestPredictPestRisk_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "tenant-1", pred.TenantID)
 	assert.Equal(t, "user-1", pred.CreatedBy)
-	assert.Equal(t, "prediction-uuid-001", pred.UUID)
+	assert.Equal(t, "prediction-uuid-001", pred.ID)
 	assert.True(t, pred.RiskLevel.IsValid())
 	assert.Greater(t, pred.RiskScore, 0)
 	assert.Greater(t, pred.ConfidencePct, 0.0)
@@ -351,7 +349,7 @@ func TestGetPrediction_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		CropType: "wheat",
 	}
-	repo.predictions["pred-001"].UUID = "pred-001"
+	repo.predictions["pred-001"].ID = "pred-001"
 
 	pred, err := svc.GetPrediction(ctx, "pred-001")
 	require.NoError(t, err)
@@ -396,9 +394,9 @@ func TestListPredictions_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.predictions["p1"] = &domain.PestPrediction{TenantID: "tenant-1"}
-	repo.predictions["p1"].UUID = "p1"
+	repo.predictions["p1"].ID = "p1"
 	repo.predictions["p2"] = &domain.PestPrediction{TenantID: "tenant-1"}
-	repo.predictions["p2"].UUID = "p2"
+	repo.predictions["p2"].ID = "p2"
 
 	predictions, total, err := svc.ListPredictions(ctx, domain.ListPredictionsParams{})
 	require.NoError(t, err)
@@ -432,7 +430,7 @@ func TestReportObservation_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.ObservedBy)
-	assert.Equal(t, "observation-uuid-001", created.UUID)
+	assert.Equal(t, "observation-uuid-001", created.ID)
 	assert.False(t, created.ObservedAt.IsZero())
 
 	assert.Len(t, pub.published, 1)
@@ -466,7 +464,7 @@ func TestListObservations_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.observations["o1"] = &domain.PestObservation{TenantID: "tenant-1"}
-	repo.observations["o1"].UUID = "o1"
+	repo.observations["o1"].ID = "o1"
 
 	observations, total, err := svc.ListObservations(ctx, domain.ListObservationsParams{})
 	require.NoError(t, err)
@@ -495,7 +493,7 @@ func TestGetPestSpecies_HappyPath(t *testing.T) {
 		TenantID:   "tenant-1",
 		CommonName: "Fall Armyworm",
 	}
-	repo.species["sp-001"].UUID = "sp-001"
+	repo.species["sp-001"].ID = "sp-001"
 
 	sp, err := svc.GetPestSpecies(ctx, "sp-001")
 	require.NoError(t, err)
@@ -530,7 +528,7 @@ func TestListPestSpecies_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.species["sp1"] = &domain.PestSpecies{TenantID: "tenant-1", CommonName: "Aphid"}
-	repo.species["sp1"].UUID = "sp1"
+	repo.species["sp1"].ID = "sp1"
 
 	species, total, err := svc.ListPestSpecies(ctx, domain.ListPestSpeciesParams{})
 	require.NoError(t, err)
@@ -559,7 +557,7 @@ func TestGetTreatmentPlan_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		CropType: "wheat",
 	}
-	repo.predictions["pred-001"].UUID = "pred-001"
+	repo.predictions["pred-001"].ID = "pred-001"
 
 	pred, err := svc.GetTreatmentPlan(ctx, "pred-001")
 	require.NoError(t, err)
@@ -642,7 +640,7 @@ func TestListAlerts_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.alerts["a1"] = &domain.PestAlert{TenantID: "tenant-1", Status: domain.AlertStatusActive}
-	repo.alerts["a1"].UUID = "a1"
+	repo.alerts["a1"].ID = "a1"
 
 	alerts, total, err := svc.ListAlerts(ctx, domain.ListAlertsParams{})
 	require.NoError(t, err)
@@ -671,7 +669,7 @@ func TestAcknowledgeAlert_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.AlertStatusActive,
 	}
-	repo.alerts["alert-001"].UUID = "alert-001"
+	repo.alerts["alert-001"].ID = "alert-001"
 
 	alert, err := svc.AcknowledgeAlert(ctx, "alert-001")
 	require.NoError(t, err)

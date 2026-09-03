@@ -205,7 +205,7 @@ func PestSpeciesToProto(s *pestmodels.PestSpecies) *pb.PestSpecies {
 	}
 
 	species := &pb.PestSpecies{
-		Id:             s.UUID,
+		Id:             s.ID,
 		TenantId:       s.TenantID,
 		CommonName:     s.CommonName,
 		ScientificName: s.ScientificName,
@@ -256,7 +256,7 @@ func PestPredictionToProto(p *pestmodels.PestPrediction) *pb.PestPrediction {
 	}
 
 	prediction := &pb.PestPrediction{
-		Id:                        p.UUID,
+		Id:                        p.ID,
 		TenantId:                  p.TenantID,
 		FarmId:                    p.FarmID,
 		FieldId:                   p.FieldID,
@@ -345,7 +345,7 @@ func PestAlertToProto(a *pestmodels.PestAlert) *pb.PestAlert {
 	}
 
 	alert := &pb.PestAlert{
-		Id:            a.UUID,
+		Id:            a.ID,
 		TenantId:      a.TenantID,
 		PredictionId:  a.PredictionUUID,
 		FarmId:        a.FarmID,
@@ -391,7 +391,7 @@ func PestObservationToProto(o *pestmodels.PestObservation) *pb.PestObservation {
 	}
 
 	obs := &pb.PestObservation{
-		Id:            o.UUID,
+		Id:            o.ID,
 		TenantId:      o.TenantID,
 		FarmId:        o.FarmID,
 		FieldId:       o.FieldID,
@@ -435,7 +435,7 @@ func PestRiskMapToProto(m *pestmodels.PestRiskMap) *pb.PestRiskMap {
 	}
 
 	riskMap := &pb.PestRiskMap{
-		Id:               m.UUID,
+		Id:               m.ID,
 		TenantId:         m.TenantID,
 		PestSpeciesId:    m.PestSpeciesUUID,
 		Region:           m.Region,

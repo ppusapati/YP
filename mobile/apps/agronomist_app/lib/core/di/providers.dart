@@ -139,13 +139,19 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   );
 });
 
-/// ConnectRPC client with auth interceptor attached.
+/// ConnectRPC client with auth, connectivity, and logging interceptors.
 final connectClientProvider = Provider<ConnectClient>((ref) {
   final config = ref.watch(apiConfigProvider);
   final tokenService = ref.watch(tokenServiceProvider);
   final authRepository = ref.watch(authRepositoryProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
 
   final client = ConnectClient(config: config);
+
+  final connectivityInterceptor = ConnectivityInterceptor(
+    connectivityService: connectivityService,
+  );
+  client.addRequestInterceptor(connectivityInterceptor.interceptRequest);
 
   final authInterceptor = AuthInterceptor(
     tokenReader: () => tokenService.getAccessToken(),
@@ -154,12 +160,25 @@ final connectClientProvider = Provider<ConnectClient>((ref) {
       return token.accessToken;
     },
   );
+  client.addAuthInterceptor(authInterceptor);
 
-  client.addRequestInterceptor(authInterceptor.interceptRequest);
-  client.addResponseInterceptor(authInterceptor.interceptResponse);
+  final loggingInterceptor = LoggingInterceptor();
+  client.addRequestInterceptor(loggingInterceptor.interceptRequest);
+  client.addResponseInterceptor(loggingInterceptor.interceptResponse);
 
-  ref.onDispose(() => client.close());
+  ref.onDispose(() {
+    connectivityInterceptor.dispose();
+    client.close();
+  });
   return client;
+});
+
+/// Authentication BLoC for login/logout/token-refresh lifecycle.
+final authBlocProvider = Provider<AuthBloc>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  final bloc = AuthBloc(authRepository: authRepository);
+  ref.onDispose(() => bloc.close());
+  return bloc;
 });
 
 /// Connectivity service.

@@ -103,7 +103,7 @@ func VegetationIndexToProto(vi *vimodels.VegetationIndex) *pb.VegetationIndex {
 	}
 
 	result := &pb.VegetationIndex{
-		Id:               vi.UUID,
+		Id:               vi.ID,
 		TenantId:         vi.TenantID,
 		FarmId:           vi.FarmUUID,
 		FieldId:          ptr.Deref(vi.FieldUUID),
@@ -149,7 +149,7 @@ func ComputeTaskToProto(ct *vimodels.ComputeTask) *pb.ComputeTask {
 	}
 
 	result := &pb.ComputeTask{
-		Id:                 ct.UUID,
+		Id:                 ct.ID,
 		TenantId:           ct.TenantID,
 		ProcessingJobId:    ct.ProcessingJobUUID,
 		FarmId:             ct.FarmUUID,

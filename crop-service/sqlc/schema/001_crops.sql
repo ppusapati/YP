@@ -2,8 +2,7 @@
 -- Manages crop catalog, varieties, growth stages, requirements, and recommendations
 
 CREATE TABLE IF NOT EXISTS crops (
-    id                      BIGSERIAL PRIMARY KEY,
-    uuid                    VARCHAR(26) NOT NULL UNIQUE,
+    id                      CHAR(26) PRIMARY KEY,
     tenant_id               VARCHAR(26) NOT NULL,
     name                    VARCHAR(255) NOT NULL,
     scientific_name         VARCHAR(255) NOT NULL DEFAULT '',
@@ -32,9 +31,8 @@ CREATE INDEX idx_crops_tenant_category ON crops (tenant_id, category);
 CREATE INDEX idx_crops_name_search ON crops USING gin (name gin_trgm_ops);
 
 CREATE TABLE IF NOT EXISTS crop_varieties (
-    id                              BIGSERIAL PRIMARY KEY,
-    uuid                            VARCHAR(26) NOT NULL UNIQUE,
-    crop_id                         BIGINT NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
+    id                              CHAR(26) PRIMARY KEY,
+    crop_id                         CHAR(26) NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
     tenant_id                       VARCHAR(26) NOT NULL,
     name                            VARCHAR(255) NOT NULL,
     description                     TEXT NOT NULL DEFAULT '',
@@ -59,9 +57,8 @@ CREATE INDEX idx_crop_varieties_crop_id ON crop_varieties (crop_id);
 CREATE INDEX idx_crop_varieties_tenant_id ON crop_varieties (tenant_id);
 
 CREATE TABLE IF NOT EXISTS crop_growth_stages (
-    id                     BIGSERIAL PRIMARY KEY,
-    uuid                   VARCHAR(26) NOT NULL UNIQUE,
-    crop_id                BIGINT NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
+    id                     CHAR(26) PRIMARY KEY,
+    crop_id                CHAR(26) NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
     tenant_id              VARCHAR(26) NOT NULL,
     name                   VARCHAR(128) NOT NULL,
     stage_order            INTEGER NOT NULL DEFAULT 0,
@@ -86,9 +83,8 @@ CREATE INDEX idx_crop_growth_stages_crop_id ON crop_growth_stages (crop_id);
 CREATE INDEX idx_crop_growth_stages_order ON crop_growth_stages (crop_id, stage_order);
 
 CREATE TABLE IF NOT EXISTS crop_requirements (
-    id                          BIGSERIAL PRIMARY KEY,
-    uuid                        VARCHAR(26) NOT NULL UNIQUE,
-    crop_id                     BIGINT NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
+    id                          CHAR(26) PRIMARY KEY,
+    crop_id                     CHAR(26) NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
     tenant_id                   VARCHAR(26) NOT NULL,
     optimal_temp_min            DOUBLE PRECISION NOT NULL DEFAULT 0,
     optimal_temp_max            DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -116,9 +112,8 @@ CREATE TABLE IF NOT EXISTS crop_requirements (
 CREATE INDEX idx_crop_requirements_crop_id ON crop_requirements (crop_id);
 
 CREATE TABLE IF NOT EXISTS crop_recommendations (
-    id                       BIGSERIAL PRIMARY KEY,
-    uuid                     VARCHAR(26) NOT NULL UNIQUE,
-    crop_id                  BIGINT NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
+    id                       CHAR(26) PRIMARY KEY,
+    crop_id                  CHAR(26) NOT NULL REFERENCES crops(id) ON DELETE CASCADE,
     tenant_id                VARCHAR(26) NOT NULL,
     recommendation_type      VARCHAR(64) NOT NULL DEFAULT '',
     title                    VARCHAR(255) NOT NULL DEFAULT '',

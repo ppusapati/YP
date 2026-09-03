@@ -51,9 +51,9 @@ func (m *mockEventPublisher) Publish(_ context.Context, topic, key string, paylo
 type mockCropRepo struct {
 	crops        map[string]*domain.Crop         // keyed by UUID
 	names        map[string]bool                  // tenantID+"/"+name -> exists
-	varieties    map[int64][]*domain.CropVariety  // keyed by crop ID
-	growthStages map[int64][]*domain.CropGrowthStage
-	requirements map[int64]*domain.CropRequirements
+	varieties    map[string][]*domain.CropVariety  // keyed by crop ID
+	growthStages map[string][]*domain.CropGrowthStage
+	requirements map[string]*domain.CropRequirements
 	recs         []*domain.CropRecommendation
 }
 
@@ -61,16 +61,15 @@ func newMockCropRepo() *mockCropRepo {
 	return &mockCropRepo{
 		crops:        make(map[string]*domain.Crop),
 		names:        make(map[string]bool),
-		varieties:    make(map[int64][]*domain.CropVariety),
-		growthStages: make(map[int64][]*domain.CropGrowthStage),
-		requirements: make(map[int64]*domain.CropRequirements),
+		varieties:    make(map[string][]*domain.CropVariety),
+		growthStages: make(map[string][]*domain.CropGrowthStage),
+		requirements: make(map[string]*domain.CropRequirements),
 	}
 }
 
 func (m *mockCropRepo) CreateCrop(_ context.Context, c *domain.Crop) (*domain.Crop, error) {
-	c.UUID = "crop-uuid-001"
-	c.ID = 1
-	m.crops[c.UUID] = c
+	c.ID = "crop-uuid-001"
+	m.crops[c.ID] = c
 	m.names[c.TenantID+"/"+c.Name] = true
 	return c, nil
 }
@@ -94,7 +93,7 @@ func (m *mockCropRepo) ListCrops(_ context.Context, params domain.ListCropParams
 }
 
 func (m *mockCropRepo) UpdateCrop(_ context.Context, c *domain.Crop) (*domain.Crop, error) {
-	existing, ok := m.crops[c.UUID]
+	existing, ok := m.crops[c.ID]
 	if !ok {
 		return nil, errors.NotFound("CROP_NOT_FOUND", "crop not found")
 	}
@@ -123,21 +122,21 @@ func (m *mockCropRepo) CheckCropNameExists(_ context.Context, name, tenantID str
 }
 
 func (m *mockCropRepo) CreateVariety(_ context.Context, v *domain.CropVariety) (*domain.CropVariety, error) {
-	v.UUID = "variety-uuid-001"
+	v.ID = "variety-uuid-001"
 	m.varieties[v.CropID] = append(m.varieties[v.CropID], v)
 	return v, nil
 }
 
-func (m *mockCropRepo) ListVarietiesByCropID(_ context.Context, cropID int64, _ string, _, _ int32) ([]*domain.CropVariety, int32, error) {
+func (m *mockCropRepo) ListVarietiesByCropID(_ context.Context, cropID string, _ string, _, _ int32) ([]*domain.CropVariety, int32, error) {
 	list := m.varieties[cropID]
 	return list, int32(len(list)), nil
 }
 
-func (m *mockCropRepo) GetGrowthStagesByCropID(_ context.Context, cropID int64, _ string) ([]*domain.CropGrowthStage, error) {
+func (m *mockCropRepo) GetGrowthStagesByCropID(_ context.Context, cropID string, _ string) ([]*domain.CropGrowthStage, error) {
 	return m.growthStages[cropID], nil
 }
 
-func (m *mockCropRepo) GetCropRequirementsByCropID(_ context.Context, cropID int64, _ string) (*domain.CropRequirements, error) {
+func (m *mockCropRepo) GetCropRequirementsByCropID(_ context.Context, cropID string, _ string) (*domain.CropRequirements, error) {
 	req, ok := m.requirements[cropID]
 	if !ok {
 		return nil, errors.NotFound("REQUIREMENTS_NOT_FOUND", "not found")
@@ -146,8 +145,7 @@ func (m *mockCropRepo) GetCropRequirementsByCropID(_ context.Context, cropID int
 }
 
 func (m *mockCropRepo) CreateRecommendation(_ context.Context, rec *domain.CropRecommendation) (*domain.CropRecommendation, error) {
-	rec.ID = 1
-	rec.UUID = "rec-uuid-001"
+	rec.ID = "rec-uuid-001"
 	m.recs = append(m.recs, rec)
 	return rec, nil
 }
@@ -195,7 +193,7 @@ func TestCreateCrop_HappyPath(t *testing.T) {
 	assert.Equal(t, "Rice", created.Name)
 	assert.Equal(t, domain.CropStatusActive, created.Status)
 	assert.Equal(t, "user-1", created.CreatedBy)
-	assert.NotEmpty(t, created.UUID)
+	assert.NotEmpty(t, created.ID)
 
 	// Event published.
 	assert.Len(t, pub.published, 1)
@@ -254,7 +252,7 @@ func TestGetCrop_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
 
 	crop, err := svc.GetCrop(ctx, "crop-uuid-001")
 	require.NoError(t, err)
@@ -299,9 +297,9 @@ func TestListCrops_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["c1"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["c1"].UUID = "c1"
+	repo.crops["c1"].ID = "c1"
 	repo.crops["c2"] = &domain.Crop{TenantID: "tenant-1", Name: "Wheat"}
-	repo.crops["c2"].UUID = "c2"
+	repo.crops["c2"].ID = "c2"
 
 	crops, total, err := svc.ListCrops(ctx, domain.ListCropParams{})
 	require.NoError(t, err)
@@ -323,7 +321,7 @@ func TestListCrops_DefaultPageSize(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["c1"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["c1"].UUID = "c1"
+	repo.crops["c1"].ID = "c1"
 
 	// PageSize <= 0 should default to 20.
 	_, _, err := svc.ListCrops(ctx, domain.ListCropParams{PageSize: 0})
@@ -348,7 +346,7 @@ func TestUpdateCrop_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
 
 	updated, err := svc.UpdateCrop(ctx, &domain.Crop{Name: "Basmati Rice"})
 	// UUID is empty so we expect MISSING_ID
@@ -361,7 +359,7 @@ func TestUpdateCrop_HappyPath(t *testing.T) {
 	updated, err = svc.UpdateCrop(ctx, &domain.Crop{Name: "Basmati Rice"})
 	// Still no UUID -- test properly:
 	crop := &domain.Crop{Name: "Basmati Rice"}
-	crop.UUID = "crop-uuid-001"
+	crop.ID = "crop-uuid-001"
 	updated, err = svc.UpdateCrop(ctx, crop)
 	require.NoError(t, err)
 	assert.Equal(t, "Basmati Rice", updated.Name)
@@ -373,7 +371,7 @@ func TestUpdateCrop_MissingTenant(t *testing.T) {
 	ctx := testContext("", "user-1")
 
 	crop := &domain.Crop{Name: "X"}
-	crop.UUID = "crop-uuid-001"
+	crop.ID = "crop-uuid-001"
 	_, err := svc.UpdateCrop(ctx, crop)
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
@@ -395,7 +393,7 @@ func TestUpdateCrop_NotFound(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	crop := &domain.Crop{Name: "X"}
-	crop.UUID = "nonexistent"
+	crop.ID = "nonexistent"
 	_, err := svc.UpdateCrop(ctx, crop)
 	require.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
@@ -410,7 +408,7 @@ func TestDeleteCrop_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
 
 	err := svc.DeleteCrop(ctx, "crop-uuid-001")
 	require.NoError(t, err)
@@ -455,7 +453,7 @@ func TestAddVariety_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	variety := &domain.CropVariety{
-		CropID: 1,
+		CropID: "crop-uuid-001",
 		Name:   "Basmati 370",
 	}
 	created, err := svc.AddVariety(ctx, variety)
@@ -471,7 +469,7 @@ func TestAddVariety_MissingName(t *testing.T) {
 	_, _, svc := newService()
 	ctx := testContext("tenant-1", "user-1")
 
-	_, err := svc.AddVariety(ctx, &domain.CropVariety{CropID: 1, Name: "  "})
+	_, err := svc.AddVariety(ctx, &domain.CropVariety{CropID: "crop-uuid-001", Name: "  "})
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
 	assert.Equal(t, "INVALID_VARIETY_NAME", errors.Reason(err))
@@ -481,7 +479,7 @@ func TestAddVariety_InvalidCropID(t *testing.T) {
 	_, _, svc := newService()
 	ctx := testContext("tenant-1", "user-1")
 
-	_, err := svc.AddVariety(ctx, &domain.CropVariety{CropID: 0, Name: "X"})
+	_, err := svc.AddVariety(ctx, &domain.CropVariety{CropID: "", Name: "X"})
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
 	assert.Equal(t, "INVALID_CROP_ID", errors.Reason(err))
@@ -496,9 +494,8 @@ func TestListVarieties_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-	repo.varieties[1] = []*domain.CropVariety{{Name: "Basmati"}}
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+		repo.varieties["crop-uuid-001"] = []*domain.CropVariety{{Name: "Basmati"}}
 
 	varieties, total, err := svc.ListVarieties(ctx, "crop-uuid-001", "", 0, 0)
 	require.NoError(t, err)
@@ -524,9 +521,8 @@ func TestGetGrowthStages_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-	repo.growthStages[1] = []*domain.CropGrowthStage{{Name: "Germination"}}
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+		repo.growthStages["crop-uuid-001"] = []*domain.CropGrowthStage{{Name: "Germination"}}
 
 	stages, err := svc.GetGrowthStages(ctx, "crop-uuid-001", "")
 	require.NoError(t, err)
@@ -552,9 +548,8 @@ func TestGetCropRequirements_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-	repo.requirements[1] = &domain.CropRequirements{OptimalTempMin: 20, OptimalTempMax: 35}
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{OptimalTempMin: 20, OptimalTempMax: 35}
 
 	req, err := svc.GetCropRequirements(ctx, "crop-uuid-001", "")
 	require.NoError(t, err)
@@ -579,9 +574,8 @@ func TestGenerateRecommendation_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+	
 	input := &domain.RecommendationInput{
 		CropID:             "crop-uuid-001",
 		TenantID:           "tenant-1",
@@ -591,7 +585,7 @@ func TestGenerateRecommendation_HappyPath(t *testing.T) {
 
 	rec, err := svc.GenerateRecommendation(ctx, input)
 	require.NoError(t, err)
-	assert.NotEmpty(t, rec.UUID)
+	assert.NotEmpty(t, rec.ID)
 	assert.Equal(t, "irrigation", rec.RecommendationType)
 	assert.Len(t, pub.published, 1)
 }
@@ -638,9 +632,8 @@ func TestGenerateRecommendation_WithRequirements(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-	repo.requirements[1] = &domain.CropRequirements{
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
 		OptimalTempMin:     20,
 		OptimalTempMax:     35,
 		OptimalHumidityMin: 60,
@@ -671,9 +664,8 @@ func TestGenerateRecommendation_WarningConditions(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-	repo.requirements[1] = &domain.CropRequirements{
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
 		OptimalTempMin: 20,
 		OptimalTempMax: 35,
 	}
@@ -696,9 +688,8 @@ func TestGenerateRecommendation_CriticalConditions(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
-	repo.crops["crop-uuid-001"].UUID = "crop-uuid-001"
-	repo.crops["crop-uuid-001"].ID = 1
-	repo.requirements[1] = &domain.CropRequirements{
+	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
+		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
 		OptimalTempMin: 20,
 		OptimalTempMax: 35,
 	}

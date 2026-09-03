@@ -1,0 +1,237 @@
+openapi: 3.0.3
+info:
+  title: Satellite Analytics Service API
+  description: |
+    Satellite imagery analytics including crop stress detection, temporal trend analysis,
+    and field health summaries for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8089
+    description: Local development
+tags:
+  - name: StressDetection
+    description: Crop stress detection from satellite imagery
+  - name: TemporalAnalysis
+    description: Temporal trend analysis
+  - name: FieldSummary
+    description: Field-level analytics summaries
+
+paths:
+  /agriculture.satellite.analytics.v1.SatelliteAnalyticsService/DetectStress:
+    post:
+      tags: [StressDetection]
+      summary: Detect crop stress from satellite imagery
+      operationId: DetectStress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                processingJobId:
+                  type: string
+      responses:
+        '200':
+          description: Stress alerts generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        stressType:
+                          type: string
+                          enum: [STRESS_TYPE_WATER, STRESS_TYPE_NUTRIENT, STRESS_TYPE_DISEASE, STRESS_TYPE_PEST, STRESS_TYPE_HEAT, STRESS_TYPE_FROST]
+                        severity:
+                          type: string
+                          enum: [SEVERITY_LEVEL_LOW, SEVERITY_LEVEL_MEDIUM, SEVERITY_LEVEL_HIGH, SEVERITY_LEVEL_CRITICAL]
+                        confidence:
+                          type: number
+                          format: double
+                        affectedAreaHectares:
+                          type: number
+                          format: double
+                        affectedPercentage:
+                          type: number
+                          format: double
+                        description:
+                          type: string
+                        recommendation:
+                          type: string
+
+  /agriculture.satellite.analytics.v1.SatelliteAnalyticsService/ListStressAlerts:
+    post:
+      tags: [StressDetection]
+      summary: List stress alerts with filtering
+      operationId: ListStressAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+                farmId:
+                  type: string
+                stressType:
+                  type: string
+                minSeverity:
+                  type: string
+                unacknowledgedOnly:
+                  type: boolean
+      responses:
+        '200':
+          description: Stress alerts listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.satellite.analytics.v1.SatelliteAnalyticsService/AcknowledgeAlert:
+    post:
+      tags: [StressDetection]
+      summary: Acknowledge a stress alert
+      operationId: AcknowledgeAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Alert acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /agriculture.satellite.analytics.v1.SatelliteAnalyticsService/RunTemporalAnalysis:
+    post:
+      tags: [TemporalAnalysis]
+      summary: Run temporal trend analysis for a field
+      operationId: RunTemporalAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                analysisType:
+                  type: string
+                  enum: [ANALYSIS_TYPE_STRESS_DETECTION, ANALYSIS_TYPE_CHANGE_DETECTION, ANALYSIS_TYPE_TEMPORAL_TREND, ANALYSIS_TYPE_ANOMALY_DETECTION, ANALYSIS_TYPE_CROP_CLASSIFICATION]
+                periodStart:
+                  type: string
+                  format: date-time
+                periodEnd:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Temporal analysis result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      metricName:
+                        type: string
+                      trendSlope:
+                        type: number
+                        format: double
+                      trendRSquared:
+                        type: number
+                        format: double
+                      currentValue:
+                        type: number
+                        format: double
+                      baselineValue:
+                        type: number
+                        format: double
+                      deviationPercent:
+                        type: number
+                        format: double
+
+  /agriculture.satellite.analytics.v1.SatelliteAnalyticsService/GetFieldAnalyticsSummary:
+    post:
+      tags: [FieldSummary]
+      summary: Get analytics summary for a field
+      operationId: GetFieldAnalyticsSummary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+      responses:
+        '200':
+          description: Field analytics summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activeStressAlerts:
+                    type: integer
+                    format: int32
+                  healthScore:
+                    type: number
+                    format: double
+                  ndviTrend:
+                    type: number
+                    format: double
+                  dominantStressType:
+                    type: string
+                  lastAnalysis:
+                    type: string
+                    format: date-time

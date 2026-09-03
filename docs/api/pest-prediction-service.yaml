@@ -1,0 +1,426 @@
+openapi: 3.0.3
+info:
+  title: Pest Prediction Service API
+  description: |
+    Pest outbreak prediction, observation tracking, species catalog, treatment plans,
+    risk maps, and alert management for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8087
+    description: Local development
+tags:
+  - name: Predictions
+    description: Pest risk prediction
+  - name: Observations
+    description: Field pest observations
+  - name: Species
+    description: Pest species catalog
+  - name: Treatments
+    description: Treatment plans
+  - name: RiskMaps
+    description: Geographic risk mapping
+  - name: Alerts
+    description: Pest alert management
+
+paths:
+  /agriculture.pest.v1.PestPredictionService/PredictPestRisk:
+    post:
+      tags: [Predictions]
+      summary: Generate a pest risk prediction for a field
+      operationId: PredictPestRisk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                pestSpeciesId:
+                  type: string
+                cropType:
+                  type: string
+                growthStage:
+                  type: string
+                weather:
+                  type: object
+                  properties:
+                    temperatureCelsius:
+                      type: number
+                      format: double
+                    humidityPct:
+                      type: number
+                      format: double
+                    rainfallMm:
+                      type: number
+                      format: double
+                    windSpeedKmh:
+                      type: number
+                      format: double
+                latitude:
+                  type: number
+                  format: double
+                longitude:
+                  type: number
+                  format: double
+      responses:
+        '200':
+          description: Prediction generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction:
+                    type: object
+
+  /agriculture.pest.v1.PestPredictionService/GetPrediction:
+    post:
+      tags: [Predictions]
+      summary: Get a pest prediction by ID
+      operationId: GetPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Prediction retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction:
+                    type: object
+
+  /agriculture.pest.v1.PestPredictionService/ListPredictions:
+    post:
+      tags: [Predictions]
+      summary: List pest predictions with filtering
+      operationId: ListPredictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                pestSpeciesId:
+                  type: string
+                minRiskLevel:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+                orderBy:
+                  type: string
+      responses:
+        '200':
+          description: Predictions listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predictions:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.pest.v1.PestPredictionService/ReportObservation:
+    post:
+      tags: [Observations]
+      summary: Report a field pest observation
+      operationId: ReportObservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                pestSpeciesId:
+                  type: string
+                pestCount:
+                  type: integer
+                  format: int32
+                damageLevel:
+                  type: string
+                trapType:
+                  type: string
+                imageUrl:
+                  type: string
+                latitude:
+                  type: number
+                  format: double
+                longitude:
+                  type: number
+                  format: double
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Observation recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observation:
+                    type: object
+
+  /agriculture.pest.v1.PestPredictionService/ListObservations:
+    post:
+      tags: [Observations]
+      summary: List pest observations
+      operationId: ListObservations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                pestSpeciesId:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Observations listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observations:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.pest.v1.PestPredictionService/GetPestSpecies:
+    post:
+      tags: [Species]
+      summary: Get a pest species by ID
+      operationId: GetPestSpecies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Species retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  species:
+                    type: object
+
+  /agriculture.pest.v1.PestPredictionService/ListPestSpecies:
+    post:
+      tags: [Species]
+      summary: List pest species with search and filtering
+      operationId: ListPestSpecies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search:
+                  type: string
+                cropType:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Species listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  species:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.pest.v1.PestPredictionService/GetTreatmentPlan:
+    post:
+      tags: [Treatments]
+      summary: Get recommended treatments for a prediction
+      operationId: GetTreatmentPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predictionId:
+                  type: string
+      responses:
+        '200':
+          description: Treatment plan retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction:
+                    type: object
+                  treatments:
+                    type: array
+                    items:
+                      type: object
+
+  /agriculture.pest.v1.PestPredictionService/GetRiskMap:
+    post:
+      tags: [RiskMaps]
+      summary: Get a geographic risk map for a pest species in a region
+      operationId: GetRiskMap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pestSpeciesId:
+                  type: string
+                region:
+                  type: string
+      responses:
+        '200':
+          description: Risk map retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  riskMap:
+                    type: object
+
+  /agriculture.pest.v1.PestPredictionService/ListAlerts:
+    post:
+      tags: [Alerts]
+      summary: List pest alerts with filtering
+      operationId: ListAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                status:
+                  type: string
+                minRiskLevel:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Alerts listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.pest.v1.PestPredictionService/AcknowledgeAlert:
+    post:
+      tags: [Alerts]
+      summary: Acknowledge a pest alert
+      operationId: AcknowledgeAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Alert acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alert:
+                    type: object

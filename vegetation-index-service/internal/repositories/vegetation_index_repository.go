@@ -89,7 +89,7 @@ func (r *vegetationIndexRepository) exec(ctx context.Context, sql string, args .
 // ---------- Compute Task Operations ----------
 
 func (r *vegetationIndexRepository) InsertComputeTask(ctx context.Context, task *vimodels.ComputeTask) (*vimodels.ComputeTask, error) {
-	task.UUID = ulid.NewString()
+	task.ID = ulid.NewString()
 	task.CreatedAt = time.Now()
 	task.IsActive = true
 	task.Version = 1
@@ -113,7 +113,7 @@ func (r *vegetationIndexRepository) InsertComputeTask(ctx context.Context, task 
 			index_types, status, error_message, compute_time_seconds,
 			version, is_active, created_by, created_at,
 			updated_by, updated_at, completed_at, deleted_at, deleted_by`,
-		task.UUID, task.TenantID, task.ProcessingJobUUID, task.FarmUUID,
+		task.ID, task.TenantID, task.ProcessingJobUUID, task.FarmUUID,
 		indexTypeStrs, task.CreatedBy,
 	)
 
@@ -123,7 +123,7 @@ func (r *vegetationIndexRepository) InsertComputeTask(ctx context.Context, task 
 		return nil, errors.InternalServer("COMPUTE_TASK_CREATE_FAILED", fmt.Sprintf("failed to create compute task: %v", err))
 	}
 
-	r.log.Infow("msg", "compute task created", "uuid", result.UUID, "tenant_id", result.TenantID)
+	r.log.Infow("msg", "compute task created", "uuid", result.ID, "tenant_id", result.TenantID)
 	return result, nil
 }
 
@@ -219,14 +219,14 @@ func (r *vegetationIndexRepository) UpdateComputeStatus(ctx context.Context, uui
 		return nil, errors.InternalServer("COMPUTE_STATUS_UPDATE_FAILED", fmt.Sprintf("failed to update compute status: %v", err))
 	}
 
-	r.log.Infow("msg", "compute task status updated", "uuid", result.UUID, "status", string(result.Status))
+	r.log.Infow("msg", "compute task status updated", "uuid", result.ID, "status", string(result.Status))
 	return result, nil
 }
 
 // ---------- Vegetation Index Operations ----------
 
 func (r *vegetationIndexRepository) InsertVegetationIndex(ctx context.Context, vi *vimodels.VegetationIndex) (*vimodels.VegetationIndex, error) {
-	vi.UUID = ulid.NewString()
+	vi.ID = ulid.NewString()
 	vi.CreatedAt = time.Now()
 	vi.ComputedAt = time.Now()
 	vi.IsActive = true
@@ -251,7 +251,7 @@ func (r *vegetationIndexRepository) InsertVegetationIndex(ctx context.Context, v
 			pixel_count, coverage_percent, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by`,
-		vi.UUID, vi.TenantID, vi.FarmUUID, vi.FieldUUID, vi.ProcessingJobUUID,
+		vi.ID, vi.TenantID, vi.FarmUUID, vi.FieldUUID, vi.ProcessingJobUUID,
 		vi.ComputeTaskUUID, string(vi.IndexType), vi.MeanValue, vi.MinValue, vi.MaxValue,
 		vi.StdDeviation, vi.MedianValue, vi.PixelCount, vi.CoveragePercent,
 		vi.RasterS3Key, vi.AcquisitionDate, vi.CreatedBy,
@@ -263,7 +263,7 @@ func (r *vegetationIndexRepository) InsertVegetationIndex(ctx context.Context, v
 		return nil, errors.InternalServer("VI_CREATE_FAILED", fmt.Sprintf("failed to create vegetation index: %v", err))
 	}
 
-	r.log.Infow("msg", "vegetation index created", "uuid", result.UUID, "index_type", string(result.IndexType))
+	r.log.Infow("msg", "vegetation index created", "uuid", result.ID, "index_type", string(result.IndexType))
 	return result, nil
 }
 
@@ -483,7 +483,7 @@ func computeHealthFromNDVI(ndvi float64) (float64, string) {
 
 func scanComputeTask(row pgx.Row, ct *vimodels.ComputeTask) error {
 	return row.Scan(
-		&ct.ID, &ct.UUID, &ct.TenantID, &ct.ProcessingJobUUID, &ct.FarmUUID,
+		&ct.ID, &ct.TenantID, &ct.ProcessingJobUUID, &ct.FarmUUID,
 		&ct.IndexTypes, &ct.Status, &ct.ErrorMessage, &ct.ComputeTimeSeconds,
 		&ct.Version, &ct.IsActive, &ct.CreatedBy, &ct.CreatedAt,
 		&ct.UpdatedBy, &ct.UpdatedAt, &ct.CompletedAt, &ct.DeletedAt, &ct.DeletedBy,
@@ -492,7 +492,7 @@ func scanComputeTask(row pgx.Row, ct *vimodels.ComputeTask) error {
 
 func scanComputeTaskFromRows(rows pgx.Rows, ct *vimodels.ComputeTask) error {
 	return rows.Scan(
-		&ct.ID, &ct.UUID, &ct.TenantID, &ct.ProcessingJobUUID, &ct.FarmUUID,
+		&ct.ID, &ct.TenantID, &ct.ProcessingJobUUID, &ct.FarmUUID,
 		&ct.IndexTypes, &ct.Status, &ct.ErrorMessage, &ct.ComputeTimeSeconds,
 		&ct.Version, &ct.IsActive, &ct.CreatedBy, &ct.CreatedAt,
 		&ct.UpdatedBy, &ct.UpdatedAt, &ct.CompletedAt, &ct.DeletedAt, &ct.DeletedBy,
@@ -501,7 +501,7 @@ func scanComputeTaskFromRows(rows pgx.Rows, ct *vimodels.ComputeTask) error {
 
 func scanVegetationIndex(row pgx.Row, vi *vimodels.VegetationIndex) error {
 	return row.Scan(
-		&vi.ID, &vi.UUID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
+		&vi.ID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
 		&vi.ProcessingJobUUID, &vi.ComputeTaskUUID, &vi.IndexType,
 		&vi.MeanValue, &vi.MinValue, &vi.MaxValue, &vi.StdDeviation, &vi.MedianValue,
 		&vi.PixelCount, &vi.CoveragePercent, &vi.RasterS3Key,
@@ -512,7 +512,7 @@ func scanVegetationIndex(row pgx.Row, vi *vimodels.VegetationIndex) error {
 
 func scanVegetationIndexFromRows(rows pgx.Rows, vi *vimodels.VegetationIndex) error {
 	return rows.Scan(
-		&vi.ID, &vi.UUID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
+		&vi.ID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
 		&vi.ProcessingJobUUID, &vi.ComputeTaskUUID, &vi.IndexType,
 		&vi.MeanValue, &vi.MinValue, &vi.MaxValue, &vi.StdDeviation, &vi.MedianValue,
 		&vi.PixelCount, &vi.CoveragePercent, &vi.RasterS3Key,

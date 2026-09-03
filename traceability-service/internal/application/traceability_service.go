@@ -318,6 +318,12 @@ func (s *traceabilityService) ListCertifications(ctx context.Context, filter dom
 	if tenantID == "" {
 		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = defaultPageSize
+	}
+	if filter.PageSize > maxPageSize {
+		filter.PageSize = maxPageSize
+	}
 	return s.repo.ListCertifications(ctx, tenantID, filter)
 }
 
@@ -431,6 +437,12 @@ func (s *traceabilityService) ListBatches(ctx context.Context, filter domain.Lis
 	tenantID := p9context.TenantID(ctx)
 	if tenantID == "" {
 		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = defaultPageSize
+	}
+	if filter.PageSize > maxPageSize {
+		filter.PageSize = maxPageSize
 	}
 	return s.repo.ListBatchRecords(ctx, tenantID, filter)
 }

@@ -90,9 +90,8 @@ func newMockFieldRepo() *mockFieldRepo {
 }
 
 func (m *mockFieldRepo) CreateField(_ context.Context, f *domain.Field) (*domain.Field, error) {
-	f.UUID = "field-uuid-001"
-	f.ID = 1
-	m.fields[f.UUID] = f
+	f.ID = "field-uuid-001"
+	m.fields[f.ID] = f
 	m.names[f.FarmID+"/"+f.Name] = true
 	return f, nil
 }
@@ -116,7 +115,7 @@ func (m *mockFieldRepo) ListFields(_ context.Context, params domain.ListFieldsPa
 }
 
 func (m *mockFieldRepo) UpdateField(_ context.Context, f *domain.Field) (*domain.Field, error) {
-	existing, ok := m.fields[f.UUID]
+	existing, ok := m.fields[f.ID]
 	if !ok {
 		return nil, errors.NotFound("FIELD_NOT_FOUND", "field not found")
 	}
@@ -247,7 +246,7 @@ func TestCreateField_HappyPath(t *testing.T) {
 	assert.Equal(t, "North Plot", created.Name)
 	assert.Equal(t, domain.FieldStatusActive, created.Status)
 	assert.Equal(t, "user-1", created.CreatedBy)
-	assert.NotEmpty(t, created.UUID)
+	assert.NotEmpty(t, created.ID)
 
 	// Event published.
 	assert.Len(t, pub.published, 1)
@@ -297,7 +296,7 @@ func TestGetField_HappyPath(t *testing.T) {
 		FarmID:   "farm-001",
 		Name:     "North Plot",
 	}
-	repo.fields["field-uuid-001"].UUID = "field-uuid-001"
+	repo.fields["field-uuid-001"].ID = "field-uuid-001"
 
 	field, err := svc.GetField(ctx, "field-uuid-001")
 	require.NoError(t, err)
@@ -322,9 +321,9 @@ func TestListFields_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.fields["f1"] = &domain.Field{TenantID: "tenant-1", Name: "A"}
-	repo.fields["f1"].UUID = "f1"
+	repo.fields["f1"].ID = "f1"
 	repo.fields["f2"] = &domain.Field{TenantID: "tenant-1", Name: "B"}
-	repo.fields["f2"].UUID = "f2"
+	repo.fields["f2"].ID = "f2"
 
 	fields, total, err := svc.ListFields(ctx, domain.ListFieldsParams{})
 	require.NoError(t, err)
@@ -342,7 +341,7 @@ func TestLogActivityEvent_HappyPath(t *testing.T) {
 
 	// Seed a field so existence check passes.
 	repo.fields["field-001"] = &domain.Field{TenantID: "tenant-1", Name: "Plot"}
-	repo.fields["field-001"].UUID = "field-001"
+	repo.fields["field-001"].ID = "field-001"
 
 	event := &domain.ActivityEvent{
 		FieldID:      "field-001",

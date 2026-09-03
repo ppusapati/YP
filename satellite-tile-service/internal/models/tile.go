@@ -109,13 +109,13 @@ type Tileset struct {
 }
 
 // GetID returns the primary key of the tileset.
-func (t *Tileset) GetID() int64 {
+func (t *Tileset) GetID() string {
 	return t.ID
 }
 
 // GetUUID returns the ULID identifier of the tileset.
 func (t *Tileset) GetUUID() string {
-	return t.UUID
+	return t.ID
 }
 
 // ListTilesetsParams holds the filter and pagination parameters for listing tilesets.

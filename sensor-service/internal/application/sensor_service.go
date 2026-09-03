@@ -91,10 +91,10 @@ func (s *sensorService) RegisterSensor(ctx context.Context, sensor *domain.Senso
 		return nil, err
 	}
 
-	s.log.Infow("msg", "sensor registered", "uuid", created.UUID, "device_id", created.DeviceID, "sensor_type", created.SensorType, "tenant_id", tenantID)
+	s.log.Infow("msg", "sensor registered", "uuid", created.ID, "device_id", created.DeviceID, "sensor_type", created.SensorType, "tenant_id", tenantID)
 
-	s.emitEvent(ctx, "agriculture.sensor.registered", created.UUID, map[string]interface{}{
-		"sensor_id":   created.UUID,
+	s.emitEvent(ctx, "agriculture.sensor.registered", created.ID, map[string]interface{}{
+		"sensor_id":   created.ID,
 		"device_id":   created.DeviceID,
 		"sensor_type": string(created.SensorType),
 		"field_id":    created.FieldID,
@@ -138,14 +138,14 @@ func (s *sensorService) UpdateSensor(ctx context.Context, sensor *domain.Sensor)
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if sensor.UUID == "" {
+	if sensor.ID == "" {
 		return nil, errors.BadRequest("MISSING_ID", "sensor ID is required")
 	}
 	if userID == "" {
 		userID = "system"
 	}
 
-	existing, err := s.repo.GetSensorByUUID(ctx, sensor.UUID, tenantID)
+	existing, err := s.repo.GetSensorByUUID(ctx, sensor.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -162,10 +162,10 @@ func (s *sensorService) UpdateSensor(ctx context.Context, sensor *domain.Sensor)
 		return nil, err
 	}
 
-	s.log.Infow("msg", "sensor updated", "uuid", updated.UUID, "tenant_id", tenantID)
+	s.log.Infow("msg", "sensor updated", "uuid", updated.ID, "tenant_id", tenantID)
 
-	s.emitEvent(ctx, "agriculture.sensor.updated", updated.UUID, map[string]interface{}{
-		"sensor_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.sensor.updated", updated.ID, map[string]interface{}{
+		"sensor_id": updated.ID, "tenant_id": tenantID,
 	})
 	return updated, nil
 }
@@ -453,7 +453,7 @@ func (s *sensorService) CreateAlert(ctx context.Context, alert *domain.SensorAle
 		return nil, err
 	}
 
-	s.log.Infow("msg", "alert created", "uuid", created.UUID, "sensor_id", alert.SensorID, "condition", alert.Condition, "threshold", alert.Threshold, "severity", alert.Severity)
+	s.log.Infow("msg", "alert created", "uuid", created.ID, "sensor_id", alert.SensorID, "condition", alert.Condition, "threshold", alert.Threshold, "severity", alert.Severity)
 
 	return created, nil
 }
@@ -691,8 +691,8 @@ func (s *sensorService) evaluateThresholdAlerts(ctx context.Context, tenantID, s
 
 			s.log.Warnw("msg", "alert triggered", "sensor_id", sensorID, "condition", alertRule.Condition, "value", value, "threshold", alertRule.Threshold, "severity", alertRule.Severity)
 
-			s.emitEvent(ctx, "agriculture.sensor.alert.triggered", created.UUID, map[string]interface{}{
-				"alert_id":     created.UUID,
+			s.emitEvent(ctx, "agriculture.sensor.alert.triggered", created.ID, map[string]interface{}{
+				"alert_id":     created.ID,
 				"sensor_id":    sensorID,
 				"sensor_type":  string(sensor.SensorType),
 				"field_id":     sensor.FieldID,

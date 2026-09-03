@@ -3,10 +3,10 @@ package domain
 import "fmt"
 
 // ErrSoilNotFound is returned when a soil cannot be located.
-type ErrSoilNotFound struct{ UUID string }
+type ErrSoilNotFound struct{ ID string }
 
 func (e ErrSoilNotFound) Error() string {
-	return fmt.Sprintf("soil not found: %s", e.UUID)
+	return fmt.Sprintf("soil not found: %s", e.ID)
 }
 
 // ErrSoilNameExists is returned when a duplicate name is detected.

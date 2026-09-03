@@ -1,9 +1,10 @@
-.PHONY: all build test lint vet proto clean help
+.PHONY: all build test lint vet proto clean help api-docs
 
 SERVICES := farm-service field-service crop-service sensor-service \
             irrigation-service soil-service yield-service \
             pest-prediction-service plant-diagnosis-service \
-            satellite-service traceability-service commerce-service
+            satellite-service traceability-service commerce-service \
+            auth-service
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -35,10 +36,23 @@ test-packages: ## Run shared package tests only
 lint: ## Run golangci-lint
 	golangci-lint run --timeout=5m
 
-proto: ## Regenerate protobuf code
+tools: ## Install pinned protoc-gen-* tools from tools.go
+	go install connectrpc.com/connect/cmd/protoc-gen-connect-go
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go install google.golang.org/protobuf/cmd/protoc-gen-go
+
+proto: ## Regenerate Go protobuf code (run 'make tools' first)
 	buf generate
 
-proto-check: ## Check proto freshness
+proto-web: ## Regenerate TypeScript proto types
+	cd web/packages/proto && bash generate.sh
+
+proto-mobile: ## Regenerate Dart proto types
+	cd mobile/packages/flutter_proto && buf generate
+
+proto-all: proto proto-web proto-mobile ## Regenerate all proto code (Go + TS + Dart)
+
+proto-check: ## Check proto freshness (CI gate)
 	buf generate
 	@git diff --quiet -- '*.pb.go' '*.connect.go' || \
 		(echo "Proto generated code is stale — run 'make proto' and commit" && exit 1)
@@ -48,6 +62,9 @@ clean: ## Remove build artifacts
 	@for svc in $(SERVICES); do \
 		rm -f $$svc/cmd/server/server; \
 	done
+
+api-docs: ## Regenerate OpenAPI specs from proto definitions
+	./scripts/generate-api-docs.sh
 
 docker-%: ## Build Docker image for a service (e.g., make docker-farm-service)
 	docker build --build-arg SERVICE=$* -t yieldpoint/$*:dev .

@@ -132,7 +132,7 @@ func (h *SensorHandler) UpdateSensor(ctx context.Context, req *connect.Request[p
 		Protocol:               sensorProtocolFromProto(req.Msg.GetProtocol()),
 		ReadingIntervalSeconds: req.Msg.GetReadingIntervalSeconds(),
 	}
-	entity.UUID = req.Msg.GetId()
+	entity.ID = req.Msg.GetId()
 
 	if req.Msg.GetLocation() != nil {
 		lat := req.Msg.GetLocation().GetLatitude()
@@ -621,7 +621,7 @@ func sensorToProto(s *domain.Sensor) *pb.Sensor {
 	}
 
 	sensor := &pb.Sensor{
-		Id:                     s.UUID,
+		Id:                     s.ID,
 		TenantId:               s.TenantID,
 		FieldId:                s.FieldID,
 		FarmId:                 s.FarmID,
@@ -669,7 +669,7 @@ func sensorReadingToProto(r *domain.SensorReading) *pb.SensorReading {
 	}
 
 	reading := &pb.SensorReading{
-		Id:        r.UUID,
+		Id:        r.ID,
 		SensorId:  r.SensorID,
 		TenantId:  r.TenantID,
 		Value:     r.Value,
@@ -698,7 +698,7 @@ func sensorAlertToProto(a *domain.SensorAlert) *pb.SensorAlert {
 	}
 
 	alert := &pb.SensorAlert{
-		Id:           a.UUID,
+		Id:           a.ID,
 		SensorId:     a.SensorID,
 		TenantId:     a.TenantID,
 		FieldId:      a.FieldID,
@@ -731,7 +731,7 @@ func sensorNetworkToProto(n *domain.SensorNetwork) *pb.SensorNetwork {
 	}
 
 	network := &pb.SensorNetwork{
-		Id:            n.UUID,
+		Id:            n.ID,
 		TenantId:      n.TenantID,
 		FarmId:        n.FarmID,
 		Name:          n.Name,
@@ -757,7 +757,7 @@ func sensorCalibrationToProto(c *domain.SensorCalibration) *pb.SensorCalibration
 	}
 
 	cal := &pb.SensorCalibration{
-		Id:              c.UUID,
+		Id:              c.ID,
 		SensorId:        c.SensorID,
 		TenantId:        c.TenantID,
 		Offset:          c.OffsetValue,

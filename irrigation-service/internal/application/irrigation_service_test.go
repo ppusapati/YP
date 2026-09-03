@@ -98,9 +98,8 @@ func newMockIrrigationRepo() *mockIrrigationRepo {
 }
 
 func (m *mockIrrigationRepo) CreateIrrigation(_ context.Context, e *domain.Irrigation) (*domain.Irrigation, error) {
-	e.UUID = "irrig-uuid-001"
-	e.ID = 1
-	m.irrigations[e.UUID] = e
+	e.ID = "irrig-uuid-001"
+	m.irrigations[e.ID] = e
 	m.names[e.TenantID+"/"+e.Name] = true
 	return e, nil
 }
@@ -124,7 +123,7 @@ func (m *mockIrrigationRepo) ListIrrigations(_ context.Context, params domain.Li
 }
 
 func (m *mockIrrigationRepo) UpdateIrrigation(_ context.Context, e *domain.Irrigation) (*domain.Irrigation, error) {
-	existing, ok := m.irrigations[e.UUID]
+	existing, ok := m.irrigations[e.ID]
 	if !ok {
 		return nil, errors.NotFound("IRRIGATION_NOT_FOUND", "not found")
 	}
@@ -155,9 +154,8 @@ func (m *mockIrrigationRepo) CheckIrrigationNameExists(_ context.Context, name, 
 func (m *mockIrrigationRepo) WithTx(_ pgx.Tx) outbound.IrrigationRepository { return m }
 
 func (m *mockIrrigationRepo) CreateZone(_ context.Context, z *domain.IrrigationZone) (*domain.IrrigationZone, error) {
-	z.UUID = "zone-uuid-001"
-	z.ID = 1
-	m.zones[z.UUID] = z
+	z.ID = "zone-uuid-001"
+	m.zones[z.ID] = z
 	return z, nil
 }
 
@@ -190,9 +188,8 @@ func (m *mockIrrigationRepo) ListZonesByFarm(_ context.Context, farmID string, _
 }
 
 func (m *mockIrrigationRepo) CreateController(_ context.Context, c *domain.WaterController) (*domain.WaterController, error) {
-	c.UUID = "ctrl-uuid-001"
-	c.ID = 1
-	m.controllers[c.UUID] = c
+	c.ID = "ctrl-uuid-001"
+	m.controllers[c.ID] = c
 	return c, nil
 }
 
@@ -224,9 +221,8 @@ func (m *mockIrrigationRepo) UpdateControllerStatus(_ context.Context, uuid stri
 }
 
 func (m *mockIrrigationRepo) CreateSchedule(_ context.Context, s *domain.IrrigationSchedule) (*domain.IrrigationSchedule, error) {
-	s.UUID = "sched-uuid-001"
-	s.ID = 1
-	m.schedules[s.UUID] = s
+	s.ID = "sched-uuid-001"
+	m.schedules[s.ID] = s
 	return s, nil
 }
 
@@ -259,7 +255,7 @@ func (m *mockIrrigationRepo) ListSchedulesByZone(_ context.Context, zoneID strin
 }
 
 func (m *mockIrrigationRepo) UpdateSchedule(_ context.Context, s *domain.IrrigationSchedule) (*domain.IrrigationSchedule, error) {
-	existing, ok := m.schedules[s.UUID]
+	existing, ok := m.schedules[s.ID]
 	if !ok {
 		return nil, errors.NotFound("SCHEDULE_NOT_FOUND", "not found")
 	}
@@ -285,9 +281,8 @@ func (m *mockIrrigationRepo) DeleteSchedule(_ context.Context, uuid string) erro
 }
 
 func (m *mockIrrigationRepo) CreateEvent(_ context.Context, evt *domain.IrrigationEvent) (*domain.IrrigationEvent, error) {
-	evt.UUID = "event-uuid-001"
-	evt.ID = 1
-	m.events[evt.UUID] = evt
+	evt.ID = "event-uuid-001"
+	m.events[evt.ID] = evt
 	return evt, nil
 }
 
@@ -318,9 +313,8 @@ func (m *mockIrrigationRepo) UpdateEvent(_ context.Context, evt *domain.Irrigati
 }
 
 func (m *mockIrrigationRepo) CreateDecision(_ context.Context, d *domain.IrrigationDecision) (*domain.IrrigationDecision, error) {
-	d.UUID = "decision-uuid-001"
-	d.ID = 1
-	m.decisions[d.UUID] = d
+	d.ID = "decision-uuid-001"
+	m.decisions[d.ID] = d
 	return d, nil
 }
 
@@ -333,7 +327,7 @@ func (m *mockIrrigationRepo) MarkDecisionApplied(_ context.Context, uuid string)
 }
 
 func (m *mockIrrigationRepo) CreateWaterUsageLog(_ context.Context, log *domain.WaterUsageLog) (*domain.WaterUsageLog, error) {
-	log.UUID = "usage-uuid-001"
+	log.ID = "usage-uuid-001"
 	m.usageLogs[log.ZoneID] = append(m.usageLogs[log.ZoneID], *log)
 	return log, nil
 }
@@ -386,7 +380,7 @@ func TestCreateIrrigation_HappyPath(t *testing.T) {
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Equal(t, domain.IrrigationStatusActive, created.Status)
-	assert.Equal(t, "irrig-uuid-001", created.UUID)
+	assert.Equal(t, "irrig-uuid-001", created.ID)
 	assert.Len(t, pub.published, 1)
 	assert.Equal(t, eventTopic, pub.published[0].topic)
 }
@@ -444,7 +438,7 @@ func TestGetIrrigation_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Name:     "Main",
 	}
-	repo.irrigations["irrig-001"].UUID = "irrig-001"
+	repo.irrigations["irrig-001"].ID = "irrig-001"
 
 	result, err := svc.GetIrrigation(ctx, "irrig-001")
 	require.NoError(t, err)
@@ -488,9 +482,9 @@ func TestListIrrigations_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.irrigations["i1"] = &domain.Irrigation{TenantID: "tenant-1", Name: "A"}
-	repo.irrigations["i1"].UUID = "i1"
+	repo.irrigations["i1"].ID = "i1"
 	repo.irrigations["i2"] = &domain.Irrigation{TenantID: "tenant-1", Name: "B"}
-	repo.irrigations["i2"].UUID = "i2"
+	repo.irrigations["i2"].ID = "i2"
 
 	list, total, err := svc.ListIrrigations(ctx, domain.ListIrrigationParams{})
 	require.NoError(t, err)
@@ -519,10 +513,10 @@ func TestUpdateIrrigation_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Name:     "Old Name",
 	}
-	repo.irrigations["irrig-001"].UUID = "irrig-001"
+	repo.irrigations["irrig-001"].ID = "irrig-001"
 
 	entity := &domain.Irrigation{Name: "New Name"}
-	entity.UUID = "irrig-001"
+	entity.ID = "irrig-001"
 	updated, err := svc.UpdateIrrigation(ctx, entity)
 	require.NoError(t, err)
 	assert.Equal(t, "New Name", updated.Name)
@@ -536,7 +530,7 @@ func TestUpdateIrrigation_MissingTenant(t *testing.T) {
 	ctx := testContext("", "user-1")
 
 	entity := &domain.Irrigation{Name: "X"}
-	entity.UUID = "irrig-001"
+	entity.ID = "irrig-001"
 	_, err := svc.UpdateIrrigation(ctx, entity)
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
@@ -557,7 +551,7 @@ func TestUpdateIrrigation_NotFound(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	entity := &domain.Irrigation{Name: "X"}
-	entity.UUID = "nonexistent"
+	entity.ID = "nonexistent"
 	_, err := svc.UpdateIrrigation(ctx, entity)
 	require.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
@@ -572,7 +566,7 @@ func TestDeleteIrrigation_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.irrigations["irrig-001"] = &domain.Irrigation{TenantID: "tenant-1", Name: "X"}
-	repo.irrigations["irrig-001"].UUID = "irrig-001"
+	repo.irrigations["irrig-001"].ID = "irrig-001"
 
 	err := svc.DeleteIrrigation(ctx, "irrig-001")
 	require.NoError(t, err)
@@ -622,7 +616,7 @@ func TestCreateZone_HappyPath(t *testing.T) {
 	}
 	created, err := svc.CreateZone(ctx, zone)
 	require.NoError(t, err)
-	assert.Equal(t, "zone-uuid-001", created.UUID)
+	assert.Equal(t, "zone-uuid-001", created.ID)
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, "user-1", created.CreatedBy)
 	assert.Len(t, pub.published, 1)
@@ -715,7 +709,7 @@ func TestGetZone_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Name:     "Zone A",
 	}
-	repo.zones["zone-001"].UUID = "zone-001"
+	repo.zones["zone-001"].ID = "zone-001"
 
 	zone, err := svc.GetZone(ctx, "zone-001")
 	require.NoError(t, err)
@@ -796,7 +790,7 @@ func TestCreateController_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.zones["zone-001"] = &domain.IrrigationZone{TenantID: "tenant-1", Name: "Zone A"}
-	repo.zones["zone-001"].UUID = "zone-001"
+	repo.zones["zone-001"].ID = "zone-001"
 
 	ctrl := &domain.WaterController{
 		Name:                     "Valve 1",
@@ -806,7 +800,7 @@ func TestCreateController_HappyPath(t *testing.T) {
 	}
 	created, err := svc.CreateController(ctx, ctrl)
 	require.NoError(t, err)
-	assert.Equal(t, "ctrl-uuid-001", created.UUID)
+	assert.Equal(t, "ctrl-uuid-001", created.ID)
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, domain.ControllerStatusOffline, created.Status)
 }
@@ -940,7 +934,7 @@ func TestUpdateControllerStatus_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.ControllerStatusOffline,
 	}
-	repo.controllers["ctrl-001"].UUID = "ctrl-001"
+	repo.controllers["ctrl-001"].ID = "ctrl-001"
 
 	updated, err := svc.UpdateControllerStatus(ctx, "ctrl-001", domain.ControllerStatusOnline)
 	require.NoError(t, err)
@@ -994,7 +988,7 @@ func TestCreateSchedule_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.zones["zone-001"] = &domain.IrrigationZone{TenantID: "tenant-1", Name: "Zone A"}
-	repo.zones["zone-001"].UUID = "zone-001"
+	repo.zones["zone-001"].ID = "zone-001"
 
 	sched := &domain.IrrigationSchedule{
 		Name:            "Morning Schedule",
@@ -1004,7 +998,7 @@ func TestCreateSchedule_HappyPath(t *testing.T) {
 	}
 	created, err := svc.CreateSchedule(ctx, sched)
 	require.NoError(t, err)
-	assert.Equal(t, "sched-uuid-001", created.UUID)
+	assert.Equal(t, "sched-uuid-001", created.ID)
 	assert.Equal(t, "tenant-1", created.TenantID)
 	assert.Equal(t, domain.IrrigationStatusScheduled, created.Status)
 	assert.Len(t, pub.published, 1)
@@ -1129,7 +1123,7 @@ func TestCancelSchedule_HappyPath(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.IrrigationStatusScheduled,
 	}
-	repo.schedules["sched-001"].UUID = "sched-001"
+	repo.schedules["sched-001"].ID = "sched-001"
 
 	err := svc.CancelSchedule(ctx, "sched-001")
 	require.NoError(t, err)
@@ -1164,7 +1158,7 @@ func TestCancelSchedule_AlreadyCancelled(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.IrrigationStatusCancelled,
 	}
-	repo.schedules["sched-001"].UUID = "sched-001"
+	repo.schedules["sched-001"].ID = "sched-001"
 
 	err := svc.CancelSchedule(ctx, "sched-001")
 	require.Error(t, err)
@@ -1180,7 +1174,7 @@ func TestCancelSchedule_AlreadyCompleted(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.IrrigationStatusCompleted,
 	}
-	repo.schedules["sched-001"].UUID = "sched-001"
+	repo.schedules["sched-001"].ID = "sched-001"
 
 	err := svc.CancelSchedule(ctx, "sched-001")
 	require.Error(t, err)
@@ -1212,11 +1206,11 @@ func TestTriggerIrrigation_HappyPath(t *testing.T) {
 		WaterQuantityLiters: 500,
 		Status:              domain.IrrigationStatusScheduled,
 	}
-	repo.schedules["sched-001"].UUID = "sched-001"
+	repo.schedules["sched-001"].ID = "sched-001"
 
 	evt, err := svc.TriggerIrrigation(ctx, "sched-001")
 	require.NoError(t, err)
-	assert.Equal(t, "event-uuid-001", evt.UUID)
+	assert.Equal(t, "event-uuid-001", evt.ID)
 	assert.Equal(t, domain.IrrigationStatusActive, evt.Status)
 	assert.NotNil(t, evt.StartedAt)
 	assert.Len(t, pub.published, 1)
@@ -1258,7 +1252,7 @@ func TestTriggerIrrigation_ControllerNotOnline(t *testing.T) {
 		TenantID: "tenant-1",
 		Status:   domain.ControllerStatusOffline,
 	}
-	repo.controllers["ctrl-001"].UUID = "ctrl-001"
+	repo.controllers["ctrl-001"].ID = "ctrl-001"
 
 	repo.schedules["sched-001"] = &domain.IrrigationSchedule{
 		TenantID:     "tenant-1",
@@ -1266,7 +1260,7 @@ func TestTriggerIrrigation_ControllerNotOnline(t *testing.T) {
 		ControllerID: "ctrl-001",
 		Status:       domain.IrrigationStatusScheduled,
 	}
-	repo.schedules["sched-001"].UUID = "sched-001"
+	repo.schedules["sched-001"].ID = "sched-001"
 
 	_, err := svc.TriggerIrrigation(ctx, "sched-001")
 	require.Error(t, err)
@@ -1329,7 +1323,7 @@ func TestRequestDecision_HappyPath(t *testing.T) {
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.zones["zone-001"] = &domain.IrrigationZone{TenantID: "tenant-1", Name: "Zone A"}
-	repo.zones["zone-001"].UUID = "zone-001"
+	repo.zones["zone-001"].ID = "zone-001"
 
 	decision := &domain.IrrigationDecision{
 		ZoneID: "zone-001",
@@ -1338,7 +1332,7 @@ func TestRequestDecision_HappyPath(t *testing.T) {
 
 	result, err := svc.RequestDecision(ctx, decision)
 	require.NoError(t, err)
-	assert.Equal(t, "decision-uuid-001", result.UUID)
+	assert.Equal(t, "decision-uuid-001", result.ID)
 	assert.Equal(t, "tenant-1", result.TenantID)
 	assert.True(t, result.Output.ShouldIrrigate) // Soil moisture 20 < 30 threshold.
 	assert.False(t, result.Applied)

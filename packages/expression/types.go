@@ -50,9 +50,8 @@ type DynamicFilter struct {
 // combining filters, pagination, sorting, and field selection.
 // Used across all modules for consistent API request/response handling.
 type SearchCriteria struct {
-	// Basic Identifier Filters
-	ID   *query.Int32FilterOperators  `json:"id,omitempty"`
-	UUID *query.StringFilterOperation `json:"uuid,omitempty"`
+	// Basic Identifier Filter
+	ID *query.StringFilterOperation `json:"id,omitempty"`
 
 	// Basic filters
 	Filters []Filter `json:"filters"`

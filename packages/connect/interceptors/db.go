@@ -137,6 +137,8 @@ func WithDBPoolResolver(resolver DBPoolResolver) DBInterceptorOption {
 
 // DBInterceptor returns a Connect interceptor that resolves the database pool.
 // It stores the resolved pool in context using p9context.NewDBPoolContext.
+// If the X-Tenant-Name header is present, it is validated against the
+// authenticated user's tenant ID from JWT claims.
 func DBInterceptor(sharedPool *pgxpool.Pool, opts ...DBInterceptorOption) connect.UnaryInterceptorFunc {
 	cfg := &dbConfig{}
 	for _, opt := range opts {
@@ -148,18 +150,29 @@ func DBInterceptor(sharedPool *pgxpool.Pool, opts ...DBInterceptorOption) connec
 			var pool *pgxpool.Pool
 			var err error
 
-			// Extract tenant ID from header
 			tenantID := req.Header().Get(TenantHeader)
 
+			// Cross-validate: if authenticated user context exists, the header
+			// tenant must match the JWT tenant to prevent routing to another
+			// tenant's database.
+			if user, ok := p9context.FromUserContext(ctx); ok && user != nil && user.TenantID != "" {
+				if tenantID != "" && tenantID != user.TenantID {
+					p9log.Context(ctx).Warnf("db interceptor: X-Tenant-Name header %q does not match JWT tenant %q — rejecting",
+						tenantID, user.TenantID)
+					return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("tenant mismatch"))
+				}
+				if tenantID == "" {
+					tenantID = user.TenantID
+				}
+			}
+
 			if cfg.resolver != nil {
-				// Use resolver if provided
 				pool, err = cfg.resolver.ResolvePool(ctx, tenantID)
 				if err != nil {
 					p9log.Context(ctx).Errorf("db interceptor: failed to resolve pool: %v", err)
 					return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to resolve database"))
 				}
 			} else {
-				// Default: use shared pool
 				pool = sharedPool
 			}
 
@@ -168,10 +181,7 @@ func DBInterceptor(sharedPool *pgxpool.Pool, opts ...DBInterceptorOption) connec
 				return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("no database pool"))
 			}
 
-			// Store pool in context
 			ctx = p9context.NewDBPoolContext(ctx, pool)
-
-			p9log.Context(ctx).Debugf("db interceptor: resolved pool for tenant %s", tenantID)
 
 			return next(ctx, req)
 		}

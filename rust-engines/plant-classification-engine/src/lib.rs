@@ -13,5 +13,5 @@ pub mod types;
 
 pub use inference::{PlantClassifier, ClassifierConfig};
 pub use model::{ClassificationModel, ClassificationModelConfig, ModelError, ModelOutput};
-pub use preprocess::{ImageBuffer, PreprocessConfig, preprocess_image, preprocess_batch};
-pub use types::{PlantSpecies, SpeciesCandidate, ClassificationResult, ConfidenceLevel, NUM_SPECIES_CLASSES};
+pub use preprocess::{ImageBuffer, PreprocessConfig, preprocess_image, preprocess_batch, tta_augment, horizontal_flip};
+pub use types::{PlantClass, TopKPrediction, ClassificationResult, NUM_CLASSES};

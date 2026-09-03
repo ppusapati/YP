@@ -110,9 +110,8 @@ type Farm struct {
 
 // FarmBoundary represents the geographic boundary of a farm.
 type FarmBoundary struct {
-	ID              int64      `json:"id"`
-	UUID            string     `json:"uuid"`
-	FarmID          int64      `json:"farm_id"`
+	ID              string     `json:"id"`
+	FarmID          string     `json:"farm_id"`
 	FarmUUID        string     `json:"farm_uuid"`
 	TenantID        string     `json:"tenant_id"`
 	GeoJSON         string     `json:"geojson"`
@@ -129,9 +128,8 @@ type FarmBoundary struct {
 
 // FarmOwner represents ownership information for a farm.
 type FarmOwner struct {
-	ID                  int64      `json:"id"`
-	UUID                string     `json:"uuid"`
-	FarmID              int64      `json:"farm_id"`
+	ID                  string     `json:"id"`
+	FarmID              string     `json:"farm_id"`
 	FarmUUID            string     `json:"farm_uuid"`
 	TenantID            string     `json:"tenant_id"`
 	UserID              string     `json:"user_id"`

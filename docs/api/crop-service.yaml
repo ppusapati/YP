@@ -1,0 +1,519 @@
+openapi: 3.0.3
+info:
+  title: Crop Service API
+  description: |
+    Crop catalog management, varieties, growth stages, requirements, and AI recommendations
+    for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8082
+    description: Local development
+tags:
+  - name: Crops
+    description: Crop CRUD operations
+  - name: Varieties
+    description: Crop variety management
+  - name: GrowthStages
+    description: Growth stage information
+  - name: Requirements
+    description: Crop growing requirements
+  - name: Intelligence
+    description: AI-powered recommendations
+
+paths:
+  /agriculture.crop.v1.CropService/CreateCrop:
+    post:
+      tags: [Crops]
+      summary: Create a new crop in the catalog
+      operationId: CreateCrop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCropRequest'
+      responses:
+        '200':
+          description: Crop created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCropResponse'
+
+  /agriculture.crop.v1.CropService/GetCrop:
+    post:
+      tags: [Crops]
+      summary: Get a crop by ID
+      operationId: GetCrop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCropRequest'
+      responses:
+        '200':
+          description: Crop retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCropResponse'
+
+  /agriculture.crop.v1.CropService/ListCrops:
+    post:
+      tags: [Crops]
+      summary: List crops with filtering and pagination
+      operationId: ListCrops
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListCropsRequest'
+      responses:
+        '200':
+          description: Crops listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCropsResponse'
+
+  /agriculture.crop.v1.CropService/UpdateCrop:
+    post:
+      tags: [Crops]
+      summary: Update a crop
+      operationId: UpdateCrop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCropRequest'
+      responses:
+        '200':
+          description: Crop updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateCropResponse'
+
+  /agriculture.crop.v1.CropService/DeleteCrop:
+    post:
+      tags: [Crops]
+      summary: Delete a crop
+      operationId: DeleteCrop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteCropRequest'
+      responses:
+        '200':
+          description: Crop deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCropResponse'
+
+  /agriculture.crop.v1.CropService/AddVariety:
+    post:
+      tags: [Varieties]
+      summary: Add a variety to a crop
+      operationId: AddVariety
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddVarietyRequest'
+      responses:
+        '200':
+          description: Variety added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddVarietyResponse'
+
+  /agriculture.crop.v1.CropService/ListVarieties:
+    post:
+      tags: [Varieties]
+      summary: List varieties for a crop
+      operationId: ListVarieties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListVarietiesRequest'
+      responses:
+        '200':
+          description: Varieties listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListVarietiesResponse'
+
+  /agriculture.crop.v1.CropService/GetGrowthStages:
+    post:
+      tags: [GrowthStages]
+      summary: Get growth stages for a crop
+      operationId: GetGrowthStages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetGrowthStagesRequest'
+      responses:
+        '200':
+          description: Growth stages retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetGrowthStagesResponse'
+
+  /agriculture.crop.v1.CropService/GetCropRequirements:
+    post:
+      tags: [Requirements]
+      summary: Get optimal growing requirements for a crop
+      operationId: GetCropRequirements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCropRequirementsRequest'
+      responses:
+        '200':
+          description: Requirements retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCropRequirementsResponse'
+
+  /agriculture.crop.v1.CropService/GenerateRecommendation:
+    post:
+      tags: [Intelligence]
+      summary: Generate an AI recommendation for a crop based on conditions
+      operationId: GenerateRecommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRecommendationRequest'
+      responses:
+        '200':
+          description: Recommendation generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateRecommendationResponse'
+
+components:
+  schemas:
+    CropCategory:
+      type: string
+      enum:
+        - CROP_CATEGORY_UNSPECIFIED
+        - CROP_CATEGORY_CEREAL
+        - CROP_CATEGORY_LEGUME
+        - CROP_CATEGORY_VEGETABLE
+        - CROP_CATEGORY_FRUIT
+        - CROP_CATEGORY_OILSEED
+        - CROP_CATEGORY_FIBER
+        - CROP_CATEGORY_SPICE
+
+    Crop:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+        scientificName:
+          type: string
+        family:
+          type: string
+        category:
+          $ref: '#/components/schemas/CropCategory'
+        description:
+          type: string
+        imageUrl:
+          type: string
+        diseaseSusceptibilities:
+          type: array
+          items:
+            type: string
+        companionPlants:
+          type: array
+          items:
+            type: string
+        rotationGroup:
+          type: string
+        version:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateCropRequest:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        name:
+          type: string
+        scientificName:
+          type: string
+        family:
+          type: string
+        category:
+          $ref: '#/components/schemas/CropCategory'
+        description:
+          type: string
+        imageUrl:
+          type: string
+        diseaseSusceptibilities:
+          type: array
+          items:
+            type: string
+        companionPlants:
+          type: array
+          items:
+            type: string
+        rotationGroup:
+          type: string
+
+    CreateCropResponse:
+      type: object
+      properties:
+        crop:
+          $ref: '#/components/schemas/Crop'
+
+    GetCropRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+
+    GetCropResponse:
+      type: object
+      properties:
+        crop:
+          $ref: '#/components/schemas/Crop'
+
+    ListCropsRequest:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        category:
+          $ref: '#/components/schemas/CropCategory'
+        searchTerm:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+        sort:
+          type: array
+          items:
+            type: string
+
+    ListCropsResponse:
+      type: object
+      properties:
+        crops:
+          type: array
+          items:
+            $ref: '#/components/schemas/Crop'
+        totalCount:
+          type: integer
+          format: int32
+
+    UpdateCropRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+        scientificName:
+          type: string
+        family:
+          type: string
+        category:
+          $ref: '#/components/schemas/CropCategory'
+        description:
+          type: string
+        imageUrl:
+          type: string
+        diseaseSusceptibilities:
+          type: array
+          items:
+            type: string
+        companionPlants:
+          type: array
+          items:
+            type: string
+        rotationGroup:
+          type: string
+        version:
+          type: integer
+          format: int32
+        updateMask:
+          type: string
+
+    UpdateCropResponse:
+      type: object
+      properties:
+        crop:
+          $ref: '#/components/schemas/Crop'
+
+    DeleteCropRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+
+    DeleteCropResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+    AddVarietyRequest:
+      type: object
+      properties:
+        cropId:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        maturityDays:
+          type: integer
+          format: int32
+        yieldPotentialKgPerHectare:
+          type: number
+          format: double
+        isHybrid:
+          type: boolean
+        diseaseResistance:
+          type: string
+        suitableRegions:
+          type: string
+        seedRateKgPerHectare:
+          type: string
+
+    AddVarietyResponse:
+      type: object
+      properties:
+        variety:
+          type: object
+
+    ListVarietiesRequest:
+      type: object
+      properties:
+        cropId:
+          type: string
+        tenantId:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageOffset:
+          type: integer
+          format: int32
+
+    ListVarietiesResponse:
+      type: object
+      properties:
+        varieties:
+          type: array
+          items:
+            type: object
+        totalCount:
+          type: integer
+          format: int32
+
+    GetGrowthStagesRequest:
+      type: object
+      properties:
+        cropId:
+          type: string
+        tenantId:
+          type: string
+
+    GetGrowthStagesResponse:
+      type: object
+      properties:
+        growthStages:
+          type: array
+          items:
+            type: object
+
+    GetCropRequirementsRequest:
+      type: object
+      properties:
+        cropId:
+          type: string
+        tenantId:
+          type: string
+
+    GetCropRequirementsResponse:
+      type: object
+      properties:
+        requirements:
+          type: object
+
+    GenerateRecommendationRequest:
+      type: object
+      properties:
+        cropId:
+          type: string
+        tenantId:
+          type: string
+        recommendationType:
+          type: string
+        currentGrowthStage:
+          type: string
+        currentTemperature:
+          type: number
+          format: double
+        currentHumidity:
+          type: number
+          format: double
+        currentSoilPh:
+          type: number
+          format: double
+        currentSoilMoisture:
+          type: number
+          format: double
+
+    GenerateRecommendationResponse:
+      type: object
+      properties:
+        recommendation:
+          type: object

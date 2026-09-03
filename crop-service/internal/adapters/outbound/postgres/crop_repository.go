@@ -67,8 +67,8 @@ const cropColumns = `id, tenant_id, name, scientific_name, family, category,
 	updated_by, updated_at, deleted_by, deleted_at`
 
 func (r *cropRepository) CreateCrop(ctx context.Context, entity *domain.Crop) (*domain.Crop, error) {
-	if entity.UUID == "" {
-		entity.UUID = ulid.NewString()
+	if entity.ID == "" {
+		entity.ID = ulid.NewString()
 	}
 	query := fmt.Sprintf(`
 		INSERT INTO crops (
@@ -82,7 +82,7 @@ func (r *cropRepository) CreateCrop(ctx context.Context, entity *domain.Crop) (*
 		) RETURNING %s`, cropColumns)
 
 	row := r.queryRow(ctx, query,
-		entity.UUID, entity.TenantID, entity.Name, entity.ScientificName, entity.Family, string(entity.Category),
+		entity.ID, entity.TenantID, entity.Name, entity.ScientificName, entity.Family, string(entity.Category),
 		entity.Description, entity.ImageURL, entity.DiseaseSusceptibilities, entity.CompanionPlants,
 		entity.RotationGroup, entity.Version, string(entity.Status), entity.IsActive, entity.CreatedBy,
 	)
@@ -195,7 +195,7 @@ func (r *cropRepository) UpdateCrop(ctx context.Context, entity *domain.Crop) (*
 		RETURNING %s`, cropColumns)
 
 	row := r.queryRow(ctx, query,
-		entity.UUID, entity.TenantID,
+		entity.ID, entity.TenantID,
 		entity.Name, entity.ScientificName, entity.Family, string(entity.Category),
 		entity.Description, entity.ImageURL, entity.DiseaseSusceptibilities, entity.CompanionPlants,
 		entity.RotationGroup, string(entity.Status), entity.UpdatedBy,
@@ -204,7 +204,7 @@ func (r *cropRepository) UpdateCrop(ctx context.Context, entity *domain.Crop) (*
 	result, err := scanCrop(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NotFound("CROP_NOT_FOUND", fmt.Sprintf("crop not found: %s", entity.UUID))
+			return nil, errors.NotFound("CROP_NOT_FOUND", fmt.Sprintf("crop not found: %s", entity.ID))
 		}
 		if isDuplicateKeyError(err) {
 			return nil, errors.Conflict("CROP_NAME_CONFLICT",
@@ -263,7 +263,7 @@ func scanCrop(row rowScanner) (*domain.Crop, error) {
 	e := &domain.Crop{}
 	var category, status string
 	err := row.Scan(
-		&e.UUID, &e.TenantID, &e.Name, &e.ScientificName, &e.Family, &category,
+		&e.ID, &e.TenantID, &e.Name, &e.ScientificName, &e.Family, &category,
 		&e.Description, &e.ImageURL, &e.DiseaseSusceptibilities, &e.CompanionPlants,
 		&e.RotationGroup, &e.Version, &status, &e.IsActive, &e.CreatedBy, &e.CreatedAt,
 		&e.UpdatedBy, &e.UpdatedAt, &e.DeletedBy, &e.DeletedAt,
@@ -279,8 +279,8 @@ func scanCrop(row rowScanner) (*domain.Crop, error) {
 // ---------- Variety ----------
 
 func (r *cropRepository) CreateVariety(ctx context.Context, variety *domain.CropVariety) (*domain.CropVariety, error) {
-	if variety.UUID == "" {
-		variety.UUID = ulid.NewString()
+	if variety.ID == "" {
+		variety.ID = ulid.NewString()
 	}
 	query := `
 		INSERT INTO crop_varieties (
@@ -296,7 +296,7 @@ func (r *cropRepository) CreateVariety(ctx context.Context, variety *domain.Crop
 			suitable_regions, seed_rate_kg_per_hectare, is_active, created_by, created_at, updated_by, updated_at`
 
 	row := r.queryRow(ctx, query,
-		variety.UUID, variety.CropID, variety.TenantID, variety.Name, variety.Description,
+		variety.ID, variety.CropID, variety.TenantID, variety.Name, variety.Description,
 		variety.MaturityDays, variety.YieldPotentialKgPerHectare, variety.IsHybrid,
 		variety.DiseaseResistance, variety.SuitableRegions, variety.SeedRateKgPerHectare,
 		variety.IsActive, variety.CreatedBy,
@@ -304,7 +304,7 @@ func (r *cropRepository) CreateVariety(ctx context.Context, variety *domain.Crop
 
 	result := &domain.CropVariety{}
 	err := row.Scan(
-		&result.UUID, &result.CropID, &result.TenantID, &result.Name,
+		&result.ID, &result.CropID, &result.TenantID, &result.Name,
 		&result.Description, &result.MaturityDays, &result.YieldPotentialKgPerHectare,
 		&result.IsHybrid, &result.DiseaseResistance, &result.SuitableRegions,
 		&result.SeedRateKgPerHectare, &result.IsActive, &result.CreatedBy, &result.CreatedAt,
@@ -321,7 +321,7 @@ func (r *cropRepository) CreateVariety(ctx context.Context, variety *domain.Crop
 	return result, nil
 }
 
-func (r *cropRepository) ListVarietiesByCropID(ctx context.Context, cropID int64, tenantID string, limit, offset int32) ([]*domain.CropVariety, int32, error) {
+func (r *cropRepository) ListVarietiesByCropID(ctx context.Context, cropID string, tenantID string, limit, offset int32) ([]*domain.CropVariety, int32, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -353,7 +353,7 @@ func (r *cropRepository) ListVarietiesByCropID(ctx context.Context, cropID int64
 	for rows.Next() {
 		v := &domain.CropVariety{}
 		if err := rows.Scan(
-			&v.UUID, &v.CropID, &v.TenantID, &v.Name,
+			&v.ID, &v.CropID, &v.TenantID, &v.Name,
 			&v.Description, &v.MaturityDays, &v.YieldPotentialKgPerHectare,
 			&v.IsHybrid, &v.DiseaseResistance, &v.SuitableRegions,
 			&v.SeedRateKgPerHectare, &v.IsActive, &v.CreatedBy, &v.CreatedAt,
@@ -374,7 +374,7 @@ func (r *cropRepository) ListVarietiesByCropID(ctx context.Context, cropID int64
 
 // ---------- Growth Stages ----------
 
-func (r *cropRepository) GetGrowthStagesByCropID(ctx context.Context, cropID int64, tenantID string) ([]*domain.CropGrowthStage, error) {
+func (r *cropRepository) GetGrowthStagesByCropID(ctx context.Context, cropID string, tenantID string) ([]*domain.CropGrowthStage, error) {
 	rows, err := r.query(ctx, `
 		SELECT id, crop_id, tenant_id, name, stage_order, duration_days,
 			water_requirement_mm, nutrient_requirements, description,
@@ -393,7 +393,7 @@ func (r *cropRepository) GetGrowthStagesByCropID(ctx context.Context, cropID int
 	for rows.Next() {
 		s := &domain.CropGrowthStage{}
 		if err := rows.Scan(
-			&s.UUID, &s.CropID, &s.TenantID, &s.Name, &s.StageOrder,
+			&s.ID, &s.CropID, &s.TenantID, &s.Name, &s.StageOrder,
 			&s.DurationDays, &s.WaterRequirementMM, &s.NutrientRequirements,
 			&s.Description, &s.OptimalTempMin, &s.OptimalTempMax,
 			&s.IsActive, &s.CreatedBy, &s.CreatedAt, &s.UpdatedBy, &s.UpdatedAt,
@@ -413,7 +413,7 @@ func (r *cropRepository) GetGrowthStagesByCropID(ctx context.Context, cropID int
 
 // ---------- Requirements ----------
 
-func (r *cropRepository) GetCropRequirementsByCropID(ctx context.Context, cropID int64, tenantID string) (*domain.CropRequirements, error) {
+func (r *cropRepository) GetCropRequirementsByCropID(ctx context.Context, cropID string, tenantID string) (*domain.CropRequirements, error) {
 	query := `
 		SELECT id, crop_id, tenant_id, optimal_temp_min, optimal_temp_max,
 			optimal_humidity_min, optimal_humidity_max, optimal_soil_ph_min, optimal_soil_ph_max,
@@ -427,7 +427,7 @@ func (r *cropRepository) GetCropRequirementsByCropID(ctx context.Context, cropID
 
 	result := &domain.CropRequirements{}
 	err := row.Scan(
-		&result.UUID, &result.CropID, &result.TenantID,
+		&result.ID, &result.CropID, &result.TenantID,
 		&result.OptimalTempMin, &result.OptimalTempMax,
 		&result.OptimalHumidityMin, &result.OptimalHumidityMax,
 		&result.OptimalSoilPhMin, &result.OptimalSoilPhMax,
@@ -449,8 +449,8 @@ func (r *cropRepository) GetCropRequirementsByCropID(ctx context.Context, cropID
 // ---------- Recommendations ----------
 
 func (r *cropRepository) CreateRecommendation(ctx context.Context, rec *domain.CropRecommendation) (*domain.CropRecommendation, error) {
-	if rec.UUID == "" {
-		rec.UUID = ulid.NewString()
+	if rec.ID == "" {
+		rec.ID = ulid.NewString()
 	}
 
 	query := `
@@ -470,7 +470,7 @@ func (r *cropRepository) CreateRecommendation(ctx context.Context, rec *domain.C
 			is_active, created_by, created_at`
 
 	row := r.queryRow(ctx, query,
-		rec.UUID, rec.CropID, rec.TenantID, rec.RecommendationType, rec.Title,
+		rec.ID, rec.CropID, rec.TenantID, rec.RecommendationType, rec.Title,
 		rec.Description, rec.Severity, rec.ConfidenceScore, rec.Parameters,
 		rec.ApplicableGrowthStage, rec.ValidFrom, rec.ValidUntil,
 		rec.CreatedBy,
@@ -478,7 +478,7 @@ func (r *cropRepository) CreateRecommendation(ctx context.Context, rec *domain.C
 
 	result := &domain.CropRecommendation{}
 	err := row.Scan(
-		&result.UUID, &result.CropID, &result.TenantID,
+		&result.ID, &result.CropID, &result.TenantID,
 		&result.RecommendationType, &result.Title, &result.Description,
 		&result.Severity, &result.ConfidenceScore, &result.Parameters,
 		&result.ApplicableGrowthStage, &result.ValidFrom, &result.ValidUntil,

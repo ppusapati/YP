@@ -27,7 +27,10 @@ func NewSoilClient(baseURL string, httpClient *http.Client, opts ...connect.Clie
 func (c *soilClient) SoilExists(ctx context.Context, uuid, tenantID string) (bool, error) {
 	resp, err := c.client.GetSoilSample(ctx, connect.NewRequest(&soilv1.GetSoilSampleRequest{Id: uuid}))
 	if err != nil {
-		return false, nil
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return false, nil
+		}
+		return false, err
 	}
 	return resp.Msg.GetSample() != nil, nil
 }

@@ -85,7 +85,7 @@ func (r *analyticsRepository) exec(ctx context.Context, sql string, args ...any)
 // ---------- Stress Alert CRUD ----------
 
 func (r *analyticsRepository) CreateStressAlert(ctx context.Context, alert *analyticsmodels.StressAlert) (*analyticsmodels.StressAlert, error) {
-	alert.UUID = ulid.NewString()
+	alert.ID = ulid.NewString()
 	alert.CreatedAt = time.Now()
 	alert.IsActive = true
 	alert.Acknowledged = false
@@ -111,7 +111,7 @@ func (r *analyticsRepository) CreateStressAlert(ctx context.Context, alert *anal
 			affected_percentage, bbox_geojson, description, recommendation,
 			acknowledged, acknowledged_at, acknowledged_by, detected_at,
 			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
-		alert.UUID, alert.TenantID, alert.FarmID, alert.FieldID, alert.ProcessingJobID,
+		alert.ID, alert.TenantID, alert.FarmID, alert.FieldID, alert.ProcessingJobID,
 		alert.StressType, alert.Severity, alert.Confidence, alert.AffectedAreaHectares,
 		alert.AffectedPercentage, alert.BboxGeoJSON, alert.Description, alert.Recommendation,
 		alert.DetectedAt, alert.CreatedBy,
@@ -123,7 +123,7 @@ func (r *analyticsRepository) CreateStressAlert(ctx context.Context, alert *anal
 		return nil, errors.InternalServer("STRESS_ALERT_CREATE_FAILED", fmt.Sprintf("failed to create stress alert: %v", err))
 	}
 
-	r.log.Infow("msg", "stress alert created", "uuid", result.UUID, "tenant_id", result.TenantID)
+	r.log.Infow("msg", "stress alert created", "uuid", result.ID, "tenant_id", result.TenantID)
 	return result, nil
 }
 
@@ -311,7 +311,7 @@ func (r *analyticsRepository) GetDominantStressType(ctx context.Context, tenantI
 // ---------- Temporal Analysis CRUD ----------
 
 func (r *analyticsRepository) CreateTemporalAnalysis(ctx context.Context, analysis *analyticsmodels.TemporalAnalysis) (*analyticsmodels.TemporalAnalysis, error) {
-	analysis.UUID = ulid.NewString()
+	analysis.ID = ulid.NewString()
 	analysis.CreatedAt = time.Now()
 	analysis.IsActive = true
 
@@ -331,7 +331,7 @@ func (r *analyticsRepository) CreateTemporalAnalysis(ctx context.Context, analys
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
 			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
-		analysis.UUID, analysis.TenantID, analysis.FarmID, analysis.FieldID, analysis.AnalysisType,
+		analysis.ID, analysis.TenantID, analysis.FarmID, analysis.FieldID, analysis.AnalysisType,
 		analysis.MetricName, analysis.TrendSlope, analysis.TrendRSquared, analysis.CurrentValue,
 		analysis.BaselineValue, analysis.DeviationPercent, analysis.PeriodStart, analysis.PeriodEnd,
 		analysis.CreatedBy,
@@ -343,7 +343,7 @@ func (r *analyticsRepository) CreateTemporalAnalysis(ctx context.Context, analys
 		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_CREATE_FAILED", fmt.Sprintf("failed to create temporal analysis: %v", err))
 	}
 
-	r.log.Infow("msg", "temporal analysis created", "uuid", result.UUID, "tenant_id", result.TenantID)
+	r.log.Infow("msg", "temporal analysis created", "uuid", result.ID, "tenant_id", result.TenantID)
 	return result, nil
 }
 
@@ -400,7 +400,7 @@ func (r *analyticsRepository) GetLatestTemporalAnalysis(ctx context.Context, ten
 
 func scanStressAlert(row pgx.Row, a *analyticsmodels.StressAlert) error {
 	return row.Scan(
-		&a.ID, &a.UUID, &a.TenantID, &a.FarmID, &a.FieldID, &a.ProcessingJobID,
+		&a.ID, &a.TenantID, &a.FarmID, &a.FieldID, &a.ProcessingJobID,
 		&a.StressType, &a.Severity, &a.Confidence, &a.AffectedAreaHectares,
 		&a.AffectedPercentage, &a.BboxGeoJSON, &a.Description, &a.Recommendation,
 		&a.Acknowledged, &a.AcknowledgedAt, &a.AcknowledgedBy, &a.DetectedAt,
@@ -410,7 +410,7 @@ func scanStressAlert(row pgx.Row, a *analyticsmodels.StressAlert) error {
 
 func scanStressAlertFromRows(rows pgx.Rows, a *analyticsmodels.StressAlert) error {
 	return rows.Scan(
-		&a.ID, &a.UUID, &a.TenantID, &a.FarmID, &a.FieldID, &a.ProcessingJobID,
+		&a.ID, &a.TenantID, &a.FarmID, &a.FieldID, &a.ProcessingJobID,
 		&a.StressType, &a.Severity, &a.Confidence, &a.AffectedAreaHectares,
 		&a.AffectedPercentage, &a.BboxGeoJSON, &a.Description, &a.Recommendation,
 		&a.Acknowledged, &a.AcknowledgedAt, &a.AcknowledgedBy, &a.DetectedAt,
@@ -420,7 +420,7 @@ func scanStressAlertFromRows(rows pgx.Rows, a *analyticsmodels.StressAlert) erro
 
 func scanTemporalAnalysis(row pgx.Row, t *analyticsmodels.TemporalAnalysis) error {
 	return row.Scan(
-		&t.ID, &t.UUID, &t.TenantID, &t.FarmID, &t.FieldID, &t.AnalysisType,
+		&t.ID, &t.TenantID, &t.FarmID, &t.FieldID, &t.AnalysisType,
 		&t.MetricName, &t.TrendSlope, &t.TrendRSquared, &t.CurrentValue,
 		&t.BaselineValue, &t.DeviationPercent, &t.PeriodStart, &t.PeriodEnd,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
@@ -429,7 +429,7 @@ func scanTemporalAnalysis(row pgx.Row, t *analyticsmodels.TemporalAnalysis) erro
 
 func scanTemporalAnalysisFromRows(rows pgx.Rows, t *analyticsmodels.TemporalAnalysis) error {
 	return rows.Scan(
-		&t.ID, &t.UUID, &t.TenantID, &t.FarmID, &t.FieldID, &t.AnalysisType,
+		&t.ID, &t.TenantID, &t.FarmID, &t.FieldID, &t.AnalysisType,
 		&t.MetricName, &t.TrendSlope, &t.TrendRSquared, &t.CurrentValue,
 		&t.BaselineValue, &t.DeviationPercent, &t.PeriodStart, &t.PeriodEnd,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,

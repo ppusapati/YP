@@ -1,13 +1,24 @@
 /// Application configuration constants.
+///
+/// Network-related values are overridable via `--dart-define` at build time:
+///   flutter run --dart-define=API_BASE_URL=localhost \
+///               --dart-define=API_PORT=8080 \
+///               --dart-define=API_USE_TLS=false
 abstract final class AppConfig {
-  /// API base URL.
-  static const String apiBaseUrl = 'api.yieldpoint.io';
+  /// API base URL (override: `--dart-define=API_BASE_URL=...`).
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'api.yieldpoint.io',
+  );
 
-  /// API port.
-  static const int apiPort = 443;
+  /// API port (override: `--dart-define=API_PORT=...`).
+  static const int apiPort = int.fromEnvironment('API_PORT', defaultValue: 443);
 
-  /// Whether to use TLS for API connections.
-  static const bool apiUseTls = true;
+  /// Whether to use TLS (override: `--dart-define=API_USE_TLS=false`).
+  static const bool apiUseTls = bool.fromEnvironment(
+    'API_USE_TLS',
+    defaultValue: true,
+  );
 
   /// Default API request timeout.
   static const Duration apiTimeout = Duration(seconds: 30);
@@ -15,9 +26,11 @@ abstract final class AppConfig {
   /// Number of API retry attempts.
   static const int apiRetryCount = 3;
 
-  /// Map tile style URL.
-  static const String mapStyleUrl =
-      'https://tiles.yieldpoint.io/styles/satellite/style.json';
+  /// Map tile style URL (override: `--dart-define=MAP_STYLE_URL=...`).
+  static const String mapStyleUrl = String.fromEnvironment(
+    'MAP_STYLE_URL',
+    defaultValue: 'https://tiles.yieldpoint.io/styles/satellite/style.json',
+  );
 
   /// Fallback map style URL.
   static const String fallbackMapStyleUrl =

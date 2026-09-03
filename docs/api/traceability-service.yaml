@@ -1,0 +1,826 @@
+openapi: 3.0.3
+info:
+  title: Traceability Service API
+  description: |
+    End-to-end organic traceability from seed to shelf including supply chain events,
+    certifications, batch management, QR codes, quality checkpoints, and compliance
+    reporting for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8090
+    description: Local development
+tags:
+  - name: Records
+    description: Traceability record management
+  - name: SupplyChain
+    description: Supply chain event tracking
+  - name: Certifications
+    description: Certification management
+  - name: Batches
+    description: Batch record management
+  - name: QRCodes
+    description: QR code generation and verification
+  - name: Compliance
+    description: Compliance reporting
+  - name: Quality
+    description: Quality checkpoint management
+
+paths:
+  /agriculture.traceability.v1.TraceabilityService/CreateRecord:
+    post:
+      tags: [Records]
+      summary: Create a new traceability record
+      operationId: CreateRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropId:
+                  type: string
+                batchNumber:
+                  type: string
+                productType:
+                  type: string
+                originCountry:
+                  type: string
+                originRegion:
+                  type: string
+                seedSource:
+                  type: string
+                plantingDate:
+                  type: string
+                  format: date-time
+                harvestDate:
+                  type: string
+                  format: date-time
+                processingDate:
+                  type: string
+                  format: date-time
+                packagingDate:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Record created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GetRecord:
+    post:
+      tags: [Records]
+      summary: Get a traceability record by ID
+      operationId: GetRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Record retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/ListRecords:
+    post:
+      tags: [Records]
+      summary: List traceability records
+      operationId: ListRecords
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+                farmId:
+                  type: string
+                cropId:
+                  type: string
+                productType:
+                  type: string
+                originCountry:
+                  type: string
+                complianceStatus:
+                  type: string
+                search:
+                  type: string
+                orderBy:
+                  type: string
+      responses:
+        '200':
+          description: Records listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.traceability.v1.TraceabilityService/UpdateRecord:
+    post:
+      tags: [Records]
+      summary: Update a traceability record
+      operationId: UpdateRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                originCountry:
+                  type: string
+                originRegion:
+                  type: string
+                seedSource:
+                  type: string
+                plantingDate:
+                  type: string
+                  format: date-time
+                harvestDate:
+                  type: string
+                  format: date-time
+                processingDate:
+                  type: string
+                  format: date-time
+                packagingDate:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Record updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/AddSupplyChainEvent:
+    post:
+      tags: [SupplyChain]
+      summary: Add a supply chain event to a record
+      operationId: AddSupplyChainEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                eventType:
+                  type: string
+                  enum:
+                    - SUPPLY_CHAIN_EVENT_TYPE_PLANTED
+                    - SUPPLY_CHAIN_EVENT_TYPE_FERTILIZED
+                    - SUPPLY_CHAIN_EVENT_TYPE_IRRIGATED
+                    - SUPPLY_CHAIN_EVENT_TYPE_SPRAYED
+                    - SUPPLY_CHAIN_EVENT_TYPE_HARVESTED
+                    - SUPPLY_CHAIN_EVENT_TYPE_PROCESSED
+                    - SUPPLY_CHAIN_EVENT_TYPE_PACKAGED
+                    - SUPPLY_CHAIN_EVENT_TYPE_SHIPPED
+                    - SUPPLY_CHAIN_EVENT_TYPE_RECEIVED
+                    - SUPPLY_CHAIN_EVENT_TYPE_SOLD
+                timestamp:
+                  type: string
+                  format: date-time
+                location:
+                  type: string
+                actor:
+                  type: string
+                details:
+                  type: string
+      responses:
+        '200':
+          description: Event added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GetSupplyChain:
+    post:
+      tags: [SupplyChain]
+      summary: Get full supply chain for a record
+      operationId: GetSupplyChain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+      responses:
+        '200':
+          description: Supply chain events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+
+  /agriculture.traceability.v1.TraceabilityService/CreateCertification:
+    post:
+      tags: [Certifications]
+      summary: Create a certification for a record
+      operationId: CreateCertification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                certType:
+                  type: string
+                  enum: [CERTIFICATION_TYPE_ORGANIC, CERTIFICATION_TYPE_GAP, CERTIFICATION_TYPE_FAIRTRADE, CERTIFICATION_TYPE_RAINFOREST_ALLIANCE, CERTIFICATION_TYPE_USDA_ORGANIC, CERTIFICATION_TYPE_EU_ORGANIC]
+                certNumber:
+                  type: string
+                issuedBy:
+                  type: string
+                issuedDate:
+                  type: string
+                  format: date-time
+                expiryDate:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Certification created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certification:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GetCertification:
+    post:
+      tags: [Certifications]
+      summary: Get a certification by ID
+      operationId: GetCertification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Certification retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certification:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/ListCertifications:
+    post:
+      tags: [Certifications]
+      summary: List certifications
+      operationId: ListCertifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                certType:
+                  type: string
+                status:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Certifications listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certifications:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.traceability.v1.TraceabilityService/VerifyCertification:
+    post:
+      tags: [Certifications]
+      summary: Verify a certification
+      operationId: VerifyCertification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                verifiedBy:
+                  type: string
+      responses:
+        '200':
+          description: Certification verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certification:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/RevokeCertification:
+    post:
+      tags: [Certifications]
+      summary: Revoke a certification
+      operationId: RevokeCertification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Certification revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certification:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/CreateBatch:
+    post:
+      tags: [Batches]
+      summary: Create a new batch record
+      operationId: CreateBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                batchNumber:
+                  type: string
+                quantity:
+                  type: integer
+                  format: int32
+                unit:
+                  type: string
+                productionDate:
+                  type: string
+                  format: date-time
+                expiryDate:
+                  type: string
+                  format: date-time
+                storageConditions:
+                  type: string
+                qualityGrade:
+                  type: string
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GetBatch:
+    post:
+      tags: [Batches]
+      summary: Get a batch record by ID
+      operationId: GetBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Batch retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/ListBatches:
+    post:
+      tags: [Batches]
+      summary: List batch records
+      operationId: ListBatches
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Batches listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batches:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.traceability.v1.TraceabilityService/GenerateQRCode:
+    post:
+      tags: [QRCodes]
+      summary: Generate a QR code for a record or batch
+      operationId: GenerateQRCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                batchId:
+                  type: string
+                baseUrl:
+                  type: string
+      responses:
+        '200':
+          description: QR code generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qrCode:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/VerifyQRCode:
+    post:
+      tags: [QRCodes]
+      summary: Verify a QR code and retrieve the associated record
+      operationId: VerifyQRCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                qrData:
+                  type: string
+      responses:
+        '200':
+          description: QR code verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  record:
+                    type: object
+                  batch:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GenerateComplianceReport:
+    post:
+      tags: [Compliance]
+      summary: Generate a compliance report for a record
+      operationId: GenerateComplianceReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                reportType:
+                  type: string
+                auditor:
+                  type: string
+      responses:
+        '200':
+          description: Compliance report generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GetComplianceReport:
+    post:
+      tags: [Compliance]
+      summary: Get a compliance report by ID
+      operationId: GetComplianceReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Report retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/ListComplianceReports:
+    post:
+      tags: [Compliance]
+      summary: List compliance reports
+      operationId: ListComplianceReports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Reports listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.traceability.v1.TraceabilityService/CreateQualityCheckpoint:
+    post:
+      tags: [Quality]
+      summary: Create a quality checkpoint for a record
+      operationId: CreateQualityCheckpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                supplyChainEventId:
+                  type: string
+                checkType:
+                  type: string
+                  enum: [QUALITY_CHECK_TYPE_VISUAL, QUALITY_CHECK_TYPE_LAB, QUALITY_CHECK_TYPE_TEMPERATURE, QUALITY_CHECK_TYPE_MOISTURE, QUALITY_CHECK_TYPE_WEIGHT, QUALITY_CHECK_TYPE_SENSORY, QUALITY_CHECK_TYPE_OTHER]
+                result:
+                  type: string
+                  enum: [QUALITY_CHECK_RESULT_PASS, QUALITY_CHECK_RESULT_FAIL]
+                inspectorName:
+                  type: string
+                inspectedAt:
+                  type: string
+                  format: date-time
+                location:
+                  type: string
+                measurementValue:
+                  type: number
+                  format: double
+                measurementUnit:
+                  type: string
+                minThreshold:
+                  type: number
+                  format: double
+                maxThreshold:
+                  type: number
+                  format: double
+                notes:
+                  type: string
+                evidenceUrls:
+                  type: array
+                  items:
+                    type: string
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Checkpoint created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkpoint:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/GetQualityCheckpoint:
+    post:
+      tags: [Quality]
+      summary: Get a quality checkpoint by ID
+      operationId: GetQualityCheckpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Checkpoint retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkpoint:
+                    type: object
+
+  /agriculture.traceability.v1.TraceabilityService/ListQualityCheckpoints:
+    post:
+      tags: [Quality]
+      summary: List quality checkpoints
+      operationId: ListQualityCheckpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recordId:
+                  type: string
+                checkType:
+                  type: string
+                result:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageToken:
+                  type: string
+      responses:
+        '200':
+          description: Checkpoints listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkpoints:
+                    type: array
+                    items:
+                      type: object
+                  nextPageToken:
+                    type: string
+                  totalCount:
+                    type: integer
+                    format: int32

@@ -14,6 +14,7 @@ import (
 
 	"p9e.in/samavaya/packages/convert/ptr"
 	"p9e.in/samavaya/packages/errors"
+	"p9e.in/samavaya/packages/geojson"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
@@ -109,7 +110,7 @@ func (s *farmService) CreateFarm(ctx context.Context, farm *domain.Farm, ownerIn
 
 		if ownerInfo != nil {
 			ownerInfo.FarmID = created.ID
-			ownerInfo.FarmUUID = created.UUID
+			ownerInfo.FarmUUID = created.ID
 			ownerInfo.TenantID = tenantID
 			ownerInfo.CreatedBy = userID
 			if ownerInfo.UserID == "" {
@@ -133,11 +134,11 @@ func (s *farmService) CreateFarm(ctx context.Context, farm *domain.Farm, ownerIn
 		return nil, txErr
 	}
 
-	s.emitEvent(ctx, "agriculture.farm.created", createdFarm.UUID, map[string]interface{}{
-		"farm_id": createdFarm.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.farm.created", createdFarm.ID, map[string]interface{}{
+		"farm_id": createdFarm.ID, "tenant_id": tenantID,
 		"name": createdFarm.Name, "farm_type": string(createdFarm.FarmType),
 	})
-	s.log.Infow("msg", "farm created", "uuid", createdFarm.UUID, "tenant_id", tenantID)
+	s.log.Infow("msg", "farm created", "uuid", createdFarm.ID, "tenant_id", tenantID)
 	return createdFarm, nil
 }
 
@@ -190,19 +191,19 @@ func (s *farmService) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domai
 	if tenantID == "" {
 		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
 	}
-	if farm.UUID == "" {
+	if farm.ID == "" {
 		return nil, errors.BadRequest("MISSING_FARM_ID", "farm ID is required")
 	}
 	if userID == "" {
 		userID = "system"
 	}
 
-	exists, err := s.repo.CheckFarmExists(ctx, farm.UUID, tenantID)
+	exists, err := s.repo.CheckFarmExists(ctx, farm.ID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", farm.UUID))
+		return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", farm.ID))
 	}
 
 	if farm.FarmType != domain.FarmTypeUnspecified && !farm.FarmType.IsValid() {
@@ -219,7 +220,7 @@ func (s *farmService) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domai
 	}
 
 	if farm.Name != "" {
-		existing, err := s.repo.GetFarmByUUID(ctx, farm.UUID, tenantID)
+		existing, err := s.repo.GetFarmByUUID(ctx, farm.ID, tenantID)
 		if err != nil {
 			return nil, err
 		}
@@ -242,17 +243,17 @@ func (s *farmService) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domai
 		return nil, err
 	}
 
-	if b, bErr := s.repo.GetFarmBoundaryByFarmUUID(ctx, updated.UUID, tenantID); bErr == nil {
+	if b, bErr := s.repo.GetFarmBoundaryByFarmUUID(ctx, updated.ID, tenantID); bErr == nil {
 		updated.Boundary = b
 	}
-	if o, oErr := s.repo.GetFarmOwnersByFarmUUID(ctx, updated.UUID, tenantID); oErr == nil {
+	if o, oErr := s.repo.GetFarmOwnersByFarmUUID(ctx, updated.ID, tenantID); oErr == nil {
 		updated.Owners = o
 	}
 
-	s.emitEvent(ctx, "agriculture.farm.updated", updated.UUID, map[string]interface{}{
-		"farm_id": updated.UUID, "tenant_id": tenantID,
+	s.emitEvent(ctx, "agriculture.farm.updated", updated.ID, map[string]interface{}{
+		"farm_id": updated.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "farm updated", "uuid", updated.UUID, "request_id", requestID)
+	s.log.Infow("msg", "farm updated", "uuid", updated.ID, "request_id", requestID)
 	return updated, nil
 }
 
@@ -315,8 +316,8 @@ func (s *farmService) SetFarmBoundary(ctx context.Context, farmUUID, geoJSON str
 	if userID == "" {
 		userID = "system"
 	}
-	if !json.Valid([]byte(geoJSON)) {
-		return nil, errors.BadRequest("INVALID_GEOJSON", "GeoJSON must be valid JSON")
+	if err := geojson.ValidatePolygon(geoJSON); err != nil {
+		return nil, errors.BadRequest("INVALID_GEOJSON", fmt.Sprintf("invalid GeoJSON: %v", err))
 	}
 
 	farm, err := s.repo.GetFarmByUUID(ctx, farmUUID, tenantID)
@@ -349,9 +350,9 @@ func (s *farmService) SetFarmBoundary(ctx context.Context, farmUUID, geoJSON str
 	}
 
 	s.emitEvent(ctx, "agriculture.farm.boundary.set", farmUUID, map[string]interface{}{
-		"farm_id": farmUUID, "boundary_id": result.UUID,
+		"farm_id": farmUUID, "boundary_id": result.ID,
 	})
-	s.log.Infow("msg", "farm boundary set", "farm_uuid", farmUUID, "boundary_uuid", result.UUID, "request_id", requestID)
+	s.log.Infow("msg", "farm boundary set", "farm_uuid", farmUUID, "boundary_uuid", result.ID, "request_id", requestID)
 	return result, nil
 }
 
