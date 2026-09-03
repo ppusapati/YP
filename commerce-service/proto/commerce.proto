@@ -158,6 +158,14 @@ message UpdateListingResponse {
   MarketplaceListing listing = 1;
 }
 
+message ActivateListingRequest {
+  string id = 1;
+}
+
+message ActivateListingResponse {
+  MarketplaceListing listing = 1;
+}
+
 message CancelListingRequest {
   string id = 1;
 }
@@ -230,6 +238,7 @@ service CommerceService {
   rpc GetListing(GetListingRequest)         returns (GetListingResponse);
   rpc ListListings(ListListingsRequest)     returns (ListListingsResponse);
   rpc UpdateListing(UpdateListingRequest)   returns (UpdateListingResponse);
+  rpc ActivateListing(ActivateListingRequest) returns (ActivateListingResponse);
   rpc CancelListing(CancelListingRequest)   returns (CancelListingResponse);
 
   // Orders

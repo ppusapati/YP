@@ -260,6 +260,41 @@ func (r *commerceRepository) UpdateListing(ctx context.Context, id, tenantID str
 	return result, nil
 }
 
+func (r *commerceRepository) ActivateListing(ctx context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error) {
+	query := fmt.Sprintf(`UPDATE marketplace_listings
+		SET status = $3, updated_by = $4, version = version + 1
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+		RETURNING %s`, listingColumns)
+
+	result, err := scanListing(r.pool.QueryRow(ctx, query, id, tenantID, string(domain.ListingStatusActive), updatedBy))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("LISTING_NOT_FOUND", fmt.Sprintf("listing %s not found", id))
+		}
+		r.log.Errorw("msg", "failed to activate listing", "error", err)
+		return nil, errors.Internal("failed to activate listing: %v", err)
+	}
+	return result, nil
+}
+
+func (r *commerceRepository) DecrementListingQuantity(ctx context.Context, id, tenantID string, quantity float64) error {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE marketplace_listings
+		 SET quantity_available = quantity_available - $3,
+		     status = CASE WHEN quantity_available - $3 <= 0 THEN $4 ELSE status END,
+		     version = version + 1
+		 WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL AND quantity_available >= $3`,
+		id, tenantID, quantity, string(domain.ListingStatusSoldOut))
+	if err != nil {
+		r.log.Errorw("msg", "failed to decrement listing quantity", "error", err)
+		return errors.Internal("failed to decrement listing quantity: %v", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.BadRequest("INSUFFICIENT_QUANTITY", "insufficient quantity available")
+	}
+	return nil
+}
+
 func (r *commerceRepository) CancelListing(ctx context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error) {
 	query := fmt.Sprintf(`UPDATE marketplace_listings
 		SET status = $3, updated_by = $4, version = version + 1

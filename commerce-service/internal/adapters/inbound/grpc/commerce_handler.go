@@ -132,6 +132,14 @@ func (h *CommerceHandler) UpdateListing(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(&pb.UpdateListingResponse{Listing: listingToProto(listing)}), nil
 }
 
+func (h *CommerceHandler) ActivateListing(ctx context.Context, req *connect.Request[pb.ActivateListingRequest]) (*connect.Response[pb.ActivateListingResponse], error) {
+	listing, err := h.svc.ActivateListing(ctx, req.Msg.GetId())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.ActivateListingResponse{Listing: listingToProto(listing)}), nil
+}
+
 func (h *CommerceHandler) CancelListing(ctx context.Context, req *connect.Request[pb.CancelListingRequest]) (*connect.Response[pb.CancelListingResponse], error) {
 	listing, err := h.svc.CancelListing(ctx, req.Msg.GetId())
 	if err != nil {

@@ -46,6 +46,19 @@ var ValidOrderTransitions = map[OrderStatus][]OrderStatus{
 	OrderStatusDisputed:   {OrderStatusCompleted, OrderStatusCancelled},
 }
 
+// ValidPaymentTransitions maps current payment status to allowed next statuses.
+var ValidPaymentTransitions = map[PaymentStatus][]PaymentStatus{
+	PaymentStatusPending: {PaymentStatusPaid},
+	PaymentStatusPaid:    {PaymentStatusRefunded},
+}
+
+// ValidListingTransitions maps current listing status to allowed next statuses.
+var ValidListingTransitions = map[ListingStatus][]ListingStatus{
+	ListingStatusDraft:   {ListingStatusActive, ListingStatusCancelled},
+	ListingStatusActive:  {ListingStatusSoldOut, ListingStatusExpired, ListingStatusCancelled},
+	ListingStatusSoldOut: {ListingStatusActive},
+}
+
 // MarketplaceListing is a produce listing posted by a farmer.
 type MarketplaceListing struct {
 	ID                    string        `json:"id"`

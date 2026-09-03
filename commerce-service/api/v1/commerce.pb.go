@@ -1276,6 +1276,94 @@ func (x *UpdateListingResponse) GetListing() *MarketplaceListing {
 	return nil
 }
 
+type ActivateListingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivateListingRequest) Reset() {
+	*x = ActivateListingRequest{}
+	mi := &file_commerce_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivateListingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivateListingRequest) ProtoMessage() {}
+
+func (x *ActivateListingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commerce_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivateListingRequest.ProtoReflect.Descriptor instead.
+func (*ActivateListingRequest) Descriptor() ([]byte, []int) {
+	return file_commerce_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ActivateListingRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type ActivateListingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Listing       *MarketplaceListing    `protobuf:"bytes,1,opt,name=listing,proto3" json:"listing,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivateListingResponse) Reset() {
+	*x = ActivateListingResponse{}
+	mi := &file_commerce_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivateListingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivateListingResponse) ProtoMessage() {}
+
+func (x *ActivateListingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commerce_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivateListingResponse.ProtoReflect.Descriptor instead.
+func (*ActivateListingResponse) Descriptor() ([]byte, []int) {
+	return file_commerce_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ActivateListingResponse) GetListing() *MarketplaceListing {
+	if x != nil {
+		return x.Listing
+	}
+	return nil
+}
+
 type CancelListingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1285,7 +1373,7 @@ type CancelListingRequest struct {
 
 func (x *CancelListingRequest) Reset() {
 	*x = CancelListingRequest{}
-	mi := &file_commerce_proto_msgTypes[10]
+	mi := &file_commerce_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1297,7 +1385,7 @@ func (x *CancelListingRequest) String() string {
 func (*CancelListingRequest) ProtoMessage() {}
 
 func (x *CancelListingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[10]
+	mi := &file_commerce_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1310,7 +1398,7 @@ func (x *CancelListingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelListingRequest.ProtoReflect.Descriptor instead.
 func (*CancelListingRequest) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{10}
+	return file_commerce_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *CancelListingRequest) GetId() string {
@@ -1329,7 +1417,7 @@ type CancelListingResponse struct {
 
 func (x *CancelListingResponse) Reset() {
 	*x = CancelListingResponse{}
-	mi := &file_commerce_proto_msgTypes[11]
+	mi := &file_commerce_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1341,7 +1429,7 @@ func (x *CancelListingResponse) String() string {
 func (*CancelListingResponse) ProtoMessage() {}
 
 func (x *CancelListingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[11]
+	mi := &file_commerce_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1354,7 +1442,7 @@ func (x *CancelListingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelListingResponse.ProtoReflect.Descriptor instead.
 func (*CancelListingResponse) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{11}
+	return file_commerce_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CancelListingResponse) GetListing() *MarketplaceListing {
@@ -1378,7 +1466,7 @@ type PlaceOrderRequest struct {
 
 func (x *PlaceOrderRequest) Reset() {
 	*x = PlaceOrderRequest{}
-	mi := &file_commerce_proto_msgTypes[12]
+	mi := &file_commerce_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1390,7 +1478,7 @@ func (x *PlaceOrderRequest) String() string {
 func (*PlaceOrderRequest) ProtoMessage() {}
 
 func (x *PlaceOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[12]
+	mi := &file_commerce_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1403,7 +1491,7 @@ func (x *PlaceOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlaceOrderRequest.ProtoReflect.Descriptor instead.
 func (*PlaceOrderRequest) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{12}
+	return file_commerce_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PlaceOrderRequest) GetListingId() string {
@@ -1457,7 +1545,7 @@ type PlaceOrderResponse struct {
 
 func (x *PlaceOrderResponse) Reset() {
 	*x = PlaceOrderResponse{}
-	mi := &file_commerce_proto_msgTypes[13]
+	mi := &file_commerce_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1469,7 +1557,7 @@ func (x *PlaceOrderResponse) String() string {
 func (*PlaceOrderResponse) ProtoMessage() {}
 
 func (x *PlaceOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[13]
+	mi := &file_commerce_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1482,7 +1570,7 @@ func (x *PlaceOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlaceOrderResponse.ProtoReflect.Descriptor instead.
 func (*PlaceOrderResponse) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{13}
+	return file_commerce_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *PlaceOrderResponse) GetOrder() *Order {
@@ -1501,7 +1589,7 @@ type GetOrderRequest struct {
 
 func (x *GetOrderRequest) Reset() {
 	*x = GetOrderRequest{}
-	mi := &file_commerce_proto_msgTypes[14]
+	mi := &file_commerce_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1513,7 +1601,7 @@ func (x *GetOrderRequest) String() string {
 func (*GetOrderRequest) ProtoMessage() {}
 
 func (x *GetOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[14]
+	mi := &file_commerce_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1526,7 +1614,7 @@ func (x *GetOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOrderRequest.ProtoReflect.Descriptor instead.
 func (*GetOrderRequest) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{14}
+	return file_commerce_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetOrderRequest) GetId() string {
@@ -1545,7 +1633,7 @@ type GetOrderResponse struct {
 
 func (x *GetOrderResponse) Reset() {
 	*x = GetOrderResponse{}
-	mi := &file_commerce_proto_msgTypes[15]
+	mi := &file_commerce_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1557,7 +1645,7 @@ func (x *GetOrderResponse) String() string {
 func (*GetOrderResponse) ProtoMessage() {}
 
 func (x *GetOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[15]
+	mi := &file_commerce_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1570,7 +1658,7 @@ func (x *GetOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOrderResponse.ProtoReflect.Descriptor instead.
 func (*GetOrderResponse) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{15}
+	return file_commerce_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetOrderResponse) GetOrder() *Order {
@@ -1594,7 +1682,7 @@ type ListOrdersRequest struct {
 
 func (x *ListOrdersRequest) Reset() {
 	*x = ListOrdersRequest{}
-	mi := &file_commerce_proto_msgTypes[16]
+	mi := &file_commerce_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1606,7 +1694,7 @@ func (x *ListOrdersRequest) String() string {
 func (*ListOrdersRequest) ProtoMessage() {}
 
 func (x *ListOrdersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[16]
+	mi := &file_commerce_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1619,7 +1707,7 @@ func (x *ListOrdersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListOrdersRequest.ProtoReflect.Descriptor instead.
 func (*ListOrdersRequest) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{16}
+	return file_commerce_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListOrdersRequest) GetListingId() string {
@@ -1674,7 +1762,7 @@ type ListOrdersResponse struct {
 
 func (x *ListOrdersResponse) Reset() {
 	*x = ListOrdersResponse{}
-	mi := &file_commerce_proto_msgTypes[17]
+	mi := &file_commerce_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1686,7 +1774,7 @@ func (x *ListOrdersResponse) String() string {
 func (*ListOrdersResponse) ProtoMessage() {}
 
 func (x *ListOrdersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[17]
+	mi := &file_commerce_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +1787,7 @@ func (x *ListOrdersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListOrdersResponse.ProtoReflect.Descriptor instead.
 func (*ListOrdersResponse) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{17}
+	return file_commerce_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListOrdersResponse) GetOrders() []*Order {
@@ -1727,7 +1815,7 @@ type UpdateOrderStatusRequest struct {
 
 func (x *UpdateOrderStatusRequest) Reset() {
 	*x = UpdateOrderStatusRequest{}
-	mi := &file_commerce_proto_msgTypes[18]
+	mi := &file_commerce_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1739,7 +1827,7 @@ func (x *UpdateOrderStatusRequest) String() string {
 func (*UpdateOrderStatusRequest) ProtoMessage() {}
 
 func (x *UpdateOrderStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[18]
+	mi := &file_commerce_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1752,7 +1840,7 @@ func (x *UpdateOrderStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateOrderStatusRequest.ProtoReflect.Descriptor instead.
 func (*UpdateOrderStatusRequest) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{18}
+	return file_commerce_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UpdateOrderStatusRequest) GetId() string {
@@ -1785,7 +1873,7 @@ type UpdateOrderStatusResponse struct {
 
 func (x *UpdateOrderStatusResponse) Reset() {
 	*x = UpdateOrderStatusResponse{}
-	mi := &file_commerce_proto_msgTypes[19]
+	mi := &file_commerce_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1797,7 +1885,7 @@ func (x *UpdateOrderStatusResponse) String() string {
 func (*UpdateOrderStatusResponse) ProtoMessage() {}
 
 func (x *UpdateOrderStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[19]
+	mi := &file_commerce_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1810,7 +1898,7 @@ func (x *UpdateOrderStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateOrderStatusResponse.ProtoReflect.Descriptor instead.
 func (*UpdateOrderStatusResponse) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{19}
+	return file_commerce_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UpdateOrderStatusResponse) GetOrder() *Order {
@@ -1831,7 +1919,7 @@ type UpdatePaymentStatusRequest struct {
 
 func (x *UpdatePaymentStatusRequest) Reset() {
 	*x = UpdatePaymentStatusRequest{}
-	mi := &file_commerce_proto_msgTypes[20]
+	mi := &file_commerce_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1843,7 +1931,7 @@ func (x *UpdatePaymentStatusRequest) String() string {
 func (*UpdatePaymentStatusRequest) ProtoMessage() {}
 
 func (x *UpdatePaymentStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[20]
+	mi := &file_commerce_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,7 +1944,7 @@ func (x *UpdatePaymentStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePaymentStatusRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePaymentStatusRequest) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{20}
+	return file_commerce_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *UpdatePaymentStatusRequest) GetId() string {
@@ -1889,7 +1977,7 @@ type UpdatePaymentStatusResponse struct {
 
 func (x *UpdatePaymentStatusResponse) Reset() {
 	*x = UpdatePaymentStatusResponse{}
-	mi := &file_commerce_proto_msgTypes[21]
+	mi := &file_commerce_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1901,7 +1989,7 @@ func (x *UpdatePaymentStatusResponse) String() string {
 func (*UpdatePaymentStatusResponse) ProtoMessage() {}
 
 func (x *UpdatePaymentStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_commerce_proto_msgTypes[21]
+	mi := &file_commerce_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1914,7 +2002,7 @@ func (x *UpdatePaymentStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePaymentStatusResponse.ProtoReflect.Descriptor instead.
 func (*UpdatePaymentStatusResponse) Descriptor() ([]byte, []int) {
-	return file_commerce_proto_rawDescGZIP(), []int{21}
+	return file_commerce_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *UpdatePaymentStatusResponse) GetOrder() *Order {
@@ -2042,6 +2130,10 @@ const file_commerce_proto_rawDesc = "" +
 	"image_urls\x18\b \x03(\tR\timageUrls\x12=\n" +
 	"\favailable_to\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vavailableTo\"^\n" +
 	"\x15UpdateListingResponse\x12E\n" +
+	"\alisting\x18\x01 \x01(\v2+.agriculture.commerce.v1.MarketplaceListingR\alisting\"(\n" +
+	"\x16ActivateListingRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"`\n" +
+	"\x17ActivateListingResponse\x12E\n" +
 	"\alisting\x18\x01 \x01(\v2+.agriculture.commerce.v1.MarketplaceListingR\alisting\"&\n" +
 	"\x14CancelListingRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"^\n" +
@@ -2107,13 +2199,14 @@ const file_commerce_proto_rawDesc = "" +
 	"\x1aPAYMENT_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16PAYMENT_STATUS_PENDING\x10\x01\x12\x17\n" +
 	"\x13PAYMENT_STATUS_PAID\x10\x02\x12\x1b\n" +
-	"\x17PAYMENT_STATUS_REFUNDED\x10\x032\xe3\b\n" +
+	"\x17PAYMENT_STATUS_REFUNDED\x10\x032\xd9\t\n" +
 	"\x0fCommerceService\x12n\n" +
 	"\rCreateListing\x12-.agriculture.commerce.v1.CreateListingRequest\x1a..agriculture.commerce.v1.CreateListingResponse\x12e\n" +
 	"\n" +
 	"GetListing\x12*.agriculture.commerce.v1.GetListingRequest\x1a+.agriculture.commerce.v1.GetListingResponse\x12k\n" +
 	"\fListListings\x12,.agriculture.commerce.v1.ListListingsRequest\x1a-.agriculture.commerce.v1.ListListingsResponse\x12n\n" +
-	"\rUpdateListing\x12-.agriculture.commerce.v1.UpdateListingRequest\x1a..agriculture.commerce.v1.UpdateListingResponse\x12n\n" +
+	"\rUpdateListing\x12-.agriculture.commerce.v1.UpdateListingRequest\x1a..agriculture.commerce.v1.UpdateListingResponse\x12t\n" +
+	"\x0fActivateListing\x12/.agriculture.commerce.v1.ActivateListingRequest\x1a0.agriculture.commerce.v1.ActivateListingResponse\x12n\n" +
 	"\rCancelListing\x12-.agriculture.commerce.v1.CancelListingRequest\x1a..agriculture.commerce.v1.CancelListingResponse\x12e\n" +
 	"\n" +
 	"PlaceOrder\x12*.agriculture.commerce.v1.PlaceOrderRequest\x1a+.agriculture.commerce.v1.PlaceOrderResponse\x12_\n" +
@@ -2136,7 +2229,7 @@ func file_commerce_proto_rawDescGZIP() []byte {
 }
 
 var file_commerce_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_commerce_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_commerce_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_commerce_proto_goTypes = []any{
 	(ListingStatus)(0),                  // 0: agriculture.commerce.v1.ListingStatus
 	(OrderStatus)(0),                    // 1: agriculture.commerce.v1.OrderStatus
@@ -2151,74 +2244,79 @@ var file_commerce_proto_goTypes = []any{
 	(*ListListingsResponse)(nil),        // 10: agriculture.commerce.v1.ListListingsResponse
 	(*UpdateListingRequest)(nil),        // 11: agriculture.commerce.v1.UpdateListingRequest
 	(*UpdateListingResponse)(nil),       // 12: agriculture.commerce.v1.UpdateListingResponse
-	(*CancelListingRequest)(nil),        // 13: agriculture.commerce.v1.CancelListingRequest
-	(*CancelListingResponse)(nil),       // 14: agriculture.commerce.v1.CancelListingResponse
-	(*PlaceOrderRequest)(nil),           // 15: agriculture.commerce.v1.PlaceOrderRequest
-	(*PlaceOrderResponse)(nil),          // 16: agriculture.commerce.v1.PlaceOrderResponse
-	(*GetOrderRequest)(nil),             // 17: agriculture.commerce.v1.GetOrderRequest
-	(*GetOrderResponse)(nil),            // 18: agriculture.commerce.v1.GetOrderResponse
-	(*ListOrdersRequest)(nil),           // 19: agriculture.commerce.v1.ListOrdersRequest
-	(*ListOrdersResponse)(nil),          // 20: agriculture.commerce.v1.ListOrdersResponse
-	(*UpdateOrderStatusRequest)(nil),    // 21: agriculture.commerce.v1.UpdateOrderStatusRequest
-	(*UpdateOrderStatusResponse)(nil),   // 22: agriculture.commerce.v1.UpdateOrderStatusResponse
-	(*UpdatePaymentStatusRequest)(nil),  // 23: agriculture.commerce.v1.UpdatePaymentStatusRequest
-	(*UpdatePaymentStatusResponse)(nil), // 24: agriculture.commerce.v1.UpdatePaymentStatusResponse
-	(*timestamppb.Timestamp)(nil),       // 25: google.protobuf.Timestamp
+	(*ActivateListingRequest)(nil),      // 13: agriculture.commerce.v1.ActivateListingRequest
+	(*ActivateListingResponse)(nil),     // 14: agriculture.commerce.v1.ActivateListingResponse
+	(*CancelListingRequest)(nil),        // 15: agriculture.commerce.v1.CancelListingRequest
+	(*CancelListingResponse)(nil),       // 16: agriculture.commerce.v1.CancelListingResponse
+	(*PlaceOrderRequest)(nil),           // 17: agriculture.commerce.v1.PlaceOrderRequest
+	(*PlaceOrderResponse)(nil),          // 18: agriculture.commerce.v1.PlaceOrderResponse
+	(*GetOrderRequest)(nil),             // 19: agriculture.commerce.v1.GetOrderRequest
+	(*GetOrderResponse)(nil),            // 20: agriculture.commerce.v1.GetOrderResponse
+	(*ListOrdersRequest)(nil),           // 21: agriculture.commerce.v1.ListOrdersRequest
+	(*ListOrdersResponse)(nil),          // 22: agriculture.commerce.v1.ListOrdersResponse
+	(*UpdateOrderStatusRequest)(nil),    // 23: agriculture.commerce.v1.UpdateOrderStatusRequest
+	(*UpdateOrderStatusResponse)(nil),   // 24: agriculture.commerce.v1.UpdateOrderStatusResponse
+	(*UpdatePaymentStatusRequest)(nil),  // 25: agriculture.commerce.v1.UpdatePaymentStatusRequest
+	(*UpdatePaymentStatusResponse)(nil), // 26: agriculture.commerce.v1.UpdatePaymentStatusResponse
+	(*timestamppb.Timestamp)(nil),       // 27: google.protobuf.Timestamp
 }
 var file_commerce_proto_depIdxs = []int32{
 	0,  // 0: agriculture.commerce.v1.MarketplaceListing.status:type_name -> agriculture.commerce.v1.ListingStatus
-	25, // 1: agriculture.commerce.v1.MarketplaceListing.available_from:type_name -> google.protobuf.Timestamp
-	25, // 2: agriculture.commerce.v1.MarketplaceListing.available_to:type_name -> google.protobuf.Timestamp
-	25, // 3: agriculture.commerce.v1.MarketplaceListing.created_at:type_name -> google.protobuf.Timestamp
-	25, // 4: agriculture.commerce.v1.MarketplaceListing.updated_at:type_name -> google.protobuf.Timestamp
+	27, // 1: agriculture.commerce.v1.MarketplaceListing.available_from:type_name -> google.protobuf.Timestamp
+	27, // 2: agriculture.commerce.v1.MarketplaceListing.available_to:type_name -> google.protobuf.Timestamp
+	27, // 3: agriculture.commerce.v1.MarketplaceListing.created_at:type_name -> google.protobuf.Timestamp
+	27, // 4: agriculture.commerce.v1.MarketplaceListing.updated_at:type_name -> google.protobuf.Timestamp
 	1,  // 5: agriculture.commerce.v1.Order.status:type_name -> agriculture.commerce.v1.OrderStatus
 	2,  // 6: agriculture.commerce.v1.Order.payment_status:type_name -> agriculture.commerce.v1.PaymentStatus
-	25, // 7: agriculture.commerce.v1.Order.estimated_delivery_date:type_name -> google.protobuf.Timestamp
-	25, // 8: agriculture.commerce.v1.Order.actual_delivery_date:type_name -> google.protobuf.Timestamp
-	25, // 9: agriculture.commerce.v1.Order.created_at:type_name -> google.protobuf.Timestamp
-	25, // 10: agriculture.commerce.v1.Order.updated_at:type_name -> google.protobuf.Timestamp
-	25, // 11: agriculture.commerce.v1.CreateListingRequest.available_from:type_name -> google.protobuf.Timestamp
-	25, // 12: agriculture.commerce.v1.CreateListingRequest.available_to:type_name -> google.protobuf.Timestamp
+	27, // 7: agriculture.commerce.v1.Order.estimated_delivery_date:type_name -> google.protobuf.Timestamp
+	27, // 8: agriculture.commerce.v1.Order.actual_delivery_date:type_name -> google.protobuf.Timestamp
+	27, // 9: agriculture.commerce.v1.Order.created_at:type_name -> google.protobuf.Timestamp
+	27, // 10: agriculture.commerce.v1.Order.updated_at:type_name -> google.protobuf.Timestamp
+	27, // 11: agriculture.commerce.v1.CreateListingRequest.available_from:type_name -> google.protobuf.Timestamp
+	27, // 12: agriculture.commerce.v1.CreateListingRequest.available_to:type_name -> google.protobuf.Timestamp
 	3,  // 13: agriculture.commerce.v1.CreateListingResponse.listing:type_name -> agriculture.commerce.v1.MarketplaceListing
 	3,  // 14: agriculture.commerce.v1.GetListingResponse.listing:type_name -> agriculture.commerce.v1.MarketplaceListing
 	0,  // 15: agriculture.commerce.v1.ListListingsRequest.status:type_name -> agriculture.commerce.v1.ListingStatus
 	3,  // 16: agriculture.commerce.v1.ListListingsResponse.listings:type_name -> agriculture.commerce.v1.MarketplaceListing
-	25, // 17: agriculture.commerce.v1.UpdateListingRequest.available_to:type_name -> google.protobuf.Timestamp
+	27, // 17: agriculture.commerce.v1.UpdateListingRequest.available_to:type_name -> google.protobuf.Timestamp
 	3,  // 18: agriculture.commerce.v1.UpdateListingResponse.listing:type_name -> agriculture.commerce.v1.MarketplaceListing
-	3,  // 19: agriculture.commerce.v1.CancelListingResponse.listing:type_name -> agriculture.commerce.v1.MarketplaceListing
-	4,  // 20: agriculture.commerce.v1.PlaceOrderResponse.order:type_name -> agriculture.commerce.v1.Order
-	4,  // 21: agriculture.commerce.v1.GetOrderResponse.order:type_name -> agriculture.commerce.v1.Order
-	1,  // 22: agriculture.commerce.v1.ListOrdersRequest.status:type_name -> agriculture.commerce.v1.OrderStatus
-	4,  // 23: agriculture.commerce.v1.ListOrdersResponse.orders:type_name -> agriculture.commerce.v1.Order
-	1,  // 24: agriculture.commerce.v1.UpdateOrderStatusRequest.status:type_name -> agriculture.commerce.v1.OrderStatus
-	4,  // 25: agriculture.commerce.v1.UpdateOrderStatusResponse.order:type_name -> agriculture.commerce.v1.Order
-	2,  // 26: agriculture.commerce.v1.UpdatePaymentStatusRequest.payment_status:type_name -> agriculture.commerce.v1.PaymentStatus
-	4,  // 27: agriculture.commerce.v1.UpdatePaymentStatusResponse.order:type_name -> agriculture.commerce.v1.Order
-	5,  // 28: agriculture.commerce.v1.CommerceService.CreateListing:input_type -> agriculture.commerce.v1.CreateListingRequest
-	7,  // 29: agriculture.commerce.v1.CommerceService.GetListing:input_type -> agriculture.commerce.v1.GetListingRequest
-	9,  // 30: agriculture.commerce.v1.CommerceService.ListListings:input_type -> agriculture.commerce.v1.ListListingsRequest
-	11, // 31: agriculture.commerce.v1.CommerceService.UpdateListing:input_type -> agriculture.commerce.v1.UpdateListingRequest
-	13, // 32: agriculture.commerce.v1.CommerceService.CancelListing:input_type -> agriculture.commerce.v1.CancelListingRequest
-	15, // 33: agriculture.commerce.v1.CommerceService.PlaceOrder:input_type -> agriculture.commerce.v1.PlaceOrderRequest
-	17, // 34: agriculture.commerce.v1.CommerceService.GetOrder:input_type -> agriculture.commerce.v1.GetOrderRequest
-	19, // 35: agriculture.commerce.v1.CommerceService.ListOrders:input_type -> agriculture.commerce.v1.ListOrdersRequest
-	21, // 36: agriculture.commerce.v1.CommerceService.UpdateOrderStatus:input_type -> agriculture.commerce.v1.UpdateOrderStatusRequest
-	23, // 37: agriculture.commerce.v1.CommerceService.UpdatePaymentStatus:input_type -> agriculture.commerce.v1.UpdatePaymentStatusRequest
-	6,  // 38: agriculture.commerce.v1.CommerceService.CreateListing:output_type -> agriculture.commerce.v1.CreateListingResponse
-	8,  // 39: agriculture.commerce.v1.CommerceService.GetListing:output_type -> agriculture.commerce.v1.GetListingResponse
-	10, // 40: agriculture.commerce.v1.CommerceService.ListListings:output_type -> agriculture.commerce.v1.ListListingsResponse
-	12, // 41: agriculture.commerce.v1.CommerceService.UpdateListing:output_type -> agriculture.commerce.v1.UpdateListingResponse
-	14, // 42: agriculture.commerce.v1.CommerceService.CancelListing:output_type -> agriculture.commerce.v1.CancelListingResponse
-	16, // 43: agriculture.commerce.v1.CommerceService.PlaceOrder:output_type -> agriculture.commerce.v1.PlaceOrderResponse
-	18, // 44: agriculture.commerce.v1.CommerceService.GetOrder:output_type -> agriculture.commerce.v1.GetOrderResponse
-	20, // 45: agriculture.commerce.v1.CommerceService.ListOrders:output_type -> agriculture.commerce.v1.ListOrdersResponse
-	22, // 46: agriculture.commerce.v1.CommerceService.UpdateOrderStatus:output_type -> agriculture.commerce.v1.UpdateOrderStatusResponse
-	24, // 47: agriculture.commerce.v1.CommerceService.UpdatePaymentStatus:output_type -> agriculture.commerce.v1.UpdatePaymentStatusResponse
-	38, // [38:48] is the sub-list for method output_type
-	28, // [28:38] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	3,  // 19: agriculture.commerce.v1.ActivateListingResponse.listing:type_name -> agriculture.commerce.v1.MarketplaceListing
+	3,  // 20: agriculture.commerce.v1.CancelListingResponse.listing:type_name -> agriculture.commerce.v1.MarketplaceListing
+	4,  // 21: agriculture.commerce.v1.PlaceOrderResponse.order:type_name -> agriculture.commerce.v1.Order
+	4,  // 22: agriculture.commerce.v1.GetOrderResponse.order:type_name -> agriculture.commerce.v1.Order
+	1,  // 23: agriculture.commerce.v1.ListOrdersRequest.status:type_name -> agriculture.commerce.v1.OrderStatus
+	4,  // 24: agriculture.commerce.v1.ListOrdersResponse.orders:type_name -> agriculture.commerce.v1.Order
+	1,  // 25: agriculture.commerce.v1.UpdateOrderStatusRequest.status:type_name -> agriculture.commerce.v1.OrderStatus
+	4,  // 26: agriculture.commerce.v1.UpdateOrderStatusResponse.order:type_name -> agriculture.commerce.v1.Order
+	2,  // 27: agriculture.commerce.v1.UpdatePaymentStatusRequest.payment_status:type_name -> agriculture.commerce.v1.PaymentStatus
+	4,  // 28: agriculture.commerce.v1.UpdatePaymentStatusResponse.order:type_name -> agriculture.commerce.v1.Order
+	5,  // 29: agriculture.commerce.v1.CommerceService.CreateListing:input_type -> agriculture.commerce.v1.CreateListingRequest
+	7,  // 30: agriculture.commerce.v1.CommerceService.GetListing:input_type -> agriculture.commerce.v1.GetListingRequest
+	9,  // 31: agriculture.commerce.v1.CommerceService.ListListings:input_type -> agriculture.commerce.v1.ListListingsRequest
+	11, // 32: agriculture.commerce.v1.CommerceService.UpdateListing:input_type -> agriculture.commerce.v1.UpdateListingRequest
+	13, // 33: agriculture.commerce.v1.CommerceService.ActivateListing:input_type -> agriculture.commerce.v1.ActivateListingRequest
+	15, // 34: agriculture.commerce.v1.CommerceService.CancelListing:input_type -> agriculture.commerce.v1.CancelListingRequest
+	17, // 35: agriculture.commerce.v1.CommerceService.PlaceOrder:input_type -> agriculture.commerce.v1.PlaceOrderRequest
+	19, // 36: agriculture.commerce.v1.CommerceService.GetOrder:input_type -> agriculture.commerce.v1.GetOrderRequest
+	21, // 37: agriculture.commerce.v1.CommerceService.ListOrders:input_type -> agriculture.commerce.v1.ListOrdersRequest
+	23, // 38: agriculture.commerce.v1.CommerceService.UpdateOrderStatus:input_type -> agriculture.commerce.v1.UpdateOrderStatusRequest
+	25, // 39: agriculture.commerce.v1.CommerceService.UpdatePaymentStatus:input_type -> agriculture.commerce.v1.UpdatePaymentStatusRequest
+	6,  // 40: agriculture.commerce.v1.CommerceService.CreateListing:output_type -> agriculture.commerce.v1.CreateListingResponse
+	8,  // 41: agriculture.commerce.v1.CommerceService.GetListing:output_type -> agriculture.commerce.v1.GetListingResponse
+	10, // 42: agriculture.commerce.v1.CommerceService.ListListings:output_type -> agriculture.commerce.v1.ListListingsResponse
+	12, // 43: agriculture.commerce.v1.CommerceService.UpdateListing:output_type -> agriculture.commerce.v1.UpdateListingResponse
+	14, // 44: agriculture.commerce.v1.CommerceService.ActivateListing:output_type -> agriculture.commerce.v1.ActivateListingResponse
+	16, // 45: agriculture.commerce.v1.CommerceService.CancelListing:output_type -> agriculture.commerce.v1.CancelListingResponse
+	18, // 46: agriculture.commerce.v1.CommerceService.PlaceOrder:output_type -> agriculture.commerce.v1.PlaceOrderResponse
+	20, // 47: agriculture.commerce.v1.CommerceService.GetOrder:output_type -> agriculture.commerce.v1.GetOrderResponse
+	22, // 48: agriculture.commerce.v1.CommerceService.ListOrders:output_type -> agriculture.commerce.v1.ListOrdersResponse
+	24, // 49: agriculture.commerce.v1.CommerceService.UpdateOrderStatus:output_type -> agriculture.commerce.v1.UpdateOrderStatusResponse
+	26, // 50: agriculture.commerce.v1.CommerceService.UpdatePaymentStatus:output_type -> agriculture.commerce.v1.UpdatePaymentStatusResponse
+	40, // [40:51] is the sub-list for method output_type
+	29, // [29:40] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_commerce_proto_init() }
@@ -2232,7 +2330,7 @@ func file_commerce_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commerce_proto_rawDesc), len(file_commerce_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   22,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
