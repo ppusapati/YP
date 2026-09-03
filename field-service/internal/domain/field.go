@@ -271,6 +271,7 @@ type CropCycle struct {
 	FieldID               string          `json:"field_id"`
 	CropID                string          `json:"crop_id"`
 	CropAssignmentID      *string         `json:"crop_assignment_id,omitempty"`
+	ManagementUnitID      *string         `json:"management_unit_id,omitempty"`
 	Season                string          `json:"season"`
 	CycleYear             int32           `json:"cycle_year"`
 	Name                  *string         `json:"name,omitempty"`

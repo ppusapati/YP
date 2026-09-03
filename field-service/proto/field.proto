@@ -335,6 +335,7 @@ message CropCycle {
   string                     created_by                = 22;
   google.protobuf.Timestamp  created_at                = 23;
   google.protobuf.Timestamp  updated_at                = 24;
+  string                     management_unit_id        = 25;
 }
 
 message CreateCropCycleRequest {
@@ -348,6 +349,7 @@ message CreateCropCycleRequest {
   double                     target_yield_per_hectare  = 8;
   string                     yield_unit                = 9;
   string                     notes                     = 10;
+  string                     management_unit_id        = 11;
 }
 
 message CreateCropCycleResponse {

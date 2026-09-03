@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:latlong2/latlong.dart';
@@ -66,7 +68,7 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
   }
 
   double _cos(double degrees) {
-    return degrees * 3.141592653589793 / 180.0;
+    return math.cos(degrees * math.pi / 180.0);
   }
 
   void _onMapTap(ml.Point point, ml.LatLng coordinates) {

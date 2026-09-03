@@ -75,6 +75,9 @@ class FarmRepositoryImpl implements FarmRepository {
 
   @override
   Future<FarmEntity> createFarm(FarmEntity farm) async {
+    if (!await _isOnline) {
+      throw const FarmOfflineException('Cannot create farm while offline');
+    }
     final model = FarmModel.fromEntity(farm);
     final created = await _remoteDataSource.createFarm(model);
     await _localDataSource.cacheFarm(created);
@@ -83,6 +86,9 @@ class FarmRepositoryImpl implements FarmRepository {
 
   @override
   Future<FarmEntity> updateFarm(FarmEntity farm) async {
+    if (!await _isOnline) {
+      throw const FarmOfflineException('Cannot update farm while offline');
+    }
     final model = FarmModel.fromEntity(farm);
     final updated = await _remoteDataSource.updateFarm(model);
     await _localDataSource.cacheFarm(updated);
@@ -91,12 +97,18 @@ class FarmRepositoryImpl implements FarmRepository {
 
   @override
   Future<void> deleteFarm(String farmId) async {
+    if (!await _isOnline) {
+      throw const FarmOfflineException('Cannot delete farm while offline');
+    }
     await _remoteDataSource.deleteFarm(farmId);
     await _localDataSource.deleteFarm(farmId);
   }
 
   @override
   Future<FieldEntity> createField(FieldEntity field) async {
+    if (!await _isOnline) {
+      throw const FarmOfflineException('Cannot create field while offline');
+    }
     final model = FieldModel.fromEntity(field);
     final created = await _remoteDataSource.createField(model);
     await _localDataSource.cacheField(created);
@@ -105,6 +117,9 @@ class FarmRepositoryImpl implements FarmRepository {
 
   @override
   Future<FieldEntity> updateField(FieldEntity field) async {
+    if (!await _isOnline) {
+      throw const FarmOfflineException('Cannot update field while offline');
+    }
     final model = FieldModel.fromEntity(field);
     final updated = await _remoteDataSource.updateField(model);
     await _localDataSource.cacheField(updated);
@@ -113,6 +128,9 @@ class FarmRepositoryImpl implements FarmRepository {
 
   @override
   Future<void> deleteField(String fieldId) async {
+    if (!await _isOnline) {
+      throw const FarmOfflineException('Cannot delete field while offline');
+    }
     await _remoteDataSource.deleteField(fieldId);
     await _localDataSource.deleteField(fieldId);
   }
@@ -143,4 +161,13 @@ class FarmNotFoundException implements Exception {
 
   @override
   String toString() => 'FarmNotFoundException: $message';
+}
+
+/// Thrown when a write operation is attempted while offline.
+class FarmOfflineException implements Exception {
+  final String message;
+  const FarmOfflineException(this.message);
+
+  @override
+  String toString() => 'FarmOfflineException: $message';
 }

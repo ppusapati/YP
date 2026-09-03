@@ -20,9 +20,16 @@ class TraceabilityRepositoryImpl implements TraceabilityRepository {
 
   @override
   Future<ProduceRecord> scanQrCode(String qrData) async {
-    final record = await _remote.scanQrCode(qrData);
-    await _local.cacheRecord(record);
-    return record;
+    try {
+      final record = await _remote.scanQrCode(qrData);
+      await _local.cacheRecord(record);
+      return record;
+    } on ConnectException catch (e) {
+      _log.warning('Remote QR scan failed, checking cache: $e');
+      final cached = await _local.getCachedRecord(qrData);
+      if (cached != null) return cached;
+      rethrow;
+    }
   }
 
   @override

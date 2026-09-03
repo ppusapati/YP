@@ -2670,6 +2670,7 @@ type CropCycle struct {
 	CreatedBy             string                 `protobuf:"bytes,22,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
 	CreatedAt             *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt             *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	ManagementUnitId      string                 `protobuf:"bytes,25,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2872,6 +2873,13 @@ func (x *CropCycle) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *CropCycle) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
+	}
+	return ""
+}
+
 type CreateCropCycleRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	FieldId               string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
@@ -2884,6 +2892,7 @@ type CreateCropCycleRequest struct {
 	TargetYieldPerHectare float64                `protobuf:"fixed64,8,opt,name=target_yield_per_hectare,json=targetYieldPerHectare,proto3" json:"target_yield_per_hectare,omitempty"`
 	YieldUnit             string                 `protobuf:"bytes,9,opt,name=yield_unit,json=yieldUnit,proto3" json:"yield_unit,omitempty"`
 	Notes                 string                 `protobuf:"bytes,10,opt,name=notes,proto3" json:"notes,omitempty"`
+	ManagementUnitId      string                 `protobuf:"bytes,11,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2984,6 +2993,13 @@ func (x *CreateCropCycleRequest) GetYieldUnit() string {
 func (x *CreateCropCycleRequest) GetNotes() string {
 	if x != nil {
 		return x.Notes
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
 	}
 	return ""
 }
@@ -4642,7 +4658,7 @@ const file_field_proto_rawDesc = "" +
 	"\x16GetCropHistoryResponse\x12K\n" +
 	"\vassignments\x18\x01 \x03(\v2).agriculture.field.v1.FieldCropAssignmentR\vassignments\x12\x1f\n" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
-	"totalCount\"\x9d\b\n" +
+	"totalCount\"\xcb\b\n" +
 	"\tCropCycle\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -4673,7 +4689,8 @@ const file_field_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xa3\x03\n" +
+	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12,\n" +
+	"\x12management_unit_id\x18\x19 \x01(\tR\x10managementUnitId\"\xd1\x03\n" +
 	"\x16CreateCropCycleRequest\x12\x19\n" +
 	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\x17\n" +
 	"\acrop_id\x18\x02 \x01(\tR\x06cropId\x12\x16\n" +
@@ -4687,7 +4704,8 @@ const file_field_proto_rawDesc = "" +
 	"\n" +
 	"yield_unit\x18\t \x01(\tR\tyieldUnit\x12\x14\n" +
 	"\x05notes\x18\n" +
-	" \x01(\tR\x05notes\"P\n" +
+	" \x01(\tR\x05notes\x12,\n" +
+	"\x12management_unit_id\x18\v \x01(\tR\x10managementUnitId\"P\n" +
 	"\x17CreateCropCycleResponse\x125\n" +
 	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"%\n" +
 	"\x13GetCropCycleRequest\x12\x0e\n" +

@@ -75,11 +75,17 @@ class FarmBloc extends Bloc<FarmEvent, FarmState> {
   ) async {
     final currentState = state;
     if (currentState is FarmsLoaded) {
-      final selected = currentState.farms.firstWhere(
-        (f) => f.id == event.farmId,
-      );
-      emit(FarmLoaded(farm: selected));
-    } else {
+      try {
+        final selected = currentState.farms.firstWhere(
+          (f) => f.id == event.farmId,
+        );
+        emit(FarmLoaded(farm: selected));
+        return;
+      } on StateError {
+        // Farm not in loaded list; fall through to fetch from repository.
+      }
+    }
+    {
       emit(const FarmLoading());
       try {
         final farm = await _farmRepository.getFarmById(event.farmId);

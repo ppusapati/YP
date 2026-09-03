@@ -334,6 +334,10 @@ func (h *FieldHandler) CreateCropCycle(ctx context.Context, req *connect.Request
 		s := req.Msg.GetNotes()
 		cycle.Notes = &s
 	}
+	if req.Msg.GetManagementUnitId() != "" {
+		s := req.Msg.GetManagementUnitId()
+		cycle.ManagementUnitID = &s
+	}
 
 	created, err := h.svc.CreateCropCycle(ctx, cycle)
 	if err != nil {
@@ -972,6 +976,9 @@ func cropCycleToProto(c *domain.CropCycle) *pb.CropCycle {
 	}
 	if c.CropAssignmentID != nil {
 		out.CropAssignmentId = *c.CropAssignmentID
+	}
+	if c.ManagementUnitID != nil {
+		out.ManagementUnitId = *c.ManagementUnitID
 	}
 	if c.Name != nil {
 		out.Name = *c.Name

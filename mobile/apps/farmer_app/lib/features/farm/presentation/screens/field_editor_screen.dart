@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:latlong2/latlong.dart';
@@ -68,7 +70,7 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
     final avgLat = points.fold(0.0, (s, p) => s + p.latitude) / points.length;
     final metersPerDegreeLat = 111320.0;
     final metersPerDegreeLng =
-        111320.0 * (avgLat * 3.141592653589793 / 180.0);
+        111320.0 * math.cos(avgLat * math.pi / 180.0);
     final areaM2 = area * metersPerDegreeLat * metersPerDegreeLng;
     return areaM2 / 10000.0;
   }

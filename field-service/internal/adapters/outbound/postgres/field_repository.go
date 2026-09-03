@@ -393,7 +393,7 @@ func nullIfEmpty(s string) *string {
 // crop_cycles
 // ---------------------------------------------------------------------------
 
-const cropCycleColumns = `id, tenant_id, field_id, crop_id, crop_assignment_id,
+const cropCycleColumns = `id, tenant_id, field_id, crop_id, crop_assignment_id, management_unit_id,
 season, cycle_year, name,
 planned_planting_date, actual_planting_date, planned_harvest_date, actual_harvest_date,
 status, target_yield_per_hectare, actual_yield_per_hectare, yield_unit,
@@ -403,12 +403,12 @@ version, created_by, updated_by, created_at, updated_at, deleted_at`
 func (r *fieldRepository) CreateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error) {
 	c.ID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO crop_cycles (id, tenant_id, field_id, crop_id, crop_assignment_id,
+		`INSERT INTO crop_cycles (id, tenant_id, field_id, crop_id, crop_assignment_id, management_unit_id,
 season, cycle_year, name, planned_planting_date, planned_harvest_date,
 status, target_yield_per_hectare, yield_unit, notes, created_by)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 RETURNING `+cropCycleColumns,
-		c.ID, c.TenantID, c.FieldID, c.CropID, c.CropAssignmentID,
+		c.ID, c.TenantID, c.FieldID, c.CropID, c.CropAssignmentID, c.ManagementUnitID,
 		c.Season, c.CycleYear, c.Name,
 		c.PlannedPlantingDate, c.PlannedHarvestDate,
 		string(c.Status), c.TargetYieldPerHectare, c.YieldUnit, c.Notes, c.CreatedBy,
@@ -502,7 +502,7 @@ func (r *fieldRepository) UpdateCropCycle(ctx context.Context, c *domain.CropCyc
 func scanCropCycle(row pgx.Row) (*domain.CropCycle, error) {
 	c := &domain.CropCycle{}
 	err := row.Scan(
-		&c.ID, &c.TenantID, &c.FieldID, &c.CropID, &c.CropAssignmentID,
+		&c.ID, &c.TenantID, &c.FieldID, &c.CropID, &c.CropAssignmentID, &c.ManagementUnitID,
 		&c.Season, &c.CycleYear, &c.Name,
 		&c.PlannedPlantingDate, &c.ActualPlantingDate, &c.PlannedHarvestDate, &c.ActualHarvestDate,
 		&c.Status, &c.TargetYieldPerHectare, &c.ActualYieldPerHectare, &c.YieldUnit,
