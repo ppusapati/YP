@@ -338,6 +338,14 @@ func (h *FieldHandler) CreateCropCycle(ctx context.Context, req *connect.Request
 		s := req.Msg.GetManagementUnitId()
 		cycle.ManagementUnitID = &s
 	}
+	if req.Msg.GetCropVariety() != "" {
+		s := req.Msg.GetCropVariety()
+		cycle.CropVariety = &s
+	}
+	if req.Msg.GetSeedSource() != "" {
+		s := req.Msg.GetSeedSource()
+		cycle.SeedSource = &s
+	}
 
 	created, err := h.svc.CreateCropCycle(ctx, cycle)
 	if err != nil {
@@ -1023,6 +1031,12 @@ func cropCycleToProto(c *domain.CropCycle) *pb.CropCycle {
 	}
 	if c.YieldUnit != nil {
 		out.YieldUnit = *c.YieldUnit
+	}
+	if c.CropVariety != nil {
+		out.CropVariety = *c.CropVariety
+	}
+	if c.SeedSource != nil {
+		out.SeedSource = *c.SeedSource
 	}
 	if c.Notes != nil {
 		out.Notes = *c.Notes

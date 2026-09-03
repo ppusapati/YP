@@ -338,6 +338,8 @@ type QualityCheckpoint struct {
 	Notes             *string            `json:"notes,omitempty" db:"notes"`
 	EvidenceURLs      []string           `json:"evidence_urls" db:"evidence_urls"`
 	Metadata          json.RawMessage    `json:"metadata" db:"metadata"`
+	Grade             *string            `json:"grade,omitempty" db:"grade"`
+	LabReportURL      *string            `json:"lab_report_url,omitempty" db:"lab_report_url"`
 	CreatedAt         time.Time          `json:"created_at" db:"created_at"`
 	BatchID           *string            `json:"batch_id,omitempty" db:"batch_id"`
 }
@@ -359,6 +361,8 @@ type CreateQualityCheckpointInput struct {
 	Notes              *string
 	EvidenceURLs       []string
 	Metadata           map[string]string
+	Grade              *string
+	LabReportURL       *string
 }
 
 // ListQualityCheckpointsFilter holds filters for listing quality checkpoints.

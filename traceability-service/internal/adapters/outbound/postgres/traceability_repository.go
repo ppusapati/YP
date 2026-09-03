@@ -851,7 +851,9 @@ func (r *traceabilityRepository) scanQualityCheckpoint(row pgx.Row) (*domain.Qua
 		&qc.InspectedAt, &qc.Location,
 		&qc.MeasurementValue, &qc.MeasurementUnit,
 		&qc.MinThreshold, &qc.MaxThreshold,
-		&qc.Notes, &qc.EvidenceURLs, &qc.Metadata, &qc.CreatedAt, &qc.BatchID,
+		&qc.Notes, &qc.EvidenceURLs, &qc.Metadata,
+		&qc.Grade, &qc.LabReportURL,
+		&qc.CreatedAt, &qc.BatchID,
 	)
 	if err != nil {
 		return nil, err
@@ -866,20 +868,26 @@ func (r *traceabilityRepository) CreateQualityCheckpoint(ctx context.Context, ch
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at, batch_id
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id
 	) VALUES (
 		$1, $2, $3, $4,
 		$5, $6, $7, $8,
 		$9, $10,
 		$11, $12,
 		$13, $14,
-		$15, $16, $17, $18, $19
+		$15, $16, $17,
+		$18, $19,
+		$20, $21
 	) RETURNING id, tenant_id, record_id, supply_chain_event_id,
 		check_type, result, inspector_id, inspector_name,
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at, batch_id`
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id`
 
 	result, err := r.scanQualityCheckpoint(r.pool.QueryRow(ctx, query,
 		checkpoint.ID, checkpoint.TenantID, checkpoint.RecordID, checkpoint.SupplyChainEventID,
@@ -887,7 +895,9 @@ func (r *traceabilityRepository) CreateQualityCheckpoint(ctx context.Context, ch
 		checkpoint.InspectedAt, checkpoint.Location,
 		checkpoint.MeasurementValue, checkpoint.MeasurementUnit,
 		checkpoint.MinThreshold, checkpoint.MaxThreshold,
-		checkpoint.Notes, checkpoint.EvidenceURLs, checkpoint.Metadata, checkpoint.CreatedAt, checkpoint.BatchID,
+		checkpoint.Notes, checkpoint.EvidenceURLs, checkpoint.Metadata,
+		checkpoint.Grade, checkpoint.LabReportURL,
+		checkpoint.CreatedAt, checkpoint.BatchID,
 	))
 	if err != nil {
 		r.log.Errorw("msg", "failed to create quality checkpoint", "error", err)
@@ -902,7 +912,9 @@ func (r *traceabilityRepository) GetQualityCheckpoint(ctx context.Context, id, t
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at, batch_id
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id
 	FROM quality_checkpoints WHERE id = $1 AND tenant_id = $2`
 
 	result, err := r.scanQualityCheckpoint(r.pool.QueryRow(ctx, query, id, tenantID))
@@ -954,7 +966,9 @@ func (r *traceabilityRepository) ListQualityCheckpoints(ctx context.Context, fil
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at, batch_id
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id
 	FROM quality_checkpoints %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, baseWhere, argIdx, argIdx+1)
 	args = append(args, pageSize, filter.PageOffset)
 
@@ -973,7 +987,9 @@ func (r *traceabilityRepository) ListQualityCheckpoints(ctx context.Context, fil
 			&qc.InspectedAt, &qc.Location,
 			&qc.MeasurementValue, &qc.MeasurementUnit,
 			&qc.MinThreshold, &qc.MaxThreshold,
-			&qc.Notes, &qc.EvidenceURLs, &qc.Metadata, &qc.CreatedAt,
+			&qc.Notes, &qc.EvidenceURLs, &qc.Metadata,
+			&qc.Grade, &qc.LabReportURL,
+			&qc.CreatedAt, &qc.BatchID,
 		); err != nil {
 			return nil, 0, errors.Internal("failed to scan quality checkpoint: %v", err)
 		}

@@ -286,6 +286,8 @@ type CropCycle struct {
 	TotalInputCost        int64           `json:"total_input_cost"`
 	TotalRevenue          int64           `json:"total_revenue"`
 	Currency              string          `json:"currency"`
+	CropVariety           *string         `json:"crop_variety,omitempty"`
+	SeedSource            *string         `json:"seed_source,omitempty"`
 	Notes                 *string         `json:"notes,omitempty"`
 	Version               int64           `json:"version"`
 	CreatedBy             string          `json:"created_by"`

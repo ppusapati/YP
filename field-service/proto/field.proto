@@ -336,6 +336,8 @@ message CropCycle {
   google.protobuf.Timestamp  created_at                = 23;
   google.protobuf.Timestamp  updated_at                = 24;
   string                     management_unit_id        = 25;
+  string                     crop_variety              = 26;
+  string                     seed_source               = 27;
 }
 
 message CreateCropCycleRequest {
@@ -350,6 +352,8 @@ message CreateCropCycleRequest {
   string                     yield_unit                = 9;
   string                     notes                     = 10;
   string                     management_unit_id        = 11;
+  string                     crop_variety              = 12;
+  string                     seed_source               = 13;
 }
 
 message CreateCropCycleResponse {

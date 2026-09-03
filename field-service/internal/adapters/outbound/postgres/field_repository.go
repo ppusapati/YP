@@ -397,7 +397,8 @@ const cropCycleColumns = `id, tenant_id, field_id, crop_id, crop_assignment_id, 
 season, cycle_year, name,
 planned_planting_date, actual_planting_date, planned_harvest_date, actual_harvest_date,
 status, target_yield_per_hectare, actual_yield_per_hectare, yield_unit,
-total_input_cost, total_revenue, currency, notes,
+total_input_cost, total_revenue, currency,
+crop_variety, seed_source, notes,
 version, created_by, updated_by, created_at, updated_at, deleted_at`
 
 func (r *fieldRepository) CreateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error) {
@@ -405,13 +406,14 @@ func (r *fieldRepository) CreateCropCycle(ctx context.Context, c *domain.CropCyc
 	row := r.queryRow(ctx,
 		`INSERT INTO crop_cycles (id, tenant_id, field_id, crop_id, crop_assignment_id, management_unit_id,
 season, cycle_year, name, planned_planting_date, planned_harvest_date,
-status, target_yield_per_hectare, yield_unit, notes, created_by)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+status, target_yield_per_hectare, yield_unit, crop_variety, seed_source, notes, created_by)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 RETURNING `+cropCycleColumns,
 		c.ID, c.TenantID, c.FieldID, c.CropID, c.CropAssignmentID, c.ManagementUnitID,
 		c.Season, c.CycleYear, c.Name,
 		c.PlannedPlantingDate, c.PlannedHarvestDate,
-		string(c.Status), c.TargetYieldPerHectare, c.YieldUnit, c.Notes, c.CreatedBy,
+		string(c.Status), c.TargetYieldPerHectare, c.YieldUnit,
+		c.CropVariety, c.SeedSource, c.Notes, c.CreatedBy,
 	)
 	return scanCropCycle(row)
 }
@@ -512,7 +514,8 @@ func scanCropCycle(row pgx.Row) (*domain.CropCycle, error) {
 		&c.Season, &c.CycleYear, &c.Name,
 		&c.PlannedPlantingDate, &c.ActualPlantingDate, &c.PlannedHarvestDate, &c.ActualHarvestDate,
 		&c.Status, &c.TargetYieldPerHectare, &c.ActualYieldPerHectare, &c.YieldUnit,
-		&c.TotalInputCost, &c.TotalRevenue, &c.Currency, &c.Notes,
+		&c.TotalInputCost, &c.TotalRevenue, &c.Currency,
+		&c.CropVariety, &c.SeedSource, &c.Notes,
 		&c.Version, &c.CreatedBy, &c.UpdatedBy, &c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
 	)
 	return c, err

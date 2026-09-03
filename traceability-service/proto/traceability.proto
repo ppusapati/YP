@@ -381,6 +381,8 @@ message QualityCheckpoint {
   map<string, string>        metadata                = 17;
   google.protobuf.Timestamp  created_at              = 18;
   string                     batch_id                = 19;
+  string                     grade                   = 20;
+  string                     lab_report_url          = 21;
 }
 
 message CreateQualityCheckpointRequest {
@@ -399,6 +401,8 @@ message CreateQualityCheckpointRequest {
   string                     notes                   = 12;
   repeated string            evidence_urls           = 13;
   map<string, string>        metadata                = 14;
+  string                     grade                   = 16;
+  string                     lab_report_url          = 17;
 }
 
 message CreateQualityCheckpointResponse {

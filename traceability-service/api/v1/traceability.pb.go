@@ -3144,6 +3144,8 @@ type QualityCheckpoint struct {
 	Metadata           map[string]string      `protobuf:"bytes,17,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	BatchId            string                 `protobuf:"bytes,19,opt,name=batch_id,json=batchId,proto3" json:"batch_id,omitempty"`
+	Grade              string                 `protobuf:"bytes,20,opt,name=grade,proto3" json:"grade,omitempty"`
+	LabReportUrl       string                 `protobuf:"bytes,21,opt,name=lab_report_url,json=labReportUrl,proto3" json:"lab_report_url,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3311,6 +3313,20 @@ func (x *QualityCheckpoint) GetBatchId() string {
 	return ""
 }
 
+func (x *QualityCheckpoint) GetGrade() string {
+	if x != nil {
+		return x.Grade
+	}
+	return ""
+}
+
+func (x *QualityCheckpoint) GetLabReportUrl() string {
+	if x != nil {
+		return x.LabReportUrl
+	}
+	return ""
+}
+
 type CreateQualityCheckpointRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	RecordId           string                 `protobuf:"bytes,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
@@ -3328,6 +3344,8 @@ type CreateQualityCheckpointRequest struct {
 	Notes              string                 `protobuf:"bytes,12,opt,name=notes,proto3" json:"notes,omitempty"`
 	EvidenceUrls       []string               `protobuf:"bytes,13,rep,name=evidence_urls,json=evidenceUrls,proto3" json:"evidence_urls,omitempty"`
 	Metadata           map[string]string      `protobuf:"bytes,14,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Grade              string                 `protobuf:"bytes,16,opt,name=grade,proto3" json:"grade,omitempty"`
+	LabReportUrl       string                 `protobuf:"bytes,17,opt,name=lab_report_url,json=labReportUrl,proto3" json:"lab_report_url,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3465,6 +3483,20 @@ func (x *CreateQualityCheckpointRequest) GetMetadata() map[string]string {
 		return x.Metadata
 	}
 	return nil
+}
+
+func (x *CreateQualityCheckpointRequest) GetGrade() string {
+	if x != nil {
+		return x.Grade
+	}
+	return ""
+}
+
+func (x *CreateQualityCheckpointRequest) GetLabReportUrl() string {
+	if x != nil {
+		return x.LabReportUrl
+	}
+	return ""
 }
 
 type CreateQualityCheckpointResponse struct {
@@ -4476,7 +4508,7 @@ const file_traceability_proto_rawDesc = "" +
 	"reportType\x12\x18\n" +
 	"\aauditor\x18\x03 \x01(\tR\aauditor\"i\n" +
 	" GenerateComplianceReportResponse\x12E\n" +
-	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report\"\x96\a\n" +
+	"\x06report\x18\x01 \x01(\v2-.agriculture.traceability.v1.ComplianceReportR\x06report\"\xd2\a\n" +
 	"\x11QualityCheckpoint\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x1b\n" +
@@ -4499,10 +4531,12 @@ const file_traceability_proto_rawDesc = "" +
 	"\bmetadata\x18\x11 \x03(\v2<.agriculture.traceability.v1.QualityCheckpoint.MetadataEntryR\bmetadata\x129\n" +
 	"\n" +
 	"created_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x19\n" +
-	"\bbatch_id\x18\x13 \x01(\tR\abatchId\x1a;\n" +
+	"\bbatch_id\x18\x13 \x01(\tR\abatchId\x12\x14\n" +
+	"\x05grade\x18\x14 \x01(\tR\x05grade\x12$\n" +
+	"\x0elab_report_url\x18\x15 \x01(\tR\flabReportUrl\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe1\x06\n" +
 	"\x1eCreateQualityCheckpointRequest\x12\x1b\n" +
 	"\trecord_id\x18\x01 \x01(\tR\brecordId\x121\n" +
 	"\x15supply_chain_event_id\x18\x02 \x01(\tR\x12supplyChainEventId\x12\x19\n" +
@@ -4520,7 +4554,9 @@ const file_traceability_proto_rawDesc = "" +
 	"\rmax_threshold\x18\v \x01(\x01R\fmaxThreshold\x12\x14\n" +
 	"\x05notes\x18\f \x01(\tR\x05notes\x12#\n" +
 	"\revidence_urls\x18\r \x03(\tR\fevidenceUrls\x12e\n" +
-	"\bmetadata\x18\x0e \x03(\v2I.agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\x0e \x03(\v2I.agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntryR\bmetadata\x12\x14\n" +
+	"\x05grade\x18\x10 \x01(\tR\x05grade\x12$\n" +
+	"\x0elab_report_url\x18\x11 \x01(\tR\flabReportUrl\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +

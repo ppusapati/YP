@@ -362,6 +362,14 @@ func (h *TraceabilityHandler) CreateQualityCheckpoint(ctx context.Context, req *
 	if v := req.Msg.GetBatchId(); v != "" {
 		batchID = &v
 	}
+	var grade *string
+	if v := req.Msg.GetGrade(); v != "" {
+		grade = &v
+	}
+	var labReportURL *string
+	if v := req.Msg.GetLabReportUrl(); v != "" {
+		labReportURL = &v
+	}
 
 	input := domain.CreateQualityCheckpointInput{
 		RecordID:           req.Msg.GetRecordId(),
@@ -379,6 +387,8 @@ func (h *TraceabilityHandler) CreateQualityCheckpoint(ctx context.Context, req *
 		Notes:              notes,
 		EvidenceURLs:       req.Msg.GetEvidenceUrls(),
 		Metadata:           req.Msg.GetMetadata(),
+		Grade:              grade,
+		LabReportURL:       labReportURL,
 	}
 	checkpoint, err := h.svc.CreateQualityCheckpoint(ctx, input)
 	if err != nil {
@@ -947,6 +957,12 @@ func qualityCheckpointToProto(qc *domain.QualityCheckpoint) *pb.QualityCheckpoin
 	}
 	if qc.BatchID != nil {
 		proto.BatchId = *qc.BatchID
+	}
+	if qc.Grade != nil {
+		proto.Grade = *qc.Grade
+	}
+	if qc.LabReportURL != nil {
+		proto.LabReportUrl = *qc.LabReportURL
 	}
 	return proto
 }

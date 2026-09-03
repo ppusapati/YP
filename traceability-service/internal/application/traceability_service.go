@@ -807,6 +807,8 @@ func (s *traceabilityService) CreateQualityCheckpoint(ctx context.Context, input
 		Notes:              input.Notes,
 		EvidenceURLs:       input.EvidenceURLs,
 		Metadata:           metadata,
+		Grade:              input.Grade,
+		LabReportURL:       input.LabReportURL,
 		CreatedAt:          now,
 		BatchID:            input.BatchID,
 	}

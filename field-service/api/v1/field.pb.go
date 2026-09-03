@@ -2671,6 +2671,8 @@ type CropCycle struct {
 	CreatedAt             *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt             *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ManagementUnitId      string                 `protobuf:"bytes,25,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	CropVariety           string                 `protobuf:"bytes,26,opt,name=crop_variety,json=cropVariety,proto3" json:"crop_variety,omitempty"`
+	SeedSource            string                 `protobuf:"bytes,27,opt,name=seed_source,json=seedSource,proto3" json:"seed_source,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2880,6 +2882,20 @@ func (x *CropCycle) GetManagementUnitId() string {
 	return ""
 }
 
+func (x *CropCycle) GetCropVariety() string {
+	if x != nil {
+		return x.CropVariety
+	}
+	return ""
+}
+
+func (x *CropCycle) GetSeedSource() string {
+	if x != nil {
+		return x.SeedSource
+	}
+	return ""
+}
+
 type CreateCropCycleRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	FieldId               string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
@@ -2893,6 +2909,8 @@ type CreateCropCycleRequest struct {
 	YieldUnit             string                 `protobuf:"bytes,9,opt,name=yield_unit,json=yieldUnit,proto3" json:"yield_unit,omitempty"`
 	Notes                 string                 `protobuf:"bytes,10,opt,name=notes,proto3" json:"notes,omitempty"`
 	ManagementUnitId      string                 `protobuf:"bytes,11,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	CropVariety           string                 `protobuf:"bytes,12,opt,name=crop_variety,json=cropVariety,proto3" json:"crop_variety,omitempty"`
+	SeedSource            string                 `protobuf:"bytes,13,opt,name=seed_source,json=seedSource,proto3" json:"seed_source,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -3000,6 +3018,20 @@ func (x *CreateCropCycleRequest) GetNotes() string {
 func (x *CreateCropCycleRequest) GetManagementUnitId() string {
 	if x != nil {
 		return x.ManagementUnitId
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetCropVariety() string {
+	if x != nil {
+		return x.CropVariety
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetSeedSource() string {
+	if x != nil {
+		return x.SeedSource
 	}
 	return ""
 }
@@ -4698,7 +4730,7 @@ const file_field_proto_rawDesc = "" +
 	"\x16GetCropHistoryResponse\x12K\n" +
 	"\vassignments\x18\x01 \x03(\v2).agriculture.field.v1.FieldCropAssignmentR\vassignments\x12\x1f\n" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
-	"totalCount\"\xcb\b\n" +
+	"totalCount\"\x8f\t\n" +
 	"\tCropCycle\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -4730,7 +4762,10 @@ const file_field_proto_rawDesc = "" +
 	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12,\n" +
-	"\x12management_unit_id\x18\x19 \x01(\tR\x10managementUnitId\"\xd1\x03\n" +
+	"\x12management_unit_id\x18\x19 \x01(\tR\x10managementUnitId\x12!\n" +
+	"\fcrop_variety\x18\x1a \x01(\tR\vcropVariety\x12\x1f\n" +
+	"\vseed_source\x18\x1b \x01(\tR\n" +
+	"seedSource\"\x95\x04\n" +
 	"\x16CreateCropCycleRequest\x12\x19\n" +
 	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\x17\n" +
 	"\acrop_id\x18\x02 \x01(\tR\x06cropId\x12\x16\n" +
@@ -4745,7 +4780,10 @@ const file_field_proto_rawDesc = "" +
 	"yield_unit\x18\t \x01(\tR\tyieldUnit\x12\x14\n" +
 	"\x05notes\x18\n" +
 	" \x01(\tR\x05notes\x12,\n" +
-	"\x12management_unit_id\x18\v \x01(\tR\x10managementUnitId\"P\n" +
+	"\x12management_unit_id\x18\v \x01(\tR\x10managementUnitId\x12!\n" +
+	"\fcrop_variety\x18\f \x01(\tR\vcropVariety\x12\x1f\n" +
+	"\vseed_source\x18\r \x01(\tR\n" +
+	"seedSource\"P\n" +
 	"\x17CreateCropCycleResponse\x125\n" +
 	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"%\n" +
 	"\x13GetCropCycleRequest\x12\x0e\n" +
