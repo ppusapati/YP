@@ -12,6 +12,7 @@ x-go-service: &go-service
   environment: &go-env
     JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
     KAFKA_BROKER: kafka:9092
+    GRPC_PLAINTEXT: "1"
     PORT: "8080"
     S3_ENDPOINT: http://minio:9000
     S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-minioadmin}
@@ -232,6 +233,7 @@ services:
       PEST_PREDICTION_SERVICE_URL: http://pest-prediction-service:8080
       CROP_SERVICE_URL: http://crop-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   pest-prediction-service:
     <<: *go-service
@@ -247,6 +249,7 @@ services:
       FIELD_SERVICE_URL: http://field-service:8080
       SENSOR_SERVICE_URL: http://sensor-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   plant-diagnosis-service:
     <<: *go-service

@@ -14,6 +14,7 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
 
+	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ai"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/domain"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/outbound"
@@ -34,6 +35,7 @@ type pestService struct {
 	farmClient   outbound.FarmClient
 	pool         *pgxpool.Pool
 	log          *p9log.Helper
+	aiClient     *ai.AIClient
 }
 
 // NewPestService creates a new application-layer PestService.
@@ -45,6 +47,7 @@ func NewPestService(
 	farmClient outbound.FarmClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) inbound.PestService {
 	return &pestService{
 		repo:         repo,
@@ -54,6 +57,7 @@ func NewPestService(
 		farmClient:   farmClient,
 		pool:         pool,
 		log:          p9log.NewHelper(p9log.With(log, "component", "PestService")),
+		aiClient:     aiClient,
 	}
 }
 

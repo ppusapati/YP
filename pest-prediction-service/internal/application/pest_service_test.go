@@ -235,6 +235,7 @@ func newService() (*mockPestRepo, *mockEventPublisher, *pestService) {
 		&mockFarmClient{},
 		nil,
 		nopLogger{},
+		nil,
 	).(*pestService)
 	return repo, pub, svc
 }

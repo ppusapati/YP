@@ -239,6 +239,7 @@ func newService() (*mockYieldRepo, *mockEventPublisher, *yieldService) {
 		&mockFarmClient{},
 		nil,
 		nopLogger{},
+		nil,
 	).(*yieldService)
 	return repo, pub, svc
 }
