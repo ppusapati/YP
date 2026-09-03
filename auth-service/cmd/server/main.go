@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"log"
@@ -20,6 +21,7 @@ import (
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
 	"p9e.in/samavaya/packages/ratelimit/algorithms"
+	"p9e.in/samavaya/packages/ulid"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -62,8 +64,6 @@ func main() {
 		log.Fatalf("migration failed: %v", err)
 	}
 
-	// 10 login attempts per IP per second, burst of 20 — tight enough to slow
-	// brute-force while generous enough for legitimate use.
 	loginLimiter := algorithms.NewTokenBucketLimiter(20, 10)
 
 	h := &authHandler{pool: pool, logger: zapLogger}
@@ -93,7 +93,7 @@ func main() {
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
-		MaxHeaderBytes:    1 << 20, // 1 MB
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	quit := make(chan os.Signal, 1)
@@ -137,7 +137,7 @@ func rateLimitByIP(limiter *algorithms.TokenBucketLimiter, next http.HandlerFunc
 			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many requests"})
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 		next(w, r)
 	}
 }
@@ -177,16 +177,23 @@ func (h *authHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := h.issueAccessToken(userID, tenantID, role)
+	sessionID := ulid.NewString()
+	refreshToken, tokenHash := generateRefreshToken()
+
+	expiresAt := time.Now().Add(refreshTokenTTL)
+	_, err = h.pool.Exec(r.Context(),
+		"INSERT INTO sessions (id, user_id, refresh_token_hash, ip_address, user_agent, expires_at) VALUES ($1, $2, $3, $4, $5, $6)",
+		sessionID, userID, tokenHash, r.RemoteAddr, r.UserAgent(), expiresAt,
+	)
 	if err != nil {
-		h.logger.Error("failed to sign access token", zap.Error(err))
+		h.logger.Error("failed to create session", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
 
-	refreshToken, err := h.createSession(r.Context(), userID, r.RemoteAddr, r.UserAgent())
+	accessToken, err := h.issueAccessToken(userID, tenantID, role, sessionID)
 	if err != nil {
-		h.logger.Error("failed to create session", zap.Error(err))
+		h.logger.Error("failed to sign access token", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
@@ -222,13 +229,15 @@ func (h *authHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tokenHash := hashToken(req.RefreshToken)
+
 	var sessionID, userID, tenantID, role string
 	var expiresAt time.Time
 	err := h.pool.QueryRow(r.Context(), `
 		SELECT s.id, s.user_id, u.tenant_id, u.role, s.expires_at
 		FROM sessions s JOIN users u ON u.id = s.user_id
-		WHERE s.refresh_token = $1 AND s.is_revoked = false AND u.is_active = true
-	`, req.RefreshToken).Scan(&sessionID, &userID, &tenantID, &role, &expiresAt)
+		WHERE s.refresh_token_hash = $1 AND s.is_revoked = false AND u.is_active = true
+	`, tokenHash).Scan(&sessionID, &userID, &tenantID, &role, &expiresAt)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid refresh token"})
 		return
@@ -240,7 +249,23 @@ func (h *authHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := h.issueAccessToken(strings.TrimSpace(userID), strings.TrimSpace(tenantID), strings.TrimSpace(role))
+	_, _ = h.pool.Exec(r.Context(), "UPDATE sessions SET is_revoked = true WHERE id = $1", sessionID)
+
+	newSessionID := ulid.NewString()
+	newRefreshToken, newTokenHash := generateRefreshToken()
+	newExpiresAt := time.Now().Add(refreshTokenTTL)
+
+	_, err = h.pool.Exec(r.Context(),
+		"INSERT INTO sessions (id, user_id, refresh_token_hash, ip_address, user_agent, expires_at) VALUES ($1, $2, $3, $4, $5, $6)",
+		newSessionID, userID, newTokenHash, r.RemoteAddr, r.UserAgent(), newExpiresAt,
+	)
+	if err != nil {
+		h.logger.Error("failed to rotate session", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	accessToken, err := h.issueAccessToken(strings.TrimSpace(userID), strings.TrimSpace(tenantID), strings.TrimSpace(role), newSessionID)
 	if err != nil {
 		h.logger.Error("failed to sign access token", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
@@ -249,8 +274,9 @@ func (h *authHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"token": map[string]interface{}{
-			"access_token": accessToken,
-			"expires_at":   time.Now().Add(accessTokenTTL).Unix(),
+			"access_token":  accessToken,
+			"refresh_token": newRefreshToken,
+			"expires_at":    time.Now().Add(accessTokenTTL).Unix(),
 		},
 	})
 }
@@ -296,24 +322,32 @@ func (h *authHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := extractBearerClaims(r)
 	if err != nil {
-		writeJSON(w, http.StatusOK, map[string]string{"status": "logged_out"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
-	_, _ = h.pool.Exec(r.Context(),
-		"UPDATE sessions SET is_revoked = true WHERE user_id = $1 AND is_revoked = false",
-		claims.UserID,
-	)
+	if claims.SessionID != "" {
+		_, _ = h.pool.Exec(r.Context(),
+			"UPDATE sessions SET is_revoked = true WHERE id = $1 AND user_id = $2 AND is_revoked = false",
+			claims.SessionID, claims.UserID,
+		)
+	} else {
+		_, _ = h.pool.Exec(r.Context(),
+			"UPDATE sessions SET is_revoked = true WHERE user_id = $1 AND is_revoked = false",
+			claims.UserID,
+		)
+	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "logged_out"})
 }
 
-func (h *authHandler) issueAccessToken(userID, tenantID, role string) (string, error) {
+func (h *authHandler) issueAccessToken(userID, tenantID, role, sessionID string) (string, error) {
 	now := time.Now()
 	claims := &authz.CustomClaims{
-		UserID:   userID,
-		TenantID: tenantID,
-		Role:     role,
+		UserID:    userID,
+		TenantID:  tenantID,
+		Role:      role,
+		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -321,21 +355,6 @@ func (h *authHandler) issueAccessToken(userID, tenantID, role string) (string, e
 		},
 	}
 	return authz.SignJWT(claims)
-}
-
-func (h *authHandler) createSession(ctx context.Context, userID, ipAddr, userAgent string) (string, error) {
-	sessionID := generateULID()
-	refreshToken := generateRefreshToken()
-	expiresAt := time.Now().Add(refreshTokenTTL)
-
-	_, err := h.pool.Exec(ctx,
-		"INSERT INTO sessions (id, user_id, refresh_token, ip_address, user_agent, expires_at) VALUES ($1, $2, $3, $4, $5, $6)",
-		sessionID, userID, refreshToken, ipAddr, userAgent, expiresAt,
-	)
-	if err != nil {
-		return "", err
-	}
-	return refreshToken, nil
 }
 
 func extractBearerClaims(r *http.Request) (*authz.CustomClaims, error) {
@@ -346,16 +365,19 @@ func extractBearerClaims(r *http.Request) (*authz.CustomClaims, error) {
 	return authz.ParseJWT(strings.TrimPrefix(auth, "Bearer "))
 }
 
-func generateULID() string {
-	b := make([]byte, 13)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)[:26]
+func hashToken(token string) string {
+	h := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(h[:])
 }
 
-func generateRefreshToken() string {
+func generateRefreshToken() (raw string, hash string) {
 	b := make([]byte, 32)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
+	raw = hex.EncodeToString(b)
+	hash = hashToken(raw)
+	return raw, hash
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
