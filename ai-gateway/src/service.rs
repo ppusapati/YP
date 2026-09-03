@@ -36,18 +36,20 @@ pub struct AiGatewayServiceImpl {
 
 impl AiGatewayServiceImpl {
     /// Create a new service from configuration. Initialises all engine modules.
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config) -> Result<Self, String> {
         let model_paths = config.models.clone();
+        let diagnosis = DiagnosisEngine::new()
+            .map_err(|e| format!("diagnosis engine init failed: {e}"))?;
 
-        Self {
-            diagnosis: Arc::new(DiagnosisEngine::new(model_paths.clone())),
+        Ok(Self {
+            diagnosis: Arc::new(diagnosis),
             yield_engine: Arc::new(YieldEngine::new(model_paths.clone())),
             satellite: Arc::new(SatelliteEngine::new(model_paths.clone())),
             recommend: Arc::new(RecommendEngine::new(model_paths)),
             alerting: Arc::new(AlertingEngine::new()),
             analytics: Arc::new(AnalyticsEngine::new()),
             prescription: Arc::new(PrescriptionEngine::new()),
-        }
+        })
     }
 }
 

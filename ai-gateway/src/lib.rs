@@ -18,5 +18,5 @@ pub mod yield_predict;
 
 /// Generated protobuf types and gRPC server trait.
 pub mod proto {
-    tonic::include_proto!("agriculture.ai.v1");
+    include!("generated/agriculture.ai.v1.rs");
 }

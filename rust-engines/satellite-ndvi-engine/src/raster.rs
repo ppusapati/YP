@@ -1,6 +1,7 @@
 //! Raster band data structures and I/O for satellite imagery processing.
 
 use ndarray::Array2;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
