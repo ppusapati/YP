@@ -87,10 +87,14 @@ func WithRLSTransaction(ctx context.Context, pool *pgxpool.Pool, fn func(uow Uni
 	return WithTx(ctx, factory, fn)
 }
 
-// SetRLSOnPool executes a read-only function within a transaction that has
-// RLS session variables set. Using a transaction ensures that set_config
-// with is_local=true scopes the variables to the transaction, preventing
-// leakage to other connections when the connection returns to the pool.
+// SetRLSOnPool executes a function within a transaction that has RLS session
+// variables set. The transaction is stored in the context via NewQuerierContext
+// so that downstream code calling QuerierFromContext receives a connection on
+// which set_config('app.tenant_id', ..., true) has already been executed.
+//
+// Using a transaction ensures that set_config with is_local=true scopes the
+// variables to the transaction, preventing leakage to other connections when
+// the connection returns to the pool.
 func SetRLSOnPool(ctx context.Context, pool *pgxpool.Pool, fn func(context.Context) error) error {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -105,6 +109,8 @@ func SetRLSOnPool(ctx context.Context, pool *pgxpool.Pool, fn func(context.Conte
 	if err := setRLSVariables(ctx, tx, scope); err != nil {
 		return err
 	}
+
+	ctx = NewQuerierContext(ctx, tx)
 
 	if err := fn(ctx); err != nil {
 		return err
