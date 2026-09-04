@@ -23,6 +23,7 @@ const (
 	CommerceService_GetListing_FullMethodName          = "/agriculture.commerce.v1.CommerceService/GetListing"
 	CommerceService_ListListings_FullMethodName        = "/agriculture.commerce.v1.CommerceService/ListListings"
 	CommerceService_UpdateListing_FullMethodName       = "/agriculture.commerce.v1.CommerceService/UpdateListing"
+	CommerceService_ActivateListing_FullMethodName     = "/agriculture.commerce.v1.CommerceService/ActivateListing"
 	CommerceService_CancelListing_FullMethodName       = "/agriculture.commerce.v1.CommerceService/CancelListing"
 	CommerceService_PlaceOrder_FullMethodName          = "/agriculture.commerce.v1.CommerceService/PlaceOrder"
 	CommerceService_GetOrder_FullMethodName            = "/agriculture.commerce.v1.CommerceService/GetOrder"
@@ -42,6 +43,7 @@ type CommerceServiceClient interface {
 	GetListing(ctx context.Context, in *GetListingRequest, opts ...grpc.CallOption) (*GetListingResponse, error)
 	ListListings(ctx context.Context, in *ListListingsRequest, opts ...grpc.CallOption) (*ListListingsResponse, error)
 	UpdateListing(ctx context.Context, in *UpdateListingRequest, opts ...grpc.CallOption) (*UpdateListingResponse, error)
+	ActivateListing(ctx context.Context, in *ActivateListingRequest, opts ...grpc.CallOption) (*ActivateListingResponse, error)
 	CancelListing(ctx context.Context, in *CancelListingRequest, opts ...grpc.CallOption) (*CancelListingResponse, error)
 	// Orders
 	PlaceOrder(ctx context.Context, in *PlaceOrderRequest, opts ...grpc.CallOption) (*PlaceOrderResponse, error)
@@ -93,6 +95,16 @@ func (c *commerceServiceClient) UpdateListing(ctx context.Context, in *UpdateLis
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateListingResponse)
 	err := c.cc.Invoke(ctx, CommerceService_UpdateListing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *commerceServiceClient) ActivateListing(ctx context.Context, in *ActivateListingRequest, opts ...grpc.CallOption) (*ActivateListingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ActivateListingResponse)
+	err := c.cc.Invoke(ctx, CommerceService_ActivateListing_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +182,7 @@ type CommerceServiceServer interface {
 	GetListing(context.Context, *GetListingRequest) (*GetListingResponse, error)
 	ListListings(context.Context, *ListListingsRequest) (*ListListingsResponse, error)
 	UpdateListing(context.Context, *UpdateListingRequest) (*UpdateListingResponse, error)
+	ActivateListing(context.Context, *ActivateListingRequest) (*ActivateListingResponse, error)
 	CancelListing(context.Context, *CancelListingRequest) (*CancelListingResponse, error)
 	// Orders
 	PlaceOrder(context.Context, *PlaceOrderRequest) (*PlaceOrderResponse, error)
@@ -198,6 +211,9 @@ func (UnimplementedCommerceServiceServer) ListListings(context.Context, *ListLis
 }
 func (UnimplementedCommerceServiceServer) UpdateListing(context.Context, *UpdateListingRequest) (*UpdateListingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateListing not implemented")
+}
+func (UnimplementedCommerceServiceServer) ActivateListing(context.Context, *ActivateListingRequest) (*ActivateListingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ActivateListing not implemented")
 }
 func (UnimplementedCommerceServiceServer) CancelListing(context.Context, *CancelListingRequest) (*CancelListingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelListing not implemented")
@@ -306,6 +322,24 @@ func _CommerceService_UpdateListing_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CommerceServiceServer).UpdateListing(ctx, req.(*UpdateListingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CommerceService_ActivateListing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateListingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommerceServiceServer).ActivateListing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CommerceService_ActivateListing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommerceServiceServer).ActivateListing(ctx, req.(*ActivateListingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -440,6 +474,10 @@ var CommerceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateListing",
 			Handler:    _CommerceService_UpdateListing_Handler,
+		},
+		{
+			MethodName: "ActivateListing",
+			Handler:    _CommerceService_ActivateListing_Handler,
 		},
 		{
 			MethodName: "CancelListing",

@@ -393,25 +393,27 @@ func nullIfEmpty(s string) *string {
 // crop_cycles
 // ---------------------------------------------------------------------------
 
-const cropCycleColumns = `id, tenant_id, field_id, crop_id, crop_assignment_id,
+const cropCycleColumns = `id, tenant_id, field_id, crop_id, crop_assignment_id, management_unit_id,
 season, cycle_year, name,
 planned_planting_date, actual_planting_date, planned_harvest_date, actual_harvest_date,
 status, target_yield_per_hectare, actual_yield_per_hectare, yield_unit,
-total_input_cost, total_revenue, currency, notes,
+total_input_cost, total_revenue, currency,
+crop_variety, seed_source, notes,
 version, created_by, updated_by, created_at, updated_at, deleted_at`
 
 func (r *fieldRepository) CreateCropCycle(ctx context.Context, c *domain.CropCycle) (*domain.CropCycle, error) {
 	c.ID = ulid.NewString()
 	row := r.queryRow(ctx,
-		`INSERT INTO crop_cycles (id, tenant_id, field_id, crop_id, crop_assignment_id,
+		`INSERT INTO crop_cycles (id, tenant_id, field_id, crop_id, crop_assignment_id, management_unit_id,
 season, cycle_year, name, planned_planting_date, planned_harvest_date,
-status, target_yield_per_hectare, yield_unit, notes, created_by)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+status, target_yield_per_hectare, yield_unit, crop_variety, seed_source, notes, created_by)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 RETURNING `+cropCycleColumns,
-		c.ID, c.TenantID, c.FieldID, c.CropID, c.CropAssignmentID,
+		c.ID, c.TenantID, c.FieldID, c.CropID, c.CropAssignmentID, c.ManagementUnitID,
 		c.Season, c.CycleYear, c.Name,
 		c.PlannedPlantingDate, c.PlannedHarvestDate,
-		string(c.Status), c.TargetYieldPerHectare, c.YieldUnit, c.Notes, c.CreatedBy,
+		string(c.Status), c.TargetYieldPerHectare, c.YieldUnit,
+		c.CropVariety, c.SeedSource, c.Notes, c.CreatedBy,
 	)
 	return scanCropCycle(row)
 }
@@ -435,9 +437,12 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 	var total int32
 	err := r.queryRow(ctx,
 		`SELECT COUNT(*)::int FROM crop_cycles
-		 WHERE tenant_id=$1 AND field_id=$2 AND deleted_at IS NULL
-		   AND ($3::varchar IS NULL OR status=$3)`,
-		params.TenantID, params.FieldID, nilIfEmptyCycleStatus(params.Status),
+		 WHERE tenant_id=$1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR field_id=$2)
+		   AND ($3::varchar IS NULL OR status=$3)
+		   AND ($4::varchar IS NULL OR management_unit_id=$4)`,
+		params.TenantID, nilIfEmptyStr(ptrOrNil(params.FieldID)), nilIfEmptyCycleStatus(params.Status),
+		nilIfEmptyStr(params.ManagementUnitID),
 	).Scan(&total)
 	if err != nil {
 		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count crop cycles: %v", err))
@@ -445,11 +450,14 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 
 	rows, err := r.query(ctx,
 		`SELECT `+cropCycleColumns+` FROM crop_cycles
-		 WHERE tenant_id=$1 AND field_id=$2 AND deleted_at IS NULL
+		 WHERE tenant_id=$1 AND deleted_at IS NULL
+		   AND ($2::varchar IS NULL OR field_id=$2)
 		   AND ($3::varchar IS NULL OR status=$3)
+		   AND ($4::varchar IS NULL OR management_unit_id=$4)
 		 ORDER BY cycle_year DESC, created_at DESC
-		 LIMIT $4 OFFSET $5`,
-		params.TenantID, params.FieldID, nilIfEmptyCycleStatus(params.Status),
+		 LIMIT $5 OFFSET $6`,
+		params.TenantID, nilIfEmptyStr(ptrOrNil(params.FieldID)), nilIfEmptyCycleStatus(params.Status),
+		nilIfEmptyStr(params.ManagementUnitID),
 		params.PageSize, params.Offset,
 	)
 	if err != nil {
@@ -502,11 +510,12 @@ func (r *fieldRepository) UpdateCropCycle(ctx context.Context, c *domain.CropCyc
 func scanCropCycle(row pgx.Row) (*domain.CropCycle, error) {
 	c := &domain.CropCycle{}
 	err := row.Scan(
-		&c.ID, &c.TenantID, &c.FieldID, &c.CropID, &c.CropAssignmentID,
+		&c.ID, &c.TenantID, &c.FieldID, &c.CropID, &c.CropAssignmentID, &c.ManagementUnitID,
 		&c.Season, &c.CycleYear, &c.Name,
 		&c.PlannedPlantingDate, &c.ActualPlantingDate, &c.PlannedHarvestDate, &c.ActualHarvestDate,
 		&c.Status, &c.TargetYieldPerHectare, &c.ActualYieldPerHectare, &c.YieldUnit,
-		&c.TotalInputCost, &c.TotalRevenue, &c.Currency, &c.Notes,
+		&c.TotalInputCost, &c.TotalRevenue, &c.Currency,
+		&c.CropVariety, &c.SeedSource, &c.Notes,
 		&c.Version, &c.CreatedBy, &c.UpdatedBy, &c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
 	)
 	return c, err
@@ -618,6 +627,13 @@ func scanActivityEvent(row pgx.Row) (*domain.ActivityEvent, error) {
 		&e.CreatedAt,
 	)
 	return e, err
+}
+
+func ptrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func nilIfEmptyStr(s *string) interface{} {

@@ -46,6 +46,19 @@ var ValidOrderTransitions = map[OrderStatus][]OrderStatus{
 	OrderStatusDisputed:   {OrderStatusCompleted, OrderStatusCancelled},
 }
 
+// ValidPaymentTransitions maps current payment status to allowed next statuses.
+var ValidPaymentTransitions = map[PaymentStatus][]PaymentStatus{
+	PaymentStatusPending: {PaymentStatusPaid},
+	PaymentStatusPaid:    {PaymentStatusRefunded},
+}
+
+// ValidListingTransitions maps current listing status to allowed next statuses.
+var ValidListingTransitions = map[ListingStatus][]ListingStatus{
+	ListingStatusDraft:   {ListingStatusActive, ListingStatusCancelled},
+	ListingStatusActive:  {ListingStatusSoldOut, ListingStatusExpired, ListingStatusCancelled},
+	ListingStatusSoldOut: {ListingStatusActive},
+}
+
 // MarketplaceListing is a produce listing posted by a farmer.
 type MarketplaceListing struct {
 	ID                    string        `json:"id"`
@@ -62,6 +75,7 @@ type MarketplaceListing struct {
 	MinOrderQuantity      *float64      `json:"min_order_quantity,omitempty"`
 	QualityGrade          *string       `json:"quality_grade,omitempty"`
 	TraceabilityRecordID  *string       `json:"traceability_record_id,omitempty"`
+	BatchID               *string       `json:"batch_id,omitempty"`
 	Status                ListingStatus `json:"status"`
 	Location              *string       `json:"location,omitempty"`
 	Region                *string       `json:"region,omitempty"`
@@ -117,6 +131,7 @@ type CreateListingInput struct {
 	MinOrderQuantity     *float64
 	QualityGrade         *string
 	TraceabilityRecordID *string
+	BatchID              *string
 	Location             *string
 	Region               *string
 	ImageURLs            []string

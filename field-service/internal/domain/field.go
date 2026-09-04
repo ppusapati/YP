@@ -271,6 +271,7 @@ type CropCycle struct {
 	FieldID               string          `json:"field_id"`
 	CropID                string          `json:"crop_id"`
 	CropAssignmentID      *string         `json:"crop_assignment_id,omitempty"`
+	ManagementUnitID      *string         `json:"management_unit_id,omitempty"`
 	Season                string          `json:"season"`
 	CycleYear             int32           `json:"cycle_year"`
 	Name                  *string         `json:"name,omitempty"`
@@ -285,6 +286,8 @@ type CropCycle struct {
 	TotalInputCost        int64           `json:"total_input_cost"`
 	TotalRevenue          int64           `json:"total_revenue"`
 	Currency              string          `json:"currency"`
+	CropVariety           *string         `json:"crop_variety,omitempty"`
+	SeedSource            *string         `json:"seed_source,omitempty"`
 	Notes                 *string         `json:"notes,omitempty"`
 	Version               int64           `json:"version"`
 	CreatedBy             string          `json:"created_by"`
@@ -295,11 +298,12 @@ type CropCycle struct {
 }
 
 type ListCropCyclesParams struct {
-	TenantID string
-	FieldID  string
-	Status   *CropCycleStatus
-	PageSize int32
-	Offset   int32
+	TenantID         string
+	FieldID          string
+	ManagementUnitID *string
+	Status           *CropCycleStatus
+	PageSize         int32
+	Offset           int32
 }
 
 // ActivityEvent is an immutable log entry for actions taken on a field.

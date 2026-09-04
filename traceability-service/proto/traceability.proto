@@ -95,6 +95,9 @@ message BatchRecord {
   google.protobuf.Timestamp created_at = 12;
   google.protobuf.Timestamp updated_at = 13;
   int64 version = 14;
+  string crop_cycle_id = 15;
+  string yield_record_id = 16;
+  double weight_kg = 17;
 }
 
 // QRCode represents a generated QR code for traceability.
@@ -281,6 +284,9 @@ message CreateBatchRequest {
   string storage_conditions = 7;
   string quality_grade = 8;
   map<string, string> metadata = 9;
+  string crop_cycle_id = 10;
+  string yield_record_id = 11;
+  double weight_kg = 12;
 }
 
 message CreateBatchResponse {
@@ -374,11 +380,15 @@ message QualityCheckpoint {
   repeated string            evidence_urls           = 16;
   map<string, string>        metadata                = 17;
   google.protobuf.Timestamp  created_at              = 18;
+  string                     batch_id                = 19;
+  string                     grade                   = 20;
+  string                     lab_report_url          = 21;
 }
 
 message CreateQualityCheckpointRequest {
   string                     record_id               = 1;
   string                     supply_chain_event_id   = 2;
+  string                     batch_id                = 15;
   QualityCheckType           check_type              = 3;
   QualityCheckResult         result                  = 4;
   string                     inspector_name          = 5;
@@ -391,6 +401,8 @@ message CreateQualityCheckpointRequest {
   string                     notes                   = 12;
   repeated string            evidence_urls           = 13;
   map<string, string>        metadata                = 14;
+  string                     grade                   = 16;
+  string                     lab_report_url          = 17;
 }
 
 message CreateQualityCheckpointResponse {

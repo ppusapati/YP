@@ -34,7 +34,7 @@ func NewCommerceRepository(pool *pgxpool.Pool, log p9log.Logger) outbound.Commer
 const listingColumns = `id, tenant_id, farm_id, crop_id,
 	product_name, product_type, description,
 	quantity_available, quantity_unit, price_per_unit_paise, currency,
-	min_order_quantity, quality_grade, traceability_record_id,
+	min_order_quantity, quality_grade, traceability_record_id, batch_id,
 	status, location, region, image_urls,
 	available_from, available_to,
 	version, created_by, updated_by, created_at, updated_at`
@@ -45,7 +45,7 @@ func scanListing(row pgx.Row) (*domain.MarketplaceListing, error) {
 		&l.ID, &l.TenantID, &l.FarmID, &l.CropID,
 		&l.ProductName, &l.ProductType, &l.Description,
 		&l.QuantityAvailable, &l.QuantityUnit, &l.PricePerUnitPaise, &l.Currency,
-		&l.MinOrderQuantity, &l.QualityGrade, &l.TraceabilityRecordID,
+		&l.MinOrderQuantity, &l.QualityGrade, &l.TraceabilityRecordID, &l.BatchID,
 		&l.Status, &l.Location, &l.Region, &l.ImageURLs,
 		&l.AvailableFrom, &l.AvailableTo,
 		&l.Version, &l.CreatedBy, &l.UpdatedBy, &l.CreatedAt, &l.UpdatedAt,
@@ -64,7 +64,7 @@ func scanListingRows(rows pgx.Rows) ([]domain.MarketplaceListing, error) {
 			&l.ID, &l.TenantID, &l.FarmID, &l.CropID,
 			&l.ProductName, &l.ProductType, &l.Description,
 			&l.QuantityAvailable, &l.QuantityUnit, &l.PricePerUnitPaise, &l.Currency,
-			&l.MinOrderQuantity, &l.QualityGrade, &l.TraceabilityRecordID,
+			&l.MinOrderQuantity, &l.QualityGrade, &l.TraceabilityRecordID, &l.BatchID,
 			&l.Status, &l.Location, &l.Region, &l.ImageURLs,
 			&l.AvailableFrom, &l.AvailableTo,
 			&l.Version, &l.CreatedBy, &l.UpdatedBy, &l.CreatedAt, &l.UpdatedAt,
@@ -83,7 +83,7 @@ func (r *commerceRepository) CreateListing(ctx context.Context, listing *domain.
 		id, tenant_id, farm_id, crop_id,
 		product_name, product_type, description,
 		quantity_available, quantity_unit, price_per_unit_paise, currency,
-		min_order_quantity, quality_grade, traceability_record_id,
+		min_order_quantity, quality_grade, traceability_record_id, batch_id,
 		status, location, region, image_urls,
 		available_from, available_to,
 		version, created_by, updated_by, created_at, updated_at
@@ -91,17 +91,17 @@ func (r *commerceRepository) CreateListing(ctx context.Context, listing *domain.
 		$1, $2, $3, $4,
 		$5, $6, $7,
 		$8, $9, $10, $11,
-		$12, $13, $14,
-		$15, $16, $17, $18,
-		$19, $20,
-		$21, $22, $23, $24, $25
+		$12, $13, $14, $15,
+		$16, $17, $18, $19,
+		$20, $21,
+		$22, $23, $24, $25, $26
 	) RETURNING %s`, listingColumns)
 
 	result, err := scanListing(r.pool.QueryRow(ctx, query,
 		listing.ID, listing.TenantID, listing.FarmID, listing.CropID,
 		listing.ProductName, listing.ProductType, listing.Description,
 		listing.QuantityAvailable, listing.QuantityUnit, listing.PricePerUnitPaise, listing.Currency,
-		listing.MinOrderQuantity, listing.QualityGrade, listing.TraceabilityRecordID,
+		listing.MinOrderQuantity, listing.QualityGrade, listing.TraceabilityRecordID, listing.BatchID,
 		string(listing.Status), listing.Location, listing.Region, listing.ImageURLs,
 		listing.AvailableFrom, listing.AvailableTo,
 		listing.Version, listing.CreatedBy, listing.UpdatedBy, listing.CreatedAt, listing.UpdatedAt,
@@ -258,6 +258,41 @@ func (r *commerceRepository) UpdateListing(ctx context.Context, id, tenantID str
 		return nil, errors.Internal("failed to update listing: %v", err)
 	}
 	return result, nil
+}
+
+func (r *commerceRepository) ActivateListing(ctx context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error) {
+	query := fmt.Sprintf(`UPDATE marketplace_listings
+		SET status = $3, updated_by = $4, version = version + 1
+		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+		RETURNING %s`, listingColumns)
+
+	result, err := scanListing(r.pool.QueryRow(ctx, query, id, tenantID, string(domain.ListingStatusActive), updatedBy))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.NotFound("LISTING_NOT_FOUND", fmt.Sprintf("listing %s not found", id))
+		}
+		r.log.Errorw("msg", "failed to activate listing", "error", err)
+		return nil, errors.Internal("failed to activate listing: %v", err)
+	}
+	return result, nil
+}
+
+func (r *commerceRepository) DecrementListingQuantity(ctx context.Context, id, tenantID string, quantity float64) error {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE marketplace_listings
+		 SET quantity_available = quantity_available - $3,
+		     status = CASE WHEN quantity_available - $3 <= 0 THEN $4 ELSE status END,
+		     version = version + 1
+		 WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL AND quantity_available >= $3`,
+		id, tenantID, quantity, string(domain.ListingStatusSoldOut))
+	if err != nil {
+		r.log.Errorw("msg", "failed to decrement listing quantity", "error", err)
+		return errors.Internal("failed to decrement listing quantity: %v", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.BadRequest("INSUFFICIENT_QUANTITY", "insufficient quantity available")
+	}
+	return nil
 }
 
 func (r *commerceRepository) CancelListing(ctx context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error) {

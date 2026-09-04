@@ -291,7 +291,9 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
           FilledButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              context.read<FarmBloc>().add(LoadFarmById(farmId: farmId));
+              context.read<FieldBloc>().add(
+                    DeleteField(fieldId: field.id, farmId: farmId),
+                  );
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,

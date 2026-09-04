@@ -515,21 +515,25 @@ func (r *traceabilityRepository) CreateBatchRecord(ctx context.Context, batch *d
 	query := `INSERT INTO batch_records (
 		id, tenant_id, record_id, batch_number, quantity, unit,
 		production_date, expiry_date, storage_conditions, quality_grade,
-		metadata, version, created_at, updated_at
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		metadata, version, created_at, updated_at,
+		crop_cycle_id, yield_record_id, weight_kg
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 	RETURNING id, tenant_id, record_id, batch_number, quantity, unit,
 		production_date, expiry_date, storage_conditions, quality_grade,
-		metadata, version, created_at, updated_at`
+		metadata, version, created_at, updated_at,
+		crop_cycle_id, yield_record_id, weight_kg`
 
 	var result domain.BatchRecord
 	err := r.pool.QueryRow(ctx, query,
 		batch.ID, batch.TenantID, batch.RecordID, batch.BatchNumber, batch.Quantity, batch.Unit,
 		batch.ProductionDate, batch.ExpiryDate, batch.StorageConditions, batch.QualityGrade,
 		batch.Metadata, batch.Version, batch.CreatedAt, batch.UpdatedAt,
+		batch.CropCycleID, batch.YieldRecordID, batch.WeightKg,
 	).Scan(
 		&result.ID, &result.TenantID, &result.RecordID, &result.BatchNumber, &result.Quantity, &result.Unit,
 		&result.ProductionDate, &result.ExpiryDate, &result.StorageConditions, &result.QualityGrade,
 		&result.Metadata, &result.Version, &result.CreatedAt, &result.UpdatedAt,
+		&result.CropCycleID, &result.YieldRecordID, &result.WeightKg,
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to create batch record", "error", err)
@@ -541,7 +545,8 @@ func (r *traceabilityRepository) CreateBatchRecord(ctx context.Context, batch *d
 func (r *traceabilityRepository) GetBatchRecord(ctx context.Context, id, tenantID string) (*domain.BatchRecord, error) {
 	query := `SELECT id, tenant_id, record_id, batch_number, quantity, unit,
 		production_date, expiry_date, storage_conditions, quality_grade,
-		metadata, version, created_at, updated_at
+		metadata, version, created_at, updated_at,
+		crop_cycle_id, yield_record_id, weight_kg
 	FROM batch_records WHERE id = $1 AND tenant_id = $2`
 
 	var result domain.BatchRecord
@@ -549,6 +554,7 @@ func (r *traceabilityRepository) GetBatchRecord(ctx context.Context, id, tenantI
 		&result.ID, &result.TenantID, &result.RecordID, &result.BatchNumber, &result.Quantity, &result.Unit,
 		&result.ProductionDate, &result.ExpiryDate, &result.StorageConditions, &result.QualityGrade,
 		&result.Metadata, &result.Version, &result.CreatedAt, &result.UpdatedAt,
+		&result.CropCycleID, &result.YieldRecordID, &result.WeightKg,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -584,7 +590,8 @@ func (r *traceabilityRepository) ListBatchRecords(ctx context.Context, tenantID 
 
 	listQuery := fmt.Sprintf(`SELECT id, tenant_id, record_id, batch_number, quantity, unit,
 		production_date, expiry_date, storage_conditions, quality_grade,
-		metadata, version, created_at, updated_at
+		metadata, version, created_at, updated_at,
+		crop_cycle_id, yield_record_id, weight_kg
 	FROM batch_records %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, baseWhere, argIdx, argIdx+1)
 	args = append(args, pageSize, filter.PageOffset)
 
@@ -601,6 +608,7 @@ func (r *traceabilityRepository) ListBatchRecords(ctx context.Context, tenantID 
 			&b.ID, &b.TenantID, &b.RecordID, &b.BatchNumber, &b.Quantity, &b.Unit,
 			&b.ProductionDate, &b.ExpiryDate, &b.StorageConditions, &b.QualityGrade,
 			&b.Metadata, &b.Version, &b.CreatedAt, &b.UpdatedAt,
+			&b.CropCycleID, &b.YieldRecordID, &b.WeightKg,
 		); err != nil {
 			return nil, 0, errors.Internal("failed to scan batch record: %v", err)
 		}
@@ -843,7 +851,9 @@ func (r *traceabilityRepository) scanQualityCheckpoint(row pgx.Row) (*domain.Qua
 		&qc.InspectedAt, &qc.Location,
 		&qc.MeasurementValue, &qc.MeasurementUnit,
 		&qc.MinThreshold, &qc.MaxThreshold,
-		&qc.Notes, &qc.EvidenceURLs, &qc.Metadata, &qc.CreatedAt,
+		&qc.Notes, &qc.EvidenceURLs, &qc.Metadata,
+		&qc.Grade, &qc.LabReportURL,
+		&qc.CreatedAt, &qc.BatchID,
 	)
 	if err != nil {
 		return nil, err
@@ -858,20 +868,26 @@ func (r *traceabilityRepository) CreateQualityCheckpoint(ctx context.Context, ch
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id
 	) VALUES (
 		$1, $2, $3, $4,
 		$5, $6, $7, $8,
 		$9, $10,
 		$11, $12,
 		$13, $14,
-		$15, $16, $17, $18
+		$15, $16, $17,
+		$18, $19,
+		$20, $21
 	) RETURNING id, tenant_id, record_id, supply_chain_event_id,
 		check_type, result, inspector_id, inspector_name,
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at`
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id`
 
 	result, err := r.scanQualityCheckpoint(r.pool.QueryRow(ctx, query,
 		checkpoint.ID, checkpoint.TenantID, checkpoint.RecordID, checkpoint.SupplyChainEventID,
@@ -879,7 +895,9 @@ func (r *traceabilityRepository) CreateQualityCheckpoint(ctx context.Context, ch
 		checkpoint.InspectedAt, checkpoint.Location,
 		checkpoint.MeasurementValue, checkpoint.MeasurementUnit,
 		checkpoint.MinThreshold, checkpoint.MaxThreshold,
-		checkpoint.Notes, checkpoint.EvidenceURLs, checkpoint.Metadata, checkpoint.CreatedAt,
+		checkpoint.Notes, checkpoint.EvidenceURLs, checkpoint.Metadata,
+		checkpoint.Grade, checkpoint.LabReportURL,
+		checkpoint.CreatedAt, checkpoint.BatchID,
 	))
 	if err != nil {
 		r.log.Errorw("msg", "failed to create quality checkpoint", "error", err)
@@ -894,7 +912,9 @@ func (r *traceabilityRepository) GetQualityCheckpoint(ctx context.Context, id, t
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id
 	FROM quality_checkpoints WHERE id = $1 AND tenant_id = $2`
 
 	result, err := r.scanQualityCheckpoint(r.pool.QueryRow(ctx, query, id, tenantID))
@@ -946,7 +966,9 @@ func (r *traceabilityRepository) ListQualityCheckpoints(ctx context.Context, fil
 		inspected_at, location,
 		measurement_value, measurement_unit,
 		min_threshold, max_threshold,
-		notes, evidence_urls, metadata, created_at
+		notes, evidence_urls, metadata,
+		grade, lab_report_url,
+		created_at, batch_id
 	FROM quality_checkpoints %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, baseWhere, argIdx, argIdx+1)
 	args = append(args, pageSize, filter.PageOffset)
 
@@ -965,7 +987,9 @@ func (r *traceabilityRepository) ListQualityCheckpoints(ctx context.Context, fil
 			&qc.InspectedAt, &qc.Location,
 			&qc.MeasurementValue, &qc.MeasurementUnit,
 			&qc.MinThreshold, &qc.MaxThreshold,
-			&qc.Notes, &qc.EvidenceURLs, &qc.Metadata, &qc.CreatedAt,
+			&qc.Notes, &qc.EvidenceURLs, &qc.Metadata,
+			&qc.Grade, &qc.LabReportURL,
+			&qc.CreatedAt, &qc.BatchID,
 		); err != nil {
 			return nil, 0, errors.Internal("failed to scan quality checkpoint: %v", err)
 		}

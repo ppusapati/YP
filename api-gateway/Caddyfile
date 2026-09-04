@@ -22,7 +22,7 @@
 	# ── CORS ───────────────────────────────────────────────────────────
 	header {
 		Access-Control-Allow-Origin  {$CORS_ORIGIN:*}
-		Access-Control-Allow-Methods "POST, OPTIONS"
+		Access-Control-Allow-Methods "GET, POST, OPTIONS"
 		Access-Control-Allow-Headers "Authorization, Content-Type, Connect-Protocol-Version, Connect-Timeout-Ms, Grpc-Timeout, X-Grpc-Web, X-User-Agent, X-Tenant-ID"
 		Access-Control-Expose-Headers "Grpc-Status, Grpc-Message, Grpc-Status-Details-Bin"
 		Access-Control-Max-Age 86400

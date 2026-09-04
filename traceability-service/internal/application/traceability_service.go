@@ -401,6 +401,9 @@ func (s *traceabilityService) CreateBatch(ctx context.Context, input domain.Crea
 		StorageConditions: input.StorageConditions,
 		QualityGrade:      input.QualityGrade,
 		Metadata:          metadata,
+		CropCycleID:       input.CropCycleID,
+		YieldRecordID:     input.YieldRecordID,
+		WeightKg:          input.WeightKg,
 		Version:           1,
 		CreatedAt:         now,
 		UpdatedAt:         now,
@@ -804,7 +807,10 @@ func (s *traceabilityService) CreateQualityCheckpoint(ctx context.Context, input
 		Notes:              input.Notes,
 		EvidenceURLs:       input.EvidenceURLs,
 		Metadata:           metadata,
+		Grade:              input.Grade,
+		LabReportURL:       input.LabReportURL,
 		CreatedAt:          now,
+		BatchID:            input.BatchID,
 	}
 
 	created, err := s.repo.CreateQualityCheckpoint(ctx, checkpoint)

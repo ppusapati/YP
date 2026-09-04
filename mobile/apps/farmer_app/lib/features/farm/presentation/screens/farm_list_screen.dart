@@ -92,6 +92,9 @@ class _FarmListScreenState extends State<FarmListScreen> {
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
+                  context
+                      .read<FarmBloc>()
+                      .add(const LoadFarms(userId: ''));
                 } else if (state is FarmDeleted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -99,6 +102,9 @@ class _FarmListScreenState extends State<FarmListScreen> {
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
+                  context
+                      .read<FarmBloc>()
+                      .add(const LoadFarms(userId: ''));
                 }
               },
               builder: (context, state) {

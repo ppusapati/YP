@@ -97,6 +97,31 @@ func (m *mockCommerceRepo) UpdateListing(_ context.Context, id, tenantID string,
 	return l, nil
 }
 
+func (m *mockCommerceRepo) ActivateListing(_ context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error) {
+	l, ok := m.listings[id]
+	if !ok || l.TenantID != tenantID {
+		return nil, errors.NotFound("LISTING_NOT_FOUND", "listing not found")
+	}
+	l.Status = domain.ListingStatusActive
+	l.UpdatedBy = &updatedBy
+	return l, nil
+}
+
+func (m *mockCommerceRepo) DecrementListingQuantity(_ context.Context, id, tenantID string, quantity float64) error {
+	l, ok := m.listings[id]
+	if !ok || l.TenantID != tenantID {
+		return errors.NotFound("LISTING_NOT_FOUND", "listing not found")
+	}
+	if l.QuantityAvailable < quantity {
+		return errors.BadRequest("INSUFFICIENT_QUANTITY", "insufficient quantity available")
+	}
+	l.QuantityAvailable -= quantity
+	if l.QuantityAvailable <= 0 {
+		l.Status = domain.ListingStatusSoldOut
+	}
+	return nil
+}
+
 func (m *mockCommerceRepo) CancelListing(_ context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error) {
 	l, ok := m.listings[id]
 	if !ok || l.TenantID != tenantID {

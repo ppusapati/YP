@@ -61,6 +61,7 @@ message MarketplaceListing {
   int64                      version                  = 22;
   google.protobuf.Timestamp  created_at               = 23;
   google.protobuf.Timestamp  updated_at               = 24;
+  string                     batch_id                 = 25;
 }
 
 // Order represents a purchase order.
@@ -110,6 +111,7 @@ message CreateListingRequest {
   repeated string            image_urls               = 15;
   google.protobuf.Timestamp  available_from           = 16;
   google.protobuf.Timestamp  available_to             = 17;
+  string                     batch_id                 = 18;
 }
 
 message CreateListingResponse {
@@ -153,6 +155,14 @@ message UpdateListingRequest {
 }
 
 message UpdateListingResponse {
+  MarketplaceListing listing = 1;
+}
+
+message ActivateListingRequest {
+  string id = 1;
+}
+
+message ActivateListingResponse {
   MarketplaceListing listing = 1;
 }
 
@@ -228,6 +238,7 @@ service CommerceService {
   rpc GetListing(GetListingRequest)         returns (GetListingResponse);
   rpc ListListings(ListListingsRequest)     returns (ListListingsResponse);
   rpc UpdateListing(UpdateListingRequest)   returns (UpdateListingResponse);
+  rpc ActivateListing(ActivateListingRequest) returns (ActivateListingResponse);
   rpc CancelListing(CancelListingRequest)   returns (CancelListingResponse);
 
   // Orders

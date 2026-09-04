@@ -14,6 +14,7 @@ type CommerceService interface {
 	GetListing(ctx context.Context, id string) (*domain.MarketplaceListing, error)
 	ListListings(ctx context.Context, filter domain.ListListingsFilter) ([]domain.MarketplaceListing, int32, error)
 	UpdateListing(ctx context.Context, id string, input domain.UpdateListingInput) (*domain.MarketplaceListing, error)
+	ActivateListing(ctx context.Context, id string) (*domain.MarketplaceListing, error)
 	CancelListing(ctx context.Context, id string) (*domain.MarketplaceListing, error)
 
 	// Orders

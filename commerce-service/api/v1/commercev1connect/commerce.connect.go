@@ -45,6 +45,9 @@ const (
 	// CommerceServiceUpdateListingProcedure is the fully-qualified name of the CommerceService's
 	// UpdateListing RPC.
 	CommerceServiceUpdateListingProcedure = "/agriculture.commerce.v1.CommerceService/UpdateListing"
+	// CommerceServiceActivateListingProcedure is the fully-qualified name of the CommerceService's
+	// ActivateListing RPC.
+	CommerceServiceActivateListingProcedure = "/agriculture.commerce.v1.CommerceService/ActivateListing"
 	// CommerceServiceCancelListingProcedure is the fully-qualified name of the CommerceService's
 	// CancelListing RPC.
 	CommerceServiceCancelListingProcedure = "/agriculture.commerce.v1.CommerceService/CancelListing"
@@ -72,6 +75,7 @@ type CommerceServiceClient interface {
 	GetListing(context.Context, *connect.Request[v1.GetListingRequest]) (*connect.Response[v1.GetListingResponse], error)
 	ListListings(context.Context, *connect.Request[v1.ListListingsRequest]) (*connect.Response[v1.ListListingsResponse], error)
 	UpdateListing(context.Context, *connect.Request[v1.UpdateListingRequest]) (*connect.Response[v1.UpdateListingResponse], error)
+	ActivateListing(context.Context, *connect.Request[v1.ActivateListingRequest]) (*connect.Response[v1.ActivateListingResponse], error)
 	CancelListing(context.Context, *connect.Request[v1.CancelListingRequest]) (*connect.Response[v1.CancelListingResponse], error)
 	// Orders
 	PlaceOrder(context.Context, *connect.Request[v1.PlaceOrderRequest]) (*connect.Response[v1.PlaceOrderResponse], error)
@@ -114,6 +118,12 @@ func NewCommerceServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			httpClient,
 			baseURL+CommerceServiceUpdateListingProcedure,
 			connect.WithSchema(commerceServiceMethods.ByName("UpdateListing")),
+			connect.WithClientOptions(opts...),
+		),
+		activateListing: connect.NewClient[v1.ActivateListingRequest, v1.ActivateListingResponse](
+			httpClient,
+			baseURL+CommerceServiceActivateListingProcedure,
+			connect.WithSchema(commerceServiceMethods.ByName("ActivateListing")),
 			connect.WithClientOptions(opts...),
 		),
 		cancelListing: connect.NewClient[v1.CancelListingRequest, v1.CancelListingResponse](
@@ -161,6 +171,7 @@ type commerceServiceClient struct {
 	getListing          *connect.Client[v1.GetListingRequest, v1.GetListingResponse]
 	listListings        *connect.Client[v1.ListListingsRequest, v1.ListListingsResponse]
 	updateListing       *connect.Client[v1.UpdateListingRequest, v1.UpdateListingResponse]
+	activateListing     *connect.Client[v1.ActivateListingRequest, v1.ActivateListingResponse]
 	cancelListing       *connect.Client[v1.CancelListingRequest, v1.CancelListingResponse]
 	placeOrder          *connect.Client[v1.PlaceOrderRequest, v1.PlaceOrderResponse]
 	getOrder            *connect.Client[v1.GetOrderRequest, v1.GetOrderResponse]
@@ -187,6 +198,11 @@ func (c *commerceServiceClient) ListListings(ctx context.Context, req *connect.R
 // UpdateListing calls agriculture.commerce.v1.CommerceService.UpdateListing.
 func (c *commerceServiceClient) UpdateListing(ctx context.Context, req *connect.Request[v1.UpdateListingRequest]) (*connect.Response[v1.UpdateListingResponse], error) {
 	return c.updateListing.CallUnary(ctx, req)
+}
+
+// ActivateListing calls agriculture.commerce.v1.CommerceService.ActivateListing.
+func (c *commerceServiceClient) ActivateListing(ctx context.Context, req *connect.Request[v1.ActivateListingRequest]) (*connect.Response[v1.ActivateListingResponse], error) {
+	return c.activateListing.CallUnary(ctx, req)
 }
 
 // CancelListing calls agriculture.commerce.v1.CommerceService.CancelListing.
@@ -227,6 +243,7 @@ type CommerceServiceHandler interface {
 	GetListing(context.Context, *connect.Request[v1.GetListingRequest]) (*connect.Response[v1.GetListingResponse], error)
 	ListListings(context.Context, *connect.Request[v1.ListListingsRequest]) (*connect.Response[v1.ListListingsResponse], error)
 	UpdateListing(context.Context, *connect.Request[v1.UpdateListingRequest]) (*connect.Response[v1.UpdateListingResponse], error)
+	ActivateListing(context.Context, *connect.Request[v1.ActivateListingRequest]) (*connect.Response[v1.ActivateListingResponse], error)
 	CancelListing(context.Context, *connect.Request[v1.CancelListingRequest]) (*connect.Response[v1.CancelListingResponse], error)
 	// Orders
 	PlaceOrder(context.Context, *connect.Request[v1.PlaceOrderRequest]) (*connect.Response[v1.PlaceOrderResponse], error)
@@ -265,6 +282,12 @@ func NewCommerceServiceHandler(svc CommerceServiceHandler, opts ...connect.Handl
 		CommerceServiceUpdateListingProcedure,
 		svc.UpdateListing,
 		connect.WithSchema(commerceServiceMethods.ByName("UpdateListing")),
+		connect.WithHandlerOptions(opts...),
+	)
+	commerceServiceActivateListingHandler := connect.NewUnaryHandler(
+		CommerceServiceActivateListingProcedure,
+		svc.ActivateListing,
+		connect.WithSchema(commerceServiceMethods.ByName("ActivateListing")),
 		connect.WithHandlerOptions(opts...),
 	)
 	commerceServiceCancelListingHandler := connect.NewUnaryHandler(
@@ -313,6 +336,8 @@ func NewCommerceServiceHandler(svc CommerceServiceHandler, opts ...connect.Handl
 			commerceServiceListListingsHandler.ServeHTTP(w, r)
 		case CommerceServiceUpdateListingProcedure:
 			commerceServiceUpdateListingHandler.ServeHTTP(w, r)
+		case CommerceServiceActivateListingProcedure:
+			commerceServiceActivateListingHandler.ServeHTTP(w, r)
 		case CommerceServiceCancelListingProcedure:
 			commerceServiceCancelListingHandler.ServeHTTP(w, r)
 		case CommerceServicePlaceOrderProcedure:
@@ -348,6 +373,10 @@ func (UnimplementedCommerceServiceHandler) ListListings(context.Context, *connec
 
 func (UnimplementedCommerceServiceHandler) UpdateListing(context.Context, *connect.Request[v1.UpdateListingRequest]) (*connect.Response[v1.UpdateListingResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.commerce.v1.CommerceService.UpdateListing is not implemented"))
+}
+
+func (UnimplementedCommerceServiceHandler) ActivateListing(context.Context, *connect.Request[v1.ActivateListingRequest]) (*connect.Response[v1.ActivateListingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.commerce.v1.CommerceService.ActivateListing is not implemented"))
 }
 
 func (UnimplementedCommerceServiceHandler) CancelListing(context.Context, *connect.Request[v1.CancelListingRequest]) (*connect.Response[v1.CancelListingResponse], error) {

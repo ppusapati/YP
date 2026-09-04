@@ -69,11 +69,17 @@ func (m *RLSMiddleware) GrpcRLSMiddleware(ctx context.Context, req interface{}, 
 	companyID := user.CompanyID
 	branchID := user.BranchID
 
-	// Check for branch override from header
+	// Check for branch override from header — only accept if it matches
+	// the JWT-authenticated branch to prevent cross-branch access via
+	// header manipulation.
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if branchHeaders := md.Get("x-branch-id"); len(branchHeaders) > 0 && branchHeaders[0] != "" {
-			branchID = branchHeaders[0]
-			p9log.Context(ctx).Debugf("rls middleware: using branch_id from header: %s", branchID)
+			if branchHeaders[0] == user.BranchID {
+				branchID = branchHeaders[0]
+			} else {
+				p9log.Context(ctx).Warnf("rls middleware: ignoring X-Branch-ID header %q — does not match JWT branch %q",
+					branchHeaders[0], user.BranchID)
+			}
 		}
 	}
 

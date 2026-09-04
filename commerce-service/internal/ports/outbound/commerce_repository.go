@@ -14,7 +14,9 @@ type CommerceRepository interface {
 	GetListingByID(ctx context.Context, id, tenantID string) (*domain.MarketplaceListing, error)
 	ListListings(ctx context.Context, tenantID string, filter domain.ListListingsFilter) ([]domain.MarketplaceListing, int32, error)
 	UpdateListing(ctx context.Context, id, tenantID string, input domain.UpdateListingInput, updatedBy string) (*domain.MarketplaceListing, error)
+	ActivateListing(ctx context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error)
 	CancelListing(ctx context.Context, id, tenantID, updatedBy string) (*domain.MarketplaceListing, error)
+	DecrementListingQuantity(ctx context.Context, id, tenantID string, quantity float64) error
 
 	// Orders
 	CreateOrder(ctx context.Context, order *domain.Order) (*domain.Order, error)

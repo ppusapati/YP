@@ -1,13 +1,21 @@
+import 'dart:io';
+
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app/app.dart';
 import 'core/di/providers.dart';
+import 'features/farm/data/datasources/farm_local_datasource.dart';
+import 'features/ai_diagnosis/data/datasources/diagnosis_local_datasource.dart';
+import 'features/satellite/data/datasources/satellite_local_datasource.dart';
 
 /// Background task dispatcher for WorkManager.
 @pragma('vm:entry-point')
@@ -115,11 +123,26 @@ Future<void> main() async {
     ':${const int.fromEnvironment('API_PORT', defaultValue: 443)}',
   );
 
+  // ─── Open Drift databases ─────────────────────────────────────────
+  final dbFolder = await getApplicationDocumentsDirectory();
+  final farmDb = FarmDatabase(
+    NativeDatabase.createInBackground(File(p.join(dbFolder.path, 'farm.sqlite'))),
+  );
+  final diagnosisDb = DiagnosisDatabase(
+    NativeDatabase.createInBackground(File(p.join(dbFolder.path, 'diagnosis.sqlite'))),
+  );
+  final satelliteDb = SatelliteDatabase(
+    NativeDatabase.createInBackground(File(p.join(dbFolder.path, 'satellite.sqlite'))),
+  );
+
   // ─── Run app ─────────────────────────────────────────────────────
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        farmDatabaseProvider.overrideWithValue(farmDb),
+        diagnosisDatabaseProvider.overrideWithValue(diagnosisDb),
+        satelliteDatabaseProvider.overrideWithValue(satelliteDb),
       ],
       child: const FarmerApp(),
     ),

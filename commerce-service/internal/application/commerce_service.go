@@ -90,6 +90,7 @@ func (s *commerceService) CreateListing(ctx context.Context, input domain.Create
 		MinOrderQuantity:     input.MinOrderQuantity,
 		QualityGrade:         input.QualityGrade,
 		TraceabilityRecordID: input.TraceabilityRecordID,
+		BatchID:              input.BatchID,
 		Status:               domain.ListingStatusDraft,
 		Location:             input.Location,
 		Region:               input.Region,
@@ -190,6 +191,39 @@ func (s *commerceService) UpdateListing(ctx context.Context, id string, input do
 	return updated, nil
 }
 
+func (s *commerceService) ActivateListing(ctx context.Context, id string) (*domain.MarketplaceListing, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_ID", "listing id is required")
+	}
+	userID := p9context.UserID(ctx)
+
+	existing, err := s.repo.GetListingByID(ctx, id, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing.Status != domain.ListingStatusDraft && existing.Status != domain.ListingStatusSoldOut {
+		return nil, errors.BadRequest("INVALID_STATUS", fmt.Sprintf("listing is in %s status, only DRAFT or SOLD_OUT listings can be activated", existing.Status))
+	}
+
+	activated, err := s.repo.ActivateListing(ctx, id, tenantID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.publishEvent(ctx, "commerce.listing.activated", activated.ID, map[string]interface{}{
+		"listing_id": activated.ID,
+		"tenant_id":  activated.TenantID,
+	})
+
+	s.log.Infow("msg", "activated listing", "listing_id", activated.ID, "tenant_id", tenantID)
+	return activated, nil
+}
+
 func (s *commerceService) CancelListing(ctx context.Context, id string) (*domain.MarketplaceListing, error) {
 	tenantID := p9context.TenantID(ctx)
 	if tenantID == "" {
@@ -248,8 +282,16 @@ func (s *commerceService) PlaceOrder(ctx context.Context, input domain.PlaceOrde
 		return nil, errors.BadRequest("LISTING_NOT_ACTIVE", fmt.Sprintf("listing is in %s status, only ACTIVE listings accept orders", listing.Status))
 	}
 
+	if listing.MinOrderQuantity != nil && input.Quantity < *listing.MinOrderQuantity {
+		return nil, errors.BadRequest("BELOW_MIN_ORDER", fmt.Sprintf("quantity %.2f is below minimum order quantity %.2f", input.Quantity, *listing.MinOrderQuantity))
+	}
+
 	if input.Quantity > listing.QuantityAvailable {
 		return nil, errors.BadRequest("INSUFFICIENT_QUANTITY", fmt.Sprintf("requested quantity %.2f exceeds available %.2f", input.Quantity, listing.QuantityAvailable))
+	}
+
+	if err := s.repo.DecrementListingQuantity(ctx, listing.ID, tenantID, input.Quantity); err != nil {
+		return nil, err
 	}
 
 	totalAmount := int64(math.Round(float64(listing.PricePerUnitPaise) * input.Quantity))
@@ -376,6 +418,30 @@ func (s *commerceService) UpdatePaymentStatus(ctx context.Context, id string, st
 		return nil, errors.BadRequest("MISSING_ID", "order id is required")
 	}
 	userID := p9context.UserID(ctx)
+
+	existing, err := s.repo.GetOrderByID(ctx, id, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing.Status == domain.OrderStatusCancelled {
+		return nil, errors.BadRequest("ORDER_CANCELLED", "cannot update payment on a cancelled order")
+	}
+
+	allowed, ok := domain.ValidPaymentTransitions[existing.PaymentStatus]
+	if !ok {
+		return nil, errors.BadRequest("INVALID_TRANSITION", fmt.Sprintf("payment in %s status cannot be transitioned", existing.PaymentStatus))
+	}
+	valid := false
+	for _, s := range allowed {
+		if s == status {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return nil, errors.BadRequest("INVALID_TRANSITION", fmt.Sprintf("cannot transition payment from %s to %s", existing.PaymentStatus, status))
+	}
 
 	updated, err := s.repo.UpdatePaymentStatus(ctx, id, tenantID, status, reference, userID)
 	if err != nil {

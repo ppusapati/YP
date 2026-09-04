@@ -51,7 +51,8 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // Build the service with all engine modules.
-    let ai_service = AiGatewayServiceImpl::new(&config);
+    let ai_service = AiGatewayServiceImpl::new(&config)
+        .map_err(|e| anyhow::anyhow!("failed to initialize AI engines: {e}"))?;
 
     // Start the gRPC server.
     Server::builder()

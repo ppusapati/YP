@@ -2670,6 +2670,9 @@ type CropCycle struct {
 	CreatedBy             string                 `protobuf:"bytes,22,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
 	CreatedAt             *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt             *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	ManagementUnitId      string                 `protobuf:"bytes,25,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	CropVariety           string                 `protobuf:"bytes,26,opt,name=crop_variety,json=cropVariety,proto3" json:"crop_variety,omitempty"`
+	SeedSource            string                 `protobuf:"bytes,27,opt,name=seed_source,json=seedSource,proto3" json:"seed_source,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2872,6 +2875,27 @@ func (x *CropCycle) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *CropCycle) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
+	}
+	return ""
+}
+
+func (x *CropCycle) GetCropVariety() string {
+	if x != nil {
+		return x.CropVariety
+	}
+	return ""
+}
+
+func (x *CropCycle) GetSeedSource() string {
+	if x != nil {
+		return x.SeedSource
+	}
+	return ""
+}
+
 type CreateCropCycleRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	FieldId               string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
@@ -2884,6 +2908,9 @@ type CreateCropCycleRequest struct {
 	TargetYieldPerHectare float64                `protobuf:"fixed64,8,opt,name=target_yield_per_hectare,json=targetYieldPerHectare,proto3" json:"target_yield_per_hectare,omitempty"`
 	YieldUnit             string                 `protobuf:"bytes,9,opt,name=yield_unit,json=yieldUnit,proto3" json:"yield_unit,omitempty"`
 	Notes                 string                 `protobuf:"bytes,10,opt,name=notes,proto3" json:"notes,omitempty"`
+	ManagementUnitId      string                 `protobuf:"bytes,11,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	CropVariety           string                 `protobuf:"bytes,12,opt,name=crop_variety,json=cropVariety,proto3" json:"crop_variety,omitempty"`
+	SeedSource            string                 `protobuf:"bytes,13,opt,name=seed_source,json=seedSource,proto3" json:"seed_source,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2984,6 +3011,27 @@ func (x *CreateCropCycleRequest) GetYieldUnit() string {
 func (x *CreateCropCycleRequest) GetNotes() string {
 	if x != nil {
 		return x.Notes
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetCropVariety() string {
+	if x != nil {
+		return x.CropVariety
+	}
+	return ""
+}
+
+func (x *CreateCropCycleRequest) GetSeedSource() string {
+	if x != nil {
+		return x.SeedSource
 	}
 	return ""
 }
@@ -3121,13 +3169,14 @@ func (x *GetCropCycleResponse) GetCycle() *CropCycle {
 }
 
 type ListCropCyclesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FieldId       string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
-	Status        CropCycleStatus        `protobuf:"varint,2,opt,name=status,proto3,enum=agriculture.field.v1.CropCycleStatus" json:"status,omitempty"`
-	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageOffset    int32                  `protobuf:"varint,4,opt,name=page_offset,json=pageOffset,proto3" json:"page_offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	FieldId          string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	Status           CropCycleStatus        `protobuf:"varint,2,opt,name=status,proto3,enum=agriculture.field.v1.CropCycleStatus" json:"status,omitempty"`
+	PageSize         int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageOffset       int32                  `protobuf:"varint,4,opt,name=page_offset,json=pageOffset,proto3" json:"page_offset,omitempty"`
+	ManagementUnitId string                 `protobuf:"bytes,5,opt,name=management_unit_id,json=managementUnitId,proto3" json:"management_unit_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ListCropCyclesRequest) Reset() {
@@ -3186,6 +3235,13 @@ func (x *ListCropCyclesRequest) GetPageOffset() int32 {
 		return x.PageOffset
 	}
 	return 0
+}
+
+func (x *ListCropCyclesRequest) GetManagementUnitId() string {
+	if x != nil {
+		return x.ManagementUnitId
+	}
+	return ""
 }
 
 type ListCropCyclesResponse struct {
@@ -3613,24 +3669,28 @@ func (x *ActivityEvent) GetCreatedAt() *timestamppb.Timestamp {
 }
 
 type LogActivityEventRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	FieldId         string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
-	CropCycleId     string                 `protobuf:"bytes,2,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
-	ActivityType    string                 `protobuf:"bytes,3,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"`
-	Category        ActivityCategory       `protobuf:"varint,4,opt,name=category,proto3,enum=agriculture.field.v1.ActivityCategory" json:"category,omitempty"`
-	StartedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
-	CompletedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
-	DurationMinutes int32                  `protobuf:"varint,7,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
-	Description     string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
-	Notes           string                 `protobuf:"bytes,9,opt,name=notes,proto3" json:"notes,omitempty"`
-	InputProductId  string                 `protobuf:"bytes,10,opt,name=input_product_id,json=inputProductId,proto3" json:"input_product_id,omitempty"`
-	InputQuantity   float64                `protobuf:"fixed64,11,opt,name=input_quantity,json=inputQuantity,proto3" json:"input_quantity,omitempty"`
-	InputUnit       string                 `protobuf:"bytes,12,opt,name=input_unit,json=inputUnit,proto3" json:"input_unit,omitempty"`
-	InputCost       int64                  `protobuf:"varint,13,opt,name=input_cost,json=inputCost,proto3" json:"input_cost,omitempty"`
-	Currency        string                 `protobuf:"bytes,14,opt,name=currency,proto3" json:"currency,omitempty"`
-	AreaHectares    float64                `protobuf:"fixed64,15,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	FieldId             string                 `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	CropCycleId         string                 `protobuf:"bytes,2,opt,name=crop_cycle_id,json=cropCycleId,proto3" json:"crop_cycle_id,omitempty"`
+	ActivityType        string                 `protobuf:"bytes,3,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"`
+	Category            ActivityCategory       `protobuf:"varint,4,opt,name=category,proto3,enum=agriculture.field.v1.ActivityCategory" json:"category,omitempty"`
+	StartedAt           *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	DurationMinutes     int32                  `protobuf:"varint,7,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
+	Description         string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	Notes               string                 `protobuf:"bytes,9,opt,name=notes,proto3" json:"notes,omitempty"`
+	InputProductId      string                 `protobuf:"bytes,10,opt,name=input_product_id,json=inputProductId,proto3" json:"input_product_id,omitempty"`
+	InputQuantity       float64                `protobuf:"fixed64,11,opt,name=input_quantity,json=inputQuantity,proto3" json:"input_quantity,omitempty"`
+	InputUnit           string                 `protobuf:"bytes,12,opt,name=input_unit,json=inputUnit,proto3" json:"input_unit,omitempty"`
+	InputCost           int64                  `protobuf:"varint,13,opt,name=input_cost,json=inputCost,proto3" json:"input_cost,omitempty"`
+	Currency            string                 `protobuf:"bytes,14,opt,name=currency,proto3" json:"currency,omitempty"`
+	AreaHectares        float64                `protobuf:"fixed64,15,opt,name=area_hectares,json=areaHectares,proto3" json:"area_hectares,omitempty"`
+	WeatherTempCelsius  float64                `protobuf:"fixed64,16,opt,name=weather_temp_celsius,json=weatherTempCelsius,proto3" json:"weather_temp_celsius,omitempty"`
+	WeatherHumidityPct  float64                `protobuf:"fixed64,17,opt,name=weather_humidity_pct,json=weatherHumidityPct,proto3" json:"weather_humidity_pct,omitempty"`
+	WeatherWindSpeedKmh float64                `protobuf:"fixed64,18,opt,name=weather_wind_speed_kmh,json=weatherWindSpeedKmh,proto3" json:"weather_wind_speed_kmh,omitempty"`
+	WeatherConditions   string                 `protobuf:"bytes,19,opt,name=weather_conditions,json=weatherConditions,proto3" json:"weather_conditions,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *LogActivityEventRequest) Reset() {
@@ -3766,6 +3826,34 @@ func (x *LogActivityEventRequest) GetAreaHectares() float64 {
 		return x.AreaHectares
 	}
 	return 0
+}
+
+func (x *LogActivityEventRequest) GetWeatherTempCelsius() float64 {
+	if x != nil {
+		return x.WeatherTempCelsius
+	}
+	return 0
+}
+
+func (x *LogActivityEventRequest) GetWeatherHumidityPct() float64 {
+	if x != nil {
+		return x.WeatherHumidityPct
+	}
+	return 0
+}
+
+func (x *LogActivityEventRequest) GetWeatherWindSpeedKmh() float64 {
+	if x != nil {
+		return x.WeatherWindSpeedKmh
+	}
+	return 0
+}
+
+func (x *LogActivityEventRequest) GetWeatherConditions() string {
+	if x != nil {
+		return x.WeatherConditions
+	}
+	return ""
 }
 
 type LogActivityEventResponse struct {
@@ -4642,7 +4730,7 @@ const file_field_proto_rawDesc = "" +
 	"\x16GetCropHistoryResponse\x12K\n" +
 	"\vassignments\x18\x01 \x03(\v2).agriculture.field.v1.FieldCropAssignmentR\vassignments\x12\x1f\n" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
-	"totalCount\"\x9d\b\n" +
+	"totalCount\"\x8f\t\n" +
 	"\tCropCycle\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -4673,7 +4761,11 @@ const file_field_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xa3\x03\n" +
+	"updated_at\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12,\n" +
+	"\x12management_unit_id\x18\x19 \x01(\tR\x10managementUnitId\x12!\n" +
+	"\fcrop_variety\x18\x1a \x01(\tR\vcropVariety\x12\x1f\n" +
+	"\vseed_source\x18\x1b \x01(\tR\n" +
+	"seedSource\"\x95\x04\n" +
 	"\x16CreateCropCycleRequest\x12\x19\n" +
 	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\x17\n" +
 	"\acrop_id\x18\x02 \x01(\tR\x06cropId\x12\x16\n" +
@@ -4687,19 +4779,24 @@ const file_field_proto_rawDesc = "" +
 	"\n" +
 	"yield_unit\x18\t \x01(\tR\tyieldUnit\x12\x14\n" +
 	"\x05notes\x18\n" +
-	" \x01(\tR\x05notes\"P\n" +
+	" \x01(\tR\x05notes\x12,\n" +
+	"\x12management_unit_id\x18\v \x01(\tR\x10managementUnitId\x12!\n" +
+	"\fcrop_variety\x18\f \x01(\tR\vcropVariety\x12\x1f\n" +
+	"\vseed_source\x18\r \x01(\tR\n" +
+	"seedSource\"P\n" +
 	"\x17CreateCropCycleResponse\x125\n" +
 	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"%\n" +
 	"\x13GetCropCycleRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"M\n" +
 	"\x14GetCropCycleResponse\x125\n" +
-	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"\xaf\x01\n" +
+	"\x05cycle\x18\x01 \x01(\v2\x1f.agriculture.field.v1.CropCycleR\x05cycle\"\xdd\x01\n" +
 	"\x15ListCropCyclesRequest\x12\x19\n" +
 	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12=\n" +
 	"\x06status\x18\x02 \x01(\x0e2%.agriculture.field.v1.CropCycleStatusR\x06status\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1f\n" +
 	"\vpage_offset\x18\x04 \x01(\x05R\n" +
-	"pageOffset\"r\n" +
+	"pageOffset\x12,\n" +
+	"\x12management_unit_id\x18\x05 \x01(\tR\x10managementUnitId\"r\n" +
 	"\x16ListCropCyclesResponse\x127\n" +
 	"\x06cycles\x18\x01 \x03(\v2\x1f.agriculture.field.v1.CropCycleR\x06cycles\x12\x1f\n" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
@@ -4745,7 +4842,7 @@ const file_field_proto_rawDesc = "" +
 	"\x16weather_wind_speed_kmh\x18\x15 \x01(\x01R\x13weatherWindSpeedKmh\x12-\n" +
 	"\x12weather_conditions\x18\x16 \x01(\tR\x11weatherConditions\x129\n" +
 	"\n" +
-	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xee\x04\n" +
+	"created_at\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xb6\x06\n" +
 	"\x17LogActivityEventRequest\x12\x19\n" +
 	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\"\n" +
 	"\rcrop_cycle_id\x18\x02 \x01(\tR\vcropCycleId\x12#\n" +
@@ -4765,7 +4862,11 @@ const file_field_proto_rawDesc = "" +
 	"\n" +
 	"input_cost\x18\r \x01(\x03R\tinputCost\x12\x1a\n" +
 	"\bcurrency\x18\x0e \x01(\tR\bcurrency\x12#\n" +
-	"\rarea_hectares\x18\x0f \x01(\x01R\fareaHectares\"U\n" +
+	"\rarea_hectares\x18\x0f \x01(\x01R\fareaHectares\x120\n" +
+	"\x14weather_temp_celsius\x18\x10 \x01(\x01R\x12weatherTempCelsius\x120\n" +
+	"\x14weather_humidity_pct\x18\x11 \x01(\x01R\x12weatherHumidityPct\x123\n" +
+	"\x16weather_wind_speed_kmh\x18\x12 \x01(\x01R\x13weatherWindSpeedKmh\x12-\n" +
+	"\x12weather_conditions\x18\x13 \x01(\tR\x11weatherConditions\"U\n" +
 	"\x18LogActivityEventResponse\x129\n" +
 	"\x05event\x18\x01 \x01(\v2#.agriculture.field.v1.ActivityEventR\x05event\"\xdc\x01\n" +
 	"\x19ListActivityEventsRequest\x12\x19\n" +

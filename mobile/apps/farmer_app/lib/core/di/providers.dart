@@ -247,8 +247,12 @@ final authBlocProvider = Provider<AuthBloc>((ref) {
 });
 
 /// Connectivity service.
+///
+/// Eagerly initialised so that [ConnectivityService.onConnectivityChanged]
+/// emits events and [ConnectivityService.currentStatus] reflects reality.
 final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   final service = ConnectivityService();
+  service.initialize();
   ref.onDispose(() => service.dispose());
   return service;
 });
