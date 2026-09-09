@@ -41,44 +41,51 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return BlocBuilder<FarmBloc, FarmState>(
-      builder: (context, state) {
-        if (state is FarmLoading) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: const Center(child: CircularProgressIndicator()),
-          );
+    return BlocListener<FarmBloc, FarmState>(
+      listener: (context, state) {
+        if (state is FarmDeleted) {
+          Navigator.of(context).pop();
         }
-        if (state is FarmError) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline,
-                      size: 48, color: colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () {
-                      context
-                          .read<FarmBloc>()
-                          .add(LoadFarmById(farmId: widget.farmId));
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        if (state is FarmLoaded) {
-          return _buildContent(context, state.farm);
-        }
-        return Scaffold(appBar: AppBar());
       },
+      child: BlocBuilder<FarmBloc, FarmState>(
+        builder: (context, state) {
+          if (state is FarmLoading) {
+            return Scaffold(
+              appBar: AppBar(),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is FarmError) {
+            return Scaffold(
+              appBar: AppBar(),
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: colorScheme.error),
+                    const SizedBox(height: 16),
+                    Text(state.message),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () {
+                        context
+                            .read<FarmBloc>()
+                            .add(LoadFarmById(farmId: widget.farmId));
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          if (state is FarmLoaded) {
+            return _buildContent(context, state.farm);
+          }
+          return Scaffold(appBar: AppBar());
+        },
+      ),
     );
   }
 
@@ -264,7 +271,6 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<FarmBloc>().add(DeleteFarm(farmId: farm.id));
-              Navigator.of(context).pop();
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,

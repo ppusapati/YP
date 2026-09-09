@@ -1,6 +1,6 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../bloc/traceability_bloc.dart';
 import '../bloc/traceability_event.dart';
@@ -17,51 +17,32 @@ class TraceabilityScreen extends StatefulWidget {
 }
 
 class _TraceabilityScreenState extends State<TraceabilityScreen> {
-  CameraController? _cameraController;
-  bool _isCameraReady = false;
-  bool _isProcessing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initCamera();
-  }
-
-  Future<void> _initCamera() async {
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) return;
-
-      final backCamera = cameras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.back,
-        orElse: () => cameras.first,
-      );
-
-      _cameraController = CameraController(
-        backCamera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-
-      await _cameraController!.initialize();
-      if (mounted) {
-        setState(() => _isCameraReady = true);
-      }
-    } catch (e) {
-      debugPrint('Camera initialization failed: $e');
-    }
-  }
+  final MobileScannerController _scannerController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.normal,
+    facing: CameraFacing.back,
+  );
+  bool _hasScanned = false;
 
   @override
   void dispose() {
-    _cameraController?.dispose();
+    _scannerController.dispose();
     super.dispose();
+  }
+
+  void _onBarcodeDetected(BarcodeCapture capture) {
+    if (_hasScanned) return;
+    final barcodes = capture.barcodes;
+    if (barcodes.isEmpty) return;
+
+    final qrData = barcodes.first.rawValue;
+    if (qrData == null || qrData.isEmpty) return;
+
+    setState(() => _hasScanned = true);
+    context.read<TraceabilityBloc>().add(ScanQRCode(qrData));
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Traceability'),
@@ -76,7 +57,6 @@ class _TraceabilityScreenState extends State<TraceabilityScreen> {
       body: BlocConsumer<TraceabilityBloc, TraceabilityState>(
         listener: (context, state) {
           if (state is RecordLoaded) {
-            _isProcessing = false;
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => BlocProvider.value(
@@ -84,10 +64,12 @@ class _TraceabilityScreenState extends State<TraceabilityScreen> {
                   child: ProduceDetailScreen(record: state.record),
                 ),
               ),
-            );
+            ).then((_) {
+              setState(() => _hasScanned = false);
+            });
           }
           if (state is TraceabilityError) {
-            _isProcessing = false;
+            setState(() => _hasScanned = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -103,35 +85,47 @@ class _TraceabilityScreenState extends State<TraceabilityScreen> {
         builder: (context, state) {
           return Stack(
             children: [
-              // Camera preview
-              if (_isCameraReady && _cameraController != null)
-                Positioned.fill(
-                  child: CameraPreview(_cameraController!),
-                )
-              else
-                Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
+              Positioned.fill(
+                child: MobileScanner(
+                  controller: _scannerController,
+                  onDetect: _onBarcodeDetected,
                 ),
+              ),
 
-              // Scanner overlay
               const Positioned.fill(
                 child: QrScannerOverlay(),
               ),
 
-              // Scan button
               Positioned(
                 bottom: 60,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: _buildScanButton(context, state, theme),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _hasScanned
+                            ? 'Processing...'
+                            : 'Point camera at a QR code',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _showManualEntry,
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.white),
+                        child: const Text('Or enter batch ID manually'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              // Loading indicator
               if (state is Scanning || state is TraceabilityLoading)
                 Positioned.fill(
                   child: Container(
@@ -159,64 +153,6 @@ class _TraceabilityScreenState extends State<TraceabilityScreen> {
         },
       ),
     );
-  }
-
-  Widget _buildScanButton(
-    BuildContext context,
-    TraceabilityState state,
-    ThemeData theme,
-  ) {
-    final isActive =
-        state is! Scanning && state is! TraceabilityLoading && !_isProcessing;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FilledButton.icon(
-          onPressed: isActive ? _captureAndScan : null,
-          icon: const Icon(Icons.qr_code_scanner, size: 28),
-          label: const Text('Scan QR Code', style: TextStyle(fontSize: 16)),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: _showManualEntry,
-          style: TextButton.styleFrom(foregroundColor: Colors.white),
-          child: const Text('Or enter batch ID manually'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _captureAndScan() async {
-    if (_cameraController == null || !_isCameraReady || _isProcessing) return;
-
-    setState(() => _isProcessing = true);
-
-    try {
-      final image = await _cameraController!.takePicture();
-      // In production, decode the QR code from the image using a QR decoding
-      // library. For now, we pass the image path as a placeholder.
-      // A real implementation would use `mobile_scanner` or `google_mlkit_barcode_scanning`.
-      if (mounted) {
-        context.read<TraceabilityBloc>().add(ScanQRCode(image.path));
-      }
-    } catch (e) {
-      setState(() => _isProcessing = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to capture image: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 
   void _showManualEntry() {

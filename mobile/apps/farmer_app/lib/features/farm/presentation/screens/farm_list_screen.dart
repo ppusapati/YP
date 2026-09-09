@@ -24,6 +24,12 @@ class _FarmListScreenState extends State<FarmListScreen> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    context.read<FarmBloc>().add(const LoadFarms(userId: ''));
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -173,7 +179,7 @@ class _FarmListScreenState extends State<FarmListScreen> {
                     ),
                   );
                 }
-                return const SizedBox.shrink();
+                return const Center(child: CircularProgressIndicator());
               },
             ),
           ),
