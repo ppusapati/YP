@@ -247,7 +247,7 @@ func newTestFarmService() (*mockFarmRepo, *mockEventPublisher, *farmService) {
 func newService() (*mockFarmRepo, *mockEventPublisher, *farmService) {
 	repo := newMockFarmRepo()
 	pub := &mockEventPublisher{}
-	svc := NewFarmService(repo, pub, nil, nopLogger{}).(*farmService)
+	svc := NewFarmService(repo, pub, nil, nopLogger{}, nil).(*farmService)
 	return repo, pub, svc
 }
 

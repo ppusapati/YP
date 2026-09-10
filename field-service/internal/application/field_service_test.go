@@ -223,7 +223,7 @@ func newService() (*mockFieldRepo, *mockEventPublisher, *mockFarmClient, *fieldS
 	pub := &mockEventPublisher{}
 	farmClient := &mockFarmClient{existing: map[string]bool{"farm-001": true}}
 	cropClient := &mockCropClient{existing: map[string]bool{"crop-001": true}}
-	svc := NewFieldService(repo, pub, farmClient, cropClient, nil, nopLogger{}).(*fieldService)
+	svc := NewFieldService(repo, pub, farmClient, cropClient, nil, nopLogger{}, nil).(*fieldService)
 	return repo, pub, farmClient, svc
 }
 

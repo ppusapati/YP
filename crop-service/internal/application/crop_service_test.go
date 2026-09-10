@@ -174,7 +174,7 @@ func testContext(tenantID, userID string) context.Context {
 func newService() (*mockCropRepo, *mockEventPublisher, *cropService) {
 	repo := newMockCropRepo()
 	pub := &mockEventPublisher{}
-	svc := NewCropService(repo, pub, nil, nopLogger{})
+	svc := NewCropService(repo, pub, nil, nopLogger{}, nil)
 	return repo, pub, svc
 }
 
