@@ -4,6 +4,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +20,9 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	kafkaconfig "p9e.in/samavaya/packages/events/config"
+	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
+	"p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
@@ -28,6 +33,7 @@ import (
 	irrigationv1connect "p9e.in/samavaya/agriculture/irrigation-service/api/v1/irrigationv1connect"
 
 	// Inbound adapters
+	eventsadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/inbound/events"
 	grpcadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/inbound/grpc"
 
 	// Outbound adapters

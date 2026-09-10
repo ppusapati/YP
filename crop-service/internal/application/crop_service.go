@@ -16,6 +16,7 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
 
+	"p9e.in/samavaya/agriculture/crop-service/internal/ai"
 	"p9e.in/samavaya/agriculture/crop-service/internal/domain"
 	"p9e.in/samavaya/agriculture/crop-service/internal/ports/outbound"
 )
@@ -28,10 +29,11 @@ const (
 )
 
 type cropService struct {
-	repo outbound.CropRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool
-	log  *p9log.Helper
+	repo     outbound.CropRepository
+	pub      outbound.EventPublisher
+	pool     *pgxpool.Pool
+	log      *p9log.Helper
+	aiClient *ai.AIClient
 }
 
 // NewCropService creates a new application-layer CropService.
@@ -41,12 +43,14 @@ func NewCropService(
 	pub outbound.EventPublisher,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) *cropService {
 	return &cropService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "CropService")),
+		repo:     repo,
+		pub:      pub,
+		pool:     pool,
+		log:      p9log.NewHelper(p9log.With(log, "component", "CropService")),
+		aiClient: aiClient,
 	}
 }
 
@@ -491,6 +495,35 @@ func (s *cropService) generateGenericRecommendation(
 	}
 
 	return title, strings.Join(suggestions, " "), "info", 0.60
+}
+
+// RecommendCropsForField delegates to the AI gateway to get crop recommendations
+// for the given field conditions. Returns an empty slice when the AI client is
+// not configured (graceful degradation).
+func (s *cropService) RecommendCropsForField(
+	ctx context.Context,
+	soilType string,
+	soilPH float64,
+	rainfall float64,
+	temperature float64,
+	humidity float64,
+	latitude float64,
+	longitude float64,
+	season string,
+) ([]ai.CropRecommendation, error) {
+	if s.aiClient == nil {
+		return nil, nil
+	}
+	return s.aiClient.RecommendCrops(ctx, &ai.RecommendCropsRequest{
+		SoilType:    soilType,
+		SoilPH:      soilPH,
+		Rainfall:    rainfall,
+		Temperature: temperature,
+		Humidity:    humidity,
+		Latitude:    latitude,
+		Longitude:   longitude,
+		Season:      season,
+	})
 }
 
 func (s *cropService) emitEvent(ctx context.Context, eventType, aggregateID string, data map[string]interface{}) {

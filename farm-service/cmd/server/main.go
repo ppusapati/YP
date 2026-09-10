@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,9 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	kafkaconfig "p9e.in/samavaya/packages/events/config"
+	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
+	"p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
@@ -34,6 +38,7 @@ import (
 	farmv1connect "p9e.in/samavaya/agriculture/farm-service/api/v1/farmv1connect"
 
 	// Inbound adapters
+	eventsadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/inbound/events"
 	grpcadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/inbound/grpc"
 
 	// Outbound adapters
@@ -176,6 +181,28 @@ func main() {
 	defer relayCancel()
 	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
 	go relay.Run(relayCtx)
+
+	// ── Kafka event consumer (background) ────────────────────────────────
+	if kafkaBroker != "" {
+		eventConsumer := eventsadapter.NewFarmConsumer(svc, logger)
+		kc := kafkaconsumer.NewKafkaConsumer(&kafkaconfig.KafkaConfig{
+			Broker:       kafkaBroker,
+			Group:        "farm-service",
+			KafkaVersion: "3.5.0",
+			Assignor:     "sticky",
+		}, logger)
+		consumerCtx, consumerCancel := context.WithCancel(context.Background())
+		defer consumerCancel()
+		if err := kc.Subscribe(consumerCtx, eventConsumer.Topic(), func(ctx context.Context, data []byte) error {
+			var event domain.DomainEvent
+			if err := json.Unmarshal(data, &event); err != nil {
+				return fmt.Errorf("unmarshal domain event: %w", err)
+			}
+			return eventConsumer.HandleEvent(ctx, &event)
+		}); err != nil {
+			log.Printf("WARNING: failed to subscribe to %s: %v", eventConsumer.Topic(), err)
+		}
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
