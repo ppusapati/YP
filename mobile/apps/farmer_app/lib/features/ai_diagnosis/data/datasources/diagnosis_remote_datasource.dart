@@ -73,13 +73,13 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
 
   @override
   Future<String> uploadImage(Uint8List imageBytes, String fileName) async {
-    // TODO: The proto has no UploadImage RPC. Image upload is not defined in
-    // the PlantDiagnosisService proto. This likely needs a separate upload
-    // endpoint or a different service. Keeping the interface for compatibility.
-    throw UnimplementedError(
-      'uploadImage is not supported by the diagnosis proto. '
-      'No UploadImage RPC exists in PlantDiagnosisService.',
-    );
+    // The PlantDiagnosisService proto embeds images inline via ImageInput
+    // rather than requiring a separate upload step. Encode the bytes as a
+    // data URI so submitDiagnosis can pass it as imageUrl.
+    final base64Data = Uri.dataFromBytes(imageBytes, mimeType: 'image/jpeg')
+        .toString();
+    _log.info('Encoded image ($fileName) as data URI for inline submission');
+    return base64Data;
   }
 
   @override

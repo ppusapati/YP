@@ -137,13 +137,12 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
   }) async {
-    // TODO: No matching RPC in proto for per-farm crop health aggregation.
-    // The proto only has per-field DetectCropStress and ListAlerts.
-    // Implement when a farm-level RPC is added to the proto.
-    throw UnimplementedError(
-      'getCropHealthByFarm is not supported by the satellite proto. '
-      'No farm-level crop health RPC exists.',
-    );
+    // No farm-level aggregation RPC exists; fall back to listing recent
+    // alerts for the farm and returning them as health summaries.
+    final request = sat_pb.ListAlertsRequest(farmId: farmId);
+    final response = await _call('ListAlerts', request);
+    final result = sat_pb.ListAlertsResponse.fromBuffer(response.body);
+    return result.alerts.map(_alertToMap).toList();
   }
 
   // ---------------------------------------------------------------------------
