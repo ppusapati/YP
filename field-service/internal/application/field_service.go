@@ -15,6 +15,7 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 	"p9e.in/samavaya/packages/uow"
 
+	"p9e.in/samavaya/agriculture/field-service/internal/ai"
 	"p9e.in/samavaya/agriculture/field-service/internal/domain"
 	"p9e.in/samavaya/agriculture/field-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/field-service/internal/ports/outbound"
@@ -34,6 +35,7 @@ type fieldService struct {
 	cropClient outbound.CropClient
 	pool       *pgxpool.Pool
 	log        *p9log.Helper
+	aiClient   *ai.AIClient
 }
 
 func NewFieldService(
@@ -43,6 +45,7 @@ func NewFieldService(
 	cropClient outbound.CropClient,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) inbound.FieldService {
 	return &fieldService{
 		repo:       repo,
@@ -51,6 +54,7 @@ func NewFieldService(
 		cropClient: cropClient,
 		pool:       pool,
 		log:        p9log.NewHelper(p9log.With(log, "component", "FieldService")),
+		aiClient:   aiClient,
 	}
 }
 
@@ -662,6 +666,47 @@ func (s *fieldService) DeleteActivityEvidence(ctx context.Context, id string) er
 		"evidence_id": id, "tenant_id": tenantID,
 	})
 	return nil
+}
+
+// ---------------------------------------------------------------------------
+// AI delegation methods
+// ---------------------------------------------------------------------------
+
+// EvaluateFieldRisk delegates to the AI gateway to assess risk factors for a
+// field. Returns nil when the AI client is not configured (graceful degradation).
+func (s *fieldService) EvaluateFieldRisk(ctx context.Context, req *ai.EvaluateFieldRiskRequest) (*ai.FieldRiskResult, error) {
+	if s.aiClient == nil {
+		return nil, nil
+	}
+	return s.aiClient.EvaluateFieldRisk(ctx, req)
+}
+
+// ComputeFieldAnalytics delegates to the AI gateway to compute analytics for a
+// field based on historical season data. Returns nil when the AI client is not
+// configured (graceful degradation).
+func (s *fieldService) ComputeFieldAnalytics(ctx context.Context, fieldID, farmID string, seasons []ai.SeasonInput) (*ai.FieldAnalyticsResult, error) {
+	if s.aiClient == nil {
+		return nil, nil
+	}
+	return s.aiClient.ComputeFieldAnalytics(ctx, fieldID, farmID, seasons)
+}
+
+// GeneratePrescription delegates to the AI gateway to generate a variable-rate
+// prescription map. Returns nil when the AI client is not configured (graceful
+// degradation).
+func (s *fieldService) GeneratePrescription(
+	ctx context.Context,
+	fieldID string,
+	gridRows, gridCols int,
+	cellSizeM float64,
+	ndvi, soilN, soilP, soilK, soilPH, soilMoisture, soilOM []float64,
+	cropType string,
+	targetYield float64,
+) (*ai.PrescriptionResult, error) {
+	if s.aiClient == nil {
+		return nil, nil
+	}
+	return s.aiClient.GeneratePrescription(ctx, fieldID, gridRows, gridCols, cellSizeM, ndvi, soilN, soilP, soilK, soilPH, soilMoisture, soilOM, cropType, targetYield)
 }
 
 // ---------------------------------------------------------------------------

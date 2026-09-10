@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"p9e.in/samavaya/packages/deps"
@@ -14,13 +15,16 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 
 	pb "p9e.in/samavaya/agriculture/vegetation-index-service/api/v1"
+	"p9e.in/samavaya/agriculture/vegetation-index-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/vegetation-index-service/internal/mappers"
 	vimodels "p9e.in/samavaya/agriculture/vegetation-index-service/internal/models"
 	"p9e.in/samavaya/agriculture/vegetation-index-service/internal/services"
 )
 
-// VegetationIndexHandler implements the ConnectRPC VegetationIndexService handler.
+// VegetationIndexHandler implements the ConnectRPC VegetationIndexServiceHandler interface.
 type VegetationIndexHandler struct {
+	v1connect.UnimplementedVegetationIndexServiceHandler
+
 	d       deps.ServiceDeps
 	service services.VegetationIndexService
 	log     *p9log.Helper
@@ -36,96 +40,96 @@ func NewVegetationIndexHandler(d deps.ServiceDeps, service services.VegetationIn
 }
 
 // ComputeIndices handles index computation requests.
-func (h *VegetationIndexHandler) ComputeIndices(ctx context.Context, req *pb.ComputeIndicesRequest) (*pb.ComputeIndicesResponse, error) {
+func (h *VegetationIndexHandler) ComputeIndices(ctx context.Context, req *connect.Request[pb.ComputeIndicesRequest]) (*connect.Response[pb.ComputeIndicesResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "ComputeIndices request",
-		"processing_job_id", req.GetProcessingJobId(),
-		"farm_id", req.GetFarmId(),
+		"processing_job_id", req.Msg.GetProcessingJobId(),
+		"farm_id", req.Msg.GetFarmId(),
 		"request_id", requestID,
 	)
 
-	if req.GetProcessingJobId() == "" {
+	if req.Msg.GetProcessingJobId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "processing_job_id is required")
 	}
-	if req.GetFarmId() == "" {
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	if len(req.GetIndexTypes()) == 0 {
+	if len(req.Msg.GetIndexTypes()) == 0 {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "at least one index type is required")
 	}
 
 	// Convert proto index types to domain types
-	indexTypes := mappers.ProtoIndexTypesToDomain(req.GetIndexTypes())
+	indexTypes := mappers.ProtoIndexTypesToDomain(req.Msg.GetIndexTypes())
 
-	task, err := h.service.ComputeIndices(ctx, req.GetProcessingJobId(), req.GetFarmId(), indexTypes)
+	task, err := h.service.ComputeIndices(ctx, req.Msg.GetProcessingJobId(), req.Msg.GetFarmId(), indexTypes)
 	if err != nil {
 		h.log.Errorw("msg", "ComputeIndices failed", "error", err, "request_id", requestID)
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.ComputeIndicesResponse{
+	return connect.NewResponse(&pb.ComputeIndicesResponse{
 		Task: mappers.ComputeTaskToProto(task),
-	}, nil
+	}), nil
 }
 
 // GetVegetationIndex handles get vegetation index requests.
-func (h *VegetationIndexHandler) GetVegetationIndex(ctx context.Context, req *pb.GetVegetationIndexRequest) (*pb.GetVegetationIndexResponse, error) {
+func (h *VegetationIndexHandler) GetVegetationIndex(ctx context.Context, req *connect.Request[pb.GetVegetationIndexRequest]) (*connect.Response[pb.GetVegetationIndexResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "GetVegetationIndex request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "GetVegetationIndex request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "vegetation index ID is required")
 	}
 
-	vi, err := h.service.GetVegetationIndex(ctx, req.GetId())
+	vi, err := h.service.GetVegetationIndex(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetVegetationIndexResponse{
+	return connect.NewResponse(&pb.GetVegetationIndexResponse{
 		Index: mappers.VegetationIndexToProto(vi),
-	}, nil
+	}), nil
 }
 
 // ListVegetationIndices handles list vegetation indices requests with filtering and pagination.
-func (h *VegetationIndexHandler) ListVegetationIndices(ctx context.Context, req *pb.ListVegetationIndicesRequest) (*pb.ListVegetationIndicesResponse, error) {
+func (h *VegetationIndexHandler) ListVegetationIndices(ctx context.Context, req *connect.Request[pb.ListVegetationIndicesRequest]) (*connect.Response[pb.ListVegetationIndicesResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "ListVegetationIndices request", "request_id", requestID)
 
 	params := vimodels.ListVegetationIndicesParams{
-		PageSize: req.GetPageSize(),
+		PageSize: req.Msg.GetPageSize(),
 	}
 
 	// Parse page token as offset
-	if req.GetPageToken() != "" {
-		offset, err := strconv.ParseInt(req.GetPageToken(), 10, 32)
+	if req.Msg.GetPageToken() != "" {
+		offset, err := strconv.ParseInt(req.Msg.GetPageToken(), 10, 32)
 		if err == nil {
 			params.Offset = int32(offset)
 		}
 	}
 
 	// Apply filters
-	if req.GetFarmId() != "" {
-		farmID := req.GetFarmId()
+	if req.Msg.GetFarmId() != "" {
+		farmID := req.Msg.GetFarmId()
 		params.FarmUUID = &farmID
 	}
-	if req.GetFieldId() != "" {
-		fieldID := req.GetFieldId()
+	if req.Msg.GetFieldId() != "" {
+		fieldID := req.Msg.GetFieldId()
 		params.FieldUUID = &fieldID
 	}
-	if req.GetIndexType() != pb.VegetationIndexType_VEGETATION_INDEX_TYPE_UNSPECIFIED {
-		it := mappers.ProtoIndexTypeToDomain(req.GetIndexType())
+	if req.Msg.GetIndexType() != pb.VegetationIndexType_VEGETATION_INDEX_TYPE_UNSPECIFIED {
+		it := mappers.ProtoIndexTypeToDomain(req.Msg.GetIndexType())
 		params.IndexType = &it
 	}
-	if req.GetDateFrom() != nil {
-		dateFrom := req.GetDateFrom().AsTime()
+	if req.Msg.GetDateFrom() != nil {
+		dateFrom := req.Msg.GetDateFrom().AsTime()
 		params.DateFrom = &dateFrom
 	}
-	if req.GetDateTo() != nil {
-		dateTo := req.GetDateTo().AsTime()
+	if req.Msg.GetDateTo() != nil {
+		dateTo := req.Msg.GetDateTo().AsTime()
 		params.DateTo = &dateTo
 	}
 
@@ -145,83 +149,83 @@ func (h *VegetationIndexHandler) ListVegetationIndices(ctx context.Context, req 
 		resp.NextPageToken = fmt.Sprintf("%d", nextOffset)
 	}
 
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // GetNDVITimeSeries handles NDVI time series requests.
-func (h *VegetationIndexHandler) GetNDVITimeSeries(ctx context.Context, req *pb.GetNDVITimeSeriesRequest) (*pb.GetNDVITimeSeriesResponse, error) {
+func (h *VegetationIndexHandler) GetNDVITimeSeries(ctx context.Context, req *connect.Request[pb.GetNDVITimeSeriesRequest]) (*connect.Response[pb.GetNDVITimeSeriesResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "GetNDVITimeSeries request",
-		"farm_id", req.GetFarmId(),
-		"field_id", req.GetFieldId(),
+		"farm_id", req.Msg.GetFarmId(),
+		"field_id", req.Msg.GetFieldId(),
 		"request_id", requestID,
 	)
 
-	if req.GetFarmId() == "" {
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
 
 	var fieldID *string
-	if req.GetFieldId() != "" {
-		fid := req.GetFieldId()
+	if req.Msg.GetFieldId() != "" {
+		fid := req.Msg.GetFieldId()
 		fieldID = &fid
 	}
 
 	var dateFrom, dateTo *time.Time
-	if req.GetDateFrom() != nil {
-		df := req.GetDateFrom().AsTime()
+	if req.Msg.GetDateFrom() != nil {
+		df := req.Msg.GetDateFrom().AsTime()
 		dateFrom = &df
 	}
-	if req.GetDateTo() != nil {
-		dt := req.GetDateTo().AsTime()
+	if req.Msg.GetDateTo() != nil {
+		dt := req.Msg.GetDateTo().AsTime()
 		dateTo = &dt
 	}
 
-	points, resolvedFieldID, err := h.service.GetNDVITimeSeries(ctx, req.GetFarmId(), fieldID, dateFrom, dateTo)
+	points, resolvedFieldID, err := h.service.GetNDVITimeSeries(ctx, req.Msg.GetFarmId(), fieldID, dateFrom, dateTo)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetNDVITimeSeriesResponse{
+	return connect.NewResponse(&pb.GetNDVITimeSeriesResponse{
 		TimeSeries: &pb.NDVITimeSeries{
-			FarmId:  req.GetFarmId(),
+			FarmId:  req.Msg.GetFarmId(),
 			FieldId: resolvedFieldID,
 			Points:  mappers.TimeSeriesPointsToProto(points),
 		},
-	}, nil
+	}), nil
 }
 
 // GetFieldHealth handles field health requests.
-func (h *VegetationIndexHandler) GetFieldHealth(ctx context.Context, req *pb.GetFieldHealthRequest) (*pb.GetFieldHealthResponse, error) {
+func (h *VegetationIndexHandler) GetFieldHealth(ctx context.Context, req *connect.Request[pb.GetFieldHealthRequest]) (*connect.Response[pb.GetFieldHealthResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "GetFieldHealth request",
-		"farm_id", req.GetFarmId(),
-		"field_id", req.GetFieldId(),
+		"farm_id", req.Msg.GetFarmId(),
+		"field_id", req.Msg.GetFieldId(),
 		"request_id", requestID,
 	)
 
-	if req.GetFarmId() == "" {
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
 
 	var fieldID *string
-	if req.GetFieldId() != "" {
-		fid := req.GetFieldId()
+	if req.Msg.GetFieldId() != "" {
+		fid := req.Msg.GetFieldId()
 		fieldID = &fid
 	}
 
-	summary, err := h.service.GetFieldHealth(ctx, req.GetFarmId(), fieldID)
+	summary, err := h.service.GetFieldHealth(ctx, req.Msg.GetFarmId(), fieldID)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetFieldHealthResponse{
+	return connect.NewResponse(&pb.GetFieldHealthResponse{
 		CurrentNdvi:    summary.CurrentNDVI,
 		NdviTrend:      summary.NDVITrend,
 		HealthScore:    summary.HealthScore,
 		HealthCategory: summary.HealthCategory,
 		LastComputed:   timestamppb.New(summary.LastComputed),
-	}, nil
+	}), nil
 }

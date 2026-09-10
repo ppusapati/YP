@@ -45,6 +45,9 @@ import (
 	kafkaadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/outbound/postgres"
 
+	// AI client
+	"p9e.in/samavaya/agriculture/farm-service/internal/ai"
+
 	// Application core
 	"p9e.in/samavaya/agriculture/farm-service/internal/application"
 )
@@ -67,6 +70,7 @@ func main() {
 	// ── Config from environment ──────────────────────────────────────────────
 	dsn := mustEnv("DATABASE_URL", "postgres://localhost:5432/farm_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER") // optional; events are best-effort
+	aiGatewayURL := os.Getenv("AI_GATEWAY_URL")
 	port := envOr("PORT", "8080")
 
 	// ── Database pool ────────────────────────────────────────────────────────
@@ -103,13 +107,24 @@ func main() {
 		}
 	}
 
+	// AI Gateway client (optional)
+	var aiClient *ai.AIClient
+	if aiGatewayURL != "" {
+		aiClient, err = ai.NewAIClient(aiGatewayURL, p9log.NewHelper(logger))
+		if err != nil {
+			log.Printf("WARNING: failed to connect to AI Gateway at %s: %v — AI features disabled", aiGatewayURL, err)
+		} else {
+			defer aiClient.Close()
+		}
+	}
+
 	// ── Outbound adapters ────────────────────────────────────────────────────
 	repo := postgresadapter.NewFarmRepository(pool, logger)
 	outboxPub := outbox.NewPublisher(pool, zapLogger)
 	kafkaPub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 
 	// ── Application service (core) ───────────────────────────────────────────
-	svc := application.NewFarmService(repo, outboxPub, pool, logger)
+	svc := application.NewFarmService(repo, outboxPub, pool, logger, aiClient)
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────
 	handler := grpcadapter.NewFarmHandler(svc, logger)

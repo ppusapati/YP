@@ -5,19 +5,24 @@ import (
 	"fmt"
 	"strconv"
 
+	"connectrpc.com/connect"
+
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 
 	pb "p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1"
+	"p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/satellite-ingestion-service/internal/mappers"
 	ingestionmodels "p9e.in/samavaya/agriculture/satellite-ingestion-service/internal/models"
 	"p9e.in/samavaya/agriculture/satellite-ingestion-service/internal/services"
 )
 
-// IngestionHandler implements the ConnectRPC SatelliteIngestionService handler.
+// IngestionHandler implements the ConnectRPC SatelliteIngestionServiceHandler interface.
 type IngestionHandler struct {
+	v1connect.UnimplementedSatelliteIngestionServiceHandler
+
 	d       deps.ServiceDeps
 	service services.IngestionService
 	log     *p9log.Helper
@@ -33,21 +38,21 @@ func NewIngestionHandler(d deps.ServiceDeps, service services.IngestionService) 
 }
 
 // RequestIngestion handles ingestion request creation.
-func (h *IngestionHandler) RequestIngestion(ctx context.Context, req *pb.RequestIngestionRequest) (*pb.RequestIngestionResponse, error) {
+func (h *IngestionHandler) RequestIngestion(ctx context.Context, req *connect.Request[pb.RequestIngestionRequest]) (*connect.Response[pb.RequestIngestionResponse], error) {
 	requestID := p9context.RequestID(ctx)
 	tenantID := p9context.TenantID(ctx)
 	userID := p9context.UserID(ctx)
 
 	h.log.Infow("msg", "RequestIngestion request", "tenant_id", tenantID, "request_id", requestID)
 
-	if req.GetFarmId() == "" {
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	if req.GetProvider() == pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED {
+	if req.Msg.GetProvider() == pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "provider is required")
 	}
 
-	task := mappers.RequestIngestionToDomain(req, tenantID, userID)
+	task := mappers.RequestIngestionToDomain(req.Msg, tenantID, userID)
 
 	created, err := h.service.RequestIngestion(ctx, task)
 	if err != nil {
@@ -55,60 +60,60 @@ func (h *IngestionHandler) RequestIngestion(ctx context.Context, req *pb.Request
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.RequestIngestionResponse{
+	return connect.NewResponse(&pb.RequestIngestionResponse{
 		Task: mappers.IngestionTaskToProto(created),
-	}, nil
+	}), nil
 }
 
 // GetIngestionTask handles get ingestion task requests.
-func (h *IngestionHandler) GetIngestionTask(ctx context.Context, req *pb.GetIngestionTaskRequest) (*pb.GetIngestionTaskResponse, error) {
+func (h *IngestionHandler) GetIngestionTask(ctx context.Context, req *connect.Request[pb.GetIngestionTaskRequest]) (*connect.Response[pb.GetIngestionTaskResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "GetIngestionTask request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "GetIngestionTask request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "task ID is required")
 	}
 
-	task, err := h.service.GetIngestionTask(ctx, req.GetId())
+	task, err := h.service.GetIngestionTask(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetIngestionTaskResponse{
+	return connect.NewResponse(&pb.GetIngestionTaskResponse{
 		Task: mappers.IngestionTaskToProto(task),
-	}, nil
+	}), nil
 }
 
 // ListIngestionTasks handles list ingestion tasks requests with filtering and pagination.
-func (h *IngestionHandler) ListIngestionTasks(ctx context.Context, req *pb.ListIngestionTasksRequest) (*pb.ListIngestionTasksResponse, error) {
+func (h *IngestionHandler) ListIngestionTasks(ctx context.Context, req *connect.Request[pb.ListIngestionTasksRequest]) (*connect.Response[pb.ListIngestionTasksResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "ListIngestionTasks request", "request_id", requestID)
 
 	params := ingestionmodels.ListIngestionTasksParams{
-		PageSize: req.GetPageSize(),
+		PageSize: req.Msg.GetPageSize(),
 	}
 
 	// Parse page token as offset
-	if req.GetPageToken() != "" {
-		offset, err := strconv.ParseInt(req.GetPageToken(), 10, 32)
+	if req.Msg.GetPageToken() != "" {
+		offset, err := strconv.ParseInt(req.Msg.GetPageToken(), 10, 32)
 		if err == nil {
 			params.Offset = int32(offset)
 		}
 	}
 
 	// Apply filters
-	if req.GetFarmId() != "" {
-		farmID := req.GetFarmId()
+	if req.Msg.GetFarmId() != "" {
+		farmID := req.Msg.GetFarmId()
 		params.FarmUUID = &farmID
 	}
-	if req.GetProvider() != pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED {
-		provider := mappers.ProtoProviderToDomain(req.GetProvider())
+	if req.Msg.GetProvider() != pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED {
+		provider := mappers.ProtoProviderToDomain(req.Msg.GetProvider())
 		params.Provider = &provider
 	}
-	if req.GetStatus() != pb.IngestionStatus_INGESTION_STATUS_UNSPECIFIED {
-		status := mappers.ProtoIngestionStatusToDomain(req.GetStatus())
+	if req.Msg.GetStatus() != pb.IngestionStatus_INGESTION_STATUS_UNSPECIFIED {
+		status := mappers.ProtoIngestionStatusToDomain(req.Msg.GetStatus())
 		params.Status = &status
 	}
 
@@ -128,64 +133,64 @@ func (h *IngestionHandler) ListIngestionTasks(ctx context.Context, req *pb.ListI
 		resp.NextPageToken = fmt.Sprintf("%d", nextOffset)
 	}
 
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // CancelIngestion handles ingestion cancellation requests.
-func (h *IngestionHandler) CancelIngestion(ctx context.Context, req *pb.CancelIngestionRequest) (*pb.CancelIngestionResponse, error) {
+func (h *IngestionHandler) CancelIngestion(ctx context.Context, req *connect.Request[pb.CancelIngestionRequest]) (*connect.Response[pb.CancelIngestionResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "CancelIngestion request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "CancelIngestion request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "task ID is required")
 	}
 
-	_, err := h.service.CancelIngestion(ctx, req.GetId())
+	_, err := h.service.CancelIngestion(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.CancelIngestionResponse{
+	return connect.NewResponse(&pb.CancelIngestionResponse{
 		Success: true,
-	}, nil
+	}), nil
 }
 
 // RetryIngestion handles ingestion retry requests.
-func (h *IngestionHandler) RetryIngestion(ctx context.Context, req *pb.RetryIngestionRequest) (*pb.RetryIngestionResponse, error) {
+func (h *IngestionHandler) RetryIngestion(ctx context.Context, req *connect.Request[pb.RetryIngestionRequest]) (*connect.Response[pb.RetryIngestionResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "RetryIngestion request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "RetryIngestion request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "task ID is required")
 	}
 
-	task, err := h.service.RetryIngestion(ctx, req.GetId())
+	task, err := h.service.RetryIngestion(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.RetryIngestionResponse{
+	return connect.NewResponse(&pb.RetryIngestionResponse{
 		Task: mappers.IngestionTaskToProto(task),
-	}, nil
+	}), nil
 }
 
 // GetIngestionStats handles ingestion statistics requests.
-func (h *IngestionHandler) GetIngestionStats(ctx context.Context, req *pb.GetIngestionStatsRequest) (*pb.GetIngestionStatsResponse, error) {
+func (h *IngestionHandler) GetIngestionStats(ctx context.Context, req *connect.Request[pb.GetIngestionStatsRequest]) (*connect.Response[pb.GetIngestionStatsResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "GetIngestionStats request", "request_id", requestID)
 
 	var farmUUID *string
-	if req.GetFarmId() != "" {
-		fid := req.GetFarmId()
+	if req.Msg.GetFarmId() != "" {
+		fid := req.Msg.GetFarmId()
 		farmUUID = &fid
 	}
 
 	var provider *ingestionmodels.SatelliteProvider
-	if req.GetProvider() != pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED {
-		p := mappers.ProtoProviderToDomain(req.GetProvider())
+	if req.Msg.GetProvider() != pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED {
+		p := mappers.ProtoProviderToDomain(req.Msg.GetProvider())
 		provider = &p
 	}
 
@@ -194,11 +199,11 @@ func (h *IngestionHandler) GetIngestionStats(ctx context.Context, req *pb.GetIng
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetIngestionStatsResponse{
+	return connect.NewResponse(&pb.GetIngestionStatsResponse{
 		TotalTasks:       stats.TotalTasks,
 		CompletedTasks:   stats.CompletedTasks,
 		FailedTasks:      stats.FailedTasks,
 		PendingTasks:     stats.PendingTasks,
 		TotalBytesStored: stats.TotalBytesStored,
-	}, nil
+	}), nil
 }

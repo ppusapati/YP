@@ -35,6 +35,7 @@ import (
 	fieldv1connect "p9e.in/samavaya/agriculture/field-service/api/v1/fieldv1connect"
 
 	eventsadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/inbound/events"
+	"p9e.in/samavaya/agriculture/field-service/internal/ai"
 	grpcadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/inbound/grpc"
 	clientsadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/outbound/clients"
 	kafkaadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/outbound/kafka"
@@ -60,6 +61,7 @@ func main() {
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	farmServiceURL := envOr("FARM_SERVICE_URL", "http://localhost:8081")
 	cropServiceURL := envOr("CROP_SERVICE_URL", "http://localhost:8083")
+	aiGatewayURL := os.Getenv("AI_GATEWAY_URL")
 	port := envOr("PORT", "8080")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -94,6 +96,17 @@ func main() {
 		}
 	}
 
+	// AI Gateway client (optional)
+	var aiClient *ai.AIClient
+	if aiGatewayURL != "" {
+		aiClient, err = ai.NewAIClient(aiGatewayURL, p9log.NewHelper(logger))
+		if err != nil {
+			log.Printf("WARNING: failed to connect to AI Gateway at %s: %v — AI features disabled", aiGatewayURL, err)
+		} else {
+			defer aiClient.Close()
+		}
+	}
+
 	// Outbound adapters
 	repo := postgresadapter.NewFieldRepository(pool, logger)
 	outboxPub := outbox.NewPublisher(pool, zapLogger)
@@ -102,7 +115,7 @@ func main() {
 	cropClient := clientsadapter.NewCropClient(cropServiceURL, connectclient.NewHTTPClient(connectclient.DefaultConfig(cropServiceURL)), connect.WithInterceptors(connectclient.ContextPropagator()))
 
 	// Application service
-	svc := application.NewFieldService(repo, outboxPub, farmClient, cropClient, pool, logger)
+	svc := application.NewFieldService(repo, outboxPub, farmClient, cropClient, pool, logger, aiClient)
 
 	// Inbound adapters
 	handler := grpcadapter.NewFieldHandler(svc, logger)

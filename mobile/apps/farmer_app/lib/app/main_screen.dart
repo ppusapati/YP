@@ -213,6 +213,14 @@ class _FarmerNavigationBar extends StatelessWidget {
                     context.push('/traceability');
                   },
                 ),
+                _MoreMenuItem(
+                  icon: Icons.storefront,
+                  label: 'Marketplace',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/marketplace');
+                  },
+                ),
               ],
             ),
           ),

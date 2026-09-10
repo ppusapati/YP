@@ -53,6 +53,11 @@ import '../../features/tasks/domain/entities/task_entity.dart';
 import '../../features/tasks/presentation/screens/task_detail_screen.dart';
 import '../../features/tasks/presentation/screens/task_editor_screen.dart';
 import '../../features/tasks/presentation/screens/task_list_screen.dart';
+import '../../features/commerce/domain/entities/listing_entity.dart';
+import '../../features/commerce/presentation/screens/create_listing_screen.dart';
+import '../../features/commerce/presentation/screens/listing_detail_screen.dart';
+import '../../features/commerce/presentation/screens/marketplace_screen.dart';
+import '../../features/commerce/presentation/screens/my_orders_screen.dart';
 import '../../features/traceability/domain/entities/produce_record_entity.dart';
 import '../../features/traceability/presentation/screens/produce_detail_screen.dart';
 import '../../features/traceability/presentation/screens/traceability_screen.dart';
@@ -390,6 +395,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+
+      // Marketplace
+      GoRoute(
+        path: '/marketplace',
+        builder: (context, state) => const MarketplaceScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            builder: (context, state) => const CreateListingScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              final listing = state.extra as Listing?;
+              return ListingDetailScreen(
+                listingId: state.pathParameters['id']!,
+                listing: listing,
+              );
+            },
+          ),
+        ],
+      ),
+
+      // Orders
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) => const MyOrdersScreen(),
       ),
 
       // Alerts

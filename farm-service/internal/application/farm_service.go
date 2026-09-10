@@ -20,6 +20,7 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 	"p9e.in/samavaya/packages/uow"
 
+	"p9e.in/samavaya/agriculture/farm-service/internal/ai"
 	"p9e.in/samavaya/agriculture/farm-service/internal/domain"
 	"p9e.in/samavaya/agriculture/farm-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/farm-service/internal/ports/outbound"
@@ -34,10 +35,11 @@ const (
 
 // farmService implements inbound.FarmService.
 type farmService struct {
-	repo outbound.FarmRepository
-	pub  outbound.EventPublisher
-	pool *pgxpool.Pool // used only for transaction management
-	log  *p9log.Helper
+	repo     outbound.FarmRepository
+	pub      outbound.EventPublisher
+	pool     *pgxpool.Pool // used only for transaction management
+	log      *p9log.Helper
+	aiClient *ai.AIClient
 }
 
 // NewFarmService creates a new application-layer FarmService.
@@ -48,12 +50,14 @@ func NewFarmService(
 	pub outbound.EventPublisher,
 	pool *pgxpool.Pool,
 	log p9log.Logger,
+	aiClient *ai.AIClient,
 ) inbound.FarmService {
 	return &farmService{
-		repo: repo,
-		pub:  pub,
-		pool: pool,
-		log:  p9log.NewHelper(p9log.With(log, "component", "FarmService")),
+		repo:     repo,
+		pub:      pub,
+		pool:     pool,
+		log:      p9log.NewHelper(p9log.With(log, "component", "FarmService")),
+		aiClient: aiClient,
 	}
 }
 
@@ -710,6 +714,16 @@ func (s *farmService) RemoveFieldsFromUnit(ctx context.Context, unitID string, f
 		"unit_id": unitID, "field_ids": fieldIDs,
 	})
 	return unit, nil
+}
+
+// ComputeFieldAnalytics delegates to the AI gateway to compute analytics for a
+// field based on historical season data. Returns nil when the AI client is not
+// configured (graceful degradation).
+func (s *farmService) ComputeFieldAnalytics(ctx context.Context, fieldID, farmID string, seasons []ai.SeasonRecord) (*ai.FieldAnalytics, error) {
+	if s.aiClient == nil {
+		return nil, nil
+	}
+	return s.aiClient.ComputeFieldAnalytics(ctx, fieldID, farmID, seasons)
 }
 
 // emitEvent publishes a domain event best-effort (errors are logged, not propagated).
