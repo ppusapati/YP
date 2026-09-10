@@ -269,7 +269,7 @@ class _AgronomistNavigationBar extends StatelessWidget {
     if (location.startsWith('/dashboard')) return 0;
     if (location.startsWith('/farms')) return 1;
     if (location.startsWith('/advisory')) return 2;
-    if (location.startsWith('/satellite') ||
+    if (location.startsWith('/analytics') ||
         location.startsWith('/diagnosis') ||
         location.startsWith('/tasks')) return 3;
     if (location.startsWith('/profile')) return 4;
@@ -285,7 +285,7 @@ class _AgronomistNavigationBar extends StatelessWidget {
       case 2:
         context.go('/advisory');
       case 3:
-        context.go('/satellite');
+        context.go('/analytics');
       case 4:
         context.go('/profile');
     }
