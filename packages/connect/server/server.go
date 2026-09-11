@@ -52,7 +52,7 @@ type ServerConfig struct {
 func DefaultServerConfig(port string) ServerConfig {
 	return ServerConfig{
 		Port:               port,
-		AllowedOrigins:     []string{"*"},
+		AllowedOrigins:     []string{},
 		ReadHeaderTimeout:  30 * time.Second,
 		ReadTimeout:        60 * time.Second,
 		WriteTimeout:       60 * time.Second,

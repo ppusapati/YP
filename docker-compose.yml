@@ -120,7 +120,7 @@ services:
       - "8080:8080"
     environment:
       GATEWAY_PORT: "8080"
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     depends_on:
       auth-service:
         condition: service_healthy
@@ -325,6 +325,132 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${AUTH_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/auth_service?sslmode=disable}
+
+  alert-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: alert-service
+    ports:
+      - "8098:8080"
+    environment:
+      <<: *go-env
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  analytics-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: analytics-service
+    ports:
+      - "8099:8080"
+    environment:
+      <<: *go-env
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  prescription-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: prescription-service
+    ports:
+      - "8100:8080"
+    environment:
+      <<: *go-env
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  satellite-ingestion-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-ingestion-service
+    ports:
+      - "8101:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_INGESTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_ingestion_service?sslmode=disable}
+
+  satellite-processing-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-processing-service
+    ports:
+      - "8102:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_PROCESSING_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_processing_service?sslmode=disable}
+
+  satellite-analytics-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-analytics-service
+    ports:
+      - "8103:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_ANALYTICS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_analytics_service?sslmode=disable}
+
+  satellite-tile-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-tile-service
+    ports:
+      - "8104:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_TILE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_tile_service?sslmode=disable}
+
+  vegetation-index-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: vegetation-index-service
+    ports:
+      - "8105:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${VEGETATION_INDEX_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/vegetation_index_service?sslmode=disable}
+
+  task-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: task-service
+    ports:
+      - "8106:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${TASK_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/task_service?sslmode=disable}
+
+  agronomy-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: agronomy-service
+    ports:
+      - "8107:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${AGRONOMY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/agronomy_service?sslmode=disable}
 
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 

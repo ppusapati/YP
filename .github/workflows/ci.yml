@@ -32,6 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - agronomy-service
           - alert-service
           - analytics-service
           - auth-service
@@ -50,6 +51,7 @@ jobs:
           - satellite-tile-service
           - sensor-service
           - soil-service
+          - task-service
           - traceability-service
           - vegetation-index-service
           - yield-service
@@ -93,6 +95,7 @@ jobs:
       - name: Run service tests
         run: |
           go test -race -count=1 -timeout=5m \
+            ./agronomy-service/... \
             ./alert-service/... \
             ./analytics-service/... \
             ./auth-service/... \
@@ -111,6 +114,7 @@ jobs:
             ./satellite-tile-service/... \
             ./sensor-service/... \
             ./soil-service/... \
+            ./task-service/... \
             ./traceability-service/... \
             ./vegetation-index-service/... \
             ./yield-service/...
@@ -251,6 +255,9 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - agronomy-service
+          - alert-service
+          - analytics-service
           - auth-service
           - commerce-service
           - crop-service
@@ -259,10 +266,17 @@ jobs:
           - irrigation-service
           - pest-prediction-service
           - plant-diagnosis-service
+          - prescription-service
+          - satellite-analytics-service
+          - satellite-ingestion-service
+          - satellite-processing-service
           - satellite-service
+          - satellite-tile-service
           - sensor-service
           - soil-service
+          - task-service
           - traceability-service
+          - vegetation-index-service
           - yield-service
     steps:
       - uses: actions/checkout@v4
