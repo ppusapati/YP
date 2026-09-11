@@ -137,17 +137,28 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
   }) async {
-    // No farm-level aggregation RPC exists; fall back to listing recent
-    // alerts for the farm and returning them as health summaries.
-    final request = sat_pb.ListAlertsRequest(farmId: farmId);
+    final request = ListAlertsRequest(farmId: farmId);
     final response = await _call('ListAlerts', request);
-    final result = sat_pb.ListAlertsResponse.fromBuffer(response.body);
+    final result = ListAlertsResponse.fromBuffer(response.body);
     return result.alerts.map(_alertToMap).toList();
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  static Map<String, dynamic> _alertToMap(SatelliteAlert alert) {
+    return {
+      'id': alert.id,
+      'field_id': alert.fieldId,
+      'alert_type': alert.alertType,
+      'severity': alert.severity,
+      'description': alert.description,
+      'detected_at': alert.hasDetectedAt()
+          ? alert.detectedAt.toDateTime().toIso8601String()
+          : '',
+    };
+  }
 
   static timestamp_pb.Timestamp _toTimestamp(DateTime dt) {
     return timestamp_pb.Timestamp.fromDateTime(dt);
