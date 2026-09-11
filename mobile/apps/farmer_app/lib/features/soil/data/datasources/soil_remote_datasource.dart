@@ -121,6 +121,8 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
       soil_pb.SoilTexture.SOIL_TEXTURE_LOAMY => SoilTexture.loamy,
       soil_pb.SoilTexture.SOIL_TEXTURE_CLAY => SoilTexture.clay,
       soil_pb.SoilTexture.SOIL_TEXTURE_SILT => SoilTexture.silt,
+      soil_pb.SoilTexture.SOIL_TEXTURE_PEAT => SoilTexture.peat,
+      soil_pb.SoilTexture.SOIL_TEXTURE_CHALK => SoilTexture.chalk,
       _ => SoilTexture.loamy,
     };
   }
