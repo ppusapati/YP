@@ -452,6 +452,34 @@ services:
       <<: *go-env
       DATABASE_URL: ${AGRONOMY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/agronomy_service?sslmode=disable}
 
+  # ── Monolith (all services in one binary) ──────────────────────────────────
+  # Start with: docker compose --profile monolith up
+  # Plain `docker compose up` still starts only the microservices above.
+
+  monolith:
+    build:
+      context: .
+      dockerfile: cmd/monolith/Dockerfile
+    restart: unless-stopped
+    profiles: ["monolith"]
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/yieldpoint?sslmode=disable}
+      KAFKA_BROKER: kafka:9092
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 
   ai-gateway:

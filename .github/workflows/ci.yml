@@ -287,6 +287,19 @@ jobs:
             -t yieldpoint/${{ matrix.service }}:ci \
             .
 
+  docker-build-monolith:
+    name: Docker build (monolith)
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Monolith Docker image
+        run: |
+          docker build \
+            -f cmd/monolith/Dockerfile \
+            -t yieldpoint/monolith:ci \
+            .
+
   docker-build-ai-gateway:
     name: Docker build (ai-gateway)
     runs-on: ubuntu-latest
