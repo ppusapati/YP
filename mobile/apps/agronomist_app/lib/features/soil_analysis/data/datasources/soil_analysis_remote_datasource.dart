@@ -63,11 +63,11 @@ class SoilAnalysisRemoteDataSourceImpl implements SoilAnalysisRemoteDataSource {
     return SoilAnalysisModel(
       id: pb.id,
       fieldId: pb.fieldId,
-      pH: 0,
-      nitrogen: 0,
-      phosphorus: 0,
-      potassium: 0,
-      organicMatter: 0,
+      pH: pb.pH,
+      nitrogen: pb.nitrogenPpm,
+      phosphorus: pb.phosphorusPpm,
+      potassium: pb.potassiumPpm,
+      organicMatter: pb.organicMatterPct,
       healthScore: pb.soilHealthScore,
       sampledAt: analyzedAt,
     );

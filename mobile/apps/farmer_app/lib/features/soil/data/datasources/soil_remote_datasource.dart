@@ -99,11 +99,11 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
     return SoilAnalysisModel(
       id: pb.id,
       fieldId: pb.fieldId,
-      pH: pb.soilHealthScore, // proto has soilHealthScore, not direct pH
-      organicCarbon: 0, // not available in SoilAnalysis pb
-      nitrogen: 0, // not available in SoilAnalysis pb
-      phosphorus: 0, // not available in SoilAnalysis pb
-      potassium: 0, // not available in SoilAnalysis pb
+      pH: pb.pH,
+      organicCarbon: pb.organicMatterPct,
+      nitrogen: pb.nitrogenPpm,
+      phosphorus: pb.phosphorusPpm,
+      potassium: pb.potassiumPpm,
       texture: _mapSoilTexture(pb.healthCategory),
       analysisDate: pb.hasAnalyzedAt()
           ? _timestampToDateTime(pb.analyzedAt)
