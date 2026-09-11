@@ -63,13 +63,15 @@ func (b *EventBus) Subscribe(module, topic string, handler EventHandler) {
 }
 
 // Publish dispatches an event to all in-process subscribers of the topic,
-// then optionally forwards to the external publisher.
+// then optionally forwards to the external publisher. Returns the first
+// error encountered (all handlers are still called).
 func (b *EventBus) Publish(ctx context.Context, topic, key string, payload []byte) error {
 	b.mu.RLock()
 	subs := b.subscribers[topic]
 	ext := b.external
 	b.mu.RUnlock()
 
+	var firstErr error
 	for _, sub := range subs {
 		if err := sub.handler(ctx, topic, key, payload); err != nil {
 			b.logger.Warn("event handler error",
@@ -77,6 +79,9 @@ func (b *EventBus) Publish(ctx context.Context, topic, key string, payload []byt
 				zap.String("topic", topic),
 				zap.String("key", key),
 				zap.Error(err))
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
 
@@ -86,10 +91,13 @@ func (b *EventBus) Publish(ctx context.Context, topic, key string, payload []byt
 				zap.String("topic", topic),
 				zap.String("key", key),
 				zap.Error(err))
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
 
-	return nil
+	return firstErr
 }
 
 // TopicSubscriberCount returns the number of subscribers for a topic (useful for diagnostics).
