@@ -60,11 +60,14 @@ func InitJWTFromConfig(cfg *config.Security) error {
 }
 
 // InitJWTFromEnv initializes JWT configuration from environment variables.
-// Environment variables: JWT_SECRET (required), JWT_ISSUER (optional), JWT_AUDIENCE (optional)
+// Environment variables: JWT_SECRET (required, min 32 chars), JWT_ISSUER (optional), JWT_AUDIENCE (optional)
 func InitJWTFromEnv() error {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return ErrJWTNotConfigured
+	}
+	if len(secret) < 32 {
+		return fmt.Errorf("JWT_SECRET must be at least 32 characters (got %d): use a cryptographically random value", len(secret))
 	}
 
 	jwtConfigOnce.Do(func() {
