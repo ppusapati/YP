@@ -84,7 +84,8 @@ func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.Sat
 	// Use a transaction to create both image and task atomically.
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return nil, errors.InternalServer("TX_BEGIN_FAILED", err.Error())
+		s.log.Errorw("msg", "tx begin failed", "error", err)
+		return nil, errors.InternalServer("TX_BEGIN_FAILED", "an internal error occurred")
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
 
@@ -110,7 +111,8 @@ func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.Sat
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, errors.InternalServer("TX_COMMIT_FAILED", err.Error())
+		s.log.Errorw("msg", "tx commit failed", "error", err)
+		return nil, errors.InternalServer("TX_COMMIT_FAILED", "an internal error occurred")
 	}
 
 	s.emitEvent(ctx, "agriculture.satellite.imagery.requested", createdImage.ID, map[string]interface{}{

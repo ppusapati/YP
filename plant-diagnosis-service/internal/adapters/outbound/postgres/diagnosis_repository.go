@@ -59,7 +59,8 @@ func (r *diagnosisRepository) CreateDiagnosisRequest(ctx context.Context, req *d
 
 	imagesJSON, err := json.Marshal(req.Images)
 	if err != nil {
-		return nil, errors.InternalServer("JSON_MARSHAL_ERROR", fmt.Sprintf("failed to marshal images: %v", err))
+		r.log.Errorw("msg", "failed to marshal images", "error", err)
+		return nil, errors.InternalServer("JSON_MARSHAL_ERROR", "an internal error occurred")
 	}
 
 	row := r.queryRow(ctx,
@@ -85,7 +86,8 @@ func (r *diagnosisRepository) GetDiagnosisRequestByID(ctx context.Context, id, t
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("DIAGNOSIS_NOT_FOUND", fmt.Sprintf("diagnosis not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return e, nil
 }
@@ -118,7 +120,8 @@ func (r *diagnosisRepository) ListDiagnosisRequests(ctx context.Context, params 
 	var total int32
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM diagnosis_requests WHERE %s", whereClause)
 	if err := r.queryRow(ctx, countSQL, args...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	// Order.
@@ -141,7 +144,8 @@ func (r *diagnosisRepository) ListDiagnosisRequests(ctx context.Context, params 
 
 	rows, err := r.query(ctx, listSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -149,12 +153,14 @@ func (r *diagnosisRepository) ListDiagnosisRequests(ctx context.Context, params 
 	for rows.Next() {
 		e, err := scanDiagnosisRequestFromRows(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_SCAN_ERROR", err.Error())
+			r.log.Errorw("msg", "db scan error", "error", err)
+			return nil, 0, errors.InternalServer("DB_SCAN_ERROR", "an internal error occurred")
 		}
 		results = append(results, *e)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	return results, total, nil
@@ -221,7 +227,8 @@ func (r *diagnosisRepository) GetDiagnosisResultByRequestID(ctx context.Context,
 		if err == pgx.ErrNoRows {
 			return nil, nil // no result yet is not an error
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	e.IdentifiedSpecies = identifiedSpeciesRaw
 	e.DetectedDiseases = diseasesRaw
@@ -252,7 +259,8 @@ func (r *diagnosisRepository) GetDiseaseByID(ctx context.Context, id, tenantID s
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("DISEASE_NOT_FOUND", fmt.Sprintf("disease not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return d, nil
 }
@@ -273,7 +281,8 @@ func (r *diagnosisRepository) ListDiseases(ctx context.Context, params domain.Li
 	var total int32
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM diseases WHERE %s", whereClause)
 	if err := r.queryRow(ctx, countSQL, args...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	listSQL := fmt.Sprintf(
@@ -286,7 +295,8 @@ func (r *diagnosisRepository) ListDiseases(ctx context.Context, params domain.Li
 
 	rows, err := r.query(ctx, listSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -297,12 +307,14 @@ func (r *diagnosisRepository) ListDiseases(ctx context.Context, params domain.Li
 			&d.ID, &d.TenantID, &d.DiseaseName, &d.ScientificName, &d.ConfidenceScore, &d.Severity,
 			&d.Description, &d.Symptoms, &d.TreatmentOptions, &d.Prevention, &d.CreatedAt, &d.UpdatedAt,
 		); err != nil {
-			return nil, 0, errors.InternalServer("DB_SCAN_ERROR", err.Error())
+			r.log.Errorw("msg", "db scan error", "error", err)
+			return nil, 0, errors.InternalServer("DB_SCAN_ERROR", "an internal error occurred")
 		}
 		results = append(results, d)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return results, total, nil
 }
@@ -331,7 +343,8 @@ func (r *diagnosisRepository) GetTreatmentPlanByDiagnosisID(ctx context.Context,
 		if err == pgx.ErrNoRows {
 			return nil, nil // no plan yet
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	tp.Steps = stepsRaw
 	return tp, nil
@@ -361,7 +374,8 @@ func (r *diagnosisRepository) CreateTreatmentPlan(ctx context.Context, plan *dom
 		&stepsRaw, &tp.EstimatedCost, &tp.EstimatedDays, &tp.CreatedAt, &tp.UpdatedAt,
 	)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	tp.Steps = stepsRaw
 	return tp, nil

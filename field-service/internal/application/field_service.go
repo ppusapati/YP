@@ -232,7 +232,8 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 
 	exists, err := s.cropClient.CropExists(ctx, params.CropID, tenantID)
 	if err != nil {
-		return nil, errors.InternalServer("CROP_CHECK_FAILED", fmt.Sprintf("failed to verify crop: %v", err))
+		s.log.Errorw("msg", "failed to verify crop", "error", err)
+		return nil, errors.InternalServer("CROP_CHECK_FAILED", "an internal error occurred")
 	}
 	if !exists {
 		return nil, errors.NotFound("CROP_NOT_FOUND", "crop does not exist")

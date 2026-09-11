@@ -113,7 +113,7 @@ func (r *tileRepository) CreateTileset(ctx context.Context, tileset *tilemodels.
 	result := &tilemodels.Tileset{}
 	if err := scanTileset(row, result); err != nil {
 		r.log.Errorw("msg", "failed to create tileset", "error", err)
-		return nil, errors.InternalServer("TILESET_CREATE_FAILED", fmt.Sprintf("failed to create tileset: %v", err))
+		return nil, errors.InternalServer("TILESET_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "tileset created", "uuid", result.ID, "tenant_id", result.TenantID)
@@ -137,7 +137,7 @@ func (r *tileRepository) GetTilesetByUUID(ctx context.Context, uuid, tenantID st
 			return nil, errors.NotFound("TILESET_NOT_FOUND", fmt.Sprintf("tileset not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get tileset", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("TILESET_GET_FAILED", fmt.Sprintf("failed to get tileset: %v", err))
+		return nil, errors.InternalServer("TILESET_GET_FAILED", "an internal error occurred")
 	}
 
 	return tileset, nil
@@ -161,7 +161,7 @@ func (r *tileRepository) ListTilesets(ctx context.Context, params tilemodels.Lis
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count tilesets", "error", err)
-		return nil, 0, errors.InternalServer("TILESET_COUNT_FAILED", fmt.Sprintf("failed to count tilesets: %v", err))
+		return nil, 0, errors.InternalServer("TILESET_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -188,7 +188,7 @@ func (r *tileRepository) ListTilesets(ctx context.Context, params tilemodels.Lis
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list tilesets", "error", err)
-		return nil, 0, errors.InternalServer("TILESET_LIST_FAILED", fmt.Sprintf("failed to list tilesets: %v", err))
+		return nil, 0, errors.InternalServer("TILESET_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -197,12 +197,13 @@ func (r *tileRepository) ListTilesets(ctx context.Context, params tilemodels.Lis
 		var tileset tilemodels.Tileset
 		if err := scanTilesetFromRows(rows, &tileset); err != nil {
 			r.log.Errorw("msg", "failed to scan tileset row", "error", err)
-			return nil, 0, errors.InternalServer("TILESET_SCAN_FAILED", fmt.Sprintf("failed to scan tileset: %v", err))
+			return nil, 0, errors.InternalServer("TILESET_SCAN_FAILED", "an internal error occurred")
 		}
 		tilesets = append(tilesets, tileset)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("TILESET_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("TILESET_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return tilesets, totalCount, nil
@@ -229,7 +230,7 @@ func (r *tileRepository) UpdateTilesetStatus(ctx context.Context, uuid, tenantID
 			return nil, errors.NotFound("TILESET_NOT_FOUND", fmt.Sprintf("tileset not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to update tileset status", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("TILESET_UPDATE_FAILED", fmt.Sprintf("failed to update tileset status: %v", err))
+		return nil, errors.InternalServer("TILESET_UPDATE_FAILED", "an internal error occurred")
 	}
 
 	return result, nil
@@ -258,7 +259,7 @@ func (r *tileRepository) CompleteTileset(ctx context.Context, uuid, tenantID str
 			return nil, errors.NotFound("TILESET_NOT_FOUND", fmt.Sprintf("tileset not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to complete tileset", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("TILESET_COMPLETE_FAILED", fmt.Sprintf("failed to complete tileset: %v", err))
+		return nil, errors.InternalServer("TILESET_COMPLETE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "tileset completed", "uuid", result.ID, "total_tiles", totalTiles)
@@ -286,7 +287,7 @@ func (r *tileRepository) FailTileset(ctx context.Context, uuid, tenantID, errorM
 			return nil, errors.NotFound("TILESET_NOT_FOUND", fmt.Sprintf("tileset not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to fail tileset", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("TILESET_FAIL_FAILED", fmt.Sprintf("failed to fail tileset: %v", err))
+		return nil, errors.InternalServer("TILESET_FAIL_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "tileset marked as failed", "uuid", result.ID, "error_message", errorMessage)
@@ -304,7 +305,7 @@ func (r *tileRepository) DeleteTileset(ctx context.Context, uuid, tenantID, dele
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to delete tileset", "uuid", uuid, "error", err)
-		return errors.InternalServer("TILESET_DELETE_FAILED", fmt.Sprintf("failed to delete tileset: %v", err))
+		return errors.InternalServer("TILESET_DELETE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "tileset deleted", "uuid", uuid)
@@ -321,7 +322,8 @@ func (r *tileRepository) CheckTilesetExists(ctx context.Context, uuid, tenantID 
 		uuid, tenantID,
 	)
 	if err := row.Scan(&exists); err != nil {
-		return false, errors.InternalServer("TILESET_CHECK_FAILED", fmt.Sprintf("failed to check tileset exists: %v", err))
+		r.log.Errorw("msg", "failed to check tileset exists", "error", err)
+		return false, errors.InternalServer("TILESET_CHECK_FAILED", "an internal error occurred")
 	}
 	return exists, nil
 }
@@ -344,7 +346,7 @@ func (r *tileRepository) GetTilesetByProcessingJobAndLayer(ctx context.Context, 
 			return nil, errors.NotFound("TILESET_NOT_FOUND", fmt.Sprintf("tileset not found for job %s layer %s", processingJobID, layer))
 		}
 		r.log.Errorw("msg", "failed to get tileset by processing job and layer", "error", err)
-		return nil, errors.InternalServer("TILESET_GET_FAILED", fmt.Sprintf("failed to get tileset: %v", err))
+		return nil, errors.InternalServer("TILESET_GET_FAILED", "an internal error occurred")
 	}
 
 	return tileset, nil

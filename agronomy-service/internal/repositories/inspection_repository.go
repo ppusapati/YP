@@ -68,7 +68,7 @@ func (r *inspectionRepository) GetByID(ctx context.Context, id string) (*pb.Insp
 			return nil, errors.NotFound("INSPECTION_NOT_FOUND", fmt.Sprintf("inspection not found: %s", id))
 		}
 		r.log.Errorw("msg", "failed to get inspection", "id", id, "error", err)
-		return nil, errors.InternalServer("INSPECTION_GET_FAILED", fmt.Sprintf("failed to get inspection: %v", err))
+		return nil, errors.InternalServer("INSPECTION_GET_FAILED", "an internal error occurred")
 	}
 
 	return inspection, nil
@@ -105,7 +105,7 @@ func (r *inspectionRepository) List(ctx context.Context, params InspectionListPa
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count inspections", "error", err)
-		return nil, "", 0, errors.InternalServer("INSPECTION_COUNT_FAILED", fmt.Sprintf("failed to count inspections: %v", err))
+		return nil, "", 0, errors.InternalServer("INSPECTION_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -133,7 +133,7 @@ func (r *inspectionRepository) List(ctx context.Context, params InspectionListPa
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list inspections", "error", err)
-		return nil, "", 0, errors.InternalServer("INSPECTION_LIST_FAILED", fmt.Sprintf("failed to list inspections: %v", err))
+		return nil, "", 0, errors.InternalServer("INSPECTION_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -142,12 +142,13 @@ func (r *inspectionRepository) List(ctx context.Context, params InspectionListPa
 		inspection, err := scanInspectionFromRows(rows)
 		if err != nil {
 			r.log.Errorw("msg", "failed to scan inspection row", "error", err)
-			return nil, "", 0, errors.InternalServer("INSPECTION_SCAN_FAILED", fmt.Sprintf("failed to scan inspection: %v", err))
+			return nil, "", 0, errors.InternalServer("INSPECTION_SCAN_FAILED", "an internal error occurred")
 		}
 		inspections = append(inspections, inspection)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, "", 0, errors.InternalServer("INSPECTION_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, "", 0, errors.InternalServer("INSPECTION_ROWS_ERROR", "an internal error occurred")
 	}
 
 	// Compute next page token
@@ -172,7 +173,8 @@ func (r *inspectionRepository) Create(ctx context.Context, inspection *pb.Inspec
 	// Serialize issues to JSONB
 	issuesJSON, err := json.Marshal(inspection.Issues)
 	if err != nil {
-		return nil, errors.InternalServer("ISSUES_MARSHAL_FAILED", fmt.Sprintf("failed to marshal issues: %v", err))
+		r.log.Errorw("msg", "failed to marshal issues", "error", err)
+		return nil, errors.InternalServer("ISSUES_MARSHAL_FAILED", "an internal error occurred")
 	}
 
 	var inspectionDate *time.Time
@@ -204,7 +206,7 @@ func (r *inspectionRepository) Create(ctx context.Context, inspection *pb.Inspec
 	created, err := scanInspection(row)
 	if err != nil {
 		r.log.Errorw("msg", "failed to insert inspection", "error", err)
-		return nil, errors.InternalServer("INSPECTION_CREATE_FAILED", fmt.Sprintf("failed to create inspection: %v", err))
+		return nil, errors.InternalServer("INSPECTION_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "inspection created", "id", created.Id, "tenant_id", tenantID)
@@ -232,7 +234,7 @@ func (r *inspectionRepository) UpdateStatus(ctx context.Context, id string, stat
 			return nil, errors.NotFound("INSPECTION_NOT_FOUND", fmt.Sprintf("inspection not found: %s", id))
 		}
 		r.log.Errorw("msg", "failed to update inspection status", "id", id, "error", err)
-		return nil, errors.InternalServer("INSPECTION_STATUS_UPDATE_FAILED", fmt.Sprintf("failed to update inspection status: %v", err))
+		return nil, errors.InternalServer("INSPECTION_STATUS_UPDATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "inspection status updated", "id", inspection.Id, "status", status)

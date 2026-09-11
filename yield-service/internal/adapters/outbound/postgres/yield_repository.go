@@ -118,7 +118,8 @@ func (r *yieldRepository) CreatePrediction(ctx context.Context, p *domain.YieldP
 	)
 	created, err := scanPrediction(row)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return created, nil
 }
@@ -135,7 +136,8 @@ func (r *yieldRepository) GetPredictionByID(ctx context.Context, id, tenantID st
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("PREDICTION_NOT_FOUND", fmt.Sprintf("prediction not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return p, nil
 }
@@ -193,7 +195,8 @@ func (r *yieldRepository) ListPredictions(ctx context.Context, params domain.Lis
 	var total int32
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM yield_predictions WHERE %s", countWhere)
 	if err := r.queryRow(ctx, countSQL, countArgs...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	// Data query
@@ -205,13 +208,15 @@ func (r *yieldRepository) ListPredictions(ctx context.Context, params domain.Lis
 
 	rows, err := r.query(ctx, dataSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
 	predictions, err := scanPredictionRows(rows)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return predictions, total, nil
 }
@@ -270,7 +275,8 @@ func (r *yieldRepository) CreateYieldRecord(ctx context.Context, rec *domain.Yie
 	)
 	created, err := scanRecord(row)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return created, nil
 }
@@ -329,7 +335,8 @@ func (r *yieldRepository) ListYieldRecords(ctx context.Context, params domain.Yi
 	var total int32
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM yield_records WHERE %s", countWhere)
 	if err := r.queryRow(ctx, countSQL, countArgs...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	dataSQL := fmt.Sprintf(
@@ -340,13 +347,15 @@ func (r *yieldRepository) ListYieldRecords(ctx context.Context, params domain.Yi
 
 	rows, err := r.query(ctx, dataSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
 	records, err := scanRecordRows(rows)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return records, total, nil
 }
@@ -400,7 +409,8 @@ func (r *yieldRepository) CreateHarvestPlan(ctx context.Context, p *domain.Harve
 	)
 	created, err := scanHarvestPlan(row)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return created, nil
 }
@@ -417,7 +427,8 @@ func (r *yieldRepository) GetHarvestPlanByID(ctx context.Context, id, tenantID s
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("HARVEST_PLAN_NOT_FOUND", fmt.Sprintf("harvest plan not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return p, nil
 }
@@ -474,7 +485,8 @@ func (r *yieldRepository) ListHarvestPlans(ctx context.Context, params domain.Li
 	var total int32
 	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM harvest_plans WHERE %s", countWhere)
 	if err := r.queryRow(ctx, countSQL, countArgs...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	dataSQL := fmt.Sprintf(
@@ -485,13 +497,15 @@ func (r *yieldRepository) ListHarvestPlans(ctx context.Context, params domain.Li
 
 	rows, err := r.query(ctx, dataSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
 	plans, err := scanHarvestPlanRows(rows)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return plans, total, nil
 }
@@ -572,7 +586,8 @@ func (r *yieldRepository) GetCropPerformance(ctx context.Context, params domain.
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("CROP_PERFORMANCE_NOT_FOUND", "no yield records found for the given criteria")
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	// Compute variance

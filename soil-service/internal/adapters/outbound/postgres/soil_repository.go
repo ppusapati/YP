@@ -83,7 +83,8 @@ func (r *soilRepository) GetSoilByUUID(ctx context.Context, uuid, tenantID strin
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("SOIL_NOT_FOUND", fmt.Sprintf("soil not found: %s", uuid))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return e, nil
 }
@@ -105,7 +106,8 @@ func (r *soilRepository) UpdateSoil(ctx context.Context, entity *domain.Soil) (*
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("SOIL_NOT_FOUND", fmt.Sprintf("soil not found: %s", entity.ID))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return e, nil
 }
@@ -202,7 +204,7 @@ func (r *soilRepository) CreateSoilSample(ctx context.Context, sample *domain.So
 	)
 	if err != nil {
 		r.log.Errorw("msg", "CreateSoilSample failed", "error", err)
-		return nil, errors.InternalServer("CREATE_SAMPLE_FAILED", fmt.Sprintf("failed to create soil sample: %v", err))
+		return nil, errors.InternalServer("CREATE_SAMPLE_FAILED", "an internal error occurred")
 	}
 	result.Texture = domain.SoilTexture(texture)
 	return &result, nil
@@ -239,7 +241,7 @@ func (r *soilRepository) GetSoilSampleByUUID(ctx context.Context, uuid, tenantID
 			return nil, errors.NotFound("SAMPLE_NOT_FOUND", fmt.Sprintf("soil sample %s not found", uuid))
 		}
 		r.log.Errorw("msg", "GetSoilSampleByUUID failed", "error", err)
-		return nil, errors.InternalServer("GET_SAMPLE_FAILED", fmt.Sprintf("failed to get soil sample: %v", err))
+		return nil, errors.InternalServer("GET_SAMPLE_FAILED", "an internal error occurred")
 	}
 	result.Texture = domain.SoilTexture(texture)
 	return &result, nil
@@ -256,7 +258,7 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 	var totalCount int64
 	if err := r.queryRow(ctx, countQuery, tenantID, fieldID, farmID).Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "CountSoilSamples failed", "error", err)
-		return nil, 0, errors.InternalServer("COUNT_SAMPLES_FAILED", fmt.Sprintf("failed to count soil samples: %v", err))
+		return nil, 0, errors.InternalServer("COUNT_SAMPLES_FAILED", "an internal error occurred")
 	}
 
 	listQuery := `
@@ -279,7 +281,7 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 	rows, err := r.query(ctx, listQuery, tenantID, fieldID, farmID, pageSize, pageOffset)
 	if err != nil {
 		r.log.Errorw("msg", "ListSoilSamples query failed", "error", err)
-		return nil, 0, errors.InternalServer("LIST_SAMPLES_FAILED", fmt.Sprintf("failed to list soil samples: %v", err))
+		return nil, 0, errors.InternalServer("LIST_SAMPLES_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -299,13 +301,14 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 			&s.UpdatedBy, &s.UpdatedAt, &s.Version,
 		); err != nil {
 			r.log.Errorw("msg", "ListSoilSamples scan failed", "error", err)
-			return nil, 0, errors.InternalServer("LIST_SAMPLES_SCAN_FAILED", fmt.Sprintf("failed to scan soil sample row: %v", err))
+			return nil, 0, errors.InternalServer("LIST_SAMPLES_SCAN_FAILED", "an internal error occurred")
 		}
 		s.Texture = domain.SoilTexture(texture)
 		samples = append(samples, s)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("LIST_SAMPLES_ROWS_ERR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("LIST_SAMPLES_ROWS_ERR", "an internal error occurred")
 	}
 	return samples, totalCount, nil
 }
@@ -319,7 +322,7 @@ func (r *soilRepository) DeleteSoilSample(ctx context.Context, uuid, tenantID st
 	affected, err := r.exec(ctx, query, uuid, tenantID)
 	if err != nil {
 		r.log.Errorw("msg", "DeleteSoilSample failed", "error", err)
-		return errors.InternalServer("DELETE_SAMPLE_FAILED", fmt.Sprintf("failed to delete soil sample: %v", err))
+		return errors.InternalServer("DELETE_SAMPLE_FAILED", "an internal error occurred")
 	}
 	if affected == 0 {
 		return errors.NotFound("SAMPLE_NOT_FOUND", fmt.Sprintf("soil sample %s not found", uuid))
@@ -361,7 +364,7 @@ func (r *soilRepository) CreateSoilAnalysis(ctx context.Context, analysis *domai
 	)
 	if err != nil {
 		r.log.Errorw("msg", "CreateSoilAnalysis failed", "error", err)
-		return nil, errors.InternalServer("CREATE_ANALYSIS_FAILED", fmt.Sprintf("failed to create soil analysis: %v", err))
+		return nil, errors.InternalServer("CREATE_ANALYSIS_FAILED", "an internal error occurred")
 	}
 	result.Status = domain.AnalysisStatus(status)
 	result.HealthCategory = domain.HealthCategory(healthCat)
@@ -390,7 +393,7 @@ func (r *soilRepository) GetSoilAnalysisByUUID(ctx context.Context, uuid, tenant
 			return nil, errors.NotFound("ANALYSIS_NOT_FOUND", fmt.Sprintf("soil analysis %s not found", uuid))
 		}
 		r.log.Errorw("msg", "GetSoilAnalysisByUUID failed", "error", err)
-		return nil, errors.InternalServer("GET_ANALYSIS_FAILED", fmt.Sprintf("failed to get soil analysis: %v", err))
+		return nil, errors.InternalServer("GET_ANALYSIS_FAILED", "an internal error occurred")
 	}
 	result.Status = domain.AnalysisStatus(status)
 	result.HealthCategory = domain.HealthCategory(healthCat)
@@ -409,7 +412,7 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 	var totalCount int64
 	if err := r.queryRow(ctx, countQuery, tenantID, fieldID, farmID, sampleID).Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "CountSoilAnalyses failed", "error", err)
-		return nil, 0, errors.InternalServer("COUNT_ANALYSES_FAILED", fmt.Sprintf("failed to count soil analyses: %v", err))
+		return nil, 0, errors.InternalServer("COUNT_ANALYSES_FAILED", "an internal error occurred")
 	}
 
 	listQuery := `
@@ -429,7 +432,7 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 	rows, err := r.query(ctx, listQuery, tenantID, fieldID, farmID, sampleID, pageSize, pageOffset)
 	if err != nil {
 		r.log.Errorw("msg", "ListSoilAnalyses query failed", "error", err)
-		return nil, 0, errors.InternalServer("LIST_ANALYSES_FAILED", fmt.Sprintf("failed to list soil analyses: %v", err))
+		return nil, 0, errors.InternalServer("LIST_ANALYSES_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -444,14 +447,15 @@ func (r *soilRepository) ListSoilAnalyses(ctx context.Context, tenantID, fieldID
 			&a.IsActive, &a.CreatedBy, &a.CreatedAt, &a.UpdatedBy, &a.UpdatedAt, &a.Version,
 		); err != nil {
 			r.log.Errorw("msg", "ListSoilAnalyses scan failed", "error", err)
-			return nil, 0, errors.InternalServer("LIST_ANALYSES_SCAN_FAILED", fmt.Sprintf("failed to scan soil analysis row: %v", err))
+			return nil, 0, errors.InternalServer("LIST_ANALYSES_SCAN_FAILED", "an internal error occurred")
 		}
 		a.Status = domain.AnalysisStatus(status)
 		a.HealthCategory = domain.HealthCategory(healthCat)
 		analyses = append(analyses, a)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("LIST_ANALYSES_ROWS_ERR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("LIST_ANALYSES_ROWS_ERR", "an internal error occurred")
 	}
 	return analyses, totalCount, nil
 }
@@ -464,7 +468,7 @@ func (r *soilRepository) UpdateSoilAnalysisStatus(ctx context.Context, uuid stri
 	)
 	if err != nil {
 		r.log.Errorw("msg", "UpdateSoilAnalysisStatus failed", "error", err)
-		return errors.InternalServer("UPDATE_ANALYSIS_FAILED", fmt.Sprintf("failed to update soil analysis: %v", err))
+		return errors.InternalServer("UPDATE_ANALYSIS_FAILED", "an internal error occurred")
 	}
 	if affected == 0 {
 		return errors.NotFound("ANALYSIS_NOT_FOUND", fmt.Sprintf("soil analysis %s not found", uuid))
@@ -504,7 +508,7 @@ func (r *soilRepository) CreateSoilMap(ctx context.Context, soilMap *domain.Soil
 	)
 	if err != nil {
 		r.log.Errorw("msg", "CreateSoilMap failed", "error", err)
-		return nil, errors.InternalServer("CREATE_MAP_FAILED", fmt.Sprintf("failed to create soil map: %v", err))
+		return nil, errors.InternalServer("CREATE_MAP_FAILED", "an internal error occurred")
 	}
 	return &result, nil
 }
@@ -533,7 +537,7 @@ func (r *soilRepository) GetSoilMapByFieldAndType(ctx context.Context, fieldID, 
 			return nil, errors.NotFound("MAP_NOT_FOUND", fmt.Sprintf("soil map for field %s type %s not found", fieldID, mapType))
 		}
 		r.log.Errorw("msg", "GetSoilMapByFieldAndType failed", "error", err)
-		return nil, errors.InternalServer("GET_MAP_FAILED", fmt.Sprintf("failed to get soil map: %v", err))
+		return nil, errors.InternalServer("GET_MAP_FAILED", "an internal error occurred")
 	}
 	return &result, nil
 }
@@ -568,7 +572,7 @@ func (r *soilRepository) CreateSoilNutrient(ctx context.Context, nutrient *domai
 	)
 	if err != nil {
 		r.log.Errorw("msg", "CreateSoilNutrient failed", "error", err)
-		return nil, errors.InternalServer("CREATE_NUTRIENT_FAILED", fmt.Sprintf("failed to create soil nutrient: %v", err))
+		return nil, errors.InternalServer("CREATE_NUTRIENT_FAILED", "an internal error occurred")
 	}
 	result.Level = domain.NutrientLevel(level)
 	return &result, nil
@@ -587,7 +591,7 @@ func (r *soilRepository) ListNutrientsBySample(ctx context.Context, sampleID, te
 	rows, err := r.query(ctx, query, sampleID, tenantID)
 	if err != nil {
 		r.log.Errorw("msg", "ListNutrientsBySample query failed", "error", err)
-		return nil, errors.InternalServer("LIST_NUTRIENTS_FAILED", fmt.Sprintf("failed to list nutrients: %v", err))
+		return nil, errors.InternalServer("LIST_NUTRIENTS_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -601,13 +605,14 @@ func (r *soilRepository) ListNutrientsBySample(ctx context.Context, sampleID, te
 			&n.IsActive, &n.CreatedBy, &n.CreatedAt,
 		); err != nil {
 			r.log.Errorw("msg", "ListNutrientsBySample scan failed", "error", err)
-			return nil, errors.InternalServer("LIST_NUTRIENTS_SCAN_FAILED", fmt.Sprintf("failed to scan nutrient row: %v", err))
+			return nil, errors.InternalServer("LIST_NUTRIENTS_SCAN_FAILED", "an internal error occurred")
 		}
 		n.Level = domain.NutrientLevel(level)
 		nutrients = append(nutrients, n)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("LIST_NUTRIENTS_ROWS_ERR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, errors.InternalServer("LIST_NUTRIENTS_ROWS_ERR", "an internal error occurred")
 	}
 	return nutrients, nil
 }
@@ -657,7 +662,7 @@ func (r *soilRepository) CreateSoilHealthScore(ctx context.Context, score *domai
 	)
 	if err != nil {
 		r.log.Errorw("msg", "CreateSoilHealthScore failed", "error", err)
-		return nil, errors.InternalServer("CREATE_HEALTH_SCORE_FAILED", fmt.Sprintf("failed to create soil health score: %v", err))
+		return nil, errors.InternalServer("CREATE_HEALTH_SCORE_FAILED", "an internal error occurred")
 	}
 	result.Category = domain.HealthCategory(category)
 	return &result, nil
@@ -688,7 +693,7 @@ func (r *soilRepository) GetLatestSoilHealthScore(ctx context.Context, fieldID, 
 			return nil, errors.NotFound("HEALTH_SCORE_NOT_FOUND", fmt.Sprintf("no health score found for field %s", fieldID))
 		}
 		r.log.Errorw("msg", "GetLatestSoilHealthScore failed", "error", err)
-		return nil, errors.InternalServer("GET_HEALTH_SCORE_FAILED", fmt.Sprintf("failed to get soil health score: %v", err))
+		return nil, errors.InternalServer("GET_HEALTH_SCORE_FAILED", "an internal error occurred")
 	}
 	result.Category = domain.HealthCategory(category)
 	return &result, nil
@@ -726,7 +731,7 @@ func (r *soilRepository) UpdateSoilHealthScore(ctx context.Context, score *domai
 			return nil, errors.NotFound("HEALTH_SCORE_NOT_FOUND", fmt.Sprintf("soil health score %s not found", score.ID))
 		}
 		r.log.Errorw("msg", "UpdateSoilHealthScore failed", "error", err)
-		return nil, errors.InternalServer("UPDATE_HEALTH_SCORE_FAILED", fmt.Sprintf("failed to update soil health score: %v", err))
+		return nil, errors.InternalServer("UPDATE_HEALTH_SCORE_FAILED", "an internal error occurred")
 	}
 	result.Category = domain.HealthCategory(category)
 	return &result, nil
@@ -741,7 +746,7 @@ func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID,
 	var totalCount int64
 	if err := r.queryRow(ctx, countQuery, farmID, tenantID).Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "CountSoilHealthScoresByFarm failed", "error", err)
-		return nil, 0, errors.InternalServer("COUNT_HEALTH_SCORES_FAILED", fmt.Sprintf("failed to count health scores: %v", err))
+		return nil, 0, errors.InternalServer("COUNT_HEALTH_SCORES_FAILED", "an internal error occurred")
 	}
 
 	query := `
@@ -758,7 +763,7 @@ func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID,
 	rows, err := r.query(ctx, query, farmID, tenantID, pageSize, pageOffset)
 	if err != nil {
 		r.log.Errorw("msg", "ListSoilHealthScoresByFarm query failed", "error", err)
-		return nil, 0, errors.InternalServer("LIST_HEALTH_SCORES_FAILED", fmt.Sprintf("failed to list health scores: %v", err))
+		return nil, 0, errors.InternalServer("LIST_HEALTH_SCORES_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -773,13 +778,14 @@ func (r *soilRepository) ListSoilHealthScoresByFarm(ctx context.Context, farmID,
 			&s.IsActive, &s.CreatedBy, &s.CreatedAt, &s.UpdatedBy, &s.UpdatedAt, &s.Version,
 		); err != nil {
 			r.log.Errorw("msg", "ListSoilHealthScoresByFarm scan failed", "error", err)
-			return nil, 0, errors.InternalServer("LIST_HEALTH_SCORES_SCAN_FAILED", fmt.Sprintf("failed to scan health score row: %v", err))
+			return nil, 0, errors.InternalServer("LIST_HEALTH_SCORES_SCAN_FAILED", "an internal error occurred")
 		}
 		s.Category = domain.HealthCategory(category)
 		scores = append(scores, s)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("LIST_HEALTH_SCORES_ROWS_ERR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("LIST_HEALTH_SCORES_ROWS_ERR", "an internal error occurred")
 	}
 	return scores, totalCount, nil
 }

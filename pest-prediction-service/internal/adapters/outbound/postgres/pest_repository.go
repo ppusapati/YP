@@ -189,7 +189,8 @@ func (r *pestRepository) GetPredictionByID(ctx context.Context, id, tenantID str
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("PREDICTION_NOT_FOUND", fmt.Sprintf("prediction not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return p, nil
 }
@@ -238,7 +239,8 @@ func (r *pestRepository) ListPredictions(ctx context.Context, params domain.List
 
 	rows, err := r.query(ctx, q, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -247,13 +249,15 @@ func (r *pestRepository) ListPredictions(ctx context.Context, params domain.List
 	for rows.Next() {
 		p, tc, err := scanPredictionWithCount(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		totalCount = tc
 		results = append(results, *p)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return results, totalCount, nil
 }
@@ -265,7 +269,8 @@ func (r *pestRepository) CountPredictionsBySpecies(ctx context.Context, pestSpec
 		pestSpeciesID, tenantID,
 	).Scan(&count)
 	if err != nil {
-		return 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return count, nil
 }
@@ -376,7 +381,8 @@ func (r *pestRepository) GetAlertByID(ctx context.Context, id, tenantID string) 
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("ALERT_NOT_FOUND", fmt.Sprintf("alert not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return a, nil
 }
@@ -425,7 +431,8 @@ func (r *pestRepository) ListAlerts(ctx context.Context, params domain.ListAlert
 
 	rows, err := r.query(ctx, q, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -434,13 +441,15 @@ func (r *pestRepository) ListAlerts(ctx context.Context, params domain.ListAlert
 	for rows.Next() {
 		a, tc, err := scanAlertWithCount(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		totalCount = tc
 		results = append(results, *a)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return results, totalCount, nil
 }
@@ -458,7 +467,8 @@ func (r *pestRepository) AcknowledgeAlert(ctx context.Context, id, tenantID, use
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("ALERT_NOT_FOUND", fmt.Sprintf("alert not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return a, nil
 }
@@ -572,7 +582,8 @@ func (r *pestRepository) ListObservations(ctx context.Context, params domain.Lis
 
 	rows, err := r.query(ctx, q, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -581,13 +592,15 @@ func (r *pestRepository) ListObservations(ctx context.Context, params domain.Lis
 	for rows.Next() {
 		o, tc, err := scanObservationWithCount(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		totalCount = tc
 		results = append(results, *o)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return results, totalCount, nil
 }
@@ -663,7 +676,8 @@ func (r *pestRepository) GetSpeciesByID(ctx context.Context, id, tenantID string
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("SPECIES_NOT_FOUND", fmt.Sprintf("pest species not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return s, nil
 }
@@ -694,7 +708,8 @@ func (r *pestRepository) ListSpecies(ctx context.Context, params domain.ListPest
 
 	rows, err := r.query(ctx, q, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -703,13 +718,15 @@ func (r *pestRepository) ListSpecies(ctx context.Context, params domain.ListPest
 	for rows.Next() {
 		s, tc, err := scanSpeciesWithCount(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		totalCount = tc
 		results = append(results, *s)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return results, totalCount, nil
 }
@@ -798,7 +815,8 @@ func (r *pestRepository) GetRiskMap(ctx context.Context, pestSpeciesID, region, 
 			return nil, errors.NotFound("RISK_MAP_NOT_FOUND",
 				fmt.Sprintf("risk map not found for species %s in region %s", pestSpeciesID, region))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return m, nil
 }

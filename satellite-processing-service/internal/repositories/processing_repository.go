@@ -116,7 +116,7 @@ func (r *processingRepository) CreateProcessingJob(ctx context.Context, job *pro
 	result := &procmodels.ProcessingJob{}
 	if err := scanProcessingJob(row, result); err != nil {
 		r.log.Errorw("msg", "failed to create processing job", "error", err)
-		return nil, errors.InternalServer("JOB_CREATE_FAILED", fmt.Sprintf("failed to create processing job: %v", err))
+		return nil, errors.InternalServer("JOB_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "processing job created", "uuid", result.ID, "tenant_id", result.TenantID)
@@ -142,7 +142,7 @@ func (r *processingRepository) GetProcessingJobByUUID(ctx context.Context, uuid,
 			return nil, errors.NotFound("JOB_NOT_FOUND", fmt.Sprintf("processing job not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get processing job", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("JOB_GET_FAILED", fmt.Sprintf("failed to get processing job: %v", err))
+		return nil, errors.InternalServer("JOB_GET_FAILED", "an internal error occurred")
 	}
 
 	return job, nil
@@ -164,7 +164,7 @@ func (r *processingRepository) ListProcessingJobs(ctx context.Context, params pr
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count processing jobs", "error", err)
-		return nil, 0, errors.InternalServer("JOB_COUNT_FAILED", fmt.Sprintf("failed to count processing jobs: %v", err))
+		return nil, 0, errors.InternalServer("JOB_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -191,7 +191,7 @@ func (r *processingRepository) ListProcessingJobs(ctx context.Context, params pr
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list processing jobs", "error", err)
-		return nil, 0, errors.InternalServer("JOB_LIST_FAILED", fmt.Sprintf("failed to list processing jobs: %v", err))
+		return nil, 0, errors.InternalServer("JOB_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -200,12 +200,13 @@ func (r *processingRepository) ListProcessingJobs(ctx context.Context, params pr
 		var job procmodels.ProcessingJob
 		if err := scanProcessingJobFromRows(rows, &job); err != nil {
 			r.log.Errorw("msg", "failed to scan processing job row", "error", err)
-			return nil, 0, errors.InternalServer("JOB_SCAN_FAILED", fmt.Sprintf("failed to scan processing job: %v", err))
+			return nil, 0, errors.InternalServer("JOB_SCAN_FAILED", "an internal error occurred")
 		}
 		jobs = append(jobs, job)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("JOB_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("JOB_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return jobs, totalCount, nil
@@ -240,7 +241,7 @@ func (r *processingRepository) UpdateProcessingStatus(ctx context.Context, job *
 			return nil, errors.NotFound("JOB_NOT_FOUND", fmt.Sprintf("processing job not found: %s", job.ID))
 		}
 		r.log.Errorw("msg", "failed to update processing job status", "uuid", job.ID, "error", err)
-		return nil, errors.InternalServer("JOB_UPDATE_FAILED", fmt.Sprintf("failed to update processing job: %v", err))
+		return nil, errors.InternalServer("JOB_UPDATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "processing job status updated", "uuid", result.ID, "status", string(result.Status))
@@ -261,7 +262,7 @@ func (r *processingRepository) CancelProcessingJob(ctx context.Context, uuid, te
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to cancel processing job", "uuid", uuid, "error", err)
-		return errors.InternalServer("JOB_CANCEL_FAILED", fmt.Sprintf("failed to cancel processing job: %v", err))
+		return errors.InternalServer("JOB_CANCEL_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "processing job cancelled", "uuid", uuid)
@@ -290,7 +291,7 @@ func (r *processingRepository) GetProcessingStats(ctx context.Context, tenantID 
 		&stats.PendingJobs, &stats.AvgProcessingTimeSeconds,
 	); err != nil {
 		r.log.Errorw("msg", "failed to get processing stats", "error", err)
-		return nil, errors.InternalServer("STATS_FAILED", fmt.Sprintf("failed to get processing stats: %v", err))
+		return nil, errors.InternalServer("STATS_FAILED", "an internal error occurred")
 	}
 
 	return stats, nil

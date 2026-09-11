@@ -115,7 +115,7 @@ func (r *farmRepository) CreateFarm(ctx context.Context, farm *domain.Farm) (*do
 	result := &domain.Farm{}
 	if err := scanFarm(row, result); err != nil {
 		r.log.Errorw("msg", "failed to create farm", "error", err)
-		return nil, errors.InternalServer("FARM_CREATE_FAILED", fmt.Sprintf("failed to create farm: %v", err))
+		return nil, errors.InternalServer("FARM_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -137,7 +137,7 @@ func (r *farmRepository) GetFarmByUUID(ctx context.Context, uuid, tenantID strin
 			return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get farm", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("FARM_GET_FAILED", fmt.Sprintf("failed to get farm: %v", err))
+		return nil, errors.InternalServer("FARM_GET_FAILED", "an internal error occurred")
 	}
 	return farm, nil
 }
@@ -245,7 +245,8 @@ func (r *farmRepository) UpdateFarm(ctx context.Context, farm *domain.Farm) (*do
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("FARM_NOT_FOUND", fmt.Sprintf("farm not found: %s", farm.ID))
 		}
-		return nil, errors.InternalServer("FARM_UPDATE_FAILED", fmt.Sprintf("failed to update farm: %v", err))
+		r.log.Errorw("msg", "failed to update farm", "error", err)
+		return nil, errors.InternalServer("FARM_UPDATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -256,7 +257,8 @@ func (r *farmRepository) DeleteFarm(ctx context.Context, uuid, tenantID, deleted
 		WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, tenantID, deletedBy,
 	); err != nil {
-		return errors.InternalServer("FARM_DELETE_FAILED", fmt.Sprintf("failed to delete farm: %v", err))
+		r.log.Errorw("msg", "failed to delete farm", "error", err)
+		return errors.InternalServer("FARM_DELETE_FAILED", "an internal error occurred")
 	}
 	return nil
 }
@@ -304,7 +306,8 @@ func (r *farmRepository) CreateFarmBoundary(ctx context.Context, b *domain.FarmB
 	)
 	result := &domain.FarmBoundary{}
 	if err := scanBoundary(row, result); err != nil {
-		return nil, errors.InternalServer("BOUNDARY_CREATE_FAILED", fmt.Sprintf("failed to create boundary: %v", err))
+		r.log.Errorw("msg", "failed to create boundary", "error", err)
+		return nil, errors.InternalServer("BOUNDARY_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -322,7 +325,8 @@ func (r *farmRepository) GetFarmBoundaryByFarmUUID(ctx context.Context, farmUUID
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("BOUNDARY_NOT_FOUND", fmt.Sprintf("boundary not found for farm: %s", farmUUID))
 		}
-		return nil, errors.InternalServer("BOUNDARY_GET_FAILED", fmt.Sprintf("failed to get boundary: %v", err))
+		r.log.Errorw("msg", "failed to get boundary", "error", err)
+		return nil, errors.InternalServer("BOUNDARY_GET_FAILED", "an internal error occurred")
 	}
 	return b, nil
 }
@@ -344,7 +348,8 @@ func (r *farmRepository) UpdateFarmBoundary(ctx context.Context, b *domain.FarmB
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("BOUNDARY_NOT_FOUND", fmt.Sprintf("boundary not found for farm: %s", b.FarmUUID))
 		}
-		return nil, errors.InternalServer("BOUNDARY_UPDATE_FAILED", fmt.Sprintf("failed to update boundary: %v", err))
+		r.log.Errorw("msg", "failed to update boundary", "error", err)
+		return nil, errors.InternalServer("BOUNDARY_UPDATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -381,7 +386,8 @@ func (r *farmRepository) CreateFarmOwner(ctx context.Context, o *domain.FarmOwne
 	)
 	result := &domain.FarmOwner{}
 	if err := scanOwner(row, result); err != nil {
-		return nil, errors.InternalServer("OWNER_CREATE_FAILED", fmt.Sprintf("failed to create owner: %v", err))
+		r.log.Errorw("msg", "failed to create owner", "error", err)
+		return nil, errors.InternalServer("OWNER_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -426,7 +432,8 @@ func (r *farmRepository) GetFarmOwnerByUserID(ctx context.Context, farmUUID, ten
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("OWNER_NOT_FOUND", fmt.Sprintf("owner %s not found for farm %s", userID, farmUUID))
 		}
-		return nil, errors.InternalServer("OWNER_GET_FAILED", fmt.Sprintf("failed to get owner: %v", err))
+		r.log.Errorw("msg", "failed to get owner", "error", err)
+		return nil, errors.InternalServer("OWNER_GET_FAILED", "an internal error occurred")
 	}
 	return o, nil
 }
@@ -548,7 +555,8 @@ func (r *farmRepository) CreateManagementUnit(ctx context.Context, unit *domain.
 	)
 	result := &domain.ManagementUnit{}
 	if err := scanManagementUnit(row, result); err != nil {
-		return nil, errors.InternalServer("UNIT_CREATE_FAILED", fmt.Sprintf("failed to create management unit: %v", err))
+		r.log.Errorw("msg", "failed to create management unit", "error", err)
+		return nil, errors.InternalServer("UNIT_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -567,7 +575,8 @@ func (r *farmRepository) GetManagementUnitByID(ctx context.Context, id, tenantID
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("UNIT_NOT_FOUND", fmt.Sprintf("management unit not found: %s", id))
 		}
-		return nil, errors.InternalServer("UNIT_GET_FAILED", fmt.Sprintf("failed to get management unit: %v", err))
+		r.log.Errorw("msg", "failed to get management unit", "error", err)
+		return nil, errors.InternalServer("UNIT_GET_FAILED", "an internal error occurred")
 	}
 	return unit, nil
 }
@@ -633,7 +642,8 @@ func (r *farmRepository) UpdateManagementUnit(ctx context.Context, unit *domain.
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("UNIT_NOT_FOUND", fmt.Sprintf("management unit not found: %s", unit.ID))
 		}
-		return nil, errors.InternalServer("UNIT_UPDATE_FAILED", fmt.Sprintf("failed to update management unit: %v", err))
+		r.log.Errorw("msg", "failed to update management unit", "error", err)
+		return nil, errors.InternalServer("UNIT_UPDATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -676,7 +686,8 @@ func (r *farmRepository) AssignFieldsToUnit(ctx context.Context, unitID, tenantI
 			ON CONFLICT (management_unit_id, field_id) DO NOTHING`,
 			ulid.NewString(), tenantID, unitID, fid,
 		); err != nil {
-			return errors.InternalServer("UNIT_ASSIGN_FAILED", fmt.Sprintf("failed to assign field %s: %v", fid, err))
+			r.log.Errorw("msg", "failed to assign field", "fieldID", fid, "error", err)
+			return errors.InternalServer("UNIT_ASSIGN_FAILED", "an internal error occurred")
 		}
 	}
 	return nil
@@ -689,7 +700,8 @@ func (r *farmRepository) RemoveFieldsFromUnit(ctx context.Context, unitID, tenan
 			WHERE management_unit_id = $1 AND tenant_id = $2 AND field_id = $3`,
 			unitID, tenantID, fid,
 		); err != nil {
-			return errors.InternalServer("UNIT_REMOVE_FAILED", fmt.Sprintf("failed to remove field %s: %v", fid, err))
+			r.log.Errorw("msg", "failed to remove field", "fieldID", fid, "error", err)
+			return errors.InternalServer("UNIT_REMOVE_FAILED", "an internal error occurred")
 		}
 	}
 	return nil

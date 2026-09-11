@@ -88,7 +88,7 @@ func (r *irrigationRepository) CreateIrrigation(ctx context.Context, entity *dom
 	result, err := scanIrrigation(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateIrrigation failed", "error", err)
-		return nil, errors.InternalServer("IRRIGATION_CREATE_FAILED", fmt.Sprintf("failed to create irrigation: %v", err))
+		return nil, errors.InternalServer("IRRIGATION_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -104,7 +104,8 @@ func (r *irrigationRepository) GetIrrigationByUUID(ctx context.Context, uuid, te
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("IRRIGATION_NOT_FOUND", fmt.Sprintf("irrigation not found: %s", uuid))
 		}
-		return nil, errors.InternalServer("IRRIGATION_GET_FAILED", fmt.Sprintf("failed to get irrigation: %v", err))
+		r.log.Errorw("msg", "failed to get irrigation", "error", err)
+		return nil, errors.InternalServer("IRRIGATION_GET_FAILED", "an internal error occurred")
 	}
 	return e, nil
 }
@@ -124,7 +125,8 @@ func (r *irrigationRepository) ListIrrigations(ctx context.Context, params domai
 		params.TenantID, nullableStatus(params.Status), params.Search,
 	)
 	if err := countRow.Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("IRRIGATION_COUNT_FAILED", fmt.Sprintf("failed to count irrigations: %v", err))
+		r.log.Errorw("msg", "failed to count irrigations", "error", err)
+		return nil, 0, errors.InternalServer("IRRIGATION_COUNT_FAILED", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx, `
@@ -138,7 +140,8 @@ func (r *irrigationRepository) ListIrrigations(ctx context.Context, params domai
 		params.TenantID, nullableStatus(params.Status), params.Search, pageSize, params.Offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("IRRIGATION_LIST_FAILED", fmt.Sprintf("failed to list irrigations: %v", err))
+		r.log.Errorw("msg", "failed to list irrigations", "error", err)
+		return nil, 0, errors.InternalServer("IRRIGATION_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -146,12 +149,14 @@ func (r *irrigationRepository) ListIrrigations(ctx context.Context, params domai
 	for rows.Next() {
 		e, err := scanIrrigation(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("IRRIGATION_SCAN_FAILED", fmt.Sprintf("failed to scan irrigation: %v", err))
+			r.log.Errorw("msg", "failed to scan irrigation", "error", err)
+			return nil, 0, errors.InternalServer("IRRIGATION_SCAN_FAILED", "an internal error occurred")
 		}
 		entities = append(entities, *e)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("IRRIGATION_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("IRRIGATION_ROWS_ERROR", "an internal error occurred")
 	}
 	return entities, total, nil
 }
@@ -172,7 +177,8 @@ func (r *irrigationRepository) UpdateIrrigation(ctx context.Context, entity *dom
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("IRRIGATION_NOT_FOUND", fmt.Sprintf("irrigation not found: %s", entity.ID))
 		}
-		return nil, errors.InternalServer("IRRIGATION_UPDATE_FAILED", fmt.Sprintf("failed to update irrigation: %v", err))
+		r.log.Errorw("msg", "failed to update irrigation", "error", err)
+		return nil, errors.InternalServer("IRRIGATION_UPDATE_FAILED", "an internal error occurred")
 	}
 	return e, nil
 }
@@ -183,7 +189,8 @@ func (r *irrigationRepository) DeleteIrrigation(ctx context.Context, uuid, tenan
 		`UPDATE irrigation_schedules SET deleted_at=NOW() WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		uuid, tenantID,
 	); err != nil {
-		return errors.InternalServer("IRRIGATION_DELETE_FAILED", fmt.Sprintf("failed to delete irrigation: %v", err))
+		r.log.Errorw("msg", "failed to delete irrigation", "error", err)
+		return errors.InternalServer("IRRIGATION_DELETE_FAILED", "an internal error occurred")
 	}
 	return nil
 }
@@ -195,7 +202,8 @@ func (r *irrigationRepository) CheckIrrigationExists(ctx context.Context, uuid, 
 		uuid, tenantID,
 	).Scan(&exists)
 	if err != nil {
-		return false, errors.InternalServer("IRRIGATION_CHECK_FAILED", fmt.Sprintf("failed to check irrigation exists: %v", err))
+		r.log.Errorw("msg", "failed to check irrigation exists", "error", err)
+		return false, errors.InternalServer("IRRIGATION_CHECK_FAILED", "an internal error occurred")
 	}
 	return exists, nil
 }
@@ -207,7 +215,8 @@ func (r *irrigationRepository) CheckIrrigationNameExists(ctx context.Context, na
 		name, tenantID,
 	).Scan(&exists)
 	if err != nil {
-		return false, errors.InternalServer("IRRIGATION_NAME_CHECK_FAILED", fmt.Sprintf("failed to check irrigation name: %v", err))
+		r.log.Errorw("msg", "failed to check irrigation name", "error", err)
+		return false, errors.InternalServer("IRRIGATION_NAME_CHECK_FAILED", "an internal error occurred")
 	}
 	return exists, nil
 }
@@ -255,7 +264,7 @@ func (r *irrigationRepository) CreateZone(ctx context.Context, zone *domain.Irri
 	result, err := scanZone(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateZone failed", "error", err)
-		return nil, errors.InternalServer("ZONE_CREATE_FAILED", fmt.Sprintf("failed to create zone: %v", err))
+		return nil, errors.InternalServer("ZONE_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -275,7 +284,8 @@ func (r *irrigationRepository) GetZoneByUUID(ctx context.Context, uuid string) (
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("ZONE_NOT_FOUND", fmt.Sprintf("zone %s not found", uuid))
 		}
-		return nil, errors.InternalServer("ZONE_GET_FAILED", fmt.Sprintf("failed to get zone: %v", err))
+		r.log.Errorw("msg", "failed to get zone", "error", err)
+		return nil, errors.InternalServer("ZONE_GET_FAILED", "an internal error occurred")
 	}
 	return z, nil
 }
@@ -297,7 +307,8 @@ func (r *irrigationRepository) listZones(ctx context.Context, column, value stri
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM irrigation_zones WHERE tenant_id = $1 AND %s = $2 AND deleted_at IS NULL`, column)
 	var total int32
 	if err := r.queryRow(ctx, countQuery, tenantID, value).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("ZONE_COUNT_FAILED", fmt.Sprintf("failed to count zones: %v", err))
+		r.log.Errorw("msg", "failed to count zones", "error", err)
+		return nil, 0, errors.InternalServer("ZONE_COUNT_FAILED", "an internal error occurred")
 	}
 
 	dataQuery := fmt.Sprintf(`
@@ -311,7 +322,8 @@ func (r *irrigationRepository) listZones(ctx context.Context, column, value stri
 
 	rows, err := r.query(ctx, dataQuery, tenantID, value, pageSize, offset)
 	if err != nil {
-		return nil, 0, errors.InternalServer("ZONE_LIST_FAILED", fmt.Sprintf("failed to list zones: %v", err))
+		r.log.Errorw("msg", "failed to list zones", "error", err)
+		return nil, 0, errors.InternalServer("ZONE_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -319,7 +331,8 @@ func (r *irrigationRepository) listZones(ctx context.Context, column, value stri
 	for rows.Next() {
 		z, err := scanZone(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("ZONE_SCAN_FAILED", fmt.Sprintf("failed to scan zone: %v", err))
+			r.log.Errorw("msg", "failed to scan zone", "error", err)
+			return nil, 0, errors.InternalServer("ZONE_SCAN_FAILED", "an internal error occurred")
 		}
 		zones = append(zones, *z)
 	}
@@ -364,7 +377,7 @@ func (r *irrigationRepository) CreateController(ctx context.Context, ctrl *domai
 	result, err := scanController(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateController failed", "error", err)
-		return nil, errors.InternalServer("CONTROLLER_CREATE_FAILED", fmt.Sprintf("failed to create controller: %v", err))
+		return nil, errors.InternalServer("CONTROLLER_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -385,7 +398,8 @@ func (r *irrigationRepository) GetControllerByUUID(ctx context.Context, uuid str
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("CONTROLLER_NOT_FOUND", fmt.Sprintf("controller %s not found", uuid))
 		}
-		return nil, errors.InternalServer("CONTROLLER_GET_FAILED", fmt.Sprintf("failed to get controller: %v", err))
+		r.log.Errorw("msg", "failed to get controller", "error", err)
+		return nil, errors.InternalServer("CONTROLLER_GET_FAILED", "an internal error occurred")
 	}
 	return c, nil
 }
@@ -401,7 +415,8 @@ func (r *irrigationRepository) ListControllersByZone(ctx context.Context, zoneID
 		`SELECT COUNT(*) FROM water_controllers WHERE tenant_id = $1 AND zone_id = $2 AND deleted_at IS NULL`,
 		tenantID, zoneID,
 	).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("CONTROLLER_COUNT_FAILED", fmt.Sprintf("failed to count controllers: %v", err))
+		r.log.Errorw("msg", "failed to count controllers", "error", err)
+		return nil, 0, errors.InternalServer("CONTROLLER_COUNT_FAILED", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx, `
@@ -416,7 +431,8 @@ func (r *irrigationRepository) ListControllersByZone(ctx context.Context, zoneID
 		tenantID, zoneID, pageSize, offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("CONTROLLER_LIST_FAILED", fmt.Sprintf("failed to list controllers: %v", err))
+		r.log.Errorw("msg", "failed to list controllers", "error", err)
+		return nil, 0, errors.InternalServer("CONTROLLER_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -424,7 +440,8 @@ func (r *irrigationRepository) ListControllersByZone(ctx context.Context, zoneID
 	for rows.Next() {
 		c, err := scanController(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("CONTROLLER_SCAN_FAILED", fmt.Sprintf("failed to scan controller: %v", err))
+			r.log.Errorw("msg", "failed to scan controller", "error", err)
+			return nil, 0, errors.InternalServer("CONTROLLER_SCAN_FAILED", "an internal error occurred")
 		}
 		controllers = append(controllers, *c)
 	}
@@ -448,7 +465,8 @@ func (r *irrigationRepository) UpdateControllerStatus(ctx context.Context, uuid 
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("CONTROLLER_NOT_FOUND", fmt.Sprintf("controller %s not found", uuid))
 		}
-		return nil, errors.InternalServer("CONTROLLER_UPDATE_FAILED", fmt.Sprintf("failed to update controller status: %v", err))
+		r.log.Errorw("msg", "failed to update controller status", "error", err)
+		return nil, errors.InternalServer("CONTROLLER_UPDATE_FAILED", "an internal error occurred")
 	}
 	return c, nil
 }
@@ -505,7 +523,7 @@ func (r *irrigationRepository) CreateSchedule(ctx context.Context, sched *domain
 	result, err := scanSchedule(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateSchedule failed", "error", err)
-		return nil, errors.InternalServer("SCHEDULE_CREATE_FAILED", fmt.Sprintf("failed to create schedule: %v", err))
+		return nil, errors.InternalServer("SCHEDULE_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -527,7 +545,8 @@ func (r *irrigationRepository) GetScheduleByUUID(ctx context.Context, uuid strin
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule %s not found", uuid))
 		}
-		return nil, errors.InternalServer("SCHEDULE_GET_FAILED", fmt.Sprintf("failed to get schedule: %v", err))
+		r.log.Errorw("msg", "failed to get schedule", "error", err)
+		return nil, errors.InternalServer("SCHEDULE_GET_FAILED", "an internal error occurred")
 	}
 	return s, nil
 }
@@ -549,7 +568,8 @@ func (r *irrigationRepository) listSchedules(ctx context.Context, column, value 
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM irrigation_schedules WHERE tenant_id = $1 AND %s = $2 AND deleted_at IS NULL`, column)
 	var total int32
 	if err := r.queryRow(ctx, countQuery, tenantID, value).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("SCHEDULE_COUNT_FAILED", fmt.Sprintf("failed to count schedules: %v", err))
+		r.log.Errorw("msg", "failed to count schedules", "error", err)
+		return nil, 0, errors.InternalServer("SCHEDULE_COUNT_FAILED", "an internal error occurred")
 	}
 
 	dataQuery := fmt.Sprintf(`
@@ -565,7 +585,8 @@ func (r *irrigationRepository) listSchedules(ctx context.Context, column, value 
 
 	rows, err := r.query(ctx, dataQuery, tenantID, value, pageSize, offset)
 	if err != nil {
-		return nil, 0, errors.InternalServer("SCHEDULE_LIST_FAILED", fmt.Sprintf("failed to list schedules: %v", err))
+		r.log.Errorw("msg", "failed to list schedules", "error", err)
+		return nil, 0, errors.InternalServer("SCHEDULE_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -573,7 +594,8 @@ func (r *irrigationRepository) listSchedules(ctx context.Context, column, value 
 	for rows.Next() {
 		s, err := scanSchedule(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("SCHEDULE_SCAN_FAILED", fmt.Sprintf("failed to scan schedule: %v", err))
+			r.log.Errorw("msg", "failed to scan schedule", "error", err)
+			return nil, 0, errors.InternalServer("SCHEDULE_SCAN_FAILED", "an internal error occurred")
 		}
 		schedules = append(schedules, *s)
 	}
@@ -608,7 +630,8 @@ func (r *irrigationRepository) UpdateSchedule(ctx context.Context, sched *domain
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule %s not found", sched.ID))
 		}
-		return nil, errors.InternalServer("SCHEDULE_UPDATE_FAILED", fmt.Sprintf("failed to update schedule: %v", err))
+		r.log.Errorw("msg", "failed to update schedule", "error", err)
+		return nil, errors.InternalServer("SCHEDULE_UPDATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -631,7 +654,8 @@ func (r *irrigationRepository) UpdateScheduleStatus(ctx context.Context, uuid st
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule %s not found", uuid))
 		}
-		return nil, errors.InternalServer("SCHEDULE_UPDATE_FAILED", fmt.Sprintf("failed to update schedule status: %v", err))
+		r.log.Errorw("msg", "failed to update schedule status", "error", err)
+		return nil, errors.InternalServer("SCHEDULE_UPDATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -643,7 +667,8 @@ func (r *irrigationRepository) DeleteSchedule(ctx context.Context, uuid string) 
 		uuid, tenantID,
 	)
 	if err != nil {
-		return errors.InternalServer("SCHEDULE_DELETE_FAILED", fmt.Sprintf("failed to delete schedule: %v", err))
+		r.log.Errorw("msg", "failed to delete schedule", "error", err)
+		return errors.InternalServer("SCHEDULE_DELETE_FAILED", "an internal error occurred")
 	}
 	if tag.RowsAffected() == 0 {
 		return errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule %s not found", uuid))
@@ -696,7 +721,7 @@ func (r *irrigationRepository) CreateEvent(ctx context.Context, evt *domain.Irri
 	result, err := scanEvent(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateEvent failed", "error", err)
-		return nil, errors.InternalServer("EVENT_CREATE_FAILED", fmt.Sprintf("failed to create event: %v", err))
+		return nil, errors.InternalServer("EVENT_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -716,7 +741,8 @@ func (r *irrigationRepository) GetEventByUUID(ctx context.Context, uuid string) 
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("EVENT_NOT_FOUND", fmt.Sprintf("event %s not found", uuid))
 		}
-		return nil, errors.InternalServer("EVENT_GET_FAILED", fmt.Sprintf("failed to get event: %v", err))
+		r.log.Errorw("msg", "failed to get event", "error", err)
+		return nil, errors.InternalServer("EVENT_GET_FAILED", "an internal error occurred")
 	}
 	return e, nil
 }
@@ -732,7 +758,8 @@ func (r *irrigationRepository) ListEventsByZone(ctx context.Context, zoneID stri
 		`SELECT COUNT(*) FROM irrigation_events WHERE tenant_id = $1 AND zone_id = $2 AND deleted_at IS NULL`,
 		tenantID, zoneID,
 	).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("EVENT_COUNT_FAILED", fmt.Sprintf("failed to count events: %v", err))
+		r.log.Errorw("msg", "failed to count events", "error", err)
+		return nil, 0, errors.InternalServer("EVENT_COUNT_FAILED", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx, `
@@ -746,7 +773,8 @@ func (r *irrigationRepository) ListEventsByZone(ctx context.Context, zoneID stri
 		tenantID, zoneID, pageSize, offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("EVENT_LIST_FAILED", fmt.Sprintf("failed to list events: %v", err))
+		r.log.Errorw("msg", "failed to list events", "error", err)
+		return nil, 0, errors.InternalServer("EVENT_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -754,7 +782,8 @@ func (r *irrigationRepository) ListEventsByZone(ctx context.Context, zoneID stri
 	for rows.Next() {
 		e, err := scanEvent(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("EVENT_SCAN_FAILED", fmt.Sprintf("failed to scan event: %v", err))
+			r.log.Errorw("msg", "failed to scan event", "error", err)
+			return nil, 0, errors.InternalServer("EVENT_SCAN_FAILED", "an internal error occurred")
 		}
 		events = append(events, *e)
 	}
@@ -773,7 +802,8 @@ func (r *irrigationRepository) ListEventsByTimeRange(ctx context.Context, zoneID
 		tenantID, zoneID, start, end,
 	)
 	if err != nil {
-		return nil, errors.InternalServer("EVENT_LIST_FAILED", fmt.Sprintf("failed to list events: %v", err))
+		r.log.Errorw("msg", "failed to list events", "error", err)
+		return nil, errors.InternalServer("EVENT_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -781,7 +811,8 @@ func (r *irrigationRepository) ListEventsByTimeRange(ctx context.Context, zoneID
 	for rows.Next() {
 		e, err := scanEvent(rows)
 		if err != nil {
-			return nil, errors.InternalServer("EVENT_SCAN_FAILED", fmt.Sprintf("failed to scan event: %v", err))
+			r.log.Errorw("msg", "failed to scan event", "error", err)
+			return nil, errors.InternalServer("EVENT_SCAN_FAILED", "an internal error occurred")
 		}
 		events = append(events, *e)
 	}
@@ -809,7 +840,8 @@ func (r *irrigationRepository) UpdateEvent(ctx context.Context, evt *domain.Irri
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("EVENT_NOT_FOUND", fmt.Sprintf("event %s not found", evt.ID))
 		}
-		return nil, errors.InternalServer("EVENT_UPDATE_FAILED", fmt.Sprintf("failed to update event: %v", err))
+		r.log.Errorw("msg", "failed to update event", "error", err)
+		return nil, errors.InternalServer("EVENT_UPDATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -870,7 +902,7 @@ func (r *irrigationRepository) CreateDecision(ctx context.Context, dec *domain.I
 	result, err := scanDecision(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateDecision failed", "error", err)
-		return nil, errors.InternalServer("DECISION_CREATE_FAILED", fmt.Sprintf("failed to create decision: %v", err))
+		return nil, errors.InternalServer("DECISION_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -882,7 +914,8 @@ func (r *irrigationRepository) MarkDecisionApplied(ctx context.Context, uuid str
 		uuid, tenantID,
 	)
 	if err != nil {
-		return errors.InternalServer("DECISION_MARK_FAILED", fmt.Sprintf("failed to mark decision applied: %v", err))
+		r.log.Errorw("msg", "failed to mark decision applied", "error", err)
+		return errors.InternalServer("DECISION_MARK_FAILED", "an internal error occurred")
 	}
 	if tag.RowsAffected() == 0 {
 		return errors.NotFound("DECISION_NOT_FOUND", fmt.Sprintf("decision %s not found", uuid))
@@ -928,7 +961,7 @@ func (r *irrigationRepository) CreateWaterUsageLog(ctx context.Context, wl *doma
 	result, err := scanWaterUsageLog(row)
 	if err != nil {
 		r.log.Errorw("msg", "CreateWaterUsageLog failed", "error", err)
-		return nil, errors.InternalServer("USAGE_LOG_CREATE_FAILED", fmt.Sprintf("failed to create water usage log: %v", err))
+		return nil, errors.InternalServer("USAGE_LOG_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
 }
@@ -944,7 +977,8 @@ func (r *irrigationRepository) ListWaterUsageLogs(ctx context.Context, zoneID st
 		tenantID, zoneID, start, end,
 	)
 	if err != nil {
-		return nil, errors.InternalServer("USAGE_LOG_LIST_FAILED", fmt.Sprintf("failed to list water usage logs: %v", err))
+		r.log.Errorw("msg", "failed to list water usage logs", "error", err)
+		return nil, errors.InternalServer("USAGE_LOG_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -952,7 +986,8 @@ func (r *irrigationRepository) ListWaterUsageLogs(ctx context.Context, zoneID st
 	for rows.Next() {
 		wl, err := scanWaterUsageLog(rows)
 		if err != nil {
-			return nil, errors.InternalServer("USAGE_LOG_SCAN_FAILED", fmt.Sprintf("failed to scan water usage log: %v", err))
+			r.log.Errorw("msg", "failed to scan water usage log", "error", err)
+			return nil, errors.InternalServer("USAGE_LOG_SCAN_FAILED", "an internal error occurred")
 		}
 		logs = append(logs, *wl)
 	}
@@ -969,7 +1004,8 @@ func (r *irrigationRepository) SumWaterUsageByZone(ctx context.Context, zoneID s
 		tenantID, zoneID, start, end,
 	).Scan(&total)
 	if err != nil {
-		return 0, errors.InternalServer("USAGE_SUM_FAILED", fmt.Sprintf("failed to sum water usage: %v", err))
+		r.log.Errorw("msg", "failed to sum water usage", "error", err)
+		return 0, errors.InternalServer("USAGE_SUM_FAILED", "an internal error occurred")
 	}
 	return total, nil
 }

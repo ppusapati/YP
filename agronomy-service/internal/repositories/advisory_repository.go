@@ -66,7 +66,7 @@ func (r *advisoryRepository) GetByID(ctx context.Context, id string) (*pb.Adviso
 			return nil, errors.NotFound("ADVISORY_NOT_FOUND", fmt.Sprintf("advisory not found: %s", id))
 		}
 		r.log.Errorw("msg", "failed to get advisory", "id", id, "error", err)
-		return nil, errors.InternalServer("ADVISORY_GET_FAILED", fmt.Sprintf("failed to get advisory: %v", err))
+		return nil, errors.InternalServer("ADVISORY_GET_FAILED", "an internal error occurred")
 	}
 
 	return advisory, nil
@@ -105,7 +105,7 @@ func (r *advisoryRepository) List(ctx context.Context, params AdvisoryListParams
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count advisories", "error", err)
-		return nil, "", 0, errors.InternalServer("ADVISORY_COUNT_FAILED", fmt.Sprintf("failed to count advisories: %v", err))
+		return nil, "", 0, errors.InternalServer("ADVISORY_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -134,7 +134,7 @@ func (r *advisoryRepository) List(ctx context.Context, params AdvisoryListParams
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list advisories", "error", err)
-		return nil, "", 0, errors.InternalServer("ADVISORY_LIST_FAILED", fmt.Sprintf("failed to list advisories: %v", err))
+		return nil, "", 0, errors.InternalServer("ADVISORY_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -143,12 +143,13 @@ func (r *advisoryRepository) List(ctx context.Context, params AdvisoryListParams
 		advisory, err := scanAdvisoryFromRows(rows)
 		if err != nil {
 			r.log.Errorw("msg", "failed to scan advisory row", "error", err)
-			return nil, "", 0, errors.InternalServer("ADVISORY_SCAN_FAILED", fmt.Sprintf("failed to scan advisory: %v", err))
+			return nil, "", 0, errors.InternalServer("ADVISORY_SCAN_FAILED", "an internal error occurred")
 		}
 		advisories = append(advisories, advisory)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, "", 0, errors.InternalServer("ADVISORY_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, "", 0, errors.InternalServer("ADVISORY_ROWS_ERROR", "an internal error occurred")
 	}
 
 	// Compute next page token
@@ -187,7 +188,7 @@ func (r *advisoryRepository) Create(ctx context.Context, advisory *pb.Advisory) 
 	created, err := scanAdvisory(row)
 	if err != nil {
 		r.log.Errorw("msg", "failed to insert advisory", "error", err)
-		return nil, errors.InternalServer("ADVISORY_CREATE_FAILED", fmt.Sprintf("failed to create advisory: %v", err))
+		return nil, errors.InternalServer("ADVISORY_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "advisory created", "id", created.Id, "tenant_id", tenantID)

@@ -95,7 +95,8 @@ func (r *satelliteRepository) GetImageByID(ctx context.Context, id, tenantID str
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("IMAGE_NOT_FOUND", fmt.Sprintf("satellite image not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return img, nil
 }
@@ -119,7 +120,8 @@ func (r *satelliteRepository) ListImages(ctx context.Context, params domain.List
 	var total int32
 	countSQL := "SELECT COUNT(*) FROM satellite_images WHERE " + where
 	if err := r.queryRow(ctx, countSQL, args...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	selectSQL := `SELECT ` + imageColumns + ` FROM satellite_images WHERE ` + where +
@@ -128,7 +130,8 @@ func (r *satelliteRepository) ListImages(ctx context.Context, params domain.List
 
 	rows, err := r.query(ctx, selectSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -136,12 +139,14 @@ func (r *satelliteRepository) ListImages(ctx context.Context, params domain.List
 	for rows.Next() {
 		img, err := scanImage(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		images = append(images, *img)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	return images, total, nil
@@ -247,7 +252,8 @@ func (r *satelliteRepository) GetVegetationIndices(ctx context.Context, params d
 
 	rows, err := r.query(ctx, selectSQL, args...)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -255,12 +261,14 @@ func (r *satelliteRepository) GetVegetationIndices(ctx context.Context, params d
 	for rows.Next() {
 		idx, err := scanVegetationIndex(rows)
 		if err != nil {
-			return nil, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		indices = append(indices, *idx)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	return indices, nil
@@ -277,7 +285,8 @@ func (r *satelliteRepository) GetVegetationIndicesForTemporal(ctx context.Contex
 		params.StartDate, params.EndDate,
 	)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -285,12 +294,14 @@ func (r *satelliteRepository) GetVegetationIndicesForTemporal(ctx context.Contex
 	for rows.Next() {
 		idx, err := scanVegetationIndex(rows)
 		if err != nil {
-			return nil, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		indices = append(indices, *idx)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	return indices, nil
@@ -396,7 +407,8 @@ func (r *satelliteRepository) ListAlerts(ctx context.Context, params domain.List
 	var total int32
 	countSQL := "SELECT COUNT(*) FROM satellite_alerts WHERE " + where
 	if err := r.queryRow(ctx, countSQL, args...).Scan(&total); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	selectSQL := `SELECT ` + alertColumns + ` FROM satellite_alerts WHERE ` + where +
@@ -405,7 +417,8 @@ func (r *satelliteRepository) ListAlerts(ctx context.Context, params domain.List
 
 	rows, err := r.query(ctx, selectSQL, args...)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -413,12 +426,14 @@ func (r *satelliteRepository) ListAlerts(ctx context.Context, params domain.List
 	for rows.Next() {
 		a, err := scanAlert(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		alerts = append(alerts, *a)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	return alerts, total, nil

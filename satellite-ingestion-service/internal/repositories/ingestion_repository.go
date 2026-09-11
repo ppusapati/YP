@@ -122,7 +122,7 @@ func (r *ingestionRepository) CreateIngestionTask(ctx context.Context, task *ing
 	result := &ingestionmodels.IngestionTask{}
 	if err := scanIngestionTask(row, result); err != nil {
 		r.log.Errorw("msg", "failed to create ingestion task", "error", err)
-		return nil, errors.InternalServer("INGESTION_CREATE_FAILED", fmt.Sprintf("failed to create ingestion task: %v", err))
+		return nil, errors.InternalServer("INGESTION_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "ingestion task created", "uuid", result.ID, "tenant_id", result.TenantID)
@@ -149,7 +149,7 @@ func (r *ingestionRepository) GetIngestionTaskByUUID(ctx context.Context, uuid, 
 			return nil, errors.NotFound("INGESTION_TASK_NOT_FOUND", fmt.Sprintf("ingestion task not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get ingestion task", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("INGESTION_GET_FAILED", fmt.Sprintf("failed to get ingestion task: %v", err))
+		return nil, errors.InternalServer("INGESTION_GET_FAILED", "an internal error occurred")
 	}
 
 	return task, nil
@@ -173,7 +173,7 @@ func (r *ingestionRepository) ListIngestionTasks(ctx context.Context, params ing
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count ingestion tasks", "error", err)
-		return nil, 0, errors.InternalServer("INGESTION_COUNT_FAILED", fmt.Sprintf("failed to count ingestion tasks: %v", err))
+		return nil, 0, errors.InternalServer("INGESTION_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -203,7 +203,7 @@ func (r *ingestionRepository) ListIngestionTasks(ctx context.Context, params ing
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list ingestion tasks", "error", err)
-		return nil, 0, errors.InternalServer("INGESTION_LIST_FAILED", fmt.Sprintf("failed to list ingestion tasks: %v", err))
+		return nil, 0, errors.InternalServer("INGESTION_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -212,12 +212,13 @@ func (r *ingestionRepository) ListIngestionTasks(ctx context.Context, params ing
 		var task ingestionmodels.IngestionTask
 		if err := scanIngestionTaskFromRows(rows, &task); err != nil {
 			r.log.Errorw("msg", "failed to scan ingestion task row", "error", err)
-			return nil, 0, errors.InternalServer("INGESTION_SCAN_FAILED", fmt.Sprintf("failed to scan ingestion task: %v", err))
+			return nil, 0, errors.InternalServer("INGESTION_SCAN_FAILED", "an internal error occurred")
 		}
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("INGESTION_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("INGESTION_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return tasks, totalCount, nil
@@ -259,7 +260,7 @@ func (r *ingestionRepository) UpdateIngestionStatus(ctx context.Context, task *i
 			return nil, errors.NotFound("INGESTION_TASK_NOT_FOUND", fmt.Sprintf("ingestion task not found: %s", task.ID))
 		}
 		r.log.Errorw("msg", "failed to update ingestion status", "uuid", task.ID, "error", err)
-		return nil, errors.InternalServer("INGESTION_UPDATE_FAILED", fmt.Sprintf("failed to update ingestion task: %v", err))
+		return nil, errors.InternalServer("INGESTION_UPDATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "ingestion task status updated", "uuid", result.ID, "status", result.Status, "version", result.Version)
@@ -293,7 +294,7 @@ func (r *ingestionRepository) CancelIngestionTask(ctx context.Context, uuid, ten
 			return nil, errors.NotFound("INGESTION_TASK_NOT_CANCELLABLE", fmt.Sprintf("ingestion task not found or not in cancellable state: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to cancel ingestion task", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("INGESTION_CANCEL_FAILED", fmt.Sprintf("failed to cancel ingestion task: %v", err))
+		return nil, errors.InternalServer("INGESTION_CANCEL_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "ingestion task cancelled", "uuid", result.ID)
@@ -328,7 +329,7 @@ func (r *ingestionRepository) GetIngestionStats(ctx context.Context, tenantID st
 		&stats.TotalBytesStored,
 	); err != nil {
 		r.log.Errorw("msg", "failed to get ingestion stats", "error", err)
-		return nil, errors.InternalServer("INGESTION_STATS_FAILED", fmt.Sprintf("failed to get ingestion stats: %v", err))
+		return nil, errors.InternalServer("INGESTION_STATS_FAILED", "an internal error occurred")
 	}
 
 	return stats, nil

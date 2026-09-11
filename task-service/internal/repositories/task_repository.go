@@ -66,7 +66,7 @@ func (r *taskRepository) GetByID(ctx context.Context, id string) (*pb.Task, erro
 			return nil, errors.NotFound("TASK_NOT_FOUND", fmt.Sprintf("task not found: %s", id))
 		}
 		r.log.Errorw("msg", "failed to get task", "id", id, "error", err)
-		return nil, errors.InternalServer("TASK_GET_FAILED", fmt.Sprintf("failed to get task: %v", err))
+		return nil, errors.InternalServer("TASK_GET_FAILED", "an internal error occurred")
 	}
 
 	return task, nil
@@ -111,7 +111,7 @@ func (r *taskRepository) List(ctx context.Context, params ListTasksParams) ([]*p
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count tasks", "error", err)
-		return nil, "", 0, errors.InternalServer("TASK_COUNT_FAILED", fmt.Sprintf("failed to count tasks: %v", err))
+		return nil, "", 0, errors.InternalServer("TASK_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page.
@@ -138,7 +138,7 @@ func (r *taskRepository) List(ctx context.Context, params ListTasksParams) ([]*p
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list tasks", "error", err)
-		return nil, "", 0, errors.InternalServer("TASK_LIST_FAILED", fmt.Sprintf("failed to list tasks: %v", err))
+		return nil, "", 0, errors.InternalServer("TASK_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -147,12 +147,13 @@ func (r *taskRepository) List(ctx context.Context, params ListTasksParams) ([]*p
 		task, err := scanTaskFromRows(rows)
 		if err != nil {
 			r.log.Errorw("msg", "failed to scan task row", "error", err)
-			return nil, "", 0, errors.InternalServer("TASK_SCAN_FAILED", fmt.Sprintf("failed to scan task: %v", err))
+			return nil, "", 0, errors.InternalServer("TASK_SCAN_FAILED", "an internal error occurred")
 		}
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, "", 0, errors.InternalServer("TASK_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, "", 0, errors.InternalServer("TASK_ROWS_ERROR", "an internal error occurred")
 	}
 
 	// Compute next page token.
@@ -201,7 +202,7 @@ func (r *taskRepository) Create(ctx context.Context, task *pb.Task, createdBy st
 	created, err := scanTask(row)
 	if err != nil {
 		r.log.Errorw("msg", "failed to create task", "error", err)
-		return nil, errors.InternalServer("TASK_CREATE_FAILED", fmt.Sprintf("failed to create task: %v", err))
+		return nil, errors.InternalServer("TASK_CREATE_FAILED", "an internal error occurred")
 	}
 
 	return created, nil
@@ -245,7 +246,7 @@ func (r *taskRepository) Update(ctx context.Context, task *pb.Task) (*pb.Task, e
 			return nil, errors.NotFound("TASK_NOT_FOUND", fmt.Sprintf("task not found: %s", task.Id))
 		}
 		r.log.Errorw("msg", "failed to update task", "id", task.Id, "error", err)
-		return nil, errors.InternalServer("TASK_UPDATE_FAILED", fmt.Sprintf("failed to update task: %v", err))
+		return nil, errors.InternalServer("TASK_UPDATE_FAILED", "an internal error occurred")
 	}
 
 	return updated, nil
@@ -263,7 +264,7 @@ func (r *taskRepository) Delete(ctx context.Context, id string) error {
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to delete task", "id", id, "error", err)
-		return errors.InternalServer("TASK_DELETE_FAILED", fmt.Sprintf("failed to delete task: %v", err))
+		return errors.InternalServer("TASK_DELETE_FAILED", "an internal error occurred")
 	}
 
 	if tag.RowsAffected() == 0 {
