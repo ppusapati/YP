@@ -1,4 +1,7 @@
-// Package events contains the inbound Kafka consumer adapter for pest-prediction-service events.
+// Package events contains the inbound Kafka consumer adapter for pest-prediction-service.
+// It subscribes to events from OTHER services that the pest-prediction-service needs to react to:
+// sensor events (weather/humidity data), crop events (crop type affects pest models),
+// and satellite events (satellite pest detection).
 package events
 
 import (
@@ -12,15 +15,21 @@ import (
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/inbound"
 )
 
-const PestEventTopic = "samavaya.agriculture.pest-prediction.events"
+// Topics from OTHER services that pest-prediction-service consumes.
+const (
+	SensorEventTopic    = "samavaya.agriculture.sensor.events"
+	CropEventTopic      = "samavaya.agriculture.crop.events"
+	FieldEventTopic     = "samavaya.agriculture.field.events"
+	SatelliteEventTopic = "samavaya.agriculture.satellite.events"
+)
 
-// PestConsumer is the inbound Kafka adapter for pest-prediction-service domain events.
+// PestConsumer is the inbound Kafka adapter that reacts to cross-service domain events.
 type PestConsumer struct {
 	svc inbound.PestService
 	log *p9log.Helper
 }
 
-// NewPestConsumer creates a new Kafka consumer for pest events.
+// NewPestConsumer creates a new Kafka consumer for cross-service events.
 func NewPestConsumer(svc inbound.PestService, log p9log.Logger) *PestConsumer {
 	return &PestConsumer{
 		svc: svc,
@@ -28,56 +37,120 @@ func NewPestConsumer(svc inbound.PestService, log p9log.Logger) *PestConsumer {
 	}
 }
 
-// Topic returns the Kafka topic this consumer listens on.
-func (c *PestConsumer) Topic() string { return PestEventTopic }
+// Topics returns the Kafka topics this consumer listens on.
+func (c *PestConsumer) Topics() []string {
+	return []string{SensorEventTopic, CropEventTopic, FieldEventTopic, SatelliteEventTopic}
+}
 
 // HandleEvent dispatches an incoming domain event.
 func (c *PestConsumer) HandleEvent(ctx context.Context, event *domain.DomainEvent) error {
 	if event == nil {
 		return fmt.Errorf("received nil event")
 	}
-	c.log.Infow("msg", "pest event received",
+	c.log.Infow("msg", "cross-service event received",
 		"event_id", event.ID,
 		"event_type", string(event.Type),
 		"aggregate_id", event.AggregateID,
 	)
+
 	switch event.Type {
-	case "agriculture.pest-prediction.created":
-		return c.onPestCreated(ctx, event)
-	case "agriculture.pest-prediction.updated":
-		return c.onPestUpdated(ctx, event)
-	case "agriculture.pest-prediction.deleted":
-		return c.onPestDeleted(ctx, event)
+	// Sensor events: weather/humidity data feeds pest prediction models
+	case domain.EventTypeSensorCreated:
+		return c.onSensorDeployed(ctx, event)
+	case domain.EventTypeSensorUpdated:
+		return c.onSensorUpdated(ctx, event)
+
+	// Crop events: crop type and lifecycle affect pest risk
+	case domain.EventTypeCropCreated:
+		return c.onCropCreated(ctx, event)
+	case domain.EventTypeFieldCropAssigned:
+		return c.onFieldCropAssigned(ctx, event)
+
+	// Satellite events: satellite imagery can detect pest outbreaks
+	case domain.EventTypeSatelliteImageCreated:
+		return c.onSatelliteImageCreated(ctx, event)
+
 	default:
-		c.log.Infow("msg", "unhandled event type", "type", event.Type)
+		c.log.Infow("msg", "unhandled event type", "type", string(event.Type))
 		return nil
 	}
 }
 
-func (c *PestConsumer) onPestCreated(_ context.Context, event *domain.DomainEvent) error {
+// onSensorDeployed handles a weather or environmental sensor being deployed.
+func (c *PestConsumer) onSensorDeployed(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onSensorDeployed: %w", err)
 	}
-	c.log.Infow("msg", "pest created event", "pest_prediction_id", data["pest_prediction_id"])
+	sensorID, _ := data["sensor_id"].(string)
+	fieldID, _ := data["field_id"].(string)
+	c.log.Infow("msg", "sensor deployed, may provide weather data for pest models",
+		"sensor_id", sensorID,
+		"field_id", fieldID,
+	)
+	// TODO: register sensor as environmental data source for pest prediction
 	return nil
 }
 
-func (c *PestConsumer) onPestUpdated(_ context.Context, event *domain.DomainEvent) error {
+// onSensorUpdated handles a sensor calibration or configuration change.
+func (c *PestConsumer) onSensorUpdated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onSensorUpdated: %w", err)
 	}
-	c.log.Infow("msg", "pest updated event", "pest_prediction_id", data["pest_prediction_id"])
+	sensorID, _ := data["sensor_id"].(string)
+	c.log.Infow("msg", "sensor updated, adjusting pest prediction parameters",
+		"sensor_id", sensorID,
+	)
+	// TODO: recalibrate pest prediction model inputs
 	return nil
 }
 
-func (c *PestConsumer) onPestDeleted(_ context.Context, event *domain.DomainEvent) error {
+// onCropCreated handles a new crop type being registered.
+// Different crops have different pest vulnerability profiles.
+func (c *PestConsumer) onCropCreated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onCropCreated: %w", err)
 	}
-	c.log.Infow("msg", "pest deleted event", "pest_prediction_id", data["pest_prediction_id"])
+	cropID, _ := data["crop_id"].(string)
+	c.log.Infow("msg", "new crop type, loading pest vulnerability profile",
+		"crop_id", cropID,
+	)
+	// TODO: load pest species that commonly affect this crop type
+	return nil
+}
+
+// onFieldCropAssigned handles a crop being assigned to a field.
+// Triggers pest risk assessment for the specific crop-field combination.
+func (c *PestConsumer) onFieldCropAssigned(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractEventData(event)
+	if err != nil {
+		return fmt.Errorf("onFieldCropAssigned: %w", err)
+	}
+	fieldID, _ := data["field_id"].(string)
+	cropID, _ := data["crop_id"].(string)
+	c.log.Infow("msg", "crop assigned to field, generating pest risk assessment",
+		"field_id", fieldID,
+		"crop_id", cropID,
+	)
+	// TODO: call c.svc.PredictPestRisk for the crop-field combination
+	return nil
+}
+
+// onSatelliteImageCreated handles new satellite imagery that may detect pest damage.
+func (c *PestConsumer) onSatelliteImageCreated(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractEventData(event)
+	if err != nil {
+		return fmt.Errorf("onSatelliteImageCreated: %w", err)
+	}
+	fieldID, _ := data["field_id"].(string)
+	imageID, _ := data["satellite_id"].(string)
+	c.log.Infow("msg", "satellite imagery available for pest detection",
+		"field_id", fieldID,
+		"image_id", imageID,
+	)
+	// TODO: analyze satellite imagery for pest outbreak indicators
 	return nil
 }
 

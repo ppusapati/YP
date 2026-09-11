@@ -169,14 +169,16 @@ func main() {
 		}, logger)
 		consumerCtx, consumerCancel := context.WithCancel(context.Background())
 		defer consumerCancel()
-		if err := kc.Subscribe(consumerCtx, eventConsumer.Topic(), func(ctx context.Context, data []byte) error {
-			var event domain.DomainEvent
-			if err := json.Unmarshal(data, &event); err != nil {
-				return fmt.Errorf("unmarshal domain event: %w", err)
+		for _, topic := range eventConsumer.Topics() {
+			if err := kc.Subscribe(consumerCtx, topic, func(ctx context.Context, data []byte) error {
+				var event domain.DomainEvent
+				if err := json.Unmarshal(data, &event); err != nil {
+					return fmt.Errorf("unmarshal domain event: %w", err)
+				}
+				return eventConsumer.HandleEvent(ctx, &event)
+			}); err != nil {
+				log.Printf("WARNING: failed to subscribe to %s: %v", topic, err)
 			}
-			return eventConsumer.HandleEvent(ctx, &event)
-		}); err != nil {
-			log.Printf("WARNING: failed to subscribe to %s: %v", eventConsumer.Topic(), err)
 		}
 	}
 

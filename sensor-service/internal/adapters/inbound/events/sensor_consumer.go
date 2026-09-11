@@ -1,4 +1,7 @@
-// Package events contains the inbound Kafka consumer adapter for sensor-service events.
+// Package events contains the inbound Kafka consumer adapter for sensor-service.
+// It subscribes to events from OTHER services that the sensor-service needs to react to:
+// field events (field lifecycle affecting sensor placement) and farm events (farm deletion
+// requiring sensor decommission).
 package events
 
 import (
@@ -12,15 +15,19 @@ import (
 	"p9e.in/samavaya/agriculture/sensor-service/internal/ports/inbound"
 )
 
-const SensorEventTopic = "samavaya.agriculture.sensor.events"
+// Topics from OTHER services that sensor-service consumes.
+const (
+	FieldEventTopic = "samavaya.agriculture.field.events"
+	FarmEventTopic  = "samavaya.agriculture.farm.events"
+)
 
-// SensorConsumer is the inbound Kafka adapter for sensor-service domain events.
+// SensorConsumer is the inbound Kafka adapter that reacts to cross-service domain events.
 type SensorConsumer struct {
 	svc inbound.SensorService
 	log *p9log.Helper
 }
 
-// NewSensorConsumer creates a new Kafka consumer for sensor events.
+// NewSensorConsumer creates a new Kafka consumer for cross-service events.
 func NewSensorConsumer(svc inbound.SensorService, log p9log.Logger) *SensorConsumer {
 	return &SensorConsumer{
 		svc: svc,
@@ -28,56 +35,83 @@ func NewSensorConsumer(svc inbound.SensorService, log p9log.Logger) *SensorConsu
 	}
 }
 
-// Topic returns the Kafka topic this consumer listens on.
-func (c *SensorConsumer) Topic() string { return SensorEventTopic }
+// Topics returns the Kafka topics this consumer listens on.
+func (c *SensorConsumer) Topics() []string {
+	return []string{FieldEventTopic, FarmEventTopic}
+}
 
 // HandleEvent dispatches an incoming domain event.
 func (c *SensorConsumer) HandleEvent(ctx context.Context, event *domain.DomainEvent) error {
 	if event == nil {
 		return fmt.Errorf("received nil event")
 	}
-	c.log.Infow("msg", "sensor event received",
+	c.log.Infow("msg", "cross-service event received",
 		"event_id", event.ID,
 		"event_type", string(event.Type),
 		"aggregate_id", event.AggregateID,
 	)
+
 	switch event.Type {
-	case "agriculture.sensor.created":
-		return c.onSensorCreated(ctx, event)
-	case "agriculture.sensor.updated":
-		return c.onSensorUpdated(ctx, event)
-	case "agriculture.sensor.deleted":
-		return c.onSensorDeleted(ctx, event)
+	// Field events: sensor placement depends on field lifecycle
+	case domain.EventTypeFieldCreated:
+		return c.onFieldCreated(ctx, event)
+	case domain.EventTypeFieldDeleted:
+		return c.onFieldDeleted(ctx, event)
+
+	// Farm events: farm deletion triggers sensor decommission
+	case domain.EventTypeFarmDeleted:
+		return c.onFarmDeleted(ctx, event)
+
 	default:
-		c.log.Infow("msg", "unhandled event type", "type", event.Type)
+		c.log.Infow("msg", "unhandled event type", "type", string(event.Type))
 		return nil
 	}
 }
 
-func (c *SensorConsumer) onSensorCreated(_ context.Context, event *domain.DomainEvent) error {
+// onFieldCreated handles a new field being created.
+// Sensor-service may plan sensor deployment for the new field.
+func (c *SensorConsumer) onFieldCreated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onFieldCreated: %w", err)
 	}
-	c.log.Infow("msg", "sensor created event", "sensor_id", data["sensor_id"])
+	fieldID, _ := data["field_id"].(string)
+	farmID, _ := data["farm_id"].(string)
+	c.log.Infow("msg", "field created, sensor deployment may be needed",
+		"field_id", fieldID,
+		"farm_id", farmID,
+	)
+	// TODO: plan sensor deployment for the new field
 	return nil
 }
 
-func (c *SensorConsumer) onSensorUpdated(_ context.Context, event *domain.DomainEvent) error {
+// onFieldDeleted handles a field being deleted.
+// Sensors on this field should be flagged for decommission or redeployment.
+func (c *SensorConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
-	c.log.Infow("msg", "sensor updated event", "sensor_id", data["sensor_id"])
+	fieldID, _ := data["field_id"].(string)
+	c.log.Infow("msg", "field deleted, decommissioning associated sensors",
+		"field_id", fieldID,
+	)
+	// TODO: list sensors by field, call c.svc.DecommissionSensor for each
 	return nil
 }
 
-func (c *SensorConsumer) onSensorDeleted(_ context.Context, event *domain.DomainEvent) error {
+// onFarmDeleted handles a farm being deleted.
+// All sensors on this farm should be decommissioned.
+func (c *SensorConsumer) onFarmDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onFarmDeleted: %w", err)
 	}
-	c.log.Infow("msg", "sensor deleted event", "sensor_id", data["sensor_id"])
+	farmID, _ := data["farm_id"].(string)
+	c.log.Infow("msg", "farm deleted, decommissioning all sensors",
+		"farm_id", farmID,
+	)
+	// TODO: list sensors by farm, call c.svc.DecommissionSensor for each
 	return nil
 }
 

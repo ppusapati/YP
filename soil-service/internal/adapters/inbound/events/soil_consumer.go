@@ -1,4 +1,6 @@
-// Package events contains the inbound Kafka consumer adapter for soil-service events.
+// Package events contains the inbound Kafka consumer adapter for soil-service.
+// It subscribes to events from OTHER services that the soil-service needs to react to:
+// sensor events (soil sensor readings) and field events (soil profiles linked to fields).
 package events
 
 import (
@@ -12,15 +14,19 @@ import (
 	"p9e.in/samavaya/agriculture/soil-service/internal/ports/inbound"
 )
 
-const SoilEventTopic = "samavaya.agriculture.soil.events"
+// Topics from OTHER services that soil-service consumes.
+const (
+	SensorEventTopic = "samavaya.agriculture.sensor.events"
+	FieldEventTopic  = "samavaya.agriculture.field.events"
+)
 
-// SoilConsumer is the inbound Kafka adapter for soil-service domain events.
+// SoilConsumer is the inbound Kafka adapter that reacts to cross-service domain events.
 type SoilConsumer struct {
 	svc inbound.SoilService
 	log *p9log.Helper
 }
 
-// NewSoilConsumer creates a new Kafka consumer for soil events.
+// NewSoilConsumer creates a new Kafka consumer for cross-service events.
 func NewSoilConsumer(svc inbound.SoilService, log p9log.Logger) *SoilConsumer {
 	return &SoilConsumer{
 		svc: svc,
@@ -28,56 +34,99 @@ func NewSoilConsumer(svc inbound.SoilService, log p9log.Logger) *SoilConsumer {
 	}
 }
 
-// Topic returns the Kafka topic this consumer listens on.
-func (c *SoilConsumer) Topic() string { return SoilEventTopic }
+// Topics returns the Kafka topics this consumer listens on.
+func (c *SoilConsumer) Topics() []string {
+	return []string{SensorEventTopic, FieldEventTopic}
+}
 
 // HandleEvent dispatches an incoming domain event.
 func (c *SoilConsumer) HandleEvent(ctx context.Context, event *domain.DomainEvent) error {
 	if event == nil {
 		return fmt.Errorf("received nil event")
 	}
-	c.log.Infow("msg", "soil event received",
+	c.log.Infow("msg", "cross-service event received",
 		"event_id", event.ID,
 		"event_type", string(event.Type),
 		"aggregate_id", event.AggregateID,
 	)
+
 	switch event.Type {
-	case "agriculture.soil.created":
-		return c.onSoilCreated(ctx, event)
-	case "agriculture.soil.updated":
-		return c.onSoilUpdated(ctx, event)
-	case "agriculture.soil.deleted":
-		return c.onSoilDeleted(ctx, event)
+	// Sensor events: soil sensors provide data for analysis
+	case domain.EventTypeSensorCreated:
+		return c.onSensorDeployed(ctx, event)
+	case domain.EventTypeSensorUpdated:
+		return c.onSensorUpdated(ctx, event)
+
+	// Field events: soil profiles are linked to fields
+	case domain.EventTypeFieldCreated:
+		return c.onFieldCreated(ctx, event)
+	case domain.EventTypeFieldDeleted:
+		return c.onFieldDeleted(ctx, event)
+
 	default:
-		c.log.Infow("msg", "unhandled event type", "type", event.Type)
+		c.log.Infow("msg", "unhandled event type", "type", string(event.Type))
 		return nil
 	}
 }
 
-func (c *SoilConsumer) onSoilCreated(_ context.Context, event *domain.DomainEvent) error {
+// onSensorDeployed handles a new soil sensor being deployed.
+func (c *SoilConsumer) onSensorDeployed(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onSensorDeployed: %w", err)
 	}
-	c.log.Infow("msg", "soil created event", "soil_id", data["soil_id"])
+	sensorID, _ := data["sensor_id"].(string)
+	fieldID, _ := data["field_id"].(string)
+	sensorType, _ := data["sensor_type"].(string)
+	c.log.Infow("msg", "sensor deployed, may provide soil readings",
+		"sensor_id", sensorID,
+		"field_id", fieldID,
+		"sensor_type", sensorType,
+	)
+	// TODO: if sensor_type is soil-related, register it as a soil data source
 	return nil
 }
 
-func (c *SoilConsumer) onSoilUpdated(_ context.Context, event *domain.DomainEvent) error {
+// onSensorUpdated handles a sensor being recalibrated or updated.
+func (c *SoilConsumer) onSensorUpdated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onSensorUpdated: %w", err)
 	}
-	c.log.Infow("msg", "soil updated event", "soil_id", data["soil_id"])
+	sensorID, _ := data["sensor_id"].(string)
+	c.log.Infow("msg", "sensor updated, adjusting soil data calibration",
+		"sensor_id", sensorID,
+	)
+	// TODO: update soil measurement calibration offsets
 	return nil
 }
 
-func (c *SoilConsumer) onSoilDeleted(_ context.Context, event *domain.DomainEvent) error {
+// onFieldCreated handles a new field being created.
+// Soil-service can prepare soil profile and baseline analysis.
+func (c *SoilConsumer) onFieldCreated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onFieldCreated: %w", err)
 	}
-	c.log.Infow("msg", "soil deleted event", "soil_id", data["soil_id"])
+	fieldID, _ := data["field_id"].(string)
+	c.log.Infow("msg", "field created, preparing soil profile",
+		"field_id", fieldID,
+	)
+	// TODO: initialize soil profile for the new field
+	return nil
+}
+
+// onFieldDeleted handles a field being deleted.
+func (c *SoilConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractEventData(event)
+	if err != nil {
+		return fmt.Errorf("onFieldDeleted: %w", err)
+	}
+	fieldID, _ := data["field_id"].(string)
+	c.log.Infow("msg", "field deleted, archiving soil data",
+		"field_id", fieldID,
+	)
+	// TODO: archive soil samples/analyses for the deleted field
 	return nil
 }
 

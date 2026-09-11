@@ -1,4 +1,7 @@
-// Package events contains the inbound Kafka consumer adapter for crop-service events.
+// Package events contains the inbound Kafka consumer adapter for crop-service.
+// It subscribes to events from OTHER services that the crop-service needs to react to:
+// field events (crop assignments), soil events (soil data for recommendations),
+// and satellite events (crop monitoring imagery).
 package events
 
 import (
@@ -12,15 +15,20 @@ import (
 	"p9e.in/samavaya/agriculture/crop-service/internal/ports/inbound"
 )
 
-const CropEventTopic = "samavaya.agriculture.crop.events"
+// Topics from OTHER services that crop-service consumes.
+const (
+	FieldEventTopic     = "samavaya.agriculture.field.events"
+	SoilEventTopic      = "samavaya.agriculture.soil.events"
+	SatelliteEventTopic = "samavaya.agriculture.satellite.events"
+)
 
-// CropConsumer is the inbound Kafka adapter for crop-service domain events.
+// CropConsumer is the inbound Kafka adapter that reacts to cross-service domain events.
 type CropConsumer struct {
 	svc inbound.CropService
 	log *p9log.Helper
 }
 
-// NewCropConsumer creates a new Kafka consumer for crop events.
+// NewCropConsumer creates a new Kafka consumer for cross-service events.
 func NewCropConsumer(svc inbound.CropService, log p9log.Logger) *CropConsumer {
 	return &CropConsumer{
 		svc: svc,
@@ -28,56 +36,104 @@ func NewCropConsumer(svc inbound.CropService, log p9log.Logger) *CropConsumer {
 	}
 }
 
-// Topic returns the Kafka topic this consumer listens on.
-func (c *CropConsumer) Topic() string { return CropEventTopic }
+// Topics returns the Kafka topics this consumer listens on.
+func (c *CropConsumer) Topics() []string {
+	return []string{FieldEventTopic, SoilEventTopic, SatelliteEventTopic}
+}
 
 // HandleEvent dispatches an incoming domain event.
 func (c *CropConsumer) HandleEvent(ctx context.Context, event *domain.DomainEvent) error {
 	if event == nil {
 		return fmt.Errorf("received nil event")
 	}
-	c.log.Infow("msg", "crop event received",
+	c.log.Infow("msg", "cross-service event received",
 		"event_id", event.ID,
 		"event_type", string(event.Type),
 		"aggregate_id", event.AggregateID,
 	)
+
 	switch event.Type {
-	case "agriculture.crop.created":
-		return c.onCropCreated(ctx, event)
-	case "agriculture.crop.updated":
-		return c.onCropUpdated(ctx, event)
-	case "agriculture.crop.deleted":
-		return c.onCropDeleted(ctx, event)
+	// Field events: react when fields are assigned crops or deleted
+	case domain.EventTypeFieldCropAssigned:
+		return c.onFieldCropAssigned(ctx, event)
+	case domain.EventTypeFieldDeleted:
+		return c.onFieldDeleted(ctx, event)
+
+	// Soil events: soil data affects crop recommendations
+	case domain.EventTypeSoilSampleCreated:
+		return c.onSoilSampleCreated(ctx, event)
+
+	// Satellite events: satellite imagery for crop monitoring
+	case domain.EventTypeSatelliteImageCreated:
+		return c.onSatelliteImageCreated(ctx, event)
+
 	default:
-		c.log.Infow("msg", "unhandled event type", "type", event.Type)
+		c.log.Infow("msg", "unhandled event type", "type", string(event.Type))
 		return nil
 	}
 }
 
-func (c *CropConsumer) onCropCreated(_ context.Context, event *domain.DomainEvent) error {
+// onFieldCropAssigned handles a crop being assigned to a field.
+// Crop-service can use this to track active crop deployments.
+func (c *CropConsumer) onFieldCropAssigned(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onFieldCropAssigned: %w", err)
 	}
-	c.log.Infow("msg", "crop created event", "crop_id", data["crop_id"])
+	cropID, _ := data["crop_id"].(string)
+	fieldID, _ := data["field_id"].(string)
+	c.log.Infow("msg", "crop assigned to field",
+		"crop_id", cropID,
+		"field_id", fieldID,
+	)
+	// TODO: track active deployment, possibly trigger growth stage initialization
 	return nil
 }
 
-func (c *CropConsumer) onCropUpdated(_ context.Context, event *domain.DomainEvent) error {
+// onFieldDeleted handles a field being deleted.
+// Crop assignments for this field should be cleaned up.
+func (c *CropConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
-	c.log.Infow("msg", "crop updated event", "crop_id", data["crop_id"])
+	fieldID, _ := data["field_id"].(string)
+	c.log.Infow("msg", "field deleted, cleaning up crop assignments",
+		"field_id", fieldID,
+	)
+	// TODO: deactivate crop assignments linked to the deleted field
 	return nil
 }
 
-func (c *CropConsumer) onCropDeleted(_ context.Context, event *domain.DomainEvent) error {
+// onSoilSampleCreated handles new soil data that may affect crop recommendations.
+func (c *CropConsumer) onSoilSampleCreated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("onSoilSampleCreated: %w", err)
 	}
-	c.log.Infow("msg", "crop deleted event", "crop_id", data["crop_id"])
+	fieldID, _ := data["field_id"].(string)
+	sampleID, _ := data["soil_id"].(string)
+	c.log.Infow("msg", "soil sample available for crop recommendations",
+		"field_id", fieldID,
+		"soil_sample_id", sampleID,
+	)
+	// TODO: trigger recommendation refresh using new soil data via c.svc.GenerateRecommendation
+	return nil
+}
+
+// onSatelliteImageCreated handles satellite imagery that may reveal crop health issues.
+func (c *CropConsumer) onSatelliteImageCreated(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractEventData(event)
+	if err != nil {
+		return fmt.Errorf("onSatelliteImageCreated: %w", err)
+	}
+	fieldID, _ := data["field_id"].(string)
+	imageID, _ := data["satellite_id"].(string)
+	c.log.Infow("msg", "satellite imagery available for crop monitoring",
+		"field_id", fieldID,
+		"image_id", imageID,
+	)
+	// TODO: trigger crop health assessment using satellite data
 	return nil
 }
 

@@ -149,6 +149,64 @@ const (
 	EventTypeMaintenanceDue           EventType = "asset.maintenance.due"
 	EventTypeMaintenanceCompleted     EventType = "asset.maintenance.completed"
 	EventTypeVehicleRegistered        EventType = "asset.vehicle.registered"
+
+	// Agriculture - Farm Events
+	EventTypeFarmCreated             EventType = "agriculture.farm.created"
+	EventTypeFarmUpdated             EventType = "agriculture.farm.updated"
+	EventTypeFarmDeleted             EventType = "agriculture.farm.deleted"
+	EventTypeFarmBoundarySet         EventType = "agriculture.farm.boundary.set"
+	EventTypeFarmOwnershipTransferred EventType = "agriculture.farm.ownership.transferred"
+
+	// Agriculture - Field Events
+	EventTypeFieldCreated     EventType = "agriculture.field.created"
+	EventTypeFieldUpdated     EventType = "agriculture.field.updated"
+	EventTypeFieldDeleted     EventType = "agriculture.field.deleted"
+	EventTypeFieldCropAssigned EventType = "agriculture.field.crop.assigned"
+
+	// Agriculture - Crop Events
+	EventTypeCropCreated EventType = "agriculture.crop.created"
+	EventTypeCropUpdated EventType = "agriculture.crop.updated"
+	EventTypeCropDeleted EventType = "agriculture.crop.deleted"
+
+	// Agriculture - Sensor Events
+	EventTypeSensorCreated EventType = "agriculture.sensor.created"
+	EventTypeSensorUpdated EventType = "agriculture.sensor.updated"
+	EventTypeSensorDeleted EventType = "agriculture.sensor.deleted"
+
+	// Agriculture - Soil Events
+	EventTypeSoilSampleCreated EventType = "agriculture.soil.created"
+	EventTypeSoilSampleUpdated EventType = "agriculture.soil.updated"
+	EventTypeSoilSampleDeleted EventType = "agriculture.soil.deleted"
+
+	// Agriculture - Irrigation Events
+	EventTypeIrrigationCreated EventType = "agriculture.irrigation.created"
+	EventTypeIrrigationUpdated EventType = "agriculture.irrigation.updated"
+	EventTypeIrrigationDeleted EventType = "agriculture.irrigation.deleted"
+
+	// Agriculture - Yield Events
+	EventTypeYieldCreated EventType = "agriculture.yield.created"
+	EventTypeYieldUpdated EventType = "agriculture.yield.updated"
+	EventTypeYieldDeleted EventType = "agriculture.yield.deleted"
+
+	// Agriculture - Satellite Events
+	EventTypeSatelliteImageCreated EventType = "agriculture.satellite.created"
+	EventTypeSatelliteImageUpdated EventType = "agriculture.satellite.updated"
+	EventTypeSatelliteImageDeleted EventType = "agriculture.satellite.deleted"
+
+	// Agriculture - Pest Prediction Events
+	EventTypePestPredictionCreated EventType = "agriculture.pest-prediction.created"
+	EventTypePestPredictionUpdated EventType = "agriculture.pest-prediction.updated"
+	EventTypePestPredictionDeleted EventType = "agriculture.pest-prediction.deleted"
+
+	// Agriculture - Plant Diagnosis Events
+	EventTypePlantDiagnosisCreated EventType = "agriculture.plant-diagnosis.created"
+	EventTypePlantDiagnosisUpdated EventType = "agriculture.plant-diagnosis.updated"
+	EventTypePlantDiagnosisDeleted EventType = "agriculture.plant-diagnosis.deleted"
+
+	// Agriculture - Traceability Events
+	EventTypeTraceabilityRecordCreated EventType = "agriculture.traceability.created"
+	EventTypeTraceabilityRecordUpdated EventType = "agriculture.traceability.updated"
+	EventTypeTraceabilityRecordDeleted EventType = "agriculture.traceability.deleted"
 )
 
 // Priority represents the priority level of an event
@@ -270,6 +328,28 @@ func (e *DomainEvent) GetTopic() string {
 		return "samavaya.banking.events"
 	case EventTypeAssetAcquisitionApproved, EventTypeAssetRecorded, EventTypeDepreciationRecorded, EventTypeEquipmentRegistered, EventTypeMaintenanceDue, EventTypeMaintenanceCompleted, EventTypeVehicleRegistered:
 		return "samavaya.asset.events"
+	case EventTypeFarmCreated, EventTypeFarmUpdated, EventTypeFarmDeleted, EventTypeFarmBoundarySet, EventTypeFarmOwnershipTransferred:
+		return "samavaya.agriculture.farm.events"
+	case EventTypeFieldCreated, EventTypeFieldUpdated, EventTypeFieldDeleted, EventTypeFieldCropAssigned:
+		return "samavaya.agriculture.field.events"
+	case EventTypeCropCreated, EventTypeCropUpdated, EventTypeCropDeleted:
+		return "samavaya.agriculture.crop.events"
+	case EventTypeSensorCreated, EventTypeSensorUpdated, EventTypeSensorDeleted:
+		return "samavaya.agriculture.sensor.events"
+	case EventTypeSoilSampleCreated, EventTypeSoilSampleUpdated, EventTypeSoilSampleDeleted:
+		return "samavaya.agriculture.soil.events"
+	case EventTypeIrrigationCreated, EventTypeIrrigationUpdated, EventTypeIrrigationDeleted:
+		return "samavaya.agriculture.irrigation.events"
+	case EventTypeYieldCreated, EventTypeYieldUpdated, EventTypeYieldDeleted:
+		return "samavaya.agriculture.yield.events"
+	case EventTypeSatelliteImageCreated, EventTypeSatelliteImageUpdated, EventTypeSatelliteImageDeleted:
+		return "samavaya.agriculture.satellite.events"
+	case EventTypePestPredictionCreated, EventTypePestPredictionUpdated, EventTypePestPredictionDeleted:
+		return "samavaya.agriculture.pest-prediction.events"
+	case EventTypePlantDiagnosisCreated, EventTypePlantDiagnosisUpdated, EventTypePlantDiagnosisDeleted:
+		return "samavaya.agriculture.plant-diagnosis.events"
+	case EventTypeTraceabilityRecordCreated, EventTypeTraceabilityRecordUpdated, EventTypeTraceabilityRecordDeleted:
+		return "samavaya.agriculture.traceability.events"
 	default:
 		return "samavaya.domain.events"
 	}
