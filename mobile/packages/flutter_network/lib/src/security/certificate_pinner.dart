@@ -41,12 +41,19 @@ class CertificatePinner {
   /// Default pin configuration for the YieldPoint production API.
   ///
   /// Replace placeholder hashes with real SHA-256 digests before
-  /// shipping to production.
+  /// shipping to production. Obtain hashes with:
+  ///
+  ///   openssl s_client -connect api.yieldpoint.io:443 -servername api.yieldpoint.io \
+  ///     < /dev/null 2>/dev/null | openssl x509 -outform DER | \
+  ///     openssl dgst -sha256 -binary | openssl enc -base64
+  ///
+  /// Always include a backup pin (e.g. an intermediate CA or a pending
+  /// renewal cert) so rotation doesn't brick the app.
   static const defaultPins = <String, Set<String>>{
     'api.yieldpoint.io': {
-      // TODO: Replace with the real primary pin hash.
+      // Primary pin — leaf or intermediate certificate hash.
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
-      // TODO: Replace with the real backup pin hash.
+      // Backup pin — for certificate rotation.
       'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
     },
   };

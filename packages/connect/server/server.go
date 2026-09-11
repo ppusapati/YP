@@ -184,7 +184,10 @@ func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 		chain = append(chain, interceptors.AuthzInterceptor(cfg.AuthzOptions...))
 	}
 
-	// 7. RLS (sets scope based on user context, must be after auth)
+	// 7. Input validation (enforces max field lengths, page size bounds)
+	chain = append(chain, interceptors.ValidationInterceptor())
+
+	// 8. RLS (sets scope based on user context, must be after auth)
 	if cfg.EnableRLS {
 		switch cfg.RLSLevel {
 		case interceptors.ScopeLevelCompany:
