@@ -162,17 +162,34 @@ func (h *authHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clientIP := clientAddr(r)
+
 	var userID, tenantID, name, role, passwordHash string
 	err := h.pool.QueryRow(r.Context(),
 		"SELECT id, tenant_id, name, role, password_hash FROM users WHERE email = $1 AND is_active = true",
 		req.Email,
 	).Scan(&userID, &tenantID, &name, &role, &passwordHash)
 	if err != nil {
+		h.logger.Warn("auth.login_failed",
+			zap.String("event", "login_failed"),
+			zap.String("reason", "user_not_found"),
+			zap.String("email", req.Email),
+			zap.String("ip", clientIP),
+			zap.String("user_agent", r.UserAgent()),
+		)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid credentials"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+		h.logger.Warn("auth.login_failed",
+			zap.String("event", "login_failed"),
+			zap.String("reason", "invalid_password"),
+			zap.String("email", req.Email),
+			zap.String("user_id", userID),
+			zap.String("ip", clientIP),
+			zap.String("user_agent", r.UserAgent()),
+		)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid credentials"})
 		return
 	}
@@ -197,6 +214,15 @@ func (h *authHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
+
+	h.logger.Info("auth.login_success",
+		zap.String("event", "login_success"),
+		zap.String("user_id", userID),
+		zap.String("tenant_id", tenantID),
+		zap.String("session_id", sessionID),
+		zap.String("ip", clientIP),
+		zap.String("user_agent", r.UserAgent()),
+	)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"token": map[string]interface{}{
@@ -229,6 +255,7 @@ func (h *authHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clientIP := clientAddr(r)
 	tokenHash := hashToken(req.RefreshToken)
 
 	var sessionID, userID, tenantID, role string
@@ -239,12 +266,24 @@ func (h *authHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		WHERE s.refresh_token_hash = $1 AND s.is_revoked = false AND u.is_active = true
 	`, tokenHash).Scan(&sessionID, &userID, &tenantID, &role, &expiresAt)
 	if err != nil {
+		h.logger.Warn("auth.refresh_failed",
+			zap.String("event", "refresh_failed"),
+			zap.String("reason", "invalid_token"),
+			zap.String("ip", clientIP),
+		)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid refresh token"})
 		return
 	}
 
 	if time.Now().After(expiresAt) {
 		_, _ = h.pool.Exec(r.Context(), "UPDATE sessions SET is_revoked = true WHERE id = $1", sessionID)
+		h.logger.Warn("auth.refresh_failed",
+			zap.String("event", "refresh_failed"),
+			zap.String("reason", "token_expired"),
+			zap.String("user_id", userID),
+			zap.String("session_id", sessionID),
+			zap.String("ip", clientIP),
+		)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "refresh token expired"})
 		return
 	}
@@ -271,6 +310,14 @@ func (h *authHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
+
+	h.logger.Info("auth.token_refreshed",
+		zap.String("event", "token_refreshed"),
+		zap.String("user_id", userID),
+		zap.String("old_session_id", sessionID),
+		zap.String("new_session_id", newSessionID),
+		zap.String("ip", clientIP),
+	)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"token": map[string]interface{}{
@@ -338,6 +385,13 @@ func (h *authHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
+	h.logger.Info("auth.logout",
+		zap.String("event", "logout"),
+		zap.String("user_id", claims.UserID),
+		zap.String("session_id", claims.SessionID),
+		zap.String("ip", clientAddr(r)),
+	)
+
 	writeJSON(w, http.StatusOK, map[string]string{"status": "logged_out"})
 }
 
@@ -384,6 +438,16 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+func clientAddr(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.Index(xff, ","); i > 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return strings.TrimSpace(xff)
+	}
+	return r.RemoteAddr
 }
 
 func envOr(key, fallback string) string {

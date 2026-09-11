@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -56,24 +57,33 @@ func defaultConfig(cfg Config) Config {
 	return cfg
 }
 
-// NewHTTPClient creates a pre-configured *http.Client for calling internal services
-// over h2c (HTTP/2 cleartext, no TLS). All inter-service calls should use this
-// client so they share consistent timeout, pooling, and circuit-breaker behaviour.
+// NewHTTPClient creates a pre-configured *http.Client for calling internal services.
+// When GRPC_PLAINTEXT=1 is set, it uses h2c (HTTP/2 cleartext); otherwise it uses
+// HTTP/2 with TLS. All inter-service calls should use this client so they share
+// consistent timeout, pooling, and circuit-breaker behaviour.
 //
 // Pass the returned *http.Client as the first argument to any generated Connect
 // client constructor (e.g., farmv1connect.NewFarmServiceClient).
 func NewHTTPClient(cfg Config) *http.Client {
 	cfg = defaultConfig(cfg)
 
-	// h2c transport: HTTP/2 without TLS, required for Connect binary (grpc) protocol.
-	transport := &http2.Transport{
-		AllowHTTP: true,
-		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-			return (&net.Dialer{
-				Timeout:   10 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext(ctx, network, addr)
-		},
+	var transport http.RoundTripper
+	if os.Getenv("GRPC_PLAINTEXT") == "1" {
+		transport = &http2.Transport{
+			AllowHTTP: true,
+			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+				return (&net.Dialer{
+					Timeout:   10 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext(ctx, network, addr)
+			},
+		}
+	} else {
+		transport = &http2.Transport{
+			TLSClientConfig: &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			},
+		}
 	}
 
 	base := &http.Client{

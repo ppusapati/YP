@@ -9,3 +9,8 @@ target/
 # Go build artifacts
 *-service/server
 
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
