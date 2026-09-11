@@ -104,7 +104,7 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
       nitrogen: pb.nitrogenPpm,
       phosphorus: pb.phosphorusPpm,
       potassium: pb.potassiumPpm,
-      texture: _mapSoilTexture(pb.healthCategory),
+      texture: _mapSoilTexture(pb.texture),
       analysisDate: pb.hasAnalyzedAt()
           ? _timestampToDateTime(pb.analyzedAt)
           : DateTime.now(),
@@ -115,9 +115,14 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
   // Enum mapping helpers
   // ---------------------------------------------------------------------------
 
-  static SoilTexture _mapSoilTexture(soil_pb.HealthCategory pbCategory) {
-    // SoilAnalysis pb does not carry texture directly; best-effort default.
-    return SoilTexture.loamy;
+  static SoilTexture _mapSoilTexture(soil_pb.SoilTexture pbTexture) {
+    return switch (pbTexture) {
+      soil_pb.SoilTexture.SOIL_TEXTURE_SANDY => SoilTexture.sandy,
+      soil_pb.SoilTexture.SOIL_TEXTURE_LOAMY => SoilTexture.loamy,
+      soil_pb.SoilTexture.SOIL_TEXTURE_CLAY => SoilTexture.clay,
+      soil_pb.SoilTexture.SOIL_TEXTURE_SILT => SoilTexture.silt,
+      _ => SoilTexture.loamy,
+    };
   }
 
   // ---------------------------------------------------------------------------

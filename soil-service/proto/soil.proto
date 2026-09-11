@@ -111,6 +111,7 @@ message SoilAnalysis {
   double                    phosphorus_ppm   = 19;
   double                    potassium_ppm    = 20;
   double                    organic_matter_pct = 21;
+  SoilTexture               texture          = 22;
 }
 
 message SoilMap {
