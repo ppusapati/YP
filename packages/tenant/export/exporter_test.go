@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,16 +31,16 @@ func (m *mockPoolResolver) ResolvePool(_ context.Context, _ string) (*pgxpool.Po
 
 // mockRows simulates pgx query results for testing.
 type mockRows struct {
-	columns []pgxFieldDescription
+	columns []pgconn.FieldDescription
 	data    [][]any
 	index   int
 	closed  bool
 }
 
 func newMockRows(colNames []string, data [][]any) *mockRows {
-	cols := make([]pgxFieldDescription, len(colNames))
+	cols := make([]pgconn.FieldDescription, len(colNames))
 	for i, name := range colNames {
-		cols[i] = pgxFieldDescription{Name: []byte(name)}
+		cols[i] = pgconn.FieldDescription{Name: name}
 	}
 	return &mockRows{
 		columns: cols,
@@ -60,7 +61,7 @@ func (r *mockRows) Values() ([]any, error) {
 	return r.data[r.index], nil
 }
 
-func (r *mockRows) FieldDescriptions() []pgxFieldDescription {
+func (r *mockRows) FieldDescriptions() []pgconn.FieldDescription {
 	return r.columns
 }
 
@@ -71,6 +72,9 @@ func (r *mockRows) Err() error {
 func (r *mockRows) Close() {
 	r.closed = true
 }
+
+// Verify mockRows satisfies RowIterator.
+var _ RowIterator = (*mockRows)(nil)
 
 // --- Tests ---
 
