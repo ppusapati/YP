@@ -109,6 +109,7 @@ func (cb *CircuitBreaker) CheckWithConfig(ctx context.Context, key string, cfg C
 			FailureCount: state.FailureCount,
 			RecoveryAt:   state.RecoveryAt,
 			WaitTime:     waitTime,
+			Reason:       "circuit breaker is open",
 		}, nil
 
 	case StateHalfOpen:
@@ -120,6 +121,7 @@ func (cb *CircuitBreaker) CheckWithConfig(ctx context.Context, key string, cfg C
 				FailureCount: state.FailureCount,
 				SuccessCount: state.SuccessCount,
 				WaitTime:     time.Second, // Short wait before retry
+				Reason:       "half-open request limit reached",
 			}, nil
 		}
 

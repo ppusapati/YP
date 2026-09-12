@@ -29,6 +29,11 @@ func (m *mockLogger) Log(level Level, keyvals ...interface{}) error {
 	return m.lastErr
 }
 
+func (m *mockLogger) Debug(keyvals ...interface{}) { _ = m.Log(LevelDebug, keyvals...) }
+func (m *mockLogger) Info(keyvals ...interface{})  { _ = m.Log(LevelInfo, keyvals...) }
+func (m *mockLogger) Warn(keyvals ...interface{})  { _ = m.Log(LevelWarn, keyvals...) }
+func (m *mockLogger) Error(keyvals ...interface{}) { _ = m.Log(LevelError, keyvals...) }
+
 func (m *mockLogger) getLogs() []logEntry {
 	m.mu.Lock()
 	defer m.mu.Unlock()

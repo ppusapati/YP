@@ -59,6 +59,11 @@ func NewFilter(logger Logger, opts ...FilterOption) *Filter {
 	return &options
 }
 
+func (f *Filter) Debug(keyvals ...interface{}) { _ = f.Log(LevelDebug, keyvals...) }
+func (f *Filter) Info(keyvals ...interface{})  { _ = f.Log(LevelInfo, keyvals...) }
+func (f *Filter) Warn(keyvals ...interface{})  { _ = f.Log(LevelWarn, keyvals...) }
+func (f *Filter) Error(keyvals ...interface{}) { _ = f.Log(LevelError, keyvals...) }
+
 // Log Print log by level and keyvals.
 func (f *Filter) Log(level Level, keyvals ...interface{}) error {
 	if level < f.level {

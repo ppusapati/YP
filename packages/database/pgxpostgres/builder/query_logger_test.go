@@ -25,6 +25,11 @@ func (m *mockLogger) Log(level p9log.Level, keyvals ...interface{}) error {
 	return nil
 }
 
+func (m *mockLogger) Debug(keyvals ...interface{}) { _ = m.Log(p9log.LevelDebug, keyvals...) }
+func (m *mockLogger) Info(keyvals ...interface{})  { _ = m.Log(p9log.LevelInfo, keyvals...) }
+func (m *mockLogger) Warn(keyvals ...interface{})  { _ = m.Log(p9log.LevelWarn, keyvals...) }
+func (m *mockLogger) Error(keyvals ...interface{}) { _ = m.Log(p9log.LevelError, keyvals...) }
+
 func TestNewQueryLogger(t *testing.T) {
 	logger := &mockLogger{}
 

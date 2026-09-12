@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"p9e.in/samavaya/packages/p9log"
 )
 
 // MockBackend is a mock implementation of RegistryBackend for testing
@@ -306,9 +308,8 @@ func TestHeartbeat(t *testing.T) {
 // Mock logger for testing
 type testLogger struct{}
 
-func (l *testLogger) Debug(msg string, fields ...interface{})   {}
-func (l *testLogger) Info(msg string, fields ...interface{})    {}
-func (l *testLogger) Warn(msg string, fields ...interface{})    {}
-func (l *testLogger) Error(msg string, fields ...interface{})   {}
-func (l *testLogger) Fatal(msg string, fields ...interface{})   {}
-func (l *testLogger) Panic(msg string, fields ...interface{})   {}
+func (l *testLogger) Log(level p9log.Level, keyvals ...interface{}) error { return nil }
+func (l *testLogger) Debug(keyvals ...interface{})                        {}
+func (l *testLogger) Info(keyvals ...interface{})                         {}
+func (l *testLogger) Warn(keyvals ...interface{})                         {}
+func (l *testLogger) Error(keyvals ...interface{})                        {}
