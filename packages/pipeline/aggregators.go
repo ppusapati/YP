@@ -19,7 +19,7 @@ type DailyYieldSummary struct {
 }
 
 func (d *DailyYieldSummary) Name() string     { return "daily_yield_summary" }
-func (d *DailyYieldSummary) Schedule() string  { return "24h" }
+func (d *DailyYieldSummary) Schedule() string { return "24h" }
 
 func (d *DailyYieldSummary) Extract(ctx context.Context) ([]RawRecord, error) {
 	yesterday := time.Now().AddDate(0, 0, -1).Truncate(24 * time.Hour)
@@ -106,10 +106,10 @@ func (d *DailyYieldSummary) Transform(ctx context.Context, records []RawRecord) 
 			Timestamp: date,
 			Table:     "daily_yield_summaries",
 			Values: map[string]interface{}{
-				"crop":      k.Crop,
-				"min_yield": a.MinYield,
-				"avg_yield": avgYield,
-				"max_yield": a.MaxYield,
+				"crop":       k.Crop,
+				"min_yield":  a.MinYield,
+				"avg_yield":  avgYield,
+				"max_yield":  a.MaxYield,
 				"total_area": a.SumArea,
 			},
 		})
@@ -151,7 +151,7 @@ type WeeklySoilTrends struct {
 }
 
 func (w *WeeklySoilTrends) Name() string     { return "weekly_soil_trends" }
-func (w *WeeklySoilTrends) Schedule() string  { return "168h" } // 7 days
+func (w *WeeklySoilTrends) Schedule() string { return "168h" } // 7 days
 
 func (w *WeeklySoilTrends) Extract(ctx context.Context) ([]RawRecord, error) {
 	weekStart := time.Now().AddDate(0, 0, -7).Truncate(24 * time.Hour)
@@ -274,7 +274,7 @@ type SeasonalCropPerformance struct {
 }
 
 func (s *SeasonalCropPerformance) Name() string     { return "seasonal_crop_performance" }
-func (s *SeasonalCropPerformance) Schedule() string  { return "720h" } // ~30 days
+func (s *SeasonalCropPerformance) Schedule() string { return "720h" } // ~30 days
 
 func (s *SeasonalCropPerformance) Extract(ctx context.Context) ([]RawRecord, error) {
 	rows, err := s.Pool.Query(ctx, `
@@ -330,12 +330,12 @@ func (s *SeasonalCropPerformance) Transform(ctx context.Context, records []RawRe
 			FieldID:  r.FieldID,
 			Table:    "seasonal_crop_performance",
 			Values: map[string]interface{}{
-				"season":           s.Season,
-				"crop":             r.Data["crop"],
-				"total_yield":      totalYield,
-				"total_input_cost": totalCost,
+				"season":            s.Season,
+				"crop":              r.Data["crop"],
+				"total_yield":       totalYield,
+				"total_input_cost":  totalCost,
 				"yield_per_hectare": yieldPerHectare,
-				"roi":              roi,
+				"roi":               roi,
 			},
 		})
 	}
@@ -377,7 +377,7 @@ type MonthlySensorStats struct {
 }
 
 func (m *MonthlySensorStats) Name() string     { return "monthly_sensor_stats" }
-func (m *MonthlySensorStats) Schedule() string  { return "720h" } // ~30 days
+func (m *MonthlySensorStats) Schedule() string { return "720h" } // ~30 days
 
 func (m *MonthlySensorStats) Extract(ctx context.Context) ([]RawRecord, error) {
 	monthStart := time.Date(time.Now().Year(), time.Now().Month()-1, 1, 0, 0, 0, 0, time.UTC)

@@ -16,8 +16,8 @@ type mockDataSource struct {
 	rows     [][]string
 }
 
-func (m *mockDataSource) DataType() string   { return m.dataType }
-func (m *mockDataSource) Columns() []string  { return m.columns }
+func (m *mockDataSource) DataType() string  { return m.dataType }
+func (m *mockDataSource) Columns() []string { return m.columns }
 func (m *mockDataSource) Scan(ctx context.Context, filter ExportFilter, fn func(row []string) error) error {
 	for _, row := range m.rows {
 		if err := fn(row); err != nil {

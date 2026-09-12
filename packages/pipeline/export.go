@@ -25,14 +25,14 @@ type ExportFilter struct {
 }
 
 type ExportManifest struct {
-	ExportID    string            `json:"export_id"`
-	TenantID    string            `json:"tenant_id"`
-	ExportedAt  time.Time         `json:"exported_at"`
-	Format      ExportFormat      `json:"format"`
-	Filter      ExportFilter      `json:"filter"`
-	Files       []ExportFileEntry `json:"files"`
-	TotalRows   int64             `json:"total_rows"`
-	TotalBytes  int64             `json:"total_bytes"`
+	ExportID   string            `json:"export_id"`
+	TenantID   string            `json:"tenant_id"`
+	ExportedAt time.Time         `json:"exported_at"`
+	Format     ExportFormat      `json:"format"`
+	Filter     ExportFilter      `json:"filter"`
+	Files      []ExportFileEntry `json:"files"`
+	TotalRows  int64             `json:"total_rows"`
+	TotalBytes int64             `json:"total_bytes"`
 }
 
 type ExportFileEntry struct {

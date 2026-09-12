@@ -160,7 +160,7 @@ func NewNullCheck(fields []string, severity Severity) *NullCheck {
 	return &NullCheck{Fields: fields, severity: severity}
 }
 
-func (n *NullCheck) Name() string          { return "null_check" }
+func (n *NullCheck) Name() string           { return "null_check" }
 func (n *NullCheck) RuleSeverity() Severity { return n.severity }
 
 func (n *NullCheck) Check(record map[string]interface{}) error {
@@ -185,7 +185,7 @@ func NewRangeCheck(field string, min, max float64, severity Severity) *RangeChec
 	return &RangeCheck{Field: field, Min: min, Max: max, severity: severity}
 }
 
-func (r *RangeCheck) Name() string          { return "range_check" }
+func (r *RangeCheck) Name() string           { return "range_check" }
 func (r *RangeCheck) RuleSeverity() Severity { return r.severity }
 
 func (r *RangeCheck) Check(record map[string]interface{}) error {
@@ -222,7 +222,7 @@ func NewFreshnessCheck(field string, maxAge time.Duration, severity Severity) *F
 	return &FreshnessCheck{Field: field, MaxAge: maxAge, severity: severity}
 }
 
-func (f *FreshnessCheck) Name() string          { return "freshness_check" }
+func (f *FreshnessCheck) Name() string           { return "freshness_check" }
 func (f *FreshnessCheck) RuleSeverity() Severity { return f.severity }
 
 func (f *FreshnessCheck) Check(record map[string]interface{}) error {
@@ -267,7 +267,7 @@ func NewUniquenessCheck(field string, severity Severity) *UniquenessCheck {
 	return &UniquenessCheck{Field: field, severity: severity, seen: make(map[interface{}]bool)}
 }
 
-func (u *UniquenessCheck) Name() string          { return "uniqueness_check" }
+func (u *UniquenessCheck) Name() string           { return "uniqueness_check" }
 func (u *UniquenessCheck) RuleSeverity() Severity { return u.severity }
 
 func (u *UniquenessCheck) Check(record map[string]interface{}) error {
@@ -308,8 +308,8 @@ type ValidatingConsumerConfig struct {
 	ConsumerGroup sarama.ConsumerGroup
 	Monitor       *QualityMonitor
 	Log           p9log.Logger
-	ValidTopic    string   // topic to forward valid messages
-	InvalidTopic  string   // topic for rejected messages (dead letter)
+	ValidTopic    string // topic to forward valid messages
+	InvalidTopic  string // topic for rejected messages (dead letter)
 	Producer      sarama.SyncProducer
 	ExtractFields func([]byte) (map[string]interface{}, error)
 }

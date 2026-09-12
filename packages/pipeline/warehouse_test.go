@@ -141,9 +141,9 @@ func TestLinearRegression(t *testing.T) {
 
 func TestTrendResult_Direction(t *testing.T) {
 	tests := []struct {
-		name      string
-		slope     float64
-		wantDir   string
+		name    string
+		slope   float64
+		wantDir string
 	}{
 		{"increasing", 0.5, "increasing"},
 		{"decreasing", -0.5, "decreasing"},

@@ -193,10 +193,10 @@ func TestQualityMonitor_Validate(t *testing.T) {
 	)
 
 	records := []map[string]interface{}{
-		{"id": "1", "name": "sensor-a", "value": 50.0},       // pass
-		{"id": "2", "value": 50.0},                           // fail: missing name
-		{"id": "3", "name": "sensor-c", "value": 150.0},      // fail: out of range
-		{"id": "4", "name": "sensor-d", "value": 75.0},       // pass
+		{"id": "1", "name": "sensor-a", "value": 50.0},  // pass
+		{"id": "2", "value": 50.0},                      // fail: missing name
+		{"id": "3", "name": "sensor-c", "value": 150.0}, // fail: out of range
+		{"id": "4", "name": "sensor-d", "value": 75.0},  // pass
 	}
 
 	report := monitor.Validate(context.Background(), "test-job", records)

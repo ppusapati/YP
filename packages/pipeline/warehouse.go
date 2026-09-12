@@ -42,31 +42,31 @@ type TimeSeriesPoint struct {
 
 // TrendQuery defines parameters for computing linear regression trends.
 type TrendQuery struct {
-	TenantID   string
-	FieldID    string
-	Metric     string // column name in the source table
-	Table      string // source table
-	Start      time.Time
-	End        time.Time
+	TenantID string
+	FieldID  string
+	Metric   string // column name in the source table
+	Table    string // source table
+	Start    time.Time
+	End      time.Time
 }
 
 // TrendResult holds the linear regression output.
 type TrendResult struct {
-	Slope     float64 // rate of change per day
-	Intercept float64
-	RSquared  float64
+	Slope      float64 // rate of change per day
+	Intercept  float64
+	RSquared   float64
 	DataPoints int
-	Direction string // "increasing", "decreasing", "stable"
+	Direction  string // "increasing", "decreasing", "stable"
 }
 
 // CrossFieldQuery defines parameters for comparing metrics across fields.
 type CrossFieldQuery struct {
-	TenantID   string
-	FieldIDs   []string
-	Metric     string
-	Table      string
-	Start      time.Time
-	End        time.Time
+	TenantID string
+	FieldIDs []string
+	Metric   string
+	Table    string
+	Start    time.Time
+	End      time.Time
 }
 
 // FieldMetricSummary holds aggregated metrics for one field.

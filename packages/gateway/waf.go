@@ -11,28 +11,28 @@ import (
 )
 
 type WAFConfig struct {
-	MaxBodySize       int64    `json:"max_body_size"`
-	EnableSQLi        bool     `json:"enable_sqli"`
-	EnableXSS         bool     `json:"enable_xss"`
-	EnablePathTraversal bool   `json:"enable_path_traversal"`
-	IPAllowlist       []string `json:"ip_allowlist"`
-	IPDenylist        []string `json:"ip_denylist"`
+	MaxBodySize         int64    `json:"max_body_size"`
+	EnableSQLi          bool     `json:"enable_sqli"`
+	EnableXSS           bool     `json:"enable_xss"`
+	EnablePathTraversal bool     `json:"enable_path_traversal"`
+	IPAllowlist         []string `json:"ip_allowlist"`
+	IPDenylist          []string `json:"ip_denylist"`
 }
 
 func DefaultWAFConfig() WAFConfig {
 	return WAFConfig{
-		MaxBodySize:       10 * 1024 * 1024, // 10MB
-		EnableSQLi:        true,
-		EnableXSS:         true,
+		MaxBodySize:         10 * 1024 * 1024, // 10MB
+		EnableSQLi:          true,
+		EnableXSS:           true,
 		EnablePathTraversal: true,
 	}
 }
 
 type WAF struct {
-	config      WAFConfig
-	allowNets   []*net.IPNet
-	denyNets    []*net.IPNet
-	mu          sync.RWMutex
+	config       WAFConfig
+	allowNets    []*net.IPNet
+	denyNets     []*net.IPNet
+	mu           sync.RWMutex
 	sqliPatterns []*regexp.Regexp
 	xssPatterns  []*regexp.Regexp
 	pathPatterns []*regexp.Regexp

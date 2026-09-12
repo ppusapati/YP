@@ -20,7 +20,7 @@ type stubJob struct {
 }
 
 func (s *stubJob) Name() string     { return s.name }
-func (s *stubJob) Schedule() string  { return s.schedule }
+func (s *stubJob) Schedule() string { return s.schedule }
 
 func (s *stubJob) Extract(ctx context.Context) ([]RawRecord, error) {
 	if s.extractFn != nil {

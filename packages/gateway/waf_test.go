@@ -104,11 +104,11 @@ func TestWAF_PathTraversal(t *testing.T) {
 
 func TestWAF_IPDenylist(t *testing.T) {
 	waf, err := NewWAF(WAFConfig{
-		MaxBodySize:       10 * 1024 * 1024,
-		EnableSQLi:        true,
-		EnableXSS:         true,
+		MaxBodySize:         10 * 1024 * 1024,
+		EnableSQLi:          true,
+		EnableXSS:           true,
 		EnablePathTraversal: true,
-		IPDenylist:        []string{"10.0.0.1/32", "192.168.1.0/24"},
+		IPDenylist:          []string{"10.0.0.1/32", "192.168.1.0/24"},
 	})
 	if err != nil {
 		t.Fatal(err)
