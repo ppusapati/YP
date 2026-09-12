@@ -46,6 +46,7 @@ pub struct Detection {
     pub recommendations: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct VisionClient {
     config: ExternalApiConfig,
     http: Client,

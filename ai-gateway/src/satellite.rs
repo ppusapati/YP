@@ -3,6 +3,7 @@
 //! Wraps the `satellite-ndvi-engine` for NDVI/NDWI/EVI computation and
 //! vegetation stress analysis.
 
+use std::collections::HashMap;
 use std::time::Instant;
 
 use ndarray::Array2;
@@ -54,15 +55,18 @@ impl SatelliteEngine {
             let red_array = Array2::from_shape_vec((height, width), red_data)
                 .unwrap_or_else(|_| Array2::zeros((height, width)));
 
-            let nir_band = RasterBand::from_array(nir_array.clone());
-            let red_band = RasterBand::from_array(red_array.clone());
+            let nir_band = RasterBand::new(nir_array, None);
+            let red_band = RasterBand::new(red_array, None);
 
             // Compute NDVI using the satellite-ndvi-engine.
             let params = NdviParams::default();
-            let ndvi_result = compute_ndvi(&nir_band, &red_band, &params);
+            let ndvi_result = match compute_ndvi(&nir_band, &red_band, &params) {
+                Ok(band) => band,
+                Err(_) => return empty_ndvi_response(&request.request_id, start),
+            };
 
             // Flatten NDVI grid to row-major array.
-            let ndvi_values: Vec<f64> = ndvi_result.data().iter().cloned().collect();
+            let ndvi_values: Vec<f64> = ndvi_result.data.iter().cloned().collect();
 
             // Compute statistics.
             let stats = compute_band_statistics(&ndvi_result);
@@ -71,14 +75,25 @@ impl SatelliteEngine {
             let classification = classify_ndvi(&ndvi_result);
             let total_pixels = (width * height) as f64;
 
-            let zones = classification
+            // Count pixels per class.
+            let mut class_counts: HashMap<u8, usize> = HashMap::new();
+            for &class_val in classification.iter() {
+                *class_counts.entry(class_val).or_insert(0) += 1;
+            }
+
+            let class_names = ["Water", "BareSoil", "SparseVegetation", "ModerateVegetation", "DenseVegetation", "NoData"];
+            let zones = class_counts
                 .iter()
-                .map(|(class, count)| proto::NdviZone {
-                    classification: format!("{:?}", class),
-                    min_value: 0.0,
-                    max_value: 1.0,
-                    pixel_count: *count as i64,
-                    area_pct: (*count as f64 / total_pixels) * 100.0,
+                .map(|(&class_val, &count)| {
+                    let name = class_names.get(class_val as usize)
+                        .unwrap_or(&"Unknown");
+                    proto::NdviZone {
+                        classification: name.to_string(),
+                        min_value: 0.0,
+                        max_value: 1.0,
+                        pixel_count: count as i64,
+                        area_pct: (count as f64 / total_pixels) * 100.0,
+                    }
                 })
                 .collect();
 
@@ -89,7 +104,7 @@ impl SatelliteEngine {
                 ndvi_values,
                 width: width as i32,
                 height: height as i32,
-                statistics: Some(convert_stats(&stats)),
+                statistics: stats.map(|s| convert_stats(&s)),
                 zones,
                 model_version: self.model_paths.satellite_ndvi_version.clone(),
                 processing_time_ms: elapsed.as_millis() as i64,
@@ -126,12 +141,15 @@ impl SatelliteEngine {
             let red_array = Array2::from_shape_vec((height, width), red_data)
                 .unwrap_or_else(|_| Array2::zeros((height, width)));
 
-            let nir_band = RasterBand::from_array(nir_array);
-            let red_band = RasterBand::from_array(red_array);
+            let nir_band = RasterBand::new(nir_array, None);
+            let red_band = RasterBand::new(red_array, None);
 
             // Compute NDVI first.
             let params = NdviParams::default();
-            let ndvi_result = compute_ndvi(&nir_band, &red_band, &params);
+            let ndvi_band = match compute_ndvi(&nir_band, &red_band, &params) {
+                Ok(band) => band,
+                Err(_) => return empty_stress_response(&request.request_id, start),
+            };
 
             // Run stress detection.
             let ndvi_threshold = if request.ndvi_stress_threshold > 0.0 {
@@ -141,38 +159,56 @@ impl SatelliteEngine {
             };
 
             let stress_params = StressParams {
-                ndvi_threshold,
-                window_size: 5,
-                min_cluster_size: 4,
+                absolute_stress_threshold: ndvi_threshold,
+                ..StressParams::default()
             };
 
-            let stress_results = detect_raster_stress(&ndvi_result, &stress_params);
-            let summary = summarize_stress(&stress_results, width, height);
+            // detect_raster_stress expects a time series of (day, &RasterBand) pairs.
+            // We have a single snapshot, so create a single-element slice.
+            let ndvi_series: Vec<(u32, &RasterBand)> = vec![(0, &ndvi_band)];
+            let severity_band = match detect_raster_stress(&ndvi_series, &stress_params) {
+                Ok(band) => band,
+                Err(_) => return empty_stress_response(&request.request_id, start),
+            };
+            let summary = summarize_stress(&severity_band, ndvi_threshold);
 
             // Compute NDVI statistics.
-            let stats = compute_band_statistics(&ndvi_result);
+            let stats = compute_band_statistics(&ndvi_band);
 
-            // Convert stress zones.
-            let stress_zones: Vec<proto::StressZone> = summary
-                .stress_events
-                .iter()
-                .map(|event| proto::StressZone {
-                    stress_type: format!("{:?}", event.stress_type),
-                    severity: event.severity.clone(),
-                    affected_area_pct: event.affected_pct,
-                    confidence: event.confidence,
+            // Convert stress summary to stress zones.
+            // FieldStressSummary provides aggregate metrics; we create a single
+            // zone entry from the dominant stress type when stress is detected.
+            let stress_zones: Vec<proto::StressZone> = if summary.stress_fraction > 0.0 {
+                let stress_type_str = summary
+                    .dominant_stress_type
+                    .as_ref()
+                    .map(|t| format!("{:?}", t))
+                    .unwrap_or_else(|| "Unknown".to_string());
+                vec![proto::StressZone {
+                    stress_type: stress_type_str,
+                    severity: if summary.mean_severity > 0.7 {
+                        "SEVERE".to_string()
+                    } else if summary.mean_severity > 0.4 {
+                        "MODERATE".to_string()
+                    } else {
+                        "MILD".to_string()
+                    },
+                    affected_area_pct: summary.stress_fraction * 100.0,
+                    confidence: 1.0 - summary.stress_fraction.min(1.0) * 0.2,
                     bounds: None,
-                })
-                .collect();
+                }]
+            } else {
+                vec![]
+            };
 
             let elapsed = start.elapsed();
 
             proto::DetectVegetationStressResponse {
                 request_id: request.request_id.clone(),
                 stress_zones,
-                overall_stress_pct: summary.stressed_pct,
-                healthy_pct: summary.healthy_pct,
-                ndvi_statistics: Some(convert_stats(&stats)),
+                overall_stress_pct: summary.stress_fraction * 100.0,
+                healthy_pct: (1.0 - summary.stress_fraction) * 100.0,
+                ndvi_statistics: stats.map(|s| convert_stats(&s)),
                 model_version: self.model_paths.satellite_ndvi_version.clone(),
                 processing_time_ms: elapsed.as_millis() as i64,
             }
