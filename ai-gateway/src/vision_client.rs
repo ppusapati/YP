@@ -352,3 +352,218 @@ impl VisionClient {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{ExternalApiConfig, VisionProvider};
+
+    fn enabled_config() -> ExternalApiConfig {
+        ExternalApiConfig {
+            enabled: true,
+            provider: VisionProvider::PlantNet,
+            api_key: "test-key".to_string(),
+            base_url: "https://example.com".to_string(),
+            timeout_secs: 10,
+            max_retries: 1,
+        }
+    }
+
+    fn disabled_config() -> ExternalApiConfig {
+        ExternalApiConfig {
+            enabled: false,
+            ..enabled_config()
+        }
+    }
+
+    #[test]
+    fn vision_client_construction_succeeds_with_enabled_config() {
+        let cfg = enabled_config();
+        let client = VisionClient::new(&cfg);
+        assert!(client.is_ok());
+        assert!(client.unwrap().is_enabled());
+    }
+
+    #[test]
+    fn vision_client_returns_disabled_error_when_not_enabled() {
+        let cfg = disabled_config();
+        let result = VisionClient::new(&cfg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, VisionError::Disabled));
+        assert_eq!(err.to_string(), "external API disabled");
+    }
+
+    #[test]
+    fn vision_result_can_be_constructed_and_cloned() {
+        let result = VisionResult {
+            provider: "plantnet".to_string(),
+            task: "disease".to_string(),
+            detections: vec![Detection {
+                label: "Tomato Blight".to_string(),
+                scientific_name: "Phytophthora infestans".to_string(),
+                confidence: 0.95,
+                category: "oomycete".to_string(),
+                description: "Late blight detected".to_string(),
+                severity: "high".to_string(),
+                recommendations: vec![
+                    "Remove infected leaves".to_string(),
+                    "Apply copper fungicide".to_string(),
+                ],
+            }],
+            raw_response: Some("{}".to_string()),
+        };
+        let cloned = result.clone();
+        assert_eq!(cloned.provider, "plantnet");
+        assert_eq!(cloned.task, "disease");
+        assert_eq!(cloned.detections.len(), 1);
+        assert_eq!(cloned.detections[0].label, "Tomato Blight");
+        assert_eq!(cloned.detections[0].confidence, 0.95);
+        assert_eq!(cloned.detections[0].recommendations.len(), 2);
+    }
+
+    #[test]
+    fn detection_struct_fields() {
+        let det = Detection {
+            label: "Aphid".to_string(),
+            scientific_name: "Myzus persicae".to_string(),
+            confidence: 0.88,
+            category: "insect".to_string(),
+            description: "Green peach aphid".to_string(),
+            severity: "moderate".to_string(),
+            recommendations: vec![],
+        };
+        assert_eq!(det.label, "Aphid");
+        assert_eq!(det.scientific_name, "Myzus persicae");
+        assert_eq!(det.confidence, 0.88);
+        assert!(det.recommendations.is_empty());
+    }
+
+    #[test]
+    fn vision_result_serializes_to_json() {
+        let result = VisionResult {
+            provider: "google_vision".to_string(),
+            task: "classification".to_string(),
+            detections: vec![],
+            raw_response: None,
+        };
+        let json = serde_json::to_string(&result).expect("should serialize");
+        assert!(json.contains("google_vision"));
+        assert!(json.contains("classification"));
+
+        let deserialized: VisionResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.provider, "google_vision");
+        assert!(deserialized.detections.is_empty());
+        assert!(deserialized.raw_response.is_none());
+    }
+
+    #[test]
+    fn vision_error_display() {
+        let disabled = VisionError::Disabled;
+        assert_eq!(disabled.to_string(), "external API disabled");
+
+        let api_err = VisionError::ApiError {
+            status: 429,
+            body: "rate limited".to_string(),
+        };
+        assert!(api_err.to_string().contains("429"));
+        assert!(api_err.to_string().contains("rate limited"));
+
+        let parse_err = VisionError::Parse("bad json".to_string());
+        assert!(parse_err.to_string().contains("bad json"));
+    }
+
+    #[test]
+    fn parse_plantnet_response_extracts_detections() {
+        let cfg = enabled_config();
+        let client = VisionClient::new(&cfg).unwrap();
+
+        let body = serde_json::json!({
+            "results": [
+                {
+                    "score": 0.85,
+                    "species": {
+                        "commonNames": ["Tomato"],
+                        "scientificNameWithoutAuthor": "Solanum lycopersicum",
+                        "family": {
+                            "scientificNameWithoutAuthor": "Solanaceae"
+                        }
+                    }
+                },
+                {
+                    "score": 0.12,
+                    "species": {
+                        "commonNames": ["Potato"],
+                        "scientificNameWithoutAuthor": "Solanum tuberosum",
+                        "family": {
+                            "scientificNameWithoutAuthor": "Solanaceae"
+                        }
+                    }
+                }
+            ]
+        });
+
+        let result = client
+            .parse_plantnet_response(&body.to_string(), "classification")
+            .expect("should parse");
+        assert_eq!(result.provider, "plantnet");
+        assert_eq!(result.task, "classification");
+        assert_eq!(result.detections.len(), 2);
+        assert_eq!(result.detections[0].label, "Tomato");
+        assert_eq!(
+            result.detections[0].scientific_name,
+            "Solanum lycopersicum"
+        );
+        assert_eq!(result.detections[0].confidence, 0.85);
+        assert_eq!(result.detections[0].category, "Solanaceae");
+        assert!(result.raw_response.is_some());
+    }
+
+    #[test]
+    fn parse_plantnet_response_handles_missing_results() {
+        let cfg = enabled_config();
+        let client = VisionClient::new(&cfg).unwrap();
+        let body = r#"{"status": "ok"}"#;
+        let result = client.parse_plantnet_response(body, "disease");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_google_vision_response_extracts_labels() {
+        let cfg = ExternalApiConfig {
+            provider: VisionProvider::GoogleVision,
+            ..enabled_config()
+        };
+        let client = VisionClient::new(&cfg).unwrap();
+
+        let body = serde_json::json!({
+            "responses": [{
+                "labelAnnotations": [
+                    {"description": "Plant", "score": 0.97},
+                    {"description": "Leaf", "score": 0.91}
+                ]
+            }]
+        });
+
+        let result = client
+            .parse_google_vision_response(&body.to_string(), "classification")
+            .expect("should parse");
+        assert_eq!(result.provider, "google_vision");
+        assert_eq!(result.detections.len(), 2);
+        assert_eq!(result.detections[0].label, "Plant");
+        assert_eq!(result.detections[0].confidence, 0.97);
+        assert_eq!(result.detections[1].label, "Leaf");
+    }
+
+    #[test]
+    fn parse_google_vision_response_errors_on_missing_annotations() {
+        let cfg = ExternalApiConfig {
+            provider: VisionProvider::GoogleVision,
+            ..enabled_config()
+        };
+        let client = VisionClient::new(&cfg).unwrap();
+        let body = r#"{"responses": [{}]}"#;
+        let result = client.parse_google_vision_response(body, "classification");
+        assert!(result.is_err());
+    }
+}

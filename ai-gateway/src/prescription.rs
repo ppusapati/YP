@@ -80,3 +80,113 @@ impl PrescriptionEngine {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn prescription_engine_constructs() {
+        let _engine = PrescriptionEngine::new();
+    }
+
+    fn make_grid(rows: i32, cols: i32) -> proto::PrescriptionGrid {
+        proto::PrescriptionGrid {
+            rows,
+            cols,
+            cell_size_m: 10.0,
+            origin_lat: 40.0,
+            origin_lon: -89.0,
+        }
+    }
+
+    fn make_zone_input(n: usize) -> proto::PrescriptionZoneInput {
+        proto::PrescriptionZoneInput {
+            ndvi: vec![0.65; n],
+            soil_nitrogen: vec![30.0; n],
+            soil_phosphorus: vec![15.0; n],
+            soil_potassium: vec![120.0; n],
+            soil_ph: vec![6.5; n],
+            soil_moisture: vec![0.28; n],
+            soil_organic_matter: vec![3.5; n],
+        }
+    }
+
+    fn make_crop_requirements() -> proto::PrescriptionCropRequirements {
+        proto::PrescriptionCropRequirements {
+            crop_type: "corn".to_string(),
+            target_yield_kg_ha: 10000.0,
+            nitrogen_kg_ha: 180.0,
+            phosphorus_kg_ha: 40.0,
+            potassium_kg_ha: 60.0,
+            optimal_ph_low: 6.0,
+            optimal_ph_high: 7.0,
+            water_requirement_mm: 500.0,
+            seed_rate_per_ha: 80000.0,
+        }
+    }
+
+    #[test]
+    fn generate_prescription_small_grid() {
+        let engine = PrescriptionEngine::new();
+        let rows = 4;
+        let cols = 4;
+        let n = (rows * cols) as usize;
+
+        let req = proto::GeneratePrescriptionRequest {
+            request_id: "rx-001".to_string(),
+            field_id: "field-p".to_string(),
+            grid: Some(make_grid(rows, cols)),
+            zone_input: Some(make_zone_input(n)),
+            crop_requirements: Some(make_crop_requirements()),
+            prescription_types: vec!["FERTILIZER".to_string()],
+        };
+        let resp = engine.generate_prescription(&req);
+        assert_eq!(resp.request_id, "rx-001");
+        assert_eq!(resp.field_id, "field-p");
+        assert!(resp.processing_time_ms >= 0);
+        assert!(resp.estimated_cost_savings_pct.is_finite());
+        assert!(resp.estimated_yield_gain_pct.is_finite());
+    }
+
+    #[test]
+    fn generate_prescription_preserves_ids() {
+        let engine = PrescriptionEngine::new();
+        let n = 4usize;
+        let req = proto::GeneratePrescriptionRequest {
+            request_id: "preserve-id".to_string(),
+            field_id: "field-q".to_string(),
+            grid: Some(make_grid(2, 2)),
+            zone_input: Some(make_zone_input(n)),
+            crop_requirements: Some(make_crop_requirements()),
+            prescription_types: vec![],
+        };
+        let resp = engine.generate_prescription(&req);
+        assert_eq!(resp.request_id, "preserve-id");
+        assert_eq!(resp.field_id, "field-q");
+    }
+
+    #[test]
+    fn generate_prescription_produces_prescriptions() {
+        let engine = PrescriptionEngine::new();
+        let rows = 3;
+        let cols = 3;
+        let n = (rows * cols) as usize;
+
+        let req = proto::GeneratePrescriptionRequest {
+            request_id: "rx-002".to_string(),
+            field_id: "field-r".to_string(),
+            grid: Some(make_grid(rows, cols)),
+            zone_input: Some(make_zone_input(n)),
+            crop_requirements: Some(make_crop_requirements()),
+            prescription_types: vec![],
+        };
+        let resp = engine.generate_prescription(&req);
+        // Should produce at least one prescription map
+        assert!(!resp.prescriptions.is_empty());
+        for p in &resp.prescriptions {
+            assert!(!p.prescription_type.is_empty());
+            assert!(!p.unit.is_empty());
+        }
+    }
+}

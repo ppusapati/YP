@@ -884,6 +884,266 @@ pub struct PrescriptionZoneSummary {
     #[prost(double, tag = "7")]
     pub total_amount: f64,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnalyzeTerrainRequest {
+    #[prost(string, tag = "1")]
+    pub request_id: ::prost::alloc::string::String,
+    /// DEM elevation data as a flat row-major array.
+    #[prost(double, repeated, tag = "2")]
+    pub elevation: ::prost::alloc::vec::Vec<f64>,
+    #[prost(int32, tag = "3")]
+    pub width: i32,
+    #[prost(int32, tag = "4")]
+    pub height: i32,
+    /// Cell size in meters (square cells).
+    #[prost(double, tag = "5")]
+    pub cell_size: f64,
+    /// Nodata value (default -9999).
+    #[prost(double, tag = "6")]
+    pub nodata_value: f64,
+    /// Which analyses to run: SLOPE, ASPECT, CONTOUR, FLOW_DIRECTION,
+    /// FLOW_ACCUMULATION, WATERSHED, HILLSHADE, TRI, TPI, FULL.
+    #[prost(string, repeated, tag = "7")]
+    pub analyses: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// Contour interval in meters (used when CONTOUR or FULL is requested).
+    #[prost(double, tag = "8")]
+    pub contour_interval: f64,
+    /// Stream threshold for flow accumulation (used when FLOW_ACCUMULATION or FULL).
+    #[prost(double, tag = "9")]
+    pub stream_threshold: f64,
+    /// Hillshade parameters (defaults: azimuth 315, altitude 45, z_factor 1).
+    #[prost(double, tag = "10")]
+    pub hillshade_azimuth: f64,
+    #[prost(double, tag = "11")]
+    pub hillshade_altitude: f64,
+    #[prost(double, tag = "12")]
+    pub hillshade_z_factor: f64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnalyzeTerrainResponse {
+    #[prost(string, tag = "1")]
+    pub request_id: ::prost::alloc::string::String,
+    #[prost(int32, tag = "2")]
+    pub width: i32,
+    #[prost(int32, tag = "3")]
+    pub height: i32,
+    /// Slope in degrees (row-major flat array).
+    #[prost(double, repeated, tag = "4")]
+    pub slope: ::prost::alloc::vec::Vec<f64>,
+    /// Aspect in degrees clockwise from north.
+    #[prost(double, repeated, tag = "5")]
+    pub aspect: ::prost::alloc::vec::Vec<f64>,
+    /// Hillshade values (0-255).
+    #[prost(double, repeated, tag = "6")]
+    pub hillshade: ::prost::alloc::vec::Vec<f64>,
+    /// Terrain Ruggedness Index.
+    #[prost(double, repeated, tag = "7")]
+    pub tri: ::prost::alloc::vec::Vec<f64>,
+    /// Topographic Position Index.
+    #[prost(double, repeated, tag = "8")]
+    pub tpi: ::prost::alloc::vec::Vec<f64>,
+    /// D8 flow direction (encoded as u8, cast to int32).
+    #[prost(int32, repeated, tag = "9")]
+    pub flow_direction: ::prost::alloc::vec::Vec<i32>,
+    /// Flow accumulation values.
+    #[prost(double, repeated, tag = "10")]
+    pub flow_accumulation: ::prost::alloc::vec::Vec<f64>,
+    /// Watershed IDs per cell.
+    #[prost(uint32, repeated, tag = "11")]
+    pub watershed_ids: ::prost::alloc::vec::Vec<u32>,
+    /// Contour lines.
+    #[prost(message, repeated, tag = "12")]
+    pub contour_lines: ::prost::alloc::vec::Vec<TerrainContourLine>,
+    /// DEM statistics.
+    #[prost(message, optional, tag = "13")]
+    pub dem_statistics: ::core::option::Option<TerrainDemStatistics>,
+    /// Flow accumulation statistics.
+    #[prost(message, optional, tag = "14")]
+    pub flow_statistics: ::core::option::Option<TerrainFlowStats>,
+    /// Per-watershed statistics.
+    #[prost(message, repeated, tag = "15")]
+    pub watershed_statistics: ::prost::alloc::vec::Vec<TerrainWatershedInfo>,
+    #[prost(int64, tag = "16")]
+    pub processing_time_ms: i64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TerrainContourLine {
+    #[prost(double, tag = "1")]
+    pub elevation: f64,
+    /// Interleaved x,y coordinates: \[x0, y0, x1, y1, ...\].
+    #[prost(double, repeated, tag = "2")]
+    pub coordinates: ::prost::alloc::vec::Vec<f64>,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct TerrainDemStatistics {
+    #[prost(double, tag = "1")]
+    pub min_elevation: f64,
+    #[prost(double, tag = "2")]
+    pub max_elevation: f64,
+    #[prost(double, tag = "3")]
+    pub mean_elevation: f64,
+    #[prost(double, tag = "4")]
+    pub elevation_range: f64,
+    #[prost(int64, tag = "5")]
+    pub valid_cells: i64,
+    #[prost(int64, tag = "6")]
+    pub total_cells: i64,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct TerrainFlowStats {
+    #[prost(double, tag = "1")]
+    pub max_accumulation: f64,
+    #[prost(double, tag = "2")]
+    pub mean_accumulation: f64,
+    #[prost(int64, tag = "3")]
+    pub stream_cell_count: i64,
+    #[prost(int64, tag = "4")]
+    pub total_cells: i64,
+    #[prost(double, tag = "5")]
+    pub drainage_density: f64,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct TerrainWatershedInfo {
+    #[prost(uint32, tag = "1")]
+    pub id: u32,
+    #[prost(int64, tag = "2")]
+    pub cell_count: i64,
+    #[prost(double, tag = "3")]
+    pub area_sq_m: f64,
+    #[prost(double, tag = "4")]
+    pub mean_elevation: f64,
+    #[prost(double, tag = "5")]
+    pub min_elevation: f64,
+    #[prost(double, tag = "6")]
+    pub max_elevation: f64,
+    #[prost(double, tag = "7")]
+    pub relief: f64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimulateWaterFlowRequest {
+    #[prost(string, tag = "1")]
+    pub request_id: ::prost::alloc::string::String,
+    /// Soil moisture parameters.
+    #[prost(message, optional, tag = "2")]
+    pub moisture_params: ::core::option::Option<WaterFlowMoistureParams>,
+    /// Water balance parameters.
+    #[prost(message, optional, tag = "3")]
+    pub balance_params: ::core::option::Option<WaterFlowBalanceParams>,
+    /// Simulation inputs.
+    #[prost(double, tag = "4")]
+    pub rainfall_mm_day: f64,
+    #[prost(double, tag = "5")]
+    pub et_mm_day: f64,
+    #[prost(double, tag = "6")]
+    pub irrigation_mm_day: f64,
+    #[prost(double, tag = "7")]
+    pub simulation_days: f64,
+    /// Daily rainfall series (used for water balance computation; overrides
+    /// rainfall_mm_day when non-empty).
+    #[prost(double, repeated, tag = "8")]
+    pub daily_rainfall_mm: ::prost::alloc::vec::Vec<f64>,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct WaterFlowMoistureParams {
+    #[prost(int32, tag = "1")]
+    pub num_layers: i32,
+    #[prost(double, tag = "2")]
+    pub layer_thickness_m: f64,
+    #[prost(double, tag = "3")]
+    pub k_sat_m_day: f64,
+    #[prost(double, tag = "4")]
+    pub field_capacity: f64,
+    #[prost(double, tag = "5")]
+    pub wilting_point: f64,
+    #[prost(double, tag = "6")]
+    pub saturation: f64,
+    #[prost(double, tag = "7")]
+    pub root_zone_depth_m: f64,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct WaterFlowBalanceParams {
+    #[prost(double, tag = "1")]
+    pub field_area_ha: f64,
+    #[prost(double, tag = "2")]
+    pub crop_coefficient: f64,
+    #[prost(double, tag = "3")]
+    pub reference_et_mm_day: f64,
+    #[prost(double, tag = "4")]
+    pub root_zone_depth_m: f64,
+    #[prost(double, tag = "5")]
+    pub field_capacity: f64,
+    #[prost(double, tag = "6")]
+    pub wilting_point: f64,
+    #[prost(double, tag = "7")]
+    pub management_allowed_depletion: f64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimulateWaterFlowResponse {
+    #[prost(string, tag = "1")]
+    pub request_id: ::prost::alloc::string::String,
+    /// Soil moisture profiles over time.
+    #[prost(message, repeated, tag = "2")]
+    pub moisture_profiles: ::prost::alloc::vec::Vec<SoilMoistureSnapshot>,
+    /// Daily water balance results.
+    #[prost(message, repeated, tag = "3")]
+    pub water_balance: ::prost::alloc::vec::Vec<WaterBalanceDay>,
+    /// Irrigation schedule summary.
+    #[prost(message, optional, tag = "4")]
+    pub irrigation_summary: ::core::option::Option<WaterFlowIrrigationSummary>,
+    #[prost(int64, tag = "5")]
+    pub processing_time_ms: i64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SoilMoistureSnapshot {
+    #[prost(double, tag = "1")]
+    pub time_days: f64,
+    #[prost(double, repeated, tag = "2")]
+    pub layer_moisture: ::prost::alloc::vec::Vec<f64>,
+    #[prost(double, tag = "3")]
+    pub root_zone_water_mm: f64,
+    #[prost(double, tag = "4")]
+    pub available_water_mm: f64,
+    #[prost(double, tag = "5")]
+    pub drainage_mm_day: f64,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct WaterBalanceDay {
+    #[prost(int32, tag = "1")]
+    pub day: i32,
+    #[prost(double, tag = "2")]
+    pub etc_mm_day: f64,
+    #[prost(double, tag = "3")]
+    pub depletion_mm: f64,
+    #[prost(double, tag = "4")]
+    pub total_available_water_mm: f64,
+    #[prost(double, tag = "5")]
+    pub readily_available_water_mm: f64,
+    #[prost(bool, tag = "6")]
+    pub irrigation_needed: bool,
+    #[prost(double, tag = "7")]
+    pub irrigation_amount_mm: f64,
+    #[prost(double, tag = "8")]
+    pub effective_rainfall_mm: f64,
+    #[prost(double, tag = "9")]
+    pub deep_percolation_mm: f64,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct WaterFlowIrrigationSummary {
+    #[prost(double, tag = "1")]
+    pub total_irrigation_mm: f64,
+    #[prost(double, tag = "2")]
+    pub total_effective_rainfall_mm: f64,
+    #[prost(double, tag = "3")]
+    pub total_crop_et_mm: f64,
+    #[prost(double, tag = "4")]
+    pub total_deep_percolation_mm: f64,
+    #[prost(int32, tag = "5")]
+    pub irrigation_events: i32,
+    #[prost(double, tag = "6")]
+    pub average_interval_days: f64,
+    #[prost(double, tag = "7")]
+    pub water_use_efficiency: f64,
+}
 /// Generated server implementations.
 pub mod ai_gateway_service_server {
     #![allow(
@@ -998,6 +1258,22 @@ pub mod ai_gateway_service_server {
             request: tonic::Request<super::GeneratePrescriptionRequest>,
         ) -> std::result::Result<
             tonic::Response<super::GeneratePrescriptionResponse>,
+            tonic::Status,
+        >;
+        /// ─── Terrain Analysis ───────────────────────────────────────────
+        async fn analyze_terrain(
+            &self,
+            request: tonic::Request<super::AnalyzeTerrainRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AnalyzeTerrainResponse>,
+            tonic::Status,
+        >;
+        /// ─── Water Flow Simulation ──────────────────────────────────────
+        async fn simulate_water_flow(
+            &self,
+            request: tonic::Request<super::SimulateWaterFlowRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::SimulateWaterFlowResponse>,
             tonic::Status,
         >;
     }
@@ -1634,6 +1910,101 @@ pub mod ai_gateway_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = GeneratePrescriptionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/agriculture.ai.v1.AIGatewayService/AnalyzeTerrain" => {
+                    #[allow(non_camel_case_types)]
+                    struct AnalyzeTerrainSvc<T: AiGatewayService>(pub Arc<T>);
+                    impl<
+                        T: AiGatewayService,
+                    > tonic::server::UnaryService<super::AnalyzeTerrainRequest>
+                    for AnalyzeTerrainSvc<T> {
+                        type Response = super::AnalyzeTerrainResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AnalyzeTerrainRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as AiGatewayService>::analyze_terrain(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = AnalyzeTerrainSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/agriculture.ai.v1.AIGatewayService/SimulateWaterFlow" => {
+                    #[allow(non_camel_case_types)]
+                    struct SimulateWaterFlowSvc<T: AiGatewayService>(pub Arc<T>);
+                    impl<
+                        T: AiGatewayService,
+                    > tonic::server::UnaryService<super::SimulateWaterFlowRequest>
+                    for SimulateWaterFlowSvc<T> {
+                        type Response = super::SimulateWaterFlowResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SimulateWaterFlowRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as AiGatewayService>::simulate_water_flow(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = SimulateWaterFlowSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

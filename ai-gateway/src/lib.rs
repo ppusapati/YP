@@ -15,6 +15,8 @@ pub mod prescription;
 pub mod recommend;
 pub mod satellite;
 pub mod service;
+pub mod terrain;
+pub mod water_flow;
 pub mod vision_client;
 pub mod yield_predict;
 

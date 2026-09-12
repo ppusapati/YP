@@ -17,6 +17,13 @@ DATABASES=(
   traceability_service
   commerce_service
   auth_service
+  satellite_ingestion_service
+  satellite_processing_service
+  satellite_analytics_service
+  satellite_tile_service
+  vegetation_index_service
+  task_service
+  agronomy_service
 )
 
 for db in "${DATABASES[@]}"; do

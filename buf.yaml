@@ -22,6 +22,8 @@ modules:
   - path: satellite-analytics-service/proto
   - path: satellite-tile-service/proto
   - path: vegetation-index-service/proto
+  - path: task-service/proto
+  - path: agronomy-service/proto
   - path: ai-gateway/proto
 lint:
   use:

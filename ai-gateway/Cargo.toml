@@ -28,6 +28,8 @@ climate-response-engine = { path = "../rust-engines/climate-response-engine" }
 alert-engine = { path = "../rust-engines/alert-engine" }
 analytics-engine = { path = "../rust-engines/analytics-engine" }
 prescription-engine = { path = "../rust-engines/prescription-engine" }
+terrain-analysis-engine = { path = "../rust-engines/terrain-analysis-engine" }
+water-flow-simulation-engine = { path = "../rust-engines/water-flow-simulation-engine" }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Serialization

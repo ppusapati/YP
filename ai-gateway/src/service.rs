@@ -23,7 +23,9 @@ use crate::proto;
 use crate::proto::ai_gateway_service_server::AiGatewayService;
 use crate::recommend::RecommendEngine;
 use crate::satellite::SatelliteEngine;
+use crate::terrain::TerrainEngine;
 use crate::vision_client::{VisionClient, VisionResult};
+use crate::water_flow::WaterFlowEngine;
 use crate::yield_predict::YieldEngine;
 
 /// The AI Gateway gRPC service implementation.
@@ -39,6 +41,8 @@ pub struct AiGatewayServiceImpl {
     alerting: Arc<AlertingEngine>,
     analytics: Arc<AnalyticsEngine>,
     prescription: Arc<PrescriptionEngine>,
+    terrain: Arc<TerrainEngine>,
+    water_flow: Arc<WaterFlowEngine>,
     vision_client: Option<Arc<VisionClient>>,
     data_collector: Arc<DataCollector>,
 }
@@ -84,6 +88,8 @@ impl AiGatewayServiceImpl {
             alerting: Arc::new(AlertingEngine::new()),
             analytics: Arc::new(AnalyticsEngine::new()),
             prescription: Arc::new(PrescriptionEngine::new()),
+            terrain: Arc::new(TerrainEngine::new()),
+            water_flow: Arc::new(WaterFlowEngine::new()),
             vision_client,
             data_collector,
         })
@@ -526,6 +532,52 @@ impl AiGatewayService for AiGatewayServiceImpl {
         let result = tokio::task::spawn_blocking(move || engine.generate_prescription(&req))
             .await
             .map_err(|e| Status::internal(format!("prescription generation panicked: {e}")))?;
+
+        Ok(Response::new(result))
+    }
+
+    // ─── Terrain Analysis ───────────────────────────────────────────
+
+    async fn analyze_terrain(
+        &self,
+        request: Request<proto::AnalyzeTerrainRequest>,
+    ) -> Result<Response<proto::AnalyzeTerrainResponse>, Status> {
+        let mut req = request.into_inner();
+        req.request_id = ensure_request_id(&req.request_id);
+        tracing::info!(
+            request_id = %req.request_id,
+            width = req.width,
+            height = req.height,
+            analyses = ?req.analyses,
+            "AnalyzeTerrain"
+        );
+
+        let engine = self.terrain.clone();
+        let result = tokio::task::spawn_blocking(move || engine.analyze(&req))
+            .await
+            .map_err(|e| Status::internal(format!("terrain analysis panicked: {e}")))?;
+
+        Ok(Response::new(result))
+    }
+
+    // ─── Water Flow Simulation ──────────────────────────────────────
+
+    async fn simulate_water_flow(
+        &self,
+        request: Request<proto::SimulateWaterFlowRequest>,
+    ) -> Result<Response<proto::SimulateWaterFlowResponse>, Status> {
+        let mut req = request.into_inner();
+        req.request_id = ensure_request_id(&req.request_id);
+        tracing::info!(
+            request_id = %req.request_id,
+            days = req.simulation_days,
+            "SimulateWaterFlow"
+        );
+
+        let engine = self.water_flow.clone();
+        let result = tokio::task::spawn_blocking(move || engine.simulate(&req))
+            .await
+            .map_err(|e| Status::internal(format!("water flow simulation panicked: {e}")))?;
 
         Ok(Response::new(result))
     }

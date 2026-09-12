@@ -180,3 +180,139 @@ impl DataCollector {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::DataCollectionConfig;
+    use crate::vision_client::{Detection, VisionResult};
+
+    fn disabled_config() -> DataCollectionConfig {
+        DataCollectionConfig {
+            enabled: false,
+            storage_dir: "/tmp/test-collection".to_string(),
+            max_images_per_category: 100,
+            save_raw_response: false,
+        }
+    }
+
+    fn enabled_config() -> DataCollectionConfig {
+        DataCollectionConfig {
+            enabled: true,
+            storage_dir: "/tmp/test-collection".to_string(),
+            max_images_per_category: 100,
+            save_raw_response: true,
+        }
+    }
+
+    fn sample_vision_result() -> VisionResult {
+        VisionResult {
+            provider: "test".to_string(),
+            task: "disease".to_string(),
+            detections: vec![Detection {
+                label: "Leaf Blight".to_string(),
+                scientific_name: "Alternaria alternata".to_string(),
+                confidence: 0.92,
+                category: "fungal".to_string(),
+                description: "Fungal leaf disease".to_string(),
+                severity: "moderate".to_string(),
+                recommendations: vec!["Apply fungicide".to_string()],
+            }],
+            raw_response: Some(r#"{"test": true}"#.to_string()),
+        }
+    }
+
+    #[tokio::test]
+    async fn data_collector_creates_with_disabled_config() {
+        let cfg = disabled_config();
+        let collector = DataCollector::new(&cfg);
+        assert!(!collector.is_enabled());
+    }
+
+    #[tokio::test]
+    async fn data_collector_creates_with_enabled_config() {
+        let cfg = enabled_config();
+        let collector = DataCollector::new(&cfg);
+        assert!(collector.is_enabled());
+    }
+
+    #[tokio::test]
+    async fn collect_is_noop_when_disabled() {
+        let cfg = disabled_config();
+        let collector = DataCollector::new(&cfg);
+        // Should return immediately without error when disabled.
+        collector
+            .collect(vec![0xFF, 0xD8, 0xFF], sample_vision_result())
+            .await;
+    }
+
+    #[test]
+    fn training_sample_serializes_to_json() {
+        let sample = TrainingSample {
+            id: "20260101_000000_000000".to_string(),
+            timestamp: "2026-01-01T00:00:00Z".to_string(),
+            task: "disease".to_string(),
+            provider: "plantnet".to_string(),
+            image_path: "/data/images/test.jpg".to_string(),
+            labels: vec![Label {
+                name: "Rust".to_string(),
+                scientific_name: "Puccinia graminis".to_string(),
+                confidence: 0.85,
+                category: "fungal".to_string(),
+                severity: "high".to_string(),
+            }],
+            raw_api_response: None,
+        };
+        let json = serde_json::to_string(&sample).expect("should serialize");
+        assert!(json.contains("Puccinia graminis"));
+        assert!(json.contains("\"confidence\":0.85"));
+    }
+
+    #[test]
+    fn training_sample_roundtrips_through_json() {
+        let sample = TrainingSample {
+            id: "test_001".to_string(),
+            timestamp: "2026-06-15T12:00:00Z".to_string(),
+            task: "pest".to_string(),
+            provider: "custom".to_string(),
+            image_path: "/images/pest.jpg".to_string(),
+            labels: vec![
+                Label {
+                    name: "Aphid".to_string(),
+                    scientific_name: "Aphis gossypii".to_string(),
+                    confidence: 0.78,
+                    category: "insect".to_string(),
+                    severity: "low".to_string(),
+                },
+                Label {
+                    name: "Whitefly".to_string(),
+                    scientific_name: "Bemisia tabaci".to_string(),
+                    confidence: 0.45,
+                    category: "insect".to_string(),
+                    severity: "low".to_string(),
+                },
+            ],
+            raw_api_response: Some("raw data".to_string()),
+        };
+        let json = serde_json::to_string(&sample).unwrap();
+        let deserialized: TrainingSample = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.id, "test_001");
+        assert_eq!(deserialized.labels.len(), 2);
+        assert_eq!(deserialized.labels[0].name, "Aphid");
+        assert_eq!(deserialized.raw_api_response, Some("raw data".to_string()));
+    }
+
+    #[test]
+    fn label_fields_are_accessible() {
+        let label = Label {
+            name: "Test Disease".to_string(),
+            scientific_name: "Testus diseaseus".to_string(),
+            confidence: 0.99,
+            category: "bacterial".to_string(),
+            severity: "critical".to_string(),
+        };
+        assert_eq!(label.name, "Test Disease");
+        assert_eq!(label.confidence, 0.99);
+        assert_eq!(label.severity, "critical");
+    }
+}
