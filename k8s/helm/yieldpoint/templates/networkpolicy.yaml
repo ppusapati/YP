@@ -1,0 +1,270 @@
+{{- if .Values.networkPolicy.enabled }}
+{{/*
+  Default deny-all ingress for the namespace.
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+{{/*
+  Allow ingress controller to reach services that appear in ingress paths.
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-controller
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          {{- range .Values.ingress.paths }}
+          - {{ .service }}
+          {{- end }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 50051
+
+{{/*
+  Every application service may talk to postgres and kafka.
+*/}}
+{{- range $key, $svc := .Values.services }}
+{{- $svcName := printf "%s-service" $key }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $svcName }}-egress
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" $svcName "context" $) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" $svcName) | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: yieldpoint
+      ports:
+        - protocol: TCP
+          port: {{ $svc.port | default 8080 }}
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Kafka
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    # Inter-service gRPC / HTTP within the namespace
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: yieldpoint
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 50051
+{{- end }}
+
+{{/*
+  AI Gateway network policy.
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-gateway-policy
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "ai-gateway" "context" $) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "ai-gateway") | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: yieldpoint
+      ports:
+        - protocol: TCP
+          port: {{ .Values.aiGateway.port }}
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    # Allow outbound HTTPS for external AI model APIs
+    - ports:
+        - protocol: TCP
+          port: 443
+
+{{/*
+  PostgreSQL: accept connections only from yieldpoint services.
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-policy
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "postgres" "context" $) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "postgres") | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: yieldpoint
+      ports:
+        - protocol: TCP
+          port: 5432
+
+{{/*
+  Kafka: accept connections only from yieldpoint services.
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-policy
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "kafka" "context" $) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "kafka") | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: yieldpoint
+      ports:
+        - protocol: TCP
+          port: 9092
+
+{{/*
+  Prometheus: scrape all pods and allow Grafana to query.
+*/}}
+{{- if .Values.monitoring.prometheus.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus-policy
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "prometheus" "context" $) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "prometheus") | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
+      ports:
+        - protocol: TCP
+          port: 9090
+  egress:
+    - to:
+        - podSelector: {}
+{{- end }}
+
+{{- if .Values.monitoring.grafana.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana-policy
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "grafana" "context" $) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "grafana") | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+{{- end }}
+{{- end }}

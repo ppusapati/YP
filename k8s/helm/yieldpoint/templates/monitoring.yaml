@@ -1,0 +1,122 @@
+{{/*
+  Prometheus deployment and PVC.
+*/}}
+{{- if .Values.monitoring.prometheus.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "prometheus" "context" $) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "prometheus") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "prometheus") | nindent 8 }}
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      containers:
+        - name: prometheus
+          image: {{ .Values.monitoring.prometheus.image }}
+          ports:
+            - containerPort: 9090
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.retention.time={{ .Values.monitoring.prometheus.retention }}"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+          resources:
+            {{- toYaml .Values.monitoring.prometheus.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.monitoring.prometheus.storage }}
+{{- end }}
+
+{{/*
+  Grafana deployment and PVC.
+*/}}
+{{- if .Values.monitoring.grafana.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "grafana" "context" $) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "grafana") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "grafana") | nindent 8 }}
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      containers:
+        - name: grafana
+          image: {{ .Values.monitoring.grafana.image }}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: GRAFANA_ADMIN_PASSWORD
+          volumeMounts:
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning
+            - name: data
+              mountPath: /var/lib/grafana
+          resources:
+            {{- toYaml .Values.monitoring.grafana.resources | nindent 12 }}
+      volumes:
+        - name: provisioning
+          configMap:
+            name: grafana-provisioning
+        - name: data
+          persistentVolumeClaim:
+            claimName: grafana-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.monitoring.grafana.storage }}
+{{- end }}

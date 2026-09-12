@@ -1,0 +1,189 @@
+{{/*
+  Deployments for every entry in .Values.services (HTTP microservices).
+*/}}
+{{- range $key, $svc := .Values.services }}
+{{- $svcName := printf "%s-service" $key }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svcName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" $svcName "context" $) | nindent 4 }}
+spec:
+  replicas: {{ $svc.replicas | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" $svcName) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" $svcName) | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ $svcName }}
+          image: {{ include "yieldpoint.image" (dict "svcName" $svcName "tag" ($svc.imageTag | default "") "global" $.Values.global) }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ $svc.port | default 8080 }}
+          envFrom:
+            - configMapRef:
+                name: yieldpoint-config
+          {{- if $svc.envSecret }}
+          env:
+            {{- range $svc.envSecret }}
+            - name: {{ .envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .key }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ $svc.port | default 8080 }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ $svc.port | default 8080 }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+{{- end }}
+
+{{/*
+  AI Gateway deployment (gRPC).
+*/}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "ai-gateway" "context" $) | nindent 4 }}
+spec:
+  replicas: {{ .Values.aiGateway.replicas | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "ai-gateway") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "ai-gateway") | nindent 8 }}
+    spec:
+      containers:
+        - name: ai-gateway
+          image: {{ include "yieldpoint.image" (dict "svcName" "ai-gateway" "tag" "" "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.aiGateway.port }}
+          resources:
+            {{- toYaml .Values.aiGateway.resources | nindent 12 }}
+          livenessProbe:
+            grpc:
+              port: {{ .Values.aiGateway.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            grpc:
+              port: {{ .Values.aiGateway.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+{{/*
+  API Gateway deployment.
+*/}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "api-gateway" "context" $) | nindent 4 }}
+spec:
+  replicas: {{ .Values.apiGateway.replicas | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "api-gateway") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "api-gateway") | nindent 8 }}
+    spec:
+      containers:
+        - name: api-gateway
+          image: {{ include "yieldpoint.image" (dict "svcName" "api-gateway" "tag" "" "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.apiGateway.port }}
+          envFrom:
+            - configMapRef:
+                name: yieldpoint-config
+          resources:
+            {{- toYaml .Values.apiGateway.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.apiGateway.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.apiGateway.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+{{/*
+  Monolith deployment (opt-in).
+*/}}
+{{- if .Values.monolith.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yieldpoint-monolith
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "yieldpoint-monolith" "context" $) | nindent 4 }}
+spec:
+  replicas: {{ .Values.monolith.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "yieldpoint-monolith") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "yieldpoint-monolith") | nindent 8 }}
+    spec:
+      containers:
+        - name: yieldpoint-monolith
+          image: {{ include "yieldpoint.image" (dict "svcName" "yieldpoint-monolith" "tag" "" "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.monolith.port }}
+          envFrom:
+            - configMapRef:
+                name: yieldpoint-config
+          resources:
+            {{- toYaml .Values.monolith.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.monolith.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.monolith.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+{{- end }}

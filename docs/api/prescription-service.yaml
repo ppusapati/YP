@@ -1,0 +1,267 @@
+openapi: 3.0.3
+info:
+  title: Prescription Service API
+  description: |
+    Variable-rate prescription generation and management for the YieldPoint
+    agriculture platform. Generates fertilizer, irrigation, seeding, and liming
+    prescriptions based on field and soil data.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8100
+    description: Local development
+tags:
+  - name: Prescriptions
+    description: Prescription CRUD and generation
+
+paths:
+  /agriculture.prescription.v1.PrescriptionService/ListPrescriptions:
+    post:
+      tags: [Prescriptions]
+      summary: List prescriptions with optional type filter and pagination
+      operationId: ListPrescriptions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPrescriptionsRequest'
+      responses:
+        '200':
+          description: Prescriptions listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPrescriptionsResponse'
+
+  /agriculture.prescription.v1.PrescriptionService/GetPrescription:
+    post:
+      tags: [Prescriptions]
+      summary: Get a single prescription bundle by ID
+      operationId: GetPrescription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPrescriptionRequest'
+      responses:
+        '200':
+          description: Prescription retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPrescriptionResponse'
+
+  /agriculture.prescription.v1.PrescriptionService/GeneratePrescription:
+    post:
+      tags: [Prescriptions]
+      summary: Generate a new variable-rate prescription for a field
+      operationId: GeneratePrescription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeneratePrescriptionRequest'
+      responses:
+        '200':
+          description: Prescription generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratePrescriptionResponse'
+
+  /agriculture.prescription.v1.PrescriptionService/ExportPrescription:
+    post:
+      tags: [Prescriptions]
+      summary: Export a prescription in the requested format
+      operationId: ExportPrescription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportPrescriptionRequest'
+      responses:
+        '200':
+          description: Export download URL returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportPrescriptionResponse'
+
+components:
+  schemas:
+    PrescriptionType:
+      type: string
+      enum:
+        - PRESCRIPTION_TYPE_UNSPECIFIED
+        - PRESCRIPTION_TYPE_FERTILIZER
+        - PRESCRIPTION_TYPE_IRRIGATION
+        - PRESCRIPTION_TYPE_SEEDING
+        - PRESCRIPTION_TYPE_LIMING
+
+    RateRow:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            type: number
+            format: double
+
+    SoilDataRow:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            type: number
+            format: double
+
+    PrescriptionMap:
+      type: object
+      properties:
+        id:
+          type: string
+        prescriptionType:
+          $ref: '#/components/schemas/PrescriptionType'
+        unit:
+          type: string
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/RateRow'
+        avgRate:
+          type: number
+          format: double
+
+    ZoneSummary:
+      type: object
+      properties:
+        zone:
+          type: string
+          description: '"Low", "Medium", or "High"'
+        prescriptionType:
+          $ref: '#/components/schemas/PrescriptionType'
+        areaHectares:
+          type: number
+          format: double
+        minRate:
+          type: number
+          format: double
+        meanRate:
+          type: number
+          format: double
+        maxRate:
+          type: number
+          format: double
+        totalAmount:
+          type: number
+          format: double
+
+    PrescriptionBundle:
+      type: object
+      properties:
+        id:
+          type: string
+        fieldId:
+          type: string
+        fieldName:
+          type: string
+        cropType:
+          type: string
+        targetYield:
+          type: number
+          format: double
+        createdAt:
+          type: string
+        estimatedCostSavings:
+          type: number
+          format: double
+        estimatedYieldGain:
+          type: number
+          format: double
+        prescriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionMap'
+        zoneSummaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneSummary'
+
+    ListPrescriptionsRequest:
+      type: object
+      properties:
+        prescriptionType:
+          $ref: '#/components/schemas/PrescriptionType'
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+
+    ListPrescriptionsResponse:
+      type: object
+      properties:
+        prescriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionBundle'
+        nextPageToken:
+          type: string
+
+    GetPrescriptionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetPrescriptionResponse:
+      type: object
+      properties:
+        prescription:
+          $ref: '#/components/schemas/PrescriptionBundle'
+
+    GeneratePrescriptionRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        cropType:
+          type: string
+        targetYield:
+          type: number
+          format: double
+        soilData:
+          type: array
+          items:
+            $ref: '#/components/schemas/SoilDataRow'
+          description: Optional soil data grid
+
+    GeneratePrescriptionResponse:
+      type: object
+      properties:
+        prescription:
+          $ref: '#/components/schemas/PrescriptionBundle'
+
+    ExportPrescriptionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        format:
+          type: string
+          description: '"csv", "shapefile", or "pdf"'
+
+    ExportPrescriptionResponse:
+      type: object
+      properties:
+        downloadUrl:
+          type: string
+        fileName:
+          type: string

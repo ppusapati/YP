@@ -1,0 +1,155 @@
+{{/*
+  ClusterIP Service for each application service.
+*/}}
+{{- range $key, $svc := .Values.services }}
+{{- $svcName := printf "%s-service" $key }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svcName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" $svcName "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" $svcName) | nindent 4 }}
+  ports:
+    - port: {{ $svc.port | default 8080 }}
+      targetPort: {{ $svc.port | default 8080 }}
+      protocol: TCP
+{{- end }}
+
+{{/*
+  AI Gateway service.
+*/}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "ai-gateway" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "ai-gateway") | nindent 4 }}
+  ports:
+    - port: {{ .Values.aiGateway.port }}
+      targetPort: {{ .Values.aiGateway.port }}
+      protocol: TCP
+
+{{/*
+  API Gateway service.
+*/}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "api-gateway" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "api-gateway") | nindent 4 }}
+  ports:
+    - port: {{ .Values.apiGateway.port }}
+      targetPort: {{ .Values.apiGateway.port }}
+      protocol: TCP
+
+{{/*
+  Monolith service (opt-in).
+*/}}
+{{- if .Values.monolith.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yieldpoint-monolith
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "yieldpoint-monolith" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "yieldpoint-monolith") | nindent 4 }}
+  ports:
+    - port: {{ .Values.monolith.port }}
+      targetPort: {{ .Values.monolith.port }}
+      protocol: TCP
+{{- end }}
+
+{{/*
+  PostgreSQL headless service.
+*/}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "postgres" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "postgres") | nindent 4 }}
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None
+
+{{/*
+  Kafka headless service.
+*/}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "kafka" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "kafka") | nindent 4 }}
+  ports:
+    - port: 9092
+      targetPort: 9092
+  clusterIP: None
+
+{{/*
+  Monitoring services (conditional).
+*/}}
+{{- if .Values.monitoring.prometheus.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "prometheus" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "prometheus") | nindent 4 }}
+  ports:
+    - port: 9090
+      targetPort: 9090
+{{- end }}
+
+{{- if .Values.monitoring.grafana.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "grafana" "context" $) | nindent 4 }}
+spec:
+  selector:
+    {{- include "yieldpoint.selectorLabels" (dict "name" "grafana") | nindent 4 }}
+  ports:
+    - port: 3000
+      targetPort: 3000
+{{- end }}

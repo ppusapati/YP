@@ -1,0 +1,25 @@
+{
+  "name": "YieldPoint",
+  "short_name": "YieldPoint",
+  "description": "Precision agriculture platform for smart farming, field monitoring, and yield optimization.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#2E7D32",
+  "background_color": "#FAFAFA",
+  "categories": ["agriculture", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

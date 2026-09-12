@@ -1,0 +1,601 @@
+##
+## YieldPoint Helm Values
+##
+
+global:
+  imageRegistry: ghcr.io/ppusapati/yieldpoint
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+  namespace: yieldpoint
+
+## ---------------------------------------------------------------------------
+## Application services (HTTP on 8080)
+## ---------------------------------------------------------------------------
+services:
+  auth:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: AUTH_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+      - secretName: yieldpoint-secrets
+        key: JWT_SECRET
+        envName: JWT_SECRET
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 70
+
+  farm:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: FARM_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 70
+
+  field:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: FIELD_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 70
+
+  crop:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: CROP_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 70
+
+  soil:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: SOIL_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  sensor:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: SENSOR_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 10
+      cpuTarget: 65
+
+  irrigation:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: IRRIGATION_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  pest-prediction:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: PEST_PREDICTION_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  plant-diagnosis:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: PLANT_DIAGNOSIS_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  yield:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: YIELD_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  commerce:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: COMMERCE_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 70
+
+  traceability:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: TRACEABILITY_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  satellite:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: SATELLITE_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  satellite-ingestion:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: SATELLITE_INGESTION_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 65
+
+  satellite-processing:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "2"
+    envSecret:
+      - secretName: database-urls
+        key: SATELLITE_PROCESSING_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 10
+      cpuTarget: 60
+
+  satellite-analytics:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: SATELLITE_ANALYTICS_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  satellite-tile:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: SATELLITE_TILE_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 65
+
+  vegetation-index:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    envSecret:
+      - secretName: database-urls
+        key: VEGETATION_INDEX_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  task:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: TASK_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  agronomy:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: AGRONOMY_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  alert:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  analytics:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 65
+
+  prescription:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+## ---------------------------------------------------------------------------
+## AI Gateway (gRPC on 50051)
+## ---------------------------------------------------------------------------
+aiGateway:
+  replicas: 2
+  port: 50051
+  protocol: grpc
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "2"
+  hpa:
+    minReplicas: 2
+    maxReplicas: 10
+    cpuTarget: 60
+
+## ---------------------------------------------------------------------------
+## API Gateway
+## ---------------------------------------------------------------------------
+apiGateway:
+  replicas: 2
+  port: 8080
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  hpa:
+    minReplicas: 2
+    maxReplicas: 10
+    cpuTarget: 60
+
+## ---------------------------------------------------------------------------
+## Monolith (legacy, disabled by default)
+## ---------------------------------------------------------------------------
+monolith:
+  enabled: false
+  replicas: 1
+  port: 8080
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2"
+
+## ---------------------------------------------------------------------------
+## PostgreSQL
+## ---------------------------------------------------------------------------
+postgres:
+  replicas: 1
+  image: postgres:16-alpine
+  user: yieldpoint
+  database: yieldpoint
+  storage: 20Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2"
+
+## ---------------------------------------------------------------------------
+## Kafka (KRaft mode)
+## ---------------------------------------------------------------------------
+kafka:
+  replicas: 1
+  image: confluentinc/cp-kafka:7.7.0
+  storage: 10Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1"
+
+## ---------------------------------------------------------------------------
+## Monitoring
+## ---------------------------------------------------------------------------
+monitoring:
+  prometheus:
+    enabled: true
+    image: prom/prometheus:v2.53.0
+    retention: 30d
+    storage: 20Gi
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "1"
+  grafana:
+    enabled: true
+    image: grafana/grafana:11.1.0
+    storage: 5Gi
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+## ---------------------------------------------------------------------------
+## Ingress
+## ---------------------------------------------------------------------------
+ingress:
+  enabled: true
+  host: api.yieldpoint.io
+  tls: true
+  tlsSecretName: yieldpoint-tls
+  clusterIssuer: letsencrypt-prod
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  paths:
+    - path: /auth
+      service: auth-service
+      port: 8080
+    - path: /agriculture.farm.v1
+      service: farm-service
+      port: 8080
+    - path: /agriculture.field.v1
+      service: field-service
+      port: 8080
+    - path: /agriculture.crop.v1
+      service: crop-service
+      port: 8080
+    - path: /agriculture.ai.v1
+      service: ai-gateway
+      port: 50051
+    - path: /
+      service: farm-service
+      port: 8080
+
+## ---------------------------------------------------------------------------
+## Shared ConfigMap data
+## ---------------------------------------------------------------------------
+config:
+  KAFKA_BROKERS: "kafka:9092"
+  REDIS_URL: "redis://redis:6379"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  LOG_LEVEL: "info"
+  GRPC_PLAINTEXT: "false"
+
+## ---------------------------------------------------------------------------
+## Network policies
+## ---------------------------------------------------------------------------
+networkPolicy:
+  enabled: true
