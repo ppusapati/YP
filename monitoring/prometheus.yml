@@ -1,0 +1,67 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ── Go Microservices ──────────────────────────────────────────────────────
+  - job_name: go-microservices
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - farm-service:8080
+          - field-service:8080
+          - crop-service:8080
+          - sensor-service:8080
+          - irrigation-service:8080
+          - soil-service:8080
+          - yield-service:8080
+          - pest-prediction-service:8080
+          - plant-diagnosis-service:8080
+          - satellite-service:8080
+          - traceability-service:8080
+          - commerce-service:8080
+          - auth-service:8080
+          - alert-service:8080
+          - analytics-service:8080
+          - prescription-service:8080
+          - satellite-ingestion-service:8080
+          - satellite-processing-service:8080
+          - satellite-analytics-service:8080
+          - satellite-tile-service:8080
+          - vegetation-index-service:8080
+          - task-service:8080
+          - agronomy-service:8080
+
+  # ── AI Gateway (Rust) ────────────────────────────────────────────────────
+  - job_name: ai-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - ai-gateway:50051
+
+  # ── Kafka ─────────────────────────────────────────────────────────────────
+  - job_name: kafka
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - kafka:9092
+
+  # ── Postgres (placeholder — add postgres_exporter for real metrics) ──────
+  - job_name: postgres
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - postgres:5432
+
+  # ── Node metrics (placeholder — add node_exporter service if needed) ─────
+  - job_name: node
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - node-exporter:9100
+
+  # ── Prometheus self-scrape ───────────────────────────────────────────────
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
