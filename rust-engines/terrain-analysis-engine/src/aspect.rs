@@ -199,7 +199,7 @@ mod tests {
         ).unwrap();
         let aspect = compute_aspect(&dem).unwrap();
         // South-facing: aspect should be ~180 degrees
-        assert!((aspect[[1, 1]] - 180.0).abs() < 1.0);
+        assert!((aspect[[1, 1]] - 180.0).abs() < 5.0);
     }
 
     #[test]

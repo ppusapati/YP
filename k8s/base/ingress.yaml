@@ -1,0 +1,61 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yieldpoint-ingress
+  namespace: yieldpoint
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.yieldpoint.io
+      secretName: yieldpoint-tls
+  rules:
+    - host: api.yieldpoint.io
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8080
+          - path: /agriculture.farm.v1
+            pathType: Prefix
+            backend:
+              service:
+                name: farm-service
+                port:
+                  number: 8080
+          - path: /agriculture.field.v1
+            pathType: Prefix
+            backend:
+              service:
+                name: field-service
+                port:
+                  number: 8080
+          - path: /agriculture.crop.v1
+            pathType: Prefix
+            backend:
+              service:
+                name: crop-service
+                port:
+                  number: 8080
+          - path: /agriculture.ai.v1
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-gateway
+                port:
+                  number: 50051
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: farm-service
+                port:
+                  number: 8080

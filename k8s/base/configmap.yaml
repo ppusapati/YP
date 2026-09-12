@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yieldpoint-config
+  namespace: yieldpoint
+data:
+  KAFKA_BROKERS: "kafka:9092"
+  REDIS_URL: "redis://redis:6379"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  LOG_LEVEL: "info"
+  GRPC_PLAINTEXT: "false"
