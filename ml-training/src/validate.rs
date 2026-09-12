@@ -44,8 +44,8 @@ pub fn validate(
         let logits = model.forward(batch.images);
         let preds = logits.argmax(1).squeeze::<1>(1);
 
-        let pred_data: Vec<i32> = preds.into_data().to_vec().unwrap();
-        let label_data: Vec<i32> = batch.labels.into_data().to_vec().unwrap();
+        let pred_data: Vec<i64> = preds.into_data().to_vec().unwrap();
+        let label_data: Vec<i64> = batch.labels.into_data().to_vec().unwrap();
 
         for (pred, actual) in pred_data.iter().zip(label_data.iter()) {
             let p = *pred as usize;

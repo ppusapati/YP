@@ -184,9 +184,9 @@ mod tests {
         let weights = extract_weights(&model);
 
         let (_, dims, data) = weights.iter().find(|(n, _, _)| n == "fc2.weight").unwrap();
-        // fc2: 512 -> num_classes
-        assert_eq!(dims, &[7, 512]);
-        assert_eq!(data.len(), 7 * 512);
+        // fc2: 512 -> num_classes (burn stores as [in_features, out_features])
+        assert_eq!(dims, &[512, 7]);
+        assert_eq!(data.len(), 512 * 7);
     }
 }
 
