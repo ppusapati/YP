@@ -254,6 +254,7 @@ class SyncQueue {
       const OfflineQueueCompanion(
         retryCount: Value(0),
         lastError: Value(null),
+        status: Value('pending'),
       ),
     );
     _log.info('Failed entries reset for retry');

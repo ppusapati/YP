@@ -1,0 +1,418 @@
+openapi: 3.0.3
+info:
+  title: Agronomy Service API
+  description: |
+    Field inspection and crop advisory management for the YieldPoint agriculture
+    platform. Covers agronomist field inspections and crop advisories.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8107
+    description: Local development
+tags:
+  - name: Inspections
+    description: Field inspection operations
+  - name: Advisories
+    description: Crop advisory operations
+
+paths:
+  /agriculture.agronomy.v1.InspectionService/GetInspection:
+    post:
+      tags: [Inspections]
+      summary: Get an inspection by ID
+      operationId: GetInspection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetInspectionRequest'
+      responses:
+        '200':
+          description: Inspection retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetInspectionResponse'
+
+  /agriculture.agronomy.v1.InspectionService/ListInspections:
+    post:
+      tags: [Inspections]
+      summary: List inspections with filtering and pagination
+      operationId: ListInspections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListInspectionsRequest'
+      responses:
+        '200':
+          description: Inspections listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListInspectionsResponse'
+
+  /agriculture.agronomy.v1.InspectionService/CreateInspection:
+    post:
+      tags: [Inspections]
+      summary: Create a new field inspection
+      operationId: CreateInspection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInspectionRequest'
+      responses:
+        '200':
+          description: Inspection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInspectionResponse'
+
+  /agriculture.agronomy.v1.InspectionService/SubmitInspection:
+    post:
+      tags: [Inspections]
+      summary: Submit a draft inspection for review
+      operationId: SubmitInspection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitInspectionRequest'
+      responses:
+        '200':
+          description: Inspection submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitInspectionResponse'
+
+  /agriculture.agronomy.v1.AdvisoryService/GetAdvisory:
+    post:
+      tags: [Advisories]
+      summary: Get a crop advisory by ID
+      operationId: GetAdvisory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAdvisoryRequest'
+      responses:
+        '200':
+          description: Advisory retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAdvisoryResponse'
+
+  /agriculture.agronomy.v1.AdvisoryService/ListAdvisories:
+    post:
+      tags: [Advisories]
+      summary: List crop advisories with filtering and pagination
+      operationId: ListAdvisories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAdvisoriesRequest'
+      responses:
+        '200':
+          description: Advisories listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAdvisoriesResponse'
+
+  /agriculture.agronomy.v1.AdvisoryService/CreateAdvisory:
+    post:
+      tags: [Advisories]
+      summary: Create a new crop advisory
+      operationId: CreateAdvisory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdvisoryRequest'
+      responses:
+        '200':
+          description: Advisory created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAdvisoryResponse'
+
+components:
+  schemas:
+    InspectionStatus:
+      type: string
+      enum:
+        - INSPECTION_STATUS_UNSPECIFIED
+        - INSPECTION_STATUS_DRAFT
+        - INSPECTION_STATUS_SUBMITTED
+        - INSPECTION_STATUS_REVIEWED
+
+    IssueSeverity:
+      type: string
+      enum:
+        - ISSUE_SEVERITY_UNSPECIFIED
+        - ISSUE_SEVERITY_LOW
+        - ISSUE_SEVERITY_MEDIUM
+        - ISSUE_SEVERITY_HIGH
+        - ISSUE_SEVERITY_CRITICAL
+
+    AdvisorySeverity:
+      type: string
+      enum:
+        - ADVISORY_SEVERITY_UNSPECIFIED
+        - ADVISORY_SEVERITY_LOW
+        - ADVISORY_SEVERITY_MEDIUM
+        - ADVISORY_SEVERITY_HIGH
+        - ADVISORY_SEVERITY_CRITICAL
+
+    InspectionIssue:
+      type: object
+      properties:
+        description:
+          type: string
+        severity:
+          $ref: '#/components/schemas/IssueSeverity'
+        photoUrl:
+          type: string
+
+    Inspection:
+      type: object
+      properties:
+        id:
+          type: string
+        fieldId:
+          type: string
+        farmId:
+          type: string
+        inspectorId:
+          type: string
+        status:
+          $ref: '#/components/schemas/InspectionStatus'
+        findings:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionIssue'
+        healthScore:
+          type: number
+          format: double
+        notes:
+          type: string
+        inspectionDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Advisory:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        cropType:
+          type: string
+        severity:
+          $ref: '#/components/schemas/AdvisorySeverity'
+        region:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GetInspectionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetInspectionResponse:
+      type: object
+      properties:
+        inspection:
+          $ref: '#/components/schemas/Inspection'
+
+    ListInspectionsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        inspectorId:
+          type: string
+        status:
+          $ref: '#/components/schemas/InspectionStatus'
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+
+    ListInspectionsResponse:
+      type: object
+      properties:
+        inspections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Inspection'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    CreateInspectionRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        farmId:
+          type: string
+        findings:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionIssue'
+        healthScore:
+          type: number
+          format: double
+        notes:
+          type: string
+        inspectionDate:
+          type: string
+          format: date-time
+
+    CreateInspectionResponse:
+      type: object
+      properties:
+        inspection:
+          $ref: '#/components/schemas/Inspection'
+
+    SubmitInspectionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    SubmitInspectionResponse:
+      type: object
+      properties:
+        inspection:
+          $ref: '#/components/schemas/Inspection'
+
+    GetAdvisoryRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetAdvisoryResponse:
+      type: object
+      properties:
+        advisory:
+          $ref: '#/components/schemas/Advisory'
+
+    ListAdvisoriesRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        cropType:
+          type: string
+        severity:
+          $ref: '#/components/schemas/AdvisorySeverity'
+        region:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+
+    ListAdvisoriesResponse:
+      type: object
+      properties:
+        advisories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Advisory'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    CreateAdvisoryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        cropType:
+          type: string
+        severity:
+          $ref: '#/components/schemas/AdvisorySeverity'
+        region:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+
+    CreateAdvisoryResponse:
+      type: object
+      properties:
+        advisory:
+          $ref: '#/components/schemas/Advisory'
