@@ -265,6 +265,161 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 
 ---
 
+## Phase 2: AI/ML & Domain Expansion (Sequential)
+
+These build on each other in order. Each step produces inputs the next one needs.
+
+### E-016: Weather Service
+
+**Current state:** No weather provider integration exists. Weather values (temperature, rainfall, humidity) are caller-supplied request fields on yield, growth, and risk RPCs. Nothing ingests forecasts or stores historical observations.
+
+**Enhancements:**
+- [ ] Create `weather-service` with provider abstraction (Open-Meteo, OpenWeather, IMD for India)
+- [ ] Ingest hourly observations and 7/14-day forecasts per field centroid into the warehouse
+- [ ] Compute derived agronomic metrics: growing degree days (GDD), reference evapotranspiration (ET0 via Penman-Monteith), chill hours, rainfall deficit
+- [ ] Publish `weather.observation` and `weather.forecast` Kafka events for downstream consumers
+- [ ] Backfill 5 years of historical weather per field for model training
+- [ ] Replace caller-supplied weather fields in AI gateway RPCs with server-side lookup by field ID
+- [ ] Add weather-triggered alerts (frost, heat stress, heavy rainfall) through the existing alert-service
+
+**Effort:** Medium | **Impact:** Critical (prerequisite for E-018, E-019, E-021)
+
+---
+
+### E-017: Satellite Pipeline Hardening
+
+**Current state:** Indices NDVI/NDWI/EVI/SAVI/MSAVI/GNDVI are computed. NDRE and LAI are declared in `vegetation-index-service/internal/models/vegetation_index.go` but never computed. Cloud handling is a scene-level `cloud_cover_percent` filter only. Change detection and trend analysis in `satellite-analytics-service/internal/services/analytics_service.go` return hardcoded slope/R².
+
+**Enhancements:**
+- [ ] Implement NDRE and LAI computation in `rust-engines/satellite-ndvi-engine`
+- [ ] Add per-pixel cloud and shadow masking using Sentinel-2 SCL band and Landsat QA_PIXEL
+- [ ] Add atmospheric correction handling (prefer L2A/Collection 2 Level-2 products; flag L1C scenes)
+- [ ] Implement temporal gap-filling and cross-sensor harmonization (Sentinel-2 to Landsat)
+- [ ] Replace stubbed change detection with real before/after differencing and z-score anomaly flags
+- [ ] Replace stubbed trend analysis with the `packages/pipeline` linear regression over the index time series
+- [ ] Add field-level phenology extraction (green-up, peak, senescence dates) from NDVI curves
+- [ ] Ingest drone/UAV orthomosaics through the same pipeline with a `source=uav` discriminator
+
+**Effort:** Large | **Impact:** High
+
+---
+
+### E-018: Tabular Yield & Growth Models
+
+**Current state:** `rust-engines/yield-prediction-engine/src/model.rs` uses hardcoded per-crop constants for wheat, corn, and soybean only. Crop-growth (WOFOST/ODE) and climate-response engines are deterministic parametric models. No tabular or time-series model training exists in `ml-training/`.
+
+**Enhancements:**
+- [ ] Add a tabular training task in `ml-training/` (gradient boosting or small temporal net) using warehouse features: weather aggregates, index time series, soil, prior yields
+- [ ] Extend crop coverage to rice, cotton, sugarcane, pulses, and regional horticulture
+- [ ] Export tabular models to ONNX and serve through the existing AI gateway model registry
+- [ ] Keep the parametric engines as a fallback when a field lacks training history; blend by confidence
+- [ ] Add in-season yield forecasting that updates weekly as new imagery and weather arrive
+- [ ] Add per-field prediction intervals and expose uncertainty in the yield RPC response
+- [ ] Wire `water-flow-simulation-engine` into irrigation-service for ET0-driven water-balance scheduling
+
+**Effort:** Large | **Impact:** High
+
+---
+
+### E-019: Training Data Quality & Human-in-the-Loop Labeling
+
+**Current state:** Labels come from PlantNet/Google Vision responses via `ai-gateway/src/data_collector.rs` directly into the training manifest. No human review, no dataset versioning, no label-noise handling beyond `min_confidence` and `min_samples_per_class`.
+
+**Enhancements:**
+- [ ] Build a labeling review queue API and web UI for agronomists to confirm, correct, or reject auto-labels
+- [ ] Add dataset versioning with content hashing and immutable snapshots per training run
+- [ ] Add class-balance reporting and stratified sampling in `ml-training/src/dataset.rs`
+- [ ] Add label-noise detection (confident-learning style disagreement between model and label)
+- [ ] Track label provenance (external API, human, model-assisted) and weight samples accordingly
+- [ ] Add active-learning sampling: surface low-confidence and high-disagreement images for review first
+- [ ] Add geographic and crop-type metadata to every sample for slicing in evaluation
+
+**Effort:** Medium | **Impact:** High
+
+---
+
+### E-020: Vision Model Upgrade
+
+**Current state:** `ml-training/src/model.rs` trains a single small `PlantCnn` from scratch for all four vision tasks (disease, pest, nutrient deficiency, classification). No pretrained backbone, no transfer learning.
+
+**Enhancements:**
+- [ ] Import a pretrained backbone (ImageNet or agriculture-specific) via ONNX and fine-tune per task
+- [ ] Add multi-task heads sharing one backbone to cut inference cost on mobile
+- [ ] Add augmentation pipeline tuned for field photos: lighting, occlusion, motion blur, background variation
+- [ ] Add mobile-optimized export (quantized ONNX / TFLite) for on-device inference in the Flutter app
+- [ ] Add GPU support in the training Dockerfile (CUDA backend for burn)
+- [ ] Benchmark against the external APIs on the held-out set and gate the kill switches on parity
+
+**Effort:** Large | **Impact:** High
+
+---
+
+### E-021: Model Evaluation & Explainability
+
+**Current state:** `ml-training/src/validate.rs` reports per-class metrics only. Explainability is limited to threshold/bbox post-processing in `rust-engines/disease-detection-engine/src/heatmap.rs`. No feature attribution for yield or prescription outputs.
+
+**Enhancements:**
+- [ ] Add confusion matrix, calibration curves, and expected calibration error to validation output
+- [ ] Add a fixed held-out benchmark suite per task that every candidate model must pass before promotion
+- [ ] Add evaluation slicing by crop, region, season, and image source
+- [ ] Add Grad-CAM heatmaps for vision predictions and return them in the diagnosis response
+- [ ] Add SHAP-style feature attribution for yield and prescription outputs
+- [ ] Surface "why this recommendation" explanations in web and mobile diagnosis views
+- [ ] Add regression gates in CI: fail promotion if benchmark accuracy drops or calibration worsens
+
+**Effort:** Medium | **Impact:** High
+
+---
+
+### E-022: Agronomy Advisory Assistant (LLM + RAG)
+
+**Current state:** No LLM, embeddings, vector search, RAG, or agentic components exist anywhere in the codebase. No advisory chat on web or mobile.
+
+**Enhancements:**
+- [ ] Add an `advisory-service` that grounds an LLM on tenant-scoped field data, prescriptions, alerts, weather, and diagnosis history
+- [ ] Add tool-use bindings so the assistant can call existing services (yield forecast, irrigation decision, pest risk) rather than guess
+- [ ] Add pgvector-backed retrieval over agronomy reference material, crop guides, and regional advisories
+- [ ] Enforce tenant isolation and RLS in retrieval; never cross tenant boundaries in context
+- [ ] Add a chat UI in web and mobile with citations back to the source data or document
+- [ ] Support the locales already shipped (Hindi, Marathi, Telugu, Tamil, Kannada, Punjabi, Bengali)
+- [ ] Add response evaluation (groundedness, hallucination checks) and log every exchange for review
+- [ ] Add cost and latency budgets per tenant with the existing rate-limit and kill-switch infrastructure
+
+**Effort:** Large | **Impact:** High
+
+---
+
+### E-023: New Domain Services
+
+**Current state:** 23 services cover farm, field, crop, soil, sensor, irrigation, satellite, pest, diagnosis, prescription, yield, commerce, traceability, and tasks. No weather (see E-016), market prices, IoT device management, carbon accounting, soil-lab integration, crop planning, or financial products.
+
+**Enhancements:**
+- [ ] `market-service`: commodity price feeds (mandi/APMC, exchanges), price alerts, sell-timing signals
+- [ ] `device-service`: IoT provisioning, firmware/OTA updates, heartbeat and health, fleet grouping
+- [ ] `sustainability-service`: carbon and emissions accounting per field, input-use tracking, certification exports
+- [ ] `soil-lab` integration: import lab reports (PDF/CSV), map to soil-service records, trigger prescriptions
+- [ ] `planning-service`: season planner with crop rotation, sowing windows from weather, input budgeting
+- [ ] `finance-service`: crop insurance quotes, credit scoring from yield history, claim support with satellite evidence
+
+**Effort:** Large | **Impact:** Medium
+
+---
+
+### E-024: Stub & TODO Debt Reduction
+
+**Current state:** Concentrated TODO/FIXME/not-implemented density: mobile (192), traceability (110), field (90), farm (79), pest-prediction (73), commerce (52), plant-diagnosis (44), irrigation (42), web (~238). Placeholder/mock-data markers: packages (57), plant-diagnosis (18), pest-prediction (12). Rust side is clean.
+
+**Enhancements:**
+- [ ] Triage every marker into: implement, delete, or convert to a tracked issue
+- [ ] Clear mobile, traceability, and field first (top three by count and user-facing impact)
+- [ ] Replace mock data in plant-diagnosis and pest-prediction with real service calls
+- [ ] Add a CI check that fails when TODO count increases in a service
+- [ ] Clear web app markers alongside the E-006 component test work
+
+**Effort:** Medium | **Impact:** Medium
+
+---
+
 ## Summary Matrix
 
 | ID | Enhancement | Priority | Effort | Impact |
@@ -284,3 +439,12 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 | E-013 | Multi-Tenancy | Lower | Medium | Medium |
 | E-014 | Real-Time Features | Lower | Medium | Low |
 | E-015 | Developer Experience | Lower | Small | Low |
+| E-016 | Weather Service | Phase 2 - Step 1 | Medium | Critical |
+| E-017 | Satellite Pipeline Hardening | Phase 2 - Step 2 | Large | High |
+| E-018 | Tabular Yield & Growth Models | Phase 2 - Step 3 | Large | High |
+| E-019 | Training Data Quality & Labeling | Phase 2 - Step 4 | Medium | High |
+| E-020 | Vision Model Upgrade | Phase 2 - Step 5 | Large | High |
+| E-021 | Model Evaluation & Explainability | Phase 2 - Step 6 | Medium | High |
+| E-022 | Agronomy Advisory Assistant | Phase 2 - Step 7 | Large | High |
+| E-023 | New Domain Services | Phase 2 - Step 8 | Large | Medium |
+| E-024 | Stub & TODO Debt Reduction | Phase 2 - Step 9 | Medium | Medium |
