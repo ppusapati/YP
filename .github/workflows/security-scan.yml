@@ -97,6 +97,7 @@ jobs:
           - field-service
           - sensor-service
           - soil-service
+          - weather-service
     steps:
       - uses: actions/checkout@v4
       - name: Build image

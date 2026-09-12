@@ -395,6 +395,28 @@ services:
       maxReplicas: 6
       cpuTarget: 70
 
+  weather:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: WEATHER_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+      - secretName: yieldpoint-secrets
+        key: OPENWEATHER_API_KEY
+        envName: OPENWEATHER_API_KEY
+    hpa:
+      minReplicas: 2
+      maxReplicas: 4
+      cpuTarget: 70
+
   alert:
     replicas: 2
     port: 8080

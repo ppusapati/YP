@@ -540,6 +540,22 @@ services:
       <<: *go-env
       DATABASE_URL: ${AGRONOMY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/agronomy_service?sslmode=disable}
 
+  weather-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: weather-service
+    ports:
+      - "8108:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${WEATHER_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/weather_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      WEATHER_POLL_INTERVAL: ${WEATHER_POLL_INTERVAL:-1h}
+      WEATHER_DEFAULT_PROVIDER: ${WEATHER_DEFAULT_PROVIDER:-OPEN_METEO}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+
   # ── Monolith (all services in one binary) ──────────────────────────────────
   # Start with: docker compose --profile monolith up
   # Plain `docker compose up` still starts only the microservices above.

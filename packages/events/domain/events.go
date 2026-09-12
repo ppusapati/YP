@@ -178,6 +178,13 @@ const (
 	EventTypeSoilSampleUpdated EventType = "agriculture.soil.updated"
 	EventTypeSoilSampleDeleted EventType = "agriculture.soil.deleted"
 
+	// Agriculture - Weather Events
+	EventTypeWeatherLocationRegistered EventType = "agriculture.weather.location.registered"
+	EventTypeWeatherObservation        EventType = "agriculture.weather.observation"
+	EventTypeWeatherForecast           EventType = "agriculture.weather.forecast"
+	EventTypeWeatherAlertTriggered     EventType = "agriculture.weather.alert.triggered"
+	EventTypeWeatherBackfillCompleted  EventType = "agriculture.weather.backfill.completed"
+
 	// Agriculture - Irrigation Events
 	EventTypeIrrigationCreated EventType = "agriculture.irrigation.created"
 	EventTypeIrrigationUpdated EventType = "agriculture.irrigation.updated"
@@ -338,6 +345,8 @@ func (e *DomainEvent) GetTopic() string {
 		return "samavaya.agriculture.sensor.events"
 	case EventTypeSoilSampleCreated, EventTypeSoilSampleUpdated, EventTypeSoilSampleDeleted:
 		return "samavaya.agriculture.soil.events"
+	case EventTypeWeatherLocationRegistered, EventTypeWeatherObservation, EventTypeWeatherForecast, EventTypeWeatherAlertTriggered, EventTypeWeatherBackfillCompleted:
+		return "samavaya.agriculture.weather.events"
 	case EventTypeIrrigationCreated, EventTypeIrrigationUpdated, EventTypeIrrigationDeleted:
 		return "samavaya.agriculture.irrigation.events"
 	case EventTypeYieldCreated, EventTypeYieldUpdated, EventTypeYieldDeleted:

@@ -1,0 +1,451 @@
+openapi: 3.0.3
+info:
+  title: Weather Service API
+  description: |
+    Field-level weather ingestion, forecasts, and derived agronomic metrics
+    (growing degree days, FAO-56 reference evapotranspiration, chill hours,
+    rainfall deficit) for the YieldPoint agriculture platform. Weather is
+    sampled at each field's boundary centroid from a pluggable provider
+    (Open-Meteo by default, OpenWeather when an API key is configured) and
+    weather hazards (frost, heat stress, heavy rainfall, high wind, drought)
+    are raised as alerts and published as `agriculture.weather.*` events.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8108
+    description: Local development
+tags:
+  - name: Locations
+    description: Field weather sampling locations
+  - name: Weather
+    description: Current conditions, forecasts, and observation history
+  - name: Agronomy
+    description: Derived agronomic metrics
+  - name: Ingestion
+    description: On-demand refresh and historical backfill
+  - name: Alerts
+    description: Weather hazard alerts
+
+paths:
+  /agriculture.weather.v1.WeatherService/RegisterFieldLocation:
+    post:
+      tags: [Locations]
+      summary: Register (or update) the point at which weather is sampled for a field
+      operationId: RegisterFieldLocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterFieldLocationRequest'
+      responses:
+        '200':
+          description: Registered location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  location:
+                    $ref: '#/components/schemas/FieldLocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /agriculture.weather.v1.WeatherService/GetFieldLocation:
+    post:
+      tags: [Locations]
+      summary: Get the registered sampling location for a field
+      operationId: GetFieldLocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+      responses:
+        '200':
+          description: Location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  location:
+                    $ref: '#/components/schemas/FieldLocation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agriculture.weather.v1.WeatherService/ListFieldLocations:
+    post:
+      tags: [Locations]
+      summary: List registered locations for the tenant
+      operationId: ListFieldLocations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                farmId: { type: string }
+                pageSize: { type: integer, default: 50, maximum: 500 }
+                pageOffset: { type: integer }
+      responses:
+        '200':
+          description: Locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    items: { $ref: '#/components/schemas/FieldLocation' }
+                  totalCount: { type: integer }
+
+  /agriculture.weather.v1.WeatherService/GetCurrentWeather:
+    post:
+      tags: [Weather]
+      summary: Latest hourly observation (refreshed from the provider if older than 2h)
+      operationId: GetCurrentWeather
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+      responses:
+        '200':
+          description: Observation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observation:
+                    $ref: '#/components/schemas/Observation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agriculture.weather.v1.WeatherService/GetForecast:
+    post:
+      tags: [Weather]
+      summary: Daily forecast (1–16 days, refreshed if older than 6h)
+      operationId: GetForecast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+                days: { type: integer, default: 7, minimum: 1, maximum: 16 }
+      responses:
+        '200':
+          description: Forecast days
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  forecasts:
+                    type: array
+                    items: { $ref: '#/components/schemas/DailyForecast' }
+
+  /agriculture.weather.v1.WeatherService/ListObservations:
+    post:
+      tags: [Weather]
+      summary: Hourly observation history for a date range
+      operationId: ListObservations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+                start: { type: string, format: date-time, description: Defaults to end - 7 days }
+                end: { type: string, format: date-time, description: Defaults to now }
+                pageSize: { type: integer, default: 50, maximum: 500 }
+                pageOffset: { type: integer }
+      responses:
+        '200':
+          description: Observations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observations:
+                    type: array
+                    items: { $ref: '#/components/schemas/Observation' }
+                  totalCount: { type: integer }
+
+  /agriculture.weather.v1.WeatherService/GetAgroMetrics:
+    post:
+      tags: [Agronomy]
+      summary: Daily GDD, ET0, chill hours, and rainfall deficit with a cumulative summary
+      description: |
+        Days covered by hourly observations are derived on the fly (local calendar
+        days in the field's timezone). Days only present from historical backfill
+        use the stored daily aggregates. GDD is recomputed with the requested
+        base/cap temperatures.
+      operationId: GetAgroMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+                start: { type: string, format: date-time, description: Defaults to end - 30 days }
+                end: { type: string, format: date-time, description: Defaults to now }
+                baseTempC: { type: number, default: 10 }
+                capTempC: { type: number, default: 30 }
+      responses:
+        '200':
+          description: Daily metrics and summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  daily:
+                    type: array
+                    items: { $ref: '#/components/schemas/DailyAgroMetrics' }
+                  summary:
+                    $ref: '#/components/schemas/AgroMetricsSummary'
+
+  /agriculture.weather.v1.WeatherService/RefreshFieldWeather:
+    post:
+      tags: [Ingestion]
+      summary: Fetch the last 48h of observations and a 7-day forecast now, then evaluate alerts
+      operationId: RefreshFieldWeather
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+      responses:
+        '200':
+          description: Ingestion counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observationsIngested: { type: integer }
+                  forecastsIngested: { type: integer }
+
+  /agriculture.weather.v1.WeatherService/BackfillHistory:
+    post:
+      tags: [Ingestion]
+      summary: Load historical daily weather (default 5 years, max 10) for model training
+      operationId: BackfillHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldId]
+              properties:
+                fieldId: { type: string }
+                years: { type: integer, default: 5, maximum: 10 }
+      responses:
+        '200':
+          description: Backfill result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  daysIngested: { type: integer }
+                  from: { type: string, format: date-time }
+                  to: { type: string, format: date-time }
+
+  /agriculture.weather.v1.WeatherService/ListWeatherAlerts:
+    post:
+      tags: [Alerts]
+      summary: List weather hazard alerts
+      operationId: ListWeatherAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldId: { type: string }
+                activeOnly: { type: boolean }
+                pageSize: { type: integer, default: 50, maximum: 500 }
+                pageOffset: { type: integer }
+      responses:
+        '200':
+          description: Alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items: { $ref: '#/components/schemas/WeatherAlert' }
+                  totalCount: { type: integer }
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid argument
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ConnectError' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ConnectError' }
+
+  schemas:
+    ConnectError:
+      type: object
+      properties:
+        code: { type: string, example: invalid_argument }
+        message: { type: string }
+
+    WeatherProvider:
+      type: string
+      enum: [WEATHER_PROVIDER_UNSPECIFIED, WEATHER_PROVIDER_OPEN_METEO, WEATHER_PROVIDER_OPENWEATHER, WEATHER_PROVIDER_IMD]
+
+    RegisterFieldLocationRequest:
+      type: object
+      required: [fieldId, latitude, longitude]
+      properties:
+        fieldId: { type: string }
+        farmId: { type: string }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        elevationM: { type: number }
+        timezone: { type: string, example: Asia/Kolkata, description: IANA zone; defaults to UTC }
+        provider: { $ref: '#/components/schemas/WeatherProvider' }
+
+    FieldLocation:
+      type: object
+      properties:
+        id: { type: string }
+        tenantId: { type: string }
+        fieldId: { type: string }
+        farmId: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        elevationM: { type: number }
+        timezone: { type: string }
+        provider: { $ref: '#/components/schemas/WeatherProvider' }
+        lastPolledAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Observation:
+      type: object
+      properties:
+        id: { type: string }
+        tenantId: { type: string }
+        fieldId: { type: string }
+        observedAt: { type: string, format: date-time }
+        temperatureC: { type: number }
+        humidityPct: { type: number }
+        precipitationMm: { type: number }
+        windSpeedMs: { type: number }
+        windDirectionDeg: { type: number }
+        pressureHpa: { type: number }
+        solarRadiationWm2: { type: number }
+        cloudCoverPct: { type: number }
+        dewPointC: { type: number }
+        soilTemperatureC: { type: number }
+        soilMoistureM3M3: { type: number }
+        provider: { $ref: '#/components/schemas/WeatherProvider' }
+
+    DailyForecast:
+      type: object
+      properties:
+        id: { type: string }
+        tenantId: { type: string }
+        fieldId: { type: string }
+        forecastDate: { type: string, format: date-time }
+        issuedAt: { type: string, format: date-time }
+        temperatureMinC: { type: number }
+        temperatureMaxC: { type: number }
+        temperatureMeanC: { type: number }
+        precipitationMm: { type: number }
+        precipitationProb: { type: number, description: Percent }
+        humidityMeanPct: { type: number }
+        windSpeedMaxMs: { type: number }
+        solarRadiationMj: { type: number }
+        et0Mm: { type: number }
+        condition: { type: string, example: rain_showers }
+        provider: { $ref: '#/components/schemas/WeatherProvider' }
+
+    DailyAgroMetrics:
+      type: object
+      properties:
+        fieldId: { type: string }
+        date: { type: string, format: date-time }
+        temperatureMinC: { type: number }
+        temperatureMaxC: { type: number }
+        temperatureMeanC: { type: number }
+        precipitationMm: { type: number }
+        gdd: { type: number, description: Growing degree days (capped-average method) }
+        et0Mm: { type: number, description: FAO-56 Penman-Monteith reference ET }
+        chillHours: { type: number, description: Hours between 0 and 7.2 C }
+        rainfallDeficitMm: { type: number, description: max(ET0 - precipitation, 0) }
+        humidityMeanPct: { type: number }
+        solarRadiationMj: { type: number }
+
+    AgroMetricsSummary:
+      type: object
+      properties:
+        cumulativeGdd: { type: number }
+        cumulativeEt0Mm: { type: number }
+        cumulativePrecipitationMm: { type: number }
+        cumulativeChillHours: { type: number }
+        cumulativeDeficitMm: { type: number }
+        days: { type: integer }
+        frostDays: { type: integer }
+        heatStressDays: { type: integer }
+
+    WeatherAlert:
+      type: object
+      properties:
+        id: { type: string }
+        tenantId: { type: string }
+        fieldId: { type: string }
+        type:
+          type: string
+          enum: [WEATHER_ALERT_TYPE_FROST, WEATHER_ALERT_TYPE_HEAT_STRESS, WEATHER_ALERT_TYPE_HEAVY_RAINFALL, WEATHER_ALERT_TYPE_HIGH_WIND, WEATHER_ALERT_TYPE_DROUGHT]
+        severity:
+          type: string
+          enum: [ALERT_SEVERITY_INFO, ALERT_SEVERITY_WARNING, ALERT_SEVERITY_CRITICAL]
+        message: { type: string }
+        value: { type: number }
+        threshold: { type: number }
+        validFrom: { type: string, format: date-time }
+        validTo: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }

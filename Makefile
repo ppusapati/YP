@@ -4,7 +4,7 @@ SERVICES := farm-service field-service crop-service sensor-service \
             irrigation-service soil-service yield-service \
             pest-prediction-service plant-diagnosis-service \
             satellite-service traceability-service commerce-service \
-            auth-service
+            auth-service weather-service
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \

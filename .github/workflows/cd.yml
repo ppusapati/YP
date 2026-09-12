@@ -43,6 +43,7 @@ jobs:
           - task-service
           - traceability-service
           - vegetation-index-service
+          - weather-service
           - yield-service
     steps:
       - uses: actions/checkout@v4

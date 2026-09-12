@@ -24,6 +24,7 @@ modules:
   - path: vegetation-index-service/proto
   - path: task-service/proto
   - path: agronomy-service/proto
+  - path: weather-service/proto
   - path: ai-gateway/proto
 lint:
   use:

@@ -24,6 +24,7 @@ DATABASES=(
   vegetation_index_service
   task_service
   agronomy_service
+  weather_service
 )
 
 for db in "${DATABASES[@]}"; do

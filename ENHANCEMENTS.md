@@ -274,13 +274,14 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** No weather provider integration exists. Weather values (temperature, rainfall, humidity) are caller-supplied request fields on yield, growth, and risk RPCs. Nothing ingests forecasts or stores historical observations.
 
 **Enhancements:**
-- [ ] Create `weather-service` with provider abstraction (Open-Meteo, OpenWeather, IMD for India)
-- [ ] Ingest hourly observations and 7/14-day forecasts per field centroid into the warehouse
-- [ ] Compute derived agronomic metrics: growing degree days (GDD), reference evapotranspiration (ET0 via Penman-Monteith), chill hours, rainfall deficit
-- [ ] Publish `weather.observation` and `weather.forecast` Kafka events for downstream consumers
-- [ ] Backfill 5 years of historical weather per field for model training
+- [x] Create `weather-service` with provider abstraction (Open-Meteo, OpenWeather; IMD enum reserved, no public API yet)
+- [x] Ingest hourly observations and 7/14-day forecasts per field centroid (auto-registered from field events, hourly poller)
+- [x] Compute derived agronomic metrics: growing degree days (GDD), reference evapotranspiration (ET0 via Penman-Monteith), chill hours, rainfall deficit
+- [x] Publish `weather.observation` and `weather.forecast` Kafka events for downstream consumers
+- [x] Backfill 5 years of historical weather per field for model training
 - [ ] Replace caller-supplied weather fields in AI gateway RPCs with server-side lookup by field ID
-- [ ] Add weather-triggered alerts (frost, heat stress, heavy rainfall) through the existing alert-service
+- [x] Raise weather alerts (frost, heat stress, heavy rainfall, high wind, drought) and publish `agriculture.weather.alert.triggered` events
+- [ ] Consume weather alert events in alert-service so they appear alongside pest and sensor alerts
 
 **Effort:** Medium | **Impact:** Critical (prerequisite for E-018, E-019, E-021)
 

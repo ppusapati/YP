@@ -342,6 +342,18 @@
 		}
 	}
 
+	handle /agriculture.weather.v1.WeatherService/* {
+		reverse_proxy weather-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
 	handle /agriculture.ai.v1.AIGatewayService/* {
 		reverse_proxy ai-gateway:50051 {
 			transport http {
