@@ -183,10 +183,15 @@ class SyncManager {
               continue;
             }
 
+            // Mark as syncing before attempting the remote call.
+            if (entry.id != null) {
+              await _syncQueue.markSyncing(entry.id!);
+            }
+
             final success = await executor(entry);
 
             if (success && entry.id != null) {
-              await _syncQueue.remove(entry.id!);
+              await _syncQueue.markCompleted(entry.id!);
               successCount++;
             }
           } on Exception catch (e) {
@@ -280,6 +285,9 @@ class SyncManager {
   /// Releases resources. Call when the sync manager is no longer needed.
   void dispose() {
     _periodicTimer?.cancel();
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
+    _connectivityMonitor.dispose();
     _statusController.close();
   }
 
