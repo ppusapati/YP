@@ -11,14 +11,14 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** Single Postgres instance, no backups, no replication, no failover. A single disk failure loses all data.
 
 **Enhancements:**
-- [ ] Set up automated PostgreSQL backups (pg_dump cron + WAL archiving to S3/MinIO)
-- [ ] Configure Point-in-Time Recovery (PITR) with WAL-G or pgBackRest
-- [ ] Add streaming replication with at least one read replica
+- [x] Set up automated PostgreSQL backups (pg_dump cron + WAL archiving to S3/MinIO)
+- [x] Configure Point-in-Time Recovery (PITR) with WAL-G or pgBackRest
+- [x] Add streaming replication with at least one read replica
 - [ ] Deploy Patroni or PgPool for automatic failover
-- [ ] Create backup verification script (restore to test DB weekly)
-- [ ] Document Recovery Point Objective (RPO) and Recovery Time Objective (RTO)
+- [x] Create backup verification script (restore to test DB weekly)
+- [x] Document Recovery Point Objective (RPO) and Recovery Time Objective (RTO)
 - [ ] Add cross-region backup replication for satellite imagery data
-- [ ] Define data retention policies per service
+- [x] Define data retention policies per service
 
 **Effort:** Large | **Impact:** Critical
 
@@ -29,11 +29,11 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** Prometheus scrapes metrics and Grafana is deployed, but zero dashboards and no alerting rules exist. Alerts engine exists in packages/ but is not connected to external notification channels.
 
 **Enhancements:**
-- [ ] Create Grafana dashboard JSONs for: service health overview, request latency/error rates, database connection pool utilization, Kafka consumer lag, AI gateway inference latency
-- [ ] Define Prometheus alerting rules (`.rules.yml`) for: service down, high error rate (>1%), P99 latency breaches, database connection exhaustion, disk space warnings, Kafka consumer lag > threshold
-- [ ] Deploy AlertManager with routing to Slack/PagerDuty/email
+- [x] Create Grafana dashboard JSONs for: service health overview, request latency/error rates, database connection pool utilization, Kafka consumer lag, AI gateway inference latency
+- [x] Define Prometheus alerting rules (`.rules.yml`) for: service down, high error rate (>1%), P99 latency breaches, database connection exhaustion, disk space warnings, Kafka consumer lag > threshold
+- [x] Deploy AlertManager with routing to Slack/PagerDuty/email
 - [ ] Add Postgres exporter (prometheusm community/postgres_exporter) and Kafka exporter (danielqsj/kafka_exporter)
-- [ ] Define SLOs/SLIs for critical paths (auth, farm CRUD, satellite processing)
+- [x] Define SLOs/SLIs for critical paths (auth, farm CRUD, satellite processing)
 - [ ] Add log aggregation (Grafana Loki or ELK stack)
 
 **Effort:** Medium | **Impact:** Critical
@@ -45,15 +45,15 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** JWT auth with RBAC, RLS, rate limiting, security headers exist. No security scanning, no secrets rotation, no WAF.
 
 **Enhancements:**
-- [ ] Add dependency vulnerability scanning in CI (govulncheck for Go, cargo-audit for Rust, npm audit for web)
-- [ ] Add SAST scanning (semgrep or CodeQL GitHub Action)
+- [x] Add dependency vulnerability scanning in CI (govulncheck for Go, cargo-audit for Rust, npm audit for web)
+- [x] Add SAST scanning (semgrep or CodeQL GitHub Action)
 - [ ] Implement secrets rotation mechanism (Vault or AWS Secrets Manager integration)
-- [ ] Add CSRF protection for web endpoints
-- [ ] Add WAF rules at ingress level (ModSecurity or cloud WAF)
-- [ ] Implement audit logging for admin operations and data mutations
-- [ ] Add OAuth2/OIDC provider support (Google, Microsoft SSO) alongside JWT
-- [ ] Move rate limiting to gateway level (Caddy rate_limit plugin) in addition to service-level
-- [ ] Add IP allowlisting/denylisting at the gateway
+- [x] Add CSRF protection for web endpoints
+- [x] Add WAF rules at ingress level (ModSecurity or cloud WAF)
+- [x] Implement audit logging for admin operations and data mutations
+- [x] Add OAuth2/OIDC provider support (Google, Microsoft SSO) alongside JWT
+- [x] Move rate limiting to gateway level (Caddy rate_limit plugin) in addition to service-level
+- [x] Add IP allowlisting/denylisting at the gateway
 
 **Effort:** Large | **Impact:** Critical
 
@@ -66,12 +66,12 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** No feature flag system exists. No canary deployment or A/B testing capability.
 
 **Enhancements:**
-- [ ] Integrate a feature flag service (Unleash self-hosted or LaunchDarkly)
-- [ ] Add feature flag middleware to ConnectRPC interceptor chain
-- [ ] Implement percentage-based rollouts for new ML models
+- [x] Integrate a feature flag service (Unleash self-hosted or LaunchDarkly)
+- [x] Add feature flag middleware to ConnectRPC interceptor chain
+- [x] Implement percentage-based rollouts for new ML models
 - [ ] Add canary deployment support in CD pipeline (deploy to subset of pods first)
 - [ ] Create experiment tracking for A/B testing crop recommendations
-- [ ] Add kill switches for external API dependencies (PlantNet, Google Vision)
+- [x] Add kill switches for external API dependencies (PlantNet, Google Vision)
 
 **Effort:** Medium | **Impact:** High
 
@@ -82,9 +82,9 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** Circuit breaker, connection pooling, caching, and load balancing packages exist. No load tests or benchmarks in CI.
 
 **Enhancements:**
-- [ ] Create k6 load test scripts for critical paths: auth flow, farm/field CRUD, sensor data ingestion, satellite image upload, AI gateway inference
-- [ ] Establish performance baselines (P50/P95/P99 latency, max throughput)
-- [ ] Add benchmark tests to CI (fail on >10% regression)
+- [x] Create k6 load test scripts for critical paths: auth flow, farm/field CRUD, sensor data ingestion, satellite image upload, AI gateway inference
+- [x] Establish performance baselines (P50/P95/P99 latency, max throughput)
+- [x] Add benchmark tests to CI (fail on >10% regression)
 - [ ] Configure PgBouncer for production database connection pooling
 - [ ] Add response compression at Caddy gateway (gzip/brotli)
 - [ ] Set up CDN for satellite tile imagery and static assets
@@ -100,8 +100,8 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** SvelteKit app has 50+ routes but only 2 test files. No E2E browser tests.
 
 **Enhancements:**
-- [ ] Add Playwright E2E tests for critical user journeys: login, create farm, add field, view satellite imagery, create irrigation schedule
-- [ ] Add Vitest unit tests for Svelte stores and utility functions
+- [x] Add Playwright E2E tests for critical user journeys: login, create farm, add field, view satellite imagery, create irrigation schedule
+- [x] Add Vitest unit tests for Svelte stores and utility functions
 - [ ] Add component tests for reusable UI components (charts, maps, data grids)
 - [ ] Set up visual regression testing (Playwright screenshots or Chromatic)
 - [ ] Add web test coverage to CI pipeline
@@ -117,12 +117,12 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 
 **Enhancements:**
 - [ ] Add TimescaleDB or InfluxDB for time-series sensor data (temperature, moisture, rainfall)
-- [ ] Set up a data warehouse (ClickHouse or PostgreSQL with Citus) for historical analytics
-- [ ] Create ETL jobs for nightly aggregation (daily yield summaries, weekly soil trends, seasonal crop performance)
-- [ ] Add data quality monitoring (Great Expectations or custom validators on Kafka consumers)
-- [ ] Build reporting/BI API for frontend dashboards (seasonal yield trends, farm-level KPIs)
+- [x] Set up a data warehouse (ClickHouse or PostgreSQL with Citus) for historical analytics
+- [x] Create ETL jobs for nightly aggregation (daily yield summaries, weekly soil trends, seasonal crop performance)
+- [x] Add data quality monitoring (Great Expectations or custom validators on Kafka consumers)
+- [x] Build reporting/BI API for frontend dashboards (seasonal yield trends, farm-level KPIs)
 - [ ] Archive satellite imagery to cold storage (S3 Glacier or MinIO tiering)
-- [ ] Add data export API for regulatory compliance and farmer data portability
+- [x] Add data export API for regulatory compliance and farmer data portability
 
 **Effort:** Large | **Impact:** High
 
