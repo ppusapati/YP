@@ -1,0 +1,68 @@
+groups:
+  - name: yieldpoint-service-alerts
+    rules:
+      # ── ServiceDown ──────────────────────────────────────────────────────────
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.job }}/{{ $labels.instance }} is down"
+          description: >-
+            The target {{ $labels.instance }} in job {{ $labels.job }} has been
+            unreachable for more than 1 minute.
+          runbook_url: https://wiki.yieldpoint.dev/runbooks/service-down
+
+      # ── HighErrorRate ────────────────────────────────────────────────────────
+      - alert: HighErrorRate
+        expr: >-
+          100
+          * sum(rate(http_requests_total{code=~"5.."}[5m])) by (service, job)
+          / sum(rate(http_requests_total[5m])) by (service, job)
+          > 1
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "High error rate on {{ $labels.service }} ({{ $value | printf \"%.2f\" }}%)"
+          description: >-
+            Service {{ $labels.service }} (job {{ $labels.job }}) is returning
+            more than 1% server errors over the last 5 minutes.
+          runbook_url: https://wiki.yieldpoint.dev/runbooks/high-error-rate
+
+      # ── HighLatencyP99 ──────────────────────────────────────────────────────
+      - alert: HighLatencyP99
+        expr: >-
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, job)
+          ) > 2
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "P99 latency > 2s on {{ $labels.service }} ({{ $value | printf \"%.2f\" }}s)"
+          description: >-
+            The 99th-percentile request latency for {{ $labels.service }}
+            (job {{ $labels.job }}) has exceeded 2 seconds for 5 minutes.
+          runbook_url: https://wiki.yieldpoint.dev/runbooks/high-latency
+
+      # ── HighLatencyP95 ──────────────────────────────────────────────────────
+      - alert: HighLatencyP95
+        expr: >-
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, job)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "P95 latency > 1s on {{ $labels.service }} ({{ $value | printf \"%.2f\" }}s)"
+          description: >-
+            The 95th-percentile request latency for {{ $labels.service }}
+            (job {{ $labels.job }}) has exceeded 1 second for 5 minutes.
+          runbook_url: https://wiki.yieldpoint.dev/runbooks/high-latency

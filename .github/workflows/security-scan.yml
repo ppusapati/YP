@@ -1,0 +1,115 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  go-vuln-check:
+    name: Go vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run govulncheck on packages
+        run: govulncheck ./packages/...
+      - name: Run govulncheck on services
+        run: govulncheck ./...
+
+  rust-audit:
+    name: Rust vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.82"
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      - name: Audit ai-gateway
+        working-directory: ai-gateway
+        run: cargo audit --deny warnings
+      - name: Audit rust-engines
+        working-directory: rust-engines
+        run: cargo audit --deny warnings
+
+  npm-audit:
+    name: npm audit (web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+      - name: Run npm audit
+        working-directory: web
+        run: npm audit --audit-level=high
+
+  sast-semgrep:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config p/golang \
+            --config p/typescript \
+            --error \
+            --severity ERROR \
+            --severity WARNING \
+            --json --output semgrep-results.json \
+            .
+      - name: Upload Semgrep results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+
+  container-scan:
+    name: Container image scan
+    runs-on: ubuntu-latest
+    needs: [go-vuln-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - agronomy-service
+          - auth-service
+          - farm-service
+          - field-service
+          - sensor-service
+          - soil-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg SERVICE=${{ matrix.service }} \
+            -t yieldpoint/${{ matrix.service }}:scan \
+            .
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: yieldpoint/${{ matrix.service }}:scan
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
