@@ -5,19 +5,24 @@ import (
 	"fmt"
 	"strconv"
 
+	"connectrpc.com/connect"
+
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 
 	pb "p9e.in/samavaya/agriculture/satellite-tile-service/api/v1"
+	"p9e.in/samavaya/agriculture/satellite-tile-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/satellite-tile-service/internal/mappers"
 	tilemodels "p9e.in/samavaya/agriculture/satellite-tile-service/internal/models"
 	"p9e.in/samavaya/agriculture/satellite-tile-service/internal/services"
 )
 
-// TileHandler implements the ConnectRPC SatelliteTileService handler.
+// TileHandler implements the ConnectRPC SatelliteTileServiceHandler interface.
 type TileHandler struct {
+	v1connect.UnimplementedSatelliteTileServiceHandler
+
 	d       deps.ServiceDeps
 	service services.TileService
 	log     *p9log.Helper
@@ -33,34 +38,34 @@ func NewTileHandler(d deps.ServiceDeps, service services.TileService) *TileHandl
 }
 
 // GenerateTileset handles tileset generation requests.
-func (h *TileHandler) GenerateTileset(ctx context.Context, req *pb.GenerateTilesetRequest) (*pb.GenerateTilesetResponse, error) {
+func (h *TileHandler) GenerateTileset(ctx context.Context, req *connect.Request[pb.GenerateTilesetRequest]) (*connect.Response[pb.GenerateTilesetResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "GenerateTileset request",
-		"processing_job_id", req.GetProcessingJobId(),
-		"farm_id", req.GetFarmId(),
-		"layer", req.GetLayer().String(),
-		"format", req.GetFormat().String(),
+		"processing_job_id", req.Msg.GetProcessingJobId(),
+		"farm_id", req.Msg.GetFarmId(),
+		"layer", req.Msg.GetLayer().String(),
+		"format", req.Msg.GetFormat().String(),
 		"request_id", requestID,
 	)
 
-	if req.GetProcessingJobId() == "" {
+	if req.Msg.GetProcessingJobId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "processing_job_id is required")
 	}
-	if req.GetFarmId() == "" {
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
-	if req.GetLayer() == pb.TileLayer_TILE_LAYER_UNSPECIFIED {
+	if req.Msg.GetLayer() == pb.TileLayer_TILE_LAYER_UNSPECIFIED {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "layer is required")
 	}
 
 	tileset := &tilemodels.Tileset{
-		FarmID:          req.GetFarmId(),
-		ProcessingJobID: req.GetProcessingJobId(),
-		Layer:           mappers.ProtoTileLayerToDomain(req.GetLayer()),
-		Format:          mappers.ProtoTileFormatToDomain(req.GetFormat()),
-		MinZoom:         req.GetMinZoom(),
-		MaxZoom:         req.GetMaxZoom(),
+		FarmID:          req.Msg.GetFarmId(),
+		ProcessingJobID: req.Msg.GetProcessingJobId(),
+		Layer:           mappers.ProtoTileLayerToDomain(req.Msg.GetLayer()),
+		Format:          mappers.ProtoTileFormatToDomain(req.Msg.GetFormat()),
+		MinZoom:         req.Msg.GetMinZoom(),
+		MaxZoom:         req.Msg.GetMaxZoom(),
 	}
 
 	created, err := h.service.GenerateTileset(ctx, tileset)
@@ -69,60 +74,60 @@ func (h *TileHandler) GenerateTileset(ctx context.Context, req *pb.GenerateTiles
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GenerateTilesetResponse{
+	return connect.NewResponse(&pb.GenerateTilesetResponse{
 		Tileset: mappers.TilesetToProto(created),
-	}, nil
+	}), nil
 }
 
 // GetTileset handles get tileset requests.
-func (h *TileHandler) GetTileset(ctx context.Context, req *pb.GetTilesetRequest) (*pb.GetTilesetResponse, error) {
+func (h *TileHandler) GetTileset(ctx context.Context, req *connect.Request[pb.GetTilesetRequest]) (*connect.Response[pb.GetTilesetResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "GetTileset request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "GetTileset request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "tileset ID is required")
 	}
 
-	tileset, err := h.service.GetTileset(ctx, req.GetId())
+	tileset, err := h.service.GetTileset(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetTilesetResponse{
+	return connect.NewResponse(&pb.GetTilesetResponse{
 		Tileset: mappers.TilesetToProto(tileset),
-	}, nil
+	}), nil
 }
 
 // ListTilesets handles list tilesets requests with filtering and pagination.
-func (h *TileHandler) ListTilesets(ctx context.Context, req *pb.ListTilesetsRequest) (*pb.ListTilesetsResponse, error) {
+func (h *TileHandler) ListTilesets(ctx context.Context, req *connect.Request[pb.ListTilesetsRequest]) (*connect.Response[pb.ListTilesetsResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "ListTilesets request", "request_id", requestID)
 
 	params := tilemodels.ListTilesetsParams{
-		PageSize: req.GetPageSize(),
+		PageSize: req.Msg.GetPageSize(),
 	}
 
 	// Parse page token as offset
-	if req.GetPageToken() != "" {
-		offset, err := strconv.ParseInt(req.GetPageToken(), 10, 32)
+	if req.Msg.GetPageToken() != "" {
+		offset, err := strconv.ParseInt(req.Msg.GetPageToken(), 10, 32)
 		if err == nil {
 			params.Offset = int32(offset)
 		}
 	}
 
 	// Apply filters
-	if req.GetFarmId() != "" {
-		farmID := req.GetFarmId()
+	if req.Msg.GetFarmId() != "" {
+		farmID := req.Msg.GetFarmId()
 		params.FarmID = &farmID
 	}
-	if req.GetLayer() != pb.TileLayer_TILE_LAYER_UNSPECIFIED {
-		layer := mappers.ProtoTileLayerToDomain(req.GetLayer())
+	if req.Msg.GetLayer() != pb.TileLayer_TILE_LAYER_UNSPECIFIED {
+		layer := mappers.ProtoTileLayerToDomain(req.Msg.GetLayer())
 		params.Layer = &layer
 	}
-	if req.GetStatus() != pb.TilesetStatus_TILESET_STATUS_UNSPECIFIED {
-		status := mappers.ProtoTilesetStatusToDomain(req.GetStatus())
+	if req.Msg.GetStatus() != pb.TilesetStatus_TILESET_STATUS_UNSPECIFIED {
+		status := mappers.ProtoTilesetStatusToDomain(req.Msg.GetStatus())
 		params.Status = &status
 	}
 
@@ -132,8 +137,8 @@ func (h *TileHandler) ListTilesets(ctx context.Context, req *pb.ListTilesetsRequ
 	}
 
 	resp := &pb.ListTilesetsResponse{
-		Tilesets:    mappers.TilesetsToProto(tilesets),
-		TotalCount:  totalCount,
+		Tilesets:   mappers.TilesetsToProto(tilesets),
+		TotalCount: totalCount,
 	}
 
 	// Compute next page token
@@ -142,52 +147,52 @@ func (h *TileHandler) ListTilesets(ctx context.Context, req *pb.ListTilesetsRequ
 		resp.NextPageToken = fmt.Sprintf("%d", nextOffset)
 	}
 
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // GetTile handles individual tile retrieval requests.
-func (h *TileHandler) GetTile(ctx context.Context, req *pb.GetTileRequest) (*pb.GetTileResponse, error) {
+func (h *TileHandler) GetTile(ctx context.Context, req *connect.Request[pb.GetTileRequest]) (*connect.Response[pb.GetTileResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Debugw("msg", "GetTile request",
-		"tileset_id", req.GetTilesetId(),
-		"z", req.GetZ(),
-		"x", req.GetX(),
-		"y", req.GetY(),
+		"tileset_id", req.Msg.GetTilesetId(),
+		"z", req.Msg.GetZ(),
+		"x", req.Msg.GetX(),
+		"y", req.Msg.GetY(),
 		"request_id", requestID,
 	)
 
-	if req.GetTilesetId() == "" {
+	if req.Msg.GetTilesetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "tileset_id is required")
 	}
 
-	tileData, contentType, err := h.service.GetTile(ctx, req.GetTilesetId(), req.GetZ(), req.GetX(), req.GetY())
+	tileData, contentType, err := h.service.GetTile(ctx, req.Msg.GetTilesetId(), req.Msg.GetZ(), req.Msg.GetX(), req.Msg.GetY())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetTileResponse{
+	return connect.NewResponse(&pb.GetTileResponse{
 		TileData:    tileData,
 		ContentType: contentType,
-	}, nil
+	}), nil
 }
 
 // DeleteTileset handles tileset deletion requests.
-func (h *TileHandler) DeleteTileset(ctx context.Context, req *pb.DeleteTilesetRequest) (*pb.DeleteTilesetResponse, error) {
+func (h *TileHandler) DeleteTileset(ctx context.Context, req *connect.Request[pb.DeleteTilesetRequest]) (*connect.Response[pb.DeleteTilesetResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "DeleteTileset request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "DeleteTileset request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "tileset ID is required")
 	}
 
-	err := h.service.DeleteTileset(ctx, req.GetId())
+	err := h.service.DeleteTileset(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.DeleteTilesetResponse{
+	return connect.NewResponse(&pb.DeleteTilesetResponse{
 		Success: true,
-	}, nil
+	}), nil
 }

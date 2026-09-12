@@ -96,3 +96,108 @@ impl AnalyticsEngine {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn analytics_engine_constructs() {
+        let _engine = AnalyticsEngine::new();
+    }
+
+    #[test]
+    fn compute_with_empty_seasons() {
+        let engine = AnalyticsEngine::new();
+        let req = proto::ComputeFieldAnalyticsRequest {
+            request_id: "analytics-001".to_string(),
+            field_id: "field-x".to_string(),
+            farm_id: "farm-1".to_string(),
+            seasons: vec![],
+            ndvi_series: vec![],
+        };
+        let resp = engine.compute_field_analytics(&req);
+        assert_eq!(resp.request_id, "analytics-001");
+        assert_eq!(resp.field_id, "field-x");
+        assert_eq!(resp.season_count, 0);
+        assert!(resp.processing_time_ms >= 0);
+    }
+
+    #[test]
+    fn compute_with_single_season() {
+        let engine = AnalyticsEngine::new();
+        let req = proto::ComputeFieldAnalyticsRequest {
+            request_id: "analytics-002".to_string(),
+            field_id: "field-y".to_string(),
+            farm_id: "farm-2".to_string(),
+            seasons: vec![proto::SeasonRecord {
+                crop_type: "corn".to_string(),
+                season: "summer".to_string(),
+                year: 2025,
+                yield_kg_per_ha: 8500.0,
+                stress_days: 5,
+                frost_events: 0,
+                heat_events: 2,
+                drought_days: 3,
+                total_precipitation_mm: 350.0,
+                mean_temperature: 24.0,
+                mean_ndvi: 0.72,
+                peak_ndvi: 0.85,
+                total_thermal_time: 1800.0,
+            }],
+            ndvi_series: vec![],
+        };
+        let resp = engine.compute_field_analytics(&req);
+        assert_eq!(resp.season_count, 1);
+        assert!(resp.mean_yield.is_finite());
+    }
+
+    #[test]
+    fn compute_with_multiple_seasons() {
+        let engine = AnalyticsEngine::new();
+        let seasons: Vec<proto::SeasonRecord> = (2020..=2025)
+            .map(|year| proto::SeasonRecord {
+                crop_type: "wheat".to_string(),
+                season: "winter".to_string(),
+                year,
+                yield_kg_per_ha: 6000.0 + (year as f64 - 2020.0) * 100.0,
+                stress_days: 3,
+                frost_events: 1,
+                heat_events: 0,
+                drought_days: 2,
+                total_precipitation_mm: 400.0,
+                mean_temperature: 18.0,
+                mean_ndvi: 0.65,
+                peak_ndvi: 0.78,
+                total_thermal_time: 1500.0,
+            })
+            .collect();
+        let req = proto::ComputeFieldAnalyticsRequest {
+            request_id: "analytics-003".to_string(),
+            field_id: "field-z".to_string(),
+            farm_id: "farm-3".to_string(),
+            seasons,
+            ndvi_series: vec![],
+        };
+        let resp = engine.compute_field_analytics(&req);
+        assert_eq!(resp.season_count, 6);
+        assert!(resp.mean_yield > 0.0);
+        assert!(resp.best_yield >= resp.worst_yield);
+        assert!(!resp.yield_trend.is_empty());
+    }
+
+    #[test]
+    fn compute_preserves_ids() {
+        let engine = AnalyticsEngine::new();
+        let req = proto::ComputeFieldAnalyticsRequest {
+            request_id: "id-preserve-test".to_string(),
+            field_id: "my-field".to_string(),
+            farm_id: "my-farm".to_string(),
+            seasons: vec![],
+            ndvi_series: vec![],
+        };
+        let resp = engine.compute_field_analytics(&req);
+        assert_eq!(resp.request_id, "id-preserve-test");
+        assert_eq!(resp.field_id, "my-field");
+    }
+}

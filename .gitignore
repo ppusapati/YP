@@ -9,3 +9,12 @@ target/
 # Go build artifacts
 *-service/server
 
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Stray build artifacts
+/server
+

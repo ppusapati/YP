@@ -1,0 +1,168 @@
+// Package main wires all vegetation-index-service layers together and starts the HTTP server.
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"connectrpc.com/connect"
+	"github.com/IBM/sarama"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+
+	"p9e.in/samavaya/packages/authz"
+	connectserver "p9e.in/samavaya/packages/connect/server"
+	"p9e.in/samavaya/packages/connect/interceptors"
+	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/deps"
+	"p9e.in/samavaya/packages/middleware"
+	"p9e.in/samavaya/packages/outbox"
+	"p9e.in/samavaya/packages/p9log"
+
+	"p9e.in/samavaya/agriculture/vegetation-index-service/api/v1/v1connect"
+	"p9e.in/samavaya/agriculture/vegetation-index-service/internal/handlers"
+	"p9e.in/samavaya/agriculture/vegetation-index-service/internal/repositories"
+	"p9e.in/samavaya/agriculture/vegetation-index-service/internal/services"
+)
+
+func main() {
+	zapLogger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("failed to create logger: %v", err)
+	}
+	defer zapLogger.Sync() //nolint:errcheck
+	logger := p9log.NewLogger(zapLogger)
+
+	// ── JWT ─────────────────────────────────────────────────────────────────
+	if err := authz.InitJWTFromEnv(); err != nil {
+		log.Fatalf("JWT not configured: %v — refusing to start without authentication", err)
+	}
+	jwtValidator := interceptors.NewAuthzJWTValidator()
+
+	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/vegetation_index_service?sslmode=disable")
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	port := envOr("PORT", "8080")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatalf("database ping failed: %v", err)
+	}
+
+	// ── Auto-migrate ─────────────────────────────────────────────────────
+	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer migrateCancel()
+	if err := migrate.Up(migrateCtx, pool, os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
+
+	var kafkaProducer sarama.SyncProducer
+	if kafkaBroker != "" {
+		cfg := sarama.NewConfig()
+		cfg.Producer.Return.Successes = true
+		kafkaProducer, err = sarama.NewSyncProducer([]string{kafkaBroker}, cfg)
+		if err != nil {
+			log.Printf("WARNING: failed to create Kafka producer: %v", err)
+		} else {
+			defer kafkaProducer.Close()
+		}
+	}
+
+	// ── Service deps ────────────────────────────────────────────────────────
+	d := deps.ServiceDeps{
+		Pool: pool,
+		Log:  logger,
+	}
+
+	repo := repositories.NewVegetationIndexRepository(d)
+	svc := services.NewVegetationIndexService(d, repo)
+	handler := handlers.NewVegetationIndexHandler(d, svc)
+
+	mwCfg := connectserver.MiddlewareConfig{
+		EnableRecovery:  true,
+		EnableRequestID: true,
+		EnableLogging:   true,
+		EnableDB:        true,
+		DBPool:          pool,
+		EnableAuth:      true,
+		JWTValidator:    jwtValidator,
+		EnableAuthz:     true,
+		EnableRLS:       true,
+		RLSLevel:        interceptors.ScopeLevelTenant,
+	}
+	connectOpt := connectserver.NewConnectOption(mwCfg)
+
+	mux := http.NewServeMux()
+	const serviceName = "vegetation-index-service"
+	path, svcHandler := v1connect.NewVegetationIndexServiceHandler(handler,
+		connect.WithInterceptors(
+			middleware.MetricsInterceptor(serviceName),
+			middleware.TracingInterceptor(serviceName),
+		),
+		connectOpt,
+	)
+	mux.Handle(path, svcHandler)
+
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+		if err := pool.Ping(context.Background()); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ready"}`))
+	})
+
+	serverCfg := connectserver.DefaultServerConfig(port)
+	wrapped := connectserver.WrapAll(mux, serverCfg)
+	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
+
+	// ── Outbox relay (background) ────────────────────────────────────────
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	if kafkaProducer != nil {
+		relay := outbox.NewRelay(pool, outbox.NewKafkaForwarder(kafkaProducer), zapLogger)
+		go relay.Run(relayCtx)
+	}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		p9log.NewHelper(logger).Infow("msg", "vegetation-index-service starting", "port", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	<-quit
+	p9log.NewHelper(logger).Infow("msg", "shutting down vegetation-index-service")
+
+	shutCtx, shutCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutCancel()
+	if err := srv.Shutdown(shutCtx); err != nil {
+		log.Printf("graceful shutdown error: %v", err)
+	}
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}

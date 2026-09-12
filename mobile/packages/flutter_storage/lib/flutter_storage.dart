@@ -15,5 +15,6 @@ export 'src/dao/task_dao.dart';
 
 // Sync
 export 'src/models/sync_status.dart';
+export 'src/sync/connectivity_monitor.dart';
 export 'src/sync/sync_manager.dart';
 export 'src/sync/sync_queue.dart';

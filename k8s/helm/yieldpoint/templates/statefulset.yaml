@@ -1,0 +1,130 @@
+{{/*
+  PostgreSQL StatefulSet.
+*/}}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "postgres" "context" $) | nindent 4 }}
+spec:
+  serviceName: postgres
+  replicas: {{ .Values.postgres.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "postgres") | nindent 8 }}
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.user }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database }}
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage }}
+
+{{/*
+  Kafka StatefulSet (KRaft mode).
+*/}}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "kafka" "context" $) | nindent 4 }}
+spec:
+  serviceName: kafka
+  replicas: {{ .Values.kafka.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "yieldpoint.selectorLabels" (dict "name" "kafka") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "yieldpoint.selectorLabels" (dict "name" "kafka") | nindent 8 }}
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      containers:
+        - name: kafka
+          image: {{ .Values.kafka.image }}
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka:9092"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@localhost:9093"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+            - name: CLUSTER_ID
+              value: "YieldPointKafkaCluster001"
+          resources:
+            {{- toYaml .Values.kafka.resources | nindent 12 }}
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 15
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.kafka.storage }}

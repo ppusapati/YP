@@ -3,6 +3,7 @@ package compensation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -109,12 +110,13 @@ func (ce *CompensationEngineImpl) ExecuteCompensation(
 		result, err := ce.stepExecutor.ExecuteStep(ctx, execution.ID, int(compStep.StepNumber), compStep)
 		if err != nil {
 			// Log compensation error
+			nowTime := time.Now()
 			if logErr := ce.logRepository.CreateExecutionLog(ctx, &models.StepExecution{
-				SagaID:       execution.ID,
-				StepNumber:   compStep.StepNumber,
-				Status:       models.StepStatusFailed,
-				ErrorMessage: err.Error(),
-				ExecutedAt:   time.Now(),
+				SagaID:     execution.ID,
+				StepNumber: compStep.StepNumber,
+				Status:     models.StepStatusFailed,
+				Error:      err.Error(),
+				CreatedAt:  &nowTime,
 			}); logErr != nil {
 				fmt.Printf("failed to log compensation error: %v\n", logErr)
 			}
@@ -129,13 +131,15 @@ func (ce *CompensationEngineImpl) ExecuteCompensation(
 		}
 
 		// 4. Log successful compensation
+		nowTime := time.Now()
+		resultBytes, _ := json.Marshal(result.Result)
 		if err := ce.logRepository.CreateExecutionLog(ctx, &models.StepExecution{
-			SagaID:        execution.ID,
-			StepNumber:    compStep.StepNumber,
-			Status:        models.StepStatusSucceeded,
-			Result:        result.Result,
-			ExecutedAt:    time.Now(),
-			ExecutionTime: result.ExecutionTimeMs,
+			SagaID:          execution.ID,
+			StepNumber:      compStep.StepNumber,
+			Status:          models.StepStatusSucceeded,
+			Result:          resultBytes,
+			ExecutionTimeMs: result.ExecutionTimeMs,
+			CreatedAt:       &nowTime,
 		}); err != nil {
 			fmt.Printf("failed to log compensation success: %v\n", err)
 		}
@@ -187,11 +191,14 @@ func (ce *CompensationEngineImpl) executeCompensation(
 
 		stepDef := stepDefs[stepExec.StepNumber-1]
 
-		// 5. Execute compensation steps if defined
-		if len(stepDef.CompensationSteps) > 0 {
-			if err := ce.ExecuteCompensation(ctx, execution, stepExec.StepNumber, stepDef.CompensationSteps); err != nil {
-				// Continue with other steps, but track that compensation failed
-				fmt.Printf("compensation for step %d failed: %v\n", stepExec.StepNumber, err)
+		// 5. Execute compensation for each compensation step number
+		for _, compStepNum := range stepDef.CompensationSteps {
+			if int(compStepNum) > len(stepDefs) {
+				continue
+			}
+			compStepDef := stepDefs[compStepNum-1]
+			if err := ce.ExecuteCompensation(ctx, execution, stepExec.StepNumber, []*saga.StepDefinition{compStepDef}); err != nil {
+				fmt.Printf("compensation for step %d (comp step %d) failed: %v\n", stepExec.StepNumber, compStepNum, err)
 			}
 		}
 	}

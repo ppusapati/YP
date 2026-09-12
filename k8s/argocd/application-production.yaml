@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: yieldpoint-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: yieldpoint
+    environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ppusapati/yieldpoint.git
+    targetRevision: main
+    path: k8s/overlays/production
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: yieldpoint
+
+  syncPolicy:
+    # Production requires manual sync -- no automated block.
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

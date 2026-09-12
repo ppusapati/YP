@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"p9e.in/samavaya/packages/p9log"
-	"p9e.in/samavaya/packages/ratelimit"
 	"p9e.in/samavaya/packages/ratelimit/backend"
 )
 

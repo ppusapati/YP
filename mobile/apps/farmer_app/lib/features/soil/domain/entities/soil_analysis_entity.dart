@@ -5,6 +5,8 @@ enum SoilTexture {
   loamy,
   clay,
   silt,
+  peat,
+  chalk,
   sandyLoam,
   clayLoam,
   siltLoam,

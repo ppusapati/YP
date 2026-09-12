@@ -1,0 +1,46 @@
+flags:
+  ml_model_v2:
+    description: "Roll out new ML model v2 for plant diagnosis"
+    enabled: true
+    rollout_percentage: 0
+    variants:
+      - name: "v1"
+        weight: 100
+      - name: "v2"
+        weight: 0
+
+  new_satellite_pipeline:
+    description: "Enable new satellite imagery processing pipeline"
+    enabled: false
+
+  plantnet_api:
+    description: "Kill switch for PlantNet external API"
+    enabled: true
+    kill_switch: true
+
+  google_vision_api:
+    description: "Kill switch for Google Vision external API"
+    enabled: true
+    kill_switch: true
+
+  enhanced_irrigation:
+    description: "Roll out enhanced irrigation scheduling algorithm"
+    enabled: true
+    rollout_percentage: 0
+    targeting:
+      - attribute: "region"
+        operator: "in"
+        values: ["maharashtra", "karnataka"]
+
+  new_dashboard_ui:
+    description: "Enable redesigned dashboard UI"
+    enabled: false
+
+  advanced_soil_analysis:
+    description: "Enable advanced soil nutrient analysis"
+    enabled: true
+    rollout_percentage: 0
+
+  crop_rotation_advisor:
+    description: "Enable AI-powered crop rotation recommendations"
+    enabled: false

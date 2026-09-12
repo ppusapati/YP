@@ -11,5 +11,8 @@ export 'src/interceptors/auth_interceptor.dart';
 export 'src/interceptors/connectivity_interceptor.dart';
 export 'src/interceptors/logging_interceptor.dart';
 
+// Security
+export 'src/security/certificate_pinner.dart';
+
 // Services
 export 'src/services/connectivity_service.dart';

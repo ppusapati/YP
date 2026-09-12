@@ -190,8 +190,8 @@ func (m *mockExecutionLogRepository) GetExecutionLog(ctx context.Context, sagaID
 type mockSagaHandler struct {
 	sagaTypeFunc        func() string
 	stepDefsFunc        func() []*saga.StepDefinition
-	stepDefFunc         func(stepNum int32) (*saga.StepDefinition, error)
-	validateInputFunc   func(input *saga.SagaExecutionInput) error
+	stepDefFunc         func(stepNum int) *saga.StepDefinition
+	validateInputFunc   func(input interface{}) error
 }
 
 func (m *mockSagaHandler) SagaType() string {
@@ -215,18 +215,18 @@ func (m *mockSagaHandler) GetStepDefinitions() []*saga.StepDefinition {
 	}
 }
 
-func (m *mockSagaHandler) GetStepDefinition(stepNum int32) (*saga.StepDefinition, error) {
+func (m *mockSagaHandler) GetStepDefinition(stepNum int) *saga.StepDefinition {
 	if m.stepDefFunc != nil {
 		return m.stepDefFunc(stepNum)
 	}
 	return &saga.StepDefinition{
-		StepNumber:    stepNum,
+		StepNumber:    int32(stepNum),
 		ServiceName:   "test-service",
 		HandlerMethod: "TestHandler",
-	}, nil
+	}
 }
 
-func (m *mockSagaHandler) ValidateInput(input *saga.SagaExecutionInput) error {
+func (m *mockSagaHandler) ValidateInput(input interface{}) error {
 	if m.validateInputFunc != nil {
 		return m.validateInputFunc(input)
 	}

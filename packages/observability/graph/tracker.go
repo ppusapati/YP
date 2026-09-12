@@ -72,7 +72,7 @@ func (t *Tracker) RecordCall(ctx context.Context, from, to, operation string, la
 		stats.latencies = append(stats.latencies, latency.Nanoseconds())
 	}
 
-	t.logger.Debug("recorded dependency call",
+	t.logger.Log(p9log.LevelDebug, "msg", "recorded dependency call",
 		"from", from,
 		"to", to,
 		"operation", operation,

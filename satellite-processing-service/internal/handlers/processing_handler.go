@@ -5,19 +5,24 @@ import (
 	"fmt"
 	"strconv"
 
+	"connectrpc.com/connect"
+
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 
 	pb "p9e.in/samavaya/agriculture/satellite-processing-service/api/v1"
+	"p9e.in/samavaya/agriculture/satellite-processing-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/satellite-processing-service/internal/mappers"
 	procmodels "p9e.in/samavaya/agriculture/satellite-processing-service/internal/models"
 	"p9e.in/samavaya/agriculture/satellite-processing-service/internal/services"
 )
 
-// ProcessingHandler implements the ConnectRPC SatelliteProcessingService handler.
+// ProcessingHandler implements the ConnectRPC SatelliteProcessingServiceHandler interface.
 type ProcessingHandler struct {
+	v1connect.UnimplementedSatelliteProcessingServiceHandler
+
 	d       deps.ServiceDeps
 	service services.ProcessingService
 	log     *p9log.Helper
@@ -33,21 +38,21 @@ func NewProcessingHandler(d deps.ServiceDeps, service services.ProcessingService
 }
 
 // SubmitProcessingJob handles processing job submission requests.
-func (h *ProcessingHandler) SubmitProcessingJob(ctx context.Context, req *pb.SubmitProcessingJobRequest) (*pb.SubmitProcessingJobResponse, error) {
+func (h *ProcessingHandler) SubmitProcessingJob(ctx context.Context, req *connect.Request[pb.SubmitProcessingJobRequest]) (*connect.Response[pb.SubmitProcessingJobResponse], error) {
 	requestID := p9context.RequestID(ctx)
 	tenantID := p9context.TenantID(ctx)
 	userID := p9context.UserID(ctx)
 
 	h.log.Infow("msg", "SubmitProcessingJob request", "tenant_id", tenantID, "request_id", requestID)
 
-	if req.GetIngestionTaskId() == "" {
+	if req.Msg.GetIngestionTaskId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "ingestion_task_id is required")
 	}
-	if req.GetFarmId() == "" {
+	if req.Msg.GetFarmId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "farm_id is required")
 	}
 
-	job := mappers.SubmitProcessingJobRequestToDomain(req, tenantID, userID)
+	job := mappers.SubmitProcessingJobRequestToDomain(req.Msg, tenantID, userID)
 
 	created, err := h.service.SubmitProcessingJob(ctx, job)
 	if err != nil {
@@ -55,56 +60,56 @@ func (h *ProcessingHandler) SubmitProcessingJob(ctx context.Context, req *pb.Sub
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.SubmitProcessingJobResponse{
+	return connect.NewResponse(&pb.SubmitProcessingJobResponse{
 		Job: mappers.ProcessingJobToProto(created),
-	}, nil
+	}), nil
 }
 
 // GetProcessingJob handles get processing job requests.
-func (h *ProcessingHandler) GetProcessingJob(ctx context.Context, req *pb.GetProcessingJobRequest) (*pb.GetProcessingJobResponse, error) {
+func (h *ProcessingHandler) GetProcessingJob(ctx context.Context, req *connect.Request[pb.GetProcessingJobRequest]) (*connect.Response[pb.GetProcessingJobResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "GetProcessingJob request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "GetProcessingJob request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "processing job ID is required")
 	}
 
-	job, err := h.service.GetProcessingJob(ctx, req.GetId())
+	job, err := h.service.GetProcessingJob(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetProcessingJobResponse{
+	return connect.NewResponse(&pb.GetProcessingJobResponse{
 		Job: mappers.ProcessingJobToProto(job),
-	}, nil
+	}), nil
 }
 
 // ListProcessingJobs handles list processing jobs requests with filtering and pagination.
-func (h *ProcessingHandler) ListProcessingJobs(ctx context.Context, req *pb.ListProcessingJobsRequest) (*pb.ListProcessingJobsResponse, error) {
+func (h *ProcessingHandler) ListProcessingJobs(ctx context.Context, req *connect.Request[pb.ListProcessingJobsRequest]) (*connect.Response[pb.ListProcessingJobsResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
 	h.log.Infow("msg", "ListProcessingJobs request", "request_id", requestID)
 
 	params := procmodels.ListProcessingJobsParams{
-		PageSize: req.GetPageSize(),
+		PageSize: req.Msg.GetPageSize(),
 	}
 
 	// Parse page token as offset
-	if req.GetPageToken() != "" {
-		offset, err := strconv.ParseInt(req.GetPageToken(), 10, 32)
+	if req.Msg.GetPageToken() != "" {
+		offset, err := strconv.ParseInt(req.Msg.GetPageToken(), 10, 32)
 		if err == nil {
 			params.Offset = int32(offset)
 		}
 	}
 
 	// Apply filters
-	if req.GetFarmId() != "" {
-		farmID := req.GetFarmId()
+	if req.Msg.GetFarmId() != "" {
+		farmID := req.Msg.GetFarmId()
 		params.FarmUUID = &farmID
 	}
-	if req.GetStatus() != pb.ProcessingStatus_PROCESSING_STATUS_UNSPECIFIED {
-		st := mappers.ProtoProcessingStatusToDomain(req.GetStatus())
+	if req.Msg.GetStatus() != pb.ProcessingStatus_PROCESSING_STATUS_UNSPECIFIED {
+		st := mappers.ProtoProcessingStatusToDomain(req.Msg.GetStatus())
 		params.Status = &st
 	}
 
@@ -124,39 +129,39 @@ func (h *ProcessingHandler) ListProcessingJobs(ctx context.Context, req *pb.List
 		resp.NextPageToken = fmt.Sprintf("%d", nextOffset)
 	}
 
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // CancelProcessingJob handles processing job cancellation requests.
-func (h *ProcessingHandler) CancelProcessingJob(ctx context.Context, req *pb.CancelProcessingJobRequest) (*pb.CancelProcessingJobResponse, error) {
+func (h *ProcessingHandler) CancelProcessingJob(ctx context.Context, req *connect.Request[pb.CancelProcessingJobRequest]) (*connect.Response[pb.CancelProcessingJobResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "CancelProcessingJob request", "id", req.GetId(), "request_id", requestID)
+	h.log.Infow("msg", "CancelProcessingJob request", "id", req.Msg.GetId(), "request_id", requestID)
 
-	if req.GetId() == "" {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "processing job ID is required")
 	}
 
-	err := h.service.CancelProcessingJob(ctx, req.GetId())
+	err := h.service.CancelProcessingJob(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.CancelProcessingJobResponse{
+	return connect.NewResponse(&pb.CancelProcessingJobResponse{
 		Success: true,
-	}, nil
+	}), nil
 }
 
 // GetProcessingStats handles processing stats requests.
-func (h *ProcessingHandler) GetProcessingStats(ctx context.Context, req *pb.GetProcessingStatsRequest) (*pb.GetProcessingStatsResponse, error) {
+func (h *ProcessingHandler) GetProcessingStats(ctx context.Context, req *connect.Request[pb.GetProcessingStatsRequest]) (*connect.Response[pb.GetProcessingStatsResponse], error) {
 	requestID := p9context.RequestID(ctx)
 
-	h.log.Infow("msg", "GetProcessingStats request", "farm_id", req.GetFarmId(), "request_id", requestID)
+	h.log.Infow("msg", "GetProcessingStats request", "farm_id", req.Msg.GetFarmId(), "request_id", requestID)
 
-	stats, err := h.service.GetProcessingStats(ctx, req.GetFarmId())
+	stats, err := h.service.GetProcessingStats(ctx, req.Msg.GetFarmId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return mappers.ProcessingStatsToProto(stats), nil
+	return connect.NewResponse(mappers.ProcessingStatsToProto(stats)), nil
 }

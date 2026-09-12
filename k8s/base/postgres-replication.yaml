@@ -1,0 +1,461 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# postgres-replication.yaml — PostgreSQL streaming replication
+#
+# Deploys a primary + read-replica StatefulSet with:
+#   - Physical streaming replication via replication slots
+#   - Headless service for replica discovery
+#   - Separate read-only service endpoint for replicas
+#   - WAL archiving configuration for PITR support
+#   - Automatic failover readiness
+#
+# This replaces the single-instance postgres.yaml for production use.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Primary PostgreSQL configuration ─────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-primary-config
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: primary
+data:
+  postgresql.conf: |
+    # ── Connection ──
+    listen_addresses = '*'
+    max_connections = 200
+    superuser_reserved_connections = 5
+
+    # ── Memory ──
+    shared_buffers = 512MB
+    effective_cache_size = 1536MB
+    work_mem = 8MB
+    maintenance_work_mem = 128MB
+
+    # ── WAL & Replication ──
+    wal_level = replica
+    max_wal_senders = 10
+    max_replication_slots = 10
+    wal_keep_size = 1GB
+    synchronous_commit = on
+    synchronous_standby_names = ''
+
+    # ── WAL Archiving (for PITR) ──
+    archive_mode = on
+    archive_command = 'test ! -f /var/lib/postgresql/wal_archive/%f && cp %p /var/lib/postgresql/wal_archive/%f'
+    archive_timeout = 300
+
+    # ── Checkpoints ──
+    checkpoint_completion_target = 0.9
+    max_wal_size = 2GB
+    min_wal_size = 512MB
+
+    # ── Logging ──
+    log_destination = 'stderr'
+    logging_collector = off
+    log_min_duration_statement = 1000
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    log_lock_waits = on
+    log_replication_commands = on
+
+    # ── Hot Standby (for replicas that connect) ──
+    hot_standby = on
+    hot_standby_feedback = on
+
+  pg_hba.conf: |
+    # TYPE  DATABASE  USER        ADDRESS          METHOD
+    # Local connections
+    local   all       all                          trust
+    # IPv4 connections
+    host    all       all         0.0.0.0/0        md5
+    # IPv6 connections
+    host    all       all         ::0/0            md5
+    # Replication connections (from any pod in the namespace)
+    host    replication  replicator  10.0.0.0/8     md5
+    host    replication  replicator  172.16.0.0/12  md5
+    host    replication  replicator  192.168.0.0/16 md5
+
+  init-replication.sh: |
+    #!/bin/bash
+    set -e
+
+    # Create replication user if it does not exist.
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-SQL
+      DO \$\$
+      BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'replicator') THEN
+          CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD '${REPLICATION_PASSWORD}';
+        END IF;
+      END
+      \$\$;
+    SQL
+
+    # Create replication slot for each replica.
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-SQL
+      SELECT pg_create_physical_replication_slot('replica_slot_1', true)
+      WHERE NOT EXISTS (
+        SELECT FROM pg_replication_slots WHERE slot_name = 'replica_slot_1'
+      );
+    SQL
+
+    # Create WAL archive directory.
+    mkdir -p /var/lib/postgresql/wal_archive
+    chown postgres:postgres /var/lib/postgresql/wal_archive
+
+    echo "Replication initialization complete."
+---
+# ── Replica configuration ────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-replica-config
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: replica
+data:
+  setup-replica.sh: |
+    #!/bin/bash
+    set -e
+
+    PGDATA="/var/lib/postgresql/data"
+
+    # If data directory is empty, bootstrap from primary via pg_basebackup.
+    if [ ! -s "$PGDATA/PG_VERSION" ]; then
+      echo "Initializing replica from primary..."
+
+      # Wait for primary to be ready.
+      until pg_isready -h postgres-primary.yieldpoint.svc.cluster.local -p 5432 -U replicator; do
+        echo "Waiting for primary to be ready..."
+        sleep 5
+      done
+
+      # Take a base backup from the primary.
+      PGPASSWORD="${REPLICATION_PASSWORD}" pg_basebackup \
+        -h postgres-primary.yieldpoint.svc.cluster.local \
+        -p 5432 \
+        -U replicator \
+        -D "$PGDATA" \
+        -Fp -Xs -P -R \
+        --slot=replica_slot_1 \
+        --checkpoint=fast
+
+      # Ensure the standby signal file exists.
+      touch "$PGDATA/standby.signal"
+
+      # Configure connection to primary.
+      cat >> "$PGDATA/postgresql.auto.conf" <<EOF
+    primary_conninfo = 'host=postgres-primary.yieldpoint.svc.cluster.local port=5432 user=replicator password=${REPLICATION_PASSWORD} application_name=replica1'
+    primary_slot_name = 'replica_slot_1'
+    hot_standby = on
+    hot_standby_feedback = on
+    recovery_target_timeline = 'latest'
+    restore_command = 'cp /var/lib/postgresql/wal_archive/%f %p 2>/dev/null || true'
+    EOF
+
+      chown -R postgres:postgres "$PGDATA"
+      chmod 0700 "$PGDATA"
+    fi
+
+    echo "Replica setup complete. Starting PostgreSQL..."
+    exec docker-entrypoint.sh postgres
+---
+# ── Primary StatefulSet ──────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-primary
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: primary
+spec:
+  serviceName: postgres-primary
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: primary
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: primary
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgresql
+          env:
+            - name: POSTGRES_USER
+              value: yieldpoint
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: yieldpoint
+            - name: REPLICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: REPLICATION_PASSWORD
+            - name: POSTGRES_INITDB_ARGS
+              value: "--data-checksums"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "4000m"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+            - name: postgres-config
+              mountPath: /etc/postgresql/pg_hba.conf
+              subPath: pg_hba.conf
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d/01-init-replication.sh
+              subPath: init-replication.sh
+            - name: wal-archive
+              mountPath: /var/lib/postgresql/wal_archive
+          args:
+            - "-c"
+            - "config_file=/etc/postgresql/postgresql.conf"
+            - "-c"
+            - "hba_file=/etc/postgresql/pg_hba.conf"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - yieldpoint
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - yieldpoint
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgres-config
+          configMap:
+            name: postgres-primary-config
+        - name: init-scripts
+          configMap:
+            name: postgres-primary-config
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 50Gi
+    - metadata:
+        name: wal-archive
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+---
+# ── Replica StatefulSet ──────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: replica
+spec:
+  serviceName: postgres-replica
+  replicas: 1                      # Scale to 2+ for more read capacity
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: replica
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: replica
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgresql
+          env:
+            - name: POSTGRES_USER
+              value: yieldpoint
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: POSTGRES_PASSWORD
+            - name: REPLICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: REPLICATION_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data
+          command:
+            - /bin/bash
+            - /scripts/setup-replica.sh
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: replica-scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: wal-archive
+              mountPath: /var/lib/postgresql/wal_archive
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - yieldpoint
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "pg_isready -U yieldpoint && psql -U yieldpoint -d yieldpoint -tAc \"SELECT pg_is_in_recovery();\" | grep -q 't'"
+            initialDelaySeconds: 30
+            periodSeconds: 5
+      volumes:
+        - name: replica-scripts
+          configMap:
+            name: postgres-replica-config
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 50Gi
+    - metadata:
+        name: wal-archive
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+---
+# ── Primary Service (read-write) ─────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-primary
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: primary
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: primary
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgresql
+---
+# ── Replica Service (read-only) ──────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: replica
+  annotations:
+    service.kubernetes.io/topology-mode: Auto
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: replica
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgresql
+---
+# ── Headless Service for StatefulSet DNS (replica discovery) ──────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replicas
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: replica
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: replica
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgresql
+---
+# ── Backward-compatible "postgres" service pointing to primary ────────────────
+# Ensures existing service configs that reference "postgres" keep working.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: primary
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgresql

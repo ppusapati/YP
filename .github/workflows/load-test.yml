@@ -1,0 +1,169 @@
+name: Load Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - dev
+        default: staging
+      test:
+        description: "Specific test to run (blank = all)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - auth-flow
+          - farm-crud
+          - sensor-ingestion
+          - satellite-upload
+          - ai-inference
+        default: ""
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  K6_VERSION: "0.54.0"
+
+jobs:
+  load-test:
+    name: Run load tests
+    runs-on: ubuntu-latest
+    # Run on manual trigger, or when a PR gets the 'load-test' label
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'load-test')
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set environment URLs
+        id: env
+        run: |
+          ENV="${{ github.event.inputs.environment || 'staging' }}"
+          case "${ENV}" in
+            staging)
+              echo "base_url=https://staging-api.yieldpoint.dev" >> "$GITHUB_OUTPUT"
+              echo "ai_url=https://staging-ai.yieldpoint.dev" >> "$GITHUB_OUTPUT"
+              ;;
+            dev)
+              echo "base_url=https://dev-api.yieldpoint.dev" >> "$GITHUB_OUTPUT"
+              echo "ai_url=https://dev-ai.yieldpoint.dev" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D68
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Run load tests
+        env:
+          BASE_URL: ${{ steps.env.outputs.base_url }}
+          AI_GATEWAY_URL: ${{ steps.env.outputs.ai_url }}
+          TEST_USER_EMAIL: ${{ secrets.LOAD_TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.LOAD_TEST_USER_PASSWORD }}
+          TEST_FARM_ID: ${{ secrets.LOAD_TEST_FARM_ID }}
+          TEST_TILESET_ID: ${{ secrets.LOAD_TEST_TILESET_ID }}
+          TEST_IMAGE_URL: ${{ secrets.LOAD_TEST_IMAGE_URL }}
+        run: |
+          ARGS=""
+          if [[ -n "${{ github.event.inputs.test }}" ]]; then
+            ARGS="--only ${{ github.event.inputs.test }}"
+          fi
+          chmod +x tests/load/run-all.sh
+          ./tests/load/run-all.sh ${ARGS} || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results-${{ github.run_number }}
+          path: tests/load/results/
+          retention-days: 30
+
+      - name: Generate summary
+        if: always()
+        run: |
+          SUMMARY_FILE=$(ls -t tests/load/results/summary-*.txt 2>/dev/null | head -1)
+          if [[ -n "${SUMMARY_FILE}" ]]; then
+            echo "## Load Test Results" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat "${SUMMARY_FILE}" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Load Test Results" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "No summary file found — check logs for errors." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Post PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const glob = require('glob');
+
+            // Find the latest summary file
+            const summaryFiles = fs.readdirSync('tests/load/results')
+              .filter(f => f.startsWith('summary-') && f.endsWith('.txt'))
+              .sort()
+              .reverse();
+
+            let body = '## Load Test Results\n\n';
+
+            if (summaryFiles.length > 0) {
+              const content = fs.readFileSync(`tests/load/results/${summaryFiles[0]}`, 'utf8');
+              body += '```\n' + content + '\n```\n';
+            } else {
+              body += 'No summary file found — check the [workflow run](' +
+                `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` +
+                ') for details.\n';
+            }
+
+            body += '\n<sub>Triggered by load-test label | ';
+            body += `[Full results](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})</sub>`;
+
+            // Find existing load test comment to update, or create new
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('## Load Test Results')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

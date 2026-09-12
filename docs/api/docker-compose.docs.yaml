@@ -1,0 +1,42 @@
+version: "3.8"
+
+# Swagger UI for browsing all YieldPoint API specs.
+#
+# Usage:
+#   docker compose -f docs/api/docker-compose.docs.yaml up
+#
+# Then open http://localhost:9090 in your browser.
+# Use the top-right dropdown to switch between service specs.
+
+services:
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    ports:
+      - "9090:8080"
+    environment:
+      URLS: >-
+        [
+          {"url": "/specs/farm-service.yaml",                  "name": "Farm Service"},
+          {"url": "/specs/field-service.yaml",                 "name": "Field Service"},
+          {"url": "/specs/crop-service.yaml",                  "name": "Crop Service"},
+          {"url": "/specs/sensor-service.yaml",                "name": "Sensor Service"},
+          {"url": "/specs/irrigation-service.yaml",            "name": "Irrigation Service"},
+          {"url": "/specs/soil-service.yaml",                  "name": "Soil Service"},
+          {"url": "/specs/yield-service.yaml",                 "name": "Yield Service"},
+          {"url": "/specs/pest-prediction-service.yaml",       "name": "Pest Prediction Service"},
+          {"url": "/specs/plant-diagnosis-service.yaml",       "name": "Plant Diagnosis Service"},
+          {"url": "/specs/satellite-analytics-service.yaml",   "name": "Satellite Analytics Service"},
+          {"url": "/specs/traceability-service.yaml",          "name": "Traceability Service"},
+          {"url": "/specs/commerce-service.yaml",              "name": "Commerce Service"},
+          {"url": "/specs/alert-service.yaml",                 "name": "Alert Service"},
+          {"url": "/specs/analytics-service.yaml",             "name": "Analytics Service"},
+          {"url": "/specs/prescription-service.yaml",          "name": "Prescription Service"},
+          {"url": "/specs/satellite-ingestion-service.yaml",   "name": "Satellite Ingestion Service"},
+          {"url": "/specs/satellite-processing-service.yaml",  "name": "Satellite Processing Service"},
+          {"url": "/specs/satellite-tile-service.yaml",        "name": "Satellite Tile Service"},
+          {"url": "/specs/vegetation-index-service.yaml",      "name": "Vegetation Index Service"},
+          {"url": "/specs/task-service.yaml",                  "name": "Task Service"},
+          {"url": "/specs/agronomy-service.yaml",              "name": "Agronomy Service"}
+        ]
+    volumes:
+      - ./:/usr/share/nginx/html/specs:ro

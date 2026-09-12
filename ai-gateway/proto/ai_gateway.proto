@@ -49,6 +49,12 @@ service AIGatewayService {
   // ─── Prescriptions ────────────────────────────────────────────────
   // Generate variable-rate prescription maps for a field.
   rpc GeneratePrescription(GeneratePrescriptionRequest) returns (GeneratePrescriptionResponse);
+
+  // ─── Terrain Analysis ───────────────────────────────────────────
+  rpc AnalyzeTerrain(AnalyzeTerrainRequest) returns (AnalyzeTerrainResponse);
+
+  // ─── Water Flow Simulation ──────────────────────────────────────
+  rpc SimulateWaterFlow(SimulateWaterFlowRequest) returns (SimulateWaterFlowResponse);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -597,4 +603,176 @@ message PrescriptionZoneSummary {
   double min_rate = 5;
   double max_rate = 6;
   double total_amount = 7;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Terrain Analysis Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message AnalyzeTerrainRequest {
+  string request_id = 1;
+  // DEM elevation data as a flat row-major array.
+  repeated double elevation = 2;
+  int32 width = 3;
+  int32 height = 4;
+  // Cell size in meters (square cells).
+  double cell_size = 5;
+  // Nodata value (default -9999).
+  double nodata_value = 6;
+  // Which analyses to run: SLOPE, ASPECT, CONTOUR, FLOW_DIRECTION,
+  // FLOW_ACCUMULATION, WATERSHED, HILLSHADE, TRI, TPI, FULL.
+  repeated string analyses = 7;
+  // Contour interval in meters (used when CONTOUR or FULL is requested).
+  double contour_interval = 8;
+  // Stream threshold for flow accumulation (used when FLOW_ACCUMULATION or FULL).
+  double stream_threshold = 9;
+  // Hillshade parameters (defaults: azimuth 315, altitude 45, z_factor 1).
+  double hillshade_azimuth = 10;
+  double hillshade_altitude = 11;
+  double hillshade_z_factor = 12;
+}
+
+message AnalyzeTerrainResponse {
+  string request_id = 1;
+  int32 width = 2;
+  int32 height = 3;
+  // Slope in degrees (row-major flat array).
+  repeated double slope = 4;
+  // Aspect in degrees clockwise from north.
+  repeated double aspect = 5;
+  // Hillshade values (0-255).
+  repeated double hillshade = 6;
+  // Terrain Ruggedness Index.
+  repeated double tri = 7;
+  // Topographic Position Index.
+  repeated double tpi = 8;
+  // D8 flow direction (encoded as u8, cast to int32).
+  repeated int32 flow_direction = 9;
+  // Flow accumulation values.
+  repeated double flow_accumulation = 10;
+  // Watershed IDs per cell.
+  repeated uint32 watershed_ids = 11;
+  // Contour lines.
+  repeated TerrainContourLine contour_lines = 12;
+  // DEM statistics.
+  TerrainDemStatistics dem_statistics = 13;
+  // Flow accumulation statistics.
+  TerrainFlowStats flow_statistics = 14;
+  // Per-watershed statistics.
+  repeated TerrainWatershedInfo watershed_statistics = 15;
+  int64 processing_time_ms = 16;
+}
+
+message TerrainContourLine {
+  double elevation = 1;
+  // Interleaved x,y coordinates: [x0, y0, x1, y1, ...].
+  repeated double coordinates = 2;
+}
+
+message TerrainDemStatistics {
+  double min_elevation = 1;
+  double max_elevation = 2;
+  double mean_elevation = 3;
+  double elevation_range = 4;
+  int64 valid_cells = 5;
+  int64 total_cells = 6;
+}
+
+message TerrainFlowStats {
+  double max_accumulation = 1;
+  double mean_accumulation = 2;
+  int64 stream_cell_count = 3;
+  int64 total_cells = 4;
+  double drainage_density = 5;
+}
+
+message TerrainWatershedInfo {
+  uint32 id = 1;
+  int64 cell_count = 2;
+  double area_sq_m = 3;
+  double mean_elevation = 4;
+  double min_elevation = 5;
+  double max_elevation = 6;
+  double relief = 7;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Water Flow Simulation Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message SimulateWaterFlowRequest {
+  string request_id = 1;
+  // Soil moisture parameters.
+  WaterFlowMoistureParams moisture_params = 2;
+  // Water balance parameters.
+  WaterFlowBalanceParams balance_params = 3;
+  // Simulation inputs.
+  double rainfall_mm_day = 4;
+  double et_mm_day = 5;
+  double irrigation_mm_day = 6;
+  double simulation_days = 7;
+  // Daily rainfall series (used for water balance computation; overrides
+  // rainfall_mm_day when non-empty).
+  repeated double daily_rainfall_mm = 8;
+}
+
+message WaterFlowMoistureParams {
+  int32 num_layers = 1;
+  double layer_thickness_m = 2;
+  double k_sat_m_day = 3;
+  double field_capacity = 4;
+  double wilting_point = 5;
+  double saturation = 6;
+  double root_zone_depth_m = 7;
+}
+
+message WaterFlowBalanceParams {
+  double field_area_ha = 1;
+  double crop_coefficient = 2;
+  double reference_et_mm_day = 3;
+  double root_zone_depth_m = 4;
+  double field_capacity = 5;
+  double wilting_point = 6;
+  double management_allowed_depletion = 7;
+}
+
+message SimulateWaterFlowResponse {
+  string request_id = 1;
+  // Soil moisture profiles over time.
+  repeated SoilMoistureSnapshot moisture_profiles = 2;
+  // Daily water balance results.
+  repeated WaterBalanceDay water_balance = 3;
+  // Irrigation schedule summary.
+  WaterFlowIrrigationSummary irrigation_summary = 4;
+  int64 processing_time_ms = 5;
+}
+
+message SoilMoistureSnapshot {
+  double time_days = 1;
+  repeated double layer_moisture = 2;
+  double root_zone_water_mm = 3;
+  double available_water_mm = 4;
+  double drainage_mm_day = 5;
+}
+
+message WaterBalanceDay {
+  int32 day = 1;
+  double etc_mm_day = 2;
+  double depletion_mm = 3;
+  double total_available_water_mm = 4;
+  double readily_available_water_mm = 5;
+  bool irrigation_needed = 6;
+  double irrigation_amount_mm = 7;
+  double effective_rainfall_mm = 8;
+  double deep_percolation_mm = 9;
+}
+
+message WaterFlowIrrigationSummary {
+  double total_irrigation_mm = 1;
+  double total_effective_rainfall_mm = 2;
+  double total_crop_et_mm = 3;
+  double total_deep_percolation_mm = 4;
+  int32 irrigation_events = 5;
+  double average_interval_days = 6;
+  double water_use_efficiency = 7;
 }

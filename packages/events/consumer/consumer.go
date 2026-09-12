@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 
 	"p9e.in/samavaya/packages/api/v1/message"
@@ -13,18 +14,18 @@ import (
 )
 
 type KafkaConsumer struct {
-	config     *config.KafkaConfig
-	log        p9log.Helper
-	committed  atomic.Value
-	shutdown   atomic.Bool
-	consumerCh chan sarama.ConsumerGroup
+	config    *config.KafkaConfig
+	log       p9log.Helper
+	committed atomic.Value
+	shutdown  atomic.Bool
+	groups    []sarama.ConsumerGroup
+	groupsMu  sync.Mutex
 }
 
 func NewKafkaConsumer(config *config.KafkaConfig, lg p9log.Logger) *KafkaConsumer {
 	kc := &KafkaConsumer{
-		config:     config,
-		log:        *p9log.NewHelper(p9log.With(lg, "caller", "Kafka Consumer")),
-		consumerCh: make(chan sarama.ConsumerGroup, 1),
+		config: config,
+		log:    *p9log.NewHelper(p9log.With(lg, "caller", "Kafka Consumer")),
 	}
 	kc.committed.Store(make(map[string]map[int32]int64))
 	return kc
@@ -41,7 +42,9 @@ func (kc *KafkaConsumer) ConsumerGroup(groupName string) sarama.ConsumerGroup {
 		kc.log.Fatalf("Error creating Kafka consumer group: %v", err)
 	}
 
-	kc.consumerCh <- consumer
+	kc.groupsMu.Lock()
+	kc.groups = append(kc.groups, consumer)
+	kc.groupsMu.Unlock()
 	return consumer
 }
 
@@ -98,11 +101,22 @@ func (kc *KafkaConsumer) watchSignals(ctx context.Context) context.Context {
 	go func() {
 		<-ctx.Done()
 		kc.shutdown.Store(true)
-		close(kc.consumerCh)
+		kc.closeAllGroups()
 		cancel()
 	}()
 
 	return ctx
+}
+
+func (kc *KafkaConsumer) closeAllGroups() {
+	kc.groupsMu.Lock()
+	defer kc.groupsMu.Unlock()
+	for _, g := range kc.groups {
+		if err := g.Close(); err != nil {
+			kc.log.Errorf("Error closing consumer group: %v", err)
+		}
+	}
+	kc.groups = nil
 }
 
 // Subscribe registers a callback handler for a given topic. It creates a
@@ -145,6 +159,7 @@ func (kc *KafkaConsumer) Subscribe(ctx context.Context, topic string, handler fu
 
 func (kc *KafkaConsumer) Cleanup() {
 	kc.shutdown.Store(true)
+	kc.closeAllGroups()
 }
 
 func (kc *KafkaConsumer) createConsumerConfig() *sarama.Config {

@@ -1,0 +1,102 @@
+syntax = "proto3";
+package agriculture.agronomy.v1;
+option go_package = "p9e.in/samavaya/agriculture/agronomy-service/api/v1;agronomyv1";
+
+import "google/protobuf/timestamp.proto";
+
+// InspectionStatus represents the status of a field inspection.
+enum InspectionStatus {
+  INSPECTION_STATUS_UNSPECIFIED = 0;
+  INSPECTION_STATUS_DRAFT = 1;
+  INSPECTION_STATUS_SUBMITTED = 2;
+  INSPECTION_STATUS_REVIEWED = 3;
+}
+
+// IssueSeverity represents the severity level of an inspection issue.
+enum IssueSeverity {
+  ISSUE_SEVERITY_UNSPECIFIED = 0;
+  ISSUE_SEVERITY_LOW = 1;
+  ISSUE_SEVERITY_MEDIUM = 2;
+  ISSUE_SEVERITY_HIGH = 3;
+  ISSUE_SEVERITY_CRITICAL = 4;
+}
+
+// InspectionIssue represents a single issue found during a field inspection.
+message InspectionIssue {
+  string description = 1;
+  IssueSeverity severity = 2;
+  string photo_url = 3;
+}
+
+// Inspection represents a field inspection performed by an agronomist.
+message Inspection {
+  string id = 1;
+  string field_id = 2;
+  string farm_id = 3;
+  string inspector_id = 4;
+  InspectionStatus status = 5;
+  string findings = 6;
+  repeated string photos = 7;
+  repeated string recommendations = 8;
+  repeated InspectionIssue issues = 9;
+  double health_score = 10;
+  string notes = 11;
+  google.protobuf.Timestamp inspection_date = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message GetInspectionRequest {
+  string id = 1;
+}
+
+message GetInspectionResponse {
+  Inspection inspection = 1;
+}
+
+message ListInspectionsRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string inspector_id = 3;
+  InspectionStatus status = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+message ListInspectionsResponse {
+  repeated Inspection inspections = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateInspectionRequest {
+  string field_id = 1;
+  string farm_id = 2;
+  string findings = 3;
+  repeated string photos = 4;
+  repeated string recommendations = 5;
+  repeated InspectionIssue issues = 6;
+  double health_score = 7;
+  string notes = 8;
+  google.protobuf.Timestamp inspection_date = 9;
+}
+
+message CreateInspectionResponse {
+  Inspection inspection = 1;
+}
+
+message SubmitInspectionRequest {
+  string id = 1;
+}
+
+message SubmitInspectionResponse {
+  Inspection inspection = 1;
+}
+
+// InspectionService provides field inspection management operations.
+service InspectionService {
+  rpc GetInspection(GetInspectionRequest) returns (GetInspectionResponse);
+  rpc ListInspections(ListInspectionsRequest) returns (ListInspectionsResponse);
+  rpc CreateInspection(CreateInspectionRequest) returns (CreateInspectionResponse);
+  rpc SubmitInspection(SubmitInspectionRequest) returns (SubmitInspectionResponse);
+}

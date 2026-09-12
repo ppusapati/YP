@@ -5,6 +5,21 @@ import 'package:logging/logging.dart';
 
 import '../database/app_database.dart';
 
+/// The status of a sync queue entry.
+enum SyncEntryStatus {
+  /// Waiting to be synced.
+  pending,
+
+  /// Currently being synced to the server.
+  syncing,
+
+  /// Sync failed (may be retried if retry count allows).
+  failed,
+
+  /// Successfully synced to the server.
+  completed,
+}
+
 /// Represents an operation in the offline sync queue.
 class SyncQueueEntry {
   const SyncQueueEntry({
@@ -16,6 +31,7 @@ class SyncQueueEntry {
     required this.createdAt,
     this.retryCount = 0,
     this.lastError,
+    this.status = SyncEntryStatus.pending,
   });
 
   /// The local auto-incremented ID.
@@ -42,6 +58,9 @@ class SyncQueueEntry {
   /// Last error message, if any.
   final String? lastError;
 
+  /// Current status of this entry in the sync pipeline.
+  final SyncEntryStatus status;
+
   /// Maximum number of retry attempts before the entry is considered failed.
   static const int maxRetries = 5;
 
@@ -59,7 +78,23 @@ class SyncQueueEntry {
       createdAt: row.createdAt,
       retryCount: row.retryCount,
       lastError: row.lastError,
+      status: _parseStatus(row.status),
     );
+  }
+
+  /// Parses a status string from the database into a [SyncEntryStatus].
+  static SyncEntryStatus _parseStatus(String value) {
+    switch (value) {
+      case 'syncing':
+        return SyncEntryStatus.syncing;
+      case 'failed':
+        return SyncEntryStatus.failed;
+      case 'completed':
+        return SyncEntryStatus.completed;
+      case 'pending':
+      default:
+        return SyncEntryStatus.pending;
+    }
   }
 
   /// Converts to a Drift companion for database insertion.
@@ -72,13 +107,14 @@ class SyncQueueEntry {
       createdAt: Value(createdAt),
       retryCount: Value(retryCount),
       lastError: Value(lastError),
+      status: Value(status.name),
     );
   }
 
   @override
   String toString() =>
       'SyncQueueEntry($operation $entityType/$entityId, '
-      'retries: $retryCount)';
+      'status: ${status.name}, retries: $retryCount)';
 }
 
 /// Manages the offline sync queue stored in the local database.
@@ -111,9 +147,14 @@ class SyncQueue {
   }
 
   /// Returns all pending (non-exhausted) entries in FIFO order.
+  ///
+  /// Includes entries with status `pending` or `failed` that have not
+  /// exceeded [SyncQueueEntry.maxRetries].
   Future<List<SyncQueueEntry>> getPendingEntries() async {
     final rows = await (db.select(db.offlineQueue)
-          ..where((t) => t.retryCount.isSmallerThanValue(SyncQueueEntry.maxRetries))
+          ..where((t) =>
+              t.retryCount.isSmallerThanValue(SyncQueueEntry.maxRetries) &
+              (t.status.equals('pending') | t.status.equals('failed')))
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .get();
 
@@ -146,6 +187,27 @@ class SyncQueue {
     return entries.length;
   }
 
+  /// Marks an entry as currently syncing.
+  Future<void> markSyncing(int entryId) async {
+    await (db.update(db.offlineQueue)
+          ..where((t) => t.id.equals(entryId)))
+        .write(const OfflineQueueCompanion(status: Value('syncing')));
+    _log.fine('Entry $entryId marked as syncing');
+  }
+
+  /// Marks an entry as completed and removes it from the queue.
+  Future<void> markCompleted(int entryId) async {
+    await (db.update(db.offlineQueue)
+          ..where((t) => t.id.equals(entryId)))
+        .write(const OfflineQueueCompanion(status: Value('completed')));
+
+    // Remove completed entries to keep the queue lean.
+    await (db.delete(db.offlineQueue)
+          ..where((t) => t.id.equals(entryId)))
+        .go();
+    _log.fine('Entry $entryId completed and removed');
+  }
+
   /// Removes a successfully synced entry from the queue.
   Future<void> remove(int entryId) async {
     await (db.delete(db.offlineQueue)
@@ -162,6 +224,7 @@ class SyncQueue {
       OfflineQueueCompanion(
         retryCount: db.offlineQueue.retryCount + const Variable(1),
         lastError: Value(error),
+        status: const Value('failed'),
       ),
     );
     _log.warning('Entry $entryId failed: $error');
@@ -191,6 +254,7 @@ class SyncQueue {
       const OfflineQueueCompanion(
         retryCount: Value(0),
         lastError: Value(null),
+        status: Value('pending'),
       ),
     );
     _log.info('Failed entries reset for retry');

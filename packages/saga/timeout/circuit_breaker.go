@@ -138,7 +138,7 @@ func (cb *CircuitBreakerImpl) GetStatus() models.CircuitBreakerStatus {
 }
 
 // Reset resets the circuit breaker to closed state
-func (cb *CircuitBreakerImpl) Reset() error {
+func (cb *CircuitBreakerImpl) Reset() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 
@@ -147,8 +147,6 @@ func (cb *CircuitBreakerImpl) Reset() error {
 	cb.successCount = 0
 
 	fmt.Printf("Circuit breaker manually reset\n")
-
-	return nil
 }
 
 // setState changes the circuit breaker state

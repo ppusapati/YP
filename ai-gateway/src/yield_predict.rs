@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use yield_prediction_engine::{
     EnvironmentFactors, ManagementFactors, SoilFactors, YieldPredictionEngine,
-    YieldModelParams, prediction_with_uncertainty,
+    YieldModelParams,
 };
 
 use crate::config::ModelPaths;
@@ -54,8 +54,8 @@ impl YieldEngine {
             .iter()
             .map(|sf| proto::StressFactor {
                 factor_name: sf.name.clone(),
-                severity: sf.severity.value(),
-                yield_impact_pct: sf.yield_impact_pct,
+                severity: 1.0 - sf.factor,
+                yield_impact_pct: (1.0 - sf.factor) * 100.0,
             })
             .collect();
 
@@ -137,7 +137,7 @@ fn simulate_stages(days: i32, final_yield: f64) -> Vec<proto::GrowthStageResult>
         let stage_end_day = (*end_frac * days as f64) as i32;
         let mid_day = (stage_start_day + stage_end_day) / 2;
         let biomass = final_yield * 2.5 * end_frac; // total biomass at end of stage
-        let lai = 3.5 * end_frac.min(&0.8); // leaf area index peaks mid-season
+        let lai = 3.5 * end_frac.min(0.8); // leaf area index peaks mid-season
         let height = 120.0 * end_frac; // max canopy height ~120cm
         let water_demand = 6.0 * (0.3 + 0.7 * end_frac); // mm/day
 
@@ -145,7 +145,7 @@ fn simulate_stages(days: i32, final_yield: f64) -> Vec<proto::GrowthStageResult>
             day: mid_day,
             stage_name: name.to_string(),
             biomass_kg_per_ha: biomass,
-            leaf_area_index: *lai,
+            leaf_area_index: lai,
             canopy_height_cm: height,
             water_demand_mm: water_demand,
         });

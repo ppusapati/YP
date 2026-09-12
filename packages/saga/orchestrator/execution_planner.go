@@ -54,7 +54,7 @@ func (ep *ExecutionPlanner) GetStepDependencies(stepNum int32) ([]*saga.StepDefi
 		return nil, fmt.Errorf("invalid step number: %d", stepNum)
 	}
 
-	step := ep.stepDefs[stepNum-1]
+	_ = ep.stepDefs[stepNum-1] // validate index in range
 	dependencies := make([]*saga.StepDefinition, 0)
 
 	// In current design, steps execute sequentially
@@ -178,8 +178,8 @@ func validateDependencyReferences(stepDefs []*saga.StepDefinition) error {
 	for _, stepDef := range stepDefs {
 		for _, compStep := range stepDef.CompensationSteps {
 			// Compensation steps should reference existing steps
-			if compStep.StepNumber < 1 || compStep.StepNumber > maxStepNum {
-				return fmt.Errorf("invalid compensation step number %d referenced by step %d", compStep.StepNumber, stepDef.StepNumber)
+			if compStep < 1 || compStep > maxStepNum {
+				return fmt.Errorf("invalid compensation step number %d referenced by step %d", compStep, stepDef.StepNumber)
 			}
 		}
 	}

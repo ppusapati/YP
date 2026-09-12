@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network Security Configuration for YieldPoint Farmer App.
+
+  Enforces certificate pinning for the production API domain and restricts
+  cleartext traffic to local development addresses only (via debug-overrides).
+
+  Pin hashes are SHA-256 digests of the Subject Public Key Info (SPKI) of
+  the server's leaf or intermediate certificate. Replace the placeholder
+  values below with real pin hashes before releasing to production.
+
+  Reference: https://developer.android.com/privacy-and-security/security-config
+-->
+<network-security-config>
+    <!-- Production domain: certificate pinning enforced. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.yieldpoint.io</domain>
+        <pin-set expiration="2027-01-01">
+            <!--
+              Primary pin: SHA-256 hash of the leaf/intermediate certificate SPKI.
+              TODO: Replace with the real pin before production release.
+            -->
+            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
+            <!--
+              Backup pin: SHA-256 hash of an alternative certificate SPKI.
+              Must differ from the primary pin to satisfy Android's requirement
+              for a backup pin that ensures connectivity during certificate rotation.
+              TODO: Replace with a real backup pin before production release.
+            -->
+            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!--
+      Debug overrides: allow cleartext traffic to localhost and the Android
+      emulator host IP so that development builds can reach local servers
+      without TLS. These overrides are ignored in release builds.
+    -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+    <!-- Base config: disallow cleartext for all other domains. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

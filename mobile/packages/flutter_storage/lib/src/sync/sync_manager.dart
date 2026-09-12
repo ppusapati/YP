@@ -4,6 +4,7 @@ import 'package:logging/logging.dart';
 
 import '../database/app_database.dart';
 import '../models/sync_status.dart';
+import 'connectivity_monitor.dart';
 import 'sync_queue.dart';
 
 /// Callback type for executing a sync operation against the remote API.
@@ -48,13 +49,16 @@ class SyncManager {
   SyncManager({
     required AppDatabase db,
     required this.executor,
+    ConnectivityMonitor? connectivityMonitor,
     this.batchSize = 10,
     this.syncInterval = const Duration(minutes: 5),
   })  : _syncQueue = SyncQueue(db: db),
+        _connectivityMonitor = connectivityMonitor ?? ConnectivityMonitor(),
         _db = db;
 
   final AppDatabase _db;
   final SyncQueue _syncQueue;
+  final ConnectivityMonitor _connectivityMonitor;
 
   /// The function that executes individual sync operations against the server.
   final SyncExecutor executor;
@@ -73,12 +77,43 @@ class SyncManager {
   SyncStatus _currentStatus = SyncStatus.initial;
   Timer? _periodicTimer;
   bool _isSyncing = false;
+  StreamSubscription<ConnectivityState>? _connectivitySubscription;
 
   /// Stream of sync status updates.
   Stream<SyncStatus> get statusStream => _statusController.stream;
 
   /// The current sync status.
   SyncStatus get currentStatus => _currentStatus;
+
+  /// The underlying connectivity monitor.
+  ConnectivityMonitor get connectivityMonitor => _connectivityMonitor;
+
+  /// Initialises the sync manager and starts monitoring connectivity.
+  ///
+  /// Call this once during app startup. It initialises the connectivity
+  /// monitor and automatically triggers sync when connectivity is restored.
+  Future<void> initialize() async {
+    await _connectivityMonitor.initialize();
+
+    _connectivitySubscription = _connectivityMonitor.stateStream.listen(
+      (state) {
+        if (state == ConnectivityState.online) {
+          onConnectivityRestored();
+        } else if (state == ConnectivityState.offline) {
+          onConnectivityLost();
+        }
+      },
+    );
+
+    // If already online, trigger an initial sync.
+    if (_connectivityMonitor.isOnline) {
+      await sync();
+    } else if (_connectivityMonitor.isOffline) {
+      _updateStatus(_currentStatus.copyWith(state: SyncState.offline));
+    }
+
+    _log.info('SyncManager initialized');
+  }
 
   /// Queues a mutation for later sync.
   ///
@@ -148,10 +183,15 @@ class SyncManager {
               continue;
             }
 
+            // Mark as syncing before attempting the remote call.
+            if (entry.id != null) {
+              await _syncQueue.markSyncing(entry.id!);
+            }
+
             final success = await executor(entry);
 
             if (success && entry.id != null) {
-              await _syncQueue.remove(entry.id!);
+              await _syncQueue.markCompleted(entry.id!);
               successCount++;
             }
           } on Exception catch (e) {
@@ -245,6 +285,9 @@ class SyncManager {
   /// Releases resources. Call when the sync manager is no longer needed.
   void dispose() {
     _periodicTimer?.cancel();
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
+    _connectivityMonitor.dispose();
     _statusController.close();
   }
 

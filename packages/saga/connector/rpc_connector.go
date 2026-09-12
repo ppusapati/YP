@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 
@@ -102,7 +103,7 @@ func (c *ConnectRPCConnector) InvokeHandler(
 	req.Header.Set("Connect-Protocol-Version", "1")
 
 	// 7. Set request body
-	req.Body = http.NewReadCloser(string(jsonInput))
+	req.Body = NewReadCloser(string(jsonInput))
 
 	// 8. Execute request
 	resp, err := client.Do(req)
@@ -163,7 +164,7 @@ func (c *ConnectRPCConnector) getOrCreateClient(serviceName string) *http.Client
 
 // NewReadCloser creates a ReadCloser from a string
 // This is a helper to work with http.Request.Body
-func NewReadCloser(s string) http.ReadCloser {
+func NewReadCloser(s string) io.ReadCloser {
 	return &readCloser{
 		reader: NewStringReader(s),
 	}
@@ -195,7 +196,7 @@ func NewStringReader(s string) *StringReader {
 // Read reads from the string
 func (sr *StringReader) Read(p []byte) (int, error) {
 	if sr.offset >= len(sr.data) {
-		return 0, fmt.Errorf("EOF")
+		return 0, io.EOF
 	}
 
 	n := copy(p, sr.data[sr.offset:])

@@ -274,7 +274,7 @@ func (s *Server) handleGetDependencyGraph(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) handleGetActiveAlerts(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	_, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
 	activeAlerts := s.engine.GetActiveAlerts()
@@ -307,7 +307,7 @@ func (s *Server) handleGetActiveAlerts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGetAlert(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	_, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
 	alertID := r.PathValue("alert_id")

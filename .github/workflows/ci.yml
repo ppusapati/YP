@@ -32,19 +32,30 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - agronomy-service
+          - alert-service
+          - analytics-service
+          - auth-service
+          - commerce-service
+          - crop-service
           - farm-service
           - field-service
-          - crop-service
-          - sensor-service
           - irrigation-service
-          - soil-service
-          - yield-service
           - pest-prediction-service
           - plant-diagnosis-service
+          - prescription-service
+          - satellite-analytics-service
+          - satellite-ingestion-service
+          - satellite-processing-service
           - satellite-service
+          - satellite-tile-service
+          - sensor-service
+          - soil-service
+          - task-service
           - traceability-service
-          - commerce-service
-          - auth-service
+          - vegetation-index-service
+          - weather-service
+          - yield-service
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -52,7 +63,12 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Build ${{ matrix.service }}
-        run: go build -trimpath ./${{ matrix.service }}/cmd/server
+        run: |
+          if [ -d "./${{ matrix.service }}/cmd/server" ]; then
+            go build -trimpath ./${{ matrix.service }}/cmd/server
+          else
+            echo "No cmd/server entrypoint — skipping binary build"
+          fi
       - name: Vet ${{ matrix.service }}
         run: go vet ./${{ matrix.service }}/...
 
@@ -80,19 +96,30 @@ jobs:
       - name: Run service tests
         run: |
           go test -race -count=1 -timeout=5m \
+            ./agronomy-service/... \
+            ./alert-service/... \
+            ./analytics-service/... \
+            ./auth-service/... \
+            ./commerce-service/... \
+            ./crop-service/... \
             ./farm-service/... \
             ./field-service/... \
-            ./crop-service/... \
-            ./sensor-service/... \
             ./irrigation-service/... \
-            ./soil-service/... \
-            ./yield-service/... \
             ./pest-prediction-service/... \
             ./plant-diagnosis-service/... \
+            ./prescription-service/... \
+            ./satellite-analytics-service/... \
+            ./satellite-ingestion-service/... \
+            ./satellite-processing-service/... \
             ./satellite-service/... \
+            ./satellite-tile-service/... \
+            ./sensor-service/... \
+            ./soil-service/... \
+            ./task-service/... \
             ./traceability-service/... \
-            ./commerce-service/... \
-            ./auth-service/...
+            ./vegetation-index-service/... \
+            ./weather-service/... \
+            ./yield-service/...
 
   proto-check:
     name: Proto freshness
@@ -111,11 +138,47 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
           go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
-      - name: Generate and check for drift
+      - name: Generate and check Go proto drift
         run: |
           buf generate
           git diff --exit-code -- '*.pb.go' '*.connect.go' || \
             (echo "Proto generated code is stale — run 'buf generate' and commit" && exit 1)
+
+  proto-check-dart:
+    name: Proto freshness (Dart)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - uses: dart-lang/setup-dart@v1
+      - name: Install protoc-gen-dart
+        run: dart pub global activate protoc_plugin
+      - name: Generate and check Dart proto drift
+        run: |
+          buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
+          git diff --exit-code -- 'mobile/packages/flutter_proto/lib/src/generated/' || \
+            (echo "Dart proto generated code is stale — run 'buf generate --template mobile/packages/flutter_proto/buf.gen.yaml' and commit" && exit 1)
+
+  proto-check-ts:
+    name: Proto freshness (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install protoc-gen-es
+        run: npm install -g @bufbuild/protoc-gen-es@2.2.3
+      - name: Generate and check TypeScript proto drift
+        run: |
+          buf generate --template web/packages/proto/buf.gen.yaml
+          git diff --exit-code -- 'web/packages/proto/src/gen/' || \
+            (echo "TypeScript proto generated code is stale — run the generate script in web/packages/proto/ and commit" && exit 1)
 
   rust-engines:
     name: Rust engines check & test
@@ -194,9 +257,30 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - agronomy-service
+          - alert-service
+          - analytics-service
+          - auth-service
+          - commerce-service
+          - crop-service
           - farm-service
           - field-service
-          - crop-service
+          - irrigation-service
+          - pest-prediction-service
+          - plant-diagnosis-service
+          - prescription-service
+          - satellite-analytics-service
+          - satellite-ingestion-service
+          - satellite-processing-service
+          - satellite-service
+          - satellite-tile-service
+          - sensor-service
+          - soil-service
+          - task-service
+          - traceability-service
+          - vegetation-index-service
+          - weather-service
+          - yield-service
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
@@ -204,6 +288,19 @@ jobs:
           docker build \
             --build-arg SERVICE=${{ matrix.service }} \
             -t yieldpoint/${{ matrix.service }}:ci \
+            .
+
+  docker-build-monolith:
+    name: Docker build (monolith)
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Monolith Docker image
+        run: |
+          docker build \
+            -f cmd/monolith/Dockerfile \
+            -t yieldpoint/monolith:ci \
             .
 
   docker-build-ai-gateway:

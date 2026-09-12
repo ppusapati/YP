@@ -6,14 +6,19 @@
 //! recommendation, plant AI inference) and exposes them through a unified gRPC API
 //! defined in `proto/ai_gateway.proto`.
 
+pub mod ab_testing;
 pub mod alerting;
 pub mod analytics;
 pub mod config;
+pub mod data_collector;
 pub mod diagnosis;
 pub mod prescription;
 pub mod recommend;
 pub mod satellite;
 pub mod service;
+pub mod terrain;
+pub mod water_flow;
+pub mod vision_client;
 pub mod yield_predict;
 
 /// Generated protobuf types and gRPC server trait.

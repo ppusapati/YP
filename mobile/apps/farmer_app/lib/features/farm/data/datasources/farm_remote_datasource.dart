@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_network/flutter_network.dart';
 import 'package:flutter_proto/src/generated/farm.pb.dart' as farm_pb;
 import 'package:flutter_proto/src/generated/field.pb.dart' as field_pb;
@@ -60,30 +62,78 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
 
   @override
   Future<FarmModel> createFarm(FarmModel farm) async {
+    final centroid = _centroid(farm.boundaries);
     final request = farm_pb.CreateFarmRequest(
       name: farm.name,
       totalAreaHectares: farm.totalAreaHectares,
-      location: farm.boundaries.isNotEmpty
-          ? farm_pb.FarmLocation(
-              latitude: farm.boundaries.first.latitude,
-              longitude: farm.boundaries.first.longitude,
-            )
-          : null,
+      location: centroid,
     );
     final response = await _call(_farmPath, 'CreateFarm', request);
     final result = farm_pb.CreateFarmResponse.fromBuffer(response.body);
-    return _farmFromPb(result.farm);
+    final created = result.farm;
+
+    if (farm.boundaries.length >= 3) {
+      final geojson = _boundariesToGeoJson(farm.boundaries);
+      final boundaryReq = farm_pb.SetFarmBoundaryRequest(
+        farmId: created.id,
+        geojson: geojson,
+      );
+      await _call(_farmPath, 'SetFarmBoundary', boundaryReq);
+    }
+
+    final model = _farmFromPb(created);
+    return FarmModel(
+      id: model.id,
+      name: model.name,
+      ownerId: model.ownerId,
+      boundaries: farm.boundaries,
+      totalAreaHectares: model.totalAreaHectares,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt,
+    );
+  }
+
+  static farm_pb.FarmLocation? _centroid(List<LatLng> points) {
+    if (points.isEmpty) return null;
+    final lat = points.fold(0.0, (s, p) => s + p.latitude) / points.length;
+    final lng = points.fold(0.0, (s, p) => s + p.longitude) / points.length;
+    return farm_pb.FarmLocation(latitude: lat, longitude: lng);
+  }
+
+  static String _boundariesToGeoJson(List<LatLng> points) {
+    final coords = points.map((p) => [p.longitude, p.latitude]).toList();
+    if (coords.isNotEmpty && (coords.first[0] != coords.last[0] || coords.first[1] != coords.last[1])) {
+      coords.add(coords.first);
+    }
+    return jsonEncode({
+      'type': 'Polygon',
+      'coordinates': [coords],
+    });
   }
 
   @override
   Future<FarmModel> updateFarm(FarmModel farm) async {
+    final centroid = _centroid(farm.boundaries);
     final request = farm_pb.UpdateFarmRequest(
       id: farm.id,
       name: farm.name,
       totalAreaHectares: farm.totalAreaHectares,
     );
+    if (centroid != null) {
+      request.location = centroid;
+    }
     final response = await _call(_farmPath, 'UpdateFarm', request);
     final result = farm_pb.UpdateFarmResponse.fromBuffer(response.body);
+
+    if (farm.boundaries.length >= 3) {
+      final geojson = _boundariesToGeoJson(farm.boundaries);
+      final boundaryReq = farm_pb.SetFarmBoundaryRequest(
+        farmId: farm.id,
+        geojson: geojson,
+      );
+      await _call(_farmPath, 'SetFarmBoundary', boundaryReq);
+    }
+
     return _farmFromPb(result.farm);
   }
 
@@ -131,13 +181,18 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
   }
 
   static FarmModel _farmFromPb(farm_pb.Farm farm) {
+    List<LatLng> boundaries = [];
+    if (farm.hasBoundary() && farm.boundary.geojson.isNotEmpty) {
+      boundaries = _parseGeoJsonBoundary(farm.boundary.geojson);
+    } else if (farm.hasLocation()) {
+      boundaries = [LatLng(farm.location.latitude, farm.location.longitude)];
+    }
+
     return FarmModel(
       id: farm.id,
       name: farm.name,
       ownerId: farm.createdBy,
-      boundaries: farm.hasLocation()
-          ? [LatLng(farm.location.latitude, farm.location.longitude)]
-          : [],
+      boundaries: boundaries,
       totalAreaHectares: farm.totalAreaHectares,
       createdAt: farm.hasCreatedAt()
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -148,6 +203,18 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
               farm.updatedAt.seconds.toInt() * 1000)
           : DateTime.now(),
     );
+  }
+
+  static List<LatLng> _parseGeoJsonBoundary(String geojson) {
+    try {
+      final map = jsonDecode(geojson) as Map<String, dynamic>;
+      final coords = (map['coordinates'] as List).first as List;
+      return coords
+          .map((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble()))
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   static FieldModel _fieldFromPb(field_pb.Field field) {

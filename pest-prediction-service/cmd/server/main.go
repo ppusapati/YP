@@ -4,6 +4,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +20,9 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	kafkaconfig "p9e.in/samavaya/packages/events/config"
+	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
+	"p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
@@ -30,6 +35,7 @@ import (
 	pestpredictionv1connect "p9e.in/samavaya/agriculture/pest-prediction-service/api/v1/pestpredictionv1connect"
 
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ai"
+	eventsadapter "p9e.in/samavaya/agriculture/pest-prediction-service/internal/adapters/inbound/events"
 	grpcadapter "p9e.in/samavaya/agriculture/pest-prediction-service/internal/adapters/inbound/grpc"
 	clientsadapter "p9e.in/samavaya/agriculture/pest-prediction-service/internal/adapters/outbound/clients"
 	kafkaadapter "p9e.in/samavaya/agriculture/pest-prediction-service/internal/adapters/outbound/kafka"
@@ -167,6 +173,30 @@ func main() {
 	defer relayCancel()
 	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
 	go relay.Run(relayCtx)
+
+	// ── Kafka event consumer (background) ────────────────────────────────
+	if kafkaBroker != "" {
+		eventConsumer := eventsadapter.NewPestConsumer(svc, logger)
+		kc := kafkaconsumer.NewKafkaConsumer(&kafkaconfig.KafkaConfig{
+			Broker:       kafkaBroker,
+			Group:        "pest-prediction-service",
+			KafkaVersion: "3.5.0",
+			Assignor:     "sticky",
+		}, logger)
+		consumerCtx, consumerCancel := context.WithCancel(context.Background())
+		defer consumerCancel()
+		for _, topic := range eventConsumer.Topics() {
+			if err := kc.Subscribe(consumerCtx, topic, func(ctx context.Context, data []byte) error {
+				var event domain.DomainEvent
+				if err := json.Unmarshal(data, &event); err != nil {
+					return fmt.Errorf("unmarshal domain event: %w", err)
+				}
+				return eventConsumer.HandleEvent(ctx, &event)
+			}); err != nil {
+				log.Printf("WARNING: failed to subscribe to %s: %v", topic, err)
+			}
+		}
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

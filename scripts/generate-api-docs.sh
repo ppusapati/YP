@@ -32,6 +32,7 @@ SERVICES=(
   "satellite-analytics-service:8089:satellite-analytics-service/proto/analytics.proto:agriculture.satellite.analytics.v1"
   "traceability-service:8090:traceability-service/proto/traceability.proto:agriculture.traceability.v1"
   "commerce-service:8092:commerce-service/proto/commerce.proto:agriculture.commerce.v1"
+  "weather-service:8108:weather-service/proto/weather.proto:agriculture.weather.v1"
 )
 
 generate_spec() {

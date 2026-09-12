@@ -99,12 +99,12 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
     return SoilAnalysisModel(
       id: pb.id,
       fieldId: pb.fieldId,
-      pH: pb.soilHealthScore, // proto has soilHealthScore, not direct pH
-      organicCarbon: 0, // not available in SoilAnalysis pb
-      nitrogen: 0, // not available in SoilAnalysis pb
-      phosphorus: 0, // not available in SoilAnalysis pb
-      potassium: 0, // not available in SoilAnalysis pb
-      texture: _mapSoilTexture(pb.healthCategory),
+      pH: pb.pH,
+      organicCarbon: pb.organicMatterPct,
+      nitrogen: pb.nitrogenPpm,
+      phosphorus: pb.phosphorusPpm,
+      potassium: pb.potassiumPpm,
+      texture: _mapSoilTexture(pb.texture),
       analysisDate: pb.hasAnalyzedAt()
           ? _timestampToDateTime(pb.analyzedAt)
           : DateTime.now(),
@@ -115,9 +115,16 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
   // Enum mapping helpers
   // ---------------------------------------------------------------------------
 
-  static SoilTexture _mapSoilTexture(soil_pb.HealthCategory pbCategory) {
-    // SoilAnalysis pb does not carry texture directly; best-effort default.
-    return SoilTexture.loamy;
+  static SoilTexture _mapSoilTexture(soil_pb.SoilTexture pbTexture) {
+    return switch (pbTexture) {
+      soil_pb.SoilTexture.SOIL_TEXTURE_SANDY => SoilTexture.sandy,
+      soil_pb.SoilTexture.SOIL_TEXTURE_LOAMY => SoilTexture.loamy,
+      soil_pb.SoilTexture.SOIL_TEXTURE_CLAY => SoilTexture.clay,
+      soil_pb.SoilTexture.SOIL_TEXTURE_SILT => SoilTexture.silt,
+      soil_pb.SoilTexture.SOIL_TEXTURE_PEAT => SoilTexture.peat,
+      soil_pb.SoilTexture.SOIL_TEXTURE_CHALK => SoilTexture.chalk,
+      _ => SoilTexture.loamy,
+    };
   }
 
   // ---------------------------------------------------------------------------

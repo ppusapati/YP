@@ -3,6 +3,7 @@
 library flutter_proto;
 
 // Generated protobuf messages
+export 'src/generated/advisory.pb.dart';
 export 'src/generated/alert.pb.dart';
 export 'src/generated/analytics.pb.dart';
 export 'src/generated/crop.pb.dart';
@@ -11,6 +12,7 @@ export 'src/generated/farm.pb.dart';
 export 'src/generated/field.pb.dart';
 export 'src/generated/field_analytics.pb.dart';
 export 'src/generated/ingestion.pb.dart';
+export 'src/generated/inspection.pb.dart';
 export 'src/generated/irrigation.pb.dart';
 export 'src/generated/pest.pb.dart';
 export 'src/generated/prescription.pb.dart';
@@ -18,6 +20,7 @@ export 'src/generated/processing.pb.dart';
 export 'src/generated/satellite.pb.dart';
 export 'src/generated/sensor.pb.dart';
 export 'src/generated/soil.pb.dart';
+export 'src/generated/task.pb.dart';
 export 'src/generated/tile.pb.dart';
 export 'src/generated/traceability.pb.dart';
 export 'src/generated/vegetation_index.pb.dart';

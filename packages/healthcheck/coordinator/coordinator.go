@@ -79,7 +79,7 @@ func (c *Coordinator) RegisterCheck(service, instance string, checker healthchec
 		UpdatedAt:   time.Now(),
 	}
 
-	c.logger.Info("registered health check",
+	c.logger.Log(p9log.LevelInfo, "msg", "registered health check",
 		"service", service,
 		"instance", instance,
 		"check_type", checker.Type(),
@@ -89,11 +89,11 @@ func (c *Coordinator) RegisterCheck(service, instance string, checker healthchec
 // Start begins the background health checking loop
 func (c *Coordinator) Start(ctx context.Context) error {
 	if !c.options.Enabled {
-		c.logger.Info("health checking is disabled")
+		c.logger.Log(p9log.LevelInfo, "msg", "health checking is disabled")
 		return nil
 	}
 
-	c.logger.Info("starting health check coordinator")
+	c.logger.Log(p9log.LevelInfo, "msg", "starting health check coordinator")
 
 	// Start check workers for each service
 	c.mu.RLock()
@@ -112,7 +112,7 @@ func (c *Coordinator) Start(ctx context.Context) error {
 
 // Stop stops the health checking loop
 func (c *Coordinator) Stop(ctx context.Context) error {
-	c.logger.Info("stopping health check coordinator")
+	c.logger.Log(p9log.LevelInfo, "msg", "stopping health check coordinator")
 	close(c.stopChan)
 	c.wg.Wait()
 	close(c.eventChan)
@@ -240,7 +240,7 @@ func (c *Coordinator) runServiceChecks(ctx context.Context, service string) {
 
 			result, err := chk.Check(ctx)
 			if err != nil {
-				c.logger.Error("health check failed",
+				c.logger.Log(p9log.LevelError, "msg", "health check failed",
 					"service", service,
 					"instance", inst,
 					"check", chk.Name(),

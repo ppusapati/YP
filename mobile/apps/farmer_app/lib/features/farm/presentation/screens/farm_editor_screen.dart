@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:uuid/uuid.dart';
 
+import 'package:flutter_auth/flutter_auth.dart';
+
 import '../../domain/entities/farm_entity.dart';
 import '../bloc/farm_bloc.dart';
 import '../bloc/farm_event.dart';
@@ -126,10 +128,12 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
       );
       context.read<FarmBloc>().add(UpdateFarm(farm: updated));
     } else {
+      final authState = context.read<AuthBloc>().state;
+      final ownerId = authState is Authenticated ? authState.user.id : '';
       final farm = FarmEntity(
         id: const Uuid().v4(),
         name: _nameController.text.trim(),
-        ownerId: '',
+        ownerId: ownerId,
         boundaries: List.of(_boundaryPoints),
         totalAreaHectares: area,
         fields: const [],

@@ -56,9 +56,13 @@ const (
 
 // SagaExecutionInput is input for starting saga execution
 type SagaExecutionInput struct {
-	SagaType string                 // e.g., "SAGA-S01"
-	Input    map[string]interface{} // Saga-specific input data
-	Metadata map[string]string      // Optional metadata
+	SagaType       string                 // e.g., "SAGA-S01"
+	TenantID       string                 // Tenant context
+	CompanyID      string                 // Company context
+	BranchID       string                 // Branch context
+	TimeoutSeconds int32                  // Overall saga timeout
+	Input          map[string]interface{} // Saga-specific input data
+	Metadata       map[string]string      // Optional metadata
 }
 
 // StepDefinition defines a single step in a saga
@@ -70,7 +74,7 @@ type StepDefinition struct {
 	RetryConfig        *RetryConfiguration
 	TimeoutSeconds     int32
 	IsCritical         bool                    // If false, failure is non-blocking
-	CompensationSteps  []int32                 // Which steps to compensate if this fails
+	CompensationSteps  []int32                   // Step numbers to compensate if this fails
 }
 
 // RetryConfiguration defines retry behavior for a step
@@ -108,13 +112,17 @@ type StepExecution struct {
 // StepExecutionStatus represents step execution status
 type StepExecutionStatus string
 
+// StepStatus is an alias kept for backward compatibility.
+type StepStatus = StepExecutionStatus
+
 const (
-	StepStatusPending   StepExecutionStatus = "PENDING"
-	StepStatusRunning   StepExecutionStatus = "RUNNING"
-	StepStatusSuccess   StepExecutionStatus = "SUCCESS"
-	StepStatusFailed    StepExecutionStatus = "FAILED"
-	StepStatusTimeout   StepExecutionStatus = "TIMEOUT"
-	StepStatusRetrying  StepExecutionStatus = "RETRYING"
+	StepStatusPending    StepExecutionStatus = "PENDING"
+	StepStatusRunning    StepExecutionStatus = "RUNNING"
+	StepStatusSuccess    StepExecutionStatus = "SUCCESS"
+	StepStatusSucceeded  StepExecutionStatus = "SUCCESS"
+	StepStatusFailed     StepExecutionStatus = "FAILED"
+	StepStatusTimeout    StepExecutionStatus = "TIMEOUT"
+	StepStatusRetrying   StepExecutionStatus = "RETRYING"
 )
 
 // StepResult represents result of executing a step

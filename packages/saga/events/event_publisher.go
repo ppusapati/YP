@@ -91,12 +91,12 @@ func (p *EventPublisherImpl) PublishStepStarted(
 		EventID:    p.eventIDGen(),
 		SagaID:     execution.ID,
 		SagaType:   execution.SagaType,
-		EventType:  models.SagaEventTypeStepStarted,
+		EventType:  models.SagaEventStepStarted,
 		StepNumber: stepNum,
 		Timestamp:  time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status": "started",
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -113,14 +113,14 @@ func (p *EventPublisherImpl) PublishStepCompleted(
 		EventID:    p.eventIDGen(),
 		SagaID:     execution.ID,
 		SagaType:   execution.SagaType,
-		EventType:  models.SagaEventTypeStepCompleted,
+		EventType:  models.SagaEventStepCompleted,
 		StepNumber: stepNum,
 		Timestamp:  time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status":          "completed",
 			"executionTimeMs": result.ExecutionTimeMs,
 			"retryCount":      result.RetryCount,
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -137,13 +137,13 @@ func (p *EventPublisherImpl) PublishStepFailed(
 		EventID:    p.eventIDGen(),
 		SagaID:     execution.ID,
 		SagaType:   execution.SagaType,
-		EventType:  models.SagaEventTypeStepFailed,
+		EventType:  models.SagaEventStepFailed,
 		StepNumber: stepNum,
 		Timestamp:  time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status": "failed",
 			"error":  err.Error(),
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -160,13 +160,13 @@ func (p *EventPublisherImpl) PublishStepRetrying(
 		EventID:    p.eventIDGen(),
 		SagaID:     execution.ID,
 		SagaType:   execution.SagaType,
-		EventType:  models.SagaEventTypeStepRetrying,
+		EventType:  models.SagaEventStepRetrying,
 		StepNumber: stepNum,
 		Timestamp:  time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status": "retrying",
 			"error":  err.Error(),
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -181,14 +181,14 @@ func (p *EventPublisherImpl) PublishSagaCompleted(
 		EventID:   p.eventIDGen(),
 		SagaID:    execution.ID,
 		SagaType:  execution.SagaType,
-		EventType: models.SagaEventTypeSagaCompleted,
+		EventType: models.SagaEventSagaCompleted,
 		Timestamp: time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status":           "completed",
 			"stepsExecuted":    execution.CurrentStep,
 			"totalSteps":       execution.TotalSteps,
 			"executionTimeMs":  execution.CompletedAt.Sub(*execution.StartedAt).Milliseconds(),
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -203,15 +203,15 @@ func (p *EventPublisherImpl) PublishSagaFailed(
 		EventID:   p.eventIDGen(),
 		SagaID:    execution.ID,
 		SagaType:  execution.SagaType,
-		EventType: models.SagaEventTypeSagaFailed,
+		EventType: models.SagaEventSagaFailed,
 		Timestamp: time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status":          "failed",
 			"errorCode":       execution.ErrorCode,
 			"errorMessage":    execution.ErrorMessage,
 			"failedAtStep":    execution.CurrentStep,
 			"totalSteps":      execution.TotalSteps,
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -226,12 +226,12 @@ func (p *EventPublisherImpl) PublishCompensationStarted(
 		EventID:   p.eventIDGen(),
 		SagaID:    execution.ID,
 		SagaType:  execution.SagaType,
-		EventType: models.SagaEventTypeCompensationStarted,
+		EventType: models.SagaEventCompensationStarted,
 		Timestamp: time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status":     "compensation_started",
 			"failedStep": execution.CurrentStep,
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -246,12 +246,12 @@ func (p *EventPublisherImpl) PublishCompensationCompleted(
 		EventID:   p.eventIDGen(),
 		SagaID:    execution.ID,
 		SagaType:  execution.SagaType,
-		EventType: models.SagaEventTypeCompensationCompleted,
+		EventType: models.SagaEventCompensationCompleted,
 		Timestamp: time.Now(),
-		Data: map[string]interface{}{
+		Data: mustMarshal(map[string]interface{}{
 			"status":                  string(execution.CompensationStatus),
 			"compensationCompleted":   true,
-		},
+		}),
 	}
 
 	return p.publishEvent(ctx, event)
@@ -309,6 +309,12 @@ func (p *EventPublisherImpl) GetPublishedEventsBySaga(sagaID string) []*models.S
 	}
 
 	return result
+}
+
+// mustMarshal marshals v to JSON, returning nil on error
+func mustMarshal(v interface{}) []byte {
+	b, _ := json.Marshal(v)
+	return b
 }
 
 // ClearBuffer clears the event buffer (for testing)
