@@ -510,10 +510,7 @@ mod tests {
         assert_eq!(result.task, "classification");
         assert_eq!(result.detections.len(), 2);
         assert_eq!(result.detections[0].label, "Tomato");
-        assert_eq!(
-            result.detections[0].scientific_name,
-            "Solanum lycopersicum"
-        );
+        assert_eq!(result.detections[0].scientific_name, "Solanum lycopersicum");
         assert_eq!(result.detections[0].confidence, 0.85);
         assert_eq!(result.detections[0].category, "Solanaceae");
         assert!(result.raw_response.is_some());

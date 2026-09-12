@@ -398,3 +398,203 @@ fn ints_attr(name: &str, vals: &[i64]) -> AttributeProto {
         ..Default::default()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::onnx_pb::*;
+    use super::*;
+    use prost::Message;
+
+    #[test]
+    fn model_proto_roundtrip() {
+        let model = ModelProto {
+            ir_version: 8,
+            opset_import: vec![OperatorSetIdProto {
+                domain: String::new(),
+                version: 17,
+            }],
+            graph: Some(GraphProto {
+                name: "test_graph".to_string(),
+                node: vec![],
+                initializer: vec![],
+                input: vec![],
+                output: vec![],
+            }),
+            producer_name: "test-producer".to_string(),
+        };
+
+        let mut buf = Vec::new();
+        model.encode(&mut buf).unwrap();
+        assert!(!buf.is_empty());
+
+        let decoded = ModelProto::decode(buf.as_slice()).unwrap();
+        assert_eq!(decoded.ir_version, 8);
+        assert_eq!(decoded.producer_name, "test-producer");
+        assert_eq!(decoded.opset_import.len(), 1);
+        assert_eq!(decoded.opset_import[0].version, 17);
+        assert_eq!(decoded.graph.unwrap().name, "test_graph");
+    }
+
+    #[test]
+    fn make_tensor_encodes_floats() {
+        let data = vec![1.0f32, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = make_tensor("w", &[2, 3], &data);
+        assert_eq!(tensor.name, "w");
+        assert_eq!(tensor.dims, vec![2, 3]);
+        assert_eq!(tensor.data_type, FLOAT);
+        // 6 floats x 4 bytes each
+        assert_eq!(tensor.raw_data.len(), 24);
+
+        // Verify first float decodes back correctly
+        let first = f32::from_le_bytes(tensor.raw_data[0..4].try_into().unwrap());
+        assert_eq!(first, 1.0);
+    }
+
+    #[test]
+    fn make_value_info_static_dims() {
+        let vi = make_value_info("input", &[1, 3, 64, 64]);
+        assert_eq!(vi.name, "input");
+        let shape = vi.r#type.unwrap().tensor_type.unwrap().shape.unwrap();
+        assert_eq!(shape.dim.len(), 4);
+        for (i, expected) in [1i64, 3, 64, 64].iter().enumerate() {
+            match &shape.dim[i].value {
+                Some(DimValue::DimValue(v)) => assert_eq!(v, expected),
+                other => panic!("dim {i}: expected DimValue({expected}), got {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn make_value_info_dynamic_batch() {
+        let vi = make_value_info("x", &[-1, 3, 64, 64]);
+        let shape = vi.r#type.unwrap().tensor_type.unwrap().shape.unwrap();
+        match &shape.dim[0].value {
+            Some(DimValue::DimParam(s)) => assert_eq!(s, "batch"),
+            other => panic!("expected DimParam(\"batch\"), got {other:?}"),
+        }
+        // Remaining dims are static
+        match &shape.dim[1].value {
+            Some(DimValue::DimValue(3)) => {}
+            other => panic!("expected DimValue(3), got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn export_to_onnx_writes_valid_file() {
+        // Build minimal weight set matching PlantCnn architecture
+        let weights: Vec<(String, Vec<usize>, Vec<f32>)> = vec![
+            ("conv1.weight".into(), vec![32, 3, 3, 3], vec![0.0; 32 * 3 * 3 * 3]),
+            ("conv1.bias".into(), vec![32], vec![0.0; 32]),
+            ("bn1.weight".into(), vec![32], vec![1.0; 32]),
+            ("bn1.bias".into(), vec![32], vec![0.0; 32]),
+            ("bn1.running_mean".into(), vec![32], vec![0.0; 32]),
+            ("bn1.running_var".into(), vec![32], vec![1.0; 32]),
+            ("conv2.weight".into(), vec![64, 32, 3, 3], vec![0.0; 64 * 32 * 3 * 3]),
+            ("conv2.bias".into(), vec![64], vec![0.0; 64]),
+            ("bn2.weight".into(), vec![64], vec![1.0; 64]),
+            ("bn2.bias".into(), vec![64], vec![0.0; 64]),
+            ("bn2.running_mean".into(), vec![64], vec![0.0; 64]),
+            ("bn2.running_var".into(), vec![64], vec![1.0; 64]),
+            ("conv3.weight".into(), vec![128, 64, 3, 3], vec![0.0; 128 * 64 * 3 * 3]),
+            ("conv3.bias".into(), vec![128], vec![0.0; 128]),
+            ("bn3.weight".into(), vec![128], vec![1.0; 128]),
+            ("bn3.bias".into(), vec![128], vec![0.0; 128]),
+            ("bn3.running_mean".into(), vec![128], vec![0.0; 128]),
+            ("bn3.running_var".into(), vec![128], vec![1.0; 128]),
+            ("conv4.weight".into(), vec![256, 128, 3, 3], vec![0.0; 256 * 128 * 3 * 3]),
+            ("conv4.bias".into(), vec![256], vec![0.0; 256]),
+            ("bn4.weight".into(), vec![256], vec![1.0; 256]),
+            ("bn4.bias".into(), vec![256], vec![0.0; 256]),
+            ("bn4.running_mean".into(), vec![256], vec![0.0; 256]),
+            ("bn4.running_var".into(), vec![256], vec![1.0; 256]),
+            ("fc1.weight".into(), vec![512, 256], vec![0.0; 512 * 256]),
+            ("fc1.bias".into(), vec![512], vec![0.0; 512]),
+            ("fc2.weight".into(), vec![5, 512], vec![0.0; 5 * 512]),
+            ("fc2.bias".into(), vec![5], vec![0.0; 5]),
+        ];
+
+        let dir = std::env::temp_dir().join("yp_test_export");
+        let _ = std::fs::create_dir_all(&dir);
+        let output_path = dir.join("test_model.onnx");
+
+        export_to_onnx(&weights, 64, 5, 17, &output_path).unwrap();
+
+        let data = std::fs::read(&output_path).unwrap();
+        assert!(!data.is_empty());
+
+        let model = ModelProto::decode(data.as_slice()).unwrap();
+        assert_eq!(model.ir_version, 8);
+        assert_eq!(model.producer_name, "yp-ml-training");
+        assert_eq!(model.opset_import[0].version, 17);
+
+        let graph = model.graph.unwrap();
+        assert_eq!(graph.name, "plant_cnn");
+        assert_eq!(graph.input.len(), 1);
+        assert_eq!(graph.input[0].name, "input");
+        assert_eq!(graph.output.len(), 1);
+        assert_eq!(graph.output[0].name, "logits");
+
+        // Should have nodes: 4*(conv+bn+relu+pool) + gap + flatten + fc1_gemm + fc1_relu + fc2_gemm
+        assert_eq!(graph.node.len(), 4 * 4 + 5);
+
+        // Initializers for all weight tensors
+        assert_eq!(graph.initializer.len(), weights.len());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn export_graph_node_types() {
+        let weights: Vec<(String, Vec<usize>, Vec<f32>)> = vec![
+            ("conv1.weight".into(), vec![32, 3, 3, 3], vec![0.0; 32 * 3 * 3 * 3]),
+            ("conv1.bias".into(), vec![32], vec![0.0; 32]),
+            ("bn1.weight".into(), vec![32], vec![1.0; 32]),
+            ("bn1.bias".into(), vec![32], vec![0.0; 32]),
+            ("bn1.running_mean".into(), vec![32], vec![0.0; 32]),
+            ("bn1.running_var".into(), vec![32], vec![1.0; 32]),
+            ("conv2.weight".into(), vec![64, 32, 3, 3], vec![0.0; 64 * 32 * 3 * 3]),
+            ("conv2.bias".into(), vec![64], vec![0.0; 64]),
+            ("bn2.weight".into(), vec![64], vec![1.0; 64]),
+            ("bn2.bias".into(), vec![64], vec![0.0; 64]),
+            ("bn2.running_mean".into(), vec![64], vec![0.0; 64]),
+            ("bn2.running_var".into(), vec![64], vec![1.0; 64]),
+            ("conv3.weight".into(), vec![128, 64, 3, 3], vec![0.0; 128 * 64 * 3 * 3]),
+            ("conv3.bias".into(), vec![128], vec![0.0; 128]),
+            ("bn3.weight".into(), vec![128], vec![1.0; 128]),
+            ("bn3.bias".into(), vec![128], vec![0.0; 128]),
+            ("bn3.running_mean".into(), vec![128], vec![0.0; 128]),
+            ("bn3.running_var".into(), vec![128], vec![1.0; 128]),
+            ("conv4.weight".into(), vec![256, 128, 3, 3], vec![0.0; 256 * 128 * 3 * 3]),
+            ("conv4.bias".into(), vec![256], vec![0.0; 256]),
+            ("bn4.weight".into(), vec![256], vec![1.0; 256]),
+            ("bn4.bias".into(), vec![256], vec![0.0; 256]),
+            ("bn4.running_mean".into(), vec![256], vec![0.0; 256]),
+            ("bn4.running_var".into(), vec![256], vec![1.0; 256]),
+            ("fc1.weight".into(), vec![512, 256], vec![0.0; 512 * 256]),
+            ("fc1.bias".into(), vec![512], vec![0.0; 512]),
+            ("fc2.weight".into(), vec![3, 512], vec![0.0; 3 * 512]),
+            ("fc2.bias".into(), vec![3], vec![0.0; 3]),
+        ];
+
+        let dir = std::env::temp_dir().join("yp_test_export_nodes");
+        let _ = std::fs::create_dir_all(&dir);
+        let output_path = dir.join("model.onnx");
+
+        export_to_onnx(&weights, 32, 3, 13, &output_path).unwrap();
+
+        let data = std::fs::read(&output_path).unwrap();
+        let model = ModelProto::decode(data.as_slice()).unwrap();
+        let graph = model.graph.unwrap();
+
+        let op_types: Vec<&str> = graph.node.iter().map(|n| n.op_type.as_str()).collect();
+        assert_eq!(op_types.iter().filter(|&&t| t == "Conv").count(), 4);
+        assert_eq!(op_types.iter().filter(|&&t| t == "BatchNormalization").count(), 4);
+        assert_eq!(op_types.iter().filter(|&&t| t == "Relu").count(), 5); // 4 conv + 1 fc1
+        assert_eq!(op_types.iter().filter(|&&t| t == "MaxPool").count(), 4);
+        assert_eq!(op_types.iter().filter(|&&t| t == "GlobalAveragePool").count(), 1);
+        assert_eq!(op_types.iter().filter(|&&t| t == "Flatten").count(), 1);
+        assert_eq!(op_types.iter().filter(|&&t| t == "Gemm").count(), 2);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

@@ -89,6 +89,107 @@ impl<B: Backend> PlantCnn<B> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use burn::tensor::Tensor;
+    use burn_ndarray::NdArray;
+
+    #[test]
+    fn instantiate_model() {
+        let device = Default::default();
+        let _model: PlantCnn<NdArray> = PlantCnn::new(5, &device);
+    }
+
+    #[test]
+    fn forward_output_shape() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(5, &device);
+        let input = Tensor::<NdArray, 4>::zeros([2, 3, 64, 64], &device);
+        let output = model.forward(input);
+        assert_eq!(output.dims(), [2, 5]);
+    }
+
+    #[test]
+    fn forward_single_sample() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(3, &device);
+        let input = Tensor::<NdArray, 4>::zeros([1, 3, 64, 64], &device);
+        let output = model.forward(input);
+        assert_eq!(output.dims(), [1, 3]);
+    }
+
+    #[test]
+    fn forward_different_num_classes() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(10, &device);
+        let input = Tensor::<NdArray, 4>::zeros([1, 3, 64, 64], &device);
+        let output = model.forward(input);
+        assert_eq!(output.dims(), [1, 10]);
+    }
+
+    #[test]
+    fn forward_larger_spatial_input() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(4, &device);
+        // Adaptive avg pool handles varying spatial sizes
+        let input = Tensor::<NdArray, 4>::zeros([2, 3, 128, 128], &device);
+        let output = model.forward(input);
+        assert_eq!(output.dims(), [2, 4]);
+    }
+
+    #[test]
+    fn extract_weights_has_expected_keys() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(5, &device);
+        let weights = extract_weights(&model);
+
+        let names: Vec<&str> = weights.iter().map(|(n, _, _)| n.as_str()).collect();
+
+        // Conv weights
+        assert!(names.contains(&"conv1.weight"), "missing conv1.weight");
+        assert!(names.contains(&"conv2.weight"), "missing conv2.weight");
+        assert!(names.contains(&"conv3.weight"), "missing conv3.weight");
+        assert!(names.contains(&"conv4.weight"), "missing conv4.weight");
+
+        // Batch norm parameters (weight, bias, running_mean, running_var)
+        for bn in &["bn1", "bn2", "bn3", "bn4"] {
+            assert!(names.contains(&format!("{bn}.weight").as_str()), "missing {bn}.weight");
+            assert!(names.contains(&format!("{bn}.bias").as_str()), "missing {bn}.bias");
+            assert!(names.contains(&format!("{bn}.running_mean").as_str()), "missing {bn}.running_mean");
+            assert!(names.contains(&format!("{bn}.running_var").as_str()), "missing {bn}.running_var");
+        }
+
+        // Fully connected layers
+        assert!(names.contains(&"fc1.weight"), "missing fc1.weight");
+        assert!(names.contains(&"fc2.weight"), "missing fc2.weight");
+    }
+
+    #[test]
+    fn extract_weights_conv1_shape() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(5, &device);
+        let weights = extract_weights(&model);
+
+        let (_, dims, data) = weights.iter().find(|(n, _, _)| n == "conv1.weight").unwrap();
+        // Conv1: 3 input channels -> 32 output channels, 3x3 kernel
+        assert_eq!(dims, &[32, 3, 3, 3]);
+        assert_eq!(data.len(), 32 * 3 * 3 * 3);
+    }
+
+    #[test]
+    fn extract_weights_fc2_shape_matches_num_classes() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(7, &device);
+        let weights = extract_weights(&model);
+
+        let (_, dims, data) = weights.iter().find(|(n, _, _)| n == "fc2.weight").unwrap();
+        // fc2: 512 -> num_classes
+        assert_eq!(dims, &[7, 512]);
+        assert_eq!(data.len(), 7 * 512);
+    }
+}
+
 /// Extract named weight tensors from the model for ONNX export.
 pub fn extract_weights<B: Backend>(model: &PlantCnn<B>) -> Vec<(String, Vec<usize>, Vec<f32>)> {
     let mut weights = Vec::new();

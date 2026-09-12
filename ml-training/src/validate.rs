@@ -112,3 +112,136 @@ pub fn print_report(report: &ValidationReport) {
     let macro_f1: f64 = report.per_class.values().map(|m| m.f1).sum::<f64>() / report.per_class.len() as f64;
     println!("Macro F1: {macro_f1:.4}");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use burn_ndarray::NdArray;
+    use crate::dataset::Sample;
+    use crate::model::PlantCnn;
+
+    fn make_samples(labels: &[(usize, &str)]) -> Vec<Sample> {
+        labels
+            .iter()
+            .enumerate()
+            .map(|(i, (idx, name))| Sample {
+                id: format!("s{i}"),
+                image_path: PathBuf::from(format!("/nonexistent/img_{i}.jpg")),
+                label: name.to_string(),
+                label_idx: *idx,
+                confidence: 0.95,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn single_class_perfect_accuracy() {
+        // With 1 output class, argmax always returns 0, so all predictions
+        // match label_idx 0 and accuracy is 1.0.
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(1, &device);
+
+        let samples = make_samples(&[
+            (0, "healthy"),
+            (0, "healthy"),
+            (0, "healthy"),
+            (0, "healthy"),
+        ]);
+        let mut label_map = HashMap::new();
+        label_map.insert("healthy".to_string(), 0usize);
+
+        let report = validate(&model, &samples, &label_map, 32, 2);
+
+        assert_eq!(report.num_samples, 4);
+        assert!((report.accuracy - 1.0).abs() < f64::EPSILON);
+        assert_eq!(report.per_class.len(), 1);
+
+        let m = &report.per_class["healthy"];
+        assert!((m.precision - 1.0).abs() < f64::EPSILON);
+        assert!((m.recall - 1.0).abs() < f64::EPSILON);
+        assert!((m.f1 - 1.0).abs() < f64::EPSILON);
+        assert_eq!(m.support, 4);
+    }
+
+    #[test]
+    fn report_structure_multi_class() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(3, &device);
+
+        let samples = make_samples(&[
+            (0, "healthy"),
+            (0, "healthy"),
+            (1, "rust"),
+            (1, "rust"),
+            (2, "blight"),
+            (2, "blight"),
+        ]);
+        let mut label_map = HashMap::new();
+        label_map.insert("healthy".to_string(), 0);
+        label_map.insert("rust".to_string(), 1);
+        label_map.insert("blight".to_string(), 2);
+
+        let report = validate(&model, &samples, &label_map, 32, 4);
+
+        assert_eq!(report.num_samples, 6);
+        assert!(report.accuracy >= 0.0 && report.accuracy <= 1.0);
+        assert_eq!(report.per_class.len(), 3);
+
+        // Support values must sum to total samples
+        let total_support: usize = report.per_class.values().map(|m| m.support).sum();
+        assert_eq!(total_support, 6);
+
+        for (name, m) in &report.per_class {
+            assert!(m.precision >= 0.0 && m.precision <= 1.0, "{name} precision out of range");
+            assert!(m.recall >= 0.0 && m.recall <= 1.0, "{name} recall out of range");
+            assert!(m.f1 >= 0.0 && m.f1 <= 1.0, "{name} f1 out of range");
+            assert!(m.support > 0, "{name} should have positive support");
+        }
+    }
+
+    #[test]
+    fn report_individual_class_support() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(2, &device);
+
+        // 3 samples of class 0, 1 sample of class 1
+        let samples = make_samples(&[
+            (0, "a"),
+            (0, "a"),
+            (0, "a"),
+            (1, "b"),
+        ]);
+        let mut label_map = HashMap::new();
+        label_map.insert("a".to_string(), 0);
+        label_map.insert("b".to_string(), 1);
+
+        let report = validate(&model, &samples, &label_map, 32, 4);
+
+        assert_eq!(report.num_samples, 4);
+        assert_eq!(report.per_class["a"].support, 3);
+        assert_eq!(report.per_class["b"].support, 1);
+    }
+
+    #[test]
+    fn validate_handles_multiple_batches() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(1, &device);
+
+        // 5 samples with batch_size=2 means 3 batches (2+2+1)
+        let samples = make_samples(&[
+            (0, "x"),
+            (0, "x"),
+            (0, "x"),
+            (0, "x"),
+            (0, "x"),
+        ]);
+        let mut label_map = HashMap::new();
+        label_map.insert("x".to_string(), 0);
+
+        let report = validate(&model, &samples, &label_map, 32, 2);
+        assert_eq!(report.num_samples, 5);
+        assert!((report.accuracy - 1.0).abs() < f64::EPSILON);
+    }
+}

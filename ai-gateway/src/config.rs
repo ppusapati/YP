@@ -205,17 +205,24 @@ crop_growth_version = "v1.0.0"
 satellite_ndvi_version = "v1.0.0"
 crop_recommendation_version = "v1.0.0"
 "#;
-        let config: Config = toml::from_str(toml_str).expect("should parse without optional sections");
+        let config: Config =
+            toml::from_str(toml_str).expect("should parse without optional sections");
         // external_api should use Default
         assert!(!config.external_api.enabled);
         assert_eq!(config.external_api.provider, VisionProvider::PlantNet);
         assert_eq!(config.external_api.api_key, "");
-        assert_eq!(config.external_api.base_url, "https://my-api.plantnet.org/v2");
+        assert_eq!(
+            config.external_api.base_url,
+            "https://my-api.plantnet.org/v2"
+        );
         assert_eq!(config.external_api.timeout_secs, 15);
         assert_eq!(config.external_api.max_retries, 2);
         // data_collection should use Default
         assert!(!config.data_collection.enabled);
-        assert_eq!(config.data_collection.storage_dir, "/data/training-collection");
+        assert_eq!(
+            config.data_collection.storage_dir,
+            "/data/training-collection"
+        );
         assert_eq!(config.data_collection.max_images_per_category, 50_000);
         assert!(config.data_collection.save_raw_response);
     }
@@ -226,7 +233,10 @@ crop_recommendation_version = "v1.0.0"
         assert_eq!(config.server.address, "0.0.0.0:50051");
         assert_eq!(config.server.max_concurrent_requests, 256);
         assert_eq!(config.server.request_timeout_secs, 30);
-        assert_eq!(config.models.disease_detection_model, "/models/disease-detection-v1");
+        assert_eq!(
+            config.models.disease_detection_model,
+            "/models/disease-detection-v1"
+        );
         assert!(!config.external_api.enabled);
         assert!(!config.data_collection.enabled);
     }
@@ -263,7 +273,10 @@ crop_recommendation_version = "v1.0.0"
             provider: VisionProvider,
         }
         let cases = [
-            (r#"provider = "google_vision""#, VisionProvider::GoogleVision),
+            (
+                r#"provider = "google_vision""#,
+                VisionProvider::GoogleVision,
+            ),
             (r#"provider = "plant_net""#, VisionProvider::PlantNet),
             (r#"provider = "custom""#, VisionProvider::Custom),
         ];
