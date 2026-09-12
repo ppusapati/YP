@@ -3,7 +3,6 @@ package compensation
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -160,15 +159,10 @@ func TestCompensationEngineStartCompensation_Success(t *testing.T) {
 
 	stepDefs := []*saga.StepDefinition{
 		{
-			StepNumber:    1,
-			ServiceName:   "service-1",
-			HandlerMethod: "Method1",
-			CompensationSteps: []*saga.StepDefinition{
-				{
-					StepNumber:    1,
-					HandlerMethod: "CancelMethod1",
-				},
-			},
+			StepNumber:        1,
+			ServiceName:       "service-1",
+			HandlerMethod:     "Method1",
+			CompensationSteps: []int32{1},
 		},
 	}
 
@@ -222,10 +216,10 @@ func TestCompensationEngineGetCompensationStatus_Success(t *testing.T) {
 	mockRepo := &mockRepository{
 		getFunc: func(ctx context.Context, sagaID string) (*models.SagaExecution, error) {
 			return &models.SagaExecution{
-				ID:                  sagaID,
-				CompensationStatus:  models.CompensationCompleted,
-				Status:              models.SagaStatusCompensated,
-				StartedAt:           &now,
+				ID:                 sagaID,
+				CompensationStatus: models.CompensationCompleted,
+				Status:             models.SagaStatusCompensated,
+				StartedAt:          &now,
 			}, nil
 		},
 	}
@@ -266,22 +260,17 @@ func TestCompensationEngineCanCompensate_Success(t *testing.T) {
 
 	ctx := context.Background()
 	execution := &models.SagaExecution{
-		ID:     "saga-123",
-		Status: models.SagaStatusFailed,
+		ID:        "saga-123",
+		Status:    models.SagaStatusFailed,
 		StartedAt: &now,
 	}
 
 	stepDefs := []*saga.StepDefinition{
 		{
-			StepNumber:    1,
-			HandlerMethod: "Method1",
-			IsCritical:    true,
-			CompensationSteps: []*saga.StepDefinition{
-				{
-					StepNumber:    1,
-					HandlerMethod: "CancelMethod1",
-				},
-			},
+			StepNumber:        1,
+			HandlerMethod:     "Method1",
+			IsCritical:        true,
+			CompensationSteps: []int32{1},
 		},
 	}
 
@@ -340,10 +329,10 @@ func TestCompensationEngineRetryCompensation_Success(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 	execution := &models.SagaExecution{
-		ID:                  "saga-123",
-		Status:              models.SagaStatusCompensating,
-		CompensationStatus:  models.CompensationFailed,
-		StartedAt:           &now,
+		ID:                 "saga-123",
+		Status:             models.SagaStatusCompensating,
+		CompensationStatus: models.CompensationFailed,
+		StartedAt:          &now,
 	}
 
 	stepDefs := []*saga.StepDefinition{}

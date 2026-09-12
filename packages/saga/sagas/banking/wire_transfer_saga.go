@@ -242,7 +242,7 @@ func NewWireTransferSaga() saga.SagaHandler {
 					BackoffMultiplier: 2.0,
 					JitterFraction:    0.1,
 				},
-			}
+			},
 			// Step 10: Archive Transaction
 			{
 				StepNumber:    10,

@@ -1,5 +1,5 @@
-// Package saga provides comprehensive tests for Phase 4C critical system sagas
-package saga
+// Package sagas provides comprehensive tests for Phase 4C critical system sagas
+package sagas
 
 import (
 	"testing"

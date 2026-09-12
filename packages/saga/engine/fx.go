@@ -1,30 +1,34 @@
-// Package saga provides the main FX module for saga engine
-package saga
+// Package engine provides the main FX module for saga engine wiring.
+// It lives in a sub-package so that the root saga package does not import
+// sub-packages that import it back (which would create a circular import).
+package engine
 
 import (
 	"time"
 
 	"go.uber.org/fx"
 
+	"p9e.in/samavaya/packages/saga"
 	"p9e.in/samavaya/packages/saga/compensation"
 	"p9e.in/samavaya/packages/saga/connector"
 	"p9e.in/samavaya/packages/saga/events"
 	"p9e.in/samavaya/packages/saga/executor"
+	"p9e.in/samavaya/packages/saga/models"
 	"p9e.in/samavaya/packages/saga/orchestrator"
-	"p9e.in/samavaya/packages/saga/sagas/inventory"
-	"p9e.in/samavaya/packages/saga/sagas/purchase"
-	"p9e.in/samavaya/packages/saga/sagas/sales"
-	"p9e.in/samavaya/packages/saga/sagas/manufacturing"
-	"p9e.in/samavaya/packages/saga/sagas/finance"
-	"p9e.in/samavaya/packages/saga/sagas/hr"
-	"p9e.in/samavaya/packages/saga/sagas/projects"
-	"p9e.in/samavaya/packages/saga/sagas/gst"
+	"p9e.in/samavaya/packages/saga/sagas/agriculture"
 	"p9e.in/samavaya/packages/saga/sagas/banking"
 	"p9e.in/samavaya/packages/saga/sagas/construction"
-	"p9e.in/samavaya/packages/saga/sagas/agriculture"
-	"p9e.in/samavaya/packages/saga/sagas/retail"
-	supplychain "p9e.in/samavaya/packages/saga/sagas/supply-chain"
+	"p9e.in/samavaya/packages/saga/sagas/finance"
+	"p9e.in/samavaya/packages/saga/sagas/gst"
 	"p9e.in/samavaya/packages/saga/sagas/healthcare"
+	"p9e.in/samavaya/packages/saga/sagas/hr"
+	"p9e.in/samavaya/packages/saga/sagas/inventory"
+	"p9e.in/samavaya/packages/saga/sagas/manufacturing"
+	"p9e.in/samavaya/packages/saga/sagas/projects"
+	"p9e.in/samavaya/packages/saga/sagas/purchase"
+	"p9e.in/samavaya/packages/saga/sagas/retail"
+	"p9e.in/samavaya/packages/saga/sagas/sales"
+	supplychain "p9e.in/samavaya/packages/saga/sagas/supply-chain"
 	"p9e.in/samavaya/packages/saga/sagas/warranty"
 	"p9e.in/samavaya/packages/saga/timeout"
 )
@@ -33,33 +37,30 @@ import (
 type SagaEngineParams struct {
 	fx.In
 
-	Config                *DefaultConfig
-	StepExecutor          SagaStepExecutor
-	TimeoutHandler        SagaTimeoutHandler
-	EventPublisher        SagaEventPublisher
-	Repository            SagaRepository
-	ExecutionLogRepository SagaExecutionLogRepository
+	Config                 *saga.DefaultConfig
+	StepExecutor           saga.SagaStepExecutor
+	TimeoutHandler         saga.SagaTimeoutHandler
+	EventPublisher         saga.SagaEventPublisher
+	Repository             saga.SagaRepository
+	ExecutionLogRepository saga.SagaExecutionLogRepository
 }
 
 // SagaEngineResult contains all provided components from saga engine module
 type SagaEngineResult struct {
 	fx.Out
 
-	Orchestrator      SagaOrchestrator
-	StepExecutor      SagaStepExecutor
-	TimeoutHandler    SagaTimeoutHandler
-	EventPublisher    SagaEventPublisher
-	Registry          *orchestrator.SagaRegistry
-	CircuitBreaker    SagaCircuitBreaker
+	Orchestrator   saga.SagaOrchestrator
+	StepExecutor   saga.SagaStepExecutor
+	TimeoutHandler saga.SagaTimeoutHandler
+	EventPublisher saga.SagaEventPublisher
+	Registry       *orchestrator.SagaRegistry
+	CircuitBreaker saga.CircuitBreaker
 }
 
 // CircuitBreakerProvider creates a default circuit breaker (can be overridden)
 type CircuitBreakerProvider interface {
-	CreateCircuitBreaker(serviceName string) SagaCircuitBreaker
+	CreateCircuitBreaker(serviceName string) saga.CircuitBreaker
 }
-
-// SagaCircuitBreaker is an alias for circuit breaker interface
-type SagaCircuitBreaker = CircuitBreaker
 
 // SagaEngineModule provides all saga engine components
 var SagaEngineModule = fx.Module(
@@ -74,7 +75,7 @@ var SagaEngineModule = fx.Module(
 	),
 
 	fx.Provide(
-		func() executor.saga.RpcConnector {
+		func() saga.RpcConnector {
 			return executor.NewRpcConnectorImpl()
 		},
 	),
@@ -83,23 +84,23 @@ var SagaEngineModule = fx.Module(
 		func(
 			rpcConnector saga.RpcConnector,
 			idempotency *executor.IdempotencyImpl,
-		) SagaStepExecutor {
+		) saga.SagaStepExecutor {
 			return executor.NewStepExecutorImpl(rpcConnector, idempotency)
 		},
 	),
 
 	// Timeout Handler Components
 	fx.Provide(
-		func(config *DefaultConfig) SagaTimeoutHandler {
-			defaultRetryConfig := &RetryConfiguration{
-				MaxRetries:         config.DefaultMaxRetries,
-				InitialBackoffMs:   int32(config.DefaultInitialBackoff.Milliseconds()),
-				MaxBackoffMs:       int32(config.DefaultMaxBackoff.Milliseconds()),
-				BackoffMultiplier:  config.BackoffMultiplier,
-				JitterFraction:     config.JitterFraction,
+		func(config *saga.DefaultConfig) saga.SagaTimeoutHandler {
+			defaultRetryConfig := &models.RetryConfiguration{
+				MaxRetries:        config.DefaultMaxRetries,
+				InitialBackoffMs:  int32(config.DefaultInitialBackoff.Milliseconds()),
+				MaxBackoffMs:      int32(config.DefaultMaxBackoff.Milliseconds()),
+				BackoffMultiplier: config.BackoffMultiplier,
+				JitterFraction:    config.JitterFraction,
 			}
 
-			retryStrategies := make(map[string]*RetryConfiguration)
+			retryStrategies := make(map[string]*models.RetryConfiguration)
 
 			return timeout.NewTimeoutHandlerImpl(defaultRetryConfig, retryStrategies)
 		},
@@ -114,7 +115,7 @@ var SagaEngineModule = fx.Module(
 	),
 
 	fx.Provide(
-		func(kafkaProducer events.KafkaProducer, config *DefaultConfig) SagaEventPublisher {
+		func(kafkaProducer events.KafkaProducer, config *saga.DefaultConfig) saga.SagaEventPublisher {
 			return events.NewEventPublisherImpl(config.KafkaTopic, kafkaProducer)
 		},
 	),
@@ -192,12 +193,12 @@ var SagaEngineModule = fx.Module(
 	fx.Provide(
 		func(
 			registry *orchestrator.SagaRegistry,
-			stepExecutor SagaStepExecutor,
-			timeoutHandler SagaTimeoutHandler,
-			eventPublisher SagaEventPublisher,
-			repository SagaRepository,
-			execLogRepository SagaExecutionLogRepository,
-			config *DefaultConfig,
+			stepExecutor saga.SagaStepExecutor,
+			timeoutHandler saga.SagaTimeoutHandler,
+			eventPublisher saga.SagaEventPublisher,
+			repository saga.SagaRepository,
+			execLogRepository saga.SagaExecutionLogRepository,
+			config *saga.DefaultConfig,
 		) SagaOrchestratorResult {
 			orch := orchestrator.NewSagaOrchestratorImpl(
 				registry,
@@ -221,7 +222,7 @@ var SagaEngineModule = fx.Module(
 type SagaOrchestratorResult struct {
 	fx.Out
 
-	Orchestrator SagaOrchestrator
+	Orchestrator saga.SagaOrchestrator
 	Registry     *orchestrator.SagaRegistry
 }
 
@@ -232,8 +233,8 @@ var MinimalSagaEngineModule = fx.Module(
 
 	// Provide default configuration
 	fx.Provide(
-		func() *DefaultConfig {
-			return &DefaultConfig{
+		func() *saga.DefaultConfig {
+			return &saga.DefaultConfig{
 				DefaultTimeoutSeconds:   60,
 				DefaultMaxRetries:       3,
 				DefaultInitialBackoff:   time.Second,

@@ -1,0 +1,380 @@
+// Package application contains the satellite-service application service.
+package application
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"p9e.in/samavaya/packages/errors"
+	"p9e.in/samavaya/packages/p9context"
+	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/ulid"
+
+	"p9e.in/samavaya/agriculture/satellite-service/internal/domain"
+	"p9e.in/samavaya/agriculture/satellite-service/internal/ports/inbound"
+	"p9e.in/samavaya/agriculture/satellite-service/internal/ports/outbound"
+)
+
+const (
+	serviceName           = "satellite-service"
+	eventTopic            = "samavaya.agriculture.satellite.events"
+	maxPageSize     int32 = 100
+	defaultPageSize       = int32(20)
+)
+
+type satelliteService struct {
+	repo        outbound.SatelliteRepository
+	pub         outbound.EventPublisher
+	fieldClient outbound.FieldClient
+	farmClient  outbound.FarmClient
+	pool        *pgxpool.Pool
+	log         *p9log.Helper
+}
+
+// NewSatelliteService creates a new application-layer SatelliteService.
+func NewSatelliteService(
+	repo outbound.SatelliteRepository,
+	pub outbound.EventPublisher,
+	fieldClient outbound.FieldClient,
+	farmClient outbound.FarmClient,
+	pool *pgxpool.Pool,
+	log p9log.Logger,
+) inbound.SatelliteService {
+	return &satelliteService{
+		repo:        repo,
+		pub:         pub,
+		fieldClient: fieldClient,
+		farmClient:  farmClient,
+		pool:        pool,
+		log:         p9log.NewHelper(p9log.With(log, "component", "SatelliteService")),
+	}
+}
+
+// ---------------------------------------------------------------------------
+// RequestImagery
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) RequestImagery(ctx context.Context, image *domain.SatelliteImage) (*domain.SatelliteTask, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if image.FieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	if image.CloudCoverPct < 0 || image.CloudCoverPct > 100 {
+		return nil, errors.BadRequest("INVALID_CLOUD_COVER", "cloud_cover_pct must be between 0 and 100")
+	}
+	if image.ResolutionMeters < 0 {
+		return nil, errors.BadRequest("INVALID_RESOLUTION", "resolution_meters must be non-negative")
+	}
+	if image.Bbox != nil && !image.Bbox.IsValid() {
+		return nil, errors.BadRequest("INVALID_BBOX", "bounding box coordinates are invalid")
+	}
+
+	image.TenantID = tenantID
+	image.ProcessingStatus = domain.ProcessingStatusPending
+	image.AcquisitionDate = time.Now()
+
+	// Use a transaction to create both image and task atomically.
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		s.log.Errorw("msg", "tx begin failed", "error", err)
+		return nil, errors.InternalServer("TX_BEGIN_FAILED", "an internal error occurred")
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	txRepo := s.repo.WithTx(tx)
+
+	createdImage, err := txRepo.CreateImage(ctx, image)
+	if err != nil {
+		return nil, err
+	}
+
+	task := &domain.SatelliteTask{
+		TenantID:     tenantID,
+		FieldID:      image.FieldID,
+		TaskType:     "acquisition",
+		Status:       domain.ProcessingStatusPending,
+		InputImageID: createdImage.ID,
+		ResultID:     createdImage.ID,
+	}
+
+	createdTask, err := txRepo.CreateTask(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		s.log.Errorw("msg", "tx commit failed", "error", err)
+		return nil, errors.InternalServer("TX_COMMIT_FAILED", "an internal error occurred")
+	}
+
+	s.emitEvent(ctx, "agriculture.satellite.imagery.requested", createdImage.ID, map[string]interface{}{
+		"image_id": createdImage.ID, "task_id": createdTask.ID, "tenant_id": tenantID,
+	})
+	s.log.Infow("msg", "imagery requested", "image_id", createdImage.ID, "task_id", createdTask.ID)
+
+	return createdTask, nil
+}
+
+// ---------------------------------------------------------------------------
+// GetImage
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) GetImage(ctx context.Context, id string) (*domain.SatelliteImage, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if id == "" {
+		return nil, errors.BadRequest("MISSING_ID", "image ID is required")
+	}
+	return s.repo.GetImageByID(ctx, id, tenantID)
+}
+
+// ---------------------------------------------------------------------------
+// ListImages
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) ListImages(ctx context.Context, params domain.ListImagesParams) ([]domain.SatelliteImage, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	params.TenantID = tenantID
+	params.PageSize = normalizePageSize(params.PageSize)
+	return s.repo.ListImages(ctx, params)
+}
+
+// ---------------------------------------------------------------------------
+// ComputeVegetationIndex
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) ComputeVegetationIndex(ctx context.Context, imageID, fieldID, indexType string) (*domain.VegetationIndex, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if imageID == "" {
+		return nil, errors.BadRequest("MISSING_IMAGE_ID", "image_id is required")
+	}
+	if fieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+
+	idxType := domain.IndexType(indexType)
+	if !idxType.IsValid() {
+		return nil, errors.BadRequest("INVALID_INDEX_TYPE", fmt.Sprintf("unsupported index type: %s", indexType))
+	}
+
+	// Verify the image exists.
+	_, err := s.repo.GetImageByID(ctx, imageID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	// No real satellite imagery processing engine is connected yet.
+	// Return an error rather than plausible-looking synthetic values
+	// that could mislead field-pilot users.
+	return nil, errors.BadRequest("MODEL_UNAVAILABLE",
+		"vegetation index computation is not yet available — satellite imagery processing engine not connected")
+}
+
+// ---------------------------------------------------------------------------
+// GetVegetationIndices
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) GetVegetationIndices(ctx context.Context, params domain.GetVegetationIndicesParams) ([]domain.VegetationIndex, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	params.TenantID = tenantID
+	return s.repo.GetVegetationIndices(ctx, params)
+}
+
+// ---------------------------------------------------------------------------
+// DetectCropStress
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) DetectCropStress(ctx context.Context, imageID, fieldID string) (*domain.CropStressAlert, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if imageID == "" {
+		return nil, errors.BadRequest("MISSING_IMAGE_ID", "image_id is required")
+	}
+	if fieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+
+	// Verify the image exists.
+	_, err := s.repo.GetImageByID(ctx, imageID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, errors.BadRequest("MODEL_UNAVAILABLE",
+		"crop stress detection is not yet available — satellite analysis engine not connected")
+}
+
+// ---------------------------------------------------------------------------
+// GetTemporalAnalysis
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) GetTemporalAnalysis(ctx context.Context, params domain.TemporalAnalysisParams) (*domain.TemporalAnalysis, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if params.FieldID == "" {
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+
+	idxType := domain.IndexType(params.IndexType)
+	if !idxType.IsValid() {
+		return nil, errors.BadRequest("INVALID_INDEX_TYPE", fmt.Sprintf("unsupported index type: %s", params.IndexType))
+	}
+
+	params.TenantID = tenantID
+
+	// Query vegetation indices for the field+index_type in date range.
+	indices, err := s.repo.GetVegetationIndicesForTemporal(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(indices) == 0 {
+		return nil, errors.NotFound("NO_DATA", "no vegetation index data found for the specified parameters")
+	}
+
+	// Build data points.
+	dataPoints := make([]domain.TemporalDataPoint, len(indices))
+	for i, idx := range indices {
+		dataPoints[i] = domain.TemporalDataPoint{
+			Date:      idx.ComputedAt,
+			MeanValue: idx.MeanValue,
+			MinValue:  idx.MinValue,
+			MaxValue:  idx.MaxValue,
+		}
+	}
+
+	// Compute trend using linear regression.
+	trendSlope, trendDirection, changePct := computeTrend(dataPoints)
+
+	now := time.Now()
+	analysis := &domain.TemporalAnalysis{
+		TenantID:       tenantID,
+		FieldID:        params.FieldID,
+		IndexType:      idxType,
+		StartDate:      params.StartDate,
+		EndDate:        params.EndDate,
+		DataPoints:     dataPoints,
+		TrendSlope:     trendSlope,
+		TrendDirection: trendDirection,
+		ChangePct:      changePct,
+		Version:        1,
+	}
+	analysis.ID = ulid.NewString()
+	analysis.CreatedAt = now
+
+	return analysis, nil
+}
+
+// ---------------------------------------------------------------------------
+// ListAlerts
+// ---------------------------------------------------------------------------
+
+func (s *satelliteService) ListAlerts(ctx context.Context, params domain.ListAlertsParams) ([]domain.CropStressAlert, int32, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	params.TenantID = tenantID
+	params.PageSize = normalizePageSize(params.PageSize)
+	return s.repo.ListAlerts(ctx, params)
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+func normalizePageSize(ps int32) int32 {
+	if ps <= 0 {
+		return defaultPageSize
+	}
+	if ps > maxPageSize {
+		return maxPageSize
+	}
+	return ps
+}
+
+// computeTrend performs simple linear regression on temporal data points and
+// determines the trend direction and percentage change.
+func computeTrend(dataPoints []domain.TemporalDataPoint) (slope float64, direction domain.TrendDirection, changePct float64) {
+	n := len(dataPoints)
+	if n < 2 {
+		return 0, domain.TrendDirectionStable, 0
+	}
+
+	// Simple linear regression: y = a + b*x where x is the index.
+	var sumX, sumY, sumXY, sumX2 float64
+	fn := float64(n)
+	for i, dp := range dataPoints {
+		x := float64(i)
+		sumX += x
+		sumY += dp.MeanValue
+		sumXY += x * dp.MeanValue
+		sumX2 += x * x
+	}
+	denom := fn*sumX2 - sumX*sumX
+	if denom != 0 {
+		slope = (fn*sumXY - sumX*sumY) / denom
+	}
+
+	first := dataPoints[0].MeanValue
+	last := dataPoints[n-1].MeanValue
+	if math.Abs(first) > 1e-9 {
+		changePct = ((last - first) / math.Abs(first)) * 100
+	}
+
+	const threshold = 0.01
+	if slope > threshold {
+		direction = domain.TrendDirectionIncreasing
+	} else if slope < -threshold {
+		direction = domain.TrendDirectionDecreasing
+	} else {
+		direction = domain.TrendDirectionStable
+	}
+
+	return slope, direction, changePct
+}
+
+func (s *satelliteService) emitEvent(ctx context.Context, eventType, aggregateID string, data map[string]interface{}) {
+	if s.pub == nil {
+		return
+	}
+	payload := map[string]interface{}{
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
+		"correlation_id": p9context.RequestID(ctx),
+		"data":           data,
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		s.log.Errorw("msg", "failed to marshal event", "error", err)
+		return
+	}
+	if err := s.pub.Publish(ctx, eventTopic, aggregateID, raw); err != nil {
+		s.log.Errorw("msg", "failed to publish event", "event_type", eventType, "error", err)
+	}
+}

@@ -4,7 +4,24 @@ package saga
 import (
 	"context"
 	"time"
+
+	"p9e.in/samavaya/packages/saga/models"
 )
+
+// ── Type aliases for model types ─────────────────────────────────────────────
+// These aliases let sub-packages reference saga.StepDefinition,
+// saga.SagaExecution, etc. without importing models directly, while the
+// canonical definitions live in models/ to avoid circular imports.
+
+type SagaExecution = models.SagaExecution
+type SagaExecutionInput = models.SagaExecutionInput
+type StepDefinition = models.StepDefinition
+type StepExecution = models.StepExecution
+type StepResult = models.StepResult
+type RetryConfiguration = models.RetryConfiguration
+type TimeoutTracker = models.TimeoutTracker
+type CompensationStatus = models.CompensationStatus
+type CircuitBreakerStatus = models.CircuitBreakerStatus
 
 // SagaOrchestrator coordinates the execution of all saga steps
 type SagaOrchestrator interface {
@@ -51,28 +68,28 @@ type SagaTimeoutHandler interface {
 // SagaEventPublisher publishes saga step events to Kafka for asynchronous processing
 type SagaEventPublisher interface {
 	// PublishStepStarted publishes step started event
-	PublishStepStarted(ctx context.Context, sagaID string, stepNum int) error
+	PublishStepStarted(ctx context.Context, execution *SagaExecution, stepNum int32) error
 
 	// PublishStepCompleted publishes step completed event with result
-	PublishStepCompleted(ctx context.Context, sagaID string, stepNum int, result interface{}) error
+	PublishStepCompleted(ctx context.Context, execution *SagaExecution, stepNum int32, result *StepResult) error
 
 	// PublishStepFailed publishes step failed event
-	PublishStepFailed(ctx context.Context, sagaID string, stepNum int, err error) error
+	PublishStepFailed(ctx context.Context, execution *SagaExecution, stepNum int32, err error) error
 
 	// PublishStepRetrying publishes step retrying event
-	PublishStepRetrying(ctx context.Context, sagaID string, stepNum int, attempt int) error
+	PublishStepRetrying(ctx context.Context, execution *SagaExecution, stepNum int32, err error) error
 
 	// PublishSagaCompleted publishes saga completed event
-	PublishSagaCompleted(ctx context.Context, sagaID string) error
+	PublishSagaCompleted(ctx context.Context, execution *SagaExecution) error
 
 	// PublishSagaFailed publishes saga failed event
-	PublishSagaFailed(ctx context.Context, sagaID string, err error) error
+	PublishSagaFailed(ctx context.Context, execution *SagaExecution) error
 
 	// PublishCompensationStarted publishes compensation started event
-	PublishCompensationStarted(ctx context.Context, sagaID string, failedStep int) error
+	PublishCompensationStarted(ctx context.Context, execution *SagaExecution) error
 
 	// PublishCompensationCompleted publishes compensation completed event
-	PublishCompensationCompleted(ctx context.Context, sagaID string) error
+	PublishCompensationCompleted(ctx context.Context, execution *SagaExecution) error
 }
 
 // SagaHandler defines a saga implementation with steps and handlers
@@ -120,29 +137,23 @@ type CircuitBreaker interface {
 
 // SagaRepository provides data access for saga instances
 type SagaRepository interface {
-	// GetByID retrieves saga by ID
-	GetByID(ctx context.Context, sagaID string) (*SagaExecution, error)
+	// CreateExecution creates a new saga execution record
+	CreateExecution(ctx context.Context, execution *SagaExecution) error
 
-	// Create creates new saga execution record
-	Create(ctx context.Context, saga *SagaExecution) error
+	// GetExecution retrieves saga execution by ID
+	GetExecution(ctx context.Context, sagaID string) (*SagaExecution, error)
 
-	// Update updates saga execution record
-	Update(ctx context.Context, saga *SagaExecution) error
-
-	// GetBySagaID gets saga by saga ID (for recovery)
-	GetBySagaID(ctx context.Context, sagaID string) (*SagaExecution, error)
+	// UpdateExecution updates saga execution record
+	UpdateExecution(ctx context.Context, execution *SagaExecution) error
 }
 
 // SagaExecutionLogRepository provides audit trail for saga execution
 type SagaExecutionLogRepository interface {
-	// GetBySagaID retrieves all execution log entries for a saga
-	GetBySagaID(ctx context.Context, sagaID string) ([]*StepExecution, error)
+	// CreateExecutionLog creates new execution log entry
+	CreateExecutionLog(ctx context.Context, entry *StepExecution) error
 
-	// Create creates new execution log entry
-	Create(ctx context.Context, entry *StepExecution) error
-
-	// Update updates execution log entry
-	Update(ctx context.Context, entry *StepExecution) error
+	// GetExecutionLog retrieves all execution log entries for a saga
+	GetExecutionLog(ctx context.Context, sagaID string) ([]*StepExecution, error)
 }
 
 // SagaTimeoutLogRepository provides timeout tracking
@@ -160,11 +171,28 @@ type SagaTimeoutLogRepository interface {
 // SagaCompensationEngine handles compensation execution
 type SagaCompensationEngine interface {
 	// StartCompensation begins compensation process for failed saga
-	StartCompensation(ctx context.Context, sagaID string, failedStepNum int, err error) error
+	StartCompensation(ctx context.Context, execution *SagaExecution, stepDefs []*StepDefinition) error
 
 	// ExecuteCompensation executes compensation for specific step
-	ExecuteCompensation(ctx context.Context, sagaID string, stepNum int) error
+	ExecuteCompensation(ctx context.Context, execution *SagaExecution, stepNum int32, compensationSteps []*StepDefinition) error
 
 	// GetCompensationStatus retrieves compensation status
 	GetCompensationStatus(ctx context.Context, sagaID string) (CompensationStatus, error)
+}
+
+// GlobalSagaRegistry is the process-wide saga handler registry.
+// Sub-package fx.go files call Register to wire handlers at startup.
+var GlobalSagaRegistry = &globalRegistry{handlers: make(map[string]SagaHandler)}
+
+type globalRegistry struct {
+	handlers map[string]SagaHandler
+}
+
+func (r *globalRegistry) Register(sagaType string, handler SagaHandler) {
+	r.handlers[sagaType] = handler
+}
+
+func (r *globalRegistry) Get(sagaType string) (SagaHandler, bool) {
+	h, ok := r.handlers[sagaType]
+	return h, ok
 }
