@@ -21,6 +21,15 @@ with a JSON body sent to `/<package>.<Service>/<Method>`. Responses are JSON.
 | 10 | **Satellite Analytics Service** | 8089 | `agriculture.satellite.analytics.v1` | [satellite-analytics-service.yaml](satellite-analytics-service.yaml) |
 | 11 | **Traceability Service** | 8090 | `agriculture.traceability.v1` | [traceability-service.yaml](traceability-service.yaml) |
 | 12 | **Commerce Service** | 8092 | `agriculture.commerce.v1` | [commerce-service.yaml](commerce-service.yaml) |
+| 13 | **Alert Service** | 8098 | `agriculture.alert.v1` | [alert-service.yaml](alert-service.yaml) |
+| 14 | **Analytics Service** | 8099 | `agriculture.field.analytics.v1` | [analytics-service.yaml](analytics-service.yaml) |
+| 15 | **Prescription Service** | 8100 | `agriculture.prescription.v1` | [prescription-service.yaml](prescription-service.yaml) |
+| 16 | **Satellite Ingestion Service** | 8101 | `agriculture.satellite.ingestion.v1` | [satellite-ingestion-service.yaml](satellite-ingestion-service.yaml) |
+| 17 | **Satellite Processing Service** | 8102 | `agriculture.satellite.processing.v1` | [satellite-processing-service.yaml](satellite-processing-service.yaml) |
+| 18 | **Satellite Tile Service** | 8104 | `agriculture.satellite.tile.v1` | [satellite-tile-service.yaml](satellite-tile-service.yaml) |
+| 19 | **Vegetation Index Service** | 8105 | `agriculture.satellite.vegetation.v1` | [vegetation-index-service.yaml](vegetation-index-service.yaml) |
+| 20 | **Task Service** | 8106 | `agriculture.task.v1` | [task-service.yaml](task-service.yaml) |
+| 21 | **Agronomy Service** | 8107 | `agriculture.agronomy.v1` | [agronomy-service.yaml](agronomy-service.yaml) |
 
 ## Endpoint Reference
 
