@@ -1,4 +1,4 @@
-.PHONY: all build test lint vet proto clean help api-docs
+.PHONY: all build test lint vet proto clean help api-docs new-service setup
 
 SERVICES := farm-service field-service crop-service sensor-service \
             irrigation-service soil-service yield-service \
@@ -65,6 +65,19 @@ clean: ## Remove build artifacts
 
 api-docs: ## Regenerate OpenAPI specs from proto definitions
 	./scripts/generate-api-docs.sh
+
+new-service: ## Scaffold a new Go microservice (e.g., make new-service NAME=weather)
+	@test -n "$(NAME)" || (echo "Usage: make new-service NAME=<name>" && exit 1)
+	./scripts/new-service.sh $(NAME)
+
+setup: ## Install pre-commit hooks and dev dependencies
+	@echo "Installing pre-commit hooks..."
+	pre-commit install
+	@echo "Installing Go tools..."
+	$(MAKE) tools
+	@echo "Downloading Go modules..."
+	go mod download
+	@echo "Setup complete."
 
 docker-%: ## Build Docker image for a service (e.g., make docker-farm-service)
 	docker build --build-arg SERVICE=$* -t yieldpoint/$*:dev .

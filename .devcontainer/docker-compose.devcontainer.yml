@@ -1,0 +1,15 @@
+# Overlay for the dev container — adds a workspace service that mounts the repo
+# and keeps the same infrastructure (postgres, kafka, etc.) from the root
+# docker-compose.yml.
+
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - ..:/workspaces/YP:cached
+    command: sleep infinity
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy

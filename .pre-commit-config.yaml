@@ -1,0 +1,70 @@
+# Pre-commit hooks for the YieldPoint monorepo.
+# Install: pre-commit install
+# Run all: pre-commit run --all-files
+
+repos:
+  # ── General checks ──────────────────────────────────────────────────────────
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-merge-conflict
+
+  # ── Secrets detection ───────────────────────────────────────────────────────
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # ── Go ──────────────────────────────────────────────────────────────────────
+
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-vet
+        args: [./...]
+
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.62.2
+    hooks:
+      - id: golangci-lint
+        args: [--timeout=5m]
+
+  # ── Rust (ai-gateway) ──────────────────────────────────────────────────────
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt-check
+        name: cargo fmt --check
+        language: system
+        entry: bash -c 'cd ai-gateway && cargo fmt -- --check'
+        files: '\.rs$'
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: cargo clippy
+        language: system
+        entry: bash -c 'cd ai-gateway && cargo clippy -- -D warnings'
+        files: '\.rs$'
+        pass_filenames: false
+
+  # ── Protobuf ────────────────────────────────────────────────────────────────
+
+  - repo: local
+    hooks:
+      - id: buf-lint
+        name: buf lint
+        language: system
+        entry: buf lint
+        files: '\.proto$'
+        pass_filenames: false
