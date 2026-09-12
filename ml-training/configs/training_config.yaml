@@ -1,0 +1,70 @@
+# Training configuration for YieldPoint vision models.
+# Each task trains a separate model from data collected by the AI gateway.
+
+data:
+  base_dir: "/data/training-collection"
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  min_samples_per_class: 20
+  min_confidence_threshold: 0.7
+
+tasks:
+  disease:
+    architecture: "efficientnet_b0"
+    input_size: 256
+    num_epochs: 50
+    batch_size: 32
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    label_smoothing: 0.1
+    early_stopping_patience: 10
+    output_model: "/models/disease-detection-v1/model.onnx"
+
+  pest:
+    architecture: "efficientnet_b0"
+    input_size: 640
+    num_epochs: 50
+    batch_size: 16
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    label_smoothing: 0.1
+    early_stopping_patience: 10
+    output_model: "/models/pest-detection-v1/model.onnx"
+
+  nutrient_deficiency:
+    architecture: "efficientnet_b0"
+    input_size: 256
+    num_epochs: 50
+    batch_size: 32
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    label_smoothing: 0.1
+    early_stopping_patience: 10
+    output_model: "/models/nutrient-deficiency-v1/model.onnx"
+
+  classification:
+    architecture: "efficientnet_b0"
+    input_size: 224
+    num_epochs: 50
+    batch_size: 32
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    label_smoothing: 0.1
+    early_stopping_patience: 10
+    output_model: "/models/plant-classification-v1/model.onnx"
+
+augmentation:
+  horizontal_flip: true
+  vertical_flip: false
+  rotation_limit: 30
+  brightness_limit: 0.2
+  contrast_limit: 0.2
+  hue_shift_limit: 10
+  random_crop_scale: [0.8, 1.0]
+
+export:
+  onnx_opset: 17
+  dynamic_batch: true
+  optimize: true
+  quantize: false

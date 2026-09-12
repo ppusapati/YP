@@ -1,0 +1,39 @@
+# AI Gateway configuration.
+#
+# Copy to config.toml and fill in values for your environment.
+
+[server]
+address = "0.0.0.0:50051"
+max_concurrent_requests = 256
+request_timeout_secs = 30
+
+[models]
+disease_detection_model = "/models/disease-detection-v1"
+pest_detection_model = "/models/pest-detection-v1"
+nutrient_deficiency_model = "/models/nutrient-deficiency-v1"
+plant_classification_model = "/models/plant-classification-v1"
+yield_prediction_version = "v1.0.0"
+crop_growth_version = "v1.0.0"
+satellite_ndvi_version = "v1.0.0"
+crop_recommendation_version = "v1.0.0"
+
+# External vision API for production inference when local ONNX models are
+# unavailable. The gateway falls back: ONNX → External API → Demo weights.
+[external_api]
+enabled = false
+# Options: "plant_net", "google_vision", "custom"
+provider = "plant_net"
+# Get a free API key at https://my.plantnet.org/
+api_key = ""
+base_url = "https://my-api.plantnet.org/v2"
+timeout_secs = 15
+max_retries = 2
+
+# Data collection for model training. When enabled, every external API call
+# saves the input image and response labels to disk. The Python training
+# pipeline in ml-training/ consumes this data to train custom ONNX models.
+[data_collection]
+enabled = false
+storage_dir = "/data/training-collection"
+max_images_per_category = 50000
+save_raw_response = true
