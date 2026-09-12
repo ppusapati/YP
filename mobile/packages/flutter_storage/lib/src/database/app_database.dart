@@ -144,6 +144,10 @@ class OfflineQueue extends Table {
 
   /// Last sync error message, if any.
   TextColumn get lastError => text().nullable()();
+
+  /// Status of the sync entry: `pending`, `syncing`, `failed`, or `completed`.
+  TextColumn get status =>
+      text().withDefault(const Constant('pending'))();
 }
 
 /// Locally cached satellite/map tiles for offline use.

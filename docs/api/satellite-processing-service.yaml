@@ -1,0 +1,306 @@
+openapi: 3.0.3
+info:
+  title: Satellite Processing Service API
+  description: |
+    Satellite imagery processing pipeline for the YieldPoint agriculture platform.
+    Handles atmospheric correction, cloud masking, orthorectification, and band math
+    on ingested satellite scenes.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8102
+    description: Local development
+tags:
+  - name: Processing
+    description: Satellite imagery processing jobs
+
+paths:
+  /agriculture.satellite.processing.v1.SatelliteProcessingService/SubmitProcessingJob:
+    post:
+      tags: [Processing]
+      summary: Submit a new processing job for an ingested scene
+      operationId: SubmitProcessingJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitProcessingJobRequest'
+      responses:
+        '200':
+          description: Processing job submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitProcessingJobResponse'
+
+  /agriculture.satellite.processing.v1.SatelliteProcessingService/GetProcessingJob:
+    post:
+      tags: [Processing]
+      summary: Get a processing job by ID
+      operationId: GetProcessingJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetProcessingJobRequest'
+      responses:
+        '200':
+          description: Processing job retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProcessingJobResponse'
+
+  /agriculture.satellite.processing.v1.SatelliteProcessingService/ListProcessingJobs:
+    post:
+      tags: [Processing]
+      summary: List processing jobs with filtering and pagination
+      operationId: ListProcessingJobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListProcessingJobsRequest'
+      responses:
+        '200':
+          description: Processing jobs listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProcessingJobsResponse'
+
+  /agriculture.satellite.processing.v1.SatelliteProcessingService/CancelProcessingJob:
+    post:
+      tags: [Processing]
+      summary: Cancel a pending or in-progress processing job
+      operationId: CancelProcessingJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelProcessingJobRequest'
+      responses:
+        '200':
+          description: Processing job cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelProcessingJobResponse'
+
+  /agriculture.satellite.processing.v1.SatelliteProcessingService/GetProcessingStats:
+    post:
+      tags: [Processing]
+      summary: Get processing statistics for a farm
+      operationId: GetProcessingStats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetProcessingStatsRequest'
+      responses:
+        '200':
+          description: Processing stats retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProcessingStatsResponse'
+
+components:
+  schemas:
+    ProcessingStatus:
+      type: string
+      enum:
+        - PROCESSING_STATUS_UNSPECIFIED
+        - PROCESSING_STATUS_QUEUED
+        - PROCESSING_STATUS_PREPROCESSING
+        - PROCESSING_STATUS_ATMOSPHERIC_CORRECTION
+        - PROCESSING_STATUS_CLOUD_MASKING
+        - PROCESSING_STATUS_ORTHORECTIFICATION
+        - PROCESSING_STATUS_BAND_MATH
+        - PROCESSING_STATUS_COMPLETED
+        - PROCESSING_STATUS_FAILED
+
+    ProcessingLevel:
+      type: string
+      enum:
+        - PROCESSING_LEVEL_UNSPECIFIED
+        - PROCESSING_LEVEL_L1C
+        - PROCESSING_LEVEL_L2A
+        - PROCESSING_LEVEL_L3
+      description: |
+        L1C = Top of atmosphere, L2A = Surface reflectance, L3 = Composited/mosaicked
+
+    CorrectionAlgorithm:
+      type: string
+      enum:
+        - CORRECTION_ALGORITHM_UNSPECIFIED
+        - CORRECTION_ALGORITHM_SEN2COR
+        - CORRECTION_ALGORITHM_LASRC
+        - CORRECTION_ALGORITHM_FLAASH
+        - CORRECTION_ALGORITHM_DOS
+
+    ProcessingJob:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        ingestionTaskId:
+          type: string
+        farmId:
+          type: string
+        status:
+          $ref: '#/components/schemas/ProcessingStatus'
+        inputLevel:
+          $ref: '#/components/schemas/ProcessingLevel'
+        outputLevel:
+          $ref: '#/components/schemas/ProcessingLevel'
+        algorithm:
+          $ref: '#/components/schemas/CorrectionAlgorithm'
+        inputS3Key:
+          type: string
+        outputS3Key:
+          type: string
+        cloudMaskThreshold:
+          type: number
+          format: double
+        applyAtmosphericCorrection:
+          type: boolean
+        applyCloudMasking:
+          type: boolean
+        applyOrthorectification:
+          type: boolean
+        outputResolutionMeters:
+          type: integer
+          format: int32
+        outputCrs:
+          type: string
+        errorMessage:
+          type: string
+        processingTimeSeconds:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    SubmitProcessingJobRequest:
+      type: object
+      properties:
+        ingestionTaskId:
+          type: string
+        farmId:
+          type: string
+        outputLevel:
+          $ref: '#/components/schemas/ProcessingLevel'
+        algorithm:
+          $ref: '#/components/schemas/CorrectionAlgorithm'
+        cloudMaskThreshold:
+          type: number
+          format: double
+        applyAtmosphericCorrection:
+          type: boolean
+        applyCloudMasking:
+          type: boolean
+        applyOrthorectification:
+          type: boolean
+        outputResolutionMeters:
+          type: integer
+          format: int32
+        outputCrs:
+          type: string
+
+    SubmitProcessingJobResponse:
+      type: object
+      properties:
+        job:
+          $ref: '#/components/schemas/ProcessingJob'
+
+    GetProcessingJobRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetProcessingJobResponse:
+      type: object
+      properties:
+        job:
+          $ref: '#/components/schemas/ProcessingJob'
+
+    ListProcessingJobsRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+        farmId:
+          type: string
+        status:
+          $ref: '#/components/schemas/ProcessingStatus'
+
+    ListProcessingJobsResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessingJob'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    CancelProcessingJobRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    CancelProcessingJobResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+    GetProcessingStatsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+
+    GetProcessingStatsResponse:
+      type: object
+      properties:
+        totalJobs:
+          type: string
+          format: int64
+        completedJobs:
+          type: string
+          format: int64
+        failedJobs:
+          type: string
+          format: int64
+        pendingJobs:
+          type: string
+          format: int64
+        avgProcessingTimeSeconds:
+          type: number
+          format: double
