@@ -3,7 +3,7 @@
  */
 
 /** Supported locale codes */
-export type Locale = 'en' | 'hi' | 'mr' | 'gu' | 'ta' | 'te' | 'kn' | 'bn' | string;
+export type Locale = 'en' | 'hi' | 'mr' | 'gu' | 'ta' | 'te' | 'kn' | 'bn' | 'pa' | string;
 
 /** Flat or nested translation messages */
 export type TranslationMessages = Record<string, string | Record<string, string | Record<string, string>>>;

@@ -242,6 +242,107 @@ with a JSON body sent to `/<package>.<Service>/<Method>`. Responses are JSON.
 | UpdateOrderStatus | `POST /agriculture.commerce.v1.CommerceService/UpdateOrderStatus` | Update order status |
 | UpdatePaymentStatus | `POST /agriculture.commerce.v1.CommerceService/UpdatePaymentStatus` | Update payment status |
 
+### Alert Service (port 8098)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| ListAlerts | `POST /agriculture.alert.v1.AlertService/ListAlerts` | List alerts with filtering |
+| GetAlert | `POST /agriculture.alert.v1.AlertService/GetAlert` | Get alert by ID |
+| AcknowledgeAlert | `POST /agriculture.alert.v1.AlertService/AcknowledgeAlert` | Acknowledge alert |
+| ResolveAlert | `POST /agriculture.alert.v1.AlertService/ResolveAlert` | Resolve alert |
+| MarkAlertRead | `POST /agriculture.alert.v1.AlertService/MarkAlertRead` | Mark alert as read |
+| MarkAllAlertsRead | `POST /agriculture.alert.v1.AlertService/MarkAllAlertsRead` | Mark all alerts read |
+| GetUnreadCount | `POST /agriculture.alert.v1.AlertService/GetUnreadCount` | Get unread count |
+| ListAlertRules | `POST /agriculture.alert.v1.AlertService/ListAlertRules` | List alert rules |
+| CreateAlertRule | `POST /agriculture.alert.v1.AlertService/CreateAlertRule` | Create alert rule |
+| UpdateAlertRule | `POST /agriculture.alert.v1.AlertService/UpdateAlertRule` | Update alert rule |
+| GetFieldRisk | `POST /agriculture.alert.v1.AlertService/GetFieldRisk` | Get field risk score |
+| ListFieldRisks | `POST /agriculture.alert.v1.AlertService/ListFieldRisks` | List field risk scores |
+| ListAlertHistory | `POST /agriculture.alert.v1.AlertService/ListAlertHistory` | List alert history |
+
+### Analytics Service (port 8099)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| GetHistoricalMetrics | `POST /agriculture.field.analytics.v1.FieldAnalyticsService/GetHistoricalMetrics` | Get aggregate historical metrics |
+| ListFieldAnalytics | `POST /agriculture.field.analytics.v1.FieldAnalyticsService/ListFieldAnalytics` | List field analytics summaries |
+| GetFieldAnalytics | `POST /agriculture.field.analytics.v1.FieldAnalyticsService/GetFieldAnalytics` | Get detailed field analytics |
+| GetSeasonComparisons | `POST /agriculture.field.analytics.v1.FieldAnalyticsService/GetSeasonComparisons` | Season-by-season comparison |
+| GetRotationAnalysis | `POST /agriculture.field.analytics.v1.FieldAnalyticsService/GetRotationAnalysis` | Crop rotation analysis |
+| GetCrossFieldTrends | `POST /agriculture.field.analytics.v1.FieldAnalyticsService/GetCrossFieldTrends` | Cross-field trend comparison |
+
+### Prescription Service (port 8100)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| ListPrescriptions | `POST /agriculture.prescription.v1.PrescriptionService/ListPrescriptions` | List prescriptions |
+| GetPrescription | `POST /agriculture.prescription.v1.PrescriptionService/GetPrescription` | Get prescription |
+| GeneratePrescription | `POST /agriculture.prescription.v1.PrescriptionService/GeneratePrescription` | Generate variable-rate prescription |
+| ExportPrescription | `POST /agriculture.prescription.v1.PrescriptionService/ExportPrescription` | Export prescription |
+
+### Satellite Ingestion Service (port 8101)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| RequestIngestion | `POST /agriculture.satellite.ingestion.v1.SatelliteIngestionService/RequestIngestion` | Request imagery ingestion |
+| GetIngestionTask | `POST /agriculture.satellite.ingestion.v1.SatelliteIngestionService/GetIngestionTask` | Get ingestion task |
+| ListIngestionTasks | `POST /agriculture.satellite.ingestion.v1.SatelliteIngestionService/ListIngestionTasks` | List ingestion tasks |
+| CancelIngestion | `POST /agriculture.satellite.ingestion.v1.SatelliteIngestionService/CancelIngestion` | Cancel ingestion |
+| RetryIngestion | `POST /agriculture.satellite.ingestion.v1.SatelliteIngestionService/RetryIngestion` | Retry failed ingestion |
+| GetIngestionStats | `POST /agriculture.satellite.ingestion.v1.SatelliteIngestionService/GetIngestionStats` | Get ingestion statistics |
+
+### Satellite Processing Service (port 8102)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| SubmitProcessingJob | `POST /agriculture.satellite.processing.v1.SatelliteProcessingService/SubmitProcessingJob` | Submit processing job |
+| GetProcessingJob | `POST /agriculture.satellite.processing.v1.SatelliteProcessingService/GetProcessingJob` | Get processing job |
+| ListProcessingJobs | `POST /agriculture.satellite.processing.v1.SatelliteProcessingService/ListProcessingJobs` | List processing jobs |
+| CancelProcessingJob | `POST /agriculture.satellite.processing.v1.SatelliteProcessingService/CancelProcessingJob` | Cancel processing job |
+| GetProcessingStats | `POST /agriculture.satellite.processing.v1.SatelliteProcessingService/GetProcessingStats` | Get processing statistics |
+
+### Satellite Tile Service (port 8104)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| GenerateTileset | `POST /agriculture.satellite.tile.v1.SatelliteTileService/GenerateTileset` | Generate tileset |
+| GetTileset | `POST /agriculture.satellite.tile.v1.SatelliteTileService/GetTileset` | Get tileset |
+| ListTilesets | `POST /agriculture.satellite.tile.v1.SatelliteTileService/ListTilesets` | List tilesets |
+| GetTile | `POST /agriculture.satellite.tile.v1.SatelliteTileService/GetTile` | Get tile by z/x/y |
+| DeleteTileset | `POST /agriculture.satellite.tile.v1.SatelliteTileService/DeleteTileset` | Delete tileset |
+
+### Vegetation Index Service (port 8105)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| ComputeIndices | `POST /agriculture.satellite.vegetation.v1.VegetationIndexService/ComputeIndices` | Compute vegetation indices |
+| GetVegetationIndex | `POST /agriculture.satellite.vegetation.v1.VegetationIndexService/GetVegetationIndex` | Get vegetation index |
+| ListVegetationIndices | `POST /agriculture.satellite.vegetation.v1.VegetationIndexService/ListVegetationIndices` | List vegetation indices |
+| GetNDVITimeSeries | `POST /agriculture.satellite.vegetation.v1.VegetationIndexService/GetNDVITimeSeries` | Get NDVI time series |
+| GetFieldHealth | `POST /agriculture.satellite.vegetation.v1.VegetationIndexService/GetFieldHealth` | Get field health |
+
+### Task Service (port 8106)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| GetTask | `POST /agriculture.task.v1.TaskService/GetTask` | Get task by ID |
+| ListTasks | `POST /agriculture.task.v1.TaskService/ListTasks` | List tasks with filtering |
+| CreateTask | `POST /agriculture.task.v1.TaskService/CreateTask` | Create task |
+| UpdateTask | `POST /agriculture.task.v1.TaskService/UpdateTask` | Update task |
+| DeleteTask | `POST /agriculture.task.v1.TaskService/DeleteTask` | Delete task |
+
+### Agronomy Service (port 8107)
+
+| RPC | Endpoint | Description |
+|-----|----------|-------------|
+| GetInspection | `POST /agriculture.agronomy.v1.InspectionService/GetInspection` | Get inspection |
+| ListInspections | `POST /agriculture.agronomy.v1.InspectionService/ListInspections` | List inspections |
+| CreateInspection | `POST /agriculture.agronomy.v1.InspectionService/CreateInspection` | Create inspection |
+| SubmitInspection | `POST /agriculture.agronomy.v1.InspectionService/SubmitInspection` | Submit inspection |
+| GetAdvisory | `POST /agriculture.agronomy.v1.AdvisoryService/GetAdvisory` | Get advisory |
+| ListAdvisories | `POST /agriculture.agronomy.v1.AdvisoryService/ListAdvisories` | List advisories |
+| CreateAdvisory | `POST /agriculture.agronomy.v1.AdvisoryService/CreateAdvisory` | Create advisory |
+
 ## Usage
 
 ### ConnectRPC (JSON)
@@ -266,7 +367,17 @@ Or directly:
 
 ## Viewing the specs
 
-You can load any of the `.yaml` files in:
+### Swagger UI (Docker)
+
+Run the bundled Swagger UI to browse all specs interactively:
+
+```bash
+docker compose -f docs/api/docker-compose.docs.yaml up
+```
+
+Then open [http://localhost:9090](http://localhost:9090) and use the top-right dropdown to switch between services.
+
+### Other options
 
 - [Swagger Editor](https://editor.swagger.io/) (paste the YAML)
 - [Redocly](https://redocly.github.io/redoc/) (point to a hosted file URL)
