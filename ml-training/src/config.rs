@@ -3,12 +3,17 @@ use std::path::Path;
 
 use serde::Deserialize;
 
+use crate::triggers::TriggerConfig;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct TrainingConfig {
     pub data: DataConfig,
     pub tasks: HashMap<String, TaskConfig>,
     pub augmentation: AugmentationConfig,
     pub export: ExportConfig,
+    /// Optional retraining trigger configuration.
+    #[serde(default)]
+    pub retraining: Option<TriggerConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

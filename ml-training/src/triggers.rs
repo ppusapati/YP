@@ -8,7 +8,7 @@
 //! Configuration lives in the `[retraining]` section of the training TOML config.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use chrono::{DateTime, Datelike, NaiveTime, Utc, Weekday};
 use serde::Deserialize;

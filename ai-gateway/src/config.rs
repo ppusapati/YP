@@ -12,6 +12,8 @@ pub struct Config {
     pub external_api: ExternalApiConfig,
     #[serde(default)]
     pub data_collection: DataCollectionConfig,
+    #[serde(default)]
+    pub ab_test: ABTestConfig,
 }
 
 /// gRPC server configuration.
@@ -80,6 +82,30 @@ impl Default for ExternalApiConfig {
     }
 }
 
+/// A/B testing configuration for comparing two model versions.
+#[derive(Debug, Deserialize, Clone)]
+pub struct ABTestConfig {
+    /// Path to model A (typically the current production model).
+    pub model_a: String,
+    /// Path to model B (typically the challenger model).
+    pub model_b: String,
+    /// Percentage of traffic routed to model A (0–100). The remainder goes to B.
+    pub traffic_split_pct: u8,
+    /// Whether to collect comparison metrics (latency, confidence).
+    pub metrics_collection: bool,
+}
+
+impl Default for ABTestConfig {
+    fn default() -> Self {
+        Self {
+            model_a: String::new(),
+            model_b: String::new(),
+            traffic_split_pct: 100,
+            metrics_collection: false,
+        }
+    }
+}
+
 /// Configuration for the data collection pipeline that stores images and
 /// labels from external API responses for later model training.
 #[derive(Debug, Deserialize, Clone)]
@@ -130,6 +156,7 @@ impl Default for Config {
             },
             external_api: ExternalApiConfig::default(),
             data_collection: DataCollectionConfig::default(),
+            ab_test: ABTestConfig::default(),
         }
     }
 }
@@ -264,6 +291,70 @@ crop_recommendation_version = "v1.0.0"
     fn config_from_file_returns_error_for_missing_file() {
         let result = Config::from_file(Path::new("/nonexistent/config.toml"));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn ab_test_default_values() {
+        let ab = ABTestConfig::default();
+        assert!(ab.model_a.is_empty());
+        assert!(ab.model_b.is_empty());
+        assert_eq!(ab.traffic_split_pct, 100);
+        assert!(!ab.metrics_collection);
+    }
+
+    #[test]
+    fn config_deserializes_with_ab_test() {
+        let toml_str = r#"
+[server]
+address = "0.0.0.0:50051"
+max_concurrent_requests = 256
+request_timeout_secs = 30
+
+[models]
+disease_detection_model = "/models/disease"
+pest_detection_model = "/models/pest"
+nutrient_deficiency_model = "/models/nutrient"
+plant_classification_model = "/models/plant"
+yield_prediction_version = "v1.0.0"
+crop_growth_version = "v1.0.0"
+satellite_ndvi_version = "v1.0.0"
+crop_recommendation_version = "v1.0.0"
+
+[ab_test]
+model_a = "/models/disease-v1.onnx"
+model_b = "/models/disease-v2.onnx"
+traffic_split_pct = 80
+metrics_collection = true
+"#;
+        let config: Config = toml::from_str(toml_str).expect("should parse with ab_test");
+        assert_eq!(config.ab_test.model_a, "/models/disease-v1.onnx");
+        assert_eq!(config.ab_test.model_b, "/models/disease-v2.onnx");
+        assert_eq!(config.ab_test.traffic_split_pct, 80);
+        assert!(config.ab_test.metrics_collection);
+    }
+
+    #[test]
+    fn config_uses_default_ab_test_when_absent() {
+        let toml_str = r#"
+[server]
+address = "0.0.0.0:50051"
+max_concurrent_requests = 256
+request_timeout_secs = 30
+
+[models]
+disease_detection_model = "/models/disease"
+pest_detection_model = "/models/pest"
+nutrient_deficiency_model = "/models/nutrient"
+plant_classification_model = "/models/plant"
+yield_prediction_version = "v1.0.0"
+crop_growth_version = "v1.0.0"
+satellite_ndvi_version = "v1.0.0"
+crop_recommendation_version = "v1.0.0"
+"#;
+        let config: Config = toml::from_str(toml_str).expect("should parse without ab_test");
+        assert!(config.ab_test.model_a.is_empty());
+        assert_eq!(config.ab_test.traffic_split_pct, 100);
+        assert!(!config.ab_test.metrics_collection);
     }
 
     #[test]

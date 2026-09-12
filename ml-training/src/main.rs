@@ -1,10 +1,3 @@
-mod config;
-mod dataset;
-mod export;
-mod model;
-mod training;
-mod validate;
-
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -14,9 +7,12 @@ use burn_ndarray::NdArray;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{fmt, EnvFilter};
 
-use crate::config::TrainingConfig;
-use crate::dataset::prepare_datasets;
-use crate::model::{extract_weights, PlantCnn};
+use yp_ml_training::config::TrainingConfig;
+use yp_ml_training::dataset::prepare_datasets;
+use yp_ml_training::export;
+use yp_ml_training::model::{extract_weights, PlantCnn};
+use yp_ml_training::training;
+use yp_ml_training::validate;
 
 type InferBackend = NdArray;
 

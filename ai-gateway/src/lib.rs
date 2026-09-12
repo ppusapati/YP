@@ -6,6 +6,7 @@
 //! recommendation, plant AI inference) and exposes them through a unified gRPC API
 //! defined in `proto/ai_gateway.proto`.
 
+pub mod ab_testing;
 pub mod alerting;
 pub mod analytics;
 pub mod config;
