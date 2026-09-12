@@ -1,18 +1,20 @@
-FROM python:3.12-slim
+FROM rust:1.82-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
+COPY Cargo.toml Cargo.lock* ./
+COPY src/ src/
+
+RUN cargo build --release
+
+FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx libglib2.0-0 && \
+    ca-certificates libssl3 && \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=builder /build/target/release/yp-ml-training /usr/local/bin/
+COPY configs/ /app/configs/
 
-COPY configs/ configs/
-COPY scripts/ scripts/
-
-WORKDIR /app/scripts
-
-ENTRYPOINT ["python", "run_pipeline.py"]
-CMD ["--tasks", "all", "--config", "../configs/training_config.yaml"]
+WORKDIR /app
+ENTRYPOINT ["yp-ml-training"]
+CMD ["pipeline", "--tasks", "all", "--config", "configs/training_config.toml"]
