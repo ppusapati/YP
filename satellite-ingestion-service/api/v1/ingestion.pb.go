@@ -29,6 +29,7 @@ const (
 	SatelliteProvider_SATELLITE_PROVIDER_SENTINEL2   SatelliteProvider = 1
 	SatelliteProvider_SATELLITE_PROVIDER_LANDSAT     SatelliteProvider = 2
 	SatelliteProvider_SATELLITE_PROVIDER_PLANETSCOPE SatelliteProvider = 3
+	SatelliteProvider_SATELLITE_PROVIDER_UAV         SatelliteProvider = 4 // drone orthomosaics
 )
 
 // Enum value maps for SatelliteProvider.
@@ -38,12 +39,14 @@ var (
 		1: "SATELLITE_PROVIDER_SENTINEL2",
 		2: "SATELLITE_PROVIDER_LANDSAT",
 		3: "SATELLITE_PROVIDER_PLANETSCOPE",
+		4: "SATELLITE_PROVIDER_UAV",
 	}
 	SatelliteProvider_value = map[string]int32{
 		"SATELLITE_PROVIDER_UNSPECIFIED": 0,
 		"SATELLITE_PROVIDER_SENTINEL2":   1,
 		"SATELLITE_PROVIDER_LANDSAT":     2,
 		"SATELLITE_PROVIDER_PLANETSCOPE": 3,
+		"SATELLITE_PROVIDER_UAV":         4,
 	}
 )
 
@@ -224,6 +227,7 @@ type IngestionTask struct {
 	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt         *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	CompletedAt       *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	ProcessingLevel   string                 `protobuf:"bytes,21,opt,name=processing_level,json=processingLevel,proto3" json:"processing_level,omitempty"` // L1C, L2A, L1TP, L2SP, SR, TOA, UNKNOWN
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -398,16 +402,24 @@ func (x *IngestionTask) GetCompletedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *IngestionTask) GetProcessingLevel() string {
+	if x != nil {
+		return x.ProcessingLevel
+	}
+	return ""
+}
+
 type RequestIngestionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FarmId        string                 `protobuf:"bytes,1,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
-	Provider      SatelliteProvider      `protobuf:"varint,2,opt,name=provider,proto3,enum=agriculture.satellite.ingestion.v1.SatelliteProvider" json:"provider,omitempty"`
-	DateFrom      *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_from,json=dateFrom,proto3" json:"date_from,omitempty"`
-	DateTo        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_to,json=dateTo,proto3" json:"date_to,omitempty"`
-	MaxCloudCover float64                `protobuf:"fixed64,5,opt,name=max_cloud_cover,json=maxCloudCover,proto3" json:"max_cloud_cover,omitempty"`
-	Bands         []SpectralBand         `protobuf:"varint,6,rep,packed,name=bands,proto3,enum=agriculture.satellite.ingestion.v1.SpectralBand" json:"bands,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	FarmId          string                 `protobuf:"bytes,1,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
+	Provider        SatelliteProvider      `protobuf:"varint,2,opt,name=provider,proto3,enum=agriculture.satellite.ingestion.v1.SatelliteProvider" json:"provider,omitempty"`
+	DateFrom        *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_from,json=dateFrom,proto3" json:"date_from,omitempty"`
+	DateTo          *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_to,json=dateTo,proto3" json:"date_to,omitempty"`
+	MaxCloudCover   float64                `protobuf:"fixed64,5,opt,name=max_cloud_cover,json=maxCloudCover,proto3" json:"max_cloud_cover,omitempty"`
+	Bands           []SpectralBand         `protobuf:"varint,6,rep,packed,name=bands,proto3,enum=agriculture.satellite.ingestion.v1.SpectralBand" json:"bands,omitempty"`
+	ProcessingLevel string                 `protobuf:"bytes,7,opt,name=processing_level,json=processingLevel,proto3" json:"processing_level,omitempty"` // requested product level; defaults to UNKNOWN
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *RequestIngestionRequest) Reset() {
@@ -480,6 +492,13 @@ func (x *RequestIngestionRequest) GetBands() []SpectralBand {
 		return x.Bands
 	}
 	return nil
+}
+
+func (x *RequestIngestionRequest) GetProcessingLevel() string {
+	if x != nil {
+		return x.ProcessingLevel
+	}
+	return ""
 }
 
 type RequestIngestionResponse struct {
@@ -1058,7 +1077,7 @@ var File_ingestion_proto protoreflect.FileDescriptor
 
 const file_ingestion_proto_rawDesc = "" +
 	"\n" +
-	"\x0fingestion.proto\x12\"agriculture.satellite.ingestion.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9f\a\n" +
+	"\x0fingestion.proto\x12\"agriculture.satellite.ingestion.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xca\a\n" +
 	"\rIngestionTask\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
@@ -1083,14 +1102,16 @@ const file_ingestion_proto_rawDesc = "" +
 	"created_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12=\n" +
-	"\fcompleted_at\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xe3\x02\n" +
+	"\fcompleted_at\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12)\n" +
+	"\x10processing_level\x18\x15 \x01(\tR\x0fprocessingLevel\"\x8e\x03\n" +
 	"\x17RequestIngestionRequest\x12\x17\n" +
 	"\afarm_id\x18\x01 \x01(\tR\x06farmId\x12Q\n" +
 	"\bprovider\x18\x02 \x01(\x0e25.agriculture.satellite.ingestion.v1.SatelliteProviderR\bprovider\x127\n" +
 	"\tdate_from\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bdateFrom\x123\n" +
 	"\adate_to\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x06dateTo\x12&\n" +
 	"\x0fmax_cloud_cover\x18\x05 \x01(\x01R\rmaxCloudCover\x12F\n" +
-	"\x05bands\x18\x06 \x03(\x0e20.agriculture.satellite.ingestion.v1.SpectralBandR\x05bands\"a\n" +
+	"\x05bands\x18\x06 \x03(\x0e20.agriculture.satellite.ingestion.v1.SpectralBandR\x05bands\x12)\n" +
+	"\x10processing_level\x18\a \x01(\tR\x0fprocessingLevel\"a\n" +
 	"\x18RequestIngestionResponse\x12E\n" +
 	"\x04task\x18\x01 \x01(\v21.agriculture.satellite.ingestion.v1.IngestionTaskR\x04task\")\n" +
 	"\x17GetIngestionTaskRequest\x12\x0e\n" +
@@ -1126,12 +1147,13 @@ const file_ingestion_proto_rawDesc = "" +
 	"\x0fcompleted_tasks\x18\x02 \x01(\x03R\x0ecompletedTasks\x12!\n" +
 	"\ffailed_tasks\x18\x03 \x01(\x03R\vfailedTasks\x12#\n" +
 	"\rpending_tasks\x18\x04 \x01(\x03R\fpendingTasks\x12,\n" +
-	"\x12total_bytes_stored\x18\x05 \x01(\x03R\x10totalBytesStored*\x9d\x01\n" +
+	"\x12total_bytes_stored\x18\x05 \x01(\x03R\x10totalBytesStored*\xb9\x01\n" +
 	"\x11SatelliteProvider\x12\"\n" +
 	"\x1eSATELLITE_PROVIDER_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cSATELLITE_PROVIDER_SENTINEL2\x10\x01\x12\x1e\n" +
 	"\x1aSATELLITE_PROVIDER_LANDSAT\x10\x02\x12\"\n" +
-	"\x1eSATELLITE_PROVIDER_PLANETSCOPE\x10\x03*\xcd\x01\n" +
+	"\x1eSATELLITE_PROVIDER_PLANETSCOPE\x10\x03\x12\x1a\n" +
+	"\x16SATELLITE_PROVIDER_UAV\x10\x04*\xcd\x01\n" +
 	"\x0fIngestionStatus\x12 \n" +
 	"\x1cINGESTION_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17INGESTION_STATUS_QUEUED\x10\x01\x12 \n" +

@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	serviceName       = "satellite-ingestion-service"
-	maxPageSize int32 = 100
-	defaultPageSize   = 20
-	maxRetryCount     = 3
+	serviceName           = "satellite-ingestion-service"
+	maxPageSize     int32 = 100
+	defaultPageSize       = 20
+	maxRetryCount         = 3
 )
 
 // Ingestion event types
@@ -79,6 +79,12 @@ func (s *ingestionService) RequestIngestion(ctx context.Context, task *ingestion
 	}
 	if task.CloudCoverPercent < 0 || task.CloudCoverPercent > 100 {
 		return nil, errors.BadRequest("INVALID_CLOUD_COVER", "cloud cover percentage must be between 0 and 100")
+	}
+	if task.ProcessingLevel == "" {
+		task.ProcessingLevel = ingestionmodels.ProcessingLevelUnknown
+	}
+	if !task.ProcessingLevel.IsValid() {
+		return nil, errors.BadRequest("INVALID_PROCESSING_LEVEL", "processing level must be one of L1C, L2A, L1TP, L2SP, SR, TOA, UNKNOWN")
 	}
 
 	// Generate a scene ID based on provider and timestamp if not provided

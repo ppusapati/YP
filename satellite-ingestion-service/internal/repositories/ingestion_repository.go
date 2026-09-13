@@ -95,14 +95,14 @@ func (r *ingestionRepository) CreateIngestionTask(ctx context.Context, task *ing
 			cloud_cover_percent, resolution_meters, bands,
 			bbox, file_size_bytes, checksum_sha256, error_message,
 			retry_count, acquisition_date, is_active, version,
-			created_by, created_at
+			created_by, created_at, processing_level
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, 'QUEUED', $7, $8,
 			$9, $10, $11,
 			ST_GeomFromGeoJSON($12), $13, $14, $15,
 			0, $16, TRUE, 1,
-			$17, NOW()
+			$17, NOW(), $18
 		)
 		RETURNING id, uuid, tenant_id, farm_id, farm_uuid, provider,
 			scene_id, status, s3_bucket, s3_key,
@@ -110,13 +110,13 @@ func (r *ingestionRepository) CreateIngestionTask(ctx context.Context, task *ing
 			file_size_bytes, checksum_sha256, error_message,
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
-			updated_by, updated_at, deleted_by, deleted_at`,
+			updated_by, updated_at, deleted_by, deleted_at, processing_level`,
 		task.ID, task.TenantID, task.FarmID, task.FarmUUID, task.Provider,
 		task.SceneID, task.S3Bucket, task.S3Key,
 		task.CloudCoverPercent, task.ResolutionMeters, pq.Array(task.Bands),
 		task.BboxGeoJSON, task.FileSizeBytes, task.ChecksumSHA256, task.ErrorMessage,
 		task.AcquisitionDate,
-		task.CreatedBy,
+		task.CreatedBy, string(task.ProcessingLevel),
 	)
 
 	result := &ingestionmodels.IngestionTask{}
@@ -137,7 +137,7 @@ func (r *ingestionRepository) GetIngestionTaskByUUID(ctx context.Context, uuid, 
 			file_size_bytes, checksum_sha256, error_message,
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
-			updated_by, updated_at, deleted_by, deleted_at
+			updated_by, updated_at, deleted_by, deleted_at, processing_level
 		FROM ingestion_tasks
 		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, tenantID,
@@ -184,7 +184,7 @@ func (r *ingestionRepository) ListIngestionTasks(ctx context.Context, params ing
 			file_size_bytes, checksum_sha256, error_message,
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
-			updated_by, updated_at, deleted_by, deleted_at
+			updated_by, updated_at, deleted_by, deleted_at, processing_level
 		FROM ingestion_tasks
 		WHERE tenant_id = $1
 			AND is_active = TRUE
@@ -245,7 +245,7 @@ func (r *ingestionRepository) UpdateIngestionStatus(ctx context.Context, task *i
 			file_size_bytes, checksum_sha256, error_message,
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
-			updated_by, updated_at, deleted_by, deleted_at`,
+			updated_by, updated_at, deleted_by, deleted_at, processing_level`,
 		task.ID, task.TenantID, task.Status,
 		task.S3Bucket, task.S3Key,
 		nilIfZeroInt64(task.FileSizeBytes), task.ChecksumSHA256,
@@ -284,7 +284,7 @@ func (r *ingestionRepository) CancelIngestionTask(ctx context.Context, uuid, ten
 			file_size_bytes, checksum_sha256, error_message,
 			retry_count, acquisition_date, completed_at,
 			is_active, version, created_by, created_at,
-			updated_by, updated_at, deleted_by, deleted_at`,
+			updated_by, updated_at, deleted_by, deleted_at, processing_level`,
 		uuid, tenantID, cancelledBy,
 	)
 
@@ -346,6 +346,7 @@ func scanIngestionTask(row pgx.Row, t *ingestionmodels.IngestionTask) error {
 		&t.RetryCount, &t.AcquisitionDate, &t.CompletedAt,
 		&t.IsActive, &t.Version, &t.CreatedBy, &t.CreatedAt,
 		&t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
+		&t.ProcessingLevel,
 	)
 }
 
@@ -358,6 +359,7 @@ func scanIngestionTaskFromRows(rows pgx.Rows, t *ingestionmodels.IngestionTask) 
 		&t.RetryCount, &t.AcquisitionDate, &t.CompletedAt,
 		&t.IsActive, &t.Version, &t.CreatedBy, &t.CreatedAt,
 		&t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
+		&t.ProcessingLevel,
 	)
 }
 

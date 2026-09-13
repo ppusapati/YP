@@ -66,7 +66,7 @@ func TestLinearRegression(t *testing.T) {
 	t.Run("perfect positive slope", func(t *testing.T) {
 		xs := []float64{1, 2, 3, 4, 5}
 		ys := []float64{2, 4, 6, 8, 10}
-		slope, intercept, rSquared := linearRegression(xs, ys)
+		slope, intercept, rSquared := LinearRegression(xs, ys)
 
 		if math.Abs(slope-2.0) > 0.001 {
 			t.Errorf("slope = %f, want 2.0", slope)
@@ -82,7 +82,7 @@ func TestLinearRegression(t *testing.T) {
 	t.Run("negative slope", func(t *testing.T) {
 		xs := []float64{1, 2, 3, 4, 5}
 		ys := []float64{10, 8, 6, 4, 2}
-		slope, _, rSquared := linearRegression(xs, ys)
+		slope, _, rSquared := LinearRegression(xs, ys)
 
 		if math.Abs(slope-(-2.0)) > 0.001 {
 			t.Errorf("slope = %f, want -2.0", slope)
@@ -95,7 +95,7 @@ func TestLinearRegression(t *testing.T) {
 	t.Run("flat line", func(t *testing.T) {
 		xs := []float64{1, 2, 3, 4, 5}
 		ys := []float64{5, 5, 5, 5, 5}
-		slope, intercept, _ := linearRegression(xs, ys)
+		slope, intercept, _ := LinearRegression(xs, ys)
 
 		if math.Abs(slope) > 0.001 {
 			t.Errorf("slope = %f, want 0.0", slope)
@@ -108,7 +108,7 @@ func TestLinearRegression(t *testing.T) {
 	t.Run("single point", func(t *testing.T) {
 		xs := []float64{1}
 		ys := []float64{5}
-		slope, _, rSquared := linearRegression(xs, ys)
+		slope, _, rSquared := LinearRegression(xs, ys)
 
 		if slope != 0 {
 			t.Errorf("slope = %f, want 0", slope)
@@ -119,7 +119,7 @@ func TestLinearRegression(t *testing.T) {
 	})
 
 	t.Run("empty data", func(t *testing.T) {
-		slope, intercept, rSquared := linearRegression(nil, nil)
+		slope, intercept, rSquared := LinearRegression(nil, nil)
 		if slope != 0 || intercept != 0 || rSquared != 0 {
 			t.Error("expected all zeros for empty data")
 		}
@@ -128,7 +128,7 @@ func TestLinearRegression(t *testing.T) {
 	t.Run("noisy data", func(t *testing.T) {
 		xs := []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		ys := []float64{2.1, 3.9, 6.2, 7.8, 10.1, 12.3, 13.8, 16.2, 17.9, 20.1}
-		slope, _, rSquared := linearRegression(xs, ys)
+		slope, _, rSquared := LinearRegression(xs, ys)
 
 		if slope < 1.5 || slope > 2.5 {
 			t.Errorf("slope = %f, expected ~2.0", slope)

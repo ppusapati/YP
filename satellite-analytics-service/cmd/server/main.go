@@ -16,8 +16,9 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
-	connectserver "p9e.in/samavaya/packages/connect/server"
+	connectclient "p9e.in/samavaya/packages/connect/client"
 	"p9e.in/samavaya/packages/connect/interceptors"
+	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/middleware"
@@ -26,6 +27,7 @@ import (
 
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/ai"
+	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/clients"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/handlers"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/repositories"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/services"
@@ -95,8 +97,13 @@ func main() {
 		Log:  logger,
 	}
 
+	vegURL := envOr("VEGETATION_INDEX_SERVICE_URL", "http://localhost:8105")
+	vegClient := clients.NewVegetationIndexClient(vegURL,
+		connectclient.NewHTTPClient(connectclient.DefaultConfig(vegURL)),
+		connect.WithInterceptors(connectclient.ContextPropagator()))
+
 	repo := repositories.NewAnalyticsRepository(d)
-	svc := services.NewAnalyticsService(d, repo, aiClient)
+	svc := services.NewAnalyticsService(d, repo, aiClient, vegClient)
 	handler := handlers.NewAnalyticsHandler(d, svc)
 
 	mwCfg := connectserver.MiddlewareConfig{

@@ -292,14 +292,16 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** Indices NDVI/NDWI/EVI/SAVI/MSAVI/GNDVI are computed. NDRE and LAI are declared in `vegetation-index-service/internal/models/vegetation_index.go` but never computed. Cloud handling is a scene-level `cloud_cover_percent` filter only. Change detection and trend analysis in `satellite-analytics-service/internal/services/analytics_service.go` return hardcoded slope/R².
 
 **Enhancements:**
-- [ ] Implement NDRE and LAI computation in `rust-engines/satellite-ndvi-engine`
-- [ ] Add per-pixel cloud and shadow masking using Sentinel-2 SCL band and Landsat QA_PIXEL
-- [ ] Add atmospheric correction handling (prefer L2A/Collection 2 Level-2 products; flag L1C scenes)
-- [ ] Implement temporal gap-filling and cross-sensor harmonization (Sentinel-2 to Landsat)
-- [ ] Replace stubbed change detection with real before/after differencing and z-score anomaly flags
-- [ ] Replace stubbed trend analysis with the `packages/pipeline` linear regression over the index time series
-- [ ] Add field-level phenology extraction (green-up, peak, senescence dates) from NDVI curves
-- [ ] Ingest drone/UAV orthomosaics through the same pipeline with a `source=uav` discriminator
+- [x] Implement NDRE and LAI computation in `rust-engines/satellite-ndvi-engine` (NDRE wired into `compute_all_indices`; LAI via SAVI-based Clevers model in `lai.rs`)
+- [x] Add per-pixel cloud and shadow masking using Sentinel-2 SCL band and Landsat QA_PIXEL (`cloudmask.rs`, applied in the AI gateway `ComputeNDVI` when QA bands are supplied)
+- [x] Add atmospheric correction handling (prefer L2A/Collection 2 Level-2 products; flag L1C scenes) — `ProcessingLevel` in engine + gateway advisory, `processing_level` on ingestion tasks
+- [x] Implement temporal gap-filling and cross-sensor harmonization (Sentinel-2 to Landsat) — Roy et al. OLI→MSI coefficients in engine and `satellite-analytics-service/internal/timeseries`
+- [x] Replace stubbed change detection with real before/after differencing and z-score anomaly flags
+- [x] Replace stubbed trend analysis with the `packages/pipeline` linear regression over the index time series (fetched live from vegetation-index-service)
+- [x] Add field-level phenology extraction (green-up, peak, senescence dates) from NDVI curves (`ANALYSIS_TYPE_PHENOLOGY`)
+- [x] Ingest drone/UAV orthomosaics through the same pipeline with a `source=uav` discriminator (`SATELLITE_PROVIDER_UAV`)
+- [ ] Attach SCL / QA_PIXEL bands during ingestion so masking is automatic rather than caller-supplied
+- [ ] Persist per-scene `cloud_fraction` / `valid_pixel_fraction` on vegetation-index results and drop scenes below a usable threshold
 
 **Effort:** Large | **Impact:** High
 

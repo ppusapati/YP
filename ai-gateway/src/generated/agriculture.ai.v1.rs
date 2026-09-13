@@ -327,6 +327,25 @@ pub struct RasterBands {
     pub width: i32,
     #[prost(int32, tag = "7")]
     pub height: i32,
+    /// Optional per-pixel QA layers used for cloud/shadow/snow masking.
+    ///
+    /// Sentinel-2 L2A Scene Classification (codes 0..11)
+    #[prost(double, repeated, tag = "8")]
+    pub scl_band: ::prost::alloc::vec::Vec<f64>,
+    /// Landsat Collection 2 QA_PIXEL bit mask
+    #[prost(double, repeated, tag = "9")]
+    pub qa_pixel_band: ::prost::alloc::vec::Vec<f64>,
+    /// Product metadata used for processing-level checks and cross-sensor harmonization.
+    ///
+    /// e.g. "L2A", "L1C", "L2SP", "L1TP"
+    #[prost(string, tag = "10")]
+    pub processing_level: ::prost::alloc::string::String,
+    /// e.g. "SENTINEL2", "LANDSAT8", "PLANETSCOPE", "UAV"
+    #[prost(string, tag = "11")]
+    pub sensor: ::prost::alloc::string::String,
+    /// dilate masked regions by N pixels (default 1)
+    #[prost(int32, tag = "12")]
+    pub cloud_buffer_pixels: i32,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct BoundingBox {
@@ -358,6 +377,29 @@ pub struct ComputeNdviResponse {
     pub model_version: ::prost::alloc::string::String,
     #[prost(int64, tag = "8")]
     pub processing_time_ms: i64,
+    /// Quality metadata (populated when QA layers / product metadata are supplied).
+    ///
+    /// true when a per-pixel mask was applied
+    #[prost(bool, tag = "9")]
+    pub cloud_masked: bool,
+    /// fraction of pixels flagged as cloud/cirrus
+    #[prost(double, tag = "10")]
+    pub cloud_fraction: f64,
+    /// fraction of pixels usable after masking
+    #[prost(double, tag = "11")]
+    pub valid_pixel_fraction: f64,
+    /// normalized level label
+    #[prost(string, tag = "12")]
+    pub processing_level: ::prost::alloc::string::String,
+    /// non-empty when the product is not surface reflectance
+    #[prost(string, tag = "13")]
+    pub processing_advisory: ::prost::alloc::string::String,
+    /// normalized sensor label
+    #[prost(string, tag = "14")]
+    pub sensor: ::prost::alloc::string::String,
+    /// true when NDVI was mapped onto the Sentinel-2 scale
+    #[prost(bool, tag = "15")]
+    pub harmonized: bool,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct BandStatistics {

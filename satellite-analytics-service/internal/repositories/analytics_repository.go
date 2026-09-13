@@ -325,21 +325,21 @@ func (r *analyticsRepository) CreateTemporalAnalysis(ctx context.Context, analys
 			uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at
+			is_active, created_by, created_at, details
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9,
 			$10, $11, $12, $13,
-			TRUE, $14, NOW()
+			TRUE, $14, NOW(), $15
 		)
 		RETURNING id, uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
+			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at, details`,
 		analysis.ID, analysis.TenantID, analysis.FarmID, analysis.FieldID, analysis.AnalysisType,
 		analysis.MetricName, analysis.TrendSlope, analysis.TrendRSquared, analysis.CurrentValue,
 		analysis.BaselineValue, analysis.DeviationPercent, analysis.PeriodStart, analysis.PeriodEnd,
-		analysis.CreatedBy,
+		analysis.CreatedBy, detailsOrEmpty(analysis.Details),
 	)
 
 	result := &analyticsmodels.TemporalAnalysis{}
@@ -357,7 +357,7 @@ func (r *analyticsRepository) GetTemporalAnalysisByUUID(ctx context.Context, uui
 		SELECT id, uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at
+			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at, details
 		FROM temporal_analyses
 		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, tenantID,
@@ -380,7 +380,7 @@ func (r *analyticsRepository) GetLatestTemporalAnalysis(ctx context.Context, ten
 		SELECT id, uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at
+			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at, details
 		FROM temporal_analyses
 		WHERE tenant_id = $1 AND farm_id = $2 AND field_id = $3
 			AND is_active = TRUE AND deleted_at IS NULL
@@ -429,7 +429,15 @@ func scanTemporalAnalysis(row pgx.Row, t *analyticsmodels.TemporalAnalysis) erro
 		&t.MetricName, &t.TrendSlope, &t.TrendRSquared, &t.CurrentValue,
 		&t.BaselineValue, &t.DeviationPercent, &t.PeriodStart, &t.PeriodEnd,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
+		&t.Details,
 	)
+}
+
+func detailsOrEmpty(d map[string]interface{}) map[string]interface{} {
+	if d == nil {
+		return map[string]interface{}{}
+	}
+	return d
 }
 
 func scanTemporalAnalysisFromRows(rows pgx.Rows, t *analyticsmodels.TemporalAnalysis) error {
@@ -438,6 +446,7 @@ func scanTemporalAnalysisFromRows(rows pgx.Rows, t *analyticsmodels.TemporalAnal
 		&t.MetricName, &t.TrendSlope, &t.TrendRSquared, &t.CurrentValue,
 		&t.BaselineValue, &t.DeviationPercent, &t.PeriodStart, &t.PeriodEnd,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
+		&t.Details,
 	)
 }
 

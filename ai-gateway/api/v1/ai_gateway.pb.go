@@ -1750,16 +1750,23 @@ func (x *ComputeNDVIRequest) GetClipBounds() *BoundingBox {
 }
 
 type RasterBands struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NirBand       []float64              `protobuf:"fixed64,1,rep,packed,name=nir_band,json=nirBand,proto3" json:"nir_band,omitempty"` // NIR values (row-major flat array)
-	RedBand       []float64              `protobuf:"fixed64,2,rep,packed,name=red_band,json=redBand,proto3" json:"red_band,omitempty"` // RED values
-	GreenBand     []float64              `protobuf:"fixed64,3,rep,packed,name=green_band,json=greenBand,proto3" json:"green_band,omitempty"`
-	BlueBand      []float64              `protobuf:"fixed64,4,rep,packed,name=blue_band,json=blueBand,proto3" json:"blue_band,omitempty"`
-	RedEdgeBand   []float64              `protobuf:"fixed64,5,rep,packed,name=red_edge_band,json=redEdgeBand,proto3" json:"red_edge_band,omitempty"`
-	Width         int32                  `protobuf:"varint,6,opt,name=width,proto3" json:"width,omitempty"`
-	Height        int32                  `protobuf:"varint,7,opt,name=height,proto3" json:"height,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	NirBand     []float64              `protobuf:"fixed64,1,rep,packed,name=nir_band,json=nirBand,proto3" json:"nir_band,omitempty"` // NIR values (row-major flat array)
+	RedBand     []float64              `protobuf:"fixed64,2,rep,packed,name=red_band,json=redBand,proto3" json:"red_band,omitempty"` // RED values
+	GreenBand   []float64              `protobuf:"fixed64,3,rep,packed,name=green_band,json=greenBand,proto3" json:"green_band,omitempty"`
+	BlueBand    []float64              `protobuf:"fixed64,4,rep,packed,name=blue_band,json=blueBand,proto3" json:"blue_band,omitempty"`
+	RedEdgeBand []float64              `protobuf:"fixed64,5,rep,packed,name=red_edge_band,json=redEdgeBand,proto3" json:"red_edge_band,omitempty"`
+	Width       int32                  `protobuf:"varint,6,opt,name=width,proto3" json:"width,omitempty"`
+	Height      int32                  `protobuf:"varint,7,opt,name=height,proto3" json:"height,omitempty"`
+	// Optional per-pixel QA layers used for cloud/shadow/snow masking.
+	SclBand     []float64 `protobuf:"fixed64,8,rep,packed,name=scl_band,json=sclBand,proto3" json:"scl_band,omitempty"`               // Sentinel-2 L2A Scene Classification (codes 0..11)
+	QaPixelBand []float64 `protobuf:"fixed64,9,rep,packed,name=qa_pixel_band,json=qaPixelBand,proto3" json:"qa_pixel_band,omitempty"` // Landsat Collection 2 QA_PIXEL bit mask
+	// Product metadata used for processing-level checks and cross-sensor harmonization.
+	ProcessingLevel   string `protobuf:"bytes,10,opt,name=processing_level,json=processingLevel,proto3" json:"processing_level,omitempty"`          // e.g. "L2A", "L1C", "L2SP", "L1TP"
+	Sensor            string `protobuf:"bytes,11,opt,name=sensor,proto3" json:"sensor,omitempty"`                                                   // e.g. "SENTINEL2", "LANDSAT8", "PLANETSCOPE", "UAV"
+	CloudBufferPixels int32  `protobuf:"varint,12,opt,name=cloud_buffer_pixels,json=cloudBufferPixels,proto3" json:"cloud_buffer_pixels,omitempty"` // dilate masked regions by N pixels (default 1)
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *RasterBands) Reset() {
@@ -1837,6 +1844,41 @@ func (x *RasterBands) GetWidth() int32 {
 func (x *RasterBands) GetHeight() int32 {
 	if x != nil {
 		return x.Height
+	}
+	return 0
+}
+
+func (x *RasterBands) GetSclBand() []float64 {
+	if x != nil {
+		return x.SclBand
+	}
+	return nil
+}
+
+func (x *RasterBands) GetQaPixelBand() []float64 {
+	if x != nil {
+		return x.QaPixelBand
+	}
+	return nil
+}
+
+func (x *RasterBands) GetProcessingLevel() string {
+	if x != nil {
+		return x.ProcessingLevel
+	}
+	return ""
+}
+
+func (x *RasterBands) GetSensor() string {
+	if x != nil {
+		return x.Sensor
+	}
+	return ""
+}
+
+func (x *RasterBands) GetCloudBufferPixels() int32 {
+	if x != nil {
+		return x.CloudBufferPixels
 	}
 	return 0
 }
@@ -1919,8 +1961,16 @@ type ComputeNDVIResponse struct {
 	Zones            []*NdviZone            `protobuf:"bytes,6,rep,name=zones,proto3" json:"zones,omitempty"`
 	ModelVersion     string                 `protobuf:"bytes,7,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	ProcessingTimeMs int64                  `protobuf:"varint,8,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Quality metadata (populated when QA layers / product metadata are supplied).
+	CloudMasked        bool    `protobuf:"varint,9,opt,name=cloud_masked,json=cloudMasked,proto3" json:"cloud_masked,omitempty"`                          // true when a per-pixel mask was applied
+	CloudFraction      float64 `protobuf:"fixed64,10,opt,name=cloud_fraction,json=cloudFraction,proto3" json:"cloud_fraction,omitempty"`                  // fraction of pixels flagged as cloud/cirrus
+	ValidPixelFraction float64 `protobuf:"fixed64,11,opt,name=valid_pixel_fraction,json=validPixelFraction,proto3" json:"valid_pixel_fraction,omitempty"` // fraction of pixels usable after masking
+	ProcessingLevel    string  `protobuf:"bytes,12,opt,name=processing_level,json=processingLevel,proto3" json:"processing_level,omitempty"`              // normalized level label
+	ProcessingAdvisory string  `protobuf:"bytes,13,opt,name=processing_advisory,json=processingAdvisory,proto3" json:"processing_advisory,omitempty"`     // non-empty when the product is not surface reflectance
+	Sensor             string  `protobuf:"bytes,14,opt,name=sensor,proto3" json:"sensor,omitempty"`                                                       // normalized sensor label
+	Harmonized         bool    `protobuf:"varint,15,opt,name=harmonized,proto3" json:"harmonized,omitempty"`                                              // true when NDVI was mapped onto the Sentinel-2 scale
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ComputeNDVIResponse) Reset() {
@@ -2007,6 +2057,55 @@ func (x *ComputeNDVIResponse) GetProcessingTimeMs() int64 {
 		return x.ProcessingTimeMs
 	}
 	return 0
+}
+
+func (x *ComputeNDVIResponse) GetCloudMasked() bool {
+	if x != nil {
+		return x.CloudMasked
+	}
+	return false
+}
+
+func (x *ComputeNDVIResponse) GetCloudFraction() float64 {
+	if x != nil {
+		return x.CloudFraction
+	}
+	return 0
+}
+
+func (x *ComputeNDVIResponse) GetValidPixelFraction() float64 {
+	if x != nil {
+		return x.ValidPixelFraction
+	}
+	return 0
+}
+
+func (x *ComputeNDVIResponse) GetProcessingLevel() string {
+	if x != nil {
+		return x.ProcessingLevel
+	}
+	return ""
+}
+
+func (x *ComputeNDVIResponse) GetProcessingAdvisory() string {
+	if x != nil {
+		return x.ProcessingAdvisory
+	}
+	return ""
+}
+
+func (x *ComputeNDVIResponse) GetSensor() string {
+	if x != nil {
+		return x.Sensor
+	}
+	return ""
+}
+
+func (x *ComputeNDVIResponse) GetHarmonized() bool {
+	if x != nil {
+		return x.Harmonized
+	}
+	return false
 }
 
 type BandStatistics struct {
@@ -4833,6 +4932,1271 @@ func (x *PrescriptionZoneSummary) GetTotalAmount() float64 {
 	return 0
 }
 
+type AnalyzeTerrainRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// DEM elevation data as a flat row-major array.
+	Elevation []float64 `protobuf:"fixed64,2,rep,packed,name=elevation,proto3" json:"elevation,omitempty"`
+	Width     int32     `protobuf:"varint,3,opt,name=width,proto3" json:"width,omitempty"`
+	Height    int32     `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
+	// Cell size in meters (square cells).
+	CellSize float64 `protobuf:"fixed64,5,opt,name=cell_size,json=cellSize,proto3" json:"cell_size,omitempty"`
+	// Nodata value (default -9999).
+	NodataValue float64 `protobuf:"fixed64,6,opt,name=nodata_value,json=nodataValue,proto3" json:"nodata_value,omitempty"`
+	// Which analyses to run: SLOPE, ASPECT, CONTOUR, FLOW_DIRECTION,
+	// FLOW_ACCUMULATION, WATERSHED, HILLSHADE, TRI, TPI, FULL.
+	Analyses []string `protobuf:"bytes,7,rep,name=analyses,proto3" json:"analyses,omitempty"`
+	// Contour interval in meters (used when CONTOUR or FULL is requested).
+	ContourInterval float64 `protobuf:"fixed64,8,opt,name=contour_interval,json=contourInterval,proto3" json:"contour_interval,omitempty"`
+	// Stream threshold for flow accumulation (used when FLOW_ACCUMULATION or FULL).
+	StreamThreshold float64 `protobuf:"fixed64,9,opt,name=stream_threshold,json=streamThreshold,proto3" json:"stream_threshold,omitempty"`
+	// Hillshade parameters (defaults: azimuth 315, altitude 45, z_factor 1).
+	HillshadeAzimuth  float64 `protobuf:"fixed64,10,opt,name=hillshade_azimuth,json=hillshadeAzimuth,proto3" json:"hillshade_azimuth,omitempty"`
+	HillshadeAltitude float64 `protobuf:"fixed64,11,opt,name=hillshade_altitude,json=hillshadeAltitude,proto3" json:"hillshade_altitude,omitempty"`
+	HillshadeZFactor  float64 `protobuf:"fixed64,12,opt,name=hillshade_z_factor,json=hillshadeZFactor,proto3" json:"hillshade_z_factor,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *AnalyzeTerrainRequest) Reset() {
+	*x = AnalyzeTerrainRequest{}
+	mi := &file_ai_gateway_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnalyzeTerrainRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnalyzeTerrainRequest) ProtoMessage() {}
+
+func (x *AnalyzeTerrainRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnalyzeTerrainRequest.ProtoReflect.Descriptor instead.
+func (*AnalyzeTerrainRequest) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *AnalyzeTerrainRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AnalyzeTerrainRequest) GetElevation() []float64 {
+	if x != nil {
+		return x.Elevation
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainRequest) GetWidth() int32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetHeight() int32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetCellSize() float64 {
+	if x != nil {
+		return x.CellSize
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetNodataValue() float64 {
+	if x != nil {
+		return x.NodataValue
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetAnalyses() []string {
+	if x != nil {
+		return x.Analyses
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainRequest) GetContourInterval() float64 {
+	if x != nil {
+		return x.ContourInterval
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetStreamThreshold() float64 {
+	if x != nil {
+		return x.StreamThreshold
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetHillshadeAzimuth() float64 {
+	if x != nil {
+		return x.HillshadeAzimuth
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetHillshadeAltitude() float64 {
+	if x != nil {
+		return x.HillshadeAltitude
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainRequest) GetHillshadeZFactor() float64 {
+	if x != nil {
+		return x.HillshadeZFactor
+	}
+	return 0
+}
+
+type AnalyzeTerrainResponse struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Width     int32                  `protobuf:"varint,2,opt,name=width,proto3" json:"width,omitempty"`
+	Height    int32                  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+	// Slope in degrees (row-major flat array).
+	Slope []float64 `protobuf:"fixed64,4,rep,packed,name=slope,proto3" json:"slope,omitempty"`
+	// Aspect in degrees clockwise from north.
+	Aspect []float64 `protobuf:"fixed64,5,rep,packed,name=aspect,proto3" json:"aspect,omitempty"`
+	// Hillshade values (0-255).
+	Hillshade []float64 `protobuf:"fixed64,6,rep,packed,name=hillshade,proto3" json:"hillshade,omitempty"`
+	// Terrain Ruggedness Index.
+	Tri []float64 `protobuf:"fixed64,7,rep,packed,name=tri,proto3" json:"tri,omitempty"`
+	// Topographic Position Index.
+	Tpi []float64 `protobuf:"fixed64,8,rep,packed,name=tpi,proto3" json:"tpi,omitempty"`
+	// D8 flow direction (encoded as u8, cast to int32).
+	FlowDirection []int32 `protobuf:"varint,9,rep,packed,name=flow_direction,json=flowDirection,proto3" json:"flow_direction,omitempty"`
+	// Flow accumulation values.
+	FlowAccumulation []float64 `protobuf:"fixed64,10,rep,packed,name=flow_accumulation,json=flowAccumulation,proto3" json:"flow_accumulation,omitempty"`
+	// Watershed IDs per cell.
+	WatershedIds []uint32 `protobuf:"varint,11,rep,packed,name=watershed_ids,json=watershedIds,proto3" json:"watershed_ids,omitempty"`
+	// Contour lines.
+	ContourLines []*TerrainContourLine `protobuf:"bytes,12,rep,name=contour_lines,json=contourLines,proto3" json:"contour_lines,omitempty"`
+	// DEM statistics.
+	DemStatistics *TerrainDemStatistics `protobuf:"bytes,13,opt,name=dem_statistics,json=demStatistics,proto3" json:"dem_statistics,omitempty"`
+	// Flow accumulation statistics.
+	FlowStatistics *TerrainFlowStats `protobuf:"bytes,14,opt,name=flow_statistics,json=flowStatistics,proto3" json:"flow_statistics,omitempty"`
+	// Per-watershed statistics.
+	WatershedStatistics []*TerrainWatershedInfo `protobuf:"bytes,15,rep,name=watershed_statistics,json=watershedStatistics,proto3" json:"watershed_statistics,omitempty"`
+	ProcessingTimeMs    int64                   `protobuf:"varint,16,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *AnalyzeTerrainResponse) Reset() {
+	*x = AnalyzeTerrainResponse{}
+	mi := &file_ai_gateway_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnalyzeTerrainResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnalyzeTerrainResponse) ProtoMessage() {}
+
+func (x *AnalyzeTerrainResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnalyzeTerrainResponse.ProtoReflect.Descriptor instead.
+func (*AnalyzeTerrainResponse) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *AnalyzeTerrainResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AnalyzeTerrainResponse) GetWidth() int32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainResponse) GetHeight() int32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *AnalyzeTerrainResponse) GetSlope() []float64 {
+	if x != nil {
+		return x.Slope
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetAspect() []float64 {
+	if x != nil {
+		return x.Aspect
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetHillshade() []float64 {
+	if x != nil {
+		return x.Hillshade
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetTri() []float64 {
+	if x != nil {
+		return x.Tri
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetTpi() []float64 {
+	if x != nil {
+		return x.Tpi
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetFlowDirection() []int32 {
+	if x != nil {
+		return x.FlowDirection
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetFlowAccumulation() []float64 {
+	if x != nil {
+		return x.FlowAccumulation
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetWatershedIds() []uint32 {
+	if x != nil {
+		return x.WatershedIds
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetContourLines() []*TerrainContourLine {
+	if x != nil {
+		return x.ContourLines
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetDemStatistics() *TerrainDemStatistics {
+	if x != nil {
+		return x.DemStatistics
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetFlowStatistics() *TerrainFlowStats {
+	if x != nil {
+		return x.FlowStatistics
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetWatershedStatistics() []*TerrainWatershedInfo {
+	if x != nil {
+		return x.WatershedStatistics
+	}
+	return nil
+}
+
+func (x *AnalyzeTerrainResponse) GetProcessingTimeMs() int64 {
+	if x != nil {
+		return x.ProcessingTimeMs
+	}
+	return 0
+}
+
+type TerrainContourLine struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Elevation float64                `protobuf:"fixed64,1,opt,name=elevation,proto3" json:"elevation,omitempty"`
+	// Interleaved x,y coordinates: [x0, y0, x1, y1, ...].
+	Coordinates   []float64 `protobuf:"fixed64,2,rep,packed,name=coordinates,proto3" json:"coordinates,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerrainContourLine) Reset() {
+	*x = TerrainContourLine{}
+	mi := &file_ai_gateway_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerrainContourLine) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerrainContourLine) ProtoMessage() {}
+
+func (x *TerrainContourLine) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerrainContourLine.ProtoReflect.Descriptor instead.
+func (*TerrainContourLine) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *TerrainContourLine) GetElevation() float64 {
+	if x != nil {
+		return x.Elevation
+	}
+	return 0
+}
+
+func (x *TerrainContourLine) GetCoordinates() []float64 {
+	if x != nil {
+		return x.Coordinates
+	}
+	return nil
+}
+
+type TerrainDemStatistics struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	MinElevation   float64                `protobuf:"fixed64,1,opt,name=min_elevation,json=minElevation,proto3" json:"min_elevation,omitempty"`
+	MaxElevation   float64                `protobuf:"fixed64,2,opt,name=max_elevation,json=maxElevation,proto3" json:"max_elevation,omitempty"`
+	MeanElevation  float64                `protobuf:"fixed64,3,opt,name=mean_elevation,json=meanElevation,proto3" json:"mean_elevation,omitempty"`
+	ElevationRange float64                `protobuf:"fixed64,4,opt,name=elevation_range,json=elevationRange,proto3" json:"elevation_range,omitempty"`
+	ValidCells     int64                  `protobuf:"varint,5,opt,name=valid_cells,json=validCells,proto3" json:"valid_cells,omitempty"`
+	TotalCells     int64                  `protobuf:"varint,6,opt,name=total_cells,json=totalCells,proto3" json:"total_cells,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TerrainDemStatistics) Reset() {
+	*x = TerrainDemStatistics{}
+	mi := &file_ai_gateway_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerrainDemStatistics) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerrainDemStatistics) ProtoMessage() {}
+
+func (x *TerrainDemStatistics) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerrainDemStatistics.ProtoReflect.Descriptor instead.
+func (*TerrainDemStatistics) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *TerrainDemStatistics) GetMinElevation() float64 {
+	if x != nil {
+		return x.MinElevation
+	}
+	return 0
+}
+
+func (x *TerrainDemStatistics) GetMaxElevation() float64 {
+	if x != nil {
+		return x.MaxElevation
+	}
+	return 0
+}
+
+func (x *TerrainDemStatistics) GetMeanElevation() float64 {
+	if x != nil {
+		return x.MeanElevation
+	}
+	return 0
+}
+
+func (x *TerrainDemStatistics) GetElevationRange() float64 {
+	if x != nil {
+		return x.ElevationRange
+	}
+	return 0
+}
+
+func (x *TerrainDemStatistics) GetValidCells() int64 {
+	if x != nil {
+		return x.ValidCells
+	}
+	return 0
+}
+
+func (x *TerrainDemStatistics) GetTotalCells() int64 {
+	if x != nil {
+		return x.TotalCells
+	}
+	return 0
+}
+
+type TerrainFlowStats struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	MaxAccumulation  float64                `protobuf:"fixed64,1,opt,name=max_accumulation,json=maxAccumulation,proto3" json:"max_accumulation,omitempty"`
+	MeanAccumulation float64                `protobuf:"fixed64,2,opt,name=mean_accumulation,json=meanAccumulation,proto3" json:"mean_accumulation,omitempty"`
+	StreamCellCount  int64                  `protobuf:"varint,3,opt,name=stream_cell_count,json=streamCellCount,proto3" json:"stream_cell_count,omitempty"`
+	TotalCells       int64                  `protobuf:"varint,4,opt,name=total_cells,json=totalCells,proto3" json:"total_cells,omitempty"`
+	DrainageDensity  float64                `protobuf:"fixed64,5,opt,name=drainage_density,json=drainageDensity,proto3" json:"drainage_density,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *TerrainFlowStats) Reset() {
+	*x = TerrainFlowStats{}
+	mi := &file_ai_gateway_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerrainFlowStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerrainFlowStats) ProtoMessage() {}
+
+func (x *TerrainFlowStats) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerrainFlowStats.ProtoReflect.Descriptor instead.
+func (*TerrainFlowStats) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *TerrainFlowStats) GetMaxAccumulation() float64 {
+	if x != nil {
+		return x.MaxAccumulation
+	}
+	return 0
+}
+
+func (x *TerrainFlowStats) GetMeanAccumulation() float64 {
+	if x != nil {
+		return x.MeanAccumulation
+	}
+	return 0
+}
+
+func (x *TerrainFlowStats) GetStreamCellCount() int64 {
+	if x != nil {
+		return x.StreamCellCount
+	}
+	return 0
+}
+
+func (x *TerrainFlowStats) GetTotalCells() int64 {
+	if x != nil {
+		return x.TotalCells
+	}
+	return 0
+}
+
+func (x *TerrainFlowStats) GetDrainageDensity() float64 {
+	if x != nil {
+		return x.DrainageDensity
+	}
+	return 0
+}
+
+type TerrainWatershedInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	CellCount     int64                  `protobuf:"varint,2,opt,name=cell_count,json=cellCount,proto3" json:"cell_count,omitempty"`
+	AreaSqM       float64                `protobuf:"fixed64,3,opt,name=area_sq_m,json=areaSqM,proto3" json:"area_sq_m,omitempty"`
+	MeanElevation float64                `protobuf:"fixed64,4,opt,name=mean_elevation,json=meanElevation,proto3" json:"mean_elevation,omitempty"`
+	MinElevation  float64                `protobuf:"fixed64,5,opt,name=min_elevation,json=minElevation,proto3" json:"min_elevation,omitempty"`
+	MaxElevation  float64                `protobuf:"fixed64,6,opt,name=max_elevation,json=maxElevation,proto3" json:"max_elevation,omitempty"`
+	Relief        float64                `protobuf:"fixed64,7,opt,name=relief,proto3" json:"relief,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerrainWatershedInfo) Reset() {
+	*x = TerrainWatershedInfo{}
+	mi := &file_ai_gateway_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerrainWatershedInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerrainWatershedInfo) ProtoMessage() {}
+
+func (x *TerrainWatershedInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerrainWatershedInfo.ProtoReflect.Descriptor instead.
+func (*TerrainWatershedInfo) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *TerrainWatershedInfo) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *TerrainWatershedInfo) GetCellCount() int64 {
+	if x != nil {
+		return x.CellCount
+	}
+	return 0
+}
+
+func (x *TerrainWatershedInfo) GetAreaSqM() float64 {
+	if x != nil {
+		return x.AreaSqM
+	}
+	return 0
+}
+
+func (x *TerrainWatershedInfo) GetMeanElevation() float64 {
+	if x != nil {
+		return x.MeanElevation
+	}
+	return 0
+}
+
+func (x *TerrainWatershedInfo) GetMinElevation() float64 {
+	if x != nil {
+		return x.MinElevation
+	}
+	return 0
+}
+
+func (x *TerrainWatershedInfo) GetMaxElevation() float64 {
+	if x != nil {
+		return x.MaxElevation
+	}
+	return 0
+}
+
+func (x *TerrainWatershedInfo) GetRelief() float64 {
+	if x != nil {
+		return x.Relief
+	}
+	return 0
+}
+
+type SimulateWaterFlowRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Soil moisture parameters.
+	MoistureParams *WaterFlowMoistureParams `protobuf:"bytes,2,opt,name=moisture_params,json=moistureParams,proto3" json:"moisture_params,omitempty"`
+	// Water balance parameters.
+	BalanceParams *WaterFlowBalanceParams `protobuf:"bytes,3,opt,name=balance_params,json=balanceParams,proto3" json:"balance_params,omitempty"`
+	// Simulation inputs.
+	RainfallMmDay   float64 `protobuf:"fixed64,4,opt,name=rainfall_mm_day,json=rainfallMmDay,proto3" json:"rainfall_mm_day,omitempty"`
+	EtMmDay         float64 `protobuf:"fixed64,5,opt,name=et_mm_day,json=etMmDay,proto3" json:"et_mm_day,omitempty"`
+	IrrigationMmDay float64 `protobuf:"fixed64,6,opt,name=irrigation_mm_day,json=irrigationMmDay,proto3" json:"irrigation_mm_day,omitempty"`
+	SimulationDays  float64 `protobuf:"fixed64,7,opt,name=simulation_days,json=simulationDays,proto3" json:"simulation_days,omitempty"`
+	// Daily rainfall series (used for water balance computation; overrides
+	// rainfall_mm_day when non-empty).
+	DailyRainfallMm []float64 `protobuf:"fixed64,8,rep,packed,name=daily_rainfall_mm,json=dailyRainfallMm,proto3" json:"daily_rainfall_mm,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SimulateWaterFlowRequest) Reset() {
+	*x = SimulateWaterFlowRequest{}
+	mi := &file_ai_gateway_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SimulateWaterFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateWaterFlowRequest) ProtoMessage() {}
+
+func (x *SimulateWaterFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateWaterFlowRequest.ProtoReflect.Descriptor instead.
+func (*SimulateWaterFlowRequest) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *SimulateWaterFlowRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SimulateWaterFlowRequest) GetMoistureParams() *WaterFlowMoistureParams {
+	if x != nil {
+		return x.MoistureParams
+	}
+	return nil
+}
+
+func (x *SimulateWaterFlowRequest) GetBalanceParams() *WaterFlowBalanceParams {
+	if x != nil {
+		return x.BalanceParams
+	}
+	return nil
+}
+
+func (x *SimulateWaterFlowRequest) GetRainfallMmDay() float64 {
+	if x != nil {
+		return x.RainfallMmDay
+	}
+	return 0
+}
+
+func (x *SimulateWaterFlowRequest) GetEtMmDay() float64 {
+	if x != nil {
+		return x.EtMmDay
+	}
+	return 0
+}
+
+func (x *SimulateWaterFlowRequest) GetIrrigationMmDay() float64 {
+	if x != nil {
+		return x.IrrigationMmDay
+	}
+	return 0
+}
+
+func (x *SimulateWaterFlowRequest) GetSimulationDays() float64 {
+	if x != nil {
+		return x.SimulationDays
+	}
+	return 0
+}
+
+func (x *SimulateWaterFlowRequest) GetDailyRainfallMm() []float64 {
+	if x != nil {
+		return x.DailyRainfallMm
+	}
+	return nil
+}
+
+type WaterFlowMoistureParams struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	NumLayers       int32                  `protobuf:"varint,1,opt,name=num_layers,json=numLayers,proto3" json:"num_layers,omitempty"`
+	LayerThicknessM float64                `protobuf:"fixed64,2,opt,name=layer_thickness_m,json=layerThicknessM,proto3" json:"layer_thickness_m,omitempty"`
+	KSatMDay        float64                `protobuf:"fixed64,3,opt,name=k_sat_m_day,json=kSatMDay,proto3" json:"k_sat_m_day,omitempty"`
+	FieldCapacity   float64                `protobuf:"fixed64,4,opt,name=field_capacity,json=fieldCapacity,proto3" json:"field_capacity,omitempty"`
+	WiltingPoint    float64                `protobuf:"fixed64,5,opt,name=wilting_point,json=wiltingPoint,proto3" json:"wilting_point,omitempty"`
+	Saturation      float64                `protobuf:"fixed64,6,opt,name=saturation,proto3" json:"saturation,omitempty"`
+	RootZoneDepthM  float64                `protobuf:"fixed64,7,opt,name=root_zone_depth_m,json=rootZoneDepthM,proto3" json:"root_zone_depth_m,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *WaterFlowMoistureParams) Reset() {
+	*x = WaterFlowMoistureParams{}
+	mi := &file_ai_gateway_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WaterFlowMoistureParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WaterFlowMoistureParams) ProtoMessage() {}
+
+func (x *WaterFlowMoistureParams) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WaterFlowMoistureParams.ProtoReflect.Descriptor instead.
+func (*WaterFlowMoistureParams) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *WaterFlowMoistureParams) GetNumLayers() int32 {
+	if x != nil {
+		return x.NumLayers
+	}
+	return 0
+}
+
+func (x *WaterFlowMoistureParams) GetLayerThicknessM() float64 {
+	if x != nil {
+		return x.LayerThicknessM
+	}
+	return 0
+}
+
+func (x *WaterFlowMoistureParams) GetKSatMDay() float64 {
+	if x != nil {
+		return x.KSatMDay
+	}
+	return 0
+}
+
+func (x *WaterFlowMoistureParams) GetFieldCapacity() float64 {
+	if x != nil {
+		return x.FieldCapacity
+	}
+	return 0
+}
+
+func (x *WaterFlowMoistureParams) GetWiltingPoint() float64 {
+	if x != nil {
+		return x.WiltingPoint
+	}
+	return 0
+}
+
+func (x *WaterFlowMoistureParams) GetSaturation() float64 {
+	if x != nil {
+		return x.Saturation
+	}
+	return 0
+}
+
+func (x *WaterFlowMoistureParams) GetRootZoneDepthM() float64 {
+	if x != nil {
+		return x.RootZoneDepthM
+	}
+	return 0
+}
+
+type WaterFlowBalanceParams struct {
+	state                      protoimpl.MessageState `protogen:"open.v1"`
+	FieldAreaHa                float64                `protobuf:"fixed64,1,opt,name=field_area_ha,json=fieldAreaHa,proto3" json:"field_area_ha,omitempty"`
+	CropCoefficient            float64                `protobuf:"fixed64,2,opt,name=crop_coefficient,json=cropCoefficient,proto3" json:"crop_coefficient,omitempty"`
+	ReferenceEtMmDay           float64                `protobuf:"fixed64,3,opt,name=reference_et_mm_day,json=referenceEtMmDay,proto3" json:"reference_et_mm_day,omitempty"`
+	RootZoneDepthM             float64                `protobuf:"fixed64,4,opt,name=root_zone_depth_m,json=rootZoneDepthM,proto3" json:"root_zone_depth_m,omitempty"`
+	FieldCapacity              float64                `protobuf:"fixed64,5,opt,name=field_capacity,json=fieldCapacity,proto3" json:"field_capacity,omitempty"`
+	WiltingPoint               float64                `protobuf:"fixed64,6,opt,name=wilting_point,json=wiltingPoint,proto3" json:"wilting_point,omitempty"`
+	ManagementAllowedDepletion float64                `protobuf:"fixed64,7,opt,name=management_allowed_depletion,json=managementAllowedDepletion,proto3" json:"management_allowed_depletion,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *WaterFlowBalanceParams) Reset() {
+	*x = WaterFlowBalanceParams{}
+	mi := &file_ai_gateway_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WaterFlowBalanceParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WaterFlowBalanceParams) ProtoMessage() {}
+
+func (x *WaterFlowBalanceParams) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WaterFlowBalanceParams.ProtoReflect.Descriptor instead.
+func (*WaterFlowBalanceParams) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *WaterFlowBalanceParams) GetFieldAreaHa() float64 {
+	if x != nil {
+		return x.FieldAreaHa
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetCropCoefficient() float64 {
+	if x != nil {
+		return x.CropCoefficient
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetReferenceEtMmDay() float64 {
+	if x != nil {
+		return x.ReferenceEtMmDay
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetRootZoneDepthM() float64 {
+	if x != nil {
+		return x.RootZoneDepthM
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetFieldCapacity() float64 {
+	if x != nil {
+		return x.FieldCapacity
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetWiltingPoint() float64 {
+	if x != nil {
+		return x.WiltingPoint
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetManagementAllowedDepletion() float64 {
+	if x != nil {
+		return x.ManagementAllowedDepletion
+	}
+	return 0
+}
+
+type SimulateWaterFlowResponse struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Soil moisture profiles over time.
+	MoistureProfiles []*SoilMoistureSnapshot `protobuf:"bytes,2,rep,name=moisture_profiles,json=moistureProfiles,proto3" json:"moisture_profiles,omitempty"`
+	// Daily water balance results.
+	WaterBalance []*WaterBalanceDay `protobuf:"bytes,3,rep,name=water_balance,json=waterBalance,proto3" json:"water_balance,omitempty"`
+	// Irrigation schedule summary.
+	IrrigationSummary *WaterFlowIrrigationSummary `protobuf:"bytes,4,opt,name=irrigation_summary,json=irrigationSummary,proto3" json:"irrigation_summary,omitempty"`
+	ProcessingTimeMs  int64                       `protobuf:"varint,5,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SimulateWaterFlowResponse) Reset() {
+	*x = SimulateWaterFlowResponse{}
+	mi := &file_ai_gateway_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SimulateWaterFlowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateWaterFlowResponse) ProtoMessage() {}
+
+func (x *SimulateWaterFlowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateWaterFlowResponse.ProtoReflect.Descriptor instead.
+func (*SimulateWaterFlowResponse) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *SimulateWaterFlowResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SimulateWaterFlowResponse) GetMoistureProfiles() []*SoilMoistureSnapshot {
+	if x != nil {
+		return x.MoistureProfiles
+	}
+	return nil
+}
+
+func (x *SimulateWaterFlowResponse) GetWaterBalance() []*WaterBalanceDay {
+	if x != nil {
+		return x.WaterBalance
+	}
+	return nil
+}
+
+func (x *SimulateWaterFlowResponse) GetIrrigationSummary() *WaterFlowIrrigationSummary {
+	if x != nil {
+		return x.IrrigationSummary
+	}
+	return nil
+}
+
+func (x *SimulateWaterFlowResponse) GetProcessingTimeMs() int64 {
+	if x != nil {
+		return x.ProcessingTimeMs
+	}
+	return 0
+}
+
+type SoilMoistureSnapshot struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TimeDays         float64                `protobuf:"fixed64,1,opt,name=time_days,json=timeDays,proto3" json:"time_days,omitempty"`
+	LayerMoisture    []float64              `protobuf:"fixed64,2,rep,packed,name=layer_moisture,json=layerMoisture,proto3" json:"layer_moisture,omitempty"`
+	RootZoneWaterMm  float64                `protobuf:"fixed64,3,opt,name=root_zone_water_mm,json=rootZoneWaterMm,proto3" json:"root_zone_water_mm,omitempty"`
+	AvailableWaterMm float64                `protobuf:"fixed64,4,opt,name=available_water_mm,json=availableWaterMm,proto3" json:"available_water_mm,omitempty"`
+	DrainageMmDay    float64                `protobuf:"fixed64,5,opt,name=drainage_mm_day,json=drainageMmDay,proto3" json:"drainage_mm_day,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SoilMoistureSnapshot) Reset() {
+	*x = SoilMoistureSnapshot{}
+	mi := &file_ai_gateway_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SoilMoistureSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SoilMoistureSnapshot) ProtoMessage() {}
+
+func (x *SoilMoistureSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SoilMoistureSnapshot.ProtoReflect.Descriptor instead.
+func (*SoilMoistureSnapshot) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *SoilMoistureSnapshot) GetTimeDays() float64 {
+	if x != nil {
+		return x.TimeDays
+	}
+	return 0
+}
+
+func (x *SoilMoistureSnapshot) GetLayerMoisture() []float64 {
+	if x != nil {
+		return x.LayerMoisture
+	}
+	return nil
+}
+
+func (x *SoilMoistureSnapshot) GetRootZoneWaterMm() float64 {
+	if x != nil {
+		return x.RootZoneWaterMm
+	}
+	return 0
+}
+
+func (x *SoilMoistureSnapshot) GetAvailableWaterMm() float64 {
+	if x != nil {
+		return x.AvailableWaterMm
+	}
+	return 0
+}
+
+func (x *SoilMoistureSnapshot) GetDrainageMmDay() float64 {
+	if x != nil {
+		return x.DrainageMmDay
+	}
+	return 0
+}
+
+type WaterBalanceDay struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	Day                     int32                  `protobuf:"varint,1,opt,name=day,proto3" json:"day,omitempty"`
+	EtcMmDay                float64                `protobuf:"fixed64,2,opt,name=etc_mm_day,json=etcMmDay,proto3" json:"etc_mm_day,omitempty"`
+	DepletionMm             float64                `protobuf:"fixed64,3,opt,name=depletion_mm,json=depletionMm,proto3" json:"depletion_mm,omitempty"`
+	TotalAvailableWaterMm   float64                `protobuf:"fixed64,4,opt,name=total_available_water_mm,json=totalAvailableWaterMm,proto3" json:"total_available_water_mm,omitempty"`
+	ReadilyAvailableWaterMm float64                `protobuf:"fixed64,5,opt,name=readily_available_water_mm,json=readilyAvailableWaterMm,proto3" json:"readily_available_water_mm,omitempty"`
+	IrrigationNeeded        bool                   `protobuf:"varint,6,opt,name=irrigation_needed,json=irrigationNeeded,proto3" json:"irrigation_needed,omitempty"`
+	IrrigationAmountMm      float64                `protobuf:"fixed64,7,opt,name=irrigation_amount_mm,json=irrigationAmountMm,proto3" json:"irrigation_amount_mm,omitempty"`
+	EffectiveRainfallMm     float64                `protobuf:"fixed64,8,opt,name=effective_rainfall_mm,json=effectiveRainfallMm,proto3" json:"effective_rainfall_mm,omitempty"`
+	DeepPercolationMm       float64                `protobuf:"fixed64,9,opt,name=deep_percolation_mm,json=deepPercolationMm,proto3" json:"deep_percolation_mm,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *WaterBalanceDay) Reset() {
+	*x = WaterBalanceDay{}
+	mi := &file_ai_gateway_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WaterBalanceDay) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WaterBalanceDay) ProtoMessage() {}
+
+func (x *WaterBalanceDay) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WaterBalanceDay.ProtoReflect.Descriptor instead.
+func (*WaterBalanceDay) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *WaterBalanceDay) GetDay() int32 {
+	if x != nil {
+		return x.Day
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetEtcMmDay() float64 {
+	if x != nil {
+		return x.EtcMmDay
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetDepletionMm() float64 {
+	if x != nil {
+		return x.DepletionMm
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetTotalAvailableWaterMm() float64 {
+	if x != nil {
+		return x.TotalAvailableWaterMm
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetReadilyAvailableWaterMm() float64 {
+	if x != nil {
+		return x.ReadilyAvailableWaterMm
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetIrrigationNeeded() bool {
+	if x != nil {
+		return x.IrrigationNeeded
+	}
+	return false
+}
+
+func (x *WaterBalanceDay) GetIrrigationAmountMm() float64 {
+	if x != nil {
+		return x.IrrigationAmountMm
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetEffectiveRainfallMm() float64 {
+	if x != nil {
+		return x.EffectiveRainfallMm
+	}
+	return 0
+}
+
+func (x *WaterBalanceDay) GetDeepPercolationMm() float64 {
+	if x != nil {
+		return x.DeepPercolationMm
+	}
+	return 0
+}
+
+type WaterFlowIrrigationSummary struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	TotalIrrigationMm        float64                `protobuf:"fixed64,1,opt,name=total_irrigation_mm,json=totalIrrigationMm,proto3" json:"total_irrigation_mm,omitempty"`
+	TotalEffectiveRainfallMm float64                `protobuf:"fixed64,2,opt,name=total_effective_rainfall_mm,json=totalEffectiveRainfallMm,proto3" json:"total_effective_rainfall_mm,omitempty"`
+	TotalCropEtMm            float64                `protobuf:"fixed64,3,opt,name=total_crop_et_mm,json=totalCropEtMm,proto3" json:"total_crop_et_mm,omitempty"`
+	TotalDeepPercolationMm   float64                `protobuf:"fixed64,4,opt,name=total_deep_percolation_mm,json=totalDeepPercolationMm,proto3" json:"total_deep_percolation_mm,omitempty"`
+	IrrigationEvents         int32                  `protobuf:"varint,5,opt,name=irrigation_events,json=irrigationEvents,proto3" json:"irrigation_events,omitempty"`
+	AverageIntervalDays      float64                `protobuf:"fixed64,6,opt,name=average_interval_days,json=averageIntervalDays,proto3" json:"average_interval_days,omitempty"`
+	WaterUseEfficiency       float64                `protobuf:"fixed64,7,opt,name=water_use_efficiency,json=waterUseEfficiency,proto3" json:"water_use_efficiency,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *WaterFlowIrrigationSummary) Reset() {
+	*x = WaterFlowIrrigationSummary{}
+	mi := &file_ai_gateway_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WaterFlowIrrigationSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WaterFlowIrrigationSummary) ProtoMessage() {}
+
+func (x *WaterFlowIrrigationSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WaterFlowIrrigationSummary.ProtoReflect.Descriptor instead.
+func (*WaterFlowIrrigationSummary) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *WaterFlowIrrigationSummary) GetTotalIrrigationMm() float64 {
+	if x != nil {
+		return x.TotalIrrigationMm
+	}
+	return 0
+}
+
+func (x *WaterFlowIrrigationSummary) GetTotalEffectiveRainfallMm() float64 {
+	if x != nil {
+		return x.TotalEffectiveRainfallMm
+	}
+	return 0
+}
+
+func (x *WaterFlowIrrigationSummary) GetTotalCropEtMm() float64 {
+	if x != nil {
+		return x.TotalCropEtMm
+	}
+	return 0
+}
+
+func (x *WaterFlowIrrigationSummary) GetTotalDeepPercolationMm() float64 {
+	if x != nil {
+		return x.TotalDeepPercolationMm
+	}
+	return 0
+}
+
+func (x *WaterFlowIrrigationSummary) GetIrrigationEvents() int32 {
+	if x != nil {
+		return x.IrrigationEvents
+	}
+	return 0
+}
+
+func (x *WaterFlowIrrigationSummary) GetAverageIntervalDays() float64 {
+	if x != nil {
+		return x.AverageIntervalDays
+	}
+	return 0
+}
+
+func (x *WaterFlowIrrigationSummary) GetWaterUseEfficiency() float64 {
+	if x != nil {
+		return x.WaterUseEfficiency
+	}
+	return 0
+}
+
 var File_ai_gateway_proto protoreflect.FileDescriptor
 
 const file_ai_gateway_proto_rawDesc = "" +
@@ -5005,7 +6369,7 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"raster_url\x18\x02 \x01(\tR\trasterUrl\x124\n" +
 	"\x05bands\x18\x03 \x01(\v2\x1e.agriculture.ai.v1.RasterBandsR\x05bands\x12?\n" +
 	"\vclip_bounds\x18\x04 \x01(\v2\x1e.agriculture.ai.v1.BoundingBoxR\n" +
-	"clipBounds\"\xd1\x01\n" +
+	"clipBounds\"\x83\x03\n" +
 	"\vRasterBands\x12\x19\n" +
 	"\bnir_band\x18\x01 \x03(\x01R\anirBand\x12\x19\n" +
 	"\bred_band\x18\x02 \x03(\x01R\aredBand\x12\x1d\n" +
@@ -5014,12 +6378,18 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\tblue_band\x18\x04 \x03(\x01R\bblueBand\x12\"\n" +
 	"\rred_edge_band\x18\x05 \x03(\x01R\vredEdgeBand\x12\x14\n" +
 	"\x05width\x18\x06 \x01(\x05R\x05width\x12\x16\n" +
-	"\x06height\x18\a \x01(\x05R\x06height\"q\n" +
+	"\x06height\x18\a \x01(\x05R\x06height\x12\x19\n" +
+	"\bscl_band\x18\b \x03(\x01R\asclBand\x12\"\n" +
+	"\rqa_pixel_band\x18\t \x03(\x01R\vqaPixelBand\x12)\n" +
+	"\x10processing_level\x18\n" +
+	" \x01(\tR\x0fprocessingLevel\x12\x16\n" +
+	"\x06sensor\x18\v \x01(\tR\x06sensor\x12.\n" +
+	"\x13cloud_buffer_pixels\x18\f \x01(\x05R\x11cloudBufferPixels\"q\n" +
 	"\vBoundingBox\x12\x17\n" +
 	"\amin_lon\x18\x01 \x01(\x01R\x06minLon\x12\x17\n" +
 	"\amin_lat\x18\x02 \x01(\x01R\x06minLat\x12\x17\n" +
 	"\amax_lon\x18\x03 \x01(\x01R\x06maxLon\x12\x17\n" +
-	"\amax_lat\x18\x04 \x01(\x01R\x06maxLat\"\xcc\x02\n" +
+	"\amax_lat\x18\x04 \x01(\x01R\x06maxLat\"\xdc\x04\n" +
 	"\x13ComputeNDVIResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1f\n" +
@@ -5032,7 +6402,17 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"statistics\x121\n" +
 	"\x05zones\x18\x06 \x03(\v2\x1b.agriculture.ai.v1.NdviZoneR\x05zones\x12#\n" +
 	"\rmodel_version\x18\a \x01(\tR\fmodelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\b \x01(\x03R\x10processingTimeMs\"\xa5\x01\n" +
+	"\x12processing_time_ms\x18\b \x01(\x03R\x10processingTimeMs\x12!\n" +
+	"\fcloud_masked\x18\t \x01(\bR\vcloudMasked\x12%\n" +
+	"\x0ecloud_fraction\x18\n" +
+	" \x01(\x01R\rcloudFraction\x120\n" +
+	"\x14valid_pixel_fraction\x18\v \x01(\x01R\x12validPixelFraction\x12)\n" +
+	"\x10processing_level\x18\f \x01(\tR\x0fprocessingLevel\x12/\n" +
+	"\x13processing_advisory\x18\r \x01(\tR\x12processingAdvisory\x12\x16\n" +
+	"\x06sensor\x18\x0e \x01(\tR\x06sensor\x12\x1e\n" +
+	"\n" +
+	"harmonized\x18\x0f \x01(\bR\n" +
+	"harmonized\"\xa5\x01\n" +
 	"\x0eBandStatistics\x12\x10\n" +
 	"\x03min\x18\x01 \x01(\x01R\x03min\x12\x10\n" +
 	"\x03max\x18\x02 \x01(\x01R\x03max\x12\x12\n" +
@@ -5318,8 +6698,130 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\tmean_rate\x18\x04 \x01(\x01R\bmeanRate\x12\x19\n" +
 	"\bmin_rate\x18\x05 \x01(\x01R\aminRate\x12\x19\n" +
 	"\bmax_rate\x18\x06 \x01(\x01R\amaxRate\x12!\n" +
-	"\ftotal_amount\x18\a \x01(\x01R\vtotalAmount2\xbb\n" +
+	"\ftotal_amount\x18\a \x01(\x01R\vtotalAmount\"\xbe\x03\n" +
+	"\x15AnalyzeTerrainRequest\x12\x1d\n" +
 	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1c\n" +
+	"\televation\x18\x02 \x03(\x01R\televation\x12\x14\n" +
+	"\x05width\x18\x03 \x01(\x05R\x05width\x12\x16\n" +
+	"\x06height\x18\x04 \x01(\x05R\x06height\x12\x1b\n" +
+	"\tcell_size\x18\x05 \x01(\x01R\bcellSize\x12!\n" +
+	"\fnodata_value\x18\x06 \x01(\x01R\vnodataValue\x12\x1a\n" +
+	"\banalyses\x18\a \x03(\tR\banalyses\x12)\n" +
+	"\x10contour_interval\x18\b \x01(\x01R\x0fcontourInterval\x12)\n" +
+	"\x10stream_threshold\x18\t \x01(\x01R\x0fstreamThreshold\x12+\n" +
+	"\x11hillshade_azimuth\x18\n" +
+	" \x01(\x01R\x10hillshadeAzimuth\x12-\n" +
+	"\x12hillshade_altitude\x18\v \x01(\x01R\x11hillshadeAltitude\x12,\n" +
+	"\x12hillshade_z_factor\x18\f \x01(\x01R\x10hillshadeZFactor\"\xc2\x05\n" +
+	"\x16AnalyzeTerrainResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
+	"\x05width\x18\x02 \x01(\x05R\x05width\x12\x16\n" +
+	"\x06height\x18\x03 \x01(\x05R\x06height\x12\x14\n" +
+	"\x05slope\x18\x04 \x03(\x01R\x05slope\x12\x16\n" +
+	"\x06aspect\x18\x05 \x03(\x01R\x06aspect\x12\x1c\n" +
+	"\thillshade\x18\x06 \x03(\x01R\thillshade\x12\x10\n" +
+	"\x03tri\x18\a \x03(\x01R\x03tri\x12\x10\n" +
+	"\x03tpi\x18\b \x03(\x01R\x03tpi\x12%\n" +
+	"\x0eflow_direction\x18\t \x03(\x05R\rflowDirection\x12+\n" +
+	"\x11flow_accumulation\x18\n" +
+	" \x03(\x01R\x10flowAccumulation\x12#\n" +
+	"\rwatershed_ids\x18\v \x03(\rR\fwatershedIds\x12J\n" +
+	"\rcontour_lines\x18\f \x03(\v2%.agriculture.ai.v1.TerrainContourLineR\fcontourLines\x12N\n" +
+	"\x0edem_statistics\x18\r \x01(\v2'.agriculture.ai.v1.TerrainDemStatisticsR\rdemStatistics\x12L\n" +
+	"\x0fflow_statistics\x18\x0e \x01(\v2#.agriculture.ai.v1.TerrainFlowStatsR\x0eflowStatistics\x12Z\n" +
+	"\x14watershed_statistics\x18\x0f \x03(\v2'.agriculture.ai.v1.TerrainWatershedInfoR\x13watershedStatistics\x12,\n" +
+	"\x12processing_time_ms\x18\x10 \x01(\x03R\x10processingTimeMs\"T\n" +
+	"\x12TerrainContourLine\x12\x1c\n" +
+	"\televation\x18\x01 \x01(\x01R\televation\x12 \n" +
+	"\vcoordinates\x18\x02 \x03(\x01R\vcoordinates\"\xf2\x01\n" +
+	"\x14TerrainDemStatistics\x12#\n" +
+	"\rmin_elevation\x18\x01 \x01(\x01R\fminElevation\x12#\n" +
+	"\rmax_elevation\x18\x02 \x01(\x01R\fmaxElevation\x12%\n" +
+	"\x0emean_elevation\x18\x03 \x01(\x01R\rmeanElevation\x12'\n" +
+	"\x0felevation_range\x18\x04 \x01(\x01R\x0eelevationRange\x12\x1f\n" +
+	"\vvalid_cells\x18\x05 \x01(\x03R\n" +
+	"validCells\x12\x1f\n" +
+	"\vtotal_cells\x18\x06 \x01(\x03R\n" +
+	"totalCells\"\xe2\x01\n" +
+	"\x10TerrainFlowStats\x12)\n" +
+	"\x10max_accumulation\x18\x01 \x01(\x01R\x0fmaxAccumulation\x12+\n" +
+	"\x11mean_accumulation\x18\x02 \x01(\x01R\x10meanAccumulation\x12*\n" +
+	"\x11stream_cell_count\x18\x03 \x01(\x03R\x0fstreamCellCount\x12\x1f\n" +
+	"\vtotal_cells\x18\x04 \x01(\x03R\n" +
+	"totalCells\x12)\n" +
+	"\x10drainage_density\x18\x05 \x01(\x01R\x0fdrainageDensity\"\xea\x01\n" +
+	"\x14TerrainWatershedInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x1d\n" +
+	"\n" +
+	"cell_count\x18\x02 \x01(\x03R\tcellCount\x12\x1a\n" +
+	"\tarea_sq_m\x18\x03 \x01(\x01R\aareaSqM\x12%\n" +
+	"\x0emean_elevation\x18\x04 \x01(\x01R\rmeanElevation\x12#\n" +
+	"\rmin_elevation\x18\x05 \x01(\x01R\fminElevation\x12#\n" +
+	"\rmax_elevation\x18\x06 \x01(\x01R\fmaxElevation\x12\x16\n" +
+	"\x06relief\x18\a \x01(\x01R\x06relief\"\xa5\x03\n" +
+	"\x18SimulateWaterFlowRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12S\n" +
+	"\x0fmoisture_params\x18\x02 \x01(\v2*.agriculture.ai.v1.WaterFlowMoistureParamsR\x0emoistureParams\x12P\n" +
+	"\x0ebalance_params\x18\x03 \x01(\v2).agriculture.ai.v1.WaterFlowBalanceParamsR\rbalanceParams\x12&\n" +
+	"\x0frainfall_mm_day\x18\x04 \x01(\x01R\rrainfallMmDay\x12\x1a\n" +
+	"\tet_mm_day\x18\x05 \x01(\x01R\aetMmDay\x12*\n" +
+	"\x11irrigation_mm_day\x18\x06 \x01(\x01R\x0firrigationMmDay\x12'\n" +
+	"\x0fsimulation_days\x18\a \x01(\x01R\x0esimulationDays\x12*\n" +
+	"\x11daily_rainfall_mm\x18\b \x03(\x01R\x0fdailyRainfallMm\"\x9a\x02\n" +
+	"\x17WaterFlowMoistureParams\x12\x1d\n" +
+	"\n" +
+	"num_layers\x18\x01 \x01(\x05R\tnumLayers\x12*\n" +
+	"\x11layer_thickness_m\x18\x02 \x01(\x01R\x0flayerThicknessM\x12\x1d\n" +
+	"\vk_sat_m_day\x18\x03 \x01(\x01R\bkSatMDay\x12%\n" +
+	"\x0efield_capacity\x18\x04 \x01(\x01R\rfieldCapacity\x12#\n" +
+	"\rwilting_point\x18\x05 \x01(\x01R\fwiltingPoint\x12\x1e\n" +
+	"\n" +
+	"saturation\x18\x06 \x01(\x01R\n" +
+	"saturation\x12)\n" +
+	"\x11root_zone_depth_m\x18\a \x01(\x01R\x0erootZoneDepthM\"\xcf\x02\n" +
+	"\x16WaterFlowBalanceParams\x12\"\n" +
+	"\rfield_area_ha\x18\x01 \x01(\x01R\vfieldAreaHa\x12)\n" +
+	"\x10crop_coefficient\x18\x02 \x01(\x01R\x0fcropCoefficient\x12-\n" +
+	"\x13reference_et_mm_day\x18\x03 \x01(\x01R\x10referenceEtMmDay\x12)\n" +
+	"\x11root_zone_depth_m\x18\x04 \x01(\x01R\x0erootZoneDepthM\x12%\n" +
+	"\x0efield_capacity\x18\x05 \x01(\x01R\rfieldCapacity\x12#\n" +
+	"\rwilting_point\x18\x06 \x01(\x01R\fwiltingPoint\x12@\n" +
+	"\x1cmanagement_allowed_depletion\x18\a \x01(\x01R\x1amanagementAllowedDepletion\"\xe5\x02\n" +
+	"\x19SimulateWaterFlowResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12T\n" +
+	"\x11moisture_profiles\x18\x02 \x03(\v2'.agriculture.ai.v1.SoilMoistureSnapshotR\x10moistureProfiles\x12G\n" +
+	"\rwater_balance\x18\x03 \x03(\v2\".agriculture.ai.v1.WaterBalanceDayR\fwaterBalance\x12\\\n" +
+	"\x12irrigation_summary\x18\x04 \x01(\v2-.agriculture.ai.v1.WaterFlowIrrigationSummaryR\x11irrigationSummary\x12,\n" +
+	"\x12processing_time_ms\x18\x05 \x01(\x03R\x10processingTimeMs\"\xdd\x01\n" +
+	"\x14SoilMoistureSnapshot\x12\x1b\n" +
+	"\ttime_days\x18\x01 \x01(\x01R\btimeDays\x12%\n" +
+	"\x0elayer_moisture\x18\x02 \x03(\x01R\rlayerMoisture\x12+\n" +
+	"\x12root_zone_water_mm\x18\x03 \x01(\x01R\x0frootZoneWaterMm\x12,\n" +
+	"\x12available_water_mm\x18\x04 \x01(\x01R\x10availableWaterMm\x12&\n" +
+	"\x0fdrainage_mm_day\x18\x05 \x01(\x01R\rdrainageMmDay\"\x9d\x03\n" +
+	"\x0fWaterBalanceDay\x12\x10\n" +
+	"\x03day\x18\x01 \x01(\x05R\x03day\x12\x1c\n" +
+	"\n" +
+	"etc_mm_day\x18\x02 \x01(\x01R\betcMmDay\x12!\n" +
+	"\fdepletion_mm\x18\x03 \x01(\x01R\vdepletionMm\x127\n" +
+	"\x18total_available_water_mm\x18\x04 \x01(\x01R\x15totalAvailableWaterMm\x12;\n" +
+	"\x1areadily_available_water_mm\x18\x05 \x01(\x01R\x17readilyAvailableWaterMm\x12+\n" +
+	"\x11irrigation_needed\x18\x06 \x01(\bR\x10irrigationNeeded\x120\n" +
+	"\x14irrigation_amount_mm\x18\a \x01(\x01R\x12irrigationAmountMm\x122\n" +
+	"\x15effective_rainfall_mm\x18\b \x01(\x01R\x13effectiveRainfallMm\x12.\n" +
+	"\x13deep_percolation_mm\x18\t \x01(\x01R\x11deepPercolationMm\"\x82\x03\n" +
+	"\x1aWaterFlowIrrigationSummary\x12.\n" +
+	"\x13total_irrigation_mm\x18\x01 \x01(\x01R\x11totalIrrigationMm\x12=\n" +
+	"\x1btotal_effective_rainfall_mm\x18\x02 \x01(\x01R\x18totalEffectiveRainfallMm\x12'\n" +
+	"\x10total_crop_et_mm\x18\x03 \x01(\x01R\rtotalCropEtMm\x129\n" +
+	"\x19total_deep_percolation_mm\x18\x04 \x01(\x01R\x16totalDeepPercolationMm\x12+\n" +
+	"\x11irrigation_events\x18\x05 \x01(\x05R\x10irrigationEvents\x122\n" +
+	"\x15average_interval_days\x18\x06 \x01(\x01R\x13averageIntervalDays\x120\n" +
+	"\x14water_use_efficiency\x18\a \x01(\x01R\x12waterUseEfficiency2\x92\f\n" +
 	"\x10AIGatewayService\x12b\n" +
 	"\rDiagnoseImage\x12'.agriculture.ai.v1.DiagnoseImageRequest\x1a(.agriculture.ai.v1.DiagnoseImageResponse\x12\\\n" +
 	"\vDetectPests\x12%.agriculture.ai.v1.DetectPestsRequest\x1a&.agriculture.ai.v1.DetectPestsResponse\x12\x83\x01\n" +
@@ -5332,7 +6834,9 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\x0eRecommendCrops\x12(.agriculture.ai.v1.RecommendCropsRequest\x1a).agriculture.ai.v1.RecommendCropsResponse\x12n\n" +
 	"\x11EvaluateFieldRisk\x12+.agriculture.ai.v1.EvaluateFieldRiskRequest\x1a,.agriculture.ai.v1.EvaluateFieldRiskResponse\x12z\n" +
 	"\x15ComputeFieldAnalytics\x12/.agriculture.ai.v1.ComputeFieldAnalyticsRequest\x1a0.agriculture.ai.v1.ComputeFieldAnalyticsResponse\x12w\n" +
-	"\x14GeneratePrescription\x12..agriculture.ai.v1.GeneratePrescriptionRequest\x1a/.agriculture.ai.v1.GeneratePrescriptionResponseB4Z2p9e.in/samavaya/agriculture/ai-gateway/api/v1;aipbb\x06proto3"
+	"\x14GeneratePrescription\x12..agriculture.ai.v1.GeneratePrescriptionRequest\x1a/.agriculture.ai.v1.GeneratePrescriptionResponse\x12e\n" +
+	"\x0eAnalyzeTerrain\x12(.agriculture.ai.v1.AnalyzeTerrainRequest\x1a).agriculture.ai.v1.AnalyzeTerrainResponse\x12n\n" +
+	"\x11SimulateWaterFlow\x12+.agriculture.ai.v1.SimulateWaterFlowRequest\x1a,.agriculture.ai.v1.SimulateWaterFlowResponseB4Z2p9e.in/samavaya/agriculture/ai-gateway/api/v1;aipbb\x06proto3"
 
 var (
 	file_ai_gateway_proto_rawDescOnce sync.Once
@@ -5346,7 +6850,7 @@ func file_ai_gateway_proto_rawDescGZIP() []byte {
 	return file_ai_gateway_proto_rawDescData
 }
 
-var file_ai_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
+var file_ai_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_ai_gateway_proto_goTypes = []any{
 	(*DiagnoseImageRequest)(nil),             // 0: agriculture.ai.v1.DiagnoseImageRequest
 	(*DiagnoseImageResponse)(nil),            // 1: agriculture.ai.v1.DiagnoseImageResponse
@@ -5405,6 +6909,19 @@ var file_ai_gateway_proto_goTypes = []any{
 	(*GeneratePrescriptionResponse)(nil),     // 54: agriculture.ai.v1.GeneratePrescriptionResponse
 	(*PrescriptionMapResult)(nil),            // 55: agriculture.ai.v1.PrescriptionMapResult
 	(*PrescriptionZoneSummary)(nil),          // 56: agriculture.ai.v1.PrescriptionZoneSummary
+	(*AnalyzeTerrainRequest)(nil),            // 57: agriculture.ai.v1.AnalyzeTerrainRequest
+	(*AnalyzeTerrainResponse)(nil),           // 58: agriculture.ai.v1.AnalyzeTerrainResponse
+	(*TerrainContourLine)(nil),               // 59: agriculture.ai.v1.TerrainContourLine
+	(*TerrainDemStatistics)(nil),             // 60: agriculture.ai.v1.TerrainDemStatistics
+	(*TerrainFlowStats)(nil),                 // 61: agriculture.ai.v1.TerrainFlowStats
+	(*TerrainWatershedInfo)(nil),             // 62: agriculture.ai.v1.TerrainWatershedInfo
+	(*SimulateWaterFlowRequest)(nil),         // 63: agriculture.ai.v1.SimulateWaterFlowRequest
+	(*WaterFlowMoistureParams)(nil),          // 64: agriculture.ai.v1.WaterFlowMoistureParams
+	(*WaterFlowBalanceParams)(nil),           // 65: agriculture.ai.v1.WaterFlowBalanceParams
+	(*SimulateWaterFlowResponse)(nil),        // 66: agriculture.ai.v1.SimulateWaterFlowResponse
+	(*SoilMoistureSnapshot)(nil),             // 67: agriculture.ai.v1.SoilMoistureSnapshot
+	(*WaterBalanceDay)(nil),                  // 68: agriculture.ai.v1.WaterBalanceDay
+	(*WaterFlowIrrigationSummary)(nil),       // 69: agriculture.ai.v1.WaterFlowIrrigationSummary
 }
 var file_ai_gateway_proto_depIdxs = []int32{
 	36, // 0: agriculture.ai.v1.DiagnoseImageRequest.images:type_name -> agriculture.ai.v1.ImageData
@@ -5449,35 +6966,48 @@ var file_ai_gateway_proto_depIdxs = []int32{
 	53, // 39: agriculture.ai.v1.GeneratePrescriptionRequest.crop_requirements:type_name -> agriculture.ai.v1.PrescriptionCropRequirements
 	55, // 40: agriculture.ai.v1.GeneratePrescriptionResponse.prescriptions:type_name -> agriculture.ai.v1.PrescriptionMapResult
 	56, // 41: agriculture.ai.v1.PrescriptionMapResult.zone_summaries:type_name -> agriculture.ai.v1.PrescriptionZoneSummary
-	0,  // 42: agriculture.ai.v1.AIGatewayService.DiagnoseImage:input_type -> agriculture.ai.v1.DiagnoseImageRequest
-	3,  // 43: agriculture.ai.v1.AIGatewayService.DetectPests:input_type -> agriculture.ai.v1.DetectPestsRequest
-	6,  // 44: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:input_type -> agriculture.ai.v1.DetectNutrientDeficiencyRequest
-	9,  // 45: agriculture.ai.v1.AIGatewayService.ClassifyPlant:input_type -> agriculture.ai.v1.ClassifyPlantRequest
-	12, // 46: agriculture.ai.v1.AIGatewayService.PredictYield:input_type -> agriculture.ai.v1.PredictYieldRequest
-	18, // 47: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:input_type -> agriculture.ai.v1.SimulateCropGrowthRequest
-	21, // 48: agriculture.ai.v1.AIGatewayService.ComputeNDVI:input_type -> agriculture.ai.v1.ComputeNDVIRequest
-	27, // 49: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:input_type -> agriculture.ai.v1.DetectVegetationStressRequest
-	30, // 50: agriculture.ai.v1.AIGatewayService.RecommendCrops:input_type -> agriculture.ai.v1.RecommendCropsRequest
-	37, // 51: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:input_type -> agriculture.ai.v1.EvaluateFieldRiskRequest
-	44, // 52: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:input_type -> agriculture.ai.v1.ComputeFieldAnalyticsRequest
-	50, // 53: agriculture.ai.v1.AIGatewayService.GeneratePrescription:input_type -> agriculture.ai.v1.GeneratePrescriptionRequest
-	1,  // 54: agriculture.ai.v1.AIGatewayService.DiagnoseImage:output_type -> agriculture.ai.v1.DiagnoseImageResponse
-	4,  // 55: agriculture.ai.v1.AIGatewayService.DetectPests:output_type -> agriculture.ai.v1.DetectPestsResponse
-	7,  // 56: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:output_type -> agriculture.ai.v1.DetectNutrientDeficiencyResponse
-	10, // 57: agriculture.ai.v1.AIGatewayService.ClassifyPlant:output_type -> agriculture.ai.v1.ClassifyPlantResponse
-	13, // 58: agriculture.ai.v1.AIGatewayService.PredictYield:output_type -> agriculture.ai.v1.PredictYieldResponse
-	19, // 59: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:output_type -> agriculture.ai.v1.SimulateCropGrowthResponse
-	24, // 60: agriculture.ai.v1.AIGatewayService.ComputeNDVI:output_type -> agriculture.ai.v1.ComputeNDVIResponse
-	28, // 61: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:output_type -> agriculture.ai.v1.DetectVegetationStressResponse
-	34, // 62: agriculture.ai.v1.AIGatewayService.RecommendCrops:output_type -> agriculture.ai.v1.RecommendCropsResponse
-	42, // 63: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:output_type -> agriculture.ai.v1.EvaluateFieldRiskResponse
-	47, // 64: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:output_type -> agriculture.ai.v1.ComputeFieldAnalyticsResponse
-	54, // 65: agriculture.ai.v1.AIGatewayService.GeneratePrescription:output_type -> agriculture.ai.v1.GeneratePrescriptionResponse
-	54, // [54:66] is the sub-list for method output_type
-	42, // [42:54] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	59, // 42: agriculture.ai.v1.AnalyzeTerrainResponse.contour_lines:type_name -> agriculture.ai.v1.TerrainContourLine
+	60, // 43: agriculture.ai.v1.AnalyzeTerrainResponse.dem_statistics:type_name -> agriculture.ai.v1.TerrainDemStatistics
+	61, // 44: agriculture.ai.v1.AnalyzeTerrainResponse.flow_statistics:type_name -> agriculture.ai.v1.TerrainFlowStats
+	62, // 45: agriculture.ai.v1.AnalyzeTerrainResponse.watershed_statistics:type_name -> agriculture.ai.v1.TerrainWatershedInfo
+	64, // 46: agriculture.ai.v1.SimulateWaterFlowRequest.moisture_params:type_name -> agriculture.ai.v1.WaterFlowMoistureParams
+	65, // 47: agriculture.ai.v1.SimulateWaterFlowRequest.balance_params:type_name -> agriculture.ai.v1.WaterFlowBalanceParams
+	67, // 48: agriculture.ai.v1.SimulateWaterFlowResponse.moisture_profiles:type_name -> agriculture.ai.v1.SoilMoistureSnapshot
+	68, // 49: agriculture.ai.v1.SimulateWaterFlowResponse.water_balance:type_name -> agriculture.ai.v1.WaterBalanceDay
+	69, // 50: agriculture.ai.v1.SimulateWaterFlowResponse.irrigation_summary:type_name -> agriculture.ai.v1.WaterFlowIrrigationSummary
+	0,  // 51: agriculture.ai.v1.AIGatewayService.DiagnoseImage:input_type -> agriculture.ai.v1.DiagnoseImageRequest
+	3,  // 52: agriculture.ai.v1.AIGatewayService.DetectPests:input_type -> agriculture.ai.v1.DetectPestsRequest
+	6,  // 53: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:input_type -> agriculture.ai.v1.DetectNutrientDeficiencyRequest
+	9,  // 54: agriculture.ai.v1.AIGatewayService.ClassifyPlant:input_type -> agriculture.ai.v1.ClassifyPlantRequest
+	12, // 55: agriculture.ai.v1.AIGatewayService.PredictYield:input_type -> agriculture.ai.v1.PredictYieldRequest
+	18, // 56: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:input_type -> agriculture.ai.v1.SimulateCropGrowthRequest
+	21, // 57: agriculture.ai.v1.AIGatewayService.ComputeNDVI:input_type -> agriculture.ai.v1.ComputeNDVIRequest
+	27, // 58: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:input_type -> agriculture.ai.v1.DetectVegetationStressRequest
+	30, // 59: agriculture.ai.v1.AIGatewayService.RecommendCrops:input_type -> agriculture.ai.v1.RecommendCropsRequest
+	37, // 60: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:input_type -> agriculture.ai.v1.EvaluateFieldRiskRequest
+	44, // 61: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:input_type -> agriculture.ai.v1.ComputeFieldAnalyticsRequest
+	50, // 62: agriculture.ai.v1.AIGatewayService.GeneratePrescription:input_type -> agriculture.ai.v1.GeneratePrescriptionRequest
+	57, // 63: agriculture.ai.v1.AIGatewayService.AnalyzeTerrain:input_type -> agriculture.ai.v1.AnalyzeTerrainRequest
+	63, // 64: agriculture.ai.v1.AIGatewayService.SimulateWaterFlow:input_type -> agriculture.ai.v1.SimulateWaterFlowRequest
+	1,  // 65: agriculture.ai.v1.AIGatewayService.DiagnoseImage:output_type -> agriculture.ai.v1.DiagnoseImageResponse
+	4,  // 66: agriculture.ai.v1.AIGatewayService.DetectPests:output_type -> agriculture.ai.v1.DetectPestsResponse
+	7,  // 67: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:output_type -> agriculture.ai.v1.DetectNutrientDeficiencyResponse
+	10, // 68: agriculture.ai.v1.AIGatewayService.ClassifyPlant:output_type -> agriculture.ai.v1.ClassifyPlantResponse
+	13, // 69: agriculture.ai.v1.AIGatewayService.PredictYield:output_type -> agriculture.ai.v1.PredictYieldResponse
+	19, // 70: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:output_type -> agriculture.ai.v1.SimulateCropGrowthResponse
+	24, // 71: agriculture.ai.v1.AIGatewayService.ComputeNDVI:output_type -> agriculture.ai.v1.ComputeNDVIResponse
+	28, // 72: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:output_type -> agriculture.ai.v1.DetectVegetationStressResponse
+	34, // 73: agriculture.ai.v1.AIGatewayService.RecommendCrops:output_type -> agriculture.ai.v1.RecommendCropsResponse
+	42, // 74: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:output_type -> agriculture.ai.v1.EvaluateFieldRiskResponse
+	47, // 75: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:output_type -> agriculture.ai.v1.ComputeFieldAnalyticsResponse
+	54, // 76: agriculture.ai.v1.AIGatewayService.GeneratePrescription:output_type -> agriculture.ai.v1.GeneratePrescriptionResponse
+	58, // 77: agriculture.ai.v1.AIGatewayService.AnalyzeTerrain:output_type -> agriculture.ai.v1.AnalyzeTerrainResponse
+	66, // 78: agriculture.ai.v1.AIGatewayService.SimulateWaterFlow:output_type -> agriculture.ai.v1.SimulateWaterFlowResponse
+	65, // [65:79] is the sub-list for method output_type
+	51, // [51:65] is the sub-list for method input_type
+	51, // [51:51] is the sub-list for extension type_name
+	51, // [51:51] is the sub-list for extension extendee
+	0,  // [0:51] is the sub-list for field type_name
 }
 
 func init() { file_ai_gateway_proto_init() }
@@ -5491,7 +7021,7 @@ func file_ai_gateway_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ai_gateway_proto_rawDesc), len(file_ai_gateway_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   57,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -11,12 +11,12 @@ type StressType string
 
 const (
 	StressTypeUnspecified StressType = ""
-	StressTypeWater      StressType = "WATER"
-	StressTypeNutrient   StressType = "NUTRIENT"
-	StressTypeDisease    StressType = "DISEASE"
-	StressTypePest       StressType = "PEST"
-	StressTypeHeat       StressType = "HEAT"
-	StressTypeFrost      StressType = "FROST"
+	StressTypeWater       StressType = "WATER"
+	StressTypeNutrient    StressType = "NUTRIENT"
+	StressTypeDisease     StressType = "DISEASE"
+	StressTypePest        StressType = "PEST"
+	StressTypeHeat        StressType = "HEAT"
+	StressTypeFrost       StressType = "FROST"
 )
 
 // IsValid checks if the stress type is a valid value.
@@ -35,10 +35,10 @@ type SeverityLevel string
 
 const (
 	SeverityLevelUnspecified SeverityLevel = ""
-	SeverityLevelLow        SeverityLevel = "LOW"
-	SeverityLevelMedium     SeverityLevel = "MEDIUM"
-	SeverityLevelHigh       SeverityLevel = "HIGH"
-	SeverityLevelCritical   SeverityLevel = "CRITICAL"
+	SeverityLevelLow         SeverityLevel = "LOW"
+	SeverityLevelMedium      SeverityLevel = "MEDIUM"
+	SeverityLevelHigh        SeverityLevel = "HIGH"
+	SeverityLevelCritical    SeverityLevel = "CRITICAL"
 )
 
 // IsValid checks if the severity level is a valid value.
@@ -61,6 +61,7 @@ const (
 	AnalysisTypeTemporalTrend      AnalysisType = "TEMPORAL_TREND"
 	AnalysisTypeAnomalyDetection   AnalysisType = "ANOMALY_DETECTION"
 	AnalysisTypeCropClassification AnalysisType = "CROP_CLASSIFICATION"
+	AnalysisTypePhenology          AnalysisType = "PHENOLOGY"
 )
 
 // IsValid checks if the analysis type is a valid value.
@@ -68,7 +69,7 @@ func (at AnalysisType) IsValid() bool {
 	switch at {
 	case AnalysisTypeStressDetection, AnalysisTypeChangeDetection,
 		AnalysisTypeTemporalTrend, AnalysisTypeAnomalyDetection,
-		AnalysisTypeCropClassification:
+		AnalysisTypeCropClassification, AnalysisTypePhenology:
 		return true
 	default:
 		return false
@@ -121,6 +122,9 @@ type TemporalAnalysis struct {
 	DeviationPercent float64      `json:"deviation_percent" db:"deviation_percent"`
 	PeriodStart      time.Time    `json:"period_start" db:"period_start"`
 	PeriodEnd        time.Time    `json:"period_end" db:"period_end"`
+	// Details carries analysis-specific outputs (z-scores, anomaly dates,
+	// phenology dates) that do not fit the scalar columns.
+	Details map[string]interface{} `json:"details" db:"details"`
 }
 
 // GetID returns the primary key of the temporal analysis.

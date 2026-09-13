@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"p9e.in/samavaya/packages/grpcdial"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/structpb"
+	"p9e.in/samavaya/packages/grpcdial"
 
 	"p9e.in/samavaya/packages/p9log"
 )
@@ -66,6 +66,15 @@ type NDVIResult struct {
 	Zones            []NDVIZone
 	ModelVersion     string
 	ProcessingTimeMs int64
+
+	// Quality metadata from cloud masking and product checks.
+	CloudMasked        bool
+	CloudFraction      float64
+	ValidPixelFraction float64
+	ProcessingLevel    string
+	ProcessingAdvisory string
+	Sensor             string
+	Harmonized         bool
 }
 
 // BandStatistics contains statistical summary of a raster band.
@@ -106,7 +115,8 @@ type StressZone struct {
 	Confidence      float64
 }
 
-// RasterBandsInput contains the satellite raster band data.
+// RasterBandsInput contains the satellite raster band data plus optional QA
+// layers and product metadata used for cloud masking and harmonization.
 type RasterBandsInput struct {
 	NIRBand     []float64
 	RedBand     []float64
@@ -115,6 +125,51 @@ type RasterBandsInput struct {
 	RedEdgeBand []float64
 	Width       int32
 	Height      int32
+	// SCLBand is the Sentinel-2 L2A scene classification layer (codes 0..11).
+	SCLBand []float64
+	// QAPixelBand is the Landsat Collection 2 QA_PIXEL bit mask.
+	QAPixelBand []float64
+	// ProcessingLevel is the product level label, e.g. "L2A", "L1C", "L2SP".
+	ProcessingLevel string
+	// Sensor is the imaging platform, e.g. "SENTINEL2", "LANDSAT8", "UAV".
+	Sensor string
+	// CloudBufferPixels dilates masked regions; 0 keeps the mask as delivered.
+	CloudBufferPixels int32
+}
+
+// bandsToStruct serializes RasterBandsInput for the structpb transport,
+// including the band arrays and QA metadata.
+func bandsToStruct(bands *RasterBandsInput) *structpb.Struct {
+	if bands == nil {
+		s, _ := structpb.NewStruct(map[string]interface{}{})
+		return s
+	}
+	fields := map[string]interface{}{
+		"width":               float64(bands.Width),
+		"height":              float64(bands.Height),
+		"processing_level":    bands.ProcessingLevel,
+		"sensor":              bands.Sensor,
+		"cloud_buffer_pixels": float64(bands.CloudBufferPixels),
+	}
+	addBand := func(key string, values []float64) {
+		if len(values) == 0 {
+			return
+		}
+		list := make([]interface{}, len(values))
+		for i, v := range values {
+			list[i] = v
+		}
+		fields[key] = list
+	}
+	addBand("nir_band", bands.NIRBand)
+	addBand("red_band", bands.RedBand)
+	addBand("green_band", bands.GreenBand)
+	addBand("blue_band", bands.BlueBand)
+	addBand("red_edge_band", bands.RedEdgeBand)
+	addBand("scl_band", bands.SCLBand)
+	addBand("qa_pixel_band", bands.QAPixelBand)
+	s, _ := structpb.NewStruct(fields)
+	return s
 }
 
 // BoundingBoxInput describes the spatial clip bounds.
@@ -128,16 +183,9 @@ type BoundingBoxInput struct {
 // ComputeNDVI calls the AI Gateway to compute NDVI from satellite raster bands.
 // This replaces the placeholder computation with the Rust satellite-ndvi-engine.
 func (c *AIClient) ComputeNDVI(ctx context.Context, requestID string, bands *RasterBandsInput, clipBounds *BoundingBoxInput) (*NDVIResult, error) {
-	bandsStruct, _ := structpb.NewStruct(map[string]interface{}{
-		"width":  float64(bands.Width),
-		"height": float64(bands.Height),
-	})
-	// Note: Large raster arrays would use proper proto serialization in production.
-	// The structpb approach works for the integration contract.
-
 	reqFields := map[string]*structpb.Value{
 		"request_id": structpb.NewStringValue(requestID),
-		"bands":      structpb.NewStructValue(bandsStruct),
+		"bands":      structpb.NewStructValue(bandsToStruct(bands)),
 	}
 
 	if clipBounds != nil {
@@ -173,16 +221,11 @@ func (c *AIClient) ComputeNDVI(ctx context.Context, requestID string, bands *Ras
 // DetectVegetationStress calls the AI Gateway to detect crop stress from satellite data.
 // This replaces the placeholder stress detection with the Rust engine.
 func (c *AIClient) DetectVegetationStress(ctx context.Context, requestID string, bands *RasterBandsInput, ndviThreshold, ndwiThreshold float64) (*VegetationStressResult, error) {
-	bandsStruct, _ := structpb.NewStruct(map[string]interface{}{
-		"width":  float64(bands.Width),
-		"height": float64(bands.Height),
-	})
-
 	reqFields := map[string]*structpb.Value{
-		"request_id":             structpb.NewStringValue(requestID),
-		"bands":                  structpb.NewStructValue(bandsStruct),
-		"ndvi_stress_threshold":  structpb.NewNumberValue(ndviThreshold),
-		"ndwi_stress_threshold":  structpb.NewNumberValue(ndwiThreshold),
+		"request_id":            structpb.NewStringValue(requestID),
+		"bands":                 structpb.NewStructValue(bandsToStruct(bands)),
+		"ndvi_stress_threshold": structpb.NewNumberValue(ndviThreshold),
+		"ndwi_stress_threshold": structpb.NewNumberValue(ndwiThreshold),
 	}
 
 	reqMsg := &structpb.Struct{Fields: reqFields}
@@ -220,6 +263,17 @@ func parseNDVIResult(resp *structpb.Struct) *NDVIResult {
 	result.Height = int32(getNumberField(resp, "height"))
 	result.ModelVersion = getStringField(resp, "model_version")
 	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
+	result.CloudFraction = getNumberField(resp, "cloud_fraction")
+	result.ValidPixelFraction = getNumberField(resp, "valid_pixel_fraction")
+	result.ProcessingLevel = getStringField(resp, "processing_level")
+	result.ProcessingAdvisory = getStringField(resp, "processing_advisory")
+	result.Sensor = getStringField(resp, "sensor")
+	if v, ok := resp.Fields["cloud_masked"]; ok {
+		result.CloudMasked = v.GetBoolValue()
+	}
+	if v, ok := resp.Fields["harmonized"]; ok {
+		result.Harmonized = v.GetBoolValue()
+	}
 
 	if statsVal, ok := resp.Fields["statistics"]; ok {
 		if ss := statsVal.GetStructValue(); ss != nil {

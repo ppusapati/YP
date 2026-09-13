@@ -3,12 +3,14 @@ package services
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
@@ -18,27 +20,20 @@ import (
 
 	analyticsmodels "p9e.in/samavaya/agriculture/satellite-analytics-service/internal/models"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/repositories"
+	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/timeseries"
 )
-
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
 
 // ---------------------------------------------------------------------------
 // Mock: AnalyticsRepository
 // ---------------------------------------------------------------------------
 
 type mockAnalyticsRepo struct {
-	stressAlerts      map[string]*analyticsmodels.StressAlert          // keyed by UUID
-	alertsByJob       map[string][]analyticsmodels.StressAlert         // keyed by processingJobID
-	temporalAnalyses  map[string]*analyticsmodels.TemporalAnalysis     // keyed by UUID
-	latestAnalysis    map[string]*analyticsmodels.TemporalAnalysis     // keyed by tenantID/farmID/fieldID
-	activeAlertCount  map[string]int32                                 // keyed by tenantID/farmID/fieldID
-	dominantStress    map[string]*analyticsmodels.StressType           // keyed by tenantID/farmID/fieldID
+	stressAlerts     map[string]*analyticsmodels.StressAlert      // keyed by UUID
+	alertsByJob      map[string][]analyticsmodels.StressAlert     // keyed by processingJobID
+	temporalAnalyses map[string]*analyticsmodels.TemporalAnalysis // keyed by UUID
+	latestAnalysis   map[string]*analyticsmodels.TemporalAnalysis // keyed by tenantID/farmID/fieldID
+	activeAlertCount map[string]int32                             // keyed by tenantID/farmID/fieldID
+	dominantStress   map[string]*analyticsmodels.StressType       // keyed by tenantID/farmID/fieldID
 }
 
 func newMockAnalyticsRepo() *mockAnalyticsRepo {
@@ -146,13 +141,51 @@ func testContext(tenantID, userID string) context.Context {
 	return ctx
 }
 
+// fakeVegClient serves a canned NDVI series for temporal analysis tests.
+type fakeVegClient struct {
+	samples []timeseries.Sample
+	err     error
+	calls   int
+}
+
+func (f *fakeVegClient) GetNDVITimeSeries(_ context.Context, _, _ string, from, to time.Time) ([]timeseries.Sample, error) {
+	f.calls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	var out []timeseries.Sample
+	for _, s := range f.samples {
+		if !s.Date.Before(from) && !s.Date.After(to) {
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}
+
+// seasonSeries returns a bell-shaped NDVI season (peak ≈ day 90) sampled every 5 days.
+func seasonSeries(start time.Time, days int) []timeseries.Sample {
+	var out []timeseries.Sample
+	for d := 0; d <= days; d += 5 {
+		v := 0.2 + 0.6*math.Exp(-math.Pow(float64(d-90)/30, 2))
+		out = append(out, timeseries.Sample{Date: start.AddDate(0, 0, d), Value: v, Sensor: "SENTINEL2"})
+	}
+	return out
+}
+
+var testPeriodStart = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
 func newTestService() (*mockAnalyticsRepo, AnalyticsService) {
+	repo, svc, _ := newTestServiceWithVeg(&fakeVegClient{samples: seasonSeries(testPeriodStart, 180)})
+	return repo, svc
+}
+
+func newTestServiceWithVeg(veg *fakeVegClient) (*mockAnalyticsRepo, AnalyticsService, *fakeVegClient) {
 	repo := newMockAnalyticsRepo()
 	d := deps.ServiceDeps{
-		Log: nopLogger{},
+		Log: p9log.NewLogger(zap.NewNop()),
 	}
-	svc := NewAnalyticsService(d, repo, nil)
-	return repo, svc
+	svc := NewAnalyticsService(d, repo, nil, veg)
+	return repo, svc, veg
 }
 
 // ---------------------------------------------------------------------------
@@ -360,6 +393,135 @@ func TestRunTemporalAnalysis_HappyPath(t *testing.T) {
 	assert.Equal(t, "NDVI", analysis.MetricName)
 	assert.Equal(t, "user-1", analysis.CreatedBy)
 	assert.Equal(t, "analysis-uuid-001", analysis.ID)
+	// 151-day period over a 5-day cadence yields 31 observations.
+	assert.Equal(t, 31, analysis.Details["observations"])
+	assert.Contains(t, analysis.Details, "trend_direction")
+	assert.InDelta(t, 0.2, analysis.CurrentValue, 0.05, "series ends back near baseline")
+}
+
+func TestRunTemporalAnalysis_TrendOnRisingSeries(t *testing.T) {
+	var rising []timeseries.Sample
+	for d := 0; d <= 60; d += 5 {
+		rising = append(rising, timeseries.Sample{Date: testPeriodStart.AddDate(0, 0, d), Value: 0.3 + 0.005*float64(d)})
+	}
+	_, svc, _ := newTestServiceWithVeg(&fakeVegClient{samples: rising})
+	ctx := testContext("tenant-1", "user-1")
+
+	a, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeTemporalTrend, testPeriodStart, testPeriodStart.AddDate(0, 0, 60))
+	require.NoError(t, err)
+	assert.InDelta(t, 0.005, a.TrendSlope, 1e-9)
+	assert.InDelta(t, 1.0, a.TrendRSquared, 1e-6)
+	assert.InDelta(t, 0.3, a.BaselineValue, 1e-9)
+	assert.InDelta(t, 0.6, a.CurrentValue, 1e-9)
+	assert.InDelta(t, 100, a.DeviationPercent, 1e-6)
+	assert.Equal(t, "increasing", a.Details["trend_direction"])
+}
+
+func TestRunTemporalAnalysis_ChangeDetection(t *testing.T) {
+	var series []timeseries.Sample
+	for d := 0; d < 60; d += 5 {
+		v := 0.7
+		if d >= 30 {
+			v = 0.4
+		}
+		series = append(series, timeseries.Sample{Date: testPeriodStart.AddDate(0, 0, d), Value: v + 0.01*float64(d%2)})
+	}
+	_, svc, _ := newTestServiceWithVeg(&fakeVegClient{samples: series})
+	ctx := testContext("tenant-1", "user-1")
+
+	a, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeChangeDetection, testPeriodStart, testPeriodStart.AddDate(0, 0, 60))
+	require.NoError(t, err)
+	assert.Equal(t, "change_magnitude", a.MetricName)
+	assert.InDelta(t, 0.7, a.BaselineValue, 0.02)
+	assert.InDelta(t, 0.4, a.CurrentValue, 0.02)
+	assert.Less(t, a.DeviationPercent, -35.0)
+	assert.Equal(t, true, a.Details["significant"])
+	assert.Less(t, a.Details["z_score"].(float64), -5.0)
+}
+
+func TestRunTemporalAnalysis_AnomalyDetection(t *testing.T) {
+	series := seasonSeries(testPeriodStart, 180)
+	series[10].Value = 0.05
+	_, svc, _ := newTestServiceWithVeg(&fakeVegClient{samples: series})
+	ctx := testContext("tenant-1", "user-1")
+
+	a, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeAnomalyDetection, testPeriodStart, testPeriodStart.AddDate(0, 0, 180))
+	require.NoError(t, err)
+	assert.Equal(t, "anomaly_score", a.MetricName)
+	assert.Equal(t, 1, a.Details["anomaly_count"])
+	assert.Greater(t, a.Details["max_abs_z"].(float64), 3.0)
+	anomalies := a.Details["anomalies"].([]interface{})
+	require.Len(t, anomalies, 1)
+	assert.Equal(t, series[10].Date.Format(time.RFC3339), anomalies[0].(map[string]interface{})["date"])
+}
+
+func TestRunTemporalAnalysis_Phenology(t *testing.T) {
+	_, svc := newTestService()
+	ctx := testContext("tenant-1", "user-1")
+
+	a, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypePhenology, testPeriodStart, testPeriodStart.AddDate(0, 0, 180))
+	require.NoError(t, err)
+	assert.Equal(t, "phenology", a.MetricName)
+	assert.Equal(t, true, a.Details["detected"])
+	assert.InDelta(t, 0.8, a.CurrentValue, 0.05)
+	assert.InDelta(t, 0.2, a.BaselineValue, 0.05)
+	peak, err := time.Parse(time.RFC3339, a.Details["peak_date"].(string))
+	require.NoError(t, err)
+	assert.InDelta(t, 90, peak.Sub(testPeriodStart).Hours()/24, 5)
+	assert.Contains(t, a.Details, "season_start")
+	assert.Contains(t, a.Details, "season_end")
+}
+
+func TestRunTemporalAnalysis_StressDetection(t *testing.T) {
+	series := []timeseries.Sample{
+		{Date: testPeriodStart, Value: 0.25},
+		{Date: testPeriodStart.AddDate(0, 0, 5), Value: 0.28},
+		{Date: testPeriodStart.AddDate(0, 0, 10), Value: 0.5},
+		{Date: testPeriodStart.AddDate(0, 0, 15), Value: 0.6},
+	}
+	_, svc, _ := newTestServiceWithVeg(&fakeVegClient{samples: series})
+	ctx := testContext("tenant-1", "user-1")
+
+	a, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeStressDetection, testPeriodStart, testPeriodStart.AddDate(0, 0, 15))
+	require.NoError(t, err)
+	assert.Equal(t, "stress_index", a.MetricName)
+	assert.InDelta(t, 0.5, a.CurrentValue, 1e-9)
+	assert.InDelta(t, 0.6, a.Details["latest_ndvi"], 1e-9)
+}
+
+func TestRunTemporalAnalysis_InsufficientData(t *testing.T) {
+	_, svc, _ := newTestServiceWithVeg(&fakeVegClient{samples: seasonSeries(testPeriodStart, 5)})
+	ctx := testContext("tenant-1", "user-1")
+
+	_, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeTemporalTrend, testPeriodStart, testPeriodStart.AddDate(0, 0, 5))
+	require.Error(t, err)
+	assert.Equal(t, "INSUFFICIENT_DATA", errors.Reason(err))
+}
+
+func TestRunTemporalAnalysis_VegClientFailure(t *testing.T) {
+	_, svc, _ := newTestServiceWithVeg(&fakeVegClient{err: fmt.Errorf("upstream down")})
+	ctx := testContext("tenant-1", "user-1")
+
+	_, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeTemporalTrend, testPeriodStart, testPeriodStart.AddDate(0, 0, 60))
+	require.Error(t, err)
+	assert.Equal(t, "TIME_SERIES_FETCH_FAILED", errors.Reason(err))
+}
+
+func TestRunTemporalAnalysis_CropClassificationUnsupported(t *testing.T) {
+	_, svc := newTestService()
+	ctx := testContext("tenant-1", "user-1")
+
+	_, err := svc.RunTemporalAnalysis(ctx, "farm-001", "field-001",
+		analyticsmodels.AnalysisTypeCropClassification, testPeriodStart, testPeriodStart.AddDate(0, 0, 60))
+	require.Error(t, err)
+	assert.Equal(t, "UNSUPPORTED_ANALYSIS_TYPE", errors.Reason(err))
 }
 
 func TestRunTemporalAnalysis_MissingTenant(t *testing.T) {

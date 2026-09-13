@@ -69,6 +69,12 @@ const (
 	// AIGatewayServiceGeneratePrescriptionProcedure is the fully-qualified name of the
 	// AIGatewayService's GeneratePrescription RPC.
 	AIGatewayServiceGeneratePrescriptionProcedure = "/agriculture.ai.v1.AIGatewayService/GeneratePrescription"
+	// AIGatewayServiceAnalyzeTerrainProcedure is the fully-qualified name of the AIGatewayService's
+	// AnalyzeTerrain RPC.
+	AIGatewayServiceAnalyzeTerrainProcedure = "/agriculture.ai.v1.AIGatewayService/AnalyzeTerrain"
+	// AIGatewayServiceSimulateWaterFlowProcedure is the fully-qualified name of the AIGatewayService's
+	// SimulateWaterFlow RPC.
+	AIGatewayServiceSimulateWaterFlowProcedure = "/agriculture.ai.v1.AIGatewayService/SimulateWaterFlow"
 )
 
 // AIGatewayServiceClient is a client for the agriculture.ai.v1.AIGatewayService service.
@@ -104,6 +110,10 @@ type AIGatewayServiceClient interface {
 	// ─── Prescriptions ────────────────────────────────────────────────
 	// Generate variable-rate prescription maps for a field.
 	GeneratePrescription(context.Context, *connect.Request[v1.GeneratePrescriptionRequest]) (*connect.Response[v1.GeneratePrescriptionResponse], error)
+	// ─── Terrain Analysis ───────────────────────────────────────────
+	AnalyzeTerrain(context.Context, *connect.Request[v1.AnalyzeTerrainRequest]) (*connect.Response[v1.AnalyzeTerrainResponse], error)
+	// ─── Water Flow Simulation ──────────────────────────────────────
+	SimulateWaterFlow(context.Context, *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error)
 }
 
 // NewAIGatewayServiceClient constructs a client for the agriculture.ai.v1.AIGatewayService service.
@@ -189,6 +199,18 @@ func NewAIGatewayServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(aIGatewayServiceMethods.ByName("GeneratePrescription")),
 			connect.WithClientOptions(opts...),
 		),
+		analyzeTerrain: connect.NewClient[v1.AnalyzeTerrainRequest, v1.AnalyzeTerrainResponse](
+			httpClient,
+			baseURL+AIGatewayServiceAnalyzeTerrainProcedure,
+			connect.WithSchema(aIGatewayServiceMethods.ByName("AnalyzeTerrain")),
+			connect.WithClientOptions(opts...),
+		),
+		simulateWaterFlow: connect.NewClient[v1.SimulateWaterFlowRequest, v1.SimulateWaterFlowResponse](
+			httpClient,
+			baseURL+AIGatewayServiceSimulateWaterFlowProcedure,
+			connect.WithSchema(aIGatewayServiceMethods.ByName("SimulateWaterFlow")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -206,6 +228,8 @@ type aIGatewayServiceClient struct {
 	evaluateFieldRisk        *connect.Client[v1.EvaluateFieldRiskRequest, v1.EvaluateFieldRiskResponse]
 	computeFieldAnalytics    *connect.Client[v1.ComputeFieldAnalyticsRequest, v1.ComputeFieldAnalyticsResponse]
 	generatePrescription     *connect.Client[v1.GeneratePrescriptionRequest, v1.GeneratePrescriptionResponse]
+	analyzeTerrain           *connect.Client[v1.AnalyzeTerrainRequest, v1.AnalyzeTerrainResponse]
+	simulateWaterFlow        *connect.Client[v1.SimulateWaterFlowRequest, v1.SimulateWaterFlowResponse]
 }
 
 // DiagnoseImage calls agriculture.ai.v1.AIGatewayService.DiagnoseImage.
@@ -268,6 +292,16 @@ func (c *aIGatewayServiceClient) GeneratePrescription(ctx context.Context, req *
 	return c.generatePrescription.CallUnary(ctx, req)
 }
 
+// AnalyzeTerrain calls agriculture.ai.v1.AIGatewayService.AnalyzeTerrain.
+func (c *aIGatewayServiceClient) AnalyzeTerrain(ctx context.Context, req *connect.Request[v1.AnalyzeTerrainRequest]) (*connect.Response[v1.AnalyzeTerrainResponse], error) {
+	return c.analyzeTerrain.CallUnary(ctx, req)
+}
+
+// SimulateWaterFlow calls agriculture.ai.v1.AIGatewayService.SimulateWaterFlow.
+func (c *aIGatewayServiceClient) SimulateWaterFlow(ctx context.Context, req *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error) {
+	return c.simulateWaterFlow.CallUnary(ctx, req)
+}
+
 // AIGatewayServiceHandler is an implementation of the agriculture.ai.v1.AIGatewayService service.
 type AIGatewayServiceHandler interface {
 	// ─── Plant Diagnosis ───────────────────────────────────────────────
@@ -301,6 +335,10 @@ type AIGatewayServiceHandler interface {
 	// ─── Prescriptions ────────────────────────────────────────────────
 	// Generate variable-rate prescription maps for a field.
 	GeneratePrescription(context.Context, *connect.Request[v1.GeneratePrescriptionRequest]) (*connect.Response[v1.GeneratePrescriptionResponse], error)
+	// ─── Terrain Analysis ───────────────────────────────────────────
+	AnalyzeTerrain(context.Context, *connect.Request[v1.AnalyzeTerrainRequest]) (*connect.Response[v1.AnalyzeTerrainResponse], error)
+	// ─── Water Flow Simulation ──────────────────────────────────────
+	SimulateWaterFlow(context.Context, *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error)
 }
 
 // NewAIGatewayServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -382,6 +420,18 @@ func NewAIGatewayServiceHandler(svc AIGatewayServiceHandler, opts ...connect.Han
 		connect.WithSchema(aIGatewayServiceMethods.ByName("GeneratePrescription")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aIGatewayServiceAnalyzeTerrainHandler := connect.NewUnaryHandler(
+		AIGatewayServiceAnalyzeTerrainProcedure,
+		svc.AnalyzeTerrain,
+		connect.WithSchema(aIGatewayServiceMethods.ByName("AnalyzeTerrain")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aIGatewayServiceSimulateWaterFlowHandler := connect.NewUnaryHandler(
+		AIGatewayServiceSimulateWaterFlowProcedure,
+		svc.SimulateWaterFlow,
+		connect.WithSchema(aIGatewayServiceMethods.ByName("SimulateWaterFlow")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.ai.v1.AIGatewayService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AIGatewayServiceDiagnoseImageProcedure:
@@ -408,6 +458,10 @@ func NewAIGatewayServiceHandler(svc AIGatewayServiceHandler, opts ...connect.Han
 			aIGatewayServiceComputeFieldAnalyticsHandler.ServeHTTP(w, r)
 		case AIGatewayServiceGeneratePrescriptionProcedure:
 			aIGatewayServiceGeneratePrescriptionHandler.ServeHTTP(w, r)
+		case AIGatewayServiceAnalyzeTerrainProcedure:
+			aIGatewayServiceAnalyzeTerrainHandler.ServeHTTP(w, r)
+		case AIGatewayServiceSimulateWaterFlowProcedure:
+			aIGatewayServiceSimulateWaterFlowHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -463,4 +517,12 @@ func (UnimplementedAIGatewayServiceHandler) ComputeFieldAnalytics(context.Contex
 
 func (UnimplementedAIGatewayServiceHandler) GeneratePrescription(context.Context, *connect.Request[v1.GeneratePrescriptionRequest]) (*connect.Response[v1.GeneratePrescriptionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.GeneratePrescription is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) AnalyzeTerrain(context.Context, *connect.Request[v1.AnalyzeTerrainRequest]) (*connect.Response[v1.AnalyzeTerrainResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.AnalyzeTerrain is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) SimulateWaterFlow(context.Context, *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.SimulateWaterFlow is not implemented"))
 }

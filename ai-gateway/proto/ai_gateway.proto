@@ -260,6 +260,13 @@ message RasterBands {
   repeated double red_edge_band = 5;
   int32 width = 6;
   int32 height = 7;
+  // Optional per-pixel QA layers used for cloud/shadow/snow masking.
+  repeated double scl_band = 8;      // Sentinel-2 L2A Scene Classification (codes 0..11)
+  repeated double qa_pixel_band = 9; // Landsat Collection 2 QA_PIXEL bit mask
+  // Product metadata used for processing-level checks and cross-sensor harmonization.
+  string processing_level = 10;      // e.g. "L2A", "L1C", "L2SP", "L1TP"
+  string sensor = 11;                // e.g. "SENTINEL2", "LANDSAT8", "PLANETSCOPE", "UAV"
+  int32 cloud_buffer_pixels = 12;    // dilate masked regions by N pixels (default 1)
 }
 
 message BoundingBox {
@@ -278,6 +285,14 @@ message ComputeNDVIResponse {
   repeated NdviZone zones = 6;
   string model_version = 7;
   int64 processing_time_ms = 8;
+  // Quality metadata (populated when QA layers / product metadata are supplied).
+  bool cloud_masked = 9;             // true when a per-pixel mask was applied
+  double cloud_fraction = 10;        // fraction of pixels flagged as cloud/cirrus
+  double valid_pixel_fraction = 11;  // fraction of pixels usable after masking
+  string processing_level = 12;      // normalized level label
+  string processing_advisory = 13;   // non-empty when the product is not surface reflectance
+  string sensor = 14;                // normalized sensor label
+  bool harmonized = 15;              // true when NDVI was mapped onto the Sentinel-2 scale
 }
 
 message BandStatistics {

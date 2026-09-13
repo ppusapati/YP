@@ -28,7 +28,7 @@ pub struct ServerConfig {
 }
 
 /// Paths and versions for AI/ML model artifacts.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct ModelPaths {
     /// Plant disease detection model directory.
     pub disease_detection_model: String,

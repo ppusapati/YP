@@ -31,6 +31,8 @@ const (
 	AIGatewayService_EvaluateFieldRisk_FullMethodName        = "/agriculture.ai.v1.AIGatewayService/EvaluateFieldRisk"
 	AIGatewayService_ComputeFieldAnalytics_FullMethodName    = "/agriculture.ai.v1.AIGatewayService/ComputeFieldAnalytics"
 	AIGatewayService_GeneratePrescription_FullMethodName     = "/agriculture.ai.v1.AIGatewayService/GeneratePrescription"
+	AIGatewayService_AnalyzeTerrain_FullMethodName           = "/agriculture.ai.v1.AIGatewayService/AnalyzeTerrain"
+	AIGatewayService_SimulateWaterFlow_FullMethodName        = "/agriculture.ai.v1.AIGatewayService/SimulateWaterFlow"
 )
 
 // AIGatewayServiceClient is the client API for AIGatewayService service.
@@ -71,6 +73,10 @@ type AIGatewayServiceClient interface {
 	// ─── Prescriptions ────────────────────────────────────────────────
 	// Generate variable-rate prescription maps for a field.
 	GeneratePrescription(ctx context.Context, in *GeneratePrescriptionRequest, opts ...grpc.CallOption) (*GeneratePrescriptionResponse, error)
+	// ─── Terrain Analysis ───────────────────────────────────────────
+	AnalyzeTerrain(ctx context.Context, in *AnalyzeTerrainRequest, opts ...grpc.CallOption) (*AnalyzeTerrainResponse, error)
+	// ─── Water Flow Simulation ──────────────────────────────────────
+	SimulateWaterFlow(ctx context.Context, in *SimulateWaterFlowRequest, opts ...grpc.CallOption) (*SimulateWaterFlowResponse, error)
 }
 
 type aIGatewayServiceClient struct {
@@ -201,6 +207,26 @@ func (c *aIGatewayServiceClient) GeneratePrescription(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *aIGatewayServiceClient) AnalyzeTerrain(ctx context.Context, in *AnalyzeTerrainRequest, opts ...grpc.CallOption) (*AnalyzeTerrainResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AnalyzeTerrainResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_AnalyzeTerrain_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aIGatewayServiceClient) SimulateWaterFlow(ctx context.Context, in *SimulateWaterFlowRequest, opts ...grpc.CallOption) (*SimulateWaterFlowResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SimulateWaterFlowResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_SimulateWaterFlow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AIGatewayServiceServer is the server API for AIGatewayService service.
 // All implementations must embed UnimplementedAIGatewayServiceServer
 // for forward compatibility.
@@ -239,6 +265,10 @@ type AIGatewayServiceServer interface {
 	// ─── Prescriptions ────────────────────────────────────────────────
 	// Generate variable-rate prescription maps for a field.
 	GeneratePrescription(context.Context, *GeneratePrescriptionRequest) (*GeneratePrescriptionResponse, error)
+	// ─── Terrain Analysis ───────────────────────────────────────────
+	AnalyzeTerrain(context.Context, *AnalyzeTerrainRequest) (*AnalyzeTerrainResponse, error)
+	// ─── Water Flow Simulation ──────────────────────────────────────
+	SimulateWaterFlow(context.Context, *SimulateWaterFlowRequest) (*SimulateWaterFlowResponse, error)
 	mustEmbedUnimplementedAIGatewayServiceServer()
 }
 
@@ -284,6 +314,12 @@ func (UnimplementedAIGatewayServiceServer) ComputeFieldAnalytics(context.Context
 }
 func (UnimplementedAIGatewayServiceServer) GeneratePrescription(context.Context, *GeneratePrescriptionRequest) (*GeneratePrescriptionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GeneratePrescription not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) AnalyzeTerrain(context.Context, *AnalyzeTerrainRequest) (*AnalyzeTerrainResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AnalyzeTerrain not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) SimulateWaterFlow(context.Context, *SimulateWaterFlowRequest) (*SimulateWaterFlowResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SimulateWaterFlow not implemented")
 }
 func (UnimplementedAIGatewayServiceServer) mustEmbedUnimplementedAIGatewayServiceServer() {}
 func (UnimplementedAIGatewayServiceServer) testEmbeddedByValue()                          {}
@@ -522,6 +558,42 @@ func _AIGatewayService_GeneratePrescription_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AIGatewayService_AnalyzeTerrain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AnalyzeTerrainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).AnalyzeTerrain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_AnalyzeTerrain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).AnalyzeTerrain(ctx, req.(*AnalyzeTerrainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AIGatewayService_SimulateWaterFlow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SimulateWaterFlowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).SimulateWaterFlow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_SimulateWaterFlow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).SimulateWaterFlow(ctx, req.(*SimulateWaterFlowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AIGatewayService_ServiceDesc is the grpc.ServiceDesc for AIGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -576,6 +648,14 @@ var AIGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GeneratePrescription",
 			Handler:    _AIGatewayService_GeneratePrescription_Handler,
+		},
+		{
+			MethodName: "AnalyzeTerrain",
+			Handler:    _AIGatewayService_AnalyzeTerrain_Handler,
+		},
+		{
+			MethodName: "SimulateWaterFlow",
+			Handler:    _AIGatewayService_SimulateWaterFlow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

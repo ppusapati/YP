@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"p9e.in/samavaya/packages/deps"
@@ -14,19 +15,24 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/ai"
+	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/clients"
 	analyticsmodels "p9e.in/samavaya/agriculture/satellite-analytics-service/internal/models"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/repositories"
+	"p9e.in/samavaya/agriculture/satellite-analytics-service/internal/timeseries"
 )
 
+// minTemporalSamples is the fewest observations that support a fit.
+const minTemporalSamples = 3
+
 const (
-	serviceName       = "satellite-analytics-service"
-	maxPageSize int32 = 100
-	defaultPageSize   = 20
+	serviceName           = "satellite-analytics-service"
+	maxPageSize     int32 = 100
+	defaultPageSize       = 20
 )
 
 // Analytics event types
 const (
-	EventTypeStressDetected   domain.EventType = "agriculture.satellite.analytics.stress.detected"
+	EventTypeStressDetected    domain.EventType = "agriculture.satellite.analytics.stress.detected"
 	EventTypeAnalysisCompleted domain.EventType = "agriculture.satellite.analytics.analysis.completed"
 )
 
@@ -41,19 +47,21 @@ type AnalyticsService interface {
 
 // analyticsService is the concrete implementation of AnalyticsService.
 type analyticsService struct {
-	d        deps.ServiceDeps
-	repo     repositories.AnalyticsRepository
-	log      *p9log.Helper
-	aiClient *ai.AIClient
+	d         deps.ServiceDeps
+	repo      repositories.AnalyticsRepository
+	log       *p9log.Helper
+	aiClient  *ai.AIClient
+	vegClient clients.VegetationIndexClient
 }
 
 // NewAnalyticsService creates a new AnalyticsService.
-func NewAnalyticsService(d deps.ServiceDeps, repo repositories.AnalyticsRepository, aiClient *ai.AIClient) AnalyticsService {
+func NewAnalyticsService(d deps.ServiceDeps, repo repositories.AnalyticsRepository, aiClient *ai.AIClient, vegClient clients.VegetationIndexClient) AnalyticsService {
 	return &analyticsService{
-		d:        d,
-		repo:     repo,
-		log:      p9log.NewHelper(p9log.With(d.Log, "component", "AnalyticsService")),
-		aiClient: aiClient,
+		d:         d,
+		repo:      repo,
+		log:       p9log.NewHelper(p9log.With(d.Log, "component", "AnalyticsService")),
+		aiClient:  aiClient,
+		vegClient: vegClient,
 	}
 }
 
@@ -156,12 +164,12 @@ func (s *analyticsService) DetectStress(ctx context.Context, farmID, fieldID, pr
 
 	// Emit domain event
 	s.emitAnalyticsEvent(ctx, EventTypeStressDetected, map[string]interface{}{
-		"farm_id":            farmID,
-		"field_id":           fieldID,
-		"processing_job_id":  processingJobID,
-		"alert_count":        len(alerts),
-		"stress_type":        string(alerts[0].StressType),
-		"severity":           string(alerts[0].Severity),
+		"farm_id":           farmID,
+		"field_id":          fieldID,
+		"processing_job_id": processingJobID,
+		"alert_count":       len(alerts),
+		"stress_type":       string(alerts[0].StressType),
+		"severity":          string(alerts[0].Severity),
 	})
 
 	s.log.Infow("msg", "stress detection completed",
@@ -261,71 +269,28 @@ func (s *analyticsService) RunTemporalAnalysis(ctx context.Context, farmID, fiel
 	if userID == "" {
 		userID = "system"
 	}
-
-	// In a real implementation, this would perform temporal analysis
-	// on satellite imagery time series data.
-	// For now, we create the analysis record with computed results.
-
-	metricName := "NDVI"
-	switch analysisType {
-	case analyticsmodels.AnalysisTypeStressDetection:
-		metricName = "stress_index"
-	case analyticsmodels.AnalysisTypeChangeDetection:
-		metricName = "change_magnitude"
-	case analyticsmodels.AnalysisTypeTemporalTrend:
-		metricName = "NDVI"
-	case analyticsmodels.AnalysisTypeAnomalyDetection:
-		metricName = "anomaly_score"
-	case analyticsmodels.AnalysisTypeCropClassification:
-		metricName = "classification_confidence"
+	if analysisType == analyticsmodels.AnalysisTypeCropClassification {
+		return nil, errors.BadRequest("UNSUPPORTED_ANALYSIS_TYPE", "crop classification is an imagery task; use the AI gateway, not temporal analysis")
+	}
+	if s.vegClient == nil {
+		return nil, errors.InternalServer("VEGETATION_CLIENT_UNAVAILABLE", "vegetation-index client not configured")
 	}
 
-	// Default synthetic values used when the AI gateway is unavailable.
-	trendSlope := 0.02
-	trendRSquared := 0.87
-	currentValue := 0.72
-	baselineValue := 0.68
-	deviationPercent := 5.88
-
-	// Attempt AI-powered NDVI computation via the AI gateway.
-	if s.aiClient != nil {
-		ndviResult, aiErr := s.aiClient.ComputeNDVI(ctx, requestID, &ai.RasterBandsInput{}, nil)
-		if aiErr != nil {
-			s.log.Warnw("msg", "AI ComputeNDVI failed, falling back to synthetic values",
-				"error", aiErr, "request_id", requestID)
-		} else if ndviResult.Statistics != nil {
-			currentValue = ndviResult.Statistics.Mean
-			baselineValue = ndviResult.Statistics.Median
-			if baselineValue != 0 {
-				deviationPercent = ((currentValue - baselineValue) / baselineValue) * 100.0
-			}
-			trendSlope = ndviResult.Statistics.Mean - ndviResult.Statistics.Median
-			// Use StdDev as a proxy for R-squared: lower stddev implies higher confidence.
-			if ndviResult.Statistics.StdDev < 0.1 {
-				trendRSquared = 0.95
-			} else if ndviResult.Statistics.StdDev < 0.2 {
-				trendRSquared = 0.80
-			} else {
-				trendRSquared = 0.60
-			}
-		}
+	raw, err := s.vegClient.GetNDVITimeSeries(ctx, farmID, fieldID, periodStart, periodEnd)
+	if err != nil {
+		s.log.Errorw("msg", "failed to fetch NDVI time series", "error", err, "request_id", requestID)
+		return nil, errors.InternalServer("TIME_SERIES_FETCH_FAILED", "could not fetch NDVI time series")
+	}
+	if len(raw) < minTemporalSamples {
+		return nil, errors.NotFound("INSUFFICIENT_DATA", fmt.Sprintf("need at least %d NDVI observations in the period, found %d", minTemporalSamples, len(raw)))
 	}
 
-	analysis := &analyticsmodels.TemporalAnalysis{
-		TenantID:         tenantID,
-		FarmID:           farmID,
-		FieldID:          fieldID,
-		AnalysisType:     analysisType,
-		MetricName:       metricName,
-		TrendSlope:       trendSlope,
-		TrendRSquared:    trendRSquared,
-		CurrentValue:     currentValue,
-		BaselineValue:    baselineValue,
-		DeviationPercent: deviationPercent,
-		PeriodStart:      periodStart,
-		PeriodEnd:        periodEnd,
-	}
+	analysis := s.analyzeSeries(analysisType, raw, periodStart, periodEnd)
+	analysis.TenantID = tenantID
+	analysis.FarmID = farmID
+	analysis.FieldID = fieldID
 	analysis.CreatedBy = userID
+	metricName := analysis.MetricName
 
 	created, err := s.repo.CreateTemporalAnalysis(ctx, analysis)
 	if err != nil {
@@ -351,6 +316,106 @@ func (s *analyticsService) RunTemporalAnalysis(ctx context.Context, farmID, fiel
 	)
 
 	return created, nil
+}
+
+// analyzeSeries derives the analysis record from the observed NDVI series.
+// Observations are harmonized onto the Sentinel-2 scale and resampled onto a
+// regular grid so uneven revisit intervals do not bias the fits.
+func (s *analyticsService) analyzeSeries(analysisType analyticsmodels.AnalysisType, raw []timeseries.Sample, periodStart, periodEnd time.Time) *analyticsmodels.TemporalAnalysis {
+	observed := timeseries.Sorted(timeseries.Harmonize(raw))
+	filled := timeseries.GapFill(observed, timeseries.DefaultStep, timeseries.DefaultMaxGap)
+	trend := timeseries.FitTrend(filled)
+	last := observed[len(observed)-1]
+
+	details := map[string]interface{}{
+		"observations":        len(observed),
+		"grid_points":         len(filled),
+		"first_observation":   observed[0].Date.Format(time.RFC3339),
+		"last_observation":    last.Date.Format(time.RFC3339),
+		"trend_direction":     trend.Direction,
+		"trend_slope_per_day": trend.SlopePerDay,
+		"trend_r_squared":     trend.RSquared,
+	}
+
+	a := &analyticsmodels.TemporalAnalysis{
+		AnalysisType:  analysisType,
+		MetricName:    "NDVI",
+		TrendSlope:    trend.SlopePerDay,
+		TrendRSquared: trend.RSquared,
+		CurrentValue:  last.Value,
+		BaselineValue: trend.FittedStart,
+		PeriodStart:   periodStart,
+		PeriodEnd:     periodEnd,
+		Details:       details,
+	}
+	if a.BaselineValue != 0 {
+		a.DeviationPercent = (a.CurrentValue - a.BaselineValue) / math.Abs(a.BaselineValue) * 100
+	}
+
+	switch analysisType {
+	case analyticsmodels.AnalysisTypeChangeDetection:
+		split := periodStart.Add(periodEnd.Sub(periodStart) / 2)
+		c := timeseries.DetectChange(filled, split)
+		a.MetricName = "change_magnitude"
+		a.CurrentValue = c.AfterMean
+		a.BaselineValue = c.BeforeMean
+		a.DeviationPercent = c.PctChange
+		details["split_at"] = split.Format(time.RFC3339)
+		details["delta"] = c.Delta
+		details["z_score"] = c.ZScore
+		details["significant"] = c.Significant
+		details["samples_before"] = c.NBefore
+		details["samples_after"] = c.NAfter
+
+	case analyticsmodels.AnalysisTypeAnomalyDetection:
+		anomalies := timeseries.DetectAnomalies(observed, timeseries.DefaultAnomalyZ)
+		a.MetricName = "anomaly_score"
+		a.BaselineValue = timeseries.Median(observed)
+		if a.BaselineValue != 0 {
+			a.DeviationPercent = (a.CurrentValue - a.BaselineValue) / math.Abs(a.BaselineValue) * 100
+		}
+		var maxAbsZ float64
+		list := make([]interface{}, 0, len(anomalies))
+		for _, an := range anomalies {
+			maxAbsZ = math.Max(maxAbsZ, math.Abs(an.ZScore))
+			list = append(list, map[string]interface{}{
+				"date": an.Date.Format(time.RFC3339), "value": an.Value, "expected": an.Expected, "z_score": an.ZScore,
+			})
+		}
+		details["anomaly_count"] = len(anomalies)
+		details["max_abs_z"] = maxAbsZ
+		details["anomalies"] = list
+
+	case analyticsmodels.AnalysisTypeStressDetection:
+		frac := timeseries.FractionBelow(observed, timeseries.StressNDVIThreshold)
+		a.MetricName = "stress_index"
+		a.CurrentValue = frac
+		a.BaselineValue = timeseries.StressNDVIThreshold
+		a.DeviationPercent = frac * 100
+		details["stress_threshold"] = timeseries.StressNDVIThreshold
+		details["latest_ndvi"] = last.Value
+		details["stressed_fraction"] = frac
+
+	case analyticsmodels.AnalysisTypePhenology:
+		p := timeseries.ExtractPhenology(filled, timeseries.DefaultPhenologyThreshold)
+		a.MetricName = "phenology"
+		a.CurrentValue = p.PeakValue
+		a.BaselineValue = p.BaseValue
+		a.DeviationPercent = p.Amplitude * 100
+		details["detected"] = p.Detected
+		details["peak_value"] = p.PeakValue
+		details["base_value"] = p.BaseValue
+		details["amplitude"] = p.Amplitude
+		if p.Detected {
+			details["season_start"] = p.SeasonStart.Format(time.RFC3339)
+			details["peak_date"] = p.PeakDate.Format(time.RFC3339)
+			details["season_end"] = p.SeasonEnd.Format(time.RFC3339)
+			details["season_length_days"] = p.SeasonLengthDays
+			details["green_up_rate_per_day"] = p.GreenUpRatePerDay
+			details["senescence_rate_per_day"] = p.SenescenceRatePerDay
+		}
+	}
+	return a
 }
 
 // GetFieldAnalyticsSummary returns an analytics summary for a field.

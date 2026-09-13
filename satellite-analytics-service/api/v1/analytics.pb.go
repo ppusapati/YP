@@ -9,6 +9,7 @@ package v1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -147,6 +148,7 @@ const (
 	AnalysisType_ANALYSIS_TYPE_TEMPORAL_TREND      AnalysisType = 3
 	AnalysisType_ANALYSIS_TYPE_ANOMALY_DETECTION   AnalysisType = 4
 	AnalysisType_ANALYSIS_TYPE_CROP_CLASSIFICATION AnalysisType = 5
+	AnalysisType_ANALYSIS_TYPE_PHENOLOGY           AnalysisType = 6
 )
 
 // Enum value maps for AnalysisType.
@@ -158,6 +160,7 @@ var (
 		3: "ANALYSIS_TYPE_TEMPORAL_TREND",
 		4: "ANALYSIS_TYPE_ANOMALY_DETECTION",
 		5: "ANALYSIS_TYPE_CROP_CLASSIFICATION",
+		6: "ANALYSIS_TYPE_PHENOLOGY",
 	}
 	AnalysisType_value = map[string]int32{
 		"ANALYSIS_TYPE_UNSPECIFIED":         0,
@@ -166,6 +169,7 @@ var (
 		"ANALYSIS_TYPE_TEMPORAL_TREND":      3,
 		"ANALYSIS_TYPE_ANOMALY_DETECTION":   4,
 		"ANALYSIS_TYPE_CROP_CLASSIFICATION": 5,
+		"ANALYSIS_TYPE_PHENOLOGY":           6,
 	}
 )
 
@@ -368,8 +372,10 @@ type TemporalAnalysis struct {
 	PeriodStart      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=period_start,json=periodStart,proto3" json:"period_start,omitempty"`
 	PeriodEnd        *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=period_end,json=periodEnd,proto3" json:"period_end,omitempty"`
 	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Analysis-specific outputs: z-scores, anomaly dates, phenology dates, sample counts.
+	Details       *structpb.Struct `protobuf:"bytes,15,opt,name=details,proto3" json:"details,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TemporalAnalysis) Reset() {
@@ -496,6 +502,13 @@ func (x *TemporalAnalysis) GetPeriodEnd() *timestamppb.Timestamp {
 func (x *TemporalAnalysis) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *TemporalAnalysis) GetDetails() *structpb.Struct {
+	if x != nil {
+		return x.Details
 	}
 	return nil
 }
@@ -1088,7 +1101,7 @@ var File_analytics_proto protoreflect.FileDescriptor
 
 const file_analytics_proto_rawDesc = "" +
 	"\n" +
-	"\x0fanalytics.proto\x12\"agriculture.satellite.analytics.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9e\x05\n" +
+	"\x0fanalytics.proto\x12\"agriculture.satellite.analytics.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9e\x05\n" +
 	"\vStressAlert\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
@@ -1110,7 +1123,7 @@ const file_analytics_proto_rawDesc = "" +
 	"\vdetected_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"detectedAt\x129\n" +
 	"\n" +
-	"created_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xe2\x04\n" +
+	"created_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\x95\x05\n" +
 	"\x10TemporalAnalysis\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
@@ -1130,7 +1143,8 @@ const file_analytics_proto_rawDesc = "" +
 	"\n" +
 	"period_end\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tperiodEnd\x129\n" +
 	"\n" +
-	"created_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"u\n" +
+	"created_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x121\n" +
+	"\adetails\x18\x0f \x01(\v2\x17.google.protobuf.StructR\adetails\"u\n" +
 	"\x13DetectStressRequest\x12\x17\n" +
 	"\afarm_id\x18\x01 \x01(\tR\x06farmId\x12\x19\n" +
 	"\bfield_id\x18\x02 \x01(\tR\afieldId\x12*\n" +
@@ -1188,14 +1202,15 @@ const file_analytics_proto_rawDesc = "" +
 	"\x12SEVERITY_LEVEL_LOW\x10\x01\x12\x19\n" +
 	"\x15SEVERITY_LEVEL_MEDIUM\x10\x02\x12\x17\n" +
 	"\x13SEVERITY_LEVEL_HIGH\x10\x03\x12\x1b\n" +
-	"\x17SEVERITY_LEVEL_CRITICAL\x10\x04*\xe3\x01\n" +
+	"\x17SEVERITY_LEVEL_CRITICAL\x10\x04*\x80\x02\n" +
 	"\fAnalysisType\x12\x1d\n" +
 	"\x19ANALYSIS_TYPE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eANALYSIS_TYPE_STRESS_DETECTION\x10\x01\x12\"\n" +
 	"\x1eANALYSIS_TYPE_CHANGE_DETECTION\x10\x02\x12 \n" +
 	"\x1cANALYSIS_TYPE_TEMPORAL_TREND\x10\x03\x12#\n" +
 	"\x1fANALYSIS_TYPE_ANOMALY_DETECTION\x10\x04\x12%\n" +
-	"!ANALYSIS_TYPE_CROP_CLASSIFICATION\x10\x052\x80\x06\n" +
+	"!ANALYSIS_TYPE_CROP_CLASSIFICATION\x10\x05\x12\x1b\n" +
+	"\x17ANALYSIS_TYPE_PHENOLOGY\x10\x062\x80\x06\n" +
 	"\x19SatelliteAnalyticsService\x12\x81\x01\n" +
 	"\fDetectStress\x127.agriculture.satellite.analytics.v1.DetectStressRequest\x1a8.agriculture.satellite.analytics.v1.DetectStressResponse\x12\x8d\x01\n" +
 	"\x10ListStressAlerts\x12;.agriculture.satellite.analytics.v1.ListStressAlertsRequest\x1a<.agriculture.satellite.analytics.v1.ListStressAlertsResponse\x12\x8d\x01\n" +
@@ -1234,6 +1249,7 @@ var file_analytics_proto_goTypes = []any{
 	(*GetFieldAnalyticsSummaryRequest)(nil),  // 13: agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryRequest
 	(*GetFieldAnalyticsSummaryResponse)(nil), // 14: agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryResponse
 	(*timestamppb.Timestamp)(nil),            // 15: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                  // 16: google.protobuf.Struct
 }
 var file_analytics_proto_depIdxs = []int32{
 	0,  // 0: agriculture.satellite.analytics.v1.StressAlert.stress_type:type_name -> agriculture.satellite.analytics.v1.StressType
@@ -1244,30 +1260,31 @@ var file_analytics_proto_depIdxs = []int32{
 	15, // 5: agriculture.satellite.analytics.v1.TemporalAnalysis.period_start:type_name -> google.protobuf.Timestamp
 	15, // 6: agriculture.satellite.analytics.v1.TemporalAnalysis.period_end:type_name -> google.protobuf.Timestamp
 	15, // 7: agriculture.satellite.analytics.v1.TemporalAnalysis.created_at:type_name -> google.protobuf.Timestamp
-	3,  // 8: agriculture.satellite.analytics.v1.DetectStressResponse.alerts:type_name -> agriculture.satellite.analytics.v1.StressAlert
-	0,  // 9: agriculture.satellite.analytics.v1.ListStressAlertsRequest.stress_type:type_name -> agriculture.satellite.analytics.v1.StressType
-	1,  // 10: agriculture.satellite.analytics.v1.ListStressAlertsRequest.min_severity:type_name -> agriculture.satellite.analytics.v1.SeverityLevel
-	3,  // 11: agriculture.satellite.analytics.v1.ListStressAlertsResponse.alerts:type_name -> agriculture.satellite.analytics.v1.StressAlert
-	2,  // 12: agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest.analysis_type:type_name -> agriculture.satellite.analytics.v1.AnalysisType
-	15, // 13: agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest.period_start:type_name -> google.protobuf.Timestamp
-	15, // 14: agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest.period_end:type_name -> google.protobuf.Timestamp
-	4,  // 15: agriculture.satellite.analytics.v1.RunTemporalAnalysisResponse.analysis:type_name -> agriculture.satellite.analytics.v1.TemporalAnalysis
-	15, // 16: agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryResponse.last_analysis:type_name -> google.protobuf.Timestamp
-	5,  // 17: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.DetectStress:input_type -> agriculture.satellite.analytics.v1.DetectStressRequest
-	7,  // 18: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.ListStressAlerts:input_type -> agriculture.satellite.analytics.v1.ListStressAlertsRequest
-	9,  // 19: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.AcknowledgeAlert:input_type -> agriculture.satellite.analytics.v1.AcknowledgeAlertRequest
-	11, // 20: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.RunTemporalAnalysis:input_type -> agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest
-	13, // 21: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.GetFieldAnalyticsSummary:input_type -> agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryRequest
-	6,  // 22: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.DetectStress:output_type -> agriculture.satellite.analytics.v1.DetectStressResponse
-	8,  // 23: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.ListStressAlerts:output_type -> agriculture.satellite.analytics.v1.ListStressAlertsResponse
-	10, // 24: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.AcknowledgeAlert:output_type -> agriculture.satellite.analytics.v1.AcknowledgeAlertResponse
-	12, // 25: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.RunTemporalAnalysis:output_type -> agriculture.satellite.analytics.v1.RunTemporalAnalysisResponse
-	14, // 26: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.GetFieldAnalyticsSummary:output_type -> agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryResponse
-	22, // [22:27] is the sub-list for method output_type
-	17, // [17:22] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	16, // 8: agriculture.satellite.analytics.v1.TemporalAnalysis.details:type_name -> google.protobuf.Struct
+	3,  // 9: agriculture.satellite.analytics.v1.DetectStressResponse.alerts:type_name -> agriculture.satellite.analytics.v1.StressAlert
+	0,  // 10: agriculture.satellite.analytics.v1.ListStressAlertsRequest.stress_type:type_name -> agriculture.satellite.analytics.v1.StressType
+	1,  // 11: agriculture.satellite.analytics.v1.ListStressAlertsRequest.min_severity:type_name -> agriculture.satellite.analytics.v1.SeverityLevel
+	3,  // 12: agriculture.satellite.analytics.v1.ListStressAlertsResponse.alerts:type_name -> agriculture.satellite.analytics.v1.StressAlert
+	2,  // 13: agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest.analysis_type:type_name -> agriculture.satellite.analytics.v1.AnalysisType
+	15, // 14: agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest.period_start:type_name -> google.protobuf.Timestamp
+	15, // 15: agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest.period_end:type_name -> google.protobuf.Timestamp
+	4,  // 16: agriculture.satellite.analytics.v1.RunTemporalAnalysisResponse.analysis:type_name -> agriculture.satellite.analytics.v1.TemporalAnalysis
+	15, // 17: agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryResponse.last_analysis:type_name -> google.protobuf.Timestamp
+	5,  // 18: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.DetectStress:input_type -> agriculture.satellite.analytics.v1.DetectStressRequest
+	7,  // 19: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.ListStressAlerts:input_type -> agriculture.satellite.analytics.v1.ListStressAlertsRequest
+	9,  // 20: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.AcknowledgeAlert:input_type -> agriculture.satellite.analytics.v1.AcknowledgeAlertRequest
+	11, // 21: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.RunTemporalAnalysis:input_type -> agriculture.satellite.analytics.v1.RunTemporalAnalysisRequest
+	13, // 22: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.GetFieldAnalyticsSummary:input_type -> agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryRequest
+	6,  // 23: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.DetectStress:output_type -> agriculture.satellite.analytics.v1.DetectStressResponse
+	8,  // 24: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.ListStressAlerts:output_type -> agriculture.satellite.analytics.v1.ListStressAlertsResponse
+	10, // 25: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.AcknowledgeAlert:output_type -> agriculture.satellite.analytics.v1.AcknowledgeAlertResponse
+	12, // 26: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.RunTemporalAnalysis:output_type -> agriculture.satellite.analytics.v1.RunTemporalAnalysisResponse
+	14, // 27: agriculture.satellite.analytics.v1.SatelliteAnalyticsService.GetFieldAnalyticsSummary:output_type -> agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryResponse
+	23, // [23:28] is the sub-list for method output_type
+	18, // [18:23] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_analytics_proto_init() }

@@ -199,7 +199,7 @@ func (pw *PostgresWarehouse) ComputeTrend(ctx context.Context, q TrendQuery) (*T
 		return &TrendResult{DataPoints: len(xs), Direction: "stable"}, nil
 	}
 
-	slope, intercept, rSquared := linearRegression(xs, ys)
+	slope, intercept, rSquared := LinearRegression(xs, ys)
 
 	// Convert slope from per-second to per-day.
 	slopePerDay := slope * 86400
@@ -287,8 +287,8 @@ func (pw *PostgresWarehouse) CompareFields(ctx context.Context, q CrossFieldQuer
 // Helpers
 // --------------------------------------------------------------------------
 
-// linearRegression computes slope, intercept, and R-squared for (x, y) pairs.
-func linearRegression(xs, ys []float64) (slope, intercept, rSquared float64) {
+// LinearRegression computes slope, intercept, and R-squared for (x, y) pairs.
+func LinearRegression(xs, ys []float64) (slope, intercept, rSquared float64) {
 	n := float64(len(xs))
 	if n < 2 {
 		return 0, 0, 0

@@ -86,32 +86,32 @@ const (
 	EventTypeComplianceViolationReportGenerated EventType = "compliance.violation.report.generated"
 
 	// Sales Module Events
-	EventTypeSalesOrderCreated        EventType = "sales.order.created"
-	EventTypeOrderConfirmed           EventType = "sales.order.confirmed"
-	EventTypeInvoiceGenerated         EventType = "sales.invoice.generated"
-	EventTypeInvoiceCreated           EventType = "sales.invoice.created"
+	EventTypeSalesOrderCreated           EventType = "sales.order.created"
+	EventTypeOrderConfirmed              EventType = "sales.order.confirmed"
+	EventTypeInvoiceGenerated            EventType = "sales.invoice.generated"
+	EventTypeInvoiceCreated              EventType = "sales.invoice.created"
 	EventTypeCustomerInteractionRecorded EventType = "sales.customer.interaction"
-	EventTypeLeadCreated              EventType = "sales.lead.created"
-	EventTypePricingRuleApplied       EventType = "sales.pricing.rule.applied"
-	EventTypePriceCalculated          EventType = "sales.price.calculated"
-	EventTypeCommissionCalculated     EventType = "sales.commission.calculated"
+	EventTypeLeadCreated                 EventType = "sales.lead.created"
+	EventTypePricingRuleApplied          EventType = "sales.pricing.rule.applied"
+	EventTypePriceCalculated             EventType = "sales.price.calculated"
+	EventTypeCommissionCalculated        EventType = "sales.commission.calculated"
 
 	// Inventory Module Events
-	EventTypeInventoryAdjustment      EventType = "inventory.adjustment"
-	EventTypeStockAdjustmentRecorded  EventType = "inventory.adjustment.recorded"
-	EventTypeInventoryIssued          EventType = "inventory.issued"
-	EventTypeLotSerialTracked         EventType = "inventory.lot.serial.tracked"
+	EventTypeInventoryAdjustment        EventType = "inventory.adjustment"
+	EventTypeStockAdjustmentRecorded    EventType = "inventory.adjustment.recorded"
+	EventTypeInventoryIssued            EventType = "inventory.issued"
+	EventTypeLotSerialTracked           EventType = "inventory.lot.serial.tracked"
 	EventTypeQualityInspectionCompleted EventType = "inventory.quality.inspection"
-	EventTypeQualityCheckRecorded     EventType = "inventory.quality.check.recorded"
-	EventTypeDemandForecastGenerated  EventType = "inventory.demand.forecast"
-	EventTypePlanningUpdated          EventType = "inventory.planning.updated"
-	EventTypeWarehouseTaskCreated     EventType = "inventory.warehouse.task"
-	EventTypeWMSTaskCompleted         EventType = "inventory.wms.task.completed"
+	EventTypeQualityCheckRecorded       EventType = "inventory.quality.check.recorded"
+	EventTypeDemandForecastGenerated    EventType = "inventory.demand.forecast"
+	EventTypePlanningUpdated            EventType = "inventory.planning.updated"
+	EventTypeWarehouseTaskCreated       EventType = "inventory.warehouse.task"
+	EventTypeWMSTaskCompleted           EventType = "inventory.wms.task.completed"
 
 	// HR Module Events
 	EventTypePayrollProcessingStarted EventType = "hr.payroll.processing.started"
 	EventTypePayrollProcessed         EventType = "hr.payroll.processed"
-	EventTypeEmployeeExpenseSubmitted  EventType = "hr.expense.submitted"
+	EventTypeEmployeeExpenseSubmitted EventType = "hr.expense.submitted"
 	EventTypeExpenseApprovalRequested EventType = "hr.expense.approval"
 	EventTypeLeaveRequestApproved     EventType = "hr.leave.approved"
 	EventTypeLeaveRecorded            EventType = "hr.leave.recorded"
@@ -133,13 +133,13 @@ const (
 	EventTypeTimesheetApproved           EventType = "projects.timesheet.approved"
 
 	// Fulfillment Module Events
-	EventTypeOrderFulfilled           EventType = "fulfillment.order.fulfilled"
-	EventTypeReturnProcessed          EventType = "fulfillment.return.processed"
-	EventTypeShipmentCreated          EventType = "fulfillment.shipment.created"
+	EventTypeOrderFulfilled  EventType = "fulfillment.order.fulfilled"
+	EventTypeReturnProcessed EventType = "fulfillment.return.processed"
+	EventTypeShipmentCreated EventType = "fulfillment.shipment.created"
 
 	// Banking Module Events
-	EventTypePaymentCreated           EventType = "banking.payment.created"
-	EventTypePaymentRecorded          EventType = "banking.payment.recorded"
+	EventTypePaymentCreated  EventType = "banking.payment.created"
+	EventTypePaymentRecorded EventType = "banking.payment.recorded"
 
 	// Asset Module Events
 	EventTypeAssetAcquisitionApproved EventType = "asset.acquisition.approved"
@@ -151,16 +151,16 @@ const (
 	EventTypeVehicleRegistered        EventType = "asset.vehicle.registered"
 
 	// Agriculture - Farm Events
-	EventTypeFarmCreated             EventType = "agriculture.farm.created"
-	EventTypeFarmUpdated             EventType = "agriculture.farm.updated"
-	EventTypeFarmDeleted             EventType = "agriculture.farm.deleted"
-	EventTypeFarmBoundarySet         EventType = "agriculture.farm.boundary.set"
+	EventTypeFarmCreated              EventType = "agriculture.farm.created"
+	EventTypeFarmUpdated              EventType = "agriculture.farm.updated"
+	EventTypeFarmDeleted              EventType = "agriculture.farm.deleted"
+	EventTypeFarmBoundarySet          EventType = "agriculture.farm.boundary.set"
 	EventTypeFarmOwnershipTransferred EventType = "agriculture.farm.ownership.transferred"
 
 	// Agriculture - Field Events
-	EventTypeFieldCreated     EventType = "agriculture.field.created"
-	EventTypeFieldUpdated     EventType = "agriculture.field.updated"
-	EventTypeFieldDeleted     EventType = "agriculture.field.deleted"
+	EventTypeFieldCreated      EventType = "agriculture.field.created"
+	EventTypeFieldUpdated      EventType = "agriculture.field.updated"
+	EventTypeFieldDeleted      EventType = "agriculture.field.deleted"
 	EventTypeFieldCropAssigned EventType = "agriculture.field.crop.assigned"
 
 	// Agriculture - Crop Events
@@ -479,10 +479,10 @@ type ComplianceViolation struct {
 
 // ComplianceViolationReportResponse represents the response with violations
 type ComplianceViolationReportResponse struct {
-	TotalViolations    int32                   `json:"total_violations"`
-	ResolvedViolations int32                   `json:"resolved_violations"`
-	PendingViolations  int32                   `json:"pending_violations"`
-	Violations         []ComplianceViolation   `json:"violations"`
+	TotalViolations    int32                 `json:"total_violations"`
+	ResolvedViolations int32                 `json:"resolved_violations"`
+	PendingViolations  int32                 `json:"pending_violations"`
+	Violations         []ComplianceViolation `json:"violations"`
 }
 
 // EventBuilder provides a fluent interface for building domain events

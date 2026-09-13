@@ -1,6 +1,8 @@
 package mappers
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1"
@@ -19,6 +21,8 @@ func ProtoProviderToDomain(p pb.SatelliteProvider) ingestionmodels.SatelliteProv
 		return ingestionmodels.SatelliteProviderLandsat
 	case pb.SatelliteProvider_SATELLITE_PROVIDER_PLANETSCOPE:
 		return ingestionmodels.SatelliteProviderPlanetScope
+	case pb.SatelliteProvider_SATELLITE_PROVIDER_UAV:
+		return ingestionmodels.SatelliteProviderUAV
 	default:
 		return ingestionmodels.SatelliteProviderUnspecified
 	}
@@ -33,6 +37,8 @@ func DomainProviderToProto(p ingestionmodels.SatelliteProvider) pb.SatelliteProv
 		return pb.SatelliteProvider_SATELLITE_PROVIDER_LANDSAT
 	case ingestionmodels.SatelliteProviderPlanetScope:
 		return pb.SatelliteProvider_SATELLITE_PROVIDER_PLANETSCOPE
+	case ingestionmodels.SatelliteProviderUAV:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_UAV
 	default:
 		return pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED
 	}
@@ -144,6 +150,7 @@ func IngestionTaskToProto(t *ingestionmodels.IngestionTask) *pb.IngestionTask {
 		S3Bucket:          ptr.Deref(t.S3Bucket),
 		S3Key:             ptr.Deref(t.S3Key),
 		CloudCoverPercent: t.CloudCoverPercent,
+		ProcessingLevel:   string(t.ProcessingLevel),
 		ResolutionMeters:  t.ResolutionMeters,
 		BboxGeojson:       ptr.Deref(t.BboxGeoJSON),
 		FileSizeBytes:     t.FileSizeBytes,
@@ -197,6 +204,7 @@ func RequestIngestionToDomain(req *pb.RequestIngestionRequest, tenantID, userID 
 		FarmUUID:          req.GetFarmId(),
 		Provider:          ProtoProviderToDomain(req.GetProvider()),
 		CloudCoverPercent: req.GetMaxCloudCover(),
+		ProcessingLevel:   ingestionmodels.ProcessingLevel(strings.ToUpper(strings.TrimSpace(req.GetProcessingLevel()))),
 		Status:            ingestionmodels.IngestionStatusQueued,
 	}
 

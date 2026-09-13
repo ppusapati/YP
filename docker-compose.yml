@@ -491,6 +491,7 @@ services:
     environment:
       <<: *go-env
       DATABASE_URL: ${SATELLITE_ANALYTICS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_analytics_service?sslmode=disable}
+      VEGETATION_INDEX_SERVICE_URL: http://vegetation-index-service:8080
 
   satellite-tile-service:
     <<: *go-service
