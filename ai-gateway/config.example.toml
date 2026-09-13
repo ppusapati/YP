@@ -13,6 +13,9 @@ pest_detection_model = "/models/pest-detection-v1"
 nutrient_deficiency_model = "/models/nutrient-deficiency-v1"
 plant_classification_model = "/models/plant-classification-v1"
 yield_prediction_version = "v1.0.0"
+# Trained tabular yield model (JSON from `yp-ml-training train-tabular --task yield`).
+# Leave empty to use the parametric stress-factor model only.
+yield_tabular_model = ""
 crop_growth_version = "v1.0.0"
 satellite_ndvi_version = "v1.0.0"
 crop_recommendation_version = "v1.0.0"

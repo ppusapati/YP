@@ -5,12 +5,81 @@
 
 use std::time::Instant;
 
+use water_flow_simulation_engine::water_balance::CropCoefficients;
 use water_flow_simulation_engine::{
-    MoistureParams, WaterBalanceParams, WaterFlowSimulationEngine,
-    compute_water_balance, irrigation_summary,
+    compute_water_balance, irrigation_summary, MoistureParams, WaterBalanceParams,
+    WaterFlowSimulationEngine,
 };
 
 use crate::proto;
+
+/// Explicit Kc wins; otherwise resolve from the FAO-56 crop table by days
+/// after planting (preferred) or named growth stage; unknown crops use 1.0.
+fn resolve_kc(bp: &proto::WaterFlowBalanceParams) -> f64 {
+    if bp.crop_coefficient > 0.0 {
+        return bp.crop_coefficient;
+    }
+    match CropCoefficients::for_crop(&bp.crop_type) {
+        Some(kc) if bp.days_after_planting > 0 => kc.kc_at_day(bp.days_after_planting as u32),
+        Some(kc) if !bp.growth_stage.trim().is_empty() => kc.kc_for_stage(&bp.growth_stage),
+        Some(kc) => kc.kc_mid,
+        None => 1.0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kc_resolution_order() {
+        let mut bp = proto::WaterFlowBalanceParams {
+            crop_coefficient: 0.77,
+            crop_type: "wheat".into(),
+            ..Default::default()
+        };
+        assert_eq!(resolve_kc(&bp), 0.77);
+        bp.crop_coefficient = 0.0;
+        bp.days_after_planting = 80; // mid-season for wheat
+        assert!((resolve_kc(&bp) - 1.15).abs() < 1e-9);
+        bp.days_after_planting = 0;
+        bp.growth_stage = "seedling".into();
+        assert!((resolve_kc(&bp) - 0.3).abs() < 1e-9);
+        bp.crop_type = "unknown-crop".into();
+        assert_eq!(resolve_kc(&bp), 1.0);
+    }
+
+    #[test]
+    fn initial_depletion_triggers_earlier_irrigation() {
+        let engine = WaterFlowEngine::new();
+        let base = proto::SimulateWaterFlowRequest {
+            request_id: "r".into(),
+            balance_params: Some(proto::WaterFlowBalanceParams {
+                crop_type: "cotton".into(),
+                growth_stage: "flowering".into(),
+                reference_et_mm_day: 6.0,
+                ..Default::default()
+            }),
+            daily_rainfall_mm: vec![0.0; 10],
+            simulation_days: 10.0,
+            ..Default::default()
+        };
+        let dry = proto::SimulateWaterFlowRequest {
+            initial_depletion_mm: 40.0,
+            ..base.clone()
+        };
+        let first_event = |r: &proto::SimulateWaterFlowResponse| {
+            r.water_balance.iter().position(|d| d.irrigation_needed)
+        };
+        let wet_first = first_event(&engine.simulate(&base));
+        let dry_first = first_event(&engine.simulate(&dry));
+        assert!(dry_first.is_some());
+        assert!(
+            wet_first.map_or(true, |w| dry_first.unwrap() < w),
+            "dry {dry_first:?} vs wet {wet_first:?}"
+        );
+    }
+}
 
 /// Handles water flow simulation operations.
 pub struct WaterFlowEngine;
@@ -21,19 +90,50 @@ impl WaterFlowEngine {
     }
 
     /// Run water flow simulation.
-    pub fn simulate(&self, req: &proto::SimulateWaterFlowRequest) -> proto::SimulateWaterFlowResponse {
+    pub fn simulate(
+        &self,
+        req: &proto::SimulateWaterFlowRequest,
+    ) -> proto::SimulateWaterFlowResponse {
         let start = Instant::now();
 
         // Build moisture params from request or use defaults.
         let moisture_params = if let Some(ref mp) = req.moisture_params {
             MoistureParams {
-                num_layers: if mp.num_layers > 0 { mp.num_layers as usize } else { 10 },
-                layer_thickness_m: if mp.layer_thickness_m > 0.0 { mp.layer_thickness_m } else { 0.1 },
-                k_sat_m_day: if mp.k_sat_m_day > 0.0 { mp.k_sat_m_day } else { 0.05 },
-                field_capacity: if mp.field_capacity > 0.0 { mp.field_capacity } else { 0.30 },
-                wilting_point: if mp.wilting_point > 0.0 { mp.wilting_point } else { 0.10 },
-                saturation: if mp.saturation > 0.0 { mp.saturation } else { 0.45 },
-                root_zone_depth_m: if mp.root_zone_depth_m > 0.0 { mp.root_zone_depth_m } else { 0.6 },
+                num_layers: if mp.num_layers > 0 {
+                    mp.num_layers as usize
+                } else {
+                    10
+                },
+                layer_thickness_m: if mp.layer_thickness_m > 0.0 {
+                    mp.layer_thickness_m
+                } else {
+                    0.1
+                },
+                k_sat_m_day: if mp.k_sat_m_day > 0.0 {
+                    mp.k_sat_m_day
+                } else {
+                    0.05
+                },
+                field_capacity: if mp.field_capacity > 0.0 {
+                    mp.field_capacity
+                } else {
+                    0.30
+                },
+                wilting_point: if mp.wilting_point > 0.0 {
+                    mp.wilting_point
+                } else {
+                    0.10
+                },
+                saturation: if mp.saturation > 0.0 {
+                    mp.saturation
+                } else {
+                    0.45
+                },
+                root_zone_depth_m: if mp.root_zone_depth_m > 0.0 {
+                    mp.root_zone_depth_m
+                } else {
+                    0.6
+                },
             }
         } else {
             MoistureParams::default()
@@ -42,12 +142,32 @@ impl WaterFlowEngine {
         // Build water balance params from request or use defaults.
         let balance_params = if let Some(ref bp) = req.balance_params {
             WaterBalanceParams {
-                field_area_ha: if bp.field_area_ha > 0.0 { bp.field_area_ha } else { 1.0 },
-                crop_coefficient: if bp.crop_coefficient > 0.0 { bp.crop_coefficient } else { 1.0 },
-                reference_et_mm_day: if bp.reference_et_mm_day > 0.0 { bp.reference_et_mm_day } else { 5.0 },
-                root_zone_depth_m: if bp.root_zone_depth_m > 0.0 { bp.root_zone_depth_m } else { 0.6 },
-                field_capacity: if bp.field_capacity > 0.0 { bp.field_capacity } else { 0.30 },
-                wilting_point: if bp.wilting_point > 0.0 { bp.wilting_point } else { 0.10 },
+                field_area_ha: if bp.field_area_ha > 0.0 {
+                    bp.field_area_ha
+                } else {
+                    1.0
+                },
+                crop_coefficient: resolve_kc(bp),
+                reference_et_mm_day: if bp.reference_et_mm_day > 0.0 {
+                    bp.reference_et_mm_day
+                } else {
+                    5.0
+                },
+                root_zone_depth_m: if bp.root_zone_depth_m > 0.0 {
+                    bp.root_zone_depth_m
+                } else {
+                    0.6
+                },
+                field_capacity: if bp.field_capacity > 0.0 {
+                    bp.field_capacity
+                } else {
+                    0.30
+                },
+                wilting_point: if bp.wilting_point > 0.0 {
+                    bp.wilting_point
+                } else {
+                    0.10
+                },
                 management_allowed_depletion: if bp.management_allowed_depletion > 0.0 {
                     bp.management_allowed_depletion
                 } else {
@@ -58,7 +178,8 @@ impl WaterFlowEngine {
             WaterBalanceParams::default()
         };
 
-        let engine = WaterFlowSimulationEngine::with_params(moisture_params, balance_params.clone());
+        let engine =
+            WaterFlowSimulationEngine::with_params(moisture_params, balance_params.clone());
 
         let mut resp = proto::SimulateWaterFlowResponse {
             request_id: req.request_id.clone(),
@@ -66,10 +187,26 @@ impl WaterFlowEngine {
         };
 
         // Run soil moisture simulation.
-        let days = if req.simulation_days > 0.0 { req.simulation_days } else { 30.0 };
-        let rainfall = if req.rainfall_mm_day >= 0.0 { req.rainfall_mm_day } else { 0.0 };
-        let et = if req.et_mm_day >= 0.0 { req.et_mm_day } else { 5.0 };
-        let irrigation = if req.irrigation_mm_day >= 0.0 { req.irrigation_mm_day } else { 0.0 };
+        let days = if req.simulation_days > 0.0 {
+            req.simulation_days
+        } else {
+            30.0
+        };
+        let rainfall = if req.rainfall_mm_day >= 0.0 {
+            req.rainfall_mm_day
+        } else {
+            0.0
+        };
+        let et = if req.et_mm_day >= 0.0 {
+            req.et_mm_day
+        } else {
+            5.0
+        };
+        let irrigation = if req.irrigation_mm_day >= 0.0 {
+            req.irrigation_mm_day
+        } else {
+            0.0
+        };
 
         if let Ok(profiles) = engine.simulate_moisture(rainfall, et, irrigation, days) {
             resp.moisture_profiles = profiles
@@ -92,7 +229,8 @@ impl WaterFlowEngine {
             vec![rainfall; days as usize]
         };
 
-        let balances = compute_water_balance(&balance_params, &daily_rain, 0.0);
+        let initial_depletion = req.initial_depletion_mm.max(0.0);
+        let balances = compute_water_balance(&balance_params, &daily_rain, initial_depletion);
         resp.water_balance = balances
             .iter()
             .map(|b| proto::WaterBalanceDay {

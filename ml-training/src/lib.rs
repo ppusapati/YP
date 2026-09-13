@@ -10,6 +10,7 @@ pub mod export;
 pub mod model;
 pub mod monitoring;
 pub mod registry;
+pub mod tabular;
 pub mod training;
 pub mod triggers;
 pub mod validate;

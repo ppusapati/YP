@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
@@ -238,9 +239,9 @@ func newService() (*mockYieldRepo, *mockEventPublisher, *yieldService) {
 		&mockCropClient{},
 		&mockFarmClient{},
 		nil,
-		nopLogger{},
+		p9log.NewLogger(zap.NewNop()),
 		nil,
-	).(*yieldService)
+	)
 	return repo, pub, svc
 }
 

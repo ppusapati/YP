@@ -26,12 +26,14 @@ const (
 )
 
 type irrigationService struct {
-	repo        outbound.IrrigationRepository
-	pub         outbound.EventPublisher
-	fieldClient outbound.FieldClient
-	farmClient  outbound.FarmClient
-	pool        *pgxpool.Pool
-	log         *p9log.Helper
+	repo          outbound.IrrigationRepository
+	pub           outbound.EventPublisher
+	fieldClient   outbound.FieldClient
+	farmClient    outbound.FarmClient
+	weatherClient outbound.WeatherClient
+	waterClient   outbound.WaterBalanceClient
+	pool          *pgxpool.Pool
+	log           *p9log.Helper
 }
 
 // NewIrrigationService creates a new application-layer IrrigationService.
@@ -578,18 +580,179 @@ func (s *irrigationService) RequestDecision(ctx context.Context, decision *domai
 		return nil, errors.BadRequest("MISSING_ZONE_ID", "zone_id is required")
 	}
 
-	_, err := s.repo.GetZoneByUUID(ctx, decision.ZoneID)
+	zone, err := s.repo.GetZoneByUUID(ctx, decision.ZoneID)
 	if err != nil {
 		return nil, errors.BadRequest("ZONE_NOT_FOUND", fmt.Sprintf("zone not found: %s", decision.ZoneID))
 	}
+	if decision.FieldID == "" {
+		decision.FieldID = zone.FieldID
+	}
+	if decision.Inputs.CropType == "" {
+		decision.Inputs.CropType = zone.CropType
+	}
+	if decision.Inputs.GrowthStage == "" {
+		decision.Inputs.GrowthStage = zone.CropGrowthStage
+	}
 
-	output := computeIrrigationDecision(decision.Inputs)
+	output, ok := s.waterBalanceDecision(ctx, zone, decision)
+	if !ok {
+		output = computeIrrigationDecision(decision.Inputs)
+	}
 	decision.TenantID = tenantID
 	decision.Output = output
 	decision.DecidedAt = time.Now()
 	decision.Applied = false
 
 	return s.repo.CreateDecision(ctx, decision)
+}
+
+// WithWaterBalance enables ET0-driven scheduling through weather-service and
+// the AI gateway water-flow simulation. Either client missing keeps the
+// threshold heuristic.
+func (s *irrigationService) WithWaterBalance(weather outbound.WeatherClient, water outbound.WaterBalanceClient) *irrigationService {
+	s.weatherClient = weather
+	s.waterClient = water
+	return s
+}
+
+// waterBalanceDecision runs the FAO-56 water balance for the zone's field. It
+// returns ok=false whenever an input is unavailable so the caller falls back.
+func (s *irrigationService) waterBalanceDecision(ctx context.Context, zone *domain.IrrigationZone, decision *domain.IrrigationDecision) (domain.DecisionOutput, bool) {
+	if s.weatherClient == nil || s.waterClient == nil || decision.FieldID == "" {
+		return domain.DecisionOutput{}, false
+	}
+	weather, err := s.weatherClient.FieldWeather(ctx, decision.FieldID, 7, 7)
+	if err != nil {
+		s.log.Warnw("msg", "weather unavailable, using heuristic irrigation decision", "field_id", decision.FieldID, "error", err)
+		return domain.DecisionOutput{}, false
+	}
+	et0 := weather.ForecastET0MMDay
+	if et0 <= 0 {
+		et0 = weather.ET0MMDay
+	}
+	if et0 <= 0 && decision.Inputs.EvapotranspirationMM > 0 {
+		et0 = decision.Inputs.EvapotranspirationMM
+	}
+	if et0 <= 0 {
+		return domain.DecisionOutput{}, false
+	}
+	// Carry the observed values into the stored inputs for auditability.
+	decision.Inputs.EvapotranspirationMM = et0
+	if decision.Inputs.RainfallForecastMM == 0 {
+		for _, mm := range weather.ForecastRainfallMM {
+			decision.Inputs.RainfallForecastMM += mm
+		}
+	}
+
+	req := outbound.WaterBalanceRequest{
+		FieldAreaHa:        zone.AreaHectares,
+		CropType:           decision.Inputs.CropType,
+		GrowthStage:        decision.Inputs.GrowthStage,
+		ReferenceET0MMDay:  et0,
+		InitialDepletionMM: initialDepletionMM(decision.Inputs.SoilMoisture, defaultRootZoneDepthM, defaultFieldCapacity, defaultWiltingPoint),
+		DailyRainfallMM:    weather.ForecastRainfallMM,
+		SimulationDays:     7,
+		RootZoneDepthM:     defaultRootZoneDepthM,
+		FieldCapacity:      defaultFieldCapacity,
+		WiltingPoint:       defaultWiltingPoint,
+		AllowedDepletion:   defaultAllowedDepletion,
+	}
+	result, err := s.waterClient.Simulate(ctx, req)
+	if err != nil || len(result.Days) == 0 {
+		s.log.Warnw("msg", "water balance unavailable, using heuristic irrigation decision", "field_id", decision.FieldID, "error", err)
+		return domain.DecisionOutput{}, false
+	}
+	return decisionFromWaterBalance(result, zone.AreaHectares, et0, decision.Inputs), true
+}
+
+// Soil hydraulic defaults for zones without a soil profile (loam).
+const (
+	defaultRootZoneDepthM   = 0.6
+	defaultFieldCapacity    = 0.30
+	defaultWiltingPoint     = 0.10
+	defaultAllowedDepletion = 0.5
+	litersPerHaPerMM        = 10_000.0
+)
+
+// initialDepletionMM converts a soil-moisture reading (percent of field
+// capacity) into root-zone depletion from field capacity in mm.
+func initialDepletionMM(soilMoisturePct, rootZoneM, fieldCapacity, wiltingPoint float64) float64 {
+	if soilMoisturePct <= 0 {
+		return 0
+	}
+	taw := (fieldCapacity - wiltingPoint) * rootZoneM * 1000 // total available water, mm
+	frac := 1 - soilMoisturePct/100
+	if frac < 0 {
+		frac = 0
+	}
+	if frac > 1 {
+		frac = 1
+	}
+	return taw * frac
+}
+
+// decisionFromWaterBalance turns the simulated schedule into a recommendation.
+// Irrigate now when the first day already needs it; otherwise report the
+// next event date and hold.
+func decisionFromWaterBalance(result *outbound.WaterBalanceResult, areaHa, et0 float64, inputs domain.DecisionInputs) domain.DecisionOutput {
+	kc := 0.0
+	if et0 > 0 {
+		kc = result.CropCoefficient / et0
+	}
+	out := domain.DecisionOutput{
+		Method:          domain.DecisionMethodWaterBalance,
+		CropCoefficient: kc,
+		ET0MMDay:        et0,
+		ConfidenceScore: 0.9,
+	}
+
+	first := -1
+	for i, d := range result.Days {
+		if d.IrrigationNeeded {
+			first = i
+			break
+		}
+	}
+	today := result.Days[0]
+	if first == 0 {
+		depth := today.IrrigationAmountMM
+		out.ShouldIrrigate = true
+		out.RecommendedDepthMM = depth
+		if areaHa > 0 {
+			out.WaterQuantityLiters = depth * litersPerHaPerMM * areaHa
+		} else {
+			out.WaterQuantityLiters = depth * 10
+		}
+		out.DurationMinutes = int32(depth * 6) // ~10 mm/h application rate
+		if out.DurationMinutes < 5 {
+			out.DurationMinutes = 5
+		}
+		now := time.Now()
+		out.OptimalTime = &now
+		out.Reasoning = fmt.Sprintf(
+			"Water balance: root-zone depletion %.1f mm exceeds readily available water %.1f mm (ETc %.1f mm/day, Kc %.2f, ET0 %.1f mm/day). Apply %.1f mm.",
+			today.DepletionMM, today.ReadilyAvailableMM, today.ETcMMDay, kc, et0, depth)
+		if inputs.WindSpeed > 20 {
+			out.WaterQuantityLiters *= 1.1
+			out.Reasoning += " High wind: quantity increased 10% for drift losses."
+		}
+		return out
+	}
+
+	out.ShouldIrrigate = false
+	if first > 0 {
+		when := time.Now().AddDate(0, 0, first)
+		out.OptimalTime = &when
+		out.RecommendedDepthMM = result.Days[first].IrrigationAmountMM
+		out.Reasoning = fmt.Sprintf(
+			"Water balance: depletion %.1f mm is within readily available water %.1f mm today; next irrigation of %.1f mm expected in %d day(s) (ETc %.1f mm/day, forecast rain %.1f mm).",
+			today.DepletionMM, today.ReadilyAvailableMM, out.RecommendedDepthMM, first, today.ETcMMDay, inputs.RainfallForecastMM)
+	} else {
+		out.Reasoning = fmt.Sprintf(
+			"Water balance: no irrigation needed within the %d-day horizon (depletion %.1f mm, ETc %.1f mm/day, forecast rain %.1f mm).",
+			len(result.Days), today.DepletionMM, today.ETcMMDay, inputs.RainfallForecastMM)
+	}
+	return out
 }
 
 func (s *irrigationService) GetWaterUsage(ctx context.Context, zoneID string, start, end time.Time) ([]domain.WaterUsageLog, error) {
@@ -660,6 +823,8 @@ func computeIrrigationDecision(inputs domain.DecisionInputs) domain.DecisionOutp
 		DurationMinutes:     duration,
 		Reasoning:           reasoning,
 		ConfidenceScore:     confidence,
+		Method:              domain.DecisionMethodHeuristic,
+		RecommendedDepthMM:  waterQty / 10,
 	}
 }
 

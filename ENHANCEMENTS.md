@@ -312,13 +312,15 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** `rust-engines/yield-prediction-engine/src/model.rs` uses hardcoded per-crop constants for wheat, corn, and soybean only. Crop-growth (WOFOST/ODE) and climate-response engines are deterministic parametric models. No tabular or time-series model training exists in `ml-training/`.
 
 **Enhancements:**
-- [ ] Add a tabular training task in `ml-training/` (gradient boosting or small temporal net) using warehouse features: weather aggregates, index time series, soil, prior yields
-- [ ] Extend crop coverage to rice, cotton, sugarcane, pulses, and regional horticulture
-- [ ] Export tabular models to ONNX and serve through the existing AI gateway model registry
-- [ ] Keep the parametric engines as a fallback when a field lacks training history; blend by confidence
-- [ ] Add in-season yield forecasting that updates weekly as new imagery and weather arrive
-- [ ] Add per-field prediction intervals and expose uncertainty in the yield RPC response
-- [ ] Wire `water-flow-simulation-engine` into irrigation-service for ET0-driven water-balance scheduling
+- [x] Add a tabular training task in `ml-training/` (gradient boosting or small temporal net) using warehouse features: weather aggregates, index time series, soil, prior yields — `yp-ml-training train-tabular --task yield` trains a pure-Rust GBM (`yield-prediction-engine/src/gbm.rs`) on a CSV of `FEATURE_NAMES` columns and registers it
+- [x] Extend crop coverage to rice, cotton, sugarcane, pulses, and regional horticulture — `YieldModelParams::for_crop` covers 13 crops incl. cotton, sugarcane, chickpea, pigeon pea, groundnut, mustard, tomato, potato, onion; FAO-56 Kc tables added for the same set
+- [x] Serve the trained model through the AI gateway — as a JSON artifact (`yield_tabular_model` config), since the gateway has no ONNX runtime; ONNX export remains a follow-up if a runtime is adopted
+- [x] Keep the parametric engines as a fallback when a field lacks training history; blend by confidence — blend weight is the tabular model's held-out R²; response reports `model_source`, `tabular_weight`, `crop_supported`
+- [x] Add per-field prediction intervals and expose uncertainty in the yield RPC response — split-conformal intervals with reported `interval_coverage`
+- [x] In-season features: yield-service now sends season-to-date GDD, rainfall, frost/heat-stress days from weather-service instead of placeholders
+- [ ] Add a weekly scheduler that re-runs in-season predictions for active fields as new weather and imagery arrive
+- [ ] Assemble the training CSV automatically from the warehouse (ETL job joining yield records, weather aggregates, and NDVI peaks)
+- [x] Wire `water-flow-simulation-engine` into irrigation-service for ET0-driven water-balance scheduling — `RequestDecision` runs the FAO-56 balance via the AI gateway with weather-service ET0/forecast, falling back to the moisture heuristic; decisions record method, depth, Kc, ET0
 
 **Effort:** Large | **Impact:** High
 

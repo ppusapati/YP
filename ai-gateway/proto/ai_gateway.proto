@@ -178,6 +178,16 @@ message PredictYieldResponse {
   repeated StressFactor stress_factors = 6;
   string model_version = 7;
   int64 processing_time_ms = 8;
+  // Provenance of the point estimate: "parametric", "tabular", or "blended".
+  string model_source = 9;
+  // Weight given to the trained tabular model in a blended estimate (0..1).
+  double tabular_weight = 10;
+  // False when crop_type was not recognized and generic wheat parameters were used.
+  bool crop_supported = 11;
+  // Nominal coverage of [yield_lower_bound, yield_upper_bound] (e.g. 0.9); 0 when heuristic.
+  double interval_coverage = 12;
+  // Parametric (stress-factor) estimate, kept for transparency when blended.
+  double parametric_yield_kg_per_hectare = 13;
 }
 
 message EnvironmentFactors {
@@ -187,6 +197,9 @@ message EnvironmentFactors {
   double solar_radiation = 4;
   double wind_speed_kmh = 5;
   double growing_degree_days = 6;
+  // Season counts from weather-service agro metrics (optional).
+  int32 frost_days = 7;
+  int32 heat_stress_days = 8;
 }
 
 message SoilFactors {
@@ -206,6 +219,8 @@ message ManagementFactors {
   string tillage_type = 3;
   double planting_density = 4;
   string pest_management_level = 5;
+  int32 planting_day = 6;   // day of year (1-366); 0 = unknown
+  double irrigation_mm = 7; // season total applied; 0 = derive from efficiency
 }
 
 message StressFactor {
@@ -729,6 +744,8 @@ message SimulateWaterFlowRequest {
   // Daily rainfall series (used for water balance computation; overrides
   // rainfall_mm_day when non-empty).
   repeated double daily_rainfall_mm = 8;
+  // Soil water depletion from field capacity at day 0 (mm). 0 = at field capacity.
+  double initial_depletion_mm = 9;
 }
 
 message WaterFlowMoistureParams {
@@ -743,12 +760,17 @@ message WaterFlowMoistureParams {
 
 message WaterFlowBalanceParams {
   double field_area_ha = 1;
-  double crop_coefficient = 2;
+  double crop_coefficient = 2; // explicit Kc; 0 = resolve from crop_type below
   double reference_et_mm_day = 3;
   double root_zone_depth_m = 4;
   double field_capacity = 5;
   double wilting_point = 6;
   double management_allowed_depletion = 7;
+  // When crop_coefficient is 0, Kc is looked up from FAO-56 tables for this
+  // crop at the given growth stage or days after planting.
+  string crop_type = 8;
+  string growth_stage = 9;
+  int32 days_after_planting = 10;
 }
 
 message SimulateWaterFlowResponse {

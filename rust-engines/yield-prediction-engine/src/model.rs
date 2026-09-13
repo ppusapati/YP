@@ -76,6 +76,168 @@ impl YieldModelParams {
             optimal_plant_population: 300_000.0,
         }
     }
+
+    pub fn cotton() -> Self {
+        Self {
+            crop_name: "Cotton".to_string(),
+            max_yield_kg_ha: 3500.0, // seed cotton
+            optimal_temp_range: (21.0, 32.0),
+            water_requirement_mm: 750.0,
+            nitrogen_requirement_kg_ha: 120.0,
+            optimal_ph_range: (5.8, 8.0),
+            required_gdd: 2200.0,
+            optimal_plant_population: 110_000.0,
+        }
+    }
+
+    pub fn sugarcane() -> Self {
+        Self {
+            crop_name: "Sugarcane".to_string(),
+            max_yield_kg_ha: 120_000.0, // cane, not sugar
+            optimal_temp_range: (24.0, 34.0),
+            water_requirement_mm: 1800.0,
+            nitrogen_requirement_kg_ha: 250.0,
+            optimal_ph_range: (6.0, 7.5),
+            required_gdd: 4500.0,
+            optimal_plant_population: 120_000.0,
+        }
+    }
+
+    pub fn chickpea() -> Self {
+        Self {
+            crop_name: "Chickpea".to_string(),
+            max_yield_kg_ha: 3000.0,
+            optimal_temp_range: (18.0, 28.0),
+            water_requirement_mm: 350.0,
+            nitrogen_requirement_kg_ha: 20.0, // N-fixing
+            optimal_ph_range: (6.0, 8.0),
+            required_gdd: 1600.0,
+            optimal_plant_population: 330_000.0,
+        }
+    }
+
+    pub fn pigeon_pea() -> Self {
+        Self {
+            crop_name: "Pigeon Pea".to_string(),
+            max_yield_kg_ha: 2500.0,
+            optimal_temp_range: (20.0, 32.0),
+            water_requirement_mm: 500.0,
+            nitrogen_requirement_kg_ha: 25.0, // N-fixing
+            optimal_ph_range: (5.5, 7.5),
+            required_gdd: 2400.0,
+            optimal_plant_population: 60_000.0,
+        }
+    }
+
+    pub fn groundnut() -> Self {
+        Self {
+            crop_name: "Groundnut".to_string(),
+            max_yield_kg_ha: 3500.0, // in-shell
+            optimal_temp_range: (22.0, 32.0),
+            water_requirement_mm: 550.0,
+            nitrogen_requirement_kg_ha: 25.0, // N-fixing
+            optimal_ph_range: (5.5, 7.0),
+            required_gdd: 1800.0,
+            optimal_plant_population: 330_000.0,
+        }
+    }
+
+    pub fn mustard() -> Self {
+        Self {
+            crop_name: "Mustard".to_string(),
+            max_yield_kg_ha: 2500.0,
+            optimal_temp_range: (15.0, 25.0),
+            water_requirement_mm: 350.0,
+            nitrogen_requirement_kg_ha: 80.0,
+            optimal_ph_range: (6.0, 7.5),
+            required_gdd: 1400.0,
+            optimal_plant_population: 300_000.0,
+        }
+    }
+
+    pub fn tomato() -> Self {
+        Self {
+            crop_name: "Tomato".to_string(),
+            max_yield_kg_ha: 80_000.0,
+            optimal_temp_range: (20.0, 27.0),
+            water_requirement_mm: 600.0,
+            nitrogen_requirement_kg_ha: 180.0,
+            optimal_ph_range: (6.0, 6.8),
+            required_gdd: 1500.0,
+            optimal_plant_population: 25_000.0,
+        }
+    }
+
+    pub fn potato() -> Self {
+        Self {
+            crop_name: "Potato".to_string(),
+            max_yield_kg_ha: 45_000.0,
+            optimal_temp_range: (15.0, 22.0),
+            water_requirement_mm: 500.0,
+            nitrogen_requirement_kg_ha: 150.0,
+            optimal_ph_range: (5.0, 6.5),
+            required_gdd: 1200.0,
+            optimal_plant_population: 45_000.0,
+        }
+    }
+
+    pub fn onion() -> Self {
+        Self {
+            crop_name: "Onion".to_string(),
+            max_yield_kg_ha: 40_000.0,
+            optimal_temp_range: (13.0, 24.0),
+            water_requirement_mm: 450.0,
+            nitrogen_requirement_kg_ha: 120.0,
+            optimal_ph_range: (6.0, 7.0),
+            required_gdd: 1300.0,
+            optimal_plant_population: 500_000.0,
+        }
+    }
+
+    /// Names accepted by [`YieldModelParams::for_crop`] (canonical form).
+    pub const SUPPORTED_CROPS: [&'static str; 13] = [
+        "wheat",
+        "corn",
+        "soybean",
+        "rice",
+        "cotton",
+        "sugarcane",
+        "chickpea",
+        "pigeon_pea",
+        "groundnut",
+        "mustard",
+        "tomato",
+        "potato",
+        "onion",
+    ];
+
+    /// Look up crop parameters by name (case-insensitive, common aliases accepted).
+    pub fn for_crop(name: &str) -> Option<Self> {
+        let key = name.trim().to_ascii_lowercase().replace([' ', '-'], "_");
+        match key.as_str() {
+            "wheat" => Some(Self::wheat()),
+            "corn" | "maize" => Some(Self::corn()),
+            "soybean" | "soya" | "soy" => Some(Self::soybean()),
+            "rice" | "paddy" => Some(Self::rice()),
+            "cotton" => Some(Self::cotton()),
+            "sugarcane" | "sugar_cane" | "cane" => Some(Self::sugarcane()),
+            "chickpea" | "gram" | "bengal_gram" | "chana" => Some(Self::chickpea()),
+            "pigeon_pea" | "pigeonpea" | "tur" | "arhar" | "red_gram" => Some(Self::pigeon_pea()),
+            "groundnut" | "peanut" => Some(Self::groundnut()),
+            "mustard" | "rapeseed" | "canola" => Some(Self::mustard()),
+            "tomato" => Some(Self::tomato()),
+            "potato" => Some(Self::potato()),
+            "onion" => Some(Self::onion()),
+            _ => None,
+        }
+    }
+
+    /// Stable numeric code for a crop, used as a model feature.
+    pub fn crop_code(name: &str) -> Option<usize> {
+        let params = Self::for_crop(name)?;
+        let canonical = params.crop_name.to_ascii_lowercase().replace(' ', "_");
+        Self::SUPPORTED_CROPS.iter().position(|c| *c == canonical)
+    }
 }
 
 /// The yield prediction model.
@@ -172,7 +334,9 @@ impl LinearRegressionModel {
 
         let mut weights = vec![0.0; p];
         let mut bias = 0.0;
-        let learning_rate = 0.001;
+        // Features and targets are standardized below, so 0.05 converges
+        // within the iteration budget; 0.001 stopped ~60% short of the optimum.
+        let learning_rate = 0.05;
         let iterations = 1000;
 
         // Normalize features for better convergence
@@ -187,21 +351,40 @@ impl LinearRegressionModel {
         }
 
         let target_mean = targets.iter().sum::<f64>() / n as f64;
-        let target_std = (targets.iter().map(|t| (t - target_mean).powi(2)).sum::<f64>() / n as f64).sqrt().max(1e-8);
+        let target_std = (targets
+            .iter()
+            .map(|t| (t - target_mean).powi(2))
+            .sum::<f64>()
+            / n as f64)
+            .sqrt()
+            .max(1e-8);
 
         let normalized_features: Vec<Vec<f64>> = features
             .iter()
-            .map(|f| f.iter().enumerate().map(|(j, v)| (v - means[j]) / stds[j]).collect())
+            .map(|f| {
+                f.iter()
+                    .enumerate()
+                    .map(|(j, v)| (v - means[j]) / stds[j])
+                    .collect()
+            })
             .collect();
 
-        let normalized_targets: Vec<f64> = targets.iter().map(|t| (t - target_mean) / target_std).collect();
+        let normalized_targets: Vec<f64> = targets
+            .iter()
+            .map(|t| (t - target_mean) / target_std)
+            .collect();
 
         for _ in 0..iterations {
             let mut grad_w = vec![0.0; p];
             let mut grad_b = 0.0;
 
             for i in 0..n {
-                let pred: f64 = normalized_features[i].iter().zip(weights.iter()).map(|(x, w)| x * w).sum::<f64>() + bias;
+                let pred: f64 = normalized_features[i]
+                    .iter()
+                    .zip(weights.iter())
+                    .map(|(x, w)| x * w)
+                    .sum::<f64>()
+                    + bias;
                 let err = pred - normalized_targets[i];
                 for j in 0..p {
                     grad_w[j] += err * normalized_features[i][j];
@@ -227,7 +410,11 @@ impl LinearRegressionModel {
         let predictions: Vec<f64> = features
             .iter()
             .map(|f| {
-                f.iter().zip(original_weights.iter()).map(|(x, w)| x * w).sum::<f64>() + original_bias
+                f.iter()
+                    .zip(original_weights.iter())
+                    .map(|(x, w)| x * w)
+                    .sum::<f64>()
+                    + original_bias
             })
             .collect();
 
@@ -238,7 +425,11 @@ impl LinearRegressionModel {
             .sum();
         let ss_tot: f64 = targets.iter().map(|t| (t - target_mean).powi(2)).sum();
 
-        let r_squared = if ss_tot > 0.0 { 1.0 - ss_res / ss_tot } else { 0.0 };
+        let r_squared = if ss_tot > 0.0 {
+            1.0 - ss_res / ss_tot
+        } else {
+            0.0
+        };
         let rmse = (ss_res / n as f64).sqrt();
 
         Some(LinearRegressionModel {
@@ -285,9 +476,17 @@ pub fn r_squared(predicted: &[f64], actual: &[f64]) -> f64 {
     }
     let n = actual.len() as f64;
     let mean = actual.iter().sum::<f64>() / n;
-    let ss_res: f64 = predicted.iter().zip(actual.iter()).map(|(p, a)| (p - a).powi(2)).sum();
+    let ss_res: f64 = predicted
+        .iter()
+        .zip(actual.iter())
+        .map(|(p, a)| (p - a).powi(2))
+        .sum();
     let ss_tot: f64 = actual.iter().map(|a| (a - mean).powi(2)).sum();
-    if ss_tot > 0.0 { 1.0 - ss_res / ss_tot } else { 0.0 }
+    if ss_tot > 0.0 {
+        1.0 - ss_res / ss_tot
+    } else {
+        0.0
+    }
 }
 
 /// Compute Root Mean Squared Error.
@@ -296,7 +495,11 @@ pub fn rmse(predicted: &[f64], actual: &[f64]) -> f64 {
         return 0.0;
     }
     let n = actual.len() as f64;
-    let ss: f64 = predicted.iter().zip(actual.iter()).map(|(p, a)| (p - a).powi(2)).sum();
+    let ss: f64 = predicted
+        .iter()
+        .zip(actual.iter())
+        .map(|(p, a)| (p - a).powi(2))
+        .sum();
     (ss / n).sqrt()
 }
 
@@ -306,7 +509,11 @@ pub fn mae(predicted: &[f64], actual: &[f64]) -> f64 {
         return 0.0;
     }
     let n = actual.len() as f64;
-    let sum: f64 = predicted.iter().zip(actual.iter()).map(|(p, a)| (p - a).abs()).sum();
+    let sum: f64 = predicted
+        .iter()
+        .zip(actual.iter())
+        .map(|(p, a)| (p - a).abs())
+        .sum();
     sum / n
 }
 
@@ -382,13 +589,20 @@ mod tests {
     fn test_linear_regression_train() {
         // Simple linear relationship: y = 2*x + 1
         let features = vec![
-            vec![1.0], vec![2.0], vec![3.0], vec![4.0], vec![5.0],
-            vec![6.0], vec![7.0], vec![8.0], vec![9.0], vec![10.0],
+            vec![1.0],
+            vec![2.0],
+            vec![3.0],
+            vec![4.0],
+            vec![5.0],
+            vec![6.0],
+            vec![7.0],
+            vec![8.0],
+            vec![9.0],
+            vec![10.0],
         ];
         let targets = vec![3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0];
-        let model = LinearRegressionModel::train(
-            &features, &targets, vec!["x".to_string()],
-        ).unwrap();
+        let model =
+            LinearRegressionModel::train(&features, &targets, vec!["x".to_string()]).unwrap();
 
         assert!(model.r_squared > 0.9, "R^2 = {}", model.r_squared);
         assert!(model.rmse < 1.0, "RMSE = {}", model.rmse);

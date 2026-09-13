@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
@@ -362,7 +363,7 @@ func newService() (*mockIrrigationRepo, *mockEventPublisher, *irrigationService)
 	pub := &mockEventPublisher{}
 	fieldClient := &mockFieldClient{existing: map[string]bool{"field-001": true}}
 	farmClient := &mockFarmClient{existing: map[string]bool{"farm-001": true}}
-	svc := NewIrrigationService(repo, pub, fieldClient, farmClient, nil, nopLogger{})
+	svc := NewIrrigationService(repo, pub, fieldClient, farmClient, nil, p9log.NewLogger(zap.NewNop()))
 	return repo, pub, svc
 }
 

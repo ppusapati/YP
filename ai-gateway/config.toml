@@ -16,6 +16,7 @@ plant_classification_model = "/models/plant-classification-v1"
 
 # Engine version tags
 yield_prediction_version = "v1.0.0"
+yield_tabular_model = ""
 crop_growth_version = "v1.0.0"
 satellite_ndvi_version = "v1.0.0"
 crop_recommendation_version = "v1.0.0"

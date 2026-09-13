@@ -881,15 +881,17 @@ func (r *irrigationRepository) CreateDecision(ctx context.Context, dec *domain.I
 			input_growth_stage, input_evapotranspiration_mm,
 			output_should_irrigate, output_water_quantity_liters,
 			output_duration_minutes, output_optimal_time, output_reasoning,
-			output_confidence_score, decided_at, applied, created_by
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+			output_confidence_score, decided_at, applied, created_by,
+			output_method, output_recommended_depth_mm, output_crop_coefficient, output_et0_mm_day
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
 		RETURNING id, tenant_id, zone_id, field_id, schedule_id,
 			input_soil_moisture, input_temperature, input_humidity,
 			input_rainfall_forecast_mm, input_wind_speed, input_crop_type,
 			input_growth_stage, input_evapotranspiration_mm,
 			output_should_irrigate, output_water_quantity_liters,
 			output_duration_minutes, output_optimal_time, output_reasoning,
-			output_confidence_score, decided_at, applied, created_by, created_at`,
+			output_confidence_score, decided_at, applied, created_by, created_at,
+			output_method, output_recommended_depth_mm, output_crop_coefficient, output_et0_mm_day`,
 		dec.ID, dec.TenantID, dec.ZoneID, dec.FieldID, dec.ScheduleID,
 		dec.Inputs.SoilMoisture, dec.Inputs.Temperature, dec.Inputs.Humidity,
 		dec.Inputs.RainfallForecastMM, dec.Inputs.WindSpeed, dec.Inputs.CropType,
@@ -897,6 +899,7 @@ func (r *irrigationRepository) CreateDecision(ctx context.Context, dec *domain.I
 		dec.Output.ShouldIrrigate, dec.Output.WaterQuantityLiters,
 		dec.Output.DurationMinutes, dec.Output.OptimalTime, dec.Output.Reasoning,
 		dec.Output.ConfidenceScore, dec.DecidedAt, dec.Applied, dec.CreatedBy,
+		methodOrHeuristic(dec.Output.Method), dec.Output.RecommendedDepthMM, dec.Output.CropCoefficient, dec.Output.ET0MMDay,
 	)
 
 	result, err := scanDecision(row)
@@ -933,8 +936,16 @@ func scanDecision(row pgx.Row) (*domain.IrrigationDecision, error) {
 		&d.Output.ShouldIrrigate, &d.Output.WaterQuantityLiters,
 		&d.Output.DurationMinutes, &d.Output.OptimalTime, &d.Output.Reasoning,
 		&d.Output.ConfidenceScore, &d.DecidedAt, &d.Applied, &d.CreatedBy, &d.CreatedAt,
+		&d.Output.Method, &d.Output.RecommendedDepthMM, &d.Output.CropCoefficient, &d.Output.ET0MMDay,
 	)
 	return d, err
+}
+
+func methodOrHeuristic(m string) string {
+	if m == "" {
+		return domain.DecisionMethodHeuristic
+	}
+	return m
 }
 
 // =========================================================================

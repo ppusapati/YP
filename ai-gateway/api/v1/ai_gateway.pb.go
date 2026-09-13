@@ -1019,8 +1019,18 @@ type PredictYieldResponse struct {
 	StressFactors              []*StressFactor        `protobuf:"bytes,6,rep,name=stress_factors,json=stressFactors,proto3" json:"stress_factors,omitempty"`
 	ModelVersion               string                 `protobuf:"bytes,7,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	ProcessingTimeMs           int64                  `protobuf:"varint,8,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	// Provenance of the point estimate: "parametric", "tabular", or "blended".
+	ModelSource string `protobuf:"bytes,9,opt,name=model_source,json=modelSource,proto3" json:"model_source,omitempty"`
+	// Weight given to the trained tabular model in a blended estimate (0..1).
+	TabularWeight float64 `protobuf:"fixed64,10,opt,name=tabular_weight,json=tabularWeight,proto3" json:"tabular_weight,omitempty"`
+	// False when crop_type was not recognized and generic wheat parameters were used.
+	CropSupported bool `protobuf:"varint,11,opt,name=crop_supported,json=cropSupported,proto3" json:"crop_supported,omitempty"`
+	// Nominal coverage of [yield_lower_bound, yield_upper_bound] (e.g. 0.9); 0 when heuristic.
+	IntervalCoverage float64 `protobuf:"fixed64,12,opt,name=interval_coverage,json=intervalCoverage,proto3" json:"interval_coverage,omitempty"`
+	// Parametric (stress-factor) estimate, kept for transparency when blended.
+	ParametricYieldKgPerHectare float64 `protobuf:"fixed64,13,opt,name=parametric_yield_kg_per_hectare,json=parametricYieldKgPerHectare,proto3" json:"parametric_yield_kg_per_hectare,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *PredictYieldResponse) Reset() {
@@ -1109,6 +1119,41 @@ func (x *PredictYieldResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *PredictYieldResponse) GetModelSource() string {
+	if x != nil {
+		return x.ModelSource
+	}
+	return ""
+}
+
+func (x *PredictYieldResponse) GetTabularWeight() float64 {
+	if x != nil {
+		return x.TabularWeight
+	}
+	return 0
+}
+
+func (x *PredictYieldResponse) GetCropSupported() bool {
+	if x != nil {
+		return x.CropSupported
+	}
+	return false
+}
+
+func (x *PredictYieldResponse) GetIntervalCoverage() float64 {
+	if x != nil {
+		return x.IntervalCoverage
+	}
+	return 0
+}
+
+func (x *PredictYieldResponse) GetParametricYieldKgPerHectare() float64 {
+	if x != nil {
+		return x.ParametricYieldKgPerHectare
+	}
+	return 0
+}
+
 type EnvironmentFactors struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	TemperatureCelsius float64                `protobuf:"fixed64,1,opt,name=temperature_celsius,json=temperatureCelsius,proto3" json:"temperature_celsius,omitempty"`
@@ -1117,8 +1162,11 @@ type EnvironmentFactors struct {
 	SolarRadiation     float64                `protobuf:"fixed64,4,opt,name=solar_radiation,json=solarRadiation,proto3" json:"solar_radiation,omitempty"`
 	WindSpeedKmh       float64                `protobuf:"fixed64,5,opt,name=wind_speed_kmh,json=windSpeedKmh,proto3" json:"wind_speed_kmh,omitempty"`
 	GrowingDegreeDays  float64                `protobuf:"fixed64,6,opt,name=growing_degree_days,json=growingDegreeDays,proto3" json:"growing_degree_days,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Season counts from weather-service agro metrics (optional).
+	FrostDays      int32 `protobuf:"varint,7,opt,name=frost_days,json=frostDays,proto3" json:"frost_days,omitempty"`
+	HeatStressDays int32 `protobuf:"varint,8,opt,name=heat_stress_days,json=heatStressDays,proto3" json:"heat_stress_days,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *EnvironmentFactors) Reset() {
@@ -1189,6 +1237,20 @@ func (x *EnvironmentFactors) GetWindSpeedKmh() float64 {
 func (x *EnvironmentFactors) GetGrowingDegreeDays() float64 {
 	if x != nil {
 		return x.GrowingDegreeDays
+	}
+	return 0
+}
+
+func (x *EnvironmentFactors) GetFrostDays() int32 {
+	if x != nil {
+		return x.FrostDays
+	}
+	return 0
+}
+
+func (x *EnvironmentFactors) GetHeatStressDays() int32 {
+	if x != nil {
+		return x.HeatStressDays
 	}
 	return 0
 }
@@ -1300,6 +1362,8 @@ type ManagementFactors struct {
 	TillageType           string                 `protobuf:"bytes,3,opt,name=tillage_type,json=tillageType,proto3" json:"tillage_type,omitempty"`
 	PlantingDensity       float64                `protobuf:"fixed64,4,opt,name=planting_density,json=plantingDensity,proto3" json:"planting_density,omitempty"`
 	PestManagementLevel   string                 `protobuf:"bytes,5,opt,name=pest_management_level,json=pestManagementLevel,proto3" json:"pest_management_level,omitempty"`
+	PlantingDay           int32                  `protobuf:"varint,6,opt,name=planting_day,json=plantingDay,proto3" json:"planting_day,omitempty"`     // day of year (1-366); 0 = unknown
+	IrrigationMm          float64                `protobuf:"fixed64,7,opt,name=irrigation_mm,json=irrigationMm,proto3" json:"irrigation_mm,omitempty"` // season total applied; 0 = derive from efficiency
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -1367,6 +1431,20 @@ func (x *ManagementFactors) GetPestManagementLevel() string {
 		return x.PestManagementLevel
 	}
 	return ""
+}
+
+func (x *ManagementFactors) GetPlantingDay() int32 {
+	if x != nil {
+		return x.PlantingDay
+	}
+	return 0
+}
+
+func (x *ManagementFactors) GetIrrigationMm() float64 {
+	if x != nil {
+		return x.IrrigationMm
+	}
+	return 0
 }
 
 type StressFactor struct {
@@ -5568,8 +5646,10 @@ type SimulateWaterFlowRequest struct {
 	// Daily rainfall series (used for water balance computation; overrides
 	// rainfall_mm_day when non-empty).
 	DailyRainfallMm []float64 `protobuf:"fixed64,8,rep,packed,name=daily_rainfall_mm,json=dailyRainfallMm,proto3" json:"daily_rainfall_mm,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Soil water depletion from field capacity at day 0 (mm). 0 = at field capacity.
+	InitialDepletionMm float64 `protobuf:"fixed64,9,opt,name=initial_depletion_mm,json=initialDepletionMm,proto3" json:"initial_depletion_mm,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SimulateWaterFlowRequest) Reset() {
@@ -5656,6 +5736,13 @@ func (x *SimulateWaterFlowRequest) GetDailyRainfallMm() []float64 {
 		return x.DailyRainfallMm
 	}
 	return nil
+}
+
+func (x *SimulateWaterFlowRequest) GetInitialDepletionMm() float64 {
+	if x != nil {
+		return x.InitialDepletionMm
+	}
+	return 0
 }
 
 type WaterFlowMoistureParams struct {
@@ -5753,14 +5840,19 @@ func (x *WaterFlowMoistureParams) GetRootZoneDepthM() float64 {
 type WaterFlowBalanceParams struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	FieldAreaHa                float64                `protobuf:"fixed64,1,opt,name=field_area_ha,json=fieldAreaHa,proto3" json:"field_area_ha,omitempty"`
-	CropCoefficient            float64                `protobuf:"fixed64,2,opt,name=crop_coefficient,json=cropCoefficient,proto3" json:"crop_coefficient,omitempty"`
+	CropCoefficient            float64                `protobuf:"fixed64,2,opt,name=crop_coefficient,json=cropCoefficient,proto3" json:"crop_coefficient,omitempty"` // explicit Kc; 0 = resolve from crop_type below
 	ReferenceEtMmDay           float64                `protobuf:"fixed64,3,opt,name=reference_et_mm_day,json=referenceEtMmDay,proto3" json:"reference_et_mm_day,omitempty"`
 	RootZoneDepthM             float64                `protobuf:"fixed64,4,opt,name=root_zone_depth_m,json=rootZoneDepthM,proto3" json:"root_zone_depth_m,omitempty"`
 	FieldCapacity              float64                `protobuf:"fixed64,5,opt,name=field_capacity,json=fieldCapacity,proto3" json:"field_capacity,omitempty"`
 	WiltingPoint               float64                `protobuf:"fixed64,6,opt,name=wilting_point,json=wiltingPoint,proto3" json:"wilting_point,omitempty"`
 	ManagementAllowedDepletion float64                `protobuf:"fixed64,7,opt,name=management_allowed_depletion,json=managementAllowedDepletion,proto3" json:"management_allowed_depletion,omitempty"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	// When crop_coefficient is 0, Kc is looked up from FAO-56 tables for this
+	// crop at the given growth stage or days after planting.
+	CropType          string `protobuf:"bytes,8,opt,name=crop_type,json=cropType,proto3" json:"crop_type,omitempty"`
+	GrowthStage       string `protobuf:"bytes,9,opt,name=growth_stage,json=growthStage,proto3" json:"growth_stage,omitempty"`
+	DaysAfterPlanting int32  `protobuf:"varint,10,opt,name=days_after_planting,json=daysAfterPlanting,proto3" json:"days_after_planting,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *WaterFlowBalanceParams) Reset() {
@@ -5838,6 +5930,27 @@ func (x *WaterFlowBalanceParams) GetWiltingPoint() float64 {
 func (x *WaterFlowBalanceParams) GetManagementAllowedDepletion() float64 {
 	if x != nil {
 		return x.ManagementAllowedDepletion
+	}
+	return 0
+}
+
+func (x *WaterFlowBalanceParams) GetCropType() string {
+	if x != nil {
+		return x.CropType
+	}
+	return ""
+}
+
+func (x *WaterFlowBalanceParams) GetGrowthStage() string {
+	if x != nil {
+		return x.GrowthStage
+	}
+	return ""
+}
+
+func (x *WaterFlowBalanceParams) GetDaysAfterPlanting() int32 {
+	if x != nil {
+		return x.DaysAfterPlanting
 	}
 	return 0
 }
@@ -6299,7 +6412,7 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\n" +
 	"management\x18\x05 \x01(\v2$.agriculture.ai.v1.ManagementFactorsR\n" +
 	"management\x12.\n" +
-	"\x13field_area_hectares\x18\x06 \x01(\x01R\x11fieldAreaHectares\"\x93\x03\n" +
+	"\x13field_area_hectares\x18\x06 \x01(\x01R\x11fieldAreaHectares\"\xf7\x04\n" +
 	"\x14PredictYieldResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12B\n" +
@@ -6309,7 +6422,13 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\x11yield_upper_bound\x18\x05 \x01(\x01R\x0fyieldUpperBound\x12F\n" +
 	"\x0estress_factors\x18\x06 \x03(\v2\x1f.agriculture.ai.v1.StressFactorR\rstressFactors\x12#\n" +
 	"\rmodel_version\x18\a \x01(\tR\fmodelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\b \x01(\x03R\x10processingTimeMs\"\x88\x02\n" +
+	"\x12processing_time_ms\x18\b \x01(\x03R\x10processingTimeMs\x12!\n" +
+	"\fmodel_source\x18\t \x01(\tR\vmodelSource\x12%\n" +
+	"\x0etabular_weight\x18\n" +
+	" \x01(\x01R\rtabularWeight\x12%\n" +
+	"\x0ecrop_supported\x18\v \x01(\bR\rcropSupported\x12+\n" +
+	"\x11interval_coverage\x18\f \x01(\x01R\x10intervalCoverage\x12D\n" +
+	"\x1fparametric_yield_kg_per_hectare\x18\r \x01(\x01R\x1bparametricYieldKgPerHectare\"\xd1\x02\n" +
 	"\x12EnvironmentFactors\x12/\n" +
 	"\x13temperature_celsius\x18\x01 \x01(\x01R\x12temperatureCelsius\x12!\n" +
 	"\fhumidity_pct\x18\x02 \x01(\x01R\vhumidityPct\x12\x1f\n" +
@@ -6317,7 +6436,10 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"rainfallMm\x12'\n" +
 	"\x0fsolar_radiation\x18\x04 \x01(\x01R\x0esolarRadiation\x12$\n" +
 	"\x0ewind_speed_kmh\x18\x05 \x01(\x01R\fwindSpeedKmh\x12.\n" +
-	"\x13growing_degree_days\x18\x06 \x01(\x01R\x11growingDegreeDays\"\xa2\x02\n" +
+	"\x13growing_degree_days\x18\x06 \x01(\x01R\x11growingDegreeDays\x12\x1d\n" +
+	"\n" +
+	"frost_days\x18\a \x01(\x05R\tfrostDays\x12(\n" +
+	"\x10heat_stress_days\x18\b \x01(\x05R\x0eheatStressDays\"\xa2\x02\n" +
 	"\vSoilFactors\x12\x0e\n" +
 	"\x02ph\x18\x01 \x01(\x01R\x02ph\x12,\n" +
 	"\x12organic_matter_pct\x18\x02 \x01(\x01R\x10organicMatterPct\x12!\n" +
@@ -6326,13 +6448,15 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\rpotassium_ppm\x18\x05 \x01(\x01R\fpotassiumPpm\x12!\n" +
 	"\fmoisture_pct\x18\x06 \x01(\x01R\vmoisturePct\x12\x18\n" +
 	"\atexture\x18\a \x01(\tR\atexture\x12)\n" +
-	"\x10compaction_index\x18\b \x01(\x01R\x0fcompactionIndex\"\x84\x02\n" +
+	"\x10compaction_index\x18\b \x01(\x01R\x0fcompactionIndex\"\xcc\x02\n" +
 	"\x11ManagementFactors\x123\n" +
 	"\x15irrigation_efficiency\x18\x01 \x01(\x01R\x14irrigationEfficiency\x128\n" +
 	"\x19fertilizer_rate_kg_per_ha\x18\x02 \x01(\x01R\x15fertilizerRateKgPerHa\x12!\n" +
 	"\ftillage_type\x18\x03 \x01(\tR\vtillageType\x12)\n" +
 	"\x10planting_density\x18\x04 \x01(\x01R\x0fplantingDensity\x122\n" +
-	"\x15pest_management_level\x18\x05 \x01(\tR\x13pestManagementLevel\"u\n" +
+	"\x15pest_management_level\x18\x05 \x01(\tR\x13pestManagementLevel\x12!\n" +
+	"\fplanting_day\x18\x06 \x01(\x05R\vplantingDay\x12#\n" +
+	"\rirrigation_mm\x18\a \x01(\x01R\firrigationMm\"u\n" +
 	"\fStressFactor\x12\x1f\n" +
 	"\vfactor_name\x18\x01 \x01(\tR\n" +
 	"factorName\x12\x1a\n" +
@@ -6760,7 +6884,7 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\x0emean_elevation\x18\x04 \x01(\x01R\rmeanElevation\x12#\n" +
 	"\rmin_elevation\x18\x05 \x01(\x01R\fminElevation\x12#\n" +
 	"\rmax_elevation\x18\x06 \x01(\x01R\fmaxElevation\x12\x16\n" +
-	"\x06relief\x18\a \x01(\x01R\x06relief\"\xa5\x03\n" +
+	"\x06relief\x18\a \x01(\x01R\x06relief\"\xd7\x03\n" +
 	"\x18SimulateWaterFlowRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12S\n" +
@@ -6770,7 +6894,8 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\tet_mm_day\x18\x05 \x01(\x01R\aetMmDay\x12*\n" +
 	"\x11irrigation_mm_day\x18\x06 \x01(\x01R\x0firrigationMmDay\x12'\n" +
 	"\x0fsimulation_days\x18\a \x01(\x01R\x0esimulationDays\x12*\n" +
-	"\x11daily_rainfall_mm\x18\b \x03(\x01R\x0fdailyRainfallMm\"\x9a\x02\n" +
+	"\x11daily_rainfall_mm\x18\b \x03(\x01R\x0fdailyRainfallMm\x120\n" +
+	"\x14initial_depletion_mm\x18\t \x01(\x01R\x12initialDepletionMm\"\x9a\x02\n" +
 	"\x17WaterFlowMoistureParams\x12\x1d\n" +
 	"\n" +
 	"num_layers\x18\x01 \x01(\x05R\tnumLayers\x12*\n" +
@@ -6781,7 +6906,7 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\n" +
 	"saturation\x18\x06 \x01(\x01R\n" +
 	"saturation\x12)\n" +
-	"\x11root_zone_depth_m\x18\a \x01(\x01R\x0erootZoneDepthM\"\xcf\x02\n" +
+	"\x11root_zone_depth_m\x18\a \x01(\x01R\x0erootZoneDepthM\"\xbf\x03\n" +
 	"\x16WaterFlowBalanceParams\x12\"\n" +
 	"\rfield_area_ha\x18\x01 \x01(\x01R\vfieldAreaHa\x12)\n" +
 	"\x10crop_coefficient\x18\x02 \x01(\x01R\x0fcropCoefficient\x12-\n" +
@@ -6789,7 +6914,11 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\x11root_zone_depth_m\x18\x04 \x01(\x01R\x0erootZoneDepthM\x12%\n" +
 	"\x0efield_capacity\x18\x05 \x01(\x01R\rfieldCapacity\x12#\n" +
 	"\rwilting_point\x18\x06 \x01(\x01R\fwiltingPoint\x12@\n" +
-	"\x1cmanagement_allowed_depletion\x18\a \x01(\x01R\x1amanagementAllowedDepletion\"\xe5\x02\n" +
+	"\x1cmanagement_allowed_depletion\x18\a \x01(\x01R\x1amanagementAllowedDepletion\x12\x1b\n" +
+	"\tcrop_type\x18\b \x01(\tR\bcropType\x12!\n" +
+	"\fgrowth_stage\x18\t \x01(\tR\vgrowthStage\x12.\n" +
+	"\x13days_after_planting\x18\n" +
+	" \x01(\x05R\x11daysAfterPlanting\"\xe5\x02\n" +
 	"\x19SimulateWaterFlowResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12T\n" +

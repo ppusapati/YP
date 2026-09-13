@@ -46,6 +46,11 @@ pub struct ModelPaths {
     pub satellite_ndvi_version: String,
     /// Crop recommendation engine version tag.
     pub crop_recommendation_version: String,
+    /// Optional path to a trained tabular yield model (JSON written by
+    /// `yp-ml-training train-tabular`). When absent, yield prediction uses the
+    /// parametric stress-factor model only.
+    #[serde(default)]
+    pub yield_tabular_model: String,
 }
 
 /// External vision API configuration for production inference fallback.
@@ -153,6 +158,7 @@ impl Default for Config {
                 crop_growth_version: "v1.0.0".to_string(),
                 satellite_ndvi_version: "v1.0.0".to_string(),
                 crop_recommendation_version: "v1.0.0".to_string(),
+                yield_tabular_model: String::new(),
             },
             external_api: ExternalApiConfig::default(),
             data_collection: DataCollectionConfig::default(),

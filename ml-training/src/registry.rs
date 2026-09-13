@@ -26,6 +26,13 @@ pub struct ModelMetrics {
     pub f1: f64,
     pub precision: f64,
     pub recall: f64,
+    /// Regression metrics, present only for tabular models.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r_squared: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rmse: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mae: Option<f64>,
 }
 
 /// Full metadata for a registered model.
@@ -228,6 +235,9 @@ mod tests {
                 f1: accuracy * 0.95,
                 precision: accuracy * 0.97,
                 recall: accuracy * 0.93,
+                r_squared: None,
+                rmse: None,
+                mae: None,
             },
             training_config_hash: "abc123".to_string(),
             onnx_path: format!("/models/{task}/{version}/model.onnx"),

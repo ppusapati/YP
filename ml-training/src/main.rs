@@ -11,6 +11,8 @@ use yp_ml_training::config::TrainingConfig;
 use yp_ml_training::dataset::prepare_datasets;
 use yp_ml_training::export;
 use yp_ml_training::model::{extract_weights, PlantCnn};
+use yp_ml_training::registry::ModelRegistry;
+use yp_ml_training::tabular;
 use yp_ml_training::training;
 use yp_ml_training::validate;
 
@@ -69,6 +71,21 @@ enum Commands {
         #[arg(long)]
         data_dir: Option<String>,
     },
+    /// Train a tabular (gradient-boosted) regression model, e.g. yield
+    TrainTabular {
+        /// Task name under [tabular.*] in the config (e.g. "yield")
+        #[arg(long)]
+        task: String,
+        /// Override the CSV path from the config
+        #[arg(long)]
+        data: Option<PathBuf>,
+        /// Override the artifact output path from the config
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Register the model in this registry directory when it passes the R² gate
+        #[arg(long)]
+        registry: Option<PathBuf>,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -107,7 +124,67 @@ fn main() -> anyhow::Result<()> {
         } => cmd_pipeline(&config, &tasks, data_dir.as_deref(), &output_dir),
 
         Commands::Status { data_dir } => cmd_status(&config, data_dir.as_deref()),
+
+        Commands::TrainTabular {
+            task,
+            data,
+            output,
+            registry,
+        } => cmd_train_tabular(
+            &config,
+            &cli.config,
+            &task,
+            data.as_deref(),
+            output.as_deref(),
+            registry.as_deref(),
+        ),
     }
+}
+
+fn cmd_train_tabular(
+    config: &TrainingConfig,
+    config_path: &Path,
+    task: &str,
+    data: Option<&Path>,
+    output: Option<&Path>,
+    registry_dir: Option<&Path>,
+) -> anyhow::Result<()> {
+    let task_config = config.tabular.get(task).ok_or_else(|| {
+        anyhow::anyhow!("unknown tabular task: {task} (add a [tabular.{task}] section)")
+    })?;
+
+    let csv_path = data
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from(&task_config.data_csv));
+    let dataset = tabular::load_csv(&csv_path, &task_config.target_column)?;
+    println!("Loaded {} rows from {}", dataset.len(), csv_path.display());
+
+    let out_path = output
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from(&task_config.output_model));
+    let (_model, result) = tabular::train_tabular(task, task_config, &dataset, &out_path)?;
+    tabular::print_result(&result);
+
+    if let Some(dir) = registry_dir {
+        let config_hash = {
+            let bytes = std::fs::read(config_path).unwrap_or_default();
+            format!(
+                "{:016x}",
+                bytes
+                    .iter()
+                    .fold(0xcbf29ce484222325u64, |h, b| (h ^ *b as u64)
+                        .wrapping_mul(0x100000001b3))
+            )
+        };
+        let registry = ModelRegistry::new(dir)?;
+        tabular::register(&registry, task, &result, &config_hash)?;
+        println!(
+            "Registered {} as staging in {}",
+            result.version,
+            dir.display()
+        );
+    }
+    Ok(())
 }
 
 fn cmd_train(
@@ -149,7 +226,10 @@ fn cmd_train(
         serde_json::to_string_pretty(&meta)?,
     )?;
 
-    println!("Training complete: val_acc={:.4} test_acc={:.4}", result.best_val_acc, result.test_acc);
+    println!(
+        "Training complete: val_acc={:.4} test_acc={:.4}",
+        result.best_val_acc, result.test_acc
+    );
     Ok(())
 }
 
@@ -204,11 +284,9 @@ fn cmd_export(
         .ok_or_else(|| anyhow::anyhow!("unknown task: {task}"))?;
 
     let meta_path = model_dir.join("training_meta.json");
-    let meta: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&meta_path)?)?;
+    let meta: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&meta_path)?)?;
     let num_classes = meta["num_classes"].as_u64().unwrap() as usize;
-    let _label_map: HashMap<String, usize> =
-        serde_json::from_value(meta["label_map"].clone())?;
+    let _label_map: HashMap<String, usize> = serde_json::from_value(meta["label_map"].clone())?;
 
     let device = <InferBackend as Backend>::Device::default();
     let record = CompactRecorder::new()
@@ -283,17 +361,15 @@ fn cmd_pipeline(
                 let task_dir = output_dir.join(task);
 
                 match cmd_validate(config, task, &task_dir, data_dir) {
-                    Ok(()) => {
-                        match cmd_export(config, task, &task_dir, None) {
-                            Ok(()) => {
-                                results.push((task.to_string(), "success", 0.0));
-                            }
-                            Err(e) => {
-                                println!("  FAILED: export — {e}");
-                                results.push((task.to_string(), "export_failed", 0.0));
-                            }
+                    Ok(()) => match cmd_export(config, task, &task_dir, None) {
+                        Ok(()) => {
+                            results.push((task.to_string(), "success", 0.0));
                         }
-                    }
+                        Err(e) => {
+                            println!("  FAILED: export — {e}");
+                            results.push((task.to_string(), "export_failed", 0.0));
+                        }
+                    },
                     Err(e) => {
                         println!("  FAILED: validation — {e}");
                         results.push((task.to_string(), "validation_failed", 0.0));
@@ -336,7 +412,11 @@ fn cmd_status(config: &TrainingConfig, data_dir: Option<&str>) -> anyhow::Result
         };
 
         let min_needed = config.data.min_samples_per_class * 3;
-        let status = if count >= min_needed { "READY" } else { "collecting" };
+        let status = if count >= min_needed {
+            "READY"
+        } else {
+            "collecting"
+        };
 
         println!("  {task:<25} {count:>6} samples  ({status}, need >= {min_needed})");
     }

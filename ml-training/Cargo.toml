@@ -16,6 +16,9 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png"]
 # ONNX protobuf export
 prost = "0.13"
 
+# Tabular yield model (shared with the AI gateway so the same artifact is served)
+yield-prediction-engine = { path = "../rust-engines/yield-prediction-engine" }
+
 # CLI
 clap = { version = "4", features = ["derive"] }
 

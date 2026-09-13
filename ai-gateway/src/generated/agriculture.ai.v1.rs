@@ -192,6 +192,21 @@ pub struct PredictYieldResponse {
     pub model_version: ::prost::alloc::string::String,
     #[prost(int64, tag = "8")]
     pub processing_time_ms: i64,
+    /// Provenance of the point estimate: "parametric", "tabular", or "blended".
+    #[prost(string, tag = "9")]
+    pub model_source: ::prost::alloc::string::String,
+    /// Weight given to the trained tabular model in a blended estimate (0..1).
+    #[prost(double, tag = "10")]
+    pub tabular_weight: f64,
+    /// False when crop_type was not recognized and generic wheat parameters were used.
+    #[prost(bool, tag = "11")]
+    pub crop_supported: bool,
+    /// Nominal coverage of \[yield_lower_bound, yield_upper_bound\] (e.g. 0.9); 0 when heuristic.
+    #[prost(double, tag = "12")]
+    pub interval_coverage: f64,
+    /// Parametric (stress-factor) estimate, kept for transparency when blended.
+    #[prost(double, tag = "13")]
+    pub parametric_yield_kg_per_hectare: f64,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct EnvironmentFactors {
@@ -207,6 +222,11 @@ pub struct EnvironmentFactors {
     pub wind_speed_kmh: f64,
     #[prost(double, tag = "6")]
     pub growing_degree_days: f64,
+    /// Season counts from weather-service agro metrics (optional).
+    #[prost(int32, tag = "7")]
+    pub frost_days: i32,
+    #[prost(int32, tag = "8")]
+    pub heat_stress_days: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SoilFactors {
@@ -239,6 +259,12 @@ pub struct ManagementFactors {
     pub planting_density: f64,
     #[prost(string, tag = "5")]
     pub pest_management_level: ::prost::alloc::string::String,
+    /// day of year (1-366); 0 = unknown
+    #[prost(int32, tag = "6")]
+    pub planting_day: i32,
+    /// season total applied; 0 = derive from efficiency
+    #[prost(double, tag = "7")]
+    pub irrigation_mm: f64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StressFactor {
@@ -1084,6 +1110,9 @@ pub struct SimulateWaterFlowRequest {
     /// rainfall_mm_day when non-empty).
     #[prost(double, repeated, tag = "8")]
     pub daily_rainfall_mm: ::prost::alloc::vec::Vec<f64>,
+    /// Soil water depletion from field capacity at day 0 (mm). 0 = at field capacity.
+    #[prost(double, tag = "9")]
+    pub initial_depletion_mm: f64,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct WaterFlowMoistureParams {
@@ -1102,10 +1131,11 @@ pub struct WaterFlowMoistureParams {
     #[prost(double, tag = "7")]
     pub root_zone_depth_m: f64,
 }
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WaterFlowBalanceParams {
     #[prost(double, tag = "1")]
     pub field_area_ha: f64,
+    /// explicit Kc; 0 = resolve from crop_type below
     #[prost(double, tag = "2")]
     pub crop_coefficient: f64,
     #[prost(double, tag = "3")]
@@ -1118,6 +1148,14 @@ pub struct WaterFlowBalanceParams {
     pub wilting_point: f64,
     #[prost(double, tag = "7")]
     pub management_allowed_depletion: f64,
+    /// When crop_coefficient is 0, Kc is looked up from FAO-56 tables for this
+    /// crop at the given growth stage or days after planting.
+    #[prost(string, tag = "8")]
+    pub crop_type: ::prost::alloc::string::String,
+    #[prost(string, tag = "9")]
+    pub growth_stage: ::prost::alloc::string::String,
+    #[prost(int32, tag = "10")]
+    pub days_after_planting: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateWaterFlowResponse {

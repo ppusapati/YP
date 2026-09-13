@@ -14,6 +14,62 @@ pub struct TrainingConfig {
     /// Optional retraining trigger configuration.
     #[serde(default)]
     pub retraining: Option<TriggerConfig>,
+    /// Tabular regression tasks (e.g. yield), keyed by task name.
+    #[serde(default)]
+    pub tabular: HashMap<String, TabularTaskConfig>,
+}
+
+/// Configuration for a tabular regression task trained with gradient boosting.
+#[derive(Debug, Deserialize, Clone)]
+pub struct TabularTaskConfig {
+    /// CSV with a header row; must contain `target_column` plus the feature columns.
+    pub data_csv: String,
+    /// Name of the target column.
+    #[serde(default = "default_target_column")]
+    pub target_column: String,
+    #[serde(default = "default_n_trees")]
+    pub n_trees: usize,
+    #[serde(default = "default_max_depth")]
+    pub max_depth: usize,
+    #[serde(default = "default_learning_rate")]
+    pub learning_rate: f64,
+    #[serde(default = "default_min_samples_leaf")]
+    pub min_samples_leaf: usize,
+    #[serde(default = "default_subsample")]
+    pub subsample: f64,
+    /// Target coverage for conformal prediction intervals.
+    #[serde(default = "default_interval_coverage")]
+    pub interval_coverage: f64,
+    /// Minimum held-out R² required to register the model.
+    #[serde(default = "default_min_r_squared")]
+    pub min_r_squared: f64,
+    /// Path of the JSON model artifact to write.
+    pub output_model: String,
+}
+
+fn default_target_column() -> String {
+    "yield_kg_ha".to_string()
+}
+fn default_n_trees() -> usize {
+    300
+}
+fn default_max_depth() -> usize {
+    4
+}
+fn default_learning_rate() -> f64 {
+    0.05
+}
+fn default_min_samples_leaf() -> usize {
+    5
+}
+fn default_subsample() -> f64 {
+    0.8
+}
+fn default_interval_coverage() -> f64 {
+    0.9
+}
+fn default_min_r_squared() -> f64 {
+    0.5
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -199,7 +255,10 @@ brightness_range = [0.9, 1.1]
 random_crop_scale = [0.8, 1.0]
 "#;
         let result = toml::from_str::<TrainingConfig>(toml_str);
-        assert!(result.is_err(), "should fail when [export] section is missing");
+        assert!(
+            result.is_err(),
+            "should fail when [export] section is missing"
+        );
     }
 
     #[test]
@@ -224,7 +283,10 @@ onnx_opset = 17
 dynamic_batch = true
 "#;
         let result = toml::from_str::<TrainingConfig>(toml_str);
-        assert!(result.is_err(), "should fail when min_confidence is missing");
+        assert!(
+            result.is_err(),
+            "should fail when min_confidence is missing"
+        );
     }
 
     #[test]
@@ -255,6 +317,9 @@ onnx_opset = 17
 dynamic_batch = true
 "#;
         let result = toml::from_str::<TrainingConfig>(toml_str);
-        assert!(result.is_err(), "should fail when task fields like learning_rate are missing");
+        assert!(
+            result.is_err(),
+            "should fail when task fields like learning_rate are missing"
+        );
     }
 }

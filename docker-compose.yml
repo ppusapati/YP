@@ -291,6 +291,8 @@ services:
       DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/irrigation_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      WEATHER_SERVICE_URL: http://weather-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   soil-service:
     <<: *go-service
@@ -324,6 +326,7 @@ services:
       CROP_SERVICE_URL: http://crop-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
+      WEATHER_SERVICE_URL: http://weather-service:8080
 
   pest-prediction-service:
     <<: *go-service
