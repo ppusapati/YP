@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"p9e.in/samavaya/packages/grpcdial"
 	"google.golang.org/grpc/keepalive"
+	"p9e.in/samavaya/packages/grpcdial"
 
 	"p9e.in/samavaya/packages/circuitbreaker"
 	"p9e.in/samavaya/packages/p9log"
@@ -116,13 +116,13 @@ type NutrientDeficiencyResult struct {
 
 // DetectedNutrientDeficiency represents a single nutrient deficiency detection.
 type DetectedNutrientDeficiency struct {
-	Nutrient              string
-	ConfidenceScore       float64
-	Severity              string
-	Description           string
-	VisualSymptoms        string
+	Nutrient               string
+	ConfidenceScore        float64
+	Severity               string
+	Description            string
+	VisualSymptoms         string
 	RecommendedFertilizers []string
-	ApplicationMethod     string
+	ApplicationMethod      string
 }
 
 // SpeciesClassificationResult contains plant species classification output.
@@ -139,12 +139,12 @@ type SpeciesClassificationResult struct {
 
 // PrescriptionResult contains the AI-generated prescription output.
 type PrescriptionResult struct {
-	RequestID              string
-	FieldID                string
-	Prescriptions          []PrescriptionMap
+	RequestID               string
+	FieldID                 string
+	Prescriptions           []PrescriptionMap
 	EstimatedCostSavingsPct float64
-	EstimatedYieldGainPct  float64
-	ProcessingTimeMs       int64
+	EstimatedYieldGainPct   float64
+	ProcessingTimeMs        int64
 }
 
 // PrescriptionMap represents a single prescription type result.
@@ -188,18 +188,14 @@ type ImageInput struct {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // DiagnoseImage sends plant images to the AI Gateway for disease detection.
-// This replaces the previous HTTP calls to the Rust preprocessing and Python inference services.
-func (c *AIClient) DiagnoseImage(ctx context.Context, requestID string, images []ImageInput, plantSpeciesID string) (*DiagnosisResult, error) {
+//
+// sctx (optional) tags the collected training sample with tenant, location,
+// and crop metadata.
+func (c *AIClient) DiagnoseImage(ctx context.Context, requestID string, images []ImageInput, plantSpeciesID string, sctx *SampleContext) (*DiagnosisResult, error) {
 	var result *DiagnosisResult
 
 	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
-		// Build the gRPC request payload using raw proto bytes (via grpc.Invoke).
-		// In a full implementation with generated pb stubs, this would be:
-		//   resp, err := c.client.DiagnoseImage(cbCtx, &aipb.DiagnoseImageRequest{...})
-		// Since we're building the integration layer, we use a codec-agnostic approach
-		// that works with the proto definition.
-
-		resp, err := callDiagnoseImage(cbCtx, c.conn, requestID, images, plantSpeciesID)
+		resp, err := callDiagnoseImage(cbCtx, c.conn, requestID, images, plantSpeciesID, sctx)
 		if err != nil {
 			return fmt.Errorf("DiagnoseImage RPC failed: %w", err)
 		}
@@ -224,11 +220,11 @@ func (c *AIClient) DiagnoseImage(ctx context.Context, requestID string, images [
 }
 
 // DetectPests sends plant images to the AI Gateway for pest detection.
-func (c *AIClient) DetectPests(ctx context.Context, requestID string, images []ImageInput, plantSpeciesID string) (*PestDetectionResult, error) {
+func (c *AIClient) DetectPests(ctx context.Context, requestID string, images []ImageInput, plantSpeciesID string, sctx *SampleContext) (*PestDetectionResult, error) {
 	var result *PestDetectionResult
 
 	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
-		resp, err := callDetectPests(cbCtx, c.conn, requestID, images, plantSpeciesID)
+		resp, err := callDetectPests(cbCtx, c.conn, requestID, images, plantSpeciesID, sctx)
 		if err != nil {
 			return fmt.Errorf("DetectPests RPC failed: %w", err)
 		}
@@ -245,11 +241,11 @@ func (c *AIClient) DetectPests(ctx context.Context, requestID string, images []I
 }
 
 // DetectNutrientDeficiency sends plant images for nutrient deficiency analysis.
-func (c *AIClient) DetectNutrientDeficiency(ctx context.Context, requestID string, images []ImageInput, plantSpeciesID string) (*NutrientDeficiencyResult, error) {
+func (c *AIClient) DetectNutrientDeficiency(ctx context.Context, requestID string, images []ImageInput, plantSpeciesID string, sctx *SampleContext) (*NutrientDeficiencyResult, error) {
 	var result *NutrientDeficiencyResult
 
 	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
-		resp, err := callDetectNutrientDeficiency(cbCtx, c.conn, requestID, images, plantSpeciesID)
+		resp, err := callDetectNutrientDeficiency(cbCtx, c.conn, requestID, images, plantSpeciesID, sctx)
 		if err != nil {
 			return fmt.Errorf("DetectNutrientDeficiency RPC failed: %w", err)
 		}
@@ -266,11 +262,11 @@ func (c *AIClient) DetectNutrientDeficiency(ctx context.Context, requestID strin
 }
 
 // ClassifyPlant sends plant images for species identification.
-func (c *AIClient) ClassifyPlant(ctx context.Context, requestID string, images []ImageInput) (*SpeciesClassificationResult, error) {
+func (c *AIClient) ClassifyPlant(ctx context.Context, requestID string, images []ImageInput, sctx *SampleContext) (*SpeciesClassificationResult, error) {
 	var result *SpeciesClassificationResult
 
 	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
-		resp, err := callClassifyPlant(cbCtx, c.conn, requestID, images)
+		resp, err := callClassifyPlant(cbCtx, c.conn, requestID, images, sctx)
 		if err != nil {
 			return fmt.Errorf("ClassifyPlant RPC failed: %w", err)
 		}

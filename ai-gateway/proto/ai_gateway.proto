@@ -55,17 +55,35 @@ service AIGatewayService {
 
   // ─── Water Flow Simulation ──────────────────────────────────────
   rpc SimulateWaterFlow(SimulateWaterFlowRequest) returns (SimulateWaterFlowResponse);
+
+  // Human-in-the-loop review of collected training samples.
+  rpc ListTrainingSamples(ListTrainingSamplesRequest) returns (ListTrainingSamplesResponse);
+  rpc SubmitLabelReview(SubmitLabelReviewRequest) returns (SubmitLabelReviewResponse);
+  rpc GetTrainingSampleImage(GetTrainingSampleImageRequest) returns (GetTrainingSampleImageResponse);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Plant Diagnosis Messages
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Where a sample came from; stored with collected training data so labels
+// carry provenance and geographic/crop context for slicing and review.
+message SampleContext {
+  string tenant_id = 1;
+  string farm_id = 2;
+  string field_id = 3;
+  string crop = 4;
+  double latitude = 5;
+  double longitude = 6;
+  string submitted_by = 7; // user id, when known
+}
+
 message DiagnoseImageRequest {
   string request_id = 1;
   repeated ImageData images = 2;
   string plant_species_id = 3; // optional hint
   repeated string operations = 4; // preprocessing ops: resize, normalize, enhance
+  SampleContext context = 5;
 }
 
 message DiagnoseImageResponse {
@@ -93,6 +111,7 @@ message DetectPestsRequest {
   string request_id = 1;
   repeated ImageData images = 2;
   string plant_species_id = 3;
+  SampleContext context = 4;
 }
 
 message DetectPestsResponse {
@@ -117,6 +136,7 @@ message DetectNutrientDeficiencyRequest {
   string request_id = 1;
   repeated ImageData images = 2;
   string plant_species_id = 3;
+  SampleContext context = 4;
 }
 
 message DetectNutrientDeficiencyResponse {
@@ -139,6 +159,79 @@ message NutrientDeficiency {
 message ClassifyPlantRequest {
   string request_id = 1;
   repeated ImageData images = 2;
+  SampleContext context = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Training Data Review (human-in-the-loop labeling)
+// ─────────────────────────────────────────────────────────────────────────────
+
+message TrainingLabel {
+  string name = 1;
+  double confidence = 2;
+  string category = 3;
+  string severity = 4;
+}
+
+message LabelReview {
+  string decision = 1;        // "confirmed", "corrected", "rejected"
+  string corrected_label = 2; // when decision = corrected
+  string reviewer_id = 3;
+  string tenant_id = 4;
+  string notes = 5;
+  string reviewed_at = 6;     // RFC3339
+}
+
+message TrainingSampleInfo {
+  string id = 1;              // sha256 of the image bytes
+  string task = 2;            // disease, pest, nutrient_deficiency, plant_classification
+  string timestamp = 3;
+  string provenance = 4;      // external_api, local_model, human
+  string provider = 5;        // API provider or model version
+  repeated TrainingLabel labels = 6;
+  double top_confidence = 7;
+  SampleContext context = 8;
+  LabelReview review = 9;     // unset when not yet reviewed
+  string effective_label = 10; // label after applying any review
+}
+
+message ListTrainingSamplesRequest {
+  string task = 1;
+  string review_status = 2;   // "unreviewed" (default), "reviewed", "all"
+  string tenant_id = 3;       // optional filter
+  double min_confidence = 4;  // optional lower bound on top_confidence
+  double max_confidence = 5;  // optional upper bound (0 = none)
+  string provenance = 6;      // optional filter
+  int32 page_size = 7;        // default 50, max 500
+  int32 page_offset = 8;
+  string order = 9;           // "confidence_asc" (default; active learning), "newest"
+}
+
+message ListTrainingSamplesResponse {
+  repeated TrainingSampleInfo samples = 1;
+  int32 total_count = 2;
+  int32 unreviewed_count = 3;
+}
+
+message SubmitLabelReviewRequest {
+  string task = 1;
+  string sample_id = 2;
+  LabelReview review = 3;
+}
+
+message SubmitLabelReviewResponse {
+  TrainingSampleInfo sample = 1;
+}
+
+message GetTrainingSampleImageRequest {
+  string task = 1;
+  string sample_id = 2;
+  string tenant_id = 3; // optional: when set, the sample must belong to this tenant
+}
+
+message GetTrainingSampleImageResponse {
+  bytes image_bytes = 1;
+  string mime_type = 2;
 }
 
 message ClassifyPlantResponse {

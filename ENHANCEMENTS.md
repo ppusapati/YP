@@ -331,13 +331,15 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** Labels come from PlantNet/Google Vision responses via `ai-gateway/src/data_collector.rs` directly into the training manifest. No human review, no dataset versioning, no label-noise handling beyond `min_confidence` and `min_samples_per_class`.
 
 **Enhancements:**
-- [ ] Build a labeling review queue API and web UI for agronomists to confirm, correct, or reject auto-labels
-- [ ] Add dataset versioning with content hashing and immutable snapshots per training run
-- [ ] Add class-balance reporting and stratified sampling in `ml-training/src/dataset.rs`
-- [ ] Add label-noise detection (confident-learning style disagreement between model and label)
-- [ ] Track label provenance (external API, human, model-assisted) and weight samples accordingly
-- [ ] Add active-learning sampling: surface low-confidence and high-disagreement images for review first
-- [ ] Add geographic and crop-type metadata to every sample for slicing in evaluation
+- [x] Build a labeling review queue API and web UI for agronomists to confirm, correct, or reject auto-labels — gateway `ListTrainingSamples` / `SubmitLabelReview` / `GetTrainingSampleImage` over the sample store (`{task}/labels/{id}.json` + `reviews.jsonl` audit log); `plant-diagnosis-service` proxies them tenant-scoped (`ListLabelReviewQueue`, `SubmitLabelReview`, `GetLabelReviewImage`, reviewer from the JWT); `label-review` page in crop-intelligence and the ERP shell
+- [x] Add dataset versioning with content hashing and immutable snapshots per training run — sample ids are the SHA-256 of the image bytes (deduped on collect); every `train` run writes `dataset_snapshot.json` (snapshot id = hash of the sorted id/label set, train/val/test id lists) and records it in `training_meta.json` and the model registry
+- [x] Add class-balance reporting and stratified sampling in `ml-training/src/dataset.rs` — `dataset_report.json` (per-class counts, imbalance ratio, provenance/crop breakdown, warnings), deterministic per-class hash-bucket split, inverse-frequency class weights fed to the cross-entropy loss
+- [x] Add label-noise detection (confident-learning style disagreement between model and label) — after training, samples the best model contradicts with p≥0.9 while p(label)≤0.1 are written to `label_noise_report.json` for review
+- [x] Track label provenance (external API, human, model-assisted) and weight samples accordingly — `provenance` on every sample; `[data.provenance_weights]` (human 1.0 / external_api 0.6 / local_model 0.3) scales class weights; human decisions bypass `min_confidence`, corrections override the label, rejections drop the sample
+- [x] Add active-learning sampling: surface low-confidence and high-disagreement images for review first — queue defaults to `confidence_asc`; local-model predictions are also collected so the trained model's uncertain cases enter the queue
+- [x] Add geographic and crop-type metadata to every sample for slicing in evaluation — `SampleContext` (tenant, farm, field, crop, lat/lon, submitter) on every vision RPC and stored with the sample; the Go client now uses the generated gateway stubs (the previous `structpb` encoding never matched the gateway's wire format)
+- [ ] Add an "ask a second reviewer" flow and inter-annotator agreement reporting
+- [ ] Feed `label_noise_report.json` suspects back into the review queue automatically
 
 **Effort:** Medium | **Impact:** High
 

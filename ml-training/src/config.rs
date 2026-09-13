@@ -80,6 +80,50 @@ pub struct DataConfig {
     pub test_split: f64,
     pub min_samples_per_class: usize,
     pub min_confidence: f64,
+    /// Relative trust in labels by origin; scales each sample's contribution
+    /// to class weights. Human-reviewed labels bypass `min_confidence`.
+    #[serde(default)]
+    pub provenance_weights: ProvenanceWeights,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ProvenanceWeights {
+    #[serde(default = "default_human_weight")]
+    pub human: f64,
+    #[serde(default = "default_external_weight")]
+    pub external_api: f64,
+    #[serde(default = "default_local_weight")]
+    pub local_model: f64,
+}
+
+impl Default for ProvenanceWeights {
+    fn default() -> Self {
+        Self {
+            human: default_human_weight(),
+            external_api: default_external_weight(),
+            local_model: default_local_weight(),
+        }
+    }
+}
+
+impl ProvenanceWeights {
+    pub fn for_provenance(&self, provenance: &str) -> f64 {
+        match provenance {
+            "human" => self.human,
+            "local_model" => self.local_model,
+            _ => self.external_api,
+        }
+    }
+}
+
+fn default_human_weight() -> f64 {
+    1.0
+}
+fn default_external_weight() -> f64 {
+    0.6
+}
+fn default_local_weight() -> f64 {
+    0.3
 }
 
 #[derive(Debug, Deserialize, Clone)]

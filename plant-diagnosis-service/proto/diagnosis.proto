@@ -249,6 +249,90 @@ message DetectPestDamageResponse {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Training-label review (human-in-the-loop labeling)
+//
+// Images the AI gateway auto-labelled are queued for agronomists to confirm,
+// correct, or reject. The service proxies the gateway's sample store and scopes
+// everything to the caller's tenant.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LabelReviewDecision {
+  LABEL_REVIEW_DECISION_UNSPECIFIED = 0;
+  LABEL_REVIEW_DECISION_CONFIRMED   = 1; // auto-label is right
+  LABEL_REVIEW_DECISION_CORRECTED   = 2; // replace with corrected_label
+  LABEL_REVIEW_DECISION_REJECTED    = 3; // exclude the sample from training
+}
+
+message TrainingLabel {
+  string name       = 1;
+  double confidence = 2;
+  string category   = 3;
+  string severity   = 4;
+}
+
+message LabelReview {
+  LabelReviewDecision decision        = 1;
+  string              corrected_label = 2;
+  string              reviewer_id     = 3;
+  string              notes           = 4;
+  google.protobuf.Timestamp reviewed_at = 5;
+}
+
+message LabelReviewSample {
+  string id              = 1;  // content hash of the image
+  string task            = 2;  // disease, pest, nutrient_deficiency, plant_classification
+  google.protobuf.Timestamp collected_at = 3;
+  string provenance      = 4;  // external_api, local_model, human
+  string provider        = 5;  // API provider or local model version
+  repeated TrainingLabel labels = 6;
+  double top_confidence  = 7;
+  string farm_id         = 8;
+  string field_id        = 9;
+  string crop            = 10;
+  string submitted_by    = 11;
+  LabelReview review     = 12; // unset until reviewed
+  string effective_label = 13; // label after applying the review
+}
+
+message ListLabelReviewQueueRequest {
+  string task           = 1;  // required
+  bool   include_reviewed = 2; // default: only unreviewed samples
+  double max_confidence = 3;  // optional upper bound on top_confidence (0 = none)
+  string provenance     = 4;  // optional filter
+  int32  page_size      = 5;
+  int32  page_offset    = 6;
+  bool   newest_first   = 7;  // default orders lowest-confidence first (active learning)
+}
+
+message ListLabelReviewQueueResponse {
+  repeated LabelReviewSample samples = 1;
+  int32 total_count      = 2;
+  int32 unreviewed_count = 3;
+}
+
+message SubmitLabelReviewRequest {
+  string              task            = 1;
+  string              sample_id       = 2;
+  LabelReviewDecision decision        = 3;
+  string              corrected_label = 4;
+  string              notes           = 5;
+}
+
+message SubmitLabelReviewResponse {
+  LabelReviewSample sample = 1;
+}
+
+message GetLabelReviewImageRequest {
+  string task      = 1;
+  string sample_id = 2;
+}
+
+message GetLabelReviewImageResponse {
+  bytes  image_bytes = 1;
+  string mime_type   = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Service
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -279,4 +363,13 @@ service PlantDiagnosisService {
 
   // Detect pest damage from images
   rpc DetectPestDamage(DetectPestDamageRequest) returns (DetectPestDamageResponse);
+
+  // List auto-labelled training samples awaiting human review (tenant-scoped)
+  rpc ListLabelReviewQueue(ListLabelReviewQueueRequest) returns (ListLabelReviewQueueResponse);
+
+  // Confirm, correct, or reject an auto-label
+  rpc SubmitLabelReview(SubmitLabelReviewRequest) returns (SubmitLabelReviewResponse);
+
+  // Fetch the image behind a review-queue sample
+  rpc GetLabelReviewImage(GetLabelReviewImageRequest) returns (GetLabelReviewImageResponse);
 }

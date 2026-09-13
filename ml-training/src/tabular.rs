@@ -245,6 +245,8 @@ pub fn register(
         training_config_hash: config_hash.to_string(),
         onnx_path: result.artifact_path.clone(),
         status: ModelStatus::Staging,
+        dataset_snapshot: None,
+        training_samples: Some(result.n_train),
     })
 }
 

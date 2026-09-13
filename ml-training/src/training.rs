@@ -19,6 +19,44 @@ pub struct TrainingResult {
     pub test_acc: f64,
     pub final_epoch: usize,
     pub model_path: String,
+    /// Training samples the best model confidently disagrees with.
+    pub label_noise: Vec<NoisySample>,
+}
+
+/// A training sample whose label the trained model contradicts with high
+/// confidence — the confident-learning signal for review.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct NoisySample {
+    pub id: String,
+    pub label: String,
+    pub predicted: String,
+    pub predicted_prob: f32,
+    pub label_prob: f32,
+    pub provenance: String,
+}
+
+/// Flag samples where p(predicted) >= `confident` and p(label) <= `doubtful`.
+pub const NOISE_CONFIDENT_PROB: f32 = 0.9;
+pub const NOISE_DOUBTFUL_PROB: f32 = 0.1;
+
+/// Options controlling the loss.
+#[derive(Debug, Clone, Default)]
+pub struct LossOptions {
+    /// Per-class weights (mean 1); empty disables weighting.
+    pub class_weights: Vec<f32>,
+    /// Label smoothing in [0, 1); 0 disables.
+    pub label_smoothing: f64,
+}
+
+fn loss_config(opts: &LossOptions) -> burn::nn::loss::CrossEntropyLossConfig {
+    let mut cfg = burn::nn::loss::CrossEntropyLossConfig::new();
+    if !opts.class_weights.is_empty() {
+        cfg = cfg.with_weights(Some(opts.class_weights.clone()));
+    }
+    if opts.label_smoothing > 0.0 {
+        cfg = cfg.with_smoothing(Some(opts.label_smoothing as f32));
+    }
+    cfg
 }
 
 pub fn train(
@@ -29,6 +67,8 @@ pub fn train(
     test_samples: Vec<Sample>,
     num_classes: usize,
     output_dir: &Path,
+    loss_opts: &LossOptions,
+    idx_to_label: &std::collections::HashMap<usize, String>,
 ) -> anyhow::Result<TrainingResult> {
     let device = <TrainBackend as Backend>::Device::default();
 
@@ -63,9 +103,10 @@ pub fn train(
             batch_size,
             task_config.learning_rate,
             epoch,
+            loss_opts,
         );
 
-        let (val_loss, val_acc) = evaluate(&model, &val_samples, &batcher, batch_size);
+        let (val_loss, val_acc) = evaluate(&model, &val_samples, &batcher, batch_size, loss_opts);
 
         tracing::info!(
             epoch = epoch,
@@ -100,14 +141,30 @@ pub fn train(
     let best_record = CompactRecorder::new()
         .load(output_dir.join("best_model"), &device)
         .map_err(|e| anyhow::anyhow!("failed to load best model: {e}"))?;
-    let best_model: PlantCnn<TrainBackend> = PlantCnn::new(num_classes, &device).load_record(best_record);
+    let best_model: PlantCnn<TrainBackend> =
+        PlantCnn::new(num_classes, &device).load_record(best_record);
 
-    let (test_loss, test_acc) = evaluate(&best_model, &test_samples, &batcher, batch_size);
+    let (test_loss, test_acc) =
+        evaluate(&best_model, &test_samples, &batcher, batch_size, loss_opts);
     tracing::info!(
         test_loss = format!("{test_loss:.4}"),
         test_acc = format!("{test_acc:.4}"),
         "test evaluation complete"
     );
+
+    let label_noise = detect_label_noise(
+        &best_model,
+        &train_samples,
+        &batcher,
+        batch_size,
+        idx_to_label,
+    );
+    if !label_noise.is_empty() {
+        tracing::warn!(
+            suspects = label_noise.len(),
+            "training labels the model confidently contradicts; see label_noise_report.json"
+        );
+    }
 
     let model_path = output_dir.join("best_model").to_string_lossy().to_string();
 
@@ -116,7 +173,60 @@ pub fn train(
         test_acc,
         final_epoch,
         model_path,
+        label_noise,
     })
+}
+
+/// Confident-learning style check: samples the trained model assigns a high
+/// probability to a different class than their label are likely mislabelled
+/// and are surfaced for human review.
+pub fn detect_label_noise(
+    model: &PlantCnn<TrainBackend>,
+    samples: &[Sample],
+    batcher: &PlantBatcher,
+    batch_size: usize,
+    idx_to_label: &std::collections::HashMap<usize, String>,
+) -> Vec<NoisySample> {
+    let mut out = Vec::new();
+    for chunk in samples.chunks(batch_size.max(1)) {
+        let batch = batcher.batch(chunk.to_vec());
+        let logits = model.forward(batch.images);
+        let [n, k] = logits.dims();
+        let probs: Vec<f32> = burn::tensor::activation::softmax(logits, 1)
+            .into_data()
+            .to_vec()
+            .unwrap();
+        for (row, sample) in chunk.iter().enumerate().take(n) {
+            let p = &probs[row * k..(row + 1) * k];
+            let (pred, pred_prob) = p.iter().enumerate().fold(
+                (0usize, f32::MIN),
+                |acc, (i, &v)| if v > acc.1 { (i, v) } else { acc },
+            );
+            let label_prob = p.get(sample.label_idx).copied().unwrap_or(0.0);
+            if pred != sample.label_idx
+                && pred_prob >= NOISE_CONFIDENT_PROB
+                && label_prob <= NOISE_DOUBTFUL_PROB
+            {
+                out.push(NoisySample {
+                    id: sample.id.clone(),
+                    label: sample.label.clone(),
+                    predicted: idx_to_label
+                        .get(&pred)
+                        .cloned()
+                        .unwrap_or_else(|| format!("class_{pred}")),
+                    predicted_prob: pred_prob,
+                    label_prob,
+                    provenance: sample.provenance.clone(),
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| {
+        b.predicted_prob
+            .partial_cmp(&a.predicted_prob)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    out
 }
 
 fn train_epoch(
@@ -127,6 +237,7 @@ fn train_epoch(
     batch_size: usize,
     lr: f64,
     _epoch: usize,
+    loss_opts: &LossOptions,
 ) -> (f64, f64) {
     let mut total_loss = 0.0;
     let mut correct = 0usize;
@@ -137,7 +248,7 @@ fn train_epoch(
         let batch_len = chunk.len();
 
         let logits = model.forward(batch.images);
-        let loss = burn::nn::loss::CrossEntropyLossConfig::new()
+        let loss = loss_config(loss_opts)
             .init(&logits.device())
             .forward(logits.clone(), batch.labels.clone());
 
@@ -155,8 +266,16 @@ fn train_epoch(
         *model = optimizer.step(lr, model.clone(), grads);
     }
 
-    let avg_loss = if total > 0 { total_loss / total as f64 } else { 0.0 };
-    let accuracy = if total > 0 { correct as f64 / total as f64 } else { 0.0 };
+    let avg_loss = if total > 0 {
+        total_loss / total as f64
+    } else {
+        0.0
+    };
+    let accuracy = if total > 0 {
+        correct as f64 / total as f64
+    } else {
+        0.0
+    };
     (avg_loss, accuracy)
 }
 
@@ -165,6 +284,7 @@ fn evaluate(
     samples: &[Sample],
     batcher: &PlantBatcher,
     batch_size: usize,
+    loss_opts: &LossOptions,
 ) -> (f64, f64) {
     let mut total_loss = 0.0;
     let mut correct = 0usize;
@@ -175,7 +295,7 @@ fn evaluate(
         let batch_len = chunk.len();
 
         let logits = model.forward(batch.images);
-        let loss = burn::nn::loss::CrossEntropyLossConfig::new()
+        let loss = loss_config(loss_opts)
             .init(&logits.device())
             .forward(logits.clone(), batch.labels.clone());
 
@@ -189,7 +309,15 @@ fn evaluate(
         total += batch_len;
     }
 
-    let avg_loss = if total > 0 { total_loss / total as f64 } else { 0.0 };
-    let accuracy = if total > 0 { correct as f64 / total as f64 } else { 0.0 };
+    let avg_loss = if total > 0 {
+        total_loss / total as f64
+    } else {
+        0.0
+    };
+    let accuracy = if total > 0 {
+        correct as f64 / total as f64
+    } else {
+        0.0
+    };
     (avg_loss, accuracy)
 }

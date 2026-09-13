@@ -75,6 +75,15 @@ const (
 	// AIGatewayServiceSimulateWaterFlowProcedure is the fully-qualified name of the AIGatewayService's
 	// SimulateWaterFlow RPC.
 	AIGatewayServiceSimulateWaterFlowProcedure = "/agriculture.ai.v1.AIGatewayService/SimulateWaterFlow"
+	// AIGatewayServiceListTrainingSamplesProcedure is the fully-qualified name of the
+	// AIGatewayService's ListTrainingSamples RPC.
+	AIGatewayServiceListTrainingSamplesProcedure = "/agriculture.ai.v1.AIGatewayService/ListTrainingSamples"
+	// AIGatewayServiceSubmitLabelReviewProcedure is the fully-qualified name of the AIGatewayService's
+	// SubmitLabelReview RPC.
+	AIGatewayServiceSubmitLabelReviewProcedure = "/agriculture.ai.v1.AIGatewayService/SubmitLabelReview"
+	// AIGatewayServiceGetTrainingSampleImageProcedure is the fully-qualified name of the
+	// AIGatewayService's GetTrainingSampleImage RPC.
+	AIGatewayServiceGetTrainingSampleImageProcedure = "/agriculture.ai.v1.AIGatewayService/GetTrainingSampleImage"
 )
 
 // AIGatewayServiceClient is a client for the agriculture.ai.v1.AIGatewayService service.
@@ -114,6 +123,10 @@ type AIGatewayServiceClient interface {
 	AnalyzeTerrain(context.Context, *connect.Request[v1.AnalyzeTerrainRequest]) (*connect.Response[v1.AnalyzeTerrainResponse], error)
 	// ─── Water Flow Simulation ──────────────────────────────────────
 	SimulateWaterFlow(context.Context, *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error)
+	// Human-in-the-loop review of collected training samples.
+	ListTrainingSamples(context.Context, *connect.Request[v1.ListTrainingSamplesRequest]) (*connect.Response[v1.ListTrainingSamplesResponse], error)
+	SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error)
+	GetTrainingSampleImage(context.Context, *connect.Request[v1.GetTrainingSampleImageRequest]) (*connect.Response[v1.GetTrainingSampleImageResponse], error)
 }
 
 // NewAIGatewayServiceClient constructs a client for the agriculture.ai.v1.AIGatewayService service.
@@ -211,6 +224,24 @@ func NewAIGatewayServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(aIGatewayServiceMethods.ByName("SimulateWaterFlow")),
 			connect.WithClientOptions(opts...),
 		),
+		listTrainingSamples: connect.NewClient[v1.ListTrainingSamplesRequest, v1.ListTrainingSamplesResponse](
+			httpClient,
+			baseURL+AIGatewayServiceListTrainingSamplesProcedure,
+			connect.WithSchema(aIGatewayServiceMethods.ByName("ListTrainingSamples")),
+			connect.WithClientOptions(opts...),
+		),
+		submitLabelReview: connect.NewClient[v1.SubmitLabelReviewRequest, v1.SubmitLabelReviewResponse](
+			httpClient,
+			baseURL+AIGatewayServiceSubmitLabelReviewProcedure,
+			connect.WithSchema(aIGatewayServiceMethods.ByName("SubmitLabelReview")),
+			connect.WithClientOptions(opts...),
+		),
+		getTrainingSampleImage: connect.NewClient[v1.GetTrainingSampleImageRequest, v1.GetTrainingSampleImageResponse](
+			httpClient,
+			baseURL+AIGatewayServiceGetTrainingSampleImageProcedure,
+			connect.WithSchema(aIGatewayServiceMethods.ByName("GetTrainingSampleImage")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -230,6 +261,9 @@ type aIGatewayServiceClient struct {
 	generatePrescription     *connect.Client[v1.GeneratePrescriptionRequest, v1.GeneratePrescriptionResponse]
 	analyzeTerrain           *connect.Client[v1.AnalyzeTerrainRequest, v1.AnalyzeTerrainResponse]
 	simulateWaterFlow        *connect.Client[v1.SimulateWaterFlowRequest, v1.SimulateWaterFlowResponse]
+	listTrainingSamples      *connect.Client[v1.ListTrainingSamplesRequest, v1.ListTrainingSamplesResponse]
+	submitLabelReview        *connect.Client[v1.SubmitLabelReviewRequest, v1.SubmitLabelReviewResponse]
+	getTrainingSampleImage   *connect.Client[v1.GetTrainingSampleImageRequest, v1.GetTrainingSampleImageResponse]
 }
 
 // DiagnoseImage calls agriculture.ai.v1.AIGatewayService.DiagnoseImage.
@@ -302,6 +336,21 @@ func (c *aIGatewayServiceClient) SimulateWaterFlow(ctx context.Context, req *con
 	return c.simulateWaterFlow.CallUnary(ctx, req)
 }
 
+// ListTrainingSamples calls agriculture.ai.v1.AIGatewayService.ListTrainingSamples.
+func (c *aIGatewayServiceClient) ListTrainingSamples(ctx context.Context, req *connect.Request[v1.ListTrainingSamplesRequest]) (*connect.Response[v1.ListTrainingSamplesResponse], error) {
+	return c.listTrainingSamples.CallUnary(ctx, req)
+}
+
+// SubmitLabelReview calls agriculture.ai.v1.AIGatewayService.SubmitLabelReview.
+func (c *aIGatewayServiceClient) SubmitLabelReview(ctx context.Context, req *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error) {
+	return c.submitLabelReview.CallUnary(ctx, req)
+}
+
+// GetTrainingSampleImage calls agriculture.ai.v1.AIGatewayService.GetTrainingSampleImage.
+func (c *aIGatewayServiceClient) GetTrainingSampleImage(ctx context.Context, req *connect.Request[v1.GetTrainingSampleImageRequest]) (*connect.Response[v1.GetTrainingSampleImageResponse], error) {
+	return c.getTrainingSampleImage.CallUnary(ctx, req)
+}
+
 // AIGatewayServiceHandler is an implementation of the agriculture.ai.v1.AIGatewayService service.
 type AIGatewayServiceHandler interface {
 	// ─── Plant Diagnosis ───────────────────────────────────────────────
@@ -339,6 +388,10 @@ type AIGatewayServiceHandler interface {
 	AnalyzeTerrain(context.Context, *connect.Request[v1.AnalyzeTerrainRequest]) (*connect.Response[v1.AnalyzeTerrainResponse], error)
 	// ─── Water Flow Simulation ──────────────────────────────────────
 	SimulateWaterFlow(context.Context, *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error)
+	// Human-in-the-loop review of collected training samples.
+	ListTrainingSamples(context.Context, *connect.Request[v1.ListTrainingSamplesRequest]) (*connect.Response[v1.ListTrainingSamplesResponse], error)
+	SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error)
+	GetTrainingSampleImage(context.Context, *connect.Request[v1.GetTrainingSampleImageRequest]) (*connect.Response[v1.GetTrainingSampleImageResponse], error)
 }
 
 // NewAIGatewayServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -432,6 +485,24 @@ func NewAIGatewayServiceHandler(svc AIGatewayServiceHandler, opts ...connect.Han
 		connect.WithSchema(aIGatewayServiceMethods.ByName("SimulateWaterFlow")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aIGatewayServiceListTrainingSamplesHandler := connect.NewUnaryHandler(
+		AIGatewayServiceListTrainingSamplesProcedure,
+		svc.ListTrainingSamples,
+		connect.WithSchema(aIGatewayServiceMethods.ByName("ListTrainingSamples")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aIGatewayServiceSubmitLabelReviewHandler := connect.NewUnaryHandler(
+		AIGatewayServiceSubmitLabelReviewProcedure,
+		svc.SubmitLabelReview,
+		connect.WithSchema(aIGatewayServiceMethods.ByName("SubmitLabelReview")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aIGatewayServiceGetTrainingSampleImageHandler := connect.NewUnaryHandler(
+		AIGatewayServiceGetTrainingSampleImageProcedure,
+		svc.GetTrainingSampleImage,
+		connect.WithSchema(aIGatewayServiceMethods.ByName("GetTrainingSampleImage")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.ai.v1.AIGatewayService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AIGatewayServiceDiagnoseImageProcedure:
@@ -462,6 +533,12 @@ func NewAIGatewayServiceHandler(svc AIGatewayServiceHandler, opts ...connect.Han
 			aIGatewayServiceAnalyzeTerrainHandler.ServeHTTP(w, r)
 		case AIGatewayServiceSimulateWaterFlowProcedure:
 			aIGatewayServiceSimulateWaterFlowHandler.ServeHTTP(w, r)
+		case AIGatewayServiceListTrainingSamplesProcedure:
+			aIGatewayServiceListTrainingSamplesHandler.ServeHTTP(w, r)
+		case AIGatewayServiceSubmitLabelReviewProcedure:
+			aIGatewayServiceSubmitLabelReviewHandler.ServeHTTP(w, r)
+		case AIGatewayServiceGetTrainingSampleImageProcedure:
+			aIGatewayServiceGetTrainingSampleImageHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -525,4 +602,16 @@ func (UnimplementedAIGatewayServiceHandler) AnalyzeTerrain(context.Context, *con
 
 func (UnimplementedAIGatewayServiceHandler) SimulateWaterFlow(context.Context, *connect.Request[v1.SimulateWaterFlowRequest]) (*connect.Response[v1.SimulateWaterFlowResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.SimulateWaterFlow is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) ListTrainingSamples(context.Context, *connect.Request[v1.ListTrainingSamplesRequest]) (*connect.Response[v1.ListTrainingSamplesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.ListTrainingSamples is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.SubmitLabelReview is not implemented"))
+}
+
+func (UnimplementedAIGatewayServiceHandler) GetTrainingSampleImage(context.Context, *connect.Request[v1.GetTrainingSampleImageRequest]) (*connect.Response[v1.GetTrainingSampleImageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.ai.v1.AIGatewayService.GetTrainingSampleImage is not implemented"))
 }

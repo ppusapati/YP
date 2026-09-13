@@ -28,6 +28,9 @@ const (
 	PlantDiagnosisService_IdentifySpecies_FullMethodName          = "/agriculture.diagnosis.v1.PlantDiagnosisService/IdentifySpecies"
 	PlantDiagnosisService_DetectNutrientDeficiency_FullMethodName = "/agriculture.diagnosis.v1.PlantDiagnosisService/DetectNutrientDeficiency"
 	PlantDiagnosisService_DetectPestDamage_FullMethodName         = "/agriculture.diagnosis.v1.PlantDiagnosisService/DetectPestDamage"
+	PlantDiagnosisService_ListLabelReviewQueue_FullMethodName     = "/agriculture.diagnosis.v1.PlantDiagnosisService/ListLabelReviewQueue"
+	PlantDiagnosisService_SubmitLabelReview_FullMethodName        = "/agriculture.diagnosis.v1.PlantDiagnosisService/SubmitLabelReview"
+	PlantDiagnosisService_GetLabelReviewImage_FullMethodName      = "/agriculture.diagnosis.v1.PlantDiagnosisService/GetLabelReviewImage"
 )
 
 // PlantDiagnosisServiceClient is the client API for PlantDiagnosisService service.
@@ -52,6 +55,12 @@ type PlantDiagnosisServiceClient interface {
 	DetectNutrientDeficiency(ctx context.Context, in *DetectNutrientDeficiencyRequest, opts ...grpc.CallOption) (*DetectNutrientDeficiencyResponse, error)
 	// Detect pest damage from images
 	DetectPestDamage(ctx context.Context, in *DetectPestDamageRequest, opts ...grpc.CallOption) (*DetectPestDamageResponse, error)
+	// List auto-labelled training samples awaiting human review (tenant-scoped)
+	ListLabelReviewQueue(ctx context.Context, in *ListLabelReviewQueueRequest, opts ...grpc.CallOption) (*ListLabelReviewQueueResponse, error)
+	// Confirm, correct, or reject an auto-label
+	SubmitLabelReview(ctx context.Context, in *SubmitLabelReviewRequest, opts ...grpc.CallOption) (*SubmitLabelReviewResponse, error)
+	// Fetch the image behind a review-queue sample
+	GetLabelReviewImage(ctx context.Context, in *GetLabelReviewImageRequest, opts ...grpc.CallOption) (*GetLabelReviewImageResponse, error)
 }
 
 type plantDiagnosisServiceClient struct {
@@ -152,6 +161,36 @@ func (c *plantDiagnosisServiceClient) DetectPestDamage(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *plantDiagnosisServiceClient) ListLabelReviewQueue(ctx context.Context, in *ListLabelReviewQueueRequest, opts ...grpc.CallOption) (*ListLabelReviewQueueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLabelReviewQueueResponse)
+	err := c.cc.Invoke(ctx, PlantDiagnosisService_ListLabelReviewQueue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *plantDiagnosisServiceClient) SubmitLabelReview(ctx context.Context, in *SubmitLabelReviewRequest, opts ...grpc.CallOption) (*SubmitLabelReviewResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitLabelReviewResponse)
+	err := c.cc.Invoke(ctx, PlantDiagnosisService_SubmitLabelReview_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *plantDiagnosisServiceClient) GetLabelReviewImage(ctx context.Context, in *GetLabelReviewImageRequest, opts ...grpc.CallOption) (*GetLabelReviewImageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLabelReviewImageResponse)
+	err := c.cc.Invoke(ctx, PlantDiagnosisService_GetLabelReviewImage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PlantDiagnosisServiceServer is the server API for PlantDiagnosisService service.
 // All implementations must embed UnimplementedPlantDiagnosisServiceServer
 // for forward compatibility.
@@ -174,6 +213,12 @@ type PlantDiagnosisServiceServer interface {
 	DetectNutrientDeficiency(context.Context, *DetectNutrientDeficiencyRequest) (*DetectNutrientDeficiencyResponse, error)
 	// Detect pest damage from images
 	DetectPestDamage(context.Context, *DetectPestDamageRequest) (*DetectPestDamageResponse, error)
+	// List auto-labelled training samples awaiting human review (tenant-scoped)
+	ListLabelReviewQueue(context.Context, *ListLabelReviewQueueRequest) (*ListLabelReviewQueueResponse, error)
+	// Confirm, correct, or reject an auto-label
+	SubmitLabelReview(context.Context, *SubmitLabelReviewRequest) (*SubmitLabelReviewResponse, error)
+	// Fetch the image behind a review-queue sample
+	GetLabelReviewImage(context.Context, *GetLabelReviewImageRequest) (*GetLabelReviewImageResponse, error)
 	mustEmbedUnimplementedPlantDiagnosisServiceServer()
 }
 
@@ -210,6 +255,15 @@ func (UnimplementedPlantDiagnosisServiceServer) DetectNutrientDeficiency(context
 }
 func (UnimplementedPlantDiagnosisServiceServer) DetectPestDamage(context.Context, *DetectPestDamageRequest) (*DetectPestDamageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DetectPestDamage not implemented")
+}
+func (UnimplementedPlantDiagnosisServiceServer) ListLabelReviewQueue(context.Context, *ListLabelReviewQueueRequest) (*ListLabelReviewQueueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListLabelReviewQueue not implemented")
+}
+func (UnimplementedPlantDiagnosisServiceServer) SubmitLabelReview(context.Context, *SubmitLabelReviewRequest) (*SubmitLabelReviewResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitLabelReview not implemented")
+}
+func (UnimplementedPlantDiagnosisServiceServer) GetLabelReviewImage(context.Context, *GetLabelReviewImageRequest) (*GetLabelReviewImageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLabelReviewImage not implemented")
 }
 func (UnimplementedPlantDiagnosisServiceServer) mustEmbedUnimplementedPlantDiagnosisServiceServer() {}
 func (UnimplementedPlantDiagnosisServiceServer) testEmbeddedByValue()                               {}
@@ -394,6 +448,60 @@ func _PlantDiagnosisService_DetectPestDamage_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PlantDiagnosisService_ListLabelReviewQueue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLabelReviewQueueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlantDiagnosisServiceServer).ListLabelReviewQueue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PlantDiagnosisService_ListLabelReviewQueue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlantDiagnosisServiceServer).ListLabelReviewQueue(ctx, req.(*ListLabelReviewQueueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PlantDiagnosisService_SubmitLabelReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitLabelReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlantDiagnosisServiceServer).SubmitLabelReview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PlantDiagnosisService_SubmitLabelReview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlantDiagnosisServiceServer).SubmitLabelReview(ctx, req.(*SubmitLabelReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PlantDiagnosisService_GetLabelReviewImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLabelReviewImageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlantDiagnosisServiceServer).GetLabelReviewImage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PlantDiagnosisService_GetLabelReviewImage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlantDiagnosisServiceServer).GetLabelReviewImage(ctx, req.(*GetLabelReviewImageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PlantDiagnosisService_ServiceDesc is the grpc.ServiceDesc for PlantDiagnosisService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -436,6 +544,18 @@ var PlantDiagnosisService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DetectPestDamage",
 			Handler:    _PlantDiagnosisService_DetectPestDamage_Handler,
+		},
+		{
+			MethodName: "ListLabelReviewQueue",
+			Handler:    _PlantDiagnosisService_ListLabelReviewQueue_Handler,
+		},
+		{
+			MethodName: "SubmitLabelReview",
+			Handler:    _PlantDiagnosisService_SubmitLabelReview_Handler,
+		},
+		{
+			MethodName: "GetLabelReviewImage",
+			Handler:    _PlantDiagnosisService_GetLabelReviewImage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

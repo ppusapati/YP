@@ -9,6 +9,14 @@ test_split = 0.1
 min_samples_per_class = 20
 min_confidence = 0.7
 
+# Relative trust in labels by origin. Scales each sample's contribution to the
+# class weights used by the loss. Human-reviewed labels bypass min_confidence;
+# corrected labels replace the auto-label; rejected samples are dropped.
+[data.provenance_weights]
+human = 1.0
+external_api = 0.6
+local_model = 0.3
+
 [tasks.disease]
 input_size = 256
 num_epochs = 50

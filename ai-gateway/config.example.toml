@@ -41,6 +41,14 @@ max_retries = 2
 # Data collection for model training. When enabled, every external API call
 # saves the input image and response labels to disk. The Python training
 # pipeline in ml-training/ consumes this data to train custom ONNX models.
+# Training-data collection. Every vision result served by an external API or a
+# trained local model is stored under storage_dir as
+#   {task}/images/{sha256}.jpg, {task}/labels/{sha256}.json, {task}/manifest.jsonl
+# with label provenance (external_api / local_model / human) and the caller's
+# SampleContext (tenant, farm, field, crop, location). Agronomists confirm,
+# correct, or reject labels through ListTrainingSamples / SubmitLabelReview
+# (proxied tenant-scoped by plant-diagnosis-service); decisions are appended to
+# {task}/reviews.jsonl and applied by ml-training at load time.
 [data_collection]
 enabled = false
 storage_dir = "/data/training-collection"

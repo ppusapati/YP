@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
@@ -17,14 +18,6 @@ import (
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/domain"
 	"p9e.in/samavaya/agriculture/plant-diagnosis-service/internal/ports/outbound"
 )
-
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
@@ -179,7 +172,7 @@ func newService() (*mockDiagnosisRepo, *mockEventPublisher, *diagnosisService) {
 		&mockFieldClient{existing: map[string]bool{"field-001": true}},
 		&mockFarmClient{},
 		nil,
-		nopLogger{},
+		p9log.NewLogger(zap.NewNop()),
 		nil, // aiClient
 	).(*diagnosisService)
 	return repo, pub, svc

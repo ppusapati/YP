@@ -16,7 +16,10 @@ use uuid::Uuid;
 use crate::alerting::AlertingEngine;
 use crate::analytics::AnalyticsEngine;
 use crate::config::Config;
-use crate::data_collector::DataCollector;
+use crate::data_collector::{
+    CollectionInput, DataCollector, Label, LabelReview, Provenance, ReviewDecision, ReviewError,
+    ReviewStatus, SampleContext, SampleOrder, SampleQuery,
+};
 use crate::diagnosis::DiagnosisEngine;
 use crate::prescription::PrescriptionEngine;
 use crate::proto;
@@ -118,6 +121,47 @@ impl AiGatewayServiceImpl {
             .first()
             .map(|img| img.image_bytes.clone())
             .unwrap_or_default()
+    }
+
+    /// Store a locally-served prediction as a training sample so low-confidence
+    /// cases surface in the review queue (active learning).
+    async fn collect_local(
+        &self,
+        task: &str,
+        images: &[proto::ImageData],
+        labels: Vec<Label>,
+        model_version: &str,
+        context: &SampleContext,
+    ) {
+        if !self.data_collector.is_enabled() || labels.is_empty() {
+            return;
+        }
+        let image_bytes = Self::collect_image_bytes(images);
+        if image_bytes.is_empty() {
+            return;
+        }
+        self.data_collector
+            .collect(CollectionInput {
+                task: task.to_string(),
+                image_bytes,
+                labels,
+                provenance: Provenance::LocalModel,
+                source: model_version.to_string(),
+                raw_response: None,
+                context: context.clone(),
+            })
+            .await;
+    }
+
+    fn review_error(e: ReviewError) -> Status {
+        match e {
+            ReviewError::UnknownTask(_) | ReviewError::Invalid(_) => {
+                Status::invalid_argument(e.to_string())
+            }
+            ReviewError::NotFound(_) => Status::not_found(e.to_string()),
+            ReviewError::Forbidden(_) => Status::permission_denied(e.to_string()),
+            ReviewError::Io(_) | ReviewError::Json(_) => Status::internal(e.to_string()),
+        }
     }
 
     fn vision_to_diseases(vr: &VisionResult) -> Vec<proto::DiseaseDetection> {
@@ -222,6 +266,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
         req.request_id = ensure_request_id(&req.request_id);
         let request_id = req.request_id.clone();
         let images_clone = req.images.clone();
+        let sample_context = SampleContext::from_proto(&req.context, &request_id);
         tracing::info!(request_id = %request_id, images = req.images.len(), "DiagnoseImage");
 
         let engine = self.diagnosis.clone();
@@ -229,13 +274,41 @@ impl AiGatewayService for AiGatewayServiceImpl {
             .await
             .map_err(|e| Status::internal(format!("diagnosis task panicked: {e}")))?;
 
+        if !Self::is_demo_model(&result.model_version) {
+            let labels = result
+                .diseases
+                .iter()
+                .map(|d| Label {
+                    name: d.disease_name.clone(),
+                    scientific_name: d.scientific_name.clone(),
+                    confidence: d.confidence_score,
+                    category: "disease".into(),
+                    severity: d.severity.clone(),
+                })
+                .collect();
+            self.collect_local(
+                "disease",
+                &images_clone,
+                labels,
+                &result.model_version,
+                &sample_context,
+            )
+            .await;
+        }
+
         if Self::is_demo_model(&result.model_version) {
             if let Some(ref vc) = self.vision_client {
                 let image_bytes = Self::collect_image_bytes(&images_clone);
                 if !image_bytes.is_empty() {
                     match vc.diagnose_disease(&image_bytes, "").await {
                         Ok(vr) => {
-                            self.data_collector.collect(image_bytes, vr.clone()).await;
+                            self.data_collector
+                                .collect(CollectionInput::from_vision_result(
+                                    image_bytes,
+                                    vr.clone(),
+                                    sample_context.clone(),
+                                ))
+                                .await;
                             let diseases = Self::vision_to_diseases(&vr);
                             let health = if diseases.is_empty() {
                                 1.0
@@ -273,6 +346,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
         req.request_id = ensure_request_id(&req.request_id);
         let request_id = req.request_id.clone();
         let images_clone = req.images.clone();
+        let sample_context = SampleContext::from_proto(&req.context, &request_id);
         tracing::info!(request_id = %request_id, images = req.images.len(), "DetectPests");
 
         let engine = self.diagnosis.clone();
@@ -280,13 +354,41 @@ impl AiGatewayService for AiGatewayServiceImpl {
             .await
             .map_err(|e| Status::internal(format!("pest detection task panicked: {e}")))?;
 
+        if !Self::is_demo_model(&result.model_version) {
+            let labels = result
+                .pests
+                .iter()
+                .map(|p| Label {
+                    name: p.pest_name.clone(),
+                    scientific_name: p.scientific_name.clone(),
+                    confidence: p.confidence_score,
+                    category: "pest".into(),
+                    severity: p.damage_level.clone(),
+                })
+                .collect();
+            self.collect_local(
+                "pest",
+                &images_clone,
+                labels,
+                &result.model_version,
+                &sample_context,
+            )
+            .await;
+        }
+
         if Self::is_demo_model(&result.model_version) {
             if let Some(ref vc) = self.vision_client {
                 let image_bytes = Self::collect_image_bytes(&images_clone);
                 if !image_bytes.is_empty() {
                     match vc.detect_pests(&image_bytes, "").await {
                         Ok(vr) => {
-                            self.data_collector.collect(image_bytes, vr.clone()).await;
+                            self.data_collector
+                                .collect(CollectionInput::from_vision_result(
+                                    image_bytes,
+                                    vr.clone(),
+                                    sample_context.clone(),
+                                ))
+                                .await;
                             return Ok(Response::new(proto::DetectPestsResponse {
                                 request_id,
                                 pests: Self::vision_to_pests(&vr),
@@ -313,6 +415,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
         req.request_id = ensure_request_id(&req.request_id);
         let request_id = req.request_id.clone();
         let images_clone = req.images.clone();
+        let sample_context = SampleContext::from_proto(&req.context, &request_id);
         tracing::info!(request_id = %request_id, images = req.images.len(), "DetectNutrientDeficiency");
 
         let engine = self.diagnosis.clone();
@@ -322,13 +425,41 @@ impl AiGatewayService for AiGatewayServiceImpl {
                 Status::internal(format!("nutrient deficiency detection panicked: {e}"))
             })?;
 
+        if !Self::is_demo_model(&result.model_version) {
+            let labels = result
+                .deficiencies
+                .iter()
+                .map(|d| Label {
+                    name: d.nutrient.clone(),
+                    scientific_name: String::new(),
+                    confidence: d.confidence_score,
+                    category: "nutrient".into(),
+                    severity: d.severity.clone(),
+                })
+                .collect();
+            self.collect_local(
+                "nutrient_deficiency",
+                &images_clone,
+                labels,
+                &result.model_version,
+                &sample_context,
+            )
+            .await;
+        }
+
         if Self::is_demo_model(&result.model_version) {
             if let Some(ref vc) = self.vision_client {
                 let image_bytes = Self::collect_image_bytes(&images_clone);
                 if !image_bytes.is_empty() {
                     match vc.detect_nutrient_deficiency(&image_bytes, "").await {
                         Ok(vr) => {
-                            self.data_collector.collect(image_bytes, vr.clone()).await;
+                            self.data_collector
+                                .collect(CollectionInput::from_vision_result(
+                                    image_bytes,
+                                    vr.clone(),
+                                    sample_context.clone(),
+                                ))
+                                .await;
                             return Ok(Response::new(proto::DetectNutrientDeficiencyResponse {
                                 request_id,
                                 deficiencies: Self::vision_to_deficiencies(&vr),
@@ -357,6 +488,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
         req.request_id = ensure_request_id(&req.request_id);
         let request_id = req.request_id.clone();
         let images_clone = req.images.clone();
+        let sample_context = SampleContext::from_proto(&req.context, &request_id);
         tracing::info!(request_id = %request_id, images = req.images.len(), "ClassifyPlant");
 
         let engine = self.diagnosis.clone();
@@ -364,13 +496,41 @@ impl AiGatewayService for AiGatewayServiceImpl {
             .await
             .map_err(|e| Status::internal(format!("plant classification panicked: {e}")))?;
 
+        if !Self::is_demo_model(&result.model_version) {
+            let labels = result
+                .species
+                .iter()
+                .map(|s| Label {
+                    name: s.common_name.clone(),
+                    scientific_name: s.scientific_name.clone(),
+                    confidence: s.confidence,
+                    category: s.family.clone(),
+                    severity: String::new(),
+                })
+                .collect();
+            self.collect_local(
+                "plant_classification",
+                &images_clone,
+                labels,
+                &result.model_version,
+                &sample_context,
+            )
+            .await;
+        }
+
         if Self::is_demo_model(&result.model_version) {
             if let Some(ref vc) = self.vision_client {
                 let image_bytes = Self::collect_image_bytes(&images_clone);
                 if !image_bytes.is_empty() {
                     match vc.classify_plant(&image_bytes).await {
                         Ok(vr) => {
-                            self.data_collector.collect(image_bytes, vr.clone()).await;
+                            self.data_collector
+                                .collect(CollectionInput::from_vision_result(
+                                    image_bytes,
+                                    vr.clone(),
+                                    sample_context.clone(),
+                                ))
+                                .await;
                             return Ok(Response::new(proto::ClassifyPlantResponse {
                                 request_id,
                                 species: Self::vision_to_classification(&vr),
@@ -590,5 +750,109 @@ impl AiGatewayService for AiGatewayServiceImpl {
             .map_err(|e| Status::internal(format!("water flow simulation panicked: {e}")))?;
 
         Ok(Response::new(result))
+    }
+
+    // ─── Training Data Review ───────────────────────────────────────
+
+    async fn list_training_samples(
+        &self,
+        request: Request<proto::ListTrainingSamplesRequest>,
+    ) -> Result<Response<proto::ListTrainingSamplesResponse>, Status> {
+        let req = request.into_inner();
+        let query = SampleQuery {
+            task: req.task.clone(),
+            review_status: match req.review_status.as_str() {
+                "" | "unreviewed" => ReviewStatus::Unreviewed,
+                "reviewed" => ReviewStatus::Reviewed,
+                "all" => ReviewStatus::All,
+                other => {
+                    return Err(Status::invalid_argument(format!(
+                        "review_status must be unreviewed, reviewed, or all (got {other:?})"
+                    )))
+                }
+            },
+            tenant_id: (!req.tenant_id.is_empty()).then(|| req.tenant_id.clone()),
+            min_confidence: (req.min_confidence > 0.0).then_some(req.min_confidence),
+            max_confidence: (req.max_confidence > 0.0).then_some(req.max_confidence),
+            provenance: if req.provenance.is_empty() {
+                None
+            } else {
+                Some(Provenance::parse(&req.provenance).ok_or_else(|| {
+                    Status::invalid_argument(format!("unknown provenance {:?}", req.provenance))
+                })?)
+            },
+            order: match req.order.as_str() {
+                "" | "confidence_asc" => SampleOrder::ConfidenceAsc,
+                "newest" => SampleOrder::Newest,
+                other => return Err(Status::invalid_argument(format!("unknown order {other:?}"))),
+            },
+            offset: req.page_offset.max(0) as usize,
+            limit: req.page_size.max(0) as usize,
+        };
+        let collector = self.data_collector.clone();
+        let page = tokio::task::spawn_blocking(move || collector.list_samples(&query))
+            .await
+            .map_err(|e| Status::internal(format!("sample listing panicked: {e}")))?
+            .map_err(Self::review_error)?;
+        Ok(Response::new(proto::ListTrainingSamplesResponse {
+            samples: page.samples.iter().map(|s| s.to_proto()).collect(),
+            total_count: page.total as i32,
+            unreviewed_count: page.unreviewed as i32,
+        }))
+    }
+
+    async fn submit_label_review(
+        &self,
+        request: Request<proto::SubmitLabelReviewRequest>,
+    ) -> Result<Response<proto::SubmitLabelReviewResponse>, Status> {
+        let req = request.into_inner();
+        let r = req
+            .review
+            .ok_or_else(|| Status::invalid_argument("review is required"))?;
+        let decision = ReviewDecision::parse(&r.decision).ok_or_else(|| {
+            Status::invalid_argument("decision must be confirmed, corrected, or rejected")
+        })?;
+        let review = LabelReview {
+            decision,
+            corrected_label: r.corrected_label,
+            reviewer_id: r.reviewer_id,
+            tenant_id: r.tenant_id,
+            notes: r.notes,
+            reviewed_at: r.reviewed_at,
+        };
+        tracing::info!(task = %req.task, sample = %req.sample_id, decision = decision.as_str(), "SubmitLabelReview");
+        let collector = self.data_collector.clone();
+        let (task, id) = (req.task, req.sample_id);
+        let sample =
+            tokio::task::spawn_blocking(move || collector.submit_review(&task, &id, review))
+                .await
+                .map_err(|e| Status::internal(format!("review panicked: {e}")))?
+                .map_err(Self::review_error)?;
+        Ok(Response::new(proto::SubmitLabelReviewResponse {
+            sample: Some(sample.to_proto()),
+        }))
+    }
+
+    async fn get_training_sample_image(
+        &self,
+        request: Request<proto::GetTrainingSampleImageRequest>,
+    ) -> Result<Response<proto::GetTrainingSampleImageResponse>, Status> {
+        let req = request.into_inner();
+        let collector = self.data_collector.clone();
+        let bytes = tokio::task::spawn_blocking(move || {
+            collector.sample_image(&req.task, &req.sample_id, &req.tenant_id)
+        })
+        .await
+        .map_err(|e| Status::internal(format!("image read panicked: {e}")))?
+        .map_err(Self::review_error)?;
+        let mime = if bytes.starts_with(&[0x89, b'P', b'N', b'G']) {
+            "image/png"
+        } else {
+            "image/jpeg"
+        };
+        Ok(Response::new(proto::GetTrainingSampleImageResponse {
+            image_bytes: bytes,
+            mime_type: mime.to_string(),
+        }))
     }
 }

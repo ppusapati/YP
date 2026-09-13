@@ -33,6 +33,9 @@ const (
 	AIGatewayService_GeneratePrescription_FullMethodName     = "/agriculture.ai.v1.AIGatewayService/GeneratePrescription"
 	AIGatewayService_AnalyzeTerrain_FullMethodName           = "/agriculture.ai.v1.AIGatewayService/AnalyzeTerrain"
 	AIGatewayService_SimulateWaterFlow_FullMethodName        = "/agriculture.ai.v1.AIGatewayService/SimulateWaterFlow"
+	AIGatewayService_ListTrainingSamples_FullMethodName      = "/agriculture.ai.v1.AIGatewayService/ListTrainingSamples"
+	AIGatewayService_SubmitLabelReview_FullMethodName        = "/agriculture.ai.v1.AIGatewayService/SubmitLabelReview"
+	AIGatewayService_GetTrainingSampleImage_FullMethodName   = "/agriculture.ai.v1.AIGatewayService/GetTrainingSampleImage"
 )
 
 // AIGatewayServiceClient is the client API for AIGatewayService service.
@@ -77,6 +80,10 @@ type AIGatewayServiceClient interface {
 	AnalyzeTerrain(ctx context.Context, in *AnalyzeTerrainRequest, opts ...grpc.CallOption) (*AnalyzeTerrainResponse, error)
 	// ─── Water Flow Simulation ──────────────────────────────────────
 	SimulateWaterFlow(ctx context.Context, in *SimulateWaterFlowRequest, opts ...grpc.CallOption) (*SimulateWaterFlowResponse, error)
+	// Human-in-the-loop review of collected training samples.
+	ListTrainingSamples(ctx context.Context, in *ListTrainingSamplesRequest, opts ...grpc.CallOption) (*ListTrainingSamplesResponse, error)
+	SubmitLabelReview(ctx context.Context, in *SubmitLabelReviewRequest, opts ...grpc.CallOption) (*SubmitLabelReviewResponse, error)
+	GetTrainingSampleImage(ctx context.Context, in *GetTrainingSampleImageRequest, opts ...grpc.CallOption) (*GetTrainingSampleImageResponse, error)
 }
 
 type aIGatewayServiceClient struct {
@@ -227,6 +234,36 @@ func (c *aIGatewayServiceClient) SimulateWaterFlow(ctx context.Context, in *Simu
 	return out, nil
 }
 
+func (c *aIGatewayServiceClient) ListTrainingSamples(ctx context.Context, in *ListTrainingSamplesRequest, opts ...grpc.CallOption) (*ListTrainingSamplesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTrainingSamplesResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_ListTrainingSamples_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aIGatewayServiceClient) SubmitLabelReview(ctx context.Context, in *SubmitLabelReviewRequest, opts ...grpc.CallOption) (*SubmitLabelReviewResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitLabelReviewResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_SubmitLabelReview_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aIGatewayServiceClient) GetTrainingSampleImage(ctx context.Context, in *GetTrainingSampleImageRequest, opts ...grpc.CallOption) (*GetTrainingSampleImageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTrainingSampleImageResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_GetTrainingSampleImage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AIGatewayServiceServer is the server API for AIGatewayService service.
 // All implementations must embed UnimplementedAIGatewayServiceServer
 // for forward compatibility.
@@ -269,6 +306,10 @@ type AIGatewayServiceServer interface {
 	AnalyzeTerrain(context.Context, *AnalyzeTerrainRequest) (*AnalyzeTerrainResponse, error)
 	// ─── Water Flow Simulation ──────────────────────────────────────
 	SimulateWaterFlow(context.Context, *SimulateWaterFlowRequest) (*SimulateWaterFlowResponse, error)
+	// Human-in-the-loop review of collected training samples.
+	ListTrainingSamples(context.Context, *ListTrainingSamplesRequest) (*ListTrainingSamplesResponse, error)
+	SubmitLabelReview(context.Context, *SubmitLabelReviewRequest) (*SubmitLabelReviewResponse, error)
+	GetTrainingSampleImage(context.Context, *GetTrainingSampleImageRequest) (*GetTrainingSampleImageResponse, error)
 	mustEmbedUnimplementedAIGatewayServiceServer()
 }
 
@@ -320,6 +361,15 @@ func (UnimplementedAIGatewayServiceServer) AnalyzeTerrain(context.Context, *Anal
 }
 func (UnimplementedAIGatewayServiceServer) SimulateWaterFlow(context.Context, *SimulateWaterFlowRequest) (*SimulateWaterFlowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SimulateWaterFlow not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) ListTrainingSamples(context.Context, *ListTrainingSamplesRequest) (*ListTrainingSamplesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTrainingSamples not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) SubmitLabelReview(context.Context, *SubmitLabelReviewRequest) (*SubmitLabelReviewResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitLabelReview not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) GetTrainingSampleImage(context.Context, *GetTrainingSampleImageRequest) (*GetTrainingSampleImageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTrainingSampleImage not implemented")
 }
 func (UnimplementedAIGatewayServiceServer) mustEmbedUnimplementedAIGatewayServiceServer() {}
 func (UnimplementedAIGatewayServiceServer) testEmbeddedByValue()                          {}
@@ -594,6 +644,60 @@ func _AIGatewayService_SimulateWaterFlow_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AIGatewayService_ListTrainingSamples_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTrainingSamplesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).ListTrainingSamples(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_ListTrainingSamples_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).ListTrainingSamples(ctx, req.(*ListTrainingSamplesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AIGatewayService_SubmitLabelReview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitLabelReviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).SubmitLabelReview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_SubmitLabelReview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).SubmitLabelReview(ctx, req.(*SubmitLabelReviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AIGatewayService_GetTrainingSampleImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTrainingSampleImageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).GetTrainingSampleImage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_GetTrainingSampleImage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).GetTrainingSampleImage(ctx, req.(*GetTrainingSampleImageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AIGatewayService_ServiceDesc is the grpc.ServiceDesc for AIGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -656,6 +760,18 @@ var AIGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SimulateWaterFlow",
 			Handler:    _AIGatewayService_SimulateWaterFlow_Handler,
+		},
+		{
+			MethodName: "ListTrainingSamples",
+			Handler:    _AIGatewayService_ListTrainingSamples_Handler,
+		},
+		{
+			MethodName: "SubmitLabelReview",
+			Handler:    _AIGatewayService_SubmitLabelReview_Handler,
+		},
+		{
+			MethodName: "GetTrainingSampleImage",
+			Handler:    _AIGatewayService_GetTrainingSampleImage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

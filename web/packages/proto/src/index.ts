@@ -209,7 +209,12 @@ export {
 export type {
   DiagnosisRequest,
   DiagnosisResult,
+  LabelReviewSample,
+  LabelReview,
+  TrainingLabel,
 } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
+
+export { LabelReviewDecision } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
 
 export type {
   YieldPrediction,

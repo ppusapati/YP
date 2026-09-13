@@ -60,6 +60,15 @@ const (
 	// PlantDiagnosisServiceDetectPestDamageProcedure is the fully-qualified name of the
 	// PlantDiagnosisService's DetectPestDamage RPC.
 	PlantDiagnosisServiceDetectPestDamageProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/DetectPestDamage"
+	// PlantDiagnosisServiceListLabelReviewQueueProcedure is the fully-qualified name of the
+	// PlantDiagnosisService's ListLabelReviewQueue RPC.
+	PlantDiagnosisServiceListLabelReviewQueueProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/ListLabelReviewQueue"
+	// PlantDiagnosisServiceSubmitLabelReviewProcedure is the fully-qualified name of the
+	// PlantDiagnosisService's SubmitLabelReview RPC.
+	PlantDiagnosisServiceSubmitLabelReviewProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/SubmitLabelReview"
+	// PlantDiagnosisServiceGetLabelReviewImageProcedure is the fully-qualified name of the
+	// PlantDiagnosisService's GetLabelReviewImage RPC.
+	PlantDiagnosisServiceGetLabelReviewImageProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/GetLabelReviewImage"
 )
 
 // PlantDiagnosisServiceClient is a client for the agriculture.diagnosis.v1.PlantDiagnosisService
@@ -83,6 +92,12 @@ type PlantDiagnosisServiceClient interface {
 	DetectNutrientDeficiency(context.Context, *connect.Request[v1.DetectNutrientDeficiencyRequest]) (*connect.Response[v1.DetectNutrientDeficiencyResponse], error)
 	// Detect pest damage from images
 	DetectPestDamage(context.Context, *connect.Request[v1.DetectPestDamageRequest]) (*connect.Response[v1.DetectPestDamageResponse], error)
+	// List auto-labelled training samples awaiting human review (tenant-scoped)
+	ListLabelReviewQueue(context.Context, *connect.Request[v1.ListLabelReviewQueueRequest]) (*connect.Response[v1.ListLabelReviewQueueResponse], error)
+	// Confirm, correct, or reject an auto-label
+	SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error)
+	// Fetch the image behind a review-queue sample
+	GetLabelReviewImage(context.Context, *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error)
 }
 
 // NewPlantDiagnosisServiceClient constructs a client for the
@@ -151,6 +166,24 @@ func NewPlantDiagnosisServiceClient(httpClient connect.HTTPClient, baseURL strin
 			connect.WithSchema(plantDiagnosisServiceMethods.ByName("DetectPestDamage")),
 			connect.WithClientOptions(opts...),
 		),
+		listLabelReviewQueue: connect.NewClient[v1.ListLabelReviewQueueRequest, v1.ListLabelReviewQueueResponse](
+			httpClient,
+			baseURL+PlantDiagnosisServiceListLabelReviewQueueProcedure,
+			connect.WithSchema(plantDiagnosisServiceMethods.ByName("ListLabelReviewQueue")),
+			connect.WithClientOptions(opts...),
+		),
+		submitLabelReview: connect.NewClient[v1.SubmitLabelReviewRequest, v1.SubmitLabelReviewResponse](
+			httpClient,
+			baseURL+PlantDiagnosisServiceSubmitLabelReviewProcedure,
+			connect.WithSchema(plantDiagnosisServiceMethods.ByName("SubmitLabelReview")),
+			connect.WithClientOptions(opts...),
+		),
+		getLabelReviewImage: connect.NewClient[v1.GetLabelReviewImageRequest, v1.GetLabelReviewImageResponse](
+			httpClient,
+			baseURL+PlantDiagnosisServiceGetLabelReviewImageProcedure,
+			connect.WithSchema(plantDiagnosisServiceMethods.ByName("GetLabelReviewImage")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -165,6 +198,9 @@ type plantDiagnosisServiceClient struct {
 	identifySpecies          *connect.Client[v1.IdentifySpeciesRequest, v1.IdentifySpeciesResponse]
 	detectNutrientDeficiency *connect.Client[v1.DetectNutrientDeficiencyRequest, v1.DetectNutrientDeficiencyResponse]
 	detectPestDamage         *connect.Client[v1.DetectPestDamageRequest, v1.DetectPestDamageResponse]
+	listLabelReviewQueue     *connect.Client[v1.ListLabelReviewQueueRequest, v1.ListLabelReviewQueueResponse]
+	submitLabelReview        *connect.Client[v1.SubmitLabelReviewRequest, v1.SubmitLabelReviewResponse]
+	getLabelReviewImage      *connect.Client[v1.GetLabelReviewImageRequest, v1.GetLabelReviewImageResponse]
 }
 
 // SubmitDiagnosis calls agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis.
@@ -213,6 +249,21 @@ func (c *plantDiagnosisServiceClient) DetectPestDamage(ctx context.Context, req 
 	return c.detectPestDamage.CallUnary(ctx, req)
 }
 
+// ListLabelReviewQueue calls agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue.
+func (c *plantDiagnosisServiceClient) ListLabelReviewQueue(ctx context.Context, req *connect.Request[v1.ListLabelReviewQueueRequest]) (*connect.Response[v1.ListLabelReviewQueueResponse], error) {
+	return c.listLabelReviewQueue.CallUnary(ctx, req)
+}
+
+// SubmitLabelReview calls agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview.
+func (c *plantDiagnosisServiceClient) SubmitLabelReview(ctx context.Context, req *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error) {
+	return c.submitLabelReview.CallUnary(ctx, req)
+}
+
+// GetLabelReviewImage calls agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage.
+func (c *plantDiagnosisServiceClient) GetLabelReviewImage(ctx context.Context, req *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error) {
+	return c.getLabelReviewImage.CallUnary(ctx, req)
+}
+
 // PlantDiagnosisServiceHandler is an implementation of the
 // agriculture.diagnosis.v1.PlantDiagnosisService service.
 type PlantDiagnosisServiceHandler interface {
@@ -234,6 +285,12 @@ type PlantDiagnosisServiceHandler interface {
 	DetectNutrientDeficiency(context.Context, *connect.Request[v1.DetectNutrientDeficiencyRequest]) (*connect.Response[v1.DetectNutrientDeficiencyResponse], error)
 	// Detect pest damage from images
 	DetectPestDamage(context.Context, *connect.Request[v1.DetectPestDamageRequest]) (*connect.Response[v1.DetectPestDamageResponse], error)
+	// List auto-labelled training samples awaiting human review (tenant-scoped)
+	ListLabelReviewQueue(context.Context, *connect.Request[v1.ListLabelReviewQueueRequest]) (*connect.Response[v1.ListLabelReviewQueueResponse], error)
+	// Confirm, correct, or reject an auto-label
+	SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error)
+	// Fetch the image behind a review-queue sample
+	GetLabelReviewImage(context.Context, *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error)
 }
 
 // NewPlantDiagnosisServiceHandler builds an HTTP handler from the service implementation. It
@@ -297,6 +354,24 @@ func NewPlantDiagnosisServiceHandler(svc PlantDiagnosisServiceHandler, opts ...c
 		connect.WithSchema(plantDiagnosisServiceMethods.ByName("DetectPestDamage")),
 		connect.WithHandlerOptions(opts...),
 	)
+	plantDiagnosisServiceListLabelReviewQueueHandler := connect.NewUnaryHandler(
+		PlantDiagnosisServiceListLabelReviewQueueProcedure,
+		svc.ListLabelReviewQueue,
+		connect.WithSchema(plantDiagnosisServiceMethods.ByName("ListLabelReviewQueue")),
+		connect.WithHandlerOptions(opts...),
+	)
+	plantDiagnosisServiceSubmitLabelReviewHandler := connect.NewUnaryHandler(
+		PlantDiagnosisServiceSubmitLabelReviewProcedure,
+		svc.SubmitLabelReview,
+		connect.WithSchema(plantDiagnosisServiceMethods.ByName("SubmitLabelReview")),
+		connect.WithHandlerOptions(opts...),
+	)
+	plantDiagnosisServiceGetLabelReviewImageHandler := connect.NewUnaryHandler(
+		PlantDiagnosisServiceGetLabelReviewImageProcedure,
+		svc.GetLabelReviewImage,
+		connect.WithSchema(plantDiagnosisServiceMethods.ByName("GetLabelReviewImage")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.diagnosis.v1.PlantDiagnosisService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PlantDiagnosisServiceSubmitDiagnosisProcedure:
@@ -317,6 +392,12 @@ func NewPlantDiagnosisServiceHandler(svc PlantDiagnosisServiceHandler, opts ...c
 			plantDiagnosisServiceDetectNutrientDeficiencyHandler.ServeHTTP(w, r)
 		case PlantDiagnosisServiceDetectPestDamageProcedure:
 			plantDiagnosisServiceDetectPestDamageHandler.ServeHTTP(w, r)
+		case PlantDiagnosisServiceListLabelReviewQueueProcedure:
+			plantDiagnosisServiceListLabelReviewQueueHandler.ServeHTTP(w, r)
+		case PlantDiagnosisServiceSubmitLabelReviewProcedure:
+			plantDiagnosisServiceSubmitLabelReviewHandler.ServeHTTP(w, r)
+		case PlantDiagnosisServiceGetLabelReviewImageProcedure:
+			plantDiagnosisServiceGetLabelReviewImageHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -360,4 +441,16 @@ func (UnimplementedPlantDiagnosisServiceHandler) DetectNutrientDeficiency(contex
 
 func (UnimplementedPlantDiagnosisServiceHandler) DetectPestDamage(context.Context, *connect.Request[v1.DetectPestDamageRequest]) (*connect.Response[v1.DetectPestDamageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage is not implemented"))
+}
+
+func (UnimplementedPlantDiagnosisServiceHandler) ListLabelReviewQueue(context.Context, *connect.Request[v1.ListLabelReviewQueueRequest]) (*connect.Response[v1.ListLabelReviewQueueResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue is not implemented"))
+}
+
+func (UnimplementedPlantDiagnosisServiceHandler) SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview is not implemented"))
+}
+
+func (UnimplementedPlantDiagnosisServiceHandler) GetLabelReviewImage(context.Context, *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage is not implemented"))
 }

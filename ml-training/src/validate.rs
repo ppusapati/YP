@@ -29,10 +29,8 @@ pub fn validate(
     batch_size: usize,
 ) -> ValidationReport {
     let batcher = PlantBatcher::new(input_size);
-    let idx_to_label: HashMap<usize, String> = label_map
-        .iter()
-        .map(|(k, &v)| (v, k.clone()))
-        .collect();
+    let idx_to_label: HashMap<usize, String> =
+        label_map.iter().map(|(k, &v)| (v, k.clone())).collect();
 
     let num_classes = label_map.len();
     let mut confusion = vec![vec![0usize; num_classes]; num_classes];
@@ -60,7 +58,11 @@ pub fn validate(
         }
     }
 
-    let accuracy = if total > 0 { correct as f64 / total as f64 } else { 0.0 };
+    let accuracy = if total > 0 {
+        correct as f64 / total as f64
+    } else {
+        0.0
+    };
 
     let mut per_class = HashMap::new();
     for class_idx in 0..num_classes {
@@ -68,21 +70,35 @@ pub fn validate(
         let actual_total: f64 = confusion[class_idx].iter().sum::<usize>() as f64;
         let predicted_total: f64 = confusion.iter().map(|row| row[class_idx]).sum::<usize>() as f64;
 
-        let precision = if predicted_total > 0.0 { true_pos / predicted_total } else { 0.0 };
-        let recall = if actual_total > 0.0 { true_pos / actual_total } else { 0.0 };
+        let precision = if predicted_total > 0.0 {
+            true_pos / predicted_total
+        } else {
+            0.0
+        };
+        let recall = if actual_total > 0.0 {
+            true_pos / actual_total
+        } else {
+            0.0
+        };
         let f1 = if precision + recall > 0.0 {
             2.0 * precision * recall / (precision + recall)
         } else {
             0.0
         };
 
-        let label = idx_to_label.get(&class_idx).cloned().unwrap_or_else(|| format!("class_{class_idx}"));
-        per_class.insert(label, ClassMetrics {
-            precision,
-            recall,
-            f1,
-            support: actual_total as usize,
-        });
+        let label = idx_to_label
+            .get(&class_idx)
+            .cloned()
+            .unwrap_or_else(|| format!("class_{class_idx}"));
+        per_class.insert(
+            label,
+            ClassMetrics {
+                precision,
+                recall,
+                f1,
+                support: actual_total as usize,
+            },
+        );
     }
 
     ValidationReport {
@@ -93,7 +109,10 @@ pub fn validate(
 }
 
 pub fn print_report(report: &ValidationReport) {
-    println!("\n{:<30} {:>10} {:>10} {:>10} {:>10}", "Class", "Precision", "Recall", "F1", "Support");
+    println!(
+        "\n{:<30} {:>10} {:>10} {:>10} {:>10}",
+        "Class", "Precision", "Recall", "F1", "Support"
+    );
     println!("{}", "-".repeat(72));
 
     let mut classes: Vec<_> = report.per_class.iter().collect();
@@ -107,20 +126,26 @@ pub fn print_report(report: &ValidationReport) {
     }
 
     println!("{}", "-".repeat(72));
-    println!("Overall accuracy: {:.4} ({}/{})", report.accuracy, (report.accuracy * report.num_samples as f64) as usize, report.num_samples);
+    println!(
+        "Overall accuracy: {:.4} ({}/{})",
+        report.accuracy,
+        (report.accuracy * report.num_samples as f64) as usize,
+        report.num_samples
+    );
 
-    let macro_f1: f64 = report.per_class.values().map(|m| m.f1).sum::<f64>() / report.per_class.len() as f64;
+    let macro_f1: f64 =
+        report.per_class.values().map(|m| m.f1).sum::<f64>() / report.per_class.len() as f64;
     println!("Macro F1: {macro_f1:.4}");
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::path::PathBuf;
-    use burn_ndarray::NdArray;
     use crate::dataset::Sample;
     use crate::model::PlantCnn;
+    use burn_ndarray::NdArray;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
 
     fn make_samples(labels: &[(usize, &str)]) -> Vec<Sample> {
         labels
@@ -132,6 +157,10 @@ mod tests {
                 label: name.to_string(),
                 label_idx: *idx,
                 confidence: 0.95,
+                weight: 1.0,
+                provenance: "external_api".to_string(),
+                crop: String::new(),
+                reviewed: false,
             })
             .collect()
     }
@@ -194,8 +223,14 @@ mod tests {
         assert_eq!(total_support, 6);
 
         for (name, m) in &report.per_class {
-            assert!(m.precision >= 0.0 && m.precision <= 1.0, "{name} precision out of range");
-            assert!(m.recall >= 0.0 && m.recall <= 1.0, "{name} recall out of range");
+            assert!(
+                m.precision >= 0.0 && m.precision <= 1.0,
+                "{name} precision out of range"
+            );
+            assert!(
+                m.recall >= 0.0 && m.recall <= 1.0,
+                "{name} recall out of range"
+            );
             assert!(m.f1 >= 0.0 && m.f1 <= 1.0, "{name} f1 out of range");
             assert!(m.support > 0, "{name} should have positive support");
         }
@@ -207,12 +242,7 @@ mod tests {
         let model: PlantCnn<NdArray> = PlantCnn::new(2, &device);
 
         // 3 samples of class 0, 1 sample of class 1
-        let samples = make_samples(&[
-            (0, "a"),
-            (0, "a"),
-            (0, "a"),
-            (1, "b"),
-        ]);
+        let samples = make_samples(&[(0, "a"), (0, "a"), (0, "a"), (1, "b")]);
         let mut label_map = HashMap::new();
         label_map.insert("a".to_string(), 0);
         label_map.insert("b".to_string(), 1);
@@ -230,13 +260,7 @@ mod tests {
         let model: PlantCnn<NdArray> = PlantCnn::new(1, &device);
 
         // 5 samples with batch_size=2 means 3 batches (2+2+1)
-        let samples = make_samples(&[
-            (0, "x"),
-            (0, "x"),
-            (0, "x"),
-            (0, "x"),
-            (0, "x"),
-        ]);
+        let samples = make_samples(&[(0, "x"), (0, "x"), (0, "x"), (0, "x"), (0, "x")]);
         let mut label_map = HashMap::new();
         label_map.insert("x".to_string(), 0);
 

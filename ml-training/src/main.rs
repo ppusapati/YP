@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use tracing_subscriber::{fmt, EnvFilter};
 
 use yp_ml_training::config::TrainingConfig;
-use yp_ml_training::dataset::prepare_datasets;
+use yp_ml_training::dataset::{self, prepare_datasets};
 use yp_ml_training::export;
 use yp_ml_training::model::{extract_weights, PlantCnn};
 use yp_ml_training::registry::ModelRegistry;
@@ -201,6 +201,35 @@ fn cmd_train(
     let splits = prepare_datasets(task, &config.data, data_dir)?;
     let num_classes = splits.label_map.len();
     let task_output = output_dir.join(task);
+    std::fs::create_dir_all(&task_output)?;
+
+    dataset::print_report(&splits.report);
+    std::fs::write(
+        task_output.join("dataset_report.json"),
+        serde_json::to_string_pretty(&splits.report)?,
+    )?;
+    // Immutable record of exactly which samples (and labels) trained this run.
+    std::fs::write(
+        task_output.join("dataset_snapshot.json"),
+        serde_json::to_string_pretty(&splits.snapshot)?,
+    )?;
+    println!(
+        "Dataset snapshot {} ({} train / {} val / {} test)",
+        &splits.snapshot.id[..12],
+        splits.snapshot.n_train,
+        splits.snapshot.n_val,
+        splits.snapshot.n_test
+    );
+
+    let loss_opts = training::LossOptions {
+        class_weights: dataset::class_weights(&splits.train, num_classes),
+        label_smoothing: task_config.label_smoothing,
+    };
+    let idx_to_label: HashMap<usize, String> = splits
+        .label_map
+        .iter()
+        .map(|(k, v)| (*v, k.clone()))
+        .collect();
 
     let result = training::train(
         task,
@@ -210,7 +239,21 @@ fn cmd_train(
         splits.test,
         num_classes,
         &task_output,
+        &loss_opts,
+        &idx_to_label,
     )?;
+
+    std::fs::write(
+        task_output.join("label_noise_report.json"),
+        serde_json::to_string_pretty(&result.label_noise)?,
+    )?;
+    if !result.label_noise.is_empty() {
+        println!(
+            "{} training labels look wrong (model confidently disagrees); see {}",
+            result.label_noise.len(),
+            task_output.join("label_noise_report.json").display()
+        );
+    }
 
     let meta = serde_json::json!({
         "task": task,
@@ -220,6 +263,10 @@ fn cmd_train(
         "test_acc": result.test_acc,
         "final_epoch": result.final_epoch,
         "label_map": splits.label_map,
+        "dataset_snapshot": splits.snapshot.id,
+        "training_samples": splits.snapshot.n_train,
+        "class_weights": loss_opts.class_weights,
+        "label_noise_suspects": result.label_noise.len(),
     });
     std::fs::write(
         task_output.join("training_meta.json"),

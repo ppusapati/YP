@@ -1,15 +1,23 @@
-use std::collections::HashMap;
+//! Training data loading with human review, provenance, balance reporting,
+//! stratified splitting, and content-hashed dataset snapshots.
+//!
+//! Samples are collected by the AI gateway as `{task}/manifest.jsonl` plus a
+//! `labels/{id}.json` record per image. Reviewer decisions stored on those
+//! records are applied here: corrections override the auto-label, rejections
+//! drop the sample, and confirmations count as human-labelled.
+
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 
 use burn::data::dataloader::batcher::Batcher;
 use burn::prelude::*;
+use chrono::Utc;
 use image::imageops::FilterType;
 use image::GenericImageView;
-use rand::seq::SliceRandom;
-use rand::SeedableRng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
-use crate::config::DataConfig;
+use crate::config::{DataConfig, ProvenanceWeights};
 
 #[derive(Debug, Clone)]
 pub struct Sample {
@@ -18,25 +26,64 @@ pub struct Sample {
     pub label: String,
     pub label_idx: usize,
     pub confidence: f64,
+    /// Trust weight from provenance (human > external API > local model).
+    pub weight: f64,
+    pub provenance: String,
+    pub crop: String,
+    pub reviewed: bool,
+}
+
+/// A sample after manifest + label-file loading, before label-map indexing.
+#[derive(Debug, Clone)]
+pub struct RawSample {
+    pub id: String,
+    pub image_path: PathBuf,
+    pub label: String,
+    pub confidence: f64,
+    pub weight: f64,
+    pub provenance: String,
+    pub crop: String,
+    pub reviewed: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct ManifestEntry {
     id: String,
     image: String,
+    #[allow(dead_code)]
     labels: Vec<String>,
+    #[allow(dead_code)]
     timestamp: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct LabelFile {
     labels: Vec<LabelEntry>,
+    #[serde(default)]
+    provenance: Option<String>,
+    #[serde(default)]
+    review: Option<ReviewEntry>,
+    #[serde(default)]
+    context: Option<ContextEntry>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct LabelEntry {
     name: String,
     confidence: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ReviewEntry {
+    decision: String,
+    #[serde(default)]
+    corrected_label: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+struct ContextEntry {
+    #[serde(default)]
+    crop: String,
 }
 
 pub struct PlantDataset {
@@ -54,6 +101,10 @@ impl PlantDataset {
 
     pub fn len(&self) -> usize {
         self.samples.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.samples.is_empty()
     }
 
     pub fn get(&self, index: usize) -> Option<(Vec<f32>, usize)> {
@@ -138,10 +189,14 @@ fn load_and_preprocess(path: &Path, size: usize) -> anyhow::Result<Vec<f32>> {
     Ok(channels)
 }
 
+/// Read the manifest and every label record, applying reviewer decisions and
+/// provenance weights. Unreviewed samples must meet `min_confidence`;
+/// human-reviewed ones always qualify.
 pub fn load_manifest(
     task_dir: &Path,
     min_confidence: f64,
-) -> anyhow::Result<Vec<(String, PathBuf, String, f64)>> {
+    weights: &ProvenanceWeights,
+) -> anyhow::Result<Vec<RawSample>> {
     let manifest_path = task_dir.join("manifest.jsonl");
     if !manifest_path.exists() {
         anyhow::bail!("no manifest found at {}", manifest_path.display());
@@ -149,45 +204,120 @@ pub fn load_manifest(
 
     let content = std::fs::read_to_string(&manifest_path)?;
     let mut results = Vec::new();
+    let mut seen: HashMap<String, ()> = HashMap::new();
 
     for line in content.lines() {
         let line = line.trim();
         if line.is_empty() {
             continue;
         }
-        let entry: ManifestEntry = serde_json::from_str(line)?;
+        let entry: ManifestEntry = match serde_json::from_str(line) {
+            Ok(e) => e,
+            Err(e) => {
+                tracing::warn!(error = %e, "skipping malformed manifest line");
+                continue;
+            }
+        };
+        if seen.insert(entry.id.clone(), ()).is_some() {
+            continue;
+        }
         let image_path = PathBuf::from(&entry.image);
         if !image_path.exists() {
             continue;
         }
 
         let label_path = task_dir.join("labels").join(format!("{}.json", entry.id));
-        if let Ok(label_content) = std::fs::read_to_string(&label_path) {
-            if let Ok(label_data) = serde_json::from_str::<LabelFile>(&label_content) {
-                if let Some(top) = label_data.labels.first() {
-                    if top.confidence >= min_confidence {
-                        results.push((
-                            entry.id,
-                            image_path,
-                            top.name.clone(),
-                            top.confidence,
-                        ));
-                    }
-                }
-            }
-        }
+        let Ok(label_content) = std::fs::read_to_string(&label_path) else {
+            continue;
+        };
+        let Ok(label_data) = serde_json::from_str::<LabelFile>(&label_content) else {
+            continue;
+        };
+        let Some(raw) = resolve_sample(&entry.id, image_path, &label_data, min_confidence, weights)
+        else {
+            continue;
+        };
+        results.push(raw);
     }
 
     Ok(results)
 }
 
-pub fn build_label_map(
-    raw: &[(String, PathBuf, String, f64)],
-    min_per_class: usize,
-) -> HashMap<String, usize> {
+/// Apply review + provenance rules to one label record.
+fn resolve_sample(
+    id: &str,
+    image_path: PathBuf,
+    label_data: &LabelFile,
+    min_confidence: f64,
+    weights: &ProvenanceWeights,
+) -> Option<RawSample> {
+    let crop = label_data
+        .context
+        .as_ref()
+        .map(|c| c.crop.clone())
+        .unwrap_or_default();
+    let top = label_data.labels.iter().max_by(|a, b| {
+        a.confidence
+            .partial_cmp(&b.confidence)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    if let Some(review) = &label_data.review {
+        match review.decision.as_str() {
+            "rejected" => return None,
+            "corrected" if !review.corrected_label.trim().is_empty() => {
+                return Some(RawSample {
+                    id: id.to_string(),
+                    image_path,
+                    label: review.corrected_label.trim().to_string(),
+                    confidence: 1.0,
+                    weight: weights.human,
+                    provenance: "human".to_string(),
+                    crop,
+                    reviewed: true,
+                });
+            }
+            "confirmed" => {
+                let top = top?;
+                return Some(RawSample {
+                    id: id.to_string(),
+                    image_path,
+                    label: top.name.clone(),
+                    confidence: top.confidence.max(0.99),
+                    weight: weights.human,
+                    provenance: "human".to_string(),
+                    crop,
+                    reviewed: true,
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let top = top?;
+    if top.confidence < min_confidence {
+        return None;
+    }
+    let provenance = label_data
+        .provenance
+        .clone()
+        .unwrap_or_else(|| "external_api".to_string());
+    Some(RawSample {
+        id: id.to_string(),
+        image_path,
+        label: top.name.clone(),
+        confidence: top.confidence,
+        weight: weights.for_provenance(&provenance),
+        provenance,
+        crop,
+        reviewed: false,
+    })
+}
+
+pub fn build_label_map(raw: &[RawSample], min_per_class: usize) -> HashMap<String, usize> {
     let mut counts: HashMap<String, usize> = HashMap::new();
-    for (_, _, label, _) in raw {
-        *counts.entry(label.clone()).or_default() += 1;
+    for s in raw {
+        *counts.entry(s.label.clone()).or_default() += 1;
     }
     let mut valid: Vec<String> = counts
         .into_iter()
@@ -202,11 +332,321 @@ pub fn build_label_map(
         .collect()
 }
 
+// ---------------------------------------------------------------------------
+// Class balance
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClassStat {
+    pub label: String,
+    pub count: usize,
+    pub weight_sum: f64,
+    pub fraction: f64,
+    pub reviewed: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatasetReport {
+    pub task: String,
+    pub loaded: usize,
+    pub kept: usize,
+    pub classes: Vec<ClassStat>,
+    pub dropped_classes: Vec<(String, usize)>,
+    /// Largest class count divided by smallest kept class count.
+    pub imbalance_ratio: f64,
+    pub provenance_counts: BTreeMap<String, usize>,
+    pub crop_counts: BTreeMap<String, usize>,
+    pub reviewed: usize,
+    pub warnings: Vec<String>,
+}
+
+pub fn build_report(
+    task: &str,
+    raw: &[RawSample],
+    label_map: &HashMap<String, usize>,
+    min_per_class: usize,
+) -> DatasetReport {
+    let mut counts: BTreeMap<String, (usize, f64, usize)> = BTreeMap::new();
+    let mut provenance_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut crop_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut reviewed = 0usize;
+    let mut kept = 0usize;
+    for s in raw {
+        let e = counts.entry(s.label.clone()).or_insert((0, 0.0, 0));
+        e.0 += 1;
+        e.1 += s.weight;
+        if s.reviewed {
+            e.2 += 1;
+        }
+        if label_map.contains_key(&s.label) {
+            kept += 1;
+            *provenance_counts.entry(s.provenance.clone()).or_default() += 1;
+            if !s.crop.is_empty() {
+                *crop_counts.entry(s.crop.clone()).or_default() += 1;
+            }
+            if s.reviewed {
+                reviewed += 1;
+            }
+        }
+    }
+
+    let mut classes = Vec::new();
+    let mut dropped = Vec::new();
+    for (label, (count, weight_sum, rev)) in &counts {
+        if label_map.contains_key(label) {
+            classes.push(ClassStat {
+                label: label.clone(),
+                count: *count,
+                weight_sum: *weight_sum,
+                fraction: if kept > 0 {
+                    *count as f64 / kept as f64
+                } else {
+                    0.0
+                },
+                reviewed: *rev,
+            });
+        } else {
+            dropped.push((label.clone(), *count));
+        }
+    }
+    classes.sort_by(|a, b| b.count.cmp(&a.count));
+
+    let max = classes.iter().map(|c| c.count).max().unwrap_or(0);
+    let min = classes.iter().map(|c| c.count).min().unwrap_or(0);
+    let imbalance_ratio = if min > 0 {
+        max as f64 / min as f64
+    } else {
+        0.0
+    };
+
+    let mut warnings = Vec::new();
+    if classes.len() < 2 {
+        warnings.push(
+            "fewer than two classes survive filtering; a classifier cannot be trained".into(),
+        );
+    }
+    if imbalance_ratio > 10.0 {
+        warnings.push(format!(
+            "severe class imbalance ({imbalance_ratio:.1}x); class-weighted loss is applied but consider collecting more of the rare classes"
+        ));
+    }
+    if !dropped.is_empty() {
+        warnings.push(format!(
+            "{} class(es) dropped for having fewer than {min_per_class} samples: {}",
+            dropped.len(),
+            dropped
+                .iter()
+                .map(|(l, c)| format!("{l}({c})"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    let human = provenance_counts.get("human").copied().unwrap_or(0);
+    if kept > 0 && (human as f64) / (kept as f64) < 0.05 {
+        warnings.push(format!(
+            "only {human} of {kept} samples are human-reviewed; labels are mostly API-derived"
+        ));
+    }
+
+    DatasetReport {
+        task: task.to_string(),
+        loaded: raw.len(),
+        kept,
+        classes,
+        dropped_classes: dropped,
+        imbalance_ratio,
+        provenance_counts,
+        crop_counts,
+        reviewed,
+        warnings,
+    }
+}
+
+pub fn print_report(report: &DatasetReport) {
+    println!("Dataset report for {}", report.task);
+    println!(
+        "  loaded {} samples, kept {} across {} classes (imbalance {:.1}x, {} human-reviewed)",
+        report.loaded,
+        report.kept,
+        report.classes.len(),
+        report.imbalance_ratio,
+        report.reviewed
+    );
+    for c in &report.classes {
+        println!(
+            "    {:<28} {:>6}  {:>5.1}%  reviewed={:<4} weight={:.1}",
+            c.label,
+            c.count,
+            c.fraction * 100.0,
+            c.reviewed,
+            c.weight_sum
+        );
+    }
+    if !report.provenance_counts.is_empty() {
+        let p: Vec<String> = report
+            .provenance_counts
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect();
+        println!("  provenance: {}", p.join(", "));
+    }
+    for w in &report.warnings {
+        println!("  WARNING: {w}");
+    }
+}
+
+/// Inverse-frequency class weights over provenance-weighted counts,
+/// normalized to mean 1 so the loss scale is unchanged.
+pub fn class_weights(samples: &[Sample], num_classes: usize) -> Vec<f32> {
+    let mut sums = vec![0.0f64; num_classes];
+    for s in samples {
+        if s.label_idx < num_classes {
+            sums[s.label_idx] += s.weight.max(1e-6);
+        }
+    }
+    let total: f64 = sums.iter().sum();
+    if total <= 0.0 || num_classes == 0 {
+        return vec![1.0; num_classes];
+    }
+    let raw: Vec<f64> = sums
+        .iter()
+        .map(|&s| {
+            if s > 0.0 {
+                total / (num_classes as f64 * s)
+            } else {
+                1.0
+            }
+        })
+        .collect();
+    let mean = raw.iter().sum::<f64>() / num_classes as f64;
+    raw.iter().map(|w| (w / mean) as f32).collect()
+}
+
+// ---------------------------------------------------------------------------
+// Splitting and snapshots
+// ---------------------------------------------------------------------------
+
+fn unit_hash(id: &str) -> f64 {
+    let mut h = Sha256::new();
+    h.update(id.as_bytes());
+    let digest = h.finalize();
+    let bits = u64::from_le_bytes(digest[..8].try_into().unwrap()) >> 11;
+    bits as f64 / (1u64 << 53) as f64
+}
+
+/// Split by class so every class is represented in each partition, using a
+/// hash of the sample id so membership is stable across runs and unaffected
+/// by manifest order.
+pub fn stratified_split(
+    samples: Vec<Sample>,
+    val_frac: f64,
+    test_frac: f64,
+) -> (Vec<Sample>, Vec<Sample>, Vec<Sample>) {
+    let mut by_class: BTreeMap<usize, Vec<Sample>> = BTreeMap::new();
+    for s in samples {
+        by_class.entry(s.label_idx).or_default().push(s);
+    }
+    let (mut train, mut val, mut test) = (Vec::new(), Vec::new(), Vec::new());
+    for (_, mut group) in by_class {
+        group.sort_by(|a, b| a.id.cmp(&b.id));
+        let (mut g_train, mut g_val, mut g_test) = (Vec::new(), Vec::new(), Vec::new());
+        for s in group {
+            let u = unit_hash(&s.id);
+            if u < test_frac {
+                g_test.push(s);
+            } else if u < test_frac + val_frac {
+                g_val.push(s);
+            } else {
+                g_train.push(s);
+            }
+        }
+        // Guarantee representation when the class is large enough to spare a sample.
+        if g_train.len() >= 3 {
+            if g_test.is_empty() && test_frac > 0.0 {
+                g_test.push(g_train.pop().unwrap());
+            }
+            if g_val.is_empty() && val_frac > 0.0 && g_train.len() >= 2 {
+                g_val.push(g_train.pop().unwrap());
+            }
+        }
+        train.extend(g_train);
+        val.extend(g_val);
+        test.extend(g_test);
+    }
+    (train, val, test)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatasetSnapshot {
+    /// SHA-256 over the sorted `id\tlabel` lines of every sample.
+    pub id: String,
+    pub task: String,
+    pub created_at: String,
+    pub n_samples: usize,
+    pub n_train: usize,
+    pub n_val: usize,
+    pub n_test: usize,
+    pub class_counts: BTreeMap<String, usize>,
+    pub provenance_counts: BTreeMap<String, usize>,
+    pub label_map: BTreeMap<String, usize>,
+    pub train_ids: Vec<String>,
+    pub val_ids: Vec<String>,
+    pub test_ids: Vec<String>,
+}
+
+pub fn build_snapshot(
+    task: &str,
+    train: &[Sample],
+    val: &[Sample],
+    test: &[Sample],
+    label_map: &HashMap<String, usize>,
+) -> DatasetSnapshot {
+    let all: Vec<&Sample> = train.iter().chain(val.iter()).chain(test.iter()).collect();
+    let mut lines: Vec<String> = all
+        .iter()
+        .map(|s| format!("{}\t{}", s.id, s.label))
+        .collect();
+    lines.sort();
+    let mut h = Sha256::new();
+    for l in &lines {
+        h.update(l.as_bytes());
+        h.update(b"\n");
+    }
+    let mut class_counts = BTreeMap::new();
+    let mut provenance_counts = BTreeMap::new();
+    for s in &all {
+        *class_counts.entry(s.label.clone()).or_default() += 1;
+        *provenance_counts.entry(s.provenance.clone()).or_default() += 1;
+    }
+    let ids = |v: &[Sample]| {
+        let mut ids: Vec<String> = v.iter().map(|s| s.id.clone()).collect();
+        ids.sort();
+        ids
+    };
+    DatasetSnapshot {
+        id: format!("{:x}", h.finalize()),
+        task: task.to_string(),
+        created_at: Utc::now().to_rfc3339(),
+        n_samples: all.len(),
+        n_train: train.len(),
+        n_val: val.len(),
+        n_test: test.len(),
+        class_counts,
+        provenance_counts,
+        label_map: label_map.iter().map(|(k, v)| (k.clone(), *v)).collect(),
+        train_ids: ids(train),
+        val_ids: ids(val),
+        test_ids: ids(test),
+    }
+}
+
 pub struct SplitDatasets {
     pub train: Vec<Sample>,
     pub val: Vec<Sample>,
     pub test: Vec<Sample>,
     pub label_map: HashMap<String, usize>,
+    pub report: DatasetReport,
+    pub snapshot: DatasetSnapshot,
 }
 
 pub fn prepare_datasets(
@@ -217,19 +657,28 @@ pub fn prepare_datasets(
     let base = PathBuf::from(base_dir.unwrap_or(&data_config.base_dir));
     let task_dir = base.join(task);
 
-    let raw = load_manifest(&task_dir, data_config.min_confidence)?;
+    let raw = load_manifest(
+        &task_dir,
+        data_config.min_confidence,
+        &data_config.provenance_weights,
+    )?;
     let label_map = build_label_map(&raw, data_config.min_samples_per_class);
+    let report = build_report(task, &raw, &label_map, data_config.min_samples_per_class);
 
-    let mut samples: Vec<Sample> = raw
+    let samples: Vec<Sample> = raw
         .into_iter()
-        .filter_map(|(id, path, label, confidence)| {
-            let idx = *label_map.get(&label)?;
+        .filter_map(|r| {
+            let idx = *label_map.get(&r.label)?;
             Some(Sample {
-                id,
-                image_path: path,
-                label,
+                id: r.id,
+                image_path: r.image_path,
+                label: r.label,
                 label_idx: idx,
-                confidence,
+                confidence: r.confidence,
+                weight: r.weight,
+                provenance: r.provenance,
+                crop: r.crop,
+                reviewed: r.reviewed,
             })
         })
         .collect();
@@ -238,21 +687,231 @@ pub fn prepare_datasets(
         anyhow::bail!("no valid samples for task '{task}' after filtering");
     }
 
-    let mut rng = rand::rngs::StdRng::seed_from_u64(42);
-    samples.shuffle(&mut rng);
-
-    let n = samples.len();
-    let test_end = (n as f64 * data_config.test_split) as usize;
-    let val_end = test_end + (n as f64 * data_config.val_split) as usize;
-
-    let test = samples[..test_end].to_vec();
-    let val = samples[test_end..val_end].to_vec();
-    let train = samples[val_end..].to_vec();
+    let (train, val, test) =
+        stratified_split(samples, data_config.val_split, data_config.test_split);
+    let snapshot = build_snapshot(task, &train, &val, &test, &label_map);
 
     Ok(SplitDatasets {
         train,
         val,
         test,
         label_map,
+        report,
+        snapshot,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write_sample(dir: &Path, id: &str, label: &str, conf: f64, extra_json: &str) {
+        let images = dir.join("images");
+        let labels = dir.join("labels");
+        std::fs::create_dir_all(&images).unwrap();
+        std::fs::create_dir_all(&labels).unwrap();
+        let img = images.join(format!("{id}.jpg"));
+        std::fs::write(&img, b"not-a-real-image").unwrap();
+        std::fs::write(
+            labels.join(format!("{id}.json")),
+            format!(
+                r#"{{"id":"{id}","labels":[{{"name":"{label}","confidence":{conf}}},{{"name":"other","confidence":0.1}}]{extra_json}}}"#
+            ),
+        )
+        .unwrap();
+        use std::io::Write;
+        let mut m = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(dir.join("manifest.jsonl"))
+            .unwrap();
+        writeln!(
+            m,
+            r#"{{"id":"{id}","image":"{}","labels":["{label}"],"timestamp":"2026-01-01T00:00:00Z"}}"#,
+            img.display()
+        )
+        .unwrap();
+    }
+
+    fn weights() -> ProvenanceWeights {
+        ProvenanceWeights::default()
+    }
+
+    #[test]
+    fn load_applies_reviews_and_provenance() {
+        let dir = tempfile::tempdir().unwrap();
+        let d = dir.path();
+        write_sample(d, "a", "rust", 0.9, "");
+        write_sample(d, "b", "rust", 0.4, "");
+        write_sample(
+            d,
+            "c",
+            "rust",
+            0.3,
+            r#","review":{"decision":"corrected","corrected_label":"blight"}"#,
+        );
+        write_sample(d, "d", "rust", 0.95, r#","review":{"decision":"rejected"}"#);
+        write_sample(
+            d,
+            "e",
+            "rust",
+            0.5,
+            r#","review":{"decision":"confirmed"},"context":{"crop":"wheat"}"#,
+        );
+        write_sample(d, "f", "rust", 0.8, r#","provenance":"local_model""#);
+
+        let raw = load_manifest(d, 0.7, &weights()).unwrap();
+        let by_id: HashMap<&str, &RawSample> = raw.iter().map(|r| (r.id.as_str(), r)).collect();
+
+        assert!(by_id.contains_key("a"));
+        assert!(
+            !by_id.contains_key("b"),
+            "below min_confidence and unreviewed"
+        );
+        assert!(!by_id.contains_key("d"), "rejected");
+
+        let c = by_id["c"];
+        assert_eq!(c.label, "blight");
+        assert_eq!(c.provenance, "human");
+        assert!(c.reviewed && c.confidence == 1.0 && c.weight == 1.0);
+
+        let e = by_id["e"];
+        assert_eq!(e.label, "rust");
+        assert_eq!(e.crop, "wheat");
+        assert!(e.reviewed, "confirmed bypasses the confidence threshold");
+
+        let f = by_id["f"];
+        assert_eq!(f.provenance, "local_model");
+        assert!((f.weight - 0.3).abs() < 1e-9);
+        assert!((by_id["a"].weight - 0.6).abs() < 1e-9);
+    }
+
+    #[test]
+    fn manifest_duplicates_and_missing_images_are_skipped() {
+        let dir = tempfile::tempdir().unwrap();
+        let d = dir.path();
+        write_sample(d, "a", "rust", 0.9, "");
+        write_sample(d, "a", "rust", 0.9, ""); // duplicate manifest line
+        write_sample(d, "z", "rust", 0.9, "");
+        std::fs::remove_file(d.join("images").join("z.jpg")).unwrap();
+        let raw = load_manifest(d, 0.5, &weights()).unwrap();
+        assert_eq!(raw.len(), 1);
+    }
+
+    fn sample(id: &str, label: &str, idx: usize, provenance: &str) -> Sample {
+        Sample {
+            id: id.into(),
+            image_path: PathBuf::from("/x"),
+            label: label.into(),
+            label_idx: idx,
+            confidence: 0.9,
+            weight: ProvenanceWeights::default().for_provenance(provenance),
+            provenance: provenance.into(),
+            crop: String::new(),
+            reviewed: provenance == "human",
+        }
+    }
+
+    #[test]
+    fn stratified_split_is_deterministic_and_covers_classes() {
+        let mut samples = Vec::new();
+        for i in 0..60 {
+            samples.push(sample(&format!("r{i}"), "rust", 0, "external_api"));
+        }
+        for i in 0..12 {
+            samples.push(sample(&format!("b{i}"), "blight", 1, "external_api"));
+        }
+        for i in 0..4 {
+            samples.push(sample(&format!("m{i}"), "mildew", 2, "human"));
+        }
+        let (train, val, test) = stratified_split(samples.clone(), 0.15, 0.15);
+        assert_eq!(train.len() + val.len() + test.len(), 76);
+        for split in [&val, &test] {
+            for idx in 0..3 {
+                assert!(
+                    split.iter().any(|s| s.label_idx == idx),
+                    "class {idx} missing from a split"
+                );
+            }
+        }
+        let mut shuffled = samples.clone();
+        shuffled.reverse();
+        let (train2, _, _) = stratified_split(shuffled, 0.15, 0.15);
+        let a: Vec<&str> = train.iter().map(|s| s.id.as_str()).collect();
+        let mut b: Vec<&str> = train2.iter().map(|s| s.id.as_str()).collect();
+        let mut a_sorted = a.clone();
+        a_sorted.sort();
+        b.sort();
+        assert_eq!(a_sorted, b, "membership must not depend on input order");
+        let frac = test.len() as f64 / 76.0;
+        assert!(frac > 0.07 && frac < 0.25, "test fraction {frac}");
+    }
+
+    #[test]
+    fn class_weights_favor_rare_classes() {
+        let mut samples = Vec::new();
+        for i in 0..90 {
+            samples.push(sample(&format!("a{i}"), "a", 0, "external_api"));
+        }
+        for i in 0..10 {
+            samples.push(sample(&format!("b{i}"), "b", 1, "external_api"));
+        }
+        let w = class_weights(&samples, 2);
+        assert!(w[1] > w[0]);
+        assert!(((w[0] + w[1]) / 2.0 - 1.0).abs() < 1e-6, "mean-normalized");
+        assert!((w[1] / w[0] - 9.0).abs() < 1e-4);
+        assert_eq!(class_weights(&[], 3), vec![1.0, 1.0, 1.0]);
+    }
+
+    #[test]
+    fn report_and_snapshot() {
+        let raw: Vec<RawSample> = (0..20)
+            .map(|i| RawSample {
+                id: format!("s{i}"),
+                image_path: PathBuf::from("/x"),
+                label: if i < 15 {
+                    "rust".into()
+                } else if i < 19 {
+                    "blight".into()
+                } else {
+                    "rare".into()
+                },
+                confidence: 0.9,
+                weight: 0.6,
+                provenance: "external_api".into(),
+                crop: "wheat".into(),
+                reviewed: false,
+            })
+            .collect();
+        let label_map = build_label_map(&raw, 2);
+        assert_eq!(label_map.len(), 2);
+        let report = build_report("disease", &raw, &label_map, 2);
+        assert_eq!(report.loaded, 20);
+        assert_eq!(report.kept, 19);
+        assert_eq!(report.dropped_classes, vec![("rare".to_string(), 1)]);
+        assert!((report.imbalance_ratio - 3.75).abs() < 1e-9);
+        assert_eq!(report.crop_counts["wheat"], 19);
+        assert!(report.warnings.iter().any(|w| w.contains("human-reviewed")));
+        assert!(report.warnings.iter().any(|w| w.contains("dropped")));
+
+        let samples: Vec<Sample> = raw
+            .iter()
+            .filter_map(|r| {
+                Some(sample(
+                    &r.id,
+                    &r.label,
+                    *label_map.get(&r.label)?,
+                    &r.provenance,
+                ))
+            })
+            .collect();
+        let (train, val, test) = stratified_split(samples.clone(), 0.2, 0.2);
+        let snap1 = build_snapshot("disease", &train, &val, &test, &label_map);
+        assert_eq!(snap1.n_samples, 19);
+        assert_eq!(snap1.class_counts["rust"], 15);
+        let (t2, v2, te2) = stratified_split(samples, 0.2, 0.2);
+        let snap2 = build_snapshot("disease", &t2, &v2, &te2, &label_map);
+        assert_eq!(snap1.id, snap2.id, "snapshot id depends only on content");
+        assert_eq!(snap1.id.len(), 64);
+    }
 }

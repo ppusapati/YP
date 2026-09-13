@@ -105,6 +105,14 @@ export {
   IrrigationStatus,
   RiskLevel,
   TreatmentType,
+  LabelReviewDecision,
+} from '@samavāya/proto';
+
+// Plant diagnosis label review (human-in-the-loop labeling)
+export type {
+  LabelReviewSample,
+  LabelReview,
+  TrainingLabel,
 } from '@samavāya/proto';
 
 // ─── Common Types ────────────────────────────────────────────────────────────

@@ -356,7 +356,7 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 		}
 	}
 
-	result, err := s.aiClient.ClassifyPlant(ctx, requestID, aiImages)
+	result, err := s.aiClient.ClassifyPlant(ctx, requestID, aiImages, s.sampleContext(ctx, ""))
 	if err != nil {
 		s.log.Warnw("msg", "AI ClassifyPlant failed, returning synthetic fallback", "error", err)
 		return syntheticResult, nil
@@ -411,7 +411,7 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 		}
 	}
 
-	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID)
+	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
 		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed, returning synthetic fallback", "error", err)
 		return syntheticResult, nil
@@ -471,7 +471,7 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 		}
 	}
 
-	result, err := s.aiClient.DetectPests(ctx, requestID, aiImages, speciesID)
+	result, err := s.aiClient.DetectPests(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
 		s.log.Warnw("msg", "AI DetectPests failed, returning synthetic fallback", "error", err)
 		return syntheticResult, nil

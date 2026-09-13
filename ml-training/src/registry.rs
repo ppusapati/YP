@@ -46,6 +46,11 @@ pub struct ModelMetadata {
     pub training_config_hash: String,
     pub onnx_path: String,
     pub status: ModelStatus,
+    /// Content hash of the dataset snapshot the model was trained on.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dataset_snapshot: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub training_samples: Option<usize>,
 }
 
 /// A file-backed model registry.
@@ -178,9 +183,15 @@ impl ModelRegistry {
         let a = self.get_model(task, version_a)?;
         let b = self.get_model(task, version_b)?;
         let mut deltas = HashMap::new();
-        deltas.insert("accuracy".to_string(), b.metrics.accuracy - a.metrics.accuracy);
+        deltas.insert(
+            "accuracy".to_string(),
+            b.metrics.accuracy - a.metrics.accuracy,
+        );
         deltas.insert("f1".to_string(), b.metrics.f1 - a.metrics.f1);
-        deltas.insert("precision".to_string(), b.metrics.precision - a.metrics.precision);
+        deltas.insert(
+            "precision".to_string(),
+            b.metrics.precision - a.metrics.precision,
+        );
         deltas.insert("recall".to_string(), b.metrics.recall - a.metrics.recall);
         Ok(deltas)
     }
@@ -242,6 +253,8 @@ mod tests {
             training_config_hash: "abc123".to_string(),
             onnx_path: format!("/models/{task}/{version}/model.onnx"),
             status: ModelStatus::Staging,
+            dataset_snapshot: None,
+            training_samples: None,
         }
     }
 
@@ -268,7 +281,10 @@ mod tests {
         let result = registry.register_model(meta);
         assert!(result.is_err());
         assert!(
-            result.unwrap_err().to_string().contains("already registered"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("already registered"),
             "error should mention 'already registered'"
         );
     }
@@ -323,12 +339,16 @@ mod tests {
             .unwrap();
 
         // Promote v1 to production.
-        registry.promote_model("disease_detection", "v1.0.0").unwrap();
+        registry
+            .promote_model("disease_detection", "v1.0.0")
+            .unwrap();
         let v1 = registry.get_model("disease_detection", "v1.0.0").unwrap();
         assert_eq!(v1.status, ModelStatus::Production);
 
         // Now promote v2 — v1 should be archived.
-        registry.promote_model("disease_detection", "v2.0.0").unwrap();
+        registry
+            .promote_model("disease_detection", "v2.0.0")
+            .unwrap();
         let v1 = registry.get_model("disease_detection", "v1.0.0").unwrap();
         let v2 = registry.get_model("disease_detection", "v2.0.0").unwrap();
         assert_eq!(v1.status, ModelStatus::Archived);
@@ -360,7 +380,9 @@ mod tests {
             .register_model(sample_metadata("disease_detection", "v3.0.0", 0.88))
             .unwrap();
 
-        let best = registry.best_model("disease_detection", "accuracy").unwrap();
+        let best = registry
+            .best_model("disease_detection", "accuracy")
+            .unwrap();
         assert_eq!(best.version, "v2.0.0");
     }
 
@@ -374,9 +396,13 @@ mod tests {
             .register_model(sample_metadata("disease_detection", "v2.0.0", 0.88))
             .unwrap();
 
-        registry.archive_model("disease_detection", "v1.0.0").unwrap();
+        registry
+            .archive_model("disease_detection", "v1.0.0")
+            .unwrap();
 
-        let best = registry.best_model("disease_detection", "accuracy").unwrap();
+        let best = registry
+            .best_model("disease_detection", "accuracy")
+            .unwrap();
         assert_eq!(best.version, "v2.0.0");
     }
 
@@ -394,7 +420,10 @@ mod tests {
             .compare_versions("disease_detection", "v1.0.0", "v2.0.0")
             .unwrap();
         let acc_delta = deltas["accuracy"];
-        assert!((acc_delta - 0.07).abs() < 1e-9, "accuracy delta should be ~0.07, got {acc_delta}");
+        assert!(
+            (acc_delta - 0.07).abs() < 1e-9,
+            "accuracy delta should be ~0.07, got {acc_delta}"
+        );
     }
 
     #[test]
