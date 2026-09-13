@@ -19,7 +19,8 @@ mod onnx_pb {
         pub opset_import: Vec<OperatorSetIdProto>,
         #[prost(message, optional, tag = "7")]
         pub graph: Option<GraphProto>,
-        #[prost(string, tag = "5")]
+        // Field numbers follow onnx.proto3: 2 = producer_name (5 is model_version).
+        #[prost(string, tag = "2")]
         pub producer_name: String,
     }
 
@@ -65,7 +66,7 @@ mod onnx_pb {
         pub name: String,
         #[prost(int32, tag = "20")]
         pub r#type: i32,
-        #[prost(float, tag = "4")]
+        #[prost(float, tag = "2")]
         pub f: f32,
         #[prost(int64, tag = "3")]
         pub i: i64,
@@ -83,7 +84,7 @@ mod onnx_pb {
         pub data_type: i32,
         #[prost(string, tag = "8")]
         pub name: String,
-        #[prost(bytes, tag = "13")]
+        #[prost(bytes, tag = "9")]
         pub raw_data: Vec<u8>,
     }
 
@@ -170,7 +171,11 @@ pub fn export_to_onnx(
         current = bn_out;
 
         let relu_out = format!("{conv_name}_relu_out");
-        nodes.push(make_relu_node(&format!("{conv_name}_relu"), &current, &relu_out));
+        nodes.push(make_relu_node(
+            &format!("{conv_name}_relu"),
+            &current,
+            &relu_out,
+        ));
         current = relu_out;
 
         let pool_out = format!("{conv_name}_pool_out");
@@ -191,7 +196,13 @@ pub fn export_to_onnx(
     current = flatten_out;
 
     let fc1_out = "fc1_out".to_string();
-    nodes.push(make_gemm_node("fc1_gemm", &current, "fc1.weight", "fc1.bias", &fc1_out));
+    nodes.push(make_gemm_node(
+        "fc1_gemm",
+        &current,
+        "fc1.weight",
+        "fc1.bias",
+        &fc1_out,
+    ));
     current = fc1_out;
 
     let fc1_relu_out = "fc1_relu_out".to_string();
@@ -199,7 +210,13 @@ pub fn export_to_onnx(
     current = fc1_relu_out;
 
     let logits = "logits".to_string();
-    nodes.push(make_gemm_node("fc2_gemm", &current, "fc2.weight", "fc2.bias", &logits));
+    nodes.push(make_gemm_node(
+        "fc2_gemm",
+        &current,
+        "fc2.weight",
+        "fc2.bias",
+        &logits,
+    ));
 
     let graph = GraphProto {
         name: "plant_cnn".to_string(),
@@ -358,16 +375,14 @@ fn make_gemm_node(name: &str, input: &str, weight: &str, bias: &str, output: &st
     NodeProto {
         name: name.to_string(),
         op_type: "Gemm".to_string(),
-        input: vec![
-            input.to_string(),
-            weight.to_string(),
-            bias.to_string(),
-        ],
+        input: vec![input.to_string(), weight.to_string(), bias.to_string()],
         output: vec![output.to_string()],
         attribute: vec![
             float_attr("alpha", 1.0),
             float_attr("beta", 1.0),
-            int_attr("transB", 1),
+            // burn's Linear stores weight as [in_features, out_features], which is
+            // exactly Gemm's B operand when transB = 0 (Y = A[N,in] · B[in,out]).
+            int_attr("transB", 0),
         ],
     }
 }
@@ -483,33 +498,49 @@ mod tests {
     fn export_to_onnx_writes_valid_file() {
         // Build minimal weight set matching PlantCnn architecture
         let weights: Vec<(String, Vec<usize>, Vec<f32>)> = vec![
-            ("conv1.weight".into(), vec![32, 3, 3, 3], vec![0.0; 32 * 3 * 3 * 3]),
+            (
+                "conv1.weight".into(),
+                vec![32, 3, 3, 3],
+                vec![0.0; 32 * 3 * 3 * 3],
+            ),
             ("conv1.bias".into(), vec![32], vec![0.0; 32]),
             ("bn1.weight".into(), vec![32], vec![1.0; 32]),
             ("bn1.bias".into(), vec![32], vec![0.0; 32]),
             ("bn1.running_mean".into(), vec![32], vec![0.0; 32]),
             ("bn1.running_var".into(), vec![32], vec![1.0; 32]),
-            ("conv2.weight".into(), vec![64, 32, 3, 3], vec![0.0; 64 * 32 * 3 * 3]),
+            (
+                "conv2.weight".into(),
+                vec![64, 32, 3, 3],
+                vec![0.0; 64 * 32 * 3 * 3],
+            ),
             ("conv2.bias".into(), vec![64], vec![0.0; 64]),
             ("bn2.weight".into(), vec![64], vec![1.0; 64]),
             ("bn2.bias".into(), vec![64], vec![0.0; 64]),
             ("bn2.running_mean".into(), vec![64], vec![0.0; 64]),
             ("bn2.running_var".into(), vec![64], vec![1.0; 64]),
-            ("conv3.weight".into(), vec![128, 64, 3, 3], vec![0.0; 128 * 64 * 3 * 3]),
+            (
+                "conv3.weight".into(),
+                vec![128, 64, 3, 3],
+                vec![0.0; 128 * 64 * 3 * 3],
+            ),
             ("conv3.bias".into(), vec![128], vec![0.0; 128]),
             ("bn3.weight".into(), vec![128], vec![1.0; 128]),
             ("bn3.bias".into(), vec![128], vec![0.0; 128]),
             ("bn3.running_mean".into(), vec![128], vec![0.0; 128]),
             ("bn3.running_var".into(), vec![128], vec![1.0; 128]),
-            ("conv4.weight".into(), vec![256, 128, 3, 3], vec![0.0; 256 * 128 * 3 * 3]),
+            (
+                "conv4.weight".into(),
+                vec![256, 128, 3, 3],
+                vec![0.0; 256 * 128 * 3 * 3],
+            ),
             ("conv4.bias".into(), vec![256], vec![0.0; 256]),
             ("bn4.weight".into(), vec![256], vec![1.0; 256]),
             ("bn4.bias".into(), vec![256], vec![0.0; 256]),
             ("bn4.running_mean".into(), vec![256], vec![0.0; 256]),
             ("bn4.running_var".into(), vec![256], vec![1.0; 256]),
-            ("fc1.weight".into(), vec![512, 256], vec![0.0; 512 * 256]),
+            ("fc1.weight".into(), vec![256, 512], vec![0.0; 256 * 512]),
             ("fc1.bias".into(), vec![512], vec![0.0; 512]),
-            ("fc2.weight".into(), vec![5, 512], vec![0.0; 5 * 512]),
+            ("fc2.weight".into(), vec![512, 5], vec![0.0; 512 * 5]),
             ("fc2.bias".into(), vec![5], vec![0.0; 5]),
         ];
 
@@ -546,33 +577,49 @@ mod tests {
     #[test]
     fn export_graph_node_types() {
         let weights: Vec<(String, Vec<usize>, Vec<f32>)> = vec![
-            ("conv1.weight".into(), vec![32, 3, 3, 3], vec![0.0; 32 * 3 * 3 * 3]),
+            (
+                "conv1.weight".into(),
+                vec![32, 3, 3, 3],
+                vec![0.0; 32 * 3 * 3 * 3],
+            ),
             ("conv1.bias".into(), vec![32], vec![0.0; 32]),
             ("bn1.weight".into(), vec![32], vec![1.0; 32]),
             ("bn1.bias".into(), vec![32], vec![0.0; 32]),
             ("bn1.running_mean".into(), vec![32], vec![0.0; 32]),
             ("bn1.running_var".into(), vec![32], vec![1.0; 32]),
-            ("conv2.weight".into(), vec![64, 32, 3, 3], vec![0.0; 64 * 32 * 3 * 3]),
+            (
+                "conv2.weight".into(),
+                vec![64, 32, 3, 3],
+                vec![0.0; 64 * 32 * 3 * 3],
+            ),
             ("conv2.bias".into(), vec![64], vec![0.0; 64]),
             ("bn2.weight".into(), vec![64], vec![1.0; 64]),
             ("bn2.bias".into(), vec![64], vec![0.0; 64]),
             ("bn2.running_mean".into(), vec![64], vec![0.0; 64]),
             ("bn2.running_var".into(), vec![64], vec![1.0; 64]),
-            ("conv3.weight".into(), vec![128, 64, 3, 3], vec![0.0; 128 * 64 * 3 * 3]),
+            (
+                "conv3.weight".into(),
+                vec![128, 64, 3, 3],
+                vec![0.0; 128 * 64 * 3 * 3],
+            ),
             ("conv3.bias".into(), vec![128], vec![0.0; 128]),
             ("bn3.weight".into(), vec![128], vec![1.0; 128]),
             ("bn3.bias".into(), vec![128], vec![0.0; 128]),
             ("bn3.running_mean".into(), vec![128], vec![0.0; 128]),
             ("bn3.running_var".into(), vec![128], vec![1.0; 128]),
-            ("conv4.weight".into(), vec![256, 128, 3, 3], vec![0.0; 256 * 128 * 3 * 3]),
+            (
+                "conv4.weight".into(),
+                vec![256, 128, 3, 3],
+                vec![0.0; 256 * 128 * 3 * 3],
+            ),
             ("conv4.bias".into(), vec![256], vec![0.0; 256]),
             ("bn4.weight".into(), vec![256], vec![1.0; 256]),
             ("bn4.bias".into(), vec![256], vec![0.0; 256]),
             ("bn4.running_mean".into(), vec![256], vec![0.0; 256]),
             ("bn4.running_var".into(), vec![256], vec![1.0; 256]),
-            ("fc1.weight".into(), vec![512, 256], vec![0.0; 512 * 256]),
+            ("fc1.weight".into(), vec![256, 512], vec![0.0; 256 * 512]),
             ("fc1.bias".into(), vec![512], vec![0.0; 512]),
-            ("fc2.weight".into(), vec![3, 512], vec![0.0; 3 * 512]),
+            ("fc2.weight".into(), vec![512, 3], vec![0.0; 512 * 3]),
             ("fc2.bias".into(), vec![3], vec![0.0; 3]),
         ];
 
@@ -588,10 +635,22 @@ mod tests {
 
         let op_types: Vec<&str> = graph.node.iter().map(|n| n.op_type.as_str()).collect();
         assert_eq!(op_types.iter().filter(|&&t| t == "Conv").count(), 4);
-        assert_eq!(op_types.iter().filter(|&&t| t == "BatchNormalization").count(), 4);
+        assert_eq!(
+            op_types
+                .iter()
+                .filter(|&&t| t == "BatchNormalization")
+                .count(),
+            4
+        );
         assert_eq!(op_types.iter().filter(|&&t| t == "Relu").count(), 5); // 4 conv + 1 fc1
         assert_eq!(op_types.iter().filter(|&&t| t == "MaxPool").count(), 4);
-        assert_eq!(op_types.iter().filter(|&&t| t == "GlobalAveragePool").count(), 1);
+        assert_eq!(
+            op_types
+                .iter()
+                .filter(|&&t| t == "GlobalAveragePool")
+                .count(),
+            1
+        );
         assert_eq!(op_types.iter().filter(|&&t| t == "Flatten").count(), 1);
         assert_eq!(op_types.iter().filter(|&&t| t == "Gemm").count(), 2);
 

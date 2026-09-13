@@ -51,8 +51,17 @@ impl AiGatewayServiceImpl {
     /// Create a new service from configuration. Initialises all engine modules.
     pub fn new(config: &Config) -> Result<Self, String> {
         let model_paths = config.models.clone();
-        let diagnosis = DiagnosisEngine::new()
+        let diagnosis = DiagnosisEngine::new(&model_paths)
             .map_err(|e| format!("diagnosis engine init failed: {e}"))?;
+        for status in diagnosis.model_status() {
+            tracing::info!(
+                task = status.task.name(),
+                loaded = status.loaded,
+                version = %status.version,
+                classes = status.classes,
+                "vision model status"
+            );
+        }
 
         let vision_client = if config.external_api.enabled {
             match VisionClient::new(&config.external_api) {
@@ -97,6 +106,11 @@ impl AiGatewayServiceImpl {
 
     fn is_demo_model(version: &str) -> bool {
         version.contains("demo")
+    }
+
+    /// Load state of the local vision models, for health reporting.
+    pub fn vision_model_status(&self) -> Vec<crate::diagnosis::ModelStatus> {
+        self.diagnosis.model_status()
     }
 
     fn collect_image_bytes(images: &[proto::ImageData]) -> Vec<u8> {
@@ -221,9 +235,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
                 if !image_bytes.is_empty() {
                     match vc.diagnose_disease(&image_bytes, "").await {
                         Ok(vr) => {
-                            self.data_collector
-                                .collect(image_bytes, vr.clone())
-                                .await;
+                            self.data_collector.collect(image_bytes, vr.clone()).await;
                             let diseases = Self::vision_to_diseases(&vr);
                             let health = if diseases.is_empty() {
                                 1.0
@@ -241,7 +253,9 @@ impl AiGatewayService for AiGatewayServiceImpl {
                             }));
                         }
                         Err(e) => {
-                            tracing::warn!("external API fallback failed for disease diagnosis: {e}");
+                            tracing::warn!(
+                                "external API fallback failed for disease diagnosis: {e}"
+                            );
                         }
                     }
                 }
@@ -272,9 +286,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
                 if !image_bytes.is_empty() {
                     match vc.detect_pests(&image_bytes, "").await {
                         Ok(vr) => {
-                            self.data_collector
-                                .collect(image_bytes, vr.clone())
-                                .await;
+                            self.data_collector.collect(image_bytes, vr.clone()).await;
                             return Ok(Response::new(proto::DetectPestsResponse {
                                 request_id,
                                 pests: Self::vision_to_pests(&vr),
@@ -306,7 +318,9 @@ impl AiGatewayService for AiGatewayServiceImpl {
         let engine = self.diagnosis.clone();
         let result = tokio::task::spawn_blocking(move || engine.detect_nutrient_deficiency(&req))
             .await
-            .map_err(|e| Status::internal(format!("nutrient deficiency detection panicked: {e}")))?;
+            .map_err(|e| {
+                Status::internal(format!("nutrient deficiency detection panicked: {e}"))
+            })?;
 
         if Self::is_demo_model(&result.model_version) {
             if let Some(ref vc) = self.vision_client {
@@ -314,9 +328,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
                 if !image_bytes.is_empty() {
                     match vc.detect_nutrient_deficiency(&image_bytes, "").await {
                         Ok(vr) => {
-                            self.data_collector
-                                .collect(image_bytes, vr.clone())
-                                .await;
+                            self.data_collector.collect(image_bytes, vr.clone()).await;
                             return Ok(Response::new(proto::DetectNutrientDeficiencyResponse {
                                 request_id,
                                 deficiencies: Self::vision_to_deficiencies(&vr),
@@ -358,9 +370,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
                 if !image_bytes.is_empty() {
                     match vc.classify_plant(&image_bytes).await {
                         Ok(vr) => {
-                            self.data_collector
-                                .collect(image_bytes, vr.clone())
-                                .await;
+                            self.data_collector.collect(image_bytes, vr.clone()).await;
                             return Ok(Response::new(proto::ClassifyPlantResponse {
                                 request_id,
                                 species: Self::vision_to_classification(&vr),

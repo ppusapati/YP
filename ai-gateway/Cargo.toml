@@ -7,6 +7,7 @@ description = "AI Gateway gRPC service wrapping Rust ML engines for Go microserv
 [dependencies]
 # gRPC / protobuf
 tonic = "0.12"
+tonic-health = "0.12"
 prost = "0.13"
 prost-types = "0.13"
 

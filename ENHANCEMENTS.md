@@ -314,7 +314,7 @@ These build on each other in order. Each step produces inputs the next one needs
 **Enhancements:**
 - [x] Add a tabular training task in `ml-training/` (gradient boosting or small temporal net) using warehouse features: weather aggregates, index time series, soil, prior yields — `yp-ml-training train-tabular --task yield` trains a pure-Rust GBM (`yield-prediction-engine/src/gbm.rs`) on a CSV of `FEATURE_NAMES` columns and registers it
 - [x] Extend crop coverage to rice, cotton, sugarcane, pulses, and regional horticulture — `YieldModelParams::for_crop` covers 13 crops incl. cotton, sugarcane, chickpea, pigeon pea, groundnut, mustard, tomato, potato, onion; FAO-56 Kc tables added for the same set
-- [x] Serve the trained model through the AI gateway — as a JSON artifact (`yield_tabular_model` config), since the gateway has no ONNX runtime; ONNX export remains a follow-up if a runtime is adopted
+- [x] Serve the trained model through the AI gateway — as a JSON artifact (`yield_tabular_model` config); the gateway now has a tract ONNX runtime, but tract does not implement the `ai.onnx.ml` TreeEnsemble op, so the GBM keeps its JSON form
 - [x] Keep the parametric engines as a fallback when a field lacks training history; blend by confidence — blend weight is the tabular model's held-out R²; response reports `model_source`, `tabular_weight`, `crop_supported`
 - [x] Add per-field prediction intervals and expose uncertainty in the yield RPC response — split-conformal intervals with reported `interval_coverage`
 - [x] In-season features: yield-service now sends season-to-date GDD, rainfall, frost/heat-stress days from weather-service instead of placeholders
@@ -348,6 +348,7 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** `ml-training/src/model.rs` trains a single small `PlantCnn` from scratch for all four vision tasks (disease, pest, nutrient deficiency, classification). No pretrained backbone, no transfer learning.
 
 **Enhancements:**
+- [x] Serve exported ONNX models locally in the AI gateway (pure-Rust `tract` runtime in `plant-ai-inference-engine`); vision RPCs try the trained model before the external-API/demo fallback, and each model is reported on the gRPC health service. A burn-vs-tract round-trip test guards the export, which fixed three wrong protobuf field tags and a transposed `Gemm` in the exporter
 - [ ] Import a pretrained backbone (ImageNet or agriculture-specific) via ONNX and fine-tune per task
 - [ ] Add multi-task heads sharing one backbone to cut inference cost on mobile
 - [ ] Add augmentation pipeline tuned for field photos: lighting, occlusion, motion blur, background variation

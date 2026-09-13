@@ -286,7 +286,7 @@ fn cmd_export(
     let meta_path = model_dir.join("training_meta.json");
     let meta: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&meta_path)?)?;
     let num_classes = meta["num_classes"].as_u64().unwrap() as usize;
-    let _label_map: HashMap<String, usize> = serde_json::from_value(meta["label_map"].clone())?;
+    let label_map: HashMap<String, usize> = serde_json::from_value(meta["label_map"].clone())?;
 
     let device = <InferBackend as Backend>::Device::default();
     let record = CompactRecorder::new()
@@ -306,6 +306,30 @@ fn cmd_export(
         config.export.onnx_opset,
         &onnx_path,
     )?;
+
+    // The AI gateway serves a model directory as-is: model.onnx plus an
+    // index-ordered labels.json and a version tag (the run directory name).
+    if let Some(dir) = onnx_path.parent() {
+        let mut labels = vec![String::new(); num_classes];
+        for (name, idx) in &label_map {
+            if *idx < num_classes {
+                labels[*idx] = name.clone();
+            }
+        }
+        if labels.iter().any(String::is_empty) {
+            anyhow::bail!("label_map does not cover all {num_classes} classes");
+        }
+        std::fs::write(
+            dir.join("labels.json"),
+            serde_json::to_string_pretty(&labels)?,
+        )?;
+        let version = model_dir
+            .file_name()
+            .map(|n| format!("{task}-{}", n.to_string_lossy()))
+            .unwrap_or_else(|| task.to_string());
+        std::fs::write(dir.join("version.txt"), format!("{version}\n"))?;
+        println!("Labels and version written to {}", dir.display());
+    }
 
     println!("ONNX model exported to {}", onnx_path.display());
     Ok(())

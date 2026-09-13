@@ -38,6 +38,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 tempfile = "3"
+# Round-trip test: exported ONNX must reproduce burn's forward pass under tract.
+plant-ai-inference-engine = { path = "../rust-engines/plant-ai-inference-engine" }
 
 [features]
 default = []

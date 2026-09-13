@@ -8,6 +8,12 @@ max_concurrent_requests = 256
 request_timeout_secs = 30
 
 [models]
+# Each vision model path is a directory produced by `yp-ml-training export`:
+#   model.onnx    — the network (input "input" [N,3,S,S] float32, output "logits")
+#   labels.json   — index-ordered class names (or training_meta.json with label_map)
+#   version.txt   — optional version tag reported in responses (defaults to the dir name)
+# A directory that is missing or unreadable leaves that task on the demo /
+# external-API fallback and is reported NOT_SERVING on the gRPC health service.
 disease_detection_model = "/models/disease-detection-v1"
 pest_detection_model = "/models/pest-detection-v1"
 nutrient_deficiency_model = "/models/nutrient-deficiency-v1"

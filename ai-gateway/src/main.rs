@@ -1,12 +1,17 @@
 //! AI Gateway — gRPC server entry point.
 //!
 //! Loads configuration, initializes all Rust AI/ML engines, and starts the
-//! tonic gRPC server that Go microservices call for inference.
+//! tonic gRPC server that Go microservices call for inference. The standard
+//! gRPC health service reports the gateway as SERVING and each local vision
+//! model as SERVING / NOT_SERVING so orchestration can tell real inference
+//! from demo/external fallback.
 
 use std::path::Path;
 use std::time::Duration;
 
 use tonic::transport::Server;
+use tonic_health::server::health_reporter;
+use tonic_health::ServingStatus;
 use tracing_subscriber::{fmt, EnvFilter};
 
 use ai_gateway::config::Config;
@@ -54,10 +59,26 @@ async fn main() -> anyhow::Result<()> {
     let ai_service = AiGatewayServiceImpl::new(&config)
         .map_err(|e| anyhow::anyhow!("failed to initialize AI engines: {e}"))?;
 
+    // gRPC health: the gateway itself plus one entry per local vision model.
+    let (mut reporter, health_service) = health_reporter();
+    reporter
+        .set_serving::<AiGatewayServiceServer<AiGatewayServiceImpl>>()
+        .await;
+    for status in ai_service.vision_model_status() {
+        let name = format!("ai_gateway.vision.{}", status.task.name());
+        let serving = if status.loaded {
+            ServingStatus::Serving
+        } else {
+            ServingStatus::NotServing
+        };
+        reporter.set_service_status(&name, serving).await;
+    }
+
     // Start the gRPC server.
     Server::builder()
         .timeout(timeout)
         .concurrency_limit_per_connection(config.server.max_concurrent_requests)
+        .add_service(health_service)
         .add_service(AiGatewayServiceServer::new(ai_service))
         .serve(addr)
         .await?;
