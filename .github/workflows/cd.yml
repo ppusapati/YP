@@ -74,6 +74,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Without this every build recompiles every layer from scratch.
+          # Scoped per service so one image's cache cannot evict another's.
+          cache-from: type=gha,scope=${{ matrix.service || github.job }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service || github.job }}
 
   build-and-push-monolith:
     name: Build & Push (monolith)
@@ -107,6 +111,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Without this every build recompiles every layer from scratch.
+          # Scoped per service so one image's cache cannot evict another's.
+          cache-from: type=gha,scope=${{ matrix.service || github.job }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service || github.job }}
 
   build-and-push-ai-gateway:
     name: Build & Push (ai-gateway)
@@ -140,6 +148,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Without this every build recompiles every layer from scratch.
+          # Scoped per service so one image's cache cannot evict another's.
+          cache-from: type=gha,scope=${{ matrix.service || github.job }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service || github.job }}
 
   deploy-staging:
     name: Deploy to staging

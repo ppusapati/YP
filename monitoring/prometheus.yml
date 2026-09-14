@@ -40,18 +40,21 @@ scrape_configs:
           - ai-gateway:50051
 
   # ── Kafka ─────────────────────────────────────────────────────────────────
+  # Consumer lag, partition counts and broker health, via kafka_exporter.
   - job_name: kafka
     metrics_path: /metrics
     static_configs:
       - targets:
-          - kafka:9092
+          - kafka-exporter:9308
 
-  # ── Postgres (placeholder — add postgres_exporter for real metrics) ──────
+  # Connection pool use, transaction rates and replication lag, via
+  # postgres_exporter. Scraping postgres:5432 directly reached the Postgres
+  # wire protocol, not metrics, so this job had never yielded a sample.
   - job_name: postgres
     metrics_path: /metrics
     static_configs:
       - targets:
-          - postgres:5432
+          - postgres-exporter:9187
 
   # ── Node metrics (placeholder — add node_exporter service if needed) ─────
   - job_name: node

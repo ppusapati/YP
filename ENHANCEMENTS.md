@@ -32,7 +32,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Create Grafana dashboard JSONs for: service health overview, request latency/error rates, database connection pool utilization, Kafka consumer lag, AI gateway inference latency
 - [x] Define Prometheus alerting rules (`.rules.yml`) for: service down, high error rate (>1%), P99 latency breaches, database connection exhaustion, disk space warnings, Kafka consumer lag > threshold
 - [x] Deploy AlertManager with routing to Slack/PagerDuty/email
-- [ ] Add Postgres exporter (prometheusm community/postgres_exporter) and Kafka exporter (danielqsj/kafka_exporter)
+- [x] Add Postgres exporter and Kafka exporter — both are deployed and the scrape jobs point at them. They previously targeted `postgres:5432` and `kafka:9092` directly, which serve the Postgres and Kafka wire protocols rather than metrics, so those two jobs had never produced a single sample
 - [x] Define SLOs/SLIs for critical paths (auth, farm CRUD, satellite processing)
 - [ ] Add log aggregation (Grafana Loki or ELK stack)
 
@@ -85,11 +85,11 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Create k6 load test scripts for critical paths: auth flow, farm/field CRUD, sensor data ingestion, satellite image upload, AI gateway inference
 - [x] Establish performance baselines (P50/P95/P99 latency, max throughput)
 - [x] Add benchmark tests to CI (fail on >10% regression)
-- [ ] Configure PgBouncer for production database connection pooling
-- [ ] Add response compression at Caddy gateway (gzip/brotli)
+- [x] Configure PgBouncer for database connection pooling — transaction pooling in front of Postgres, since every service keeps its own pool and the sum of two dozen of them is what exhausts `max_connections`. Not in the default path: transaction pooling forbids session state, so a service has to be checked before its `DATABASE_URL` moves
+- [x] Add response compression at the Caddy gateway — zstd and gzip on the API gateway and the web proxy. JSON and Connect envelopes compress to a fraction of their size, and the farmers using this are often on a rural mobile connection where bytes cost time. Caddy skips already-compressed types on its own
 - [ ] Set up CDN for satellite tile imagery and static assets
 - [ ] Configure database read replicas for read-heavy services (satellite, analytics)
-- [ ] Add slow query logging and periodic EXPLAIN analysis
+- [x] Add slow query logging and periodic EXPLAIN analysis — Postgres now preloads `pg_stat_statements` and logs statements over a second, lock waits, temp files and checkpoints. `scripts/slow-queries.sh` ranks by total time rather than mean, because a 2ms query running a million times costs more than a two-second one running twice and is the one worth an index
 
 **Effort:** Medium | **Impact:** High
 
@@ -104,7 +104,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Add Vitest unit tests for Svelte stores and utility functions
 - [ ] Add component tests for reusable UI components (charts, maps, data grids)
 - [ ] Set up visual regression testing (Playwright screenshots or Chromatic)
-- [ ] Add web test coverage to CI pipeline
+- [x] Add web test coverage to CI pipeline — the web suite had no CI job at all, so a broken test only surfaced when someone happened to run it locally. Lint, typecheck and test now run on every push
 - [ ] Create Storybook for the UI component library
 
 **Effort:** Large | **Impact:** High
@@ -141,7 +141,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [ ] Add Terraform/Pulumi for cloud infrastructure (VPC, RDS, EKS/GKE, S3)
 - [x] Add K8s network policies for inter-service communication isolation
 - [x] Configure Horizontal Pod Autoscaler (HPA) for all services
-- [ ] Add Docker BuildKit layer caching in CI for faster builds
+- [x] Add Docker BuildKit layer caching in CI for faster builds — every image build recompiled every layer from scratch. Caches are scoped per service so one image cannot evict another's
 - [ ] Evaluate Istio/Linkerd service mesh for mTLS and traffic management
 
 **Effort:** Large | **Impact:** Medium

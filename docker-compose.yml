@@ -52,6 +52,29 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    # Log anything slower than a second and keep per-statement timings.
+    # Without this the answer to "which query is slow" is a guess; with it,
+    # pg_stat_statements ranks them and the log names the offending call.
+    # One second is deliberately not aggressive: a threshold that fires on
+    # ordinary queries produces a log nobody reads.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.max=10000
+      - -c
+      - pg_stat_statements.track=top
+      - -c
+      - log_min_duration_statement=1000
+      - -c
+      - log_checkpoints=on
+      - -c
+      - log_lock_waits=on
+      - -c
+      - log_temp_files=0
+      - -c
+      - log_autovacuum_min_duration=0
     ports:
       - "5432:5432"
     healthcheck:
@@ -622,6 +645,80 @@ services:
         limits:
           memory: 1G
           cpus: '2.0'
+
+  # Transaction pooling in front of Postgres.
+  #
+  # Every service keeps its own connection pool, and the sum of two dozen of
+  # them is what exhausts max_connections long before the database runs out of
+  # anything else. Services reach this by pointing DATABASE_URL at pgbouncer
+  # instead of postgres; it is not in the default path because transaction
+  # pooling forbids session state (prepared statements, LISTEN, advisory locks
+  # held across statements), so a service has to be checked before it moves.
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.23.1-p2
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-yieldpoint}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-yieldpoint}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: "25"
+      # Without this, transaction pooling breaks any driver that prepares
+      # statements — which is most of them.
+      SERVER_RESET_QUERY: DISCARD ALL
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits,options
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - "6432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+
+  # ── Metric exporters ────────────────────────────────────────────────────────
+  #
+  # Prometheus scraped postgres:5432 and kafka:9092 directly, which serve the
+  # Postgres and Kafka wire protocols rather than metrics — those jobs never
+  # produced a single sample. These translate.
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # sslmode=disable is correct inside the compose network; the exporter
+      # never leaves it.
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-yieldpoint}:${POSTGRES_PASSWORD:-yieldpoint}@postgres:5432/${POSTGRES_DB:-yieldpoint}?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+    ports:
+      - "9187:9187"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    command: ["--kafka.server=kafka:9092"]
+    ports:
+      - "9308:9308"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
   # ── Monitoring ──────────────────────────────────────────────────────────────
 

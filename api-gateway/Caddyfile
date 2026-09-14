@@ -10,6 +10,18 @@
 		level INFO
 	}
 
+	# ── Response compression ───────────────────────────────────────────
+	#
+	# Most of what this gateway returns is JSON or Connect envelopes, which
+	# compress to a fraction of their size — and the farmers using it are often
+	# on a rural mobile connection where bytes cost time, not just bandwidth.
+	#
+	# zstd is offered first for clients that take it and gzip for everything
+	# else. Caddy skips already-compressed types (images, video) on its own, so
+	# there is nothing to exclude here: re-compressing a JPEG spends CPU to make
+	# the file slightly larger.
+	encode zstd gzip
+
 	# ── Security headers ───────────────────────────────────────────────
 	header {
 		X-Content-Type-Options "nosniff"
