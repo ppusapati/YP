@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	serviceName       = "vegetation-index-service"
-	maxPageSize int32 = 100
-	defaultPageSize   = 20
+	serviceName           = "vegetation-index-service"
+	maxPageSize     int32 = 100
+	defaultPageSize       = 20
 )
 
 // Vegetation index event types
@@ -38,6 +38,9 @@ type VegetationIndexService interface {
 	ListVegetationIndices(ctx context.Context, params vimodels.ListVegetationIndicesParams) ([]vimodels.VegetationIndex, int32, error)
 	GetNDVITimeSeries(ctx context.Context, farmID string, fieldID *string, dateFrom, dateTo *time.Time) ([]vimodels.TimeSeriesPoint, string, error)
 	GetFieldHealth(ctx context.Context, farmID string, fieldID *string) (*vimodels.FieldHealthSummary, error)
+	// RecordIndex stores a computed index, dropping scenes too cloudy to be
+	// worth keeping. Returns (nil, nil) when a scene is dropped.
+	RecordIndex(ctx context.Context, vi *vimodels.VegetationIndex) (*vimodels.VegetationIndex, error)
 }
 
 // vegetationIndexService is the concrete implementation of VegetationIndexService.

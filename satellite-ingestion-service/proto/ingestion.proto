@@ -32,6 +32,12 @@ enum SpectralBand {
   SPECTRAL_BAND_RED_EDGE1 = 7;
   SPECTRAL_BAND_RED_EDGE2 = 8;
   SPECTRAL_BAND_RED_EDGE3 = 9;
+  // Per-pixel quality layers, attached automatically by the ingestion service
+  // for providers that publish them. Not reflectance bands: these say which
+  // pixels are cloud, shadow or snow, without which an index is computed over
+  // whatever the weather left behind.
+  SPECTRAL_BAND_SCL = 10;      // Sentinel-2 L2A scene classification
+  SPECTRAL_BAND_QA_PIXEL = 11; // Landsat Collection 2 QA bitmask
 }
 
 message IngestionTask {

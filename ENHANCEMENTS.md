@@ -300,8 +300,8 @@ These build on each other in order. Each step produces inputs the next one needs
 - [x] Replace stubbed trend analysis with the `packages/pipeline` linear regression over the index time series (fetched live from vegetation-index-service)
 - [x] Add field-level phenology extraction (green-up, peak, senescence dates) from NDVI curves (`ANALYSIS_TYPE_PHENOLOGY`)
 - [x] Ingest drone/UAV orthomosaics through the same pipeline with a `source=uav` discriminator (`SATELLITE_PROVIDER_UAV`)
-- [ ] Attach SCL / QA_PIXEL bands during ingestion so masking is automatic rather than caller-supplied
-- [ ] Persist per-scene `cloud_fraction` / `valid_pixel_fraction` on vegetation-index results and drop scenes below a usable threshold
+- [x] Attach SCL / QA_PIXEL bands during ingestion so masking is automatic rather than caller-supplied — ingestion now adds the quality layer its provider publishes at the requested processing level. Sentinel-2 only carries SCL in its L2A product, so asking for one on L1C would fail the download rather than improve the mask; the mapping is pinned by tests
+- [x] Persist per-scene `cloud_fraction` / `valid_pixel_fraction` on vegetation-index results and drop scenes below a usable threshold — both are stored with the index and returned with it, and `RecordIndex` drops a scene with too little clear sky. A gap in the time series is honest; an index computed over cloud lands in it looking exactly like a clear-day reading. Providers report one fraction or the other, so the missing one is derived rather than treated as zero. Note the write path this hangs off had no callers, the same orphaned-insert pattern as `diagnosis_results`
 
 **Effort:** Large | **Impact:** High
 

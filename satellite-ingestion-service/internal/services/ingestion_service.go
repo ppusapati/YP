@@ -58,6 +58,17 @@ func NewIngestionService(d deps.ServiceDeps, repo repositories.IngestionReposito
 }
 
 // RequestIngestion creates a new ingestion task and queues it for processing.
+
+// containsBand reports whether a band was already requested.
+func containsBand(bands []ingestionmodels.SpectralBand, want ingestionmodels.SpectralBand) bool {
+	for _, b := range bands {
+		if b == want {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *ingestionService) RequestIngestion(ctx context.Context, task *ingestionmodels.IngestionTask) (*ingestionmodels.IngestionTask, error) {
 	tenantID := p9context.TenantID(ctx)
 	userID := p9context.UserID(ctx)
@@ -85,6 +96,17 @@ func (s *ingestionService) RequestIngestion(ctx context.Context, task *ingestion
 	}
 	if !task.ProcessingLevel.IsValid() {
 		return nil, errors.BadRequest("INVALID_PROCESSING_LEVEL", "processing level must be one of L1C, L2A, L1TP, L2SP, SR, TOA, UNKNOWN")
+	}
+
+	// Pull down the provider's quality layer alongside the reflectance bands.
+	// Masking used to depend on a caller remembering to ask for SCL or
+	// QA_PIXEL; when they forgot, the index was computed over cloud and
+	// reported as if it were the crop. Attaching it here makes the mask a
+	// property of the scene rather than of the request.
+	if qa := ingestionmodels.QualityBandFor(task.Provider, task.ProcessingLevel); qa != ingestionmodels.SpectralBandUnspecified {
+		if !containsBand(task.Bands, qa) {
+			task.Bands = append(task.Bands, qa)
+		}
 	}
 
 	// Generate a scene ID based on provider and timestamp if not provided

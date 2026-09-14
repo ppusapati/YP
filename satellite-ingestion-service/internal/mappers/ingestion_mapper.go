@@ -101,6 +101,10 @@ func ProtoSpectralBandToDomain(b pb.SpectralBand) ingestionmodels.SpectralBand {
 		return ingestionmodels.SpectralBandRedEdge2
 	case pb.SpectralBand_SPECTRAL_BAND_RED_EDGE3:
 		return ingestionmodels.SpectralBandRedEdge3
+	case pb.SpectralBand_SPECTRAL_BAND_SCL:
+		return ingestionmodels.SpectralBandSCL
+	case pb.SpectralBand_SPECTRAL_BAND_QA_PIXEL:
+		return ingestionmodels.SpectralBandQAPixel
 	default:
 		return ingestionmodels.SpectralBandUnspecified
 	}
@@ -127,6 +131,10 @@ func DomainSpectralBandToProto(b ingestionmodels.SpectralBand) pb.SpectralBand {
 		return pb.SpectralBand_SPECTRAL_BAND_RED_EDGE2
 	case ingestionmodels.SpectralBandRedEdge3:
 		return pb.SpectralBand_SPECTRAL_BAND_RED_EDGE3
+	case ingestionmodels.SpectralBandSCL:
+		return pb.SpectralBand_SPECTRAL_BAND_SCL
+	case ingestionmodels.SpectralBandQAPixel:
+		return pb.SpectralBand_SPECTRAL_BAND_QA_PIXEL
 	default:
 		return pb.SpectralBand_SPECTRAL_BAND_UNSPECIFIED
 	}

@@ -148,21 +148,29 @@ const (
 	SpectralBand_SPECTRAL_BAND_RED_EDGE1   SpectralBand = 7
 	SpectralBand_SPECTRAL_BAND_RED_EDGE2   SpectralBand = 8
 	SpectralBand_SPECTRAL_BAND_RED_EDGE3   SpectralBand = 9
+	// Per-pixel quality layers, attached automatically by the ingestion service
+	// for providers that publish them. Not reflectance bands: these say which
+	// pixels are cloud, shadow or snow, without which an index is computed over
+	// whatever the weather left behind.
+	SpectralBand_SPECTRAL_BAND_SCL      SpectralBand = 10 // Sentinel-2 L2A scene classification
+	SpectralBand_SPECTRAL_BAND_QA_PIXEL SpectralBand = 11 // Landsat Collection 2 QA bitmask
 )
 
 // Enum value maps for SpectralBand.
 var (
 	SpectralBand_name = map[int32]string{
-		0: "SPECTRAL_BAND_UNSPECIFIED",
-		1: "SPECTRAL_BAND_BLUE",
-		2: "SPECTRAL_BAND_GREEN",
-		3: "SPECTRAL_BAND_RED",
-		4: "SPECTRAL_BAND_NIR",
-		5: "SPECTRAL_BAND_SWIR1",
-		6: "SPECTRAL_BAND_SWIR2",
-		7: "SPECTRAL_BAND_RED_EDGE1",
-		8: "SPECTRAL_BAND_RED_EDGE2",
-		9: "SPECTRAL_BAND_RED_EDGE3",
+		0:  "SPECTRAL_BAND_UNSPECIFIED",
+		1:  "SPECTRAL_BAND_BLUE",
+		2:  "SPECTRAL_BAND_GREEN",
+		3:  "SPECTRAL_BAND_RED",
+		4:  "SPECTRAL_BAND_NIR",
+		5:  "SPECTRAL_BAND_SWIR1",
+		6:  "SPECTRAL_BAND_SWIR2",
+		7:  "SPECTRAL_BAND_RED_EDGE1",
+		8:  "SPECTRAL_BAND_RED_EDGE2",
+		9:  "SPECTRAL_BAND_RED_EDGE3",
+		10: "SPECTRAL_BAND_SCL",
+		11: "SPECTRAL_BAND_QA_PIXEL",
 	}
 	SpectralBand_value = map[string]int32{
 		"SPECTRAL_BAND_UNSPECIFIED": 0,
@@ -175,6 +183,8 @@ var (
 		"SPECTRAL_BAND_RED_EDGE1":   7,
 		"SPECTRAL_BAND_RED_EDGE2":   8,
 		"SPECTRAL_BAND_RED_EDGE3":   9,
+		"SPECTRAL_BAND_SCL":         10,
+		"SPECTRAL_BAND_QA_PIXEL":    11,
 	}
 )
 
@@ -1160,7 +1170,7 @@ const file_ingestion_proto_rawDesc = "" +
 	"\x1cINGESTION_STATUS_DOWNLOADING\x10\x02\x12\x1f\n" +
 	"\x1bINGESTION_STATUS_VALIDATING\x10\x03\x12\x1b\n" +
 	"\x17INGESTION_STATUS_STORED\x10\x04\x12\x1b\n" +
-	"\x17INGESTION_STATUS_FAILED\x10\x05*\x95\x02\n" +
+	"\x17INGESTION_STATUS_FAILED\x10\x05*\xc8\x02\n" +
 	"\fSpectralBand\x12\x1d\n" +
 	"\x19SPECTRAL_BAND_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12SPECTRAL_BAND_BLUE\x10\x01\x12\x17\n" +
@@ -1171,7 +1181,10 @@ const file_ingestion_proto_rawDesc = "" +
 	"\x13SPECTRAL_BAND_SWIR2\x10\x06\x12\x1b\n" +
 	"\x17SPECTRAL_BAND_RED_EDGE1\x10\a\x12\x1b\n" +
 	"\x17SPECTRAL_BAND_RED_EDGE2\x10\b\x12\x1b\n" +
-	"\x17SPECTRAL_BAND_RED_EDGE3\x10\t2\xfb\x06\n" +
+	"\x17SPECTRAL_BAND_RED_EDGE3\x10\t\x12\x15\n" +
+	"\x11SPECTRAL_BAND_SCL\x10\n" +
+	"\x12\x1a\n" +
+	"\x16SPECTRAL_BAND_QA_PIXEL\x10\v2\xfb\x06\n" +
 	"\x19SatelliteIngestionService\x12\x8d\x01\n" +
 	"\x10RequestIngestion\x12;.agriculture.satellite.ingestion.v1.RequestIngestionRequest\x1a<.agriculture.satellite.ingestion.v1.RequestIngestionResponse\x12\x8d\x01\n" +
 	"\x10GetIngestionTask\x12;.agriculture.satellite.ingestion.v1.GetIngestionTaskRequest\x1a<.agriculture.satellite.ingestion.v1.GetIngestionTaskResponse\x12\x93\x01\n" +

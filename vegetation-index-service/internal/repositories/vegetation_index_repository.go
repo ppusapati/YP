@@ -237,24 +237,27 @@ func (r *vegetationIndexRepository) InsertVegetationIndex(ctx context.Context, v
 			uuid, tenant_id, farm_uuid, field_uuid, processing_job_uuid,
 			compute_task_uuid, index_type, mean_value, min_value, max_value,
 			std_deviation, median_value, pixel_count, coverage_percent,
+			cloud_fraction, valid_pixel_fraction,
 			raster_s3_key, acquisition_date, computed_at,
 			is_active, created_by, created_at
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7::vegetation_index_type, $8, $9, $10,
 			$11, $12, $13, $14,
-			$15, $16, NOW(),
-			TRUE, $17, NOW()
+			$15, $16,
+			$17, $18, NOW(),
+			TRUE, $19, NOW()
 		)
 		RETURNING id, uuid, tenant_id, farm_uuid, field_uuid,
 			processing_job_uuid, compute_task_uuid, index_type,
 			mean_value, min_value, max_value, std_deviation, median_value,
-			pixel_count, coverage_percent, raster_s3_key,
+			pixel_count, coverage_percent, cloud_fraction, valid_pixel_fraction, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by`,
 		vi.ID, vi.TenantID, vi.FarmUUID, vi.FieldUUID, vi.ProcessingJobUUID,
 		vi.ComputeTaskUUID, string(vi.IndexType), vi.MeanValue, vi.MinValue, vi.MaxValue,
 		vi.StdDeviation, vi.MedianValue, vi.PixelCount, vi.CoveragePercent,
+		vi.CloudFraction, vi.ValidPixelFraction,
 		vi.RasterS3Key, vi.AcquisitionDate, vi.CreatedBy,
 	)
 
@@ -273,7 +276,7 @@ func (r *vegetationIndexRepository) GetVegetationIndexByUUID(ctx context.Context
 		SELECT id, uuid, tenant_id, farm_uuid, field_uuid,
 			processing_job_uuid, compute_task_uuid, index_type,
 			mean_value, min_value, max_value, std_deviation, median_value,
-			pixel_count, coverage_percent, raster_s3_key,
+			pixel_count, coverage_percent, cloud_fraction, valid_pixel_fraction, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by
 		FROM vegetation_indices
@@ -323,7 +326,7 @@ func (r *vegetationIndexRepository) ListVegetationIndices(ctx context.Context, p
 		SELECT id, uuid, tenant_id, farm_uuid, field_uuid,
 			processing_job_uuid, compute_task_uuid, index_type,
 			mean_value, min_value, max_value, std_deviation, median_value,
-			pixel_count, coverage_percent, raster_s3_key,
+			pixel_count, coverage_percent, cloud_fraction, valid_pixel_fraction, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by
 		FROM vegetation_indices
@@ -509,7 +512,7 @@ func scanVegetationIndex(row pgx.Row, vi *vimodels.VegetationIndex) error {
 		&vi.ID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
 		&vi.ProcessingJobUUID, &vi.ComputeTaskUUID, &vi.IndexType,
 		&vi.MeanValue, &vi.MinValue, &vi.MaxValue, &vi.StdDeviation, &vi.MedianValue,
-		&vi.PixelCount, &vi.CoveragePercent, &vi.RasterS3Key,
+		&vi.PixelCount, &vi.CoveragePercent, &vi.CloudFraction, &vi.ValidPixelFraction, &vi.RasterS3Key,
 		&vi.AcquisitionDate, &vi.ComputedAt, &vi.IsActive, &vi.CreatedBy, &vi.CreatedAt,
 		&vi.DeletedAt, &vi.DeletedBy,
 	)
@@ -520,7 +523,7 @@ func scanVegetationIndexFromRows(rows pgx.Rows, vi *vimodels.VegetationIndex) er
 		&vi.ID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
 		&vi.ProcessingJobUUID, &vi.ComputeTaskUUID, &vi.IndexType,
 		&vi.MeanValue, &vi.MinValue, &vi.MaxValue, &vi.StdDeviation, &vi.MedianValue,
-		&vi.PixelCount, &vi.CoveragePercent, &vi.RasterS3Key,
+		&vi.PixelCount, &vi.CoveragePercent, &vi.CloudFraction, &vi.ValidPixelFraction, &vi.RasterS3Key,
 		&vi.AcquisitionDate, &vi.ComputedAt, &vi.IsActive, &vi.CreatedBy, &vi.CreatedAt,
 		&vi.DeletedAt, &vi.DeletedBy,
 	)

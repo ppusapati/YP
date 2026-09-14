@@ -163,11 +163,15 @@ type VegetationIndex struct {
 	PixelCount      int64                  `protobuf:"varint,12,opt,name=pixel_count,json=pixelCount,proto3" json:"pixel_count,omitempty"`
 	CoveragePercent float64                `protobuf:"fixed64,13,opt,name=coverage_percent,json=coveragePercent,proto3" json:"coverage_percent,omitempty"`
 	RasterS3Key     string                 `protobuf:"bytes,14,opt,name=raster_s3_key,json=rasterS3Key,proto3" json:"raster_s3_key,omitempty"`
-	AcquisitionDate *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=acquisition_date,json=acquisitionDate,proto3" json:"acquisition_date,omitempty"`
-	ComputedAt      *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=computed_at,json=computedAt,proto3" json:"computed_at,omitempty"`
-	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Scene quality. An index computed over cloud is not wrong so much as
+	// meaningless, and these are what let a reader tell that from a clear day.
+	CloudFraction      float64                `protobuf:"fixed64,18,opt,name=cloud_fraction,json=cloudFraction,proto3" json:"cloud_fraction,omitempty"`                  // share masked as cloud, shadow or snow (0..1)
+	ValidPixelFraction float64                `protobuf:"fixed64,19,opt,name=valid_pixel_fraction,json=validPixelFraction,proto3" json:"valid_pixel_fraction,omitempty"` // share that survived masking (0..1)
+	AcquisitionDate    *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=acquisition_date,json=acquisitionDate,proto3" json:"acquisition_date,omitempty"`
+	ComputedAt         *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=computed_at,json=computedAt,proto3" json:"computed_at,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *VegetationIndex) Reset() {
@@ -296,6 +300,20 @@ func (x *VegetationIndex) GetRasterS3Key() string {
 		return x.RasterS3Key
 	}
 	return ""
+}
+
+func (x *VegetationIndex) GetCloudFraction() float64 {
+	if x != nil {
+		return x.CloudFraction
+	}
+	return 0
+}
+
+func (x *VegetationIndex) GetValidPixelFraction() float64 {
+	if x != nil {
+		return x.ValidPixelFraction
+	}
+	return 0
 }
 
 func (x *VegetationIndex) GetAcquisitionDate() *timestamppb.Timestamp {
@@ -1143,7 +1161,7 @@ var File_vegetation_index_proto protoreflect.FileDescriptor
 
 const file_vegetation_index_proto_rawDesc = "" +
 	"\n" +
-	"\x16vegetation_index.proto\x12#agriculture.satellite.vegetation.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc7\x05\n" +
+	"\x16vegetation_index.proto\x12#agriculture.satellite.vegetation.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x06\n" +
 	"\x0fVegetationIndex\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
@@ -1162,7 +1180,9 @@ const file_vegetation_index_proto_rawDesc = "" +
 	"\vpixel_count\x18\f \x01(\x03R\n" +
 	"pixelCount\x12)\n" +
 	"\x10coverage_percent\x18\r \x01(\x01R\x0fcoveragePercent\x12\"\n" +
-	"\rraster_s3_key\x18\x0e \x01(\tR\vrasterS3Key\x12E\n" +
+	"\rraster_s3_key\x18\x0e \x01(\tR\vrasterS3Key\x12%\n" +
+	"\x0ecloud_fraction\x18\x12 \x01(\x01R\rcloudFraction\x120\n" +
+	"\x14valid_pixel_fraction\x18\x13 \x01(\x01R\x12validPixelFraction\x12E\n" +
 	"\x10acquisition_date\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x0facquisitionDate\x12;\n" +
 	"\vcomputed_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"computedAt\x129\n" +

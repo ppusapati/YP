@@ -99,14 +99,42 @@ const (
 	SpectralBandRedEdge1    SpectralBand = "RED_EDGE1"
 	SpectralBandRedEdge2    SpectralBand = "RED_EDGE2"
 	SpectralBandRedEdge3    SpectralBand = "RED_EDGE3"
+	// Per-pixel quality layers. These are not reflectance bands but the masks
+	// that say which pixels are cloud, shadow or snow — without one, an index
+	// is computed over whatever the weather left behind and reported as if it
+	// were the crop.
+	SpectralBandSCL     SpectralBand = "SCL"      // Sentinel-2 L2A scene classification
+	SpectralBandQAPixel SpectralBand = "QA_PIXEL" // Landsat Collection 2 QA bitmask
 )
+
+// QualityBandFor returns the per-pixel quality layer a provider publishes at
+// the given processing level, or empty when it publishes none.
+//
+// Sentinel-2 only carries SCL in its L2A (surface reflectance) product; the
+// L1C top-of-atmosphere product has no scene classification, so asking for one
+// would fail the download rather than improve the mask.
+func QualityBandFor(provider SatelliteProvider, level ProcessingLevel) SpectralBand {
+	switch provider {
+	case SatelliteProviderSentinel2:
+		if level == ProcessingLevelL2A {
+			return SpectralBandSCL
+		}
+	case SatelliteProviderLandsat:
+		// QA_PIXEL ships with both Collection 2 levels.
+		if level == ProcessingLevelL1TP || level == ProcessingLevelL2SP || level == ProcessingLevelSR {
+			return SpectralBandQAPixel
+		}
+	}
+	return SpectralBandUnspecified
+}
 
 // IsValid checks if the spectral band is a valid value.
 func (sb SpectralBand) IsValid() bool {
 	switch sb {
 	case SpectralBandBlue, SpectralBandGreen, SpectralBandRed, SpectralBandNIR,
 		SpectralBandSWIR1, SpectralBandSWIR2,
-		SpectralBandRedEdge1, SpectralBandRedEdge2, SpectralBandRedEdge3:
+		SpectralBandRedEdge1, SpectralBandRedEdge2, SpectralBandRedEdge3,
+		SpectralBandSCL, SpectralBandQAPixel:
 		return true
 	default:
 		return false
