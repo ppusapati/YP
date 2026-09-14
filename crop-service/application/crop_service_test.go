@@ -11,20 +11,18 @@ import (
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
+	"p9e.in/samavaya/packages/testutil"
 
 	"p9e.in/samavaya/agriculture/crop-service/internal/domain"
 	"p9e.in/samavaya/agriculture/crop-service/internal/ports/outbound"
 )
 
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
+// nopLogger aliases the shared test logger. Each service package used to
+// define its own, and all of them broke at once when p9log.Logger gained
+// Debug/Info/Warn/Error — silently, because a _test.go file that does not
+// compile is a test suite that does not run.
+type nopLogger = testutil.NopLogger
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
@@ -49,9 +47,9 @@ func (m *mockEventPublisher) Publish(_ context.Context, topic, key string, paylo
 // ---------------------------------------------------------------------------
 
 type mockCropRepo struct {
-	crops        map[string]*domain.Crop         // keyed by UUID
+	crops        map[string]*domain.Crop          // keyed by UUID
 	names        map[string]bool                  // tenantID+"/"+name -> exists
-	varieties    map[string][]*domain.CropVariety  // keyed by crop ID
+	varieties    map[string][]*domain.CropVariety // keyed by crop ID
 	growthStages map[string][]*domain.CropGrowthStage
 	requirements map[string]*domain.CropRequirements
 	recs         []*domain.CropRecommendation
@@ -495,7 +493,7 @@ func TestListVarieties_HappyPath(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-		repo.varieties["crop-uuid-001"] = []*domain.CropVariety{{Name: "Basmati"}}
+	repo.varieties["crop-uuid-001"] = []*domain.CropVariety{{Name: "Basmati"}}
 
 	varieties, total, err := svc.ListVarieties(ctx, "crop-uuid-001", "", 0, 0)
 	require.NoError(t, err)
@@ -522,7 +520,7 @@ func TestGetGrowthStages_HappyPath(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-		repo.growthStages["crop-uuid-001"] = []*domain.CropGrowthStage{{Name: "Germination"}}
+	repo.growthStages["crop-uuid-001"] = []*domain.CropGrowthStage{{Name: "Germination"}}
 
 	stages, err := svc.GetGrowthStages(ctx, "crop-uuid-001", "")
 	require.NoError(t, err)
@@ -549,7 +547,7 @@ func TestGetCropRequirements_HappyPath(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{OptimalTempMin: 20, OptimalTempMax: 35}
+	repo.requirements["crop-uuid-001"] = &domain.CropRequirements{OptimalTempMin: 20, OptimalTempMax: 35}
 
 	req, err := svc.GetCropRequirements(ctx, "crop-uuid-001", "")
 	require.NoError(t, err)
@@ -575,12 +573,12 @@ func TestGenerateRecommendation_HappyPath(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-	
+
 	input := &domain.RecommendationInput{
 		CropID:             "crop-uuid-001",
 		TenantID:           "tenant-1",
 		RecommendationType: "irrigation",
-		CurrentTemperature:  30,
+		CurrentTemperature: 30,
 	}
 
 	rec, err := svc.GenerateRecommendation(ctx, input)
@@ -633,7 +631,7 @@ func TestGenerateRecommendation_WithRequirements(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
+	repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
 		OptimalTempMin:     20,
 		OptimalTempMax:     35,
 		OptimalHumidityMin: 60,
@@ -665,7 +663,7 @@ func TestGenerateRecommendation_WarningConditions(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
+	repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
 		OptimalTempMin: 20,
 		OptimalTempMax: 35,
 	}
@@ -689,7 +687,7 @@ func TestGenerateRecommendation_CriticalConditions(t *testing.T) {
 
 	repo.crops["crop-uuid-001"] = &domain.Crop{TenantID: "tenant-1", Name: "Rice", ScientificName: "Oryza sativa"}
 	repo.crops["crop-uuid-001"].ID = "crop-uuid-001"
-		repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
+	repo.requirements["crop-uuid-001"] = &domain.CropRequirements{
 		OptimalTempMin: 20,
 		OptimalTempMax: 35,
 	}

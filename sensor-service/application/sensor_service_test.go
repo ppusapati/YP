@@ -12,20 +12,18 @@ import (
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
+	"p9e.in/samavaya/packages/testutil"
 
 	"p9e.in/samavaya/agriculture/sensor-service/internal/domain"
 	"p9e.in/samavaya/agriculture/sensor-service/internal/ports/outbound"
 )
 
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
+// nopLogger aliases the shared test logger. Each service package used to
+// define its own, and all of them broke at once when p9log.Logger gained
+// Debug/Info/Warn/Error — silently, because a _test.go file that does not
+// compile is a test suite that does not run.
+type nopLogger = testutil.NopLogger
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
@@ -74,12 +72,12 @@ func (m *mockFarmClient) FarmExists(_ context.Context, uuid, _ string) (bool, er
 // ---------------------------------------------------------------------------
 
 type mockSensorRepo struct {
-	sensors      map[string]*domain.Sensor        // keyed by UUID
-	deviceIndex  map[string]*domain.Sensor        // keyed by tenantID+"/"+deviceID
-	readings     map[string]*domain.SensorReading  // keyed by sensorID (latest)
-	alerts       map[string]*domain.SensorAlert    // keyed by UUID
-	alertRules   map[string][]domain.SensorAlert   // keyed by sensorID (active rules)
-	networks     map[string]*domain.SensorNetwork  // keyed by UUID or farmID
+	sensors      map[string]*domain.Sensor            // keyed by UUID
+	deviceIndex  map[string]*domain.Sensor            // keyed by tenantID+"/"+deviceID
+	readings     map[string]*domain.SensorReading     // keyed by sensorID (latest)
+	alerts       map[string]*domain.SensorAlert       // keyed by UUID
+	alertRules   map[string][]domain.SensorAlert      // keyed by sensorID (active rules)
+	networks     map[string]*domain.SensorNetwork     // keyed by UUID or farmID
 	calibrations map[string]*domain.SensorCalibration // keyed by sensorID (latest)
 }
 

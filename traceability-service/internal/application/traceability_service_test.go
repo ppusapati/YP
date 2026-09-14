@@ -12,19 +12,17 @@ import (
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
+	"p9e.in/samavaya/packages/testutil"
 
 	"p9e.in/samavaya/agriculture/traceability-service/internal/domain"
 )
 
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
+// nopLogger aliases the shared test logger. Each service package used to
+// define its own, and all of them broke at once when p9log.Logger gained
+// Debug/Info/Warn/Error — silently, because a _test.go file that does not
+// compile is a test suite that does not run.
+type nopLogger = testutil.NopLogger
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
@@ -87,15 +85,15 @@ func (m *mockCropClient) CropExists(_ context.Context, uuid, _ string) (bool, er
 // ---------------------------------------------------------------------------
 
 type mockTraceabilityRepo struct {
-	records       map[string]*domain.TraceabilityRecord
-	events        map[string][]domain.SupplyChainEvent // keyed by recordID
+	records        map[string]*domain.TraceabilityRecord
+	events         map[string][]domain.SupplyChainEvent // keyed by recordID
 	certifications map[string]*domain.Certification
-	certsByRecord map[string][]domain.Certification
-	batches       map[string]*domain.BatchRecord
-	qrCodes       map[string]*domain.QRCodeRecord // keyed by ID
-	qrByData      map[string]*domain.QRCodeRecord // keyed by QRData
-	reports       map[string]*domain.ComplianceReport
-	checkpoints   map[string]*domain.QualityCheckpoint
+	certsByRecord  map[string][]domain.Certification
+	batches        map[string]*domain.BatchRecord
+	qrCodes        map[string]*domain.QRCodeRecord // keyed by ID
+	qrByData       map[string]*domain.QRCodeRecord // keyed by QRData
+	reports        map[string]*domain.ComplianceReport
+	checkpoints    map[string]*domain.QualityCheckpoint
 }
 
 func newMockTraceabilityRepo() *mockTraceabilityRepo {

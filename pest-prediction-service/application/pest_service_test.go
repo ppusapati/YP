@@ -11,28 +11,19 @@ import (
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
+	"p9e.in/samavaya/packages/testutil"
 
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ai"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/domain"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/outbound"
 )
 
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
-
-// p9log.Logger grew these after this file was written, which is why the suite
-// stopped compiling — and therefore stopped running.
-func (nopLogger) Debug(_ ...interface{}) {}
-func (nopLogger) Info(_ ...interface{})  {}
-func (nopLogger) Warn(_ ...interface{})  {}
-func (nopLogger) Error(_ ...interface{}) {}
+// nopLogger aliases the shared test logger. Each service package used to
+// define its own, and all of them broke at once when p9log.Logger gained
+// Debug/Info/Warn/Error — silently, because a _test.go file that does not
+// compile is a test suite that does not run.
+type nopLogger = testutil.NopLogger
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher

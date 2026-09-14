@@ -28,133 +28,133 @@ import (
 	"p9e.in/samavaya/packages/ulid"
 
 	// ── Generated ConnectRPC packages (named) ───────────────────────────────
-	farmv1connect           "p9e.in/samavaya/agriculture/farm-service/api/v1/farmv1connect"
-	fieldv1connect          "p9e.in/samavaya/agriculture/field-service/api/v1/fieldv1connect"
-	cropv1connect           "p9e.in/samavaya/agriculture/crop-service/api/v1/cropv1connect"
-	sensorv1connect         "p9e.in/samavaya/agriculture/sensor-service/api/v1/sensorv1connect"
-	soilv1connect           "p9e.in/samavaya/agriculture/soil-service/api/v1/soilv1connect"
-	irrigationv1connect     "p9e.in/samavaya/agriculture/irrigation-service/api/v1/irrigationv1connect"
-	yieldv1connect          "p9e.in/samavaya/agriculture/yield-service/api/v1/yieldv1connect"
-	satellitev1connect      "p9e.in/samavaya/agriculture/satellite-service/api/v1/satellitev1connect"
+	commercev1connect "p9e.in/samavaya/agriculture/commerce-service/api/v1/commercev1connect"
+	cropv1connect "p9e.in/samavaya/agriculture/crop-service/api/v1/cropv1connect"
+	farmv1connect "p9e.in/samavaya/agriculture/farm-service/api/v1/farmv1connect"
+	fieldv1connect "p9e.in/samavaya/agriculture/field-service/api/v1/fieldv1connect"
+	irrigationv1connect "p9e.in/samavaya/agriculture/irrigation-service/api/v1/irrigationv1connect"
 	pestpredictionv1connect "p9e.in/samavaya/agriculture/pest-prediction-service/api/v1/pestpredictionv1connect"
 	plantdiagnosisv1connect "p9e.in/samavaya/agriculture/plant-diagnosis-service/api/v1/plantdiagnosisv1connect"
-	traceabilityv1connect   "p9e.in/samavaya/agriculture/traceability-service/api/v1/traceabilityv1connect"
-	commercev1connect       "p9e.in/samavaya/agriculture/commerce-service/api/v1/commercev1connect"
+	satellitev1connect "p9e.in/samavaya/agriculture/satellite-service/api/v1/satellitev1connect"
+	sensorv1connect "p9e.in/samavaya/agriculture/sensor-service/api/v1/sensorv1connect"
+	soilv1connect "p9e.in/samavaya/agriculture/soil-service/api/v1/soilv1connect"
+	traceabilityv1connect "p9e.in/samavaya/agriculture/traceability-service/api/v1/traceabilityv1connect"
+	yieldv1connect "p9e.in/samavaya/agriculture/yield-service/api/v1/yieldv1connect"
 
 	// ── Generated ConnectRPC packages (aliased — all named v1connect) ───────
-	alertv1connect         "p9e.in/samavaya/agriculture/alert-service/api/v1/v1connect"
-	analyticsv1connect     "p9e.in/samavaya/agriculture/analytics-service/api/v1/v1connect"
-	prescriptionv1connect  "p9e.in/samavaya/agriculture/prescription-service/api/v1/v1connect"
-	agronomyv1connect      "p9e.in/samavaya/agriculture/agronomy-service/api/v1/v1connect"
-	taskv1connect          "p9e.in/samavaya/agriculture/task-service/api/v1/v1connect"
-	vegetationv1connect    "p9e.in/samavaya/agriculture/vegetation-index-service/api/v1/v1connect"
-	satanalyticsv1connect  "p9e.in/samavaya/agriculture/satellite-analytics-service/api/v1/v1connect"
-	sattilev1connect       "p9e.in/samavaya/agriculture/satellite-tile-service/api/v1/v1connect"
-	satingestionv1connect  "p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1/v1connect"
+	agronomyv1connect "p9e.in/samavaya/agriculture/agronomy-service/api/v1/v1connect"
+	alertv1connect "p9e.in/samavaya/agriculture/alert-service/api/v1/v1connect"
+	analyticsv1connect "p9e.in/samavaya/agriculture/analytics-service/api/v1/v1connect"
+	prescriptionv1connect "p9e.in/samavaya/agriculture/prescription-service/api/v1/v1connect"
+	satanalyticsv1connect "p9e.in/samavaya/agriculture/satellite-analytics-service/api/v1/v1connect"
+	satingestionv1connect "p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1/v1connect"
 	satprocessingv1connect "p9e.in/samavaya/agriculture/satellite-processing-service/api/v1/v1connect"
+	sattilev1connect "p9e.in/samavaya/agriculture/satellite-tile-service/api/v1/v1connect"
+	taskv1connect "p9e.in/samavaya/agriculture/task-service/api/v1/v1connect"
+	vegetationv1connect "p9e.in/samavaya/agriculture/vegetation-index-service/api/v1/v1connect"
 
 	// ── Hexagonal service adapters — farm ────────────────────────────────────
-	farmgrpc     "p9e.in/samavaya/agriculture/farm-service/adapters/inbound/grpc"
+	farmgrpc "p9e.in/samavaya/agriculture/farm-service/adapters/inbound/grpc"
 	farmpostgres "p9e.in/samavaya/agriculture/farm-service/adapters/outbound/postgres"
-	farmapp      "p9e.in/samavaya/agriculture/farm-service/application"
+	farmapp "p9e.in/samavaya/agriculture/farm-service/application"
 
 	// ── Hexagonal service adapters — field ───────────────────────────────────
-	fieldgrpc     "p9e.in/samavaya/agriculture/field-service/adapters/inbound/grpc"
-	fieldclients  "p9e.in/samavaya/agriculture/field-service/adapters/outbound/clients"
+	fieldgrpc "p9e.in/samavaya/agriculture/field-service/adapters/inbound/grpc"
+	fieldclients "p9e.in/samavaya/agriculture/field-service/adapters/outbound/clients"
 	fieldpostgres "p9e.in/samavaya/agriculture/field-service/adapters/outbound/postgres"
-	fieldapp      "p9e.in/samavaya/agriculture/field-service/application"
+	fieldapp "p9e.in/samavaya/agriculture/field-service/application"
 
 	// ── Hexagonal service adapters — crop ────────────────────────────────────
-	cropgrpc     "p9e.in/samavaya/agriculture/crop-service/adapters/inbound/grpc"
+	cropgrpc "p9e.in/samavaya/agriculture/crop-service/adapters/inbound/grpc"
 	croppostgres "p9e.in/samavaya/agriculture/crop-service/adapters/outbound/postgres"
-	cropapp      "p9e.in/samavaya/agriculture/crop-service/application"
+	cropapp "p9e.in/samavaya/agriculture/crop-service/application"
 
 	// ── Hexagonal service adapters — sensor ──────────────────────────────────
-	sensorgrpc     "p9e.in/samavaya/agriculture/sensor-service/adapters/inbound/grpc"
-	sensorclients  "p9e.in/samavaya/agriculture/sensor-service/adapters/outbound/clients"
+	sensorgrpc "p9e.in/samavaya/agriculture/sensor-service/adapters/inbound/grpc"
+	sensorclients "p9e.in/samavaya/agriculture/sensor-service/adapters/outbound/clients"
 	sensorpostgres "p9e.in/samavaya/agriculture/sensor-service/adapters/outbound/postgres"
-	sensorapp      "p9e.in/samavaya/agriculture/sensor-service/application"
+	sensorapp "p9e.in/samavaya/agriculture/sensor-service/application"
 
 	// ── Hexagonal service adapters — soil ────────────────────────────────────
-	soilgrpc     "p9e.in/samavaya/agriculture/soil-service/adapters/inbound/grpc"
-	soilclients  "p9e.in/samavaya/agriculture/soil-service/adapters/outbound/clients"
+	soilgrpc "p9e.in/samavaya/agriculture/soil-service/adapters/inbound/grpc"
+	soilclients "p9e.in/samavaya/agriculture/soil-service/adapters/outbound/clients"
 	soilpostgres "p9e.in/samavaya/agriculture/soil-service/adapters/outbound/postgres"
-	soilapp      "p9e.in/samavaya/agriculture/soil-service/application"
+	soilapp "p9e.in/samavaya/agriculture/soil-service/application"
 
 	// ── Hexagonal service adapters — irrigation ─────────────────────────────
-	irrigationgrpc     "p9e.in/samavaya/agriculture/irrigation-service/adapters/inbound/grpc"
-	irrigationclients  "p9e.in/samavaya/agriculture/irrigation-service/adapters/outbound/clients"
+	irrigationgrpc "p9e.in/samavaya/agriculture/irrigation-service/adapters/inbound/grpc"
+	irrigationclients "p9e.in/samavaya/agriculture/irrigation-service/adapters/outbound/clients"
 	irrigationpostgres "p9e.in/samavaya/agriculture/irrigation-service/adapters/outbound/postgres"
-	irrigationapp      "p9e.in/samavaya/agriculture/irrigation-service/application"
+	irrigationapp "p9e.in/samavaya/agriculture/irrigation-service/application"
 
 	// ── Hexagonal service adapters — yield ───────────────────────────────────
-	yieldgrpc     "p9e.in/samavaya/agriculture/yield-service/adapters/inbound/grpc"
-	yieldclients  "p9e.in/samavaya/agriculture/yield-service/adapters/outbound/clients"
+	yieldgrpc "p9e.in/samavaya/agriculture/yield-service/adapters/inbound/grpc"
+	yieldclients "p9e.in/samavaya/agriculture/yield-service/adapters/outbound/clients"
 	yieldpostgres "p9e.in/samavaya/agriculture/yield-service/adapters/outbound/postgres"
-	yieldapp      "p9e.in/samavaya/agriculture/yield-service/application"
+	yieldapp "p9e.in/samavaya/agriculture/yield-service/application"
 
 	// ── Hexagonal service adapters — satellite ──────────────────────────────
-	satellitegrpc     "p9e.in/samavaya/agriculture/satellite-service/adapters/inbound/grpc"
-	satelliteclients  "p9e.in/samavaya/agriculture/satellite-service/adapters/outbound/clients"
+	satellitegrpc "p9e.in/samavaya/agriculture/satellite-service/adapters/inbound/grpc"
+	satelliteclients "p9e.in/samavaya/agriculture/satellite-service/adapters/outbound/clients"
 	satellitepostgres "p9e.in/samavaya/agriculture/satellite-service/adapters/outbound/postgres"
-	satelliteapp      "p9e.in/samavaya/agriculture/satellite-service/application"
+	satelliteapp "p9e.in/samavaya/agriculture/satellite-service/application"
 
 	// ── Hexagonal service adapters — pest-prediction ────────────────────────
-	pestgrpc     "p9e.in/samavaya/agriculture/pest-prediction-service/adapters/inbound/grpc"
-	pestclients  "p9e.in/samavaya/agriculture/pest-prediction-service/adapters/outbound/clients"
+	pestgrpc "p9e.in/samavaya/agriculture/pest-prediction-service/adapters/inbound/grpc"
+	pestclients "p9e.in/samavaya/agriculture/pest-prediction-service/adapters/outbound/clients"
 	pestpostgres "p9e.in/samavaya/agriculture/pest-prediction-service/adapters/outbound/postgres"
-	pestapp      "p9e.in/samavaya/agriculture/pest-prediction-service/application"
+	pestapp "p9e.in/samavaya/agriculture/pest-prediction-service/application"
 
 	// ── Hexagonal service adapters — plant-diagnosis ────────────────────────
-	diagnosisgrpc     "p9e.in/samavaya/agriculture/plant-diagnosis-service/adapters/inbound/grpc"
-	diagnosisclients  "p9e.in/samavaya/agriculture/plant-diagnosis-service/adapters/outbound/clients"
+	diagnosisgrpc "p9e.in/samavaya/agriculture/plant-diagnosis-service/adapters/inbound/grpc"
+	diagnosisclients "p9e.in/samavaya/agriculture/plant-diagnosis-service/adapters/outbound/clients"
 	diagnosispostgres "p9e.in/samavaya/agriculture/plant-diagnosis-service/adapters/outbound/postgres"
-	diagnosisapp      "p9e.in/samavaya/agriculture/plant-diagnosis-service/application"
+	diagnosisapp "p9e.in/samavaya/agriculture/plant-diagnosis-service/application"
 
 	// ── Hexagonal service adapters — traceability ───────────────────────────
-	traceabilitygrpc     "p9e.in/samavaya/agriculture/traceability-service/adapters/inbound/grpc"
-	traceabilityclients  "p9e.in/samavaya/agriculture/traceability-service/adapters/outbound/clients"
+	traceabilitygrpc "p9e.in/samavaya/agriculture/traceability-service/adapters/inbound/grpc"
+	traceabilityclients "p9e.in/samavaya/agriculture/traceability-service/adapters/outbound/clients"
 	traceabilitypostgres "p9e.in/samavaya/agriculture/traceability-service/adapters/outbound/postgres"
-	traceabilityapp      "p9e.in/samavaya/agriculture/traceability-service/application"
+	traceabilityapp "p9e.in/samavaya/agriculture/traceability-service/application"
 
 	// ── Hexagonal service adapters — commerce ───────────────────────────────
-	commercegrpc     "p9e.in/samavaya/agriculture/commerce-service/adapters/inbound/grpc"
+	commercegrpc "p9e.in/samavaya/agriculture/commerce-service/adapters/inbound/grpc"
 	commercepostgres "p9e.in/samavaya/agriculture/commerce-service/adapters/outbound/postgres"
-	commerceapp      "p9e.in/samavaya/agriculture/commerce-service/application"
+	commerceapp "p9e.in/samavaya/agriculture/commerce-service/application"
 
 	// ── Deps-based services — task ──────────────────────────────────────────
 	taskhandlers "p9e.in/samavaya/agriculture/task-service/handlers"
-	taskrepos    "p9e.in/samavaya/agriculture/task-service/repositories"
+	taskrepos "p9e.in/samavaya/agriculture/task-service/repositories"
 	taskservices "p9e.in/samavaya/agriculture/task-service/services"
 
 	// ── Deps-based services — agronomy ──────────────────────────────────────
 	agronomyhandlers "p9e.in/samavaya/agriculture/agronomy-service/handlers"
-	agronomyrepos    "p9e.in/samavaya/agriculture/agronomy-service/repositories"
+	agronomyrepos "p9e.in/samavaya/agriculture/agronomy-service/repositories"
 	agronomyservices "p9e.in/samavaya/agriculture/agronomy-service/services"
 
 	// ── Deps-based services — vegetation-index ──────────────────────────────
 	vegetationhandlers "p9e.in/samavaya/agriculture/vegetation-index-service/handlers"
-	vegetationrepos    "p9e.in/samavaya/agriculture/vegetation-index-service/repositories"
+	vegetationrepos "p9e.in/samavaya/agriculture/vegetation-index-service/repositories"
 	vegetationservices "p9e.in/samavaya/agriculture/vegetation-index-service/services"
 
 	// ── Deps-based services — satellite-analytics ───────────────────────────
 	satanalyticshandlers "p9e.in/samavaya/agriculture/satellite-analytics-service/handlers"
-	satanalyticsrepos    "p9e.in/samavaya/agriculture/satellite-analytics-service/repositories"
+	satanalyticsrepos "p9e.in/samavaya/agriculture/satellite-analytics-service/repositories"
 	satanalyticsservices "p9e.in/samavaya/agriculture/satellite-analytics-service/services"
 
 	// ── Deps-based services — satellite-tile ────────────────────────────────
 	sattilehandlers "p9e.in/samavaya/agriculture/satellite-tile-service/handlers"
-	sattilerepos    "p9e.in/samavaya/agriculture/satellite-tile-service/repositories"
+	sattilerepos "p9e.in/samavaya/agriculture/satellite-tile-service/repositories"
 	sattileservices "p9e.in/samavaya/agriculture/satellite-tile-service/services"
 
 	// ── Deps-based services — satellite-ingestion ───────────────────────────
 	satingestionhandlers "p9e.in/samavaya/agriculture/satellite-ingestion-service/handlers"
-	satingestionrepos    "p9e.in/samavaya/agriculture/satellite-ingestion-service/repositories"
+	satingestionrepos "p9e.in/samavaya/agriculture/satellite-ingestion-service/repositories"
 	satingestionservices "p9e.in/samavaya/agriculture/satellite-ingestion-service/services"
 
 	// ── Deps-based services — satellite-processing ──────────────────────────
 	satprocessinghandlers "p9e.in/samavaya/agriculture/satellite-processing-service/handlers"
-	satprocessingrepos    "p9e.in/samavaya/agriculture/satellite-processing-service/repositories"
+	satprocessingrepos "p9e.in/samavaya/agriculture/satellite-processing-service/repositories"
 	satprocessingservices "p9e.in/samavaya/agriculture/satellite-processing-service/services"
 
 	// ── Stateless services — alert ──────────────────────────────────────────
@@ -408,7 +408,17 @@ func registerPestPredictionModule(mux *http.ServeMux, infra *sharedInfra) {
 		clientOpt,
 	)
 
-	svc := pestapp.NewPestService(repo, outboxPub, fieldClient, sensorClient, farmClient, infra.pool, infra.logger, nil)
+	// Both optional dependencies are nil here, and deliberately so.
+	//
+	// The AI gateway is a separate process the monolith does not manage, and
+	// the monolith registers no weather module — so there is nothing at
+	// infra.baseURL to point a weather client at. With neither, pest risk is
+	// scored by the local rules against whatever weather the caller supplied,
+	// which is the documented fallback rather than a failure.
+	svc := pestapp.NewPestService(
+		repo, outboxPub, fieldClient, sensorClient, farmClient,
+		infra.pool, infra.logger, nil, nil,
+	)
 	handler := pestgrpc.NewPestHandler(svc, infra.logger)
 
 	path, h := pestpredictionv1connect.NewPestPredictionServiceHandler(handler,

@@ -13,32 +13,30 @@ import (
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
+	"p9e.in/samavaya/packages/testutil"
 
 	analyticsmodels "p9e.in/samavaya/agriculture/satellite-analytics-service/internal/models"
 	"p9e.in/samavaya/agriculture/satellite-analytics-service/repositories"
 )
 
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
+// nopLogger aliases the shared test logger. Each service package used to
+// define its own, and all of them broke at once when p9log.Logger gained
+// Debug/Info/Warn/Error — silently, because a _test.go file that does not
+// compile is a test suite that does not run.
+type nopLogger = testutil.NopLogger
 
 // ---------------------------------------------------------------------------
 // Mock: AnalyticsRepository
 // ---------------------------------------------------------------------------
 
 type mockAnalyticsRepo struct {
-	stressAlerts      map[string]*analyticsmodels.StressAlert          // keyed by UUID
-	alertsByJob       map[string][]analyticsmodels.StressAlert         // keyed by processingJobID
-	temporalAnalyses  map[string]*analyticsmodels.TemporalAnalysis     // keyed by UUID
-	latestAnalysis    map[string]*analyticsmodels.TemporalAnalysis     // keyed by tenantID/farmID/fieldID
-	activeAlertCount  map[string]int32                                 // keyed by tenantID/farmID/fieldID
-	dominantStress    map[string]*analyticsmodels.StressType           // keyed by tenantID/farmID/fieldID
+	stressAlerts     map[string]*analyticsmodels.StressAlert      // keyed by UUID
+	alertsByJob      map[string][]analyticsmodels.StressAlert     // keyed by processingJobID
+	temporalAnalyses map[string]*analyticsmodels.TemporalAnalysis // keyed by UUID
+	latestAnalysis   map[string]*analyticsmodels.TemporalAnalysis // keyed by tenantID/farmID/fieldID
+	activeAlertCount map[string]int32                             // keyed by tenantID/farmID/fieldID
+	dominantStress   map[string]*analyticsmodels.StressType       // keyed by tenantID/farmID/fieldID
 }
 
 func newMockAnalyticsRepo() *mockAnalyticsRepo {
