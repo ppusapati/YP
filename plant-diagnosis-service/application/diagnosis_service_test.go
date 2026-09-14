@@ -445,11 +445,14 @@ func TestGetTreatmentPlan_ExistingPlan(t *testing.T) {
 	assert.Equal(t, "Existing Plan", plan.Title)
 }
 
-func TestGetTreatmentPlan_GeneratesSyntheticPlan(t *testing.T) {
+func TestGetTreatmentPlan_RefusesToInventOne(t *testing.T) {
+	// This used to build a canned three-step plan — "Apply recommended
+	// treatment", product "Pending analysis", cost "TBD" — persist it, and
+	// return it as a created plan. A treatment plan is advice about what to
+	// put on a crop, so inventing one is worse than having none.
 	repo, _, svc := newService()
 	ctx := testContext("tenant-1", "user-1")
 
-	// Diagnosis exists but no treatment plan.
 	repo.requests["diag-001"] = &domain.DiagnosisRequest{
 		ID:       "diag-001",
 		TenantID: "tenant-1",
@@ -457,10 +460,11 @@ func TestGetTreatmentPlan_GeneratesSyntheticPlan(t *testing.T) {
 	}
 
 	plan, err := svc.GetTreatmentPlan(ctx, "diag-001")
-	require.NoError(t, err)
-	assert.Equal(t, "Preliminary Treatment Plan", plan.Title)
-	assert.Equal(t, "treatment-plan-001", plan.ID)
-	assert.Equal(t, "diag-001", plan.DiagnosisID)
+	require.Error(t, err, "a plan was returned without anything deriving it")
+	assert.Nil(t, plan)
+	// And nothing was written: a fabricated plan in the database is
+	// indistinguishable from a real one later.
+	assert.Empty(t, repo.treatmentPlans)
 }
 
 func TestGetTreatmentPlan_MissingTenant(t *testing.T) {
@@ -514,7 +518,12 @@ func TestIdentifySpecies_SyntheticFallback(t *testing.T) {
 // Tests: DetectNutrientDeficiency (synthetic fallback, no AI client)
 // ---------------------------------------------------------------------------
 
-func TestDetectNutrientDeficiency_SyntheticFallback(t *testing.T) {
+func TestDetectNutrientDeficiency_RefusesToGuess(t *testing.T) {
+	// This used to return "Nitrogen, 0.5 confidence, moderate severity,
+	// possible nitrogen deficiency detected" with a nil error whenever the
+	// model was unavailable. A named nutrient at a stated confidence reads as
+	// a finding, and a farmer acting on it would apply nitrogen to a field
+	// that might be short of something else, or of nothing at all.
 	_, _, svc := newService()
 	ctx := testContext("tenant-1", "user-1")
 
@@ -523,12 +532,8 @@ func TestDetectNutrientDeficiency_SyntheticFallback(t *testing.T) {
 	}
 
 	deficiencies, explanations, err := svc.DetectNutrientDeficiency(ctx, "species-001", images)
-	require.NoError(t, err)
-	require.Len(t, deficiencies, 1)
-	assert.Equal(t, "Nitrogen", deficiencies[0].Nutrient)
-	assert.Equal(t, domain.SeverityModerate, deficiencies[0].Severity)
-	// The synthetic fallback is a placeholder, not a model output; it must
-	// not come with an explanation of reasoning that never happened.
+	require.Error(t, err, "a deficiency was named with no model behind it")
+	assert.Empty(t, deficiencies)
 	assert.Empty(t, explanations)
 }
 

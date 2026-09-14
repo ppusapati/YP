@@ -215,6 +215,12 @@ pub struct DiseaseModel {
     config: DiseaseModelConfig,
     backend: Option<ModelBackend>,
     is_loaded: bool,
+    /// Whether the loaded backend is demo weights rather than a trained model.
+    ///
+    /// Carried so that a caller can refuse to present demo output as a
+    /// prediction. Without it, a demo-backed detector is indistinguishable
+    /// from a real one at every call site.
+    is_demo: bool,
 }
 
 impl DiseaseModel {
@@ -224,6 +230,7 @@ impl DiseaseModel {
             config,
             backend: None,
             is_loaded: false,
+            is_demo: false,
         }
     }
 
@@ -234,55 +241,75 @@ impl DiseaseModel {
     /// `DemoWeights` with a warning printed to stderr.
     ///
     /// Without the `onnx` feature, always uses `DemoWeights`.
+    /// Load a trained model from `path`.
+    ///
+    /// Fails if the model cannot be loaded. It used to fall back to
+    /// `DemoWeights` and return `Ok(())`, setting `is_loaded` to true — so a
+    /// caller that asked for a trained EfficientNet and got arithmetic had no
+    /// way to tell, and `eprintln!` was the only trace. Every confidence score
+    /// downstream was then a deterministic formula presented as inference.
+    ///
+    /// Demo weights are still available, but only by asking for them:
+    /// [`load_demo`] is explicit, and [`is_demo`] reports which is in use.
     pub fn load(&mut self, #[allow(unused)] path: &str, _format: ModelFormat) -> Result<(), ModelError> {
         #[cfg(feature = "onnx")]
         {
-            match OnnxModel::load(
+            let onnx = OnnxModel::load(
                 path,
                 self.config.num_classes,
                 self.config.input_size,
                 self.config.segmentation_enabled,
-            ) {
-                Ok(onnx) => {
-                    eprintln!("[disease-detection] Loaded ONNX model from '{path}'");
-                    self.backend = Some(ModelBackend::Onnx(onnx));
-                    self.is_loaded = true;
-                    return Ok(());
-                }
-                Err(e) => {
-                    eprintln!(
-                        "[disease-detection] WARNING: Failed to load ONNX model from '{path}': {e}. \
-                         Falling back to demo weights."
-                    );
-                }
-            }
+            )
+            .map_err(|e| ModelError::LoadError(format!("ONNX model at '{path}': {e}")))?;
+            self.backend = Some(ModelBackend::Onnx(onnx));
+            self.is_loaded = true;
+            self.is_demo = false;
+            return Ok(());
         }
 
+        // Without the `onnx` feature there is no code path that can read a
+        // model file at all, so asking to load one is a build-configuration
+        // error and is reported as such rather than quietly succeeding.
+        //
+        // Worth knowing: `onnx` is not enabled by any Makefile, Dockerfile or
+        // compose target in this repository, so this is the branch that
+        // currently compiles.
         #[cfg(not(feature = "onnx"))]
         {
-            eprintln!(
-                "[disease-detection] ONNX feature not enabled; using demo weights \
-                 (compile with --features onnx to load real models)."
-            );
+            Err(ModelError::LoadError(format!(
+                "cannot load '{path}': this build has no ONNX support. \
+                 Rebuild with --features onnx, or call load_demo() if demo \
+                 weights are what you want."
+            )))
         }
-
-        let weights = DemoWeights::init(self.config.num_classes);
-        self.backend = Some(ModelBackend::Demo(weights));
-        self.is_loaded = true;
-        Ok(())
     }
 
-    /// Load a demo model for testing.
+    /// Load deterministic demo weights.
+    ///
+    /// Output from a demo-backed model is arithmetic, not inference: a class
+    /// score is a formula over the class index and a few image statistics.
+    /// It is useful for exercising the plumbing and for tests; it must not be
+    /// presented to anyone as a diagnosis. [`is_demo`] is how a caller tells.
     pub fn load_demo(&mut self) -> Result<(), ModelError> {
         let weights = DemoWeights::init(self.config.num_classes);
         self.backend = Some(ModelBackend::Demo(weights));
         self.is_loaded = true;
+        self.is_demo = true;
         Ok(())
     }
 
     /// Whether the model is loaded and ready for inference.
     pub fn is_loaded(&self) -> bool {
         self.is_loaded
+    }
+
+    /// Whether the loaded backend is demo weights rather than a trained model.
+    ///
+    /// Callers that surface predictions to a user should check this and refuse,
+    /// or label the result plainly. A demo score carries no information about
+    /// the image.
+    pub fn is_demo(&self) -> bool {
+        self.is_demo
     }
 
     /// Get the model configuration.
@@ -363,11 +390,28 @@ mod tests {
     }
 
     #[test]
-    fn test_load_fallback_to_demo() {
+    fn loading_a_missing_model_fails_rather_than_substituting_demo_weights() {
+        // This used to succeed, set is_loaded, and quietly install demo
+        // weights. A caller that asked for a trained EfficientNet then got
+        // arithmetic, with no way to tell and no error to catch — and every
+        // confidence score downstream was a formula presented as inference.
         let mut model = DiseaseModel::new(DiseaseModelConfig::default());
-        // Loading a non-existent path should fall back to demo weights
-        model.load("/nonexistent/model.onnx", ModelFormat::Onnx).unwrap();
+        assert!(
+            model.load("/nonexistent/model.onnx", ModelFormat::Onnx).is_err(),
+            "a model that could not be loaded reported success"
+        );
+        assert!(!model.is_loaded(), "a failed load left the model marked as ready");
+    }
+
+    #[test]
+    fn demo_weights_are_available_but_have_to_be_asked_for() {
+        let mut model = DiseaseModel::new(DiseaseModelConfig::default());
+        model.load_demo().unwrap();
         assert!(model.is_loaded());
+
+        // And they say what they are, so a caller can refuse to present the
+        // output as a diagnosis.
+        assert!(model.is_demo(), "demo weights did not identify themselves");
 
         let img = make_test_image(300, 300);
         let output = model.infer_image(&img).unwrap();

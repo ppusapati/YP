@@ -417,36 +417,19 @@ func (s *diagnosisService) GetTreatmentPlan(ctx context.Context, diagnosisID str
 		}
 	}
 
-	// Fall back to synthetic placeholder plan.
-	syntheticPlan := s.generateSyntheticTreatmentPlan(tenantID, diagnosisID)
-	created, err := s.repo.CreateTreatmentPlan(ctx, syntheticPlan)
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
-}
-
-func (s *diagnosisService) generateSyntheticTreatmentPlan(tenantID, diagnosisID string) *domain.TreatmentPlan {
-	steps := []domain.TreatmentStep{
-		{StepNumber: 1, Action: "Inspect affected plants closely", Notes: "Document visual symptoms", DurationDays: 1},
-		{StepNumber: 2, Action: "Apply recommended treatment", Product: "Pending analysis", Frequency: "As directed", DurationDays: 7},
-		{StepNumber: 3, Action: "Monitor progress and re-evaluate", Notes: "Reassess after treatment period", DurationDays: 14},
-	}
-	stepsJSON, _ := json.Marshal(steps)
-	desc := "Auto-generated treatment plan pending full AI analysis"
-	cost := "TBD"
-	days := int32(22)
-
-	return &domain.TreatmentPlan{
-		TenantID:      tenantID,
-		DiagnosisID:   diagnosisID,
-		Title:         "Preliminary Treatment Plan",
-		Description:   &desc,
-		Priority:      string(domain.SeverityUnspecified),
-		Steps:         stepsJSON,
-		EstimatedCost: &cost,
-		EstimatedDays: &days,
-	}
+	// No fallback plan.
+	//
+	// This used to build a canned three-step plan — "Apply recommended
+	// treatment", product "Pending analysis", cost "TBD" — persist it, and
+	// return it as a created treatment plan. A farmer opening it saw a plan
+	// with their diagnosis attached and no indication that nothing had been
+	// derived from it, and it sat in the database looking like every real one.
+	//
+	// A treatment plan is advice about what to put on a crop. Inventing one is
+	// worse than having none, so when the advisory engine cannot produce a
+	// plan this says so.
+	return nil, errors.ServiceUnavailable("TREATMENT_PLAN_UNAVAILABLE",
+		"a treatment plan could not be generated for this diagnosis")
 }
 
 // mapPrescriptionToTreatmentPlan converts an AI GeneratePrescription result
@@ -549,16 +532,16 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 // DetectNutrientDeficiency (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// DetectNutrientDeficiency identifies nutrient deficiencies from leaf images.
+//
+// It returns an error rather than a guess when the model is unavailable. The
+// code this replaced returned a fabricated "Nitrogen, 0.5 confidence, moderate
+// severity, possible nitrogen deficiency detected" with a nil error whenever
+// the AI client was missing or the call failed — and a named nutrient at a
+// stated confidence reads as a finding. A farmer acting on it would apply
+// nitrogen to a field that might be short of something else entirely, or of
+// nothing at all.
 func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, []domain.Explanation, error) {
-	syntheticResult := []domain.NutrientDeficiency{
-		{
-			Nutrient:        "Nitrogen",
-			ConfidenceScore: 0.5,
-			Severity:        domain.SeverityModerate,
-			Description:     "Possible nitrogen deficiency detected",
-		},
-	}
-
 	for _, img := range images {
 		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
 			return nil, nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
@@ -566,7 +549,8 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 	}
 
 	if s.aiClient == nil {
-		return syntheticResult, nil, nil
+		return nil, nil, errors.ServiceUnavailable("NUTRIENT_ANALYSIS_UNAVAILABLE",
+			"nutrient deficiency analysis is not available")
 	}
 
 	requestID := p9context.RequestID(ctx)
@@ -585,8 +569,9 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 
 	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
-		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed, returning synthetic fallback", "error", err)
-		return syntheticResult, nil, nil
+		s.log.Errorw("msg", "nutrient deficiency analysis failed", "error", err)
+		return nil, nil, errors.ServiceUnavailable("NUTRIENT_ANALYSIS_UNAVAILABLE",
+			"nutrient deficiency analysis is not available")
 	}
 
 	deficiencies := make([]domain.NutrientDeficiency, len(result.Deficiencies))

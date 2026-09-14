@@ -579,7 +579,15 @@ func registerSatelliteAnalyticsModule(mux *http.ServeMux, infra *sharedInfra) {
 	d := deps.ServiceDeps{Pool: infra.pool, Log: infra.logger}
 
 	repo := satanalyticsrepos.NewAnalyticsRepository(d)
-	svc := satanalyticsservices.NewAnalyticsService(d, repo, nil) // nil AI client
+	// Both clients are nil here. The AI gateway is a separate process the
+	// monolith does not manage, and the vegetation-index client would need a
+	// loopback call to a module mounted in this same process.
+	//
+	// Without the vegetation client, stress detection has no observations to
+	// judge and returns no alerts, which is the honest outcome. It used to
+	// return a hardcoded "water stress detected in the northern section" at
+	// 0.85 confidence instead.
+	svc := satanalyticsservices.NewAnalyticsService(d, repo, nil, nil)
 	handler := satanalyticshandlers.NewAnalyticsHandler(d, svc)
 
 	path, h := satanalyticsv1connect.NewSatelliteAnalyticsServiceHandler(handler,
@@ -596,7 +604,11 @@ func registerSatelliteTileModule(mux *http.ServeMux, infra *sharedInfra) {
 	d := deps.ServiceDeps{Pool: infra.pool, Log: infra.logger}
 
 	repo := sattilerepos.NewTileRepository(d)
-	svc := sattileservices.NewTileService(d, repo)
+	// No tile store: the monolith does not configure object storage. Tile
+	// reads therefore fail with a clear error instead of returning an empty
+	// body, which a map client would render as a transparent tile and could
+	// not distinguish from a field with nothing on it.
+	svc := sattileservices.NewTileService(d, repo, nil)
 	handler := sattilehandlers.NewTileHandler(d, svc)
 
 	path, h := sattilev1connect.NewSatelliteTileServiceHandler(handler,

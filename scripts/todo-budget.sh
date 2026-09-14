@@ -27,6 +27,20 @@ UPDATE=0
 
 # Generated code, vendored dependencies and agent worktrees are not ours to
 # clean, and counting them would drown the signal.
+#
+# Two exclusions were added after an audit found the budget was mostly
+# measuring noise:
+#
+#   /pkg/   — wasm-bindgen writes its output there, and ships with a TODO of
+#             its own. Ten of the thirteen markers counted against `web` were
+#             that one comment, repeated across build artefacts.
+#   XXX{2,} — a phone-number mask is written XXX-XXX-XXXX, and the word-boundary
+#             match counted each one as a marker. That accounted for the other
+#             three.
+#
+# `web` therefore had one real marker and a budget of thirteen: twelve free
+# TODOs before the ratchet would notice anything. A budget that permits more
+# debt than exists is worse than none, because it reads as enforcement.
 count_markers() {
   local dir="$1"
   grep -rIn --binary-files=without-match \
@@ -35,18 +49,27 @@ count_markers() {
     | grep -v '/\.claude/worktrees/' \
     | grep -v '/target/' \
     | grep -v '/build/' \
+    | grep -v '/dist/' \
     | grep -v '\.pb\.go:' \
-    | grep -v '\.pb\.dart:' \
+    | grep -v '_grpc\.pb\.go:' \
+    | grep -v '\.pb.*\.dart:' \
+    | grep -v '\.g\.dart:' \
+    | grep -v '\.freezed\.dart:' \
     | grep -v '_pb\.ts:' \
     | grep -v '\.connect\.go:' \
     | grep -v '/src/gen/' \
     | grep -v '/src/generated/' \
+    | grep -v '/pkg/' \
     | grep -v 'todo-budget' \
+    | grep -vE 'XXX{2,}' \
     | wc -l | tr -d ' '
 }
 
 # Areas worth tracking separately: a spike in one should not be hidden by
 # progress in another.
+# Every top-level area is listed. The original set covered thirteen of them and
+# left fifty-two markers — a third of the total — entirely outside the ratchet,
+# including every satellite service and all of yield, crop, soil and sensor.
 AREAS=(
   ai-gateway
   ml-training
@@ -54,13 +77,34 @@ AREAS=(
   mobile
   web
   packages
-  plant-diagnosis-service
-  pest-prediction-service
-  traceability-service
-  field-service
-  farm-service
+  scripts
+  cmd
+  internal
+  tests
+  agronomy-service
+  alert-service
+  analytics-service
+  auth-service
   commerce-service
+  crop-service
+  farm-service
+  field-service
   irrigation-service
+  pest-prediction-service
+  plant-diagnosis-service
+  prescription-service
+  satellite-analytics-service
+  satellite-ingestion-service
+  satellite-processing-service
+  satellite-service
+  satellite-tile-service
+  sensor-service
+  soil-service
+  task-service
+  traceability-service
+  vegetation-index-service
+  weather-service
+  yield-service
 )
 
 if [ "$UPDATE" = "1" ]; then

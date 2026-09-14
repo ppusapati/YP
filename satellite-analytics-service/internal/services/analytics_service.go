@@ -47,9 +47,13 @@ type AnalyticsService interface {
 
 // analyticsService is the concrete implementation of AnalyticsService.
 type analyticsService struct {
-	d         deps.ServiceDeps
-	repo      repositories.AnalyticsRepository
-	log       *p9log.Helper
+	d    deps.ServiceDeps
+	repo repositories.AnalyticsRepository
+	log  *p9log.Helper
+	// aiClient is retained but no longer used for stress detection: the gateway
+	// needs raster bands, and this service has no route to them. Kept so the
+	// wiring survives for when imagery access exists, rather than being called
+	// with an empty input to make the code look connected.
 	aiClient  *ai.AIClient
 	vegClient clients.VegetationIndexClient
 }
@@ -87,10 +91,6 @@ func (s *analyticsService) DetectStress(ctx context.Context, farmID, fieldID, pr
 		userID = "system"
 	}
 
-	// In a real implementation, this would analyze satellite imagery data
-	// from the processing job and detect various types of stress.
-	// For now, we create the stress alert records based on analysis results.
-
 	// Check if alerts already exist for this processing job
 	existing, err := s.repo.ListStressAlertsByProcessingJob(ctx, processingJobID, tenantID)
 	if err != nil {
@@ -100,66 +100,35 @@ func (s *analyticsService) DetectStress(ctx context.Context, farmID, fieldID, pr
 		return existing, nil
 	}
 
-	// Attempt AI-powered stress detection via the AI gateway.
-	var alerts []analyticsmodels.StressAlert
-	if s.aiClient != nil {
-		aiResult, aiErr := s.aiClient.DetectVegetationStress(ctx, requestID, &ai.RasterBandsInput{}, 0.3, 0.2)
-		if aiErr != nil {
-			s.log.Warnw("msg", "AI DetectVegetationStress failed, falling back to synthetic result",
-				"error", aiErr, "request_id", requestID)
-		} else {
-			for _, zone := range aiResult.StressZones {
-				desc := fmt.Sprintf("%s stress detected with %.0f%% confidence", zone.StressType, zone.Confidence*100)
-				rec := fmt.Sprintf("Review affected area (%.1f%% of field) for %s stress mitigation", zone.AffectedAreaPct, zone.StressType)
-				zoneAlert := &analyticsmodels.StressAlert{
-					TenantID:             tenantID,
-					FarmID:               farmID,
-					FieldID:              fieldID,
-					ProcessingJobID:      &processingJobID,
-					StressType:           analyticsmodels.StressType(zone.StressType),
-					Severity:             analyticsmodels.SeverityLevel(zone.Severity),
-					Confidence:           zone.Confidence,
-					AffectedAreaHectares: 0,
-					AffectedPercentage:   zone.AffectedAreaPct,
-					Description:          strPtr(desc),
-					Recommendation:       strPtr(rec),
-					DetectedAt:           time.Now(),
-				}
-				zoneAlert.CreatedBy = userID
-				created, createErr := s.repo.CreateStressAlert(ctx, zoneAlert)
-				if createErr != nil {
-					s.log.Errorw("msg", "failed to create AI stress alert", "error", createErr, "request_id", requestID)
-					continue
-				}
-				alerts = append(alerts, *created)
-			}
-		}
+	// Stress is detected from the field's own NDVI history, not from raster
+	// imagery.
+	//
+	// This used to call the AI gateway's DetectVegetationStress with an empty
+	// RasterBandsInput — zero pixels, zero bands — and then, when that
+	// unsurprisingly produced nothing, write a hardcoded alert saying "water
+	// stress detected in the northern section based on NDWI analysis" at 0.85
+	// confidence, persist it, and emit a domain event about it. A farmer was
+	// told their field was stressed on the basis of no observation at all, and
+	// every downstream consumer was told the same.
+	//
+	// The reason it could not work is structural: the raster bands live in
+	// object storage behind satellite-processing-service, and this service has
+	// no route to them. What it does have is a vegetation-index client, and a
+	// field whose NDVI has fallen well below its own recent baseline is a real
+	// and standard stress signal. So that is what is measured.
+	//
+	// When there is not enough history to judge, this returns no alerts. Not
+	// an error and not a guess: "we cannot tell yet" is the honest answer, and
+	// the absence of an alert says it.
+	alerts, err := s.detectStressFromHistory(ctx, tenantID, userID, farmID, fieldID, processingJobID)
+	if err != nil {
+		return nil, err
 	}
-
-	// Fallback: create a synthetic stress alert if AI produced no results.
 	if len(alerts) == 0 {
-		syntheticAlert := &analyticsmodels.StressAlert{
-			TenantID:             tenantID,
-			FarmID:               farmID,
-			FieldID:              fieldID,
-			ProcessingJobID:      &processingJobID,
-			StressType:           analyticsmodels.StressTypeWater,
-			Severity:             analyticsmodels.SeverityLevelMedium,
-			Confidence:           0.85,
-			AffectedAreaHectares: 2.5,
-			AffectedPercentage:   15.0,
-			Description:          strPtr("Water stress detected in northern section of the field based on NDWI analysis"),
-			Recommendation:       strPtr("Consider increasing irrigation frequency in the affected area"),
-			DetectedAt:           time.Now(),
-		}
-		syntheticAlert.CreatedBy = userID
-
-		created, err := s.repo.CreateStressAlert(ctx, syntheticAlert)
-		if err != nil {
-			s.log.Errorw("msg", "failed to create stress alert", "error", err, "request_id", requestID)
-			return nil, err
-		}
-		alerts = []analyticsmodels.StressAlert{*created}
+		s.log.Infow("msg", "no stress detected",
+			"farm_id", farmID, "field_id", fieldID,
+			"processing_job_id", processingJobID, "request_id", requestID)
+		return nil, nil
 	}
 
 	// Emit domain event
@@ -181,6 +150,130 @@ func (s *analyticsService) DetectStress(ctx context.Context, farmID, fieldID, pr
 	)
 
 	return alerts, nil
+}
+
+// Stress-detection thresholds.
+//
+// NDVI is a ratio, so these are in NDVI units and comparable across fields.
+// The bands come from the drop below a field's own recent baseline rather than
+// from an absolute NDVI value, because what is healthy for cotton in July is
+// not what is healthy for wheat in March, and a fixed cut-off would alert on
+// every crop with a naturally low canopy.
+const (
+	// stressBaselineDays is how far back the baseline is drawn from.
+	stressBaselineDays = 60
+	// stressMinSamples is the fewest observations that support a judgement.
+	// Below this the baseline is one or two scenes, which a single cloudy
+	// pass would drag far enough to raise an alert on a healthy field.
+	stressMinSamples = 5
+	// stressDropLow is the smallest drop worth reporting.
+	stressDropLow = 0.10
+	// stressDropMedium, stressDropHigh and stressDropCritical band the rest.
+	stressDropMedium   = 0.18
+	stressDropHigh     = 0.28
+	stressDropCritical = 0.40
+	// stressSmoothWindow damps single-scene noise before comparison. Three
+	// scenes is roughly a fortnight at Sentinel-2 revisit.
+	stressSmoothWindow = 3
+)
+
+// detectStressFromHistory raises alerts where a field's NDVI has fallen below
+// its own recent baseline.
+//
+// It deliberately does not name a cause. NDVI falling says the canopy is
+// losing vigour; it does not say whether that is drought, disease or a pest,
+// and the previous code's confident "water stress ... based on NDWI analysis"
+// was inventing an explanation as well as an observation. The stress type is
+// reported as unspecified until there is imagery to distinguish them.
+func (s *analyticsService) detectStressFromHistory(
+	ctx context.Context, tenantID, userID, farmID, fieldID, processingJobID string,
+) ([]analyticsmodels.StressAlert, error) {
+	if s.vegClient == nil {
+		// Without a source of observations there is nothing to judge. Silence
+		// is the correct output; the log is how the misconfiguration surfaces.
+		s.log.Warnw("msg", "no vegetation index client; stress detection unavailable",
+			"field_id", fieldID)
+		return nil, nil
+	}
+
+	now := time.Now().UTC()
+	from := now.AddDate(0, 0, -stressBaselineDays)
+
+	samples, err := s.vegClient.GetNDVITimeSeries(ctx, farmID, fieldID, from, now)
+	if err != nil {
+		// A dependency being down is a real failure, and reporting "no stress"
+		// for it would be indistinguishable from a healthy field.
+		s.log.Errorw("msg", "NDVI time series unavailable", "field_id", fieldID, "error", err)
+		return nil, errors.InternalServer("NDVI_UNAVAILABLE", "vegetation index data is unavailable")
+	}
+
+	series := timeseries.Smooth(timeseries.Sorted(samples), stressSmoothWindow)
+	if len(series) < stressMinSamples {
+		return nil, nil
+	}
+
+	// The baseline is the median of everything but the most recent scene,
+	// which resists a single bad observation in a way a mean does not.
+	latest := series[len(series)-1]
+	baseline := timeseries.Median(series[:len(series)-1])
+	drop := baseline - latest.Value
+	if drop < stressDropLow {
+		return nil, nil
+	}
+
+	severity := analyticsmodels.SeverityLevelLow
+	switch {
+	case drop >= stressDropCritical:
+		severity = analyticsmodels.SeverityLevelCritical
+	case drop >= stressDropHigh:
+		severity = analyticsmodels.SeverityLevelHigh
+	case drop >= stressDropMedium:
+		severity = analyticsmodels.SeverityLevelMedium
+	}
+
+	// Confidence rises with the size of the drop and with how much history
+	// supports the baseline, and is capped below certainty — a single index
+	// over a handful of scenes does not justify more.
+	confidence := math.Min(0.90,
+		0.45+math.Min(drop/stressDropCritical, 1)*0.30+
+			math.Min(float64(len(series))/20, 1)*0.15)
+
+	var pct float64
+	if baseline > 0 {
+		pct = math.Min(100, drop/baseline*100)
+	}
+
+	desc := fmt.Sprintf(
+		"NDVI has fallen to %.2f from a %d-day baseline of %.2f, a drop of %.2f.",
+		latest.Value, stressBaselineDays, baseline, drop)
+	rec := "Inspect the field before treating. A fall in NDVI shows the canopy losing vigour " +
+		"but does not distinguish water stress from disease, pest damage or nutrient deficiency."
+
+	alert := &analyticsmodels.StressAlert{
+		TenantID:        tenantID,
+		FarmID:          farmID,
+		FieldID:         fieldID,
+		ProcessingJobID: &processingJobID,
+		// Unspecified on purpose: see above.
+		StressType: analyticsmodels.StressTypeUnspecified,
+		Severity:   severity,
+		Confidence: math.Round(confidence*100) / 100,
+		// Left at zero rather than guessed. The field's area is not known here,
+		// and the previous code's "2.5 hectares" was a literal.
+		AffectedAreaHectares: 0,
+		AffectedPercentage:   math.Round(pct*10) / 10,
+		Description:          strPtr(desc),
+		Recommendation:       strPtr(rec),
+		DetectedAt:           latest.Date,
+	}
+	alert.CreatedBy = userID
+
+	created, err := s.repo.CreateStressAlert(ctx, alert)
+	if err != nil {
+		s.log.Errorw("msg", "failed to create stress alert", "error", err, "field_id", fieldID)
+		return nil, err
+	}
+	return []analyticsmodels.StressAlert{*created}, nil
 }
 
 // ListStressAlerts lists stress alerts with filtering and pagination.

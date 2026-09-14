@@ -18,12 +18,12 @@ const (
 
 // StressDetectedEventData represents the data payload for stress detection events.
 type StressDetectedEventData struct {
-	FarmID           string `json:"farm_id"`
-	FieldID          string `json:"field_id"`
-	ProcessingJobID  string `json:"processing_job_id"`
-	AlertCount       int    `json:"alert_count"`
-	StressType       string `json:"stress_type,omitempty"`
-	Severity         string `json:"severity,omitempty"`
+	FarmID          string `json:"farm_id"`
+	FieldID         string `json:"field_id"`
+	ProcessingJobID string `json:"processing_job_id"`
+	AlertCount      int    `json:"alert_count"`
+	StressType      string `json:"stress_type,omitempty"`
+	Severity        string `json:"severity,omitempty"`
 }
 
 // AnalysisCompletedEventData represents the data payload for analysis completed events.

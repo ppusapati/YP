@@ -133,7 +133,6 @@ func callGeneratePrescription(ctx context.Context, conn *grpc.ClientConn, reques
 // Response mappers (proto -> typed result)
 // ─────────────────────────────────────────────────────────────────────────────
 
-
 // parseExplanations converts the gateway's explanations, which are absent
 // whenever the answer came from a model with no gradient to explain.
 func parseExplanations(in []*aipb.Explanation) []Explanation {

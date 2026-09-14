@@ -16,13 +16,14 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
-	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/connect/interceptors"
+	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/middleware"
 	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/storage"
 
 	"p9e.in/samavaya/agriculture/satellite-tile-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/satellite-tile-service/internal/handlers"
@@ -86,8 +87,19 @@ func main() {
 		Log:  logger,
 	}
 
+	// Tiles are read from object storage. Without it the service can still
+	// list and manage tilesets, but a tile read fails with a clear error
+	// rather than returning an empty body — an empty PNG is a transparent
+	// tile, and a map client cannot tell that from a field with nothing on it.
+	var tileStore services.TileStore
+	if s3Client, s3Err := storage.NewClient(ctx, storage.ConfigFromEnv()); s3Err != nil {
+		log.Printf("WARNING: object storage unavailable: %v — tile reads will fail", s3Err)
+	} else {
+		tileStore = s3Client
+	}
+
 	repo := repositories.NewTileRepository(d)
-	svc := services.NewTileService(d, repo)
+	svc := services.NewTileService(d, repo, tileStore)
 	handler := handlers.NewTileHandler(d, svc)
 
 	mwCfg := connectserver.MiddlewareConfig{

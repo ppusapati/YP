@@ -70,7 +70,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Add feature flag middleware to ConnectRPC interceptor chain
 - [x] Implement percentage-based rollouts for new ML models
 - [ ] Add canary deployment support in CD pipeline (deploy to subset of pods first)
-- [ ] Create experiment tracking for A/B testing crop recommendations
+- [x] Create experiment tracking for A/B testing crop recommendations
 - [x] Add kill switches for external API dependencies (PlantNet, Google Vision)
 
 **Effort:** Medium | **Impact:** High
@@ -423,7 +423,7 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** Concentrated TODO/FIXME/not-implemented density: mobile (192), traceability (110), field (90), farm (79), pest-prediction (73), commerce (52), plant-diagnosis (44), irrigation (42), web (~238). Placeholder/mock-data markers: packages (57), plant-diagnosis (18), pest-prediction (12). Rust side is clean.
 
 **Enhancements:**
-- [ ] Triage every marker into: implement, delete, or convert to a tracked issue
+- [x] Triage every marker into: implement, delete, or convert to a tracked issue — see `docs/stub-debt.md`
 - [ ] Clear mobile, traceability, and field first (top three by count and user-facing impact)
 - [x] Replace mock data in plant-diagnosis with real service calls — the service fetches the image bytes for the URLs it validated and hands them to the gateway, which previously received a URL and no pixels and silently fell through to demo weights. The gateway now declines an image it cannot see rather than analysing a black frame
 - [x] Replace mock data in pest-prediction with real service calls — the service now asks the gateway to score a field and falls back to its weather rules only when that fails. Its AI client previously sent `structpb.Struct` values over hand-written method names, which cannot decode as the typed request the server expects; nothing called it, so the mismatch never surfaced. Its test suite had also stopped compiling against a widened logger interface, so 37 tests had not run in some time
