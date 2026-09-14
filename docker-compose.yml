@@ -590,6 +590,36 @@ services:
       WEATHER_POLL_INTERVAL: ${WEATHER_POLL_INTERVAL:-1h}
       WEATHER_DEFAULT_PROVIDER: ${WEATHER_DEFAULT_PROVIDER:-OPEN_METEO}
       OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      # Left empty, the adapters call the real public APIs. Point these at the
+      # mockserver below to develop and test without network access or a key:
+      #   docker compose --profile offline up
+      # and set the three in .env — see .env.example.
+      OPEN_METEO_FORECAST_URL: ${OPEN_METEO_FORECAST_URL:-}
+      OPEN_METEO_ARCHIVE_URL: ${OPEN_METEO_ARCHIVE_URL:-}
+      OPENWEATHER_BASE_URL: ${OPENWEATHER_BASE_URL:-}
+
+  # ── Offline development ────────────────────────────────────────────────────
+  # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
+  # Vision), so the platform runs with no network access, no API keys, and
+  # nobody else's rate limit. Responses are deterministic, so tests can assert
+  # on them. Opt in with: docker compose --profile offline up
+  mockserver:
+    build:
+      context: .
+      args:
+        CMD_PATH: ./cmd/mockserver
+    profiles: ["offline"]
+    restart: unless-stopped
+    command: ["-addr", ":8199", "-v"]
+    ports:
+      # 8199, not 8099: the 8080-8108 block is already spoken for by the
+      # services, and analytics-service publishes 8099.
+      - "8199:8199"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8199/__mock/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   # ── Monolith (all services in one binary) ──────────────────────────────────
   # Start with: docker compose --profile monolith up

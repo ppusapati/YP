@@ -81,3 +81,6 @@ setup: ## Install pre-commit hooks and dev dependencies
 
 docker-%: ## Build Docker image for a service (e.g., make docker-farm-service)
 	docker build --build-arg SERVICE=$* -t yieldpoint/$*:dev .
+
+mockserver: ## Run the offline stand-in for external APIs (Open-Meteo, OpenWeather, PlantNet, Vision)
+	go run ./cmd/mockserver -v

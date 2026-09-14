@@ -1,12 +1,18 @@
 # Multi-stage Dockerfile for all Go agriculture services.
 # Build:  docker build --build-arg SERVICE=farm-service -t farm-service .
 # Run:    docker run -e DATABASE_URL=... -e PORT=8080 farm-service
+#
+# CMD_PATH overrides the package built, for the few binaries in this repo that
+# are not a service at <name>/cmd/server — cmd/mockserver, for instance:
+#   docker build --build-arg CMD_PATH=./cmd/mockserver -t mockserver .
 
 # ── Stage 1: build ──────────────────────────────────────────────────────────
 FROM golang:1.25-alpine AS builder
 
 ARG SERVICE
-RUN test -n "$SERVICE" || (echo "SERVICE build arg is required" && exit 1)
+ARG CMD_PATH
+RUN test -n "$SERVICE" -o -n "$CMD_PATH" || \
+    (echo "one of SERVICE or CMD_PATH is required" && exit 1)
 
 RUN apk add --no-cache git ca-certificates
 
@@ -22,10 +28,10 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -trimpath -ldflags="-s -w" \
-    -o /app/server ./${SERVICE}/cmd/server
+    -o /app/server "${CMD_PATH:-./${SERVICE}/cmd/server}"
 
 # Copy migrations if they exist; create empty dir otherwise.
-RUN if [ -d "${SERVICE}/migrations" ]; then \
+RUN if [ -n "${SERVICE}" ] && [ -d "${SERVICE}/migrations" ]; then \
       cp -r "${SERVICE}/migrations" /app/migrations; \
     else \
       mkdir -p /app/migrations; \

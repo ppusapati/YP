@@ -1,0 +1,67 @@
+# AI Gateway configuration for offline development.
+#
+# Identical to config.toml except that the external vision provider points at
+# the local mockserver instead of PlantNet or Google Cloud Vision, so the
+# diagnosis path can be developed and demonstrated with no network access and
+# no API key.
+#
+# Use it by starting the mock and pointing the gateway at this file:
+#
+#   docker compose --profile offline up mockserver
+#   AI_GATEWAY_CONFIG=ai-gateway/config.offline.toml cargo run -p ai-gateway
+#
+# Under docker compose, mount it and set the variable on the ai-gateway
+# service — the image does not ship it:
+#
+#   volumes:
+#     - ./ai-gateway/config.offline.toml:/app/config.offline.toml:ro
+#   environment:
+#     AI_GATEWAY_CONFIG: /app/config.offline.toml
+#
+# Note that this only reaches the *external API* path. When a local ONNX model
+# is present the gateway uses it and never calls out at all, which is the
+# intended production behaviour; clear the model paths below to force the
+# external path if that is what you mean to exercise.
+
+[server]
+address = "0.0.0.0:50051"
+max_concurrent_requests = 256
+request_timeout_secs = 30
+
+[models]
+# Empty so that every vision task falls through to the external provider.
+# Point these at real directories to test local inference instead.
+disease_detection_model = ""
+pest_detection_model = ""
+nutrient_deficiency_model = ""
+plant_classification_model = ""
+
+yield_prediction_version = "v1.0.0"
+yield_tabular_model = ""
+multitask_model = ""
+crop_growth_version = "v1.0.0"
+satellite_ndvi_version = "v1.0.0"
+crop_recommendation_version = "v1.0.0"
+
+[external_api]
+enabled = true
+
+# "custom" is the richest of the three shapes — it is the only one that carries
+# severity and treatment recommendations through to the response — so it is the
+# one to develop the diagnosis UI against. Switch to "plantnet" or
+# "google_vision" to exercise those parsers; the mock serves all three.
+provider = "custom"
+
+# The mock checks that a key is present but does not care what it is.
+api_key = "mock"
+
+# Host and port only: the client appends the provider's own path. Use
+# http://localhost:8199 when running the gateway outside compose.
+base_url = "http://mockserver:8199"
+
+# Short, because nothing here is going over a network. Retries stay above zero
+# so that the mock's fault injection has something to exercise:
+#   curl -X POST 'localhost:8199/__mock/faults?provider=custom' \
+#        -d '{"status":503,"remaining":2}'
+timeout_secs = 5
+max_retries = 2

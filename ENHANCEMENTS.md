@@ -259,7 +259,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Add pre-commit hooks (lint, format, proto freshness check)
 - [ ] Set up PR preview environments (ephemeral namespaces per PR)
 - [x] Add architecture decision records (ADRs) for major design choices
-- [ ] Build local mock server for external APIs (PlantNet, Google Vision) for offline development
+- [x] Build local mock server for external APIs (PlantNet, Google Vision) for offline development
 
 **Effort:** Small | **Impact:** Low
 
