@@ -6,6 +6,7 @@ import (
 	"hash/crc32"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,25 @@ func NewEvaluator() *Evaluator {
 func (e *Evaluator) Evaluate(flag *Flag, attrs Attributes) EvaluationResult {
 	result := EvaluationResult{
 		FlagName: flag.Name,
+	}
+
+	// A tenant override is a pin, so it is checked before everything else —
+	// including `Enabled`, because "turn it on for us early" is a request about
+	// a flag that is globally off, and checking the global switch first would
+	// make that the one thing an override could never do.
+	if o, ok := flag.OverrideFor(attrs["tenant_id"], time.Now()); ok {
+		result.Enabled = o.Enabled
+		result.Reason = "tenant_override:" + o.TenantID
+		switch {
+		case o.Variant != "":
+			result.VariantKey = o.Variant
+		case !o.Enabled:
+			result.VariantKey = flag.DefaultVariant
+		case flag.Type == FlagTypeMultivariate && len(flag.Variants) > 0:
+			result.VariantKey = e.selectVariant(flag, attrs).Key
+		}
+		result.Payload = e.variantPayload(flag, result.VariantKey)
+		return result
 	}
 
 	// If the flag is globally disabled, return the default.
@@ -79,6 +99,25 @@ func (e *Evaluator) Evaluate(flag *Flag, attrs Attributes) EvaluationResult {
 	}
 
 	return result
+}
+
+// variantPayload returns the payload attached to a named variant, or nil when
+// the flag has no such variant.
+//
+// A flag that is off still reports its default variant's payload, because the
+// payload is usually the configuration the caller needs in order to run the
+// control behaviour — returning nil there would leave a disabled flag with no
+// settings at all rather than with its safe ones.
+func (e *Evaluator) variantPayload(flag *Flag, variantKey string) map[string]interface{} {
+	if variantKey == "" {
+		return nil
+	}
+	for _, v := range flag.Variants {
+		if v.Key == variantKey {
+			return v.Payload
+		}
+	}
+	return nil
 }
 
 // matchesTargetingRules checks whether the given attributes satisfy any of the

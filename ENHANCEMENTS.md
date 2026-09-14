@@ -228,7 +228,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [ ] Build admin dashboard for cross-tenant analytics and health monitoring
 - [x] Add tenant data export API (GDPR/data portability compliance)
 - [ ] Implement tenant offboarding with data archival
-- [ ] Add tenant-specific feature flags
+- [x] Add tenant-specific feature flags
 
 **Effort:** Medium | **Impact:** Medium
 

@@ -71,6 +71,33 @@ func (c *FlagConfig) Validate() error {
 				return fmt.Errorf("featureflags: flag %q targeting rule %d has no values", f.Name, j)
 			}
 		}
+
+		seenTenants := make(map[string]struct{}, len(f.TenantOverrides))
+		for _, o := range f.TenantOverrides {
+			if err := o.Validate(); err != nil {
+				return fmt.Errorf("featureflags: flag %q: %w", f.Name, err)
+			}
+			// Two overrides for the same tenant would resolve by declaration
+			// order, which is not something anybody means.
+			if _, dup := seenTenants[o.TenantID]; dup {
+				return fmt.Errorf("featureflags: flag %q has two overrides for tenant %q", f.Name, o.TenantID)
+			}
+			seenTenants[o.TenantID] = struct{}{}
+
+			if o.Variant != "" {
+				found := false
+				for _, v := range f.Variants {
+					if v.Key == o.Variant {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("featureflags: flag %q pins tenant %q to unknown variant %q",
+						f.Name, o.TenantID, o.Variant)
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -89,27 +116,30 @@ func LoadFlags(path string) (*FlagConfig, error) {
 // ParseFlags parses flag configuration from raw bytes. The path is used only
 // to determine the format from its extension.
 func ParseFlags(data []byte, path string) (*FlagConfig, error) {
-	var config FlagConfig
+	// Parsed through the forgiving on-disk shapes in loader.go, which accept
+	// both a list and a map of flags and infer the type from the flag's shape.
+	var raw rawConfig
 	ext := strings.ToLower(filepath.Ext(path))
 
 	switch ext {
 	case ".json":
-		if err := json.Unmarshal(data, &config); err != nil {
+		if err := json.Unmarshal(data, &raw); err != nil {
 			return nil, fmt.Errorf("featureflags: parse JSON from %s: %w", path, err)
 		}
 	case ".yaml", ".yml":
-		if err := yaml.Unmarshal(data, &config); err != nil {
+		if err := yaml.Unmarshal(data, &raw); err != nil {
 			return nil, fmt.Errorf("featureflags: parse YAML from %s: %w", path, err)
 		}
 	default:
 		return nil, fmt.Errorf("featureflags: unsupported config format %q (use .json, .yaml, or .yml)", ext)
 	}
 
+	config := raw.config()
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	return config, nil
 }
 
 // LoadFlagsFromEnv loads flag overrides from environment variables. Environment

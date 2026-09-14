@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"connectrpc.com/connect"
+
 	erro "p9e.in/samavaya/packages/api/v1/errors"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -176,12 +178,67 @@ func InvalidArgumentf(format string, args ...interface{}) *Error {
 	return New(400, "INVALID_ARGUMENT", msg)
 }
 
-// ToConnectError converts an error to a Connect-compatible error.
-// For now, returns the error as-is since ConnectRPC handles *Error via GRPCStatus.
+// ToConnectError converts an error into a *connect.Error carrying the right
+// code, a clean message, and the reason as structured detail.
+//
+// The conversion has to be explicit. *Error implements GRPCStatus(), and this
+// function used to return it unchanged on the assumption that ConnectRPC would
+// read the code from there. It does not: connect-go's wrapIfUncoded looks only
+// for a *connect.Error via errors.As and wraps anything else in CodeUnknown. So
+// returning *Error unchanged sent every domain error to the client as
+// `unknown` / HTTP 500, with *Error.Error()'s debug formatting — "error: code =
+// 404 reason = ... metadata = map[] cause = <nil>" — as the message the caller
+// sees.
+//
+// The cause chain is preserved through Unwrap, so a logging interceptor
+// upstream can still recover the original error and its cause even though the
+// client is shown only the message.
 func ToConnectError(err error) error {
 	if err == nil {
 		return nil
 	}
+	// Already coded — an interceptor's own error, or an error converted
+	// earlier in the chain. Converting twice would replace a precise code with
+	// whatever the round trip through HTTP numbers produces.
+	var already *connect.Error
+	if errors.As(err, &already) {
+		return already
+	}
+
 	se := FromError(err)
-	return se
+	msg := se.Message
+	if msg == "" {
+		// Better a machine-readable reason than an empty message.
+		msg = se.Reason
+	}
+
+	ce := connect.NewError(
+		connect.Code(ToGRPCCode(int(se.Code))),
+		&wireError{msg: msg, cause: err},
+	)
+
+	// The reason is what a client branches on; the numeric code only says what
+	// kind of thing went wrong. Carried as an ErrorInfo detail, which is the
+	// same shape GRPCStatus() puts it in, and mirrored into metadata so a
+	// browser client that cannot decode details can still read it.
+	if se.Reason != "" {
+		if detail, derr := connect.NewErrorDetail(&errdetails.ErrorInfo{
+			Reason:   se.Reason,
+			Metadata: se.Metadata,
+		}); derr == nil {
+			ce.AddDetail(detail)
+		}
+		ce.Meta().Set("x-error-reason", se.Reason)
+	}
+	return ce
 }
+
+// wireError carries a clean message to the client while keeping the original
+// error reachable through Unwrap for server-side logging.
+type wireError struct {
+	msg   string
+	cause error
+}
+
+func (e *wireError) Error() string { return e.msg }
+func (e *wireError) Unwrap() error { return e.cause }

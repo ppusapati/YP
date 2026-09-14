@@ -1,3 +1,20 @@
+# Feature flags.
+#
+# Each flag is keyed by name. `type` is inferred from the flag's shape — a flag
+# with variants is multivariate, one with `kill_switch: true` is a kill switch,
+# one with a rollout percentage is a percentage rollout, anything else is
+# boolean — so it only needs stating to override that.
+#
+# `targeting` rules can only turn a flag ON for whoever matches. To pin a flag
+# for one tenant in either direction, use `tenants:` — see enhanced_irrigation
+# below. Overrides are checked before targeting and before the rollout
+# percentage, and before `enabled`, so a tenant can be given early access to a
+# flag that is globally off.
+#
+# Every override should carry a reason and, where the need is temporary, an
+# `expires_at`. An override with neither becomes permanent by default, and a
+# tenant pinned off a feature nobody remembers pinning ends up a year behind.
+
 flags:
   ml_model_v2:
     description: "Roll out new ML model v2 for plant diagnosis"
@@ -31,6 +48,17 @@ flags:
       - attribute: "region"
         operator: "in"
         values: ["maharashtra", "karnataka"]
+    # Worked example of a per-tenant pin in both directions. Both tenants are
+    # in a targeted region, and the override is what decides each of them.
+    tenants:
+      demo-tenant:
+        enabled: true
+        reason: "Design partner; agreed early access ahead of the regional rollout."
+        set_by: "ops@example.com"
+      legacy-tenant:
+        enabled: false
+        reason: "Their controllers predate the new schedule format; pending firmware."
+        set_by: "ops@example.com"
 
   new_dashboard_ui:
     description: "Enable redesigned dashboard UI"

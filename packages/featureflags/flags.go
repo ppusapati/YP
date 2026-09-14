@@ -81,8 +81,27 @@ type Flag struct {
 	DefaultVariant string `json:"default_variant,omitempty" yaml:"default_variant,omitempty"`
 	// Tags provides optional metadata for organizing and filtering flags.
 	Tags []string `json:"tags,omitempty" yaml:"tags,omitempty"`
+	// TenantOverrides pins the flag for named tenants, in either direction,
+	// ahead of targeting rules and the rollout percentage. Declared in the
+	// config file under a flag's `tenants:` key; see tenant.go for why a
+	// targeting rule cannot express the "off" half of this.
+	TenantOverrides []TenantOverride `json:"tenant_overrides,omitempty" yaml:"tenant_overrides,omitempty"`
 	// UpdatedAt records when the flag was last modified.
 	UpdatedAt time.Time `json:"updated_at,omitempty" yaml:"updated_at,omitempty"`
+}
+
+// OverrideFor returns the flag's declared override for a tenant, if one is set
+// and has not expired.
+func (f *Flag) OverrideFor(tenantID string, now time.Time) (TenantOverride, bool) {
+	if tenantID == "" {
+		return TenantOverride{}, false
+	}
+	for _, o := range f.TenantOverrides {
+		if o.TenantID == tenantID && o.Active(now) {
+			return o, true
+		}
+	}
+	return TenantOverride{}, false
 }
 
 // EvaluationResult holds the outcome of a flag evaluation.
@@ -124,6 +143,7 @@ type InMemoryFlagService struct {
 	flags     map[string]*Flag
 	evaluator *Evaluator
 	logger    EvaluationLogger
+	overrides OverrideStore
 }
 
 // InMemoryOption configures the InMemoryFlagService.
@@ -174,6 +194,18 @@ func (s *InMemoryFlagService) GetVariant(ctx context.Context, flagName string, a
 	// Copy the flag under read lock so evaluation proceeds without holding the lock.
 	flagCopy := *flag
 	s.mu.RUnlock()
+
+	// A runtime override outranks one declared in the config file: the file
+	// carries the long-lived decisions, the store carries the ones made in
+	// response to something happening right now.
+	if s.overrides != nil {
+		if tenantID := attributes["tenant_id"]; tenantID != "" {
+			if o, ok := s.overrides.Override(ctx, tenantID, flagName); ok {
+				flagCopy.TenantOverrides = append(
+					[]TenantOverride{o}, flagCopy.TenantOverrides...)
+			}
+		}
+	}
 
 	result := s.evaluator.Evaluate(&flagCopy, attributes)
 
