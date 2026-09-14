@@ -155,10 +155,10 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Enhancements:**
 - [x] Generate OpenAPI specs for missing services: alert, analytics, prescription, satellite-ingestion, satellite-processing, satellite-tile, vegetation-index, task, agronomy
 - [x] Deploy Swagger UI or Redoc as a service for interactive API exploration
-- [ ] Add API changelog and versioning migration guides
+- [x] Add API changelog and versioning migration guides
 - [ ] Create developer portal with getting-started guides, authentication docs, and code samples
 - [ ] Add API usage examples and SDK generation (Go, Python, TypeScript clients)
-- [ ] Document rate limits, pagination, and error codes
+- [x] Document rate limits, pagination, and error codes
 
 **Effort:** Medium | **Impact:** Medium
 

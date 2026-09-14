@@ -141,8 +141,12 @@ func (h *TileHandler) ListTilesets(ctx context.Context, req *connect.Request[pb.
 		TotalCount: totalCount,
 	}
 
-	// Compute next page token
-	nextOffset := params.Offset + params.PageSize
+	// Advance by the number of rows actually returned, not by the requested
+	// page size. The service clamps its own copy of params, so a client that
+	// omitted page_size leaves PageSize at 0 here — the token would then be
+	// the offset the client just read, and paging would loop forever while
+	// each response still carried a full page of rows.
+	nextOffset := params.Offset + int32(len(tilesets))
 	if nextOffset < totalCount {
 		resp.NextPageToken = fmt.Sprintf("%d", nextOffset)
 	}

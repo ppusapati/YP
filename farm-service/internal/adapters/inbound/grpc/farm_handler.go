@@ -128,7 +128,12 @@ func (h *FarmHandler) ListFarms(ctx context.Context, req *connect.Request[pb.Lis
 		return nil, errors.ToConnectError(err)
 	}
 	resp := &pb.ListFarmsResponse{Farms: mappers.FarmsToProto(farms), TotalCount: total}
-	if next := params.Offset + params.PageSize; next < total {
+	// Advance by the number of rows actually returned, not by the requested
+	// page size. The service clamps its own copy of params, so a client that
+	// omitted page_size leaves PageSize at 0 here — the token would then be
+	// the offset the client just read, and paging would loop forever while
+	// each response still carried a full page of rows.
+	if next := params.Offset + int32(len(farms)); next < total {
 		resp.NextPageToken = fmt.Sprintf("%d", next)
 	}
 	return connect.NewResponse(resp), nil
@@ -239,10 +244,10 @@ func (h *FarmHandler) CreateManagementUnit(ctx context.Context, req *connect.Req
 	}
 
 	unit := &domain.ManagementUnit{
-		FarmID:          req.Msg.GetFarmId(),
-		Name:            req.Msg.GetName(),
-		UnitType:        mappers.ProtoManagementUnitTypeToDomain(req.Msg.GetUnitType()),
-		FieldIDs:        req.Msg.GetFieldIds(),
+		FarmID:   req.Msg.GetFarmId(),
+		Name:     req.Msg.GetName(),
+		UnitType: mappers.ProtoManagementUnitTypeToDomain(req.Msg.GetUnitType()),
+		FieldIDs: req.Msg.GetFieldIds(),
 	}
 	if req.Msg.GetParentUnitId() != "" {
 		s := req.Msg.GetParentUnitId()

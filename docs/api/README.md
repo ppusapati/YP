@@ -5,6 +5,13 @@ API documentation for the YieldPoint agriculture platform, generated from protob
 All services use [ConnectRPC](https://connectrpc.com/) over HTTP. Every RPC is a `POST` request
 with a JSON body sent to `/<package>.<Service>/<Method>`. Responses are JSON.
 
+Before integrating, read:
+
+- **[CONVENTIONS.md](CONVENTIONS.md)** — rate limits, pagination and error codes, as the
+  code actually implements them, including where services disagree with each other.
+- **[VERSIONING.md](VERSIONING.md)** — what may change inside `v1`, and what a `v2` would take.
+- **[CHANGELOG.md](CHANGELOG.md)** — wire-visible changes, with migration snippets.
+
 ## Services
 
 | # | Service | Port | Proto Package | Spec |
