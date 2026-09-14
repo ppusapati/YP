@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::triggers::TriggerConfig;
 
@@ -17,6 +17,99 @@ pub struct TrainingConfig {
     /// Tabular regression tasks (e.g. yield), keyed by task name.
     #[serde(default)]
     pub tabular: HashMap<String, TabularTaskConfig>,
+    /// Pretrained backbone used by `train-heads` for transfer learning.
+    #[serde(default)]
+    pub backbone: Option<BackboneConfig>,
+    /// Head hyper-parameters for `train-heads`.
+    #[serde(default)]
+    pub heads: HeadConfig,
+}
+
+/// A frozen pretrained ONNX backbone used as a feature extractor.
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct BackboneConfig {
+    /// Path to the pretrained ONNX file (ImageNet or agriculture-specific).
+    pub path: String,
+    /// ONNX tensor name to read embeddings from — normally the pooled feature
+    /// map just before the pretrained classifier. Empty uses the graph output.
+    #[serde(default)]
+    pub embedding_output: String,
+    /// Required only when the backbone graph has a symbolic input size.
+    #[serde(default)]
+    pub input_size: usize,
+    /// Pixel normalization the backbone expects: imagenet, unit, or symmetric.
+    #[serde(default)]
+    pub normalization: String,
+}
+
+/// Hyper-parameters for the per-task heads trained on frozen embeddings.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct HeadConfig {
+    /// Width of the hidden layer (must be >= 1).
+    #[serde(default = "default_head_hidden")]
+    pub hidden_size: usize,
+    #[serde(default = "default_head_epochs")]
+    pub num_epochs: usize,
+    #[serde(default = "default_head_batch_size")]
+    pub batch_size: usize,
+    #[serde(default = "default_head_lr")]
+    pub learning_rate: f64,
+    #[serde(default = "default_head_weight_decay")]
+    pub weight_decay: f64,
+    #[serde(default = "default_head_dropout")]
+    pub dropout: f64,
+    #[serde(default = "default_head_label_smoothing")]
+    pub label_smoothing: f64,
+    #[serde(default = "default_head_patience")]
+    pub early_stopping_patience: usize,
+    /// Extra augmented copies of each training image to embed. 0 embeds each
+    /// image once, unaugmented.
+    #[serde(default = "default_augment_passes")]
+    pub augment_passes: u32,
+}
+
+impl Default for HeadConfig {
+    fn default() -> Self {
+        Self {
+            hidden_size: default_head_hidden(),
+            num_epochs: default_head_epochs(),
+            batch_size: default_head_batch_size(),
+            learning_rate: default_head_lr(),
+            weight_decay: default_head_weight_decay(),
+            dropout: default_head_dropout(),
+            label_smoothing: default_head_label_smoothing(),
+            early_stopping_patience: default_head_patience(),
+            augment_passes: default_augment_passes(),
+        }
+    }
+}
+
+fn default_head_hidden() -> usize {
+    256
+}
+fn default_head_epochs() -> usize {
+    60
+}
+fn default_head_batch_size() -> usize {
+    64
+}
+fn default_head_lr() -> f64 {
+    0.001
+}
+fn default_head_weight_decay() -> f64 {
+    0.0001
+}
+fn default_head_dropout() -> f64 {
+    0.2
+}
+fn default_head_label_smoothing() -> f64 {
+    0.05
+}
+fn default_head_patience() -> usize {
+    8
+}
+fn default_augment_passes() -> u32 {
+    2
 }
 
 /// Configuration for a tabular regression task trained with gradient boosting.
@@ -138,13 +231,85 @@ pub struct TaskConfig {
     pub output_model: String,
 }
 
+/// Training-time augmentation. The first five fields are the original
+/// geometry/brightness knobs; the rest target field-photo conditions and
+/// default to sensible values so older configs keep working.
 #[derive(Debug, Deserialize, Clone)]
 pub struct AugmentationConfig {
     pub horizontal_flip: bool,
     pub vertical_flip: bool,
+    /// Max rotation in degrees (0 disables).
     pub rotation_limit: u32,
     pub brightness_range: [f64; 2],
+    /// Random-resized-crop scale range as a fraction of the shorter side.
     pub random_crop_scale: [f64; 2],
+    /// Contrast multiplier about mid-grey.
+    #[serde(default = "default_contrast_range")]
+    pub contrast_range: [f64; 2],
+    /// Gamma range (harsh sun / deep shade).
+    #[serde(default = "default_gamma_range")]
+    pub gamma_range: [f64; 2],
+    /// Max per-channel gain deviation for white-balance / colour casts.
+    #[serde(default = "default_color_cast")]
+    pub color_cast: f64,
+    /// Probability of re-lighting the periphery outside a random ellipse
+    /// (uneven subject vs background illumination).
+    #[serde(default = "default_background_prob")]
+    pub background_prob: f64,
+    /// Probability of camera-shake motion blur.
+    #[serde(default = "default_motion_blur_prob")]
+    pub motion_blur_prob: f64,
+    /// Longest blur streak in pixels (at the decoded resolution).
+    #[serde(default = "default_motion_blur_max_len")]
+    pub motion_blur_max_len: u32,
+    /// Probability of painting occluding patches (hands, leaves, tools).
+    #[serde(default = "default_occlusion_prob")]
+    pub occlusion_prob: f64,
+    #[serde(default = "default_occlusion_max_patches")]
+    pub occlusion_max_patches: u32,
+    /// Max area fraction covered by one patch.
+    #[serde(default = "default_occlusion_max_frac")]
+    pub occlusion_max_frac: f64,
+    /// Max Gaussian sensor-noise sigma as a fraction of full scale.
+    #[serde(default = "default_noise_std")]
+    pub noise_std: f64,
+    /// Base seed; draws are keyed by sample id and epoch on top of it.
+    #[serde(default = "default_aug_seed")]
+    pub seed: u64,
+}
+
+fn default_contrast_range() -> [f64; 2] {
+    [0.8, 1.2]
+}
+fn default_gamma_range() -> [f64; 2] {
+    [0.8, 1.25]
+}
+fn default_color_cast() -> f64 {
+    0.1
+}
+fn default_background_prob() -> f64 {
+    0.2
+}
+fn default_motion_blur_prob() -> f64 {
+    0.2
+}
+fn default_motion_blur_max_len() -> u32 {
+    9
+}
+fn default_occlusion_prob() -> f64 {
+    0.3
+}
+fn default_occlusion_max_patches() -> u32 {
+    2
+}
+fn default_occlusion_max_frac() -> f64 {
+    0.2
+}
+fn default_noise_std() -> f64 {
+    0.02
+}
+fn default_aug_seed() -> u64 {
+    42
 }
 
 #[derive(Debug, Deserialize, Clone)]

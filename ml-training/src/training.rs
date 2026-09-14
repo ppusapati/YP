@@ -1,18 +1,14 @@
 use std::path::Path;
 
+use crate::config::{AugmentationConfig, TaskConfig};
+use crate::dataset::{PlantBatcher, Sample};
+use crate::model::PlantCnn;
 use burn::data::dataloader::batcher::Batcher;
 use burn::optim::AdamWConfig;
 use burn::prelude::*;
 use burn::record::{CompactRecorder, Recorder};
-use burn_autodiff::Autodiff;
-use burn_ndarray::NdArray;
 
-use crate::config::TaskConfig;
-use crate::dataset::{PlantBatcher, Sample};
-use crate::model::PlantCnn;
-
-type TrainBackend = Autodiff<NdArray>;
-type _InferBackend = NdArray;
+use crate::backend::TrainBackend;
 
 pub struct TrainingResult {
     pub best_val_acc: f64,
@@ -48,7 +44,7 @@ pub struct LossOptions {
     pub label_smoothing: f64,
 }
 
-fn loss_config(opts: &LossOptions) -> burn::nn::loss::CrossEntropyLossConfig {
+pub fn loss_config(opts: &LossOptions) -> burn::nn::loss::CrossEntropyLossConfig {
     let mut cfg = burn::nn::loss::CrossEntropyLossConfig::new();
     if !opts.class_weights.is_empty() {
         cfg = cfg.with_weights(Some(opts.class_weights.clone()));
@@ -69,6 +65,7 @@ pub fn train(
     output_dir: &Path,
     loss_opts: &LossOptions,
     idx_to_label: &std::collections::HashMap<usize, String>,
+    augmentation: Option<&AugmentationConfig>,
 ) -> anyhow::Result<TrainingResult> {
     let device = <TrainBackend as Backend>::Device::default();
 
@@ -87,7 +84,13 @@ pub fn train(
         .with_weight_decay(task_config.weight_decay as f32)
         .init();
 
+    // Validation/test/noise detection see plain preprocessing; only training
+    // batches are augmented, re-seeded each epoch.
     let batcher = PlantBatcher::new(task_config.input_size);
+    let train_batcher = match augmentation {
+        Some(cfg) => batcher.clone().with_augmentation(cfg),
+        None => batcher.clone(),
+    };
     let batch_size = task_config.batch_size;
 
     let mut best_val_acc = 0.0f64;
@@ -99,7 +102,7 @@ pub fn train(
             &mut model,
             &mut optimizer,
             &train_samples,
-            &batcher,
+            &train_batcher.for_epoch(epoch as u64),
             batch_size,
             task_config.learning_rate,
             epoch,

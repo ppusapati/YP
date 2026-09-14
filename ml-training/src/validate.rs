@@ -1,12 +1,9 @@
 use std::collections::HashMap;
 
-use burn::data::dataloader::batcher::Batcher;
-use burn_ndarray::NdArray;
-
+use crate::backend::InferBackend;
 use crate::dataset::{PlantBatcher, Sample};
 use crate::model::PlantCnn;
-
-type InferBackend = NdArray;
+use burn::data::dataloader::batcher::Batcher;
 
 pub struct ValidationReport {
     pub accuracy: f64,

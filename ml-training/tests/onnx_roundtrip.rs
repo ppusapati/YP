@@ -107,3 +107,186 @@ fn load_dir_reads_training_meta_labels() {
     std::fs::write(dir.path().join("labels.json"), r#"["a","b"]"#).unwrap();
     assert!(OnnxClassifier::load_dir(dir.path()).is_err());
 }
+
+// ── Multi-task composition ───────────────────────────────────────────────────
+
+/// A backbone plus trained heads must, once composed, compute exactly the
+/// logits the heads were trained to produce — and the manifest written by the
+/// trainer must be readable by the serving crate.
+#[test]
+fn composed_multitask_model_matches_the_heads_it_was_built_from() {
+    use plant_ai_inference_engine::MultiTaskClassifier;
+    use yp_ml_training::backbone::Backbone;
+    use yp_ml_training::compose::{compose_multitask, synthetic::synthetic_backbone, HeadSpec};
+    use yp_ml_training::config::BackboneConfig;
+
+    let dir = tempfile::tempdir().unwrap();
+    let backbone_path = dir.path().join("backbone.onnx");
+    std::fs::write(&backbone_path, synthetic_backbone(32, 8, 1000)).unwrap();
+
+    let backbone = Backbone::load(&BackboneConfig {
+        path: backbone_path.display().to_string(),
+        embedding_output: "embedding".into(),
+        ..Default::default()
+    })
+    .unwrap();
+    let dim = backbone.embedding_dim();
+    assert_eq!(dim, 8);
+
+    // Deterministic head weights so the expected logits can be computed by hand.
+    let head = |task: &str, classes: usize, scale: f32| HeadSpec {
+        task: task.to_string(),
+        layers: vec![(
+            (0..dim * classes)
+                .map(|i| (i as f32 % 5.0 - 2.0) * scale)
+                .collect(),
+            (0..classes).map(|i| i as f32 * 0.1).collect(),
+            dim,
+            classes,
+        )],
+        labels: (0..classes).map(|i| format!("{task}_{i}")).collect(),
+    };
+    let heads = vec![head("disease", 3, 0.05), head("pest", 2, 0.08)];
+
+    let model_dir = dir.path().join("multitask");
+    let manifest = compose_multitask(&backbone, &heads, &model_dir).unwrap();
+    assert_eq!(manifest.tasks.len(), 2);
+    assert_eq!(manifest.input_size, 32);
+
+    // The serving crate reads the trainer's manifest as written.
+    let classifier = MultiTaskClassifier::load_dir(&model_dir).unwrap();
+    assert_eq!(classifier.tasks(), vec!["disease", "pest"]);
+    assert_eq!(classifier.num_classes("disease"), 3);
+    assert!(classifier.has_task("pest"));
+    assert!(!classifier.has_task("yield"));
+
+    // A real image through both paths must agree.
+    let image = image::RgbImage::from_fn(50, 44, |x, y| {
+        image::Rgb([(x * 3) as u8, (y * 5 + 20) as u8, ((x ^ y) * 2) as u8])
+    });
+    let png = {
+        let mut buf = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgb8(image.clone())
+            .write_to(&mut buf, image::ImageFormat::Png)
+            .unwrap();
+        buf.into_inner()
+    };
+
+    let embedding = backbone.embed_rgb(&image).unwrap();
+    let logits = classifier
+        .run(&classifier.preprocess(&png).unwrap())
+        .unwrap();
+    assert_eq!(logits.len(), 2);
+
+    for (head, actual) in heads.iter().zip(&logits) {
+        let (weight, bias, fan_in, fan_out) = &head.layers[0];
+        assert_eq!(actual.len(), *fan_out);
+        for out in 0..*fan_out {
+            let expected: f32 = (0..*fan_in)
+                .map(|i| embedding[i] * weight[i * fan_out + out])
+                .sum::<f32>()
+                + bias[out];
+            assert!(
+                (expected - actual[out]).abs() < 1e-3,
+                "{} class {out}: expected {expected}, got {}",
+                head.task,
+                actual[out]
+            );
+        }
+    }
+
+    // Per-task classification reads the right slot and ranks the labels.
+    let disease = classifier.classify_task("disease", &png, 3).unwrap();
+    assert!(disease.class_name.starts_with("disease_"));
+    assert_eq!(disease.top_k.len(), 3);
+    let all = classifier.classify_image(&png, 1).unwrap();
+    assert_eq!(all.len(), 2);
+    assert_eq!(all["disease"].class_name, disease.class_name);
+}
+
+/// The int8 model shipped to phones must still agree with the float model it
+/// was derived from, and must be substantially smaller.
+#[test]
+fn quantized_model_tracks_the_float_model() {
+    use plant_ai_inference_engine::MultiTaskClassifier;
+    use yp_ml_training::compose::{compose_bytes, synthetic::synthetic_backbone, HeadSpec};
+    use yp_ml_training::quantize::{quantize_bytes, DEFAULT_MIN_ELEMENTS};
+
+    let dim = 64;
+    let classes = 4;
+    let head = HeadSpec {
+        task: "disease".into(),
+        layers: vec![(
+            (0..dim * classes)
+                .map(|i| ((i % 13) as f32 - 6.0) * 0.03)
+                .collect(),
+            vec![0.0; classes],
+            dim,
+            classes,
+        )],
+        labels: (0..classes).map(|i| format!("class_{i}")).collect(),
+    };
+    let float_model = compose_bytes(
+        &synthetic_backbone(32, dim, 500),
+        "embedding",
+        &[head.clone()],
+    )
+    .unwrap();
+    let (int8_model, report) = quantize_bytes(&float_model, DEFAULT_MIN_ELEMENTS).unwrap();
+    // The convolution weights dominate the file and are quantized; the small
+    // head and every bias stay float, which is the intended trade.
+    assert_eq!(report.tensors_quantized, 1, "{report:?}");
+    assert!(report.tensors_kept_float >= 3, "{report:?}");
+    assert!(
+        report.size_reduction_pct() > 40.0,
+        "expected a real size win, got {:.1}%",
+        report.size_reduction_pct()
+    );
+
+    let manifest = serde_json::json!({
+        "input_size": 32,
+        "tasks": [{ "name": "disease", "output": "logits_disease", "labels": head.labels }],
+    });
+    let manifest: plant_ai_inference_engine::MultiTaskManifest =
+        serde_json::from_value(manifest).unwrap();
+
+    let float_clf =
+        MultiTaskClassifier::from_bytes(&float_model, manifest.clone(), "float").unwrap();
+    let int8_clf = MultiTaskClassifier::from_bytes(&int8_model, manifest, "int8").unwrap();
+
+    let image = image::RgbImage::from_fn(40, 40, |x, y| {
+        image::Rgb([(x * 6) as u8, (y * 6) as u8, 128])
+    });
+    let png = {
+        let mut buf = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgb8(image)
+            .write_to(&mut buf, image::ImageFormat::Png)
+            .unwrap();
+        buf.into_inner()
+    };
+    let chw = float_clf.preprocess(&png).unwrap();
+    let float_logits = &float_clf.run(&chw).unwrap()[0];
+    let int8_logits = &int8_clf.run(&chw).unwrap()[0];
+
+    let spread = float_logits.iter().cloned().fold(f32::MIN, f32::max)
+        - float_logits.iter().cloned().fold(f32::MAX, f32::min);
+    assert!(spread > 1e-3, "logits are degenerate: {float_logits:?}");
+
+    for (i, (f, q)) in float_logits.iter().zip(int8_logits).enumerate() {
+        assert!(
+            (f - q).abs() < spread * 0.05,
+            "logit {i} drifted too far under quantization: float {f}, int8 {q}"
+        );
+    }
+    // The ranking a user sees must be unchanged.
+    let argmax = |v: &[f32]| {
+        v.iter()
+            .enumerate()
+            .fold(
+                (0usize, f32::MIN),
+                |a, (i, &x)| if x > a.1 { (i, x) } else { a },
+            )
+            .0
+    };
+    assert_eq!(argmax(float_logits), argmax(int8_logits));
+}

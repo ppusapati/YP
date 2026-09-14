@@ -6089,6 +6089,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "tract-onnx",
  "yield-prediction-engine",
 ]
 

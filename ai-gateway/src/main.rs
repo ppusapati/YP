@@ -72,6 +72,13 @@ async fn main() -> anyhow::Result<()> {
             ServingStatus::NotServing
         };
         reporter.set_service_status(&name, serving).await;
+        if status.shared {
+            tracing::info!(
+                task = status.task.name(),
+                version = %status.version,
+                "task served by the shared multi-task model"
+            );
+        }
     }
 
     // Start the gRPC server.

@@ -47,7 +47,9 @@ label_smoothing = 0.1
 early_stopping_patience = 10
 output_model = "/models/nutrient-deficiency-v1/model.onnx"
 
-[tasks.classification]
+# Task keys must match the directory names the AI gateway collects into
+# (disease, pest, nutrient_deficiency, plant_classification).
+[tasks.plant_classification]
 input_size = 224
 num_epochs = 50
 batch_size = 32
@@ -72,13 +74,69 @@ interval_coverage = 0.9
 min_r_squared = 0.5
 output_model = "/models/yield-gbm-v1/model.json"
 
+# Augmentation tuned for field photos. Applied to training batches only;
+# validation, test, and inference see plain preprocessing. Draws are seeded by
+# `seed` + sample id + epoch, so a run is reproducible.
 [augmentation]
 horizontal_flip = true
 vertical_flip = false
 rotation_limit = 30
 brightness_range = [0.8, 1.2]
 random_crop_scale = [0.8, 1.0]
+# Harsh sun and deep shade.
+contrast_range = [0.8, 1.2]
+gamma_range = [0.8, 1.25]
+# White-balance drift from soil and sky (max per-channel gain deviation).
+color_cast = 0.1
+# Subject lit differently from the background.
+background_prob = 0.2
+# Camera shake.
+motion_blur_prob = 0.2
+motion_blur_max_len = 9
+# Hands, other leaves, tools in front of the subject.
+occlusion_prob = 0.3
+occlusion_max_patches = 2
+occlusion_max_frac = 0.2
+# Sensor noise, as a fraction of full scale.
+noise_std = 0.02
+seed = 42
 
 [export]
 onnx_opset = 17
 dynamic_batch = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Transfer learning (`yp-ml-training train-heads`)
+# ─────────────────────────────────────────────────────────────────────────────
+# A pretrained ONNX backbone is run once per image to produce an embedding, and
+# a small head is fitted per task on those embeddings. The heads are then
+# spliced back onto the backbone as one multi-output model, so serving every
+# vision task costs a single forward pass.
+#
+# The backbone stays frozen: burn cannot import ONNX weights at runtime, so
+# full fine-tuning is not available here. Supply any ImageNet or
+# agriculture-specific checkpoint exported to ONNX (MobileNetV3, EfficientNet,
+# ResNet, ...). To try the pipeline without one:
+#   cargo run --example synthetic_backbone -- /tmp/backbone.onnx 32 32
+[backbone]
+path = ""
+# ONNX tensor name to read embeddings from — usually the pooled feature map
+# just before the pretrained classifier. Empty uses the graph's own output.
+embedding_output = ""
+# Only needed when the backbone graph has a symbolic input size.
+input_size = 0
+# Pixel normalization the backbone expects: imagenet, unit, or symmetric.
+normalization = "imagenet"
+
+[heads]
+hidden_size = 256
+num_epochs = 60
+batch_size = 64
+learning_rate = 0.001
+weight_decay = 0.0001
+dropout = 0.2
+label_smoothing = 0.05
+early_stopping_patience = 8
+# Extra augmented copies of each training image to embed. Embeddings are
+# cached, so this cost is paid once rather than every epoch.
+augment_passes = 2

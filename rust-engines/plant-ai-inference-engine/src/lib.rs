@@ -3,11 +3,15 @@
 //! High-performance image preprocessing and AI model inference pipeline.
 //! Handles image normalization, tiling, batch preparation, and result postprocessing.
 
+pub mod multitask;
 pub mod onnx;
 pub mod pipeline;
 pub mod postprocessing;
 pub mod preprocessing;
 
+pub use multitask::{
+    MultiTaskClassifier, MultiTaskManifest, Normalization, TaskEntry, MANIFEST_FILE_NAME,
+};
 pub use onnx::{
     OnnxClassifier, OnnxError, LABELS_FILE_NAME, MODEL_FILE_NAME, TRAINING_META_FILE_NAME,
 };

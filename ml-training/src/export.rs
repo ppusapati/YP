@@ -10,131 +10,7 @@ use std::path::Path;
 
 use prost::Message;
 
-mod onnx_pb {
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct ModelProto {
-        #[prost(int64, tag = "1")]
-        pub ir_version: i64,
-        #[prost(message, repeated, tag = "8")]
-        pub opset_import: Vec<OperatorSetIdProto>,
-        #[prost(message, optional, tag = "7")]
-        pub graph: Option<GraphProto>,
-        // Field numbers follow onnx.proto3: 2 = producer_name (5 is model_version).
-        #[prost(string, tag = "2")]
-        pub producer_name: String,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct OperatorSetIdProto {
-        #[prost(string, tag = "1")]
-        pub domain: String,
-        #[prost(int64, tag = "2")]
-        pub version: i64,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct GraphProto {
-        #[prost(message, repeated, tag = "1")]
-        pub node: Vec<NodeProto>,
-        #[prost(string, tag = "2")]
-        pub name: String,
-        #[prost(message, repeated, tag = "5")]
-        pub initializer: Vec<TensorProto>,
-        #[prost(message, repeated, tag = "11")]
-        pub input: Vec<ValueInfoProto>,
-        #[prost(message, repeated, tag = "12")]
-        pub output: Vec<ValueInfoProto>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct NodeProto {
-        #[prost(string, repeated, tag = "1")]
-        pub input: Vec<String>,
-        #[prost(string, repeated, tag = "2")]
-        pub output: Vec<String>,
-        #[prost(string, tag = "3")]
-        pub name: String,
-        #[prost(string, tag = "4")]
-        pub op_type: String,
-        #[prost(message, repeated, tag = "5")]
-        pub attribute: Vec<AttributeProto>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct AttributeProto {
-        #[prost(string, tag = "1")]
-        pub name: String,
-        #[prost(int32, tag = "20")]
-        pub r#type: i32,
-        #[prost(float, tag = "2")]
-        pub f: f32,
-        #[prost(int64, tag = "3")]
-        pub i: i64,
-        #[prost(float, repeated, tag = "7")]
-        pub floats: Vec<f32>,
-        #[prost(int64, repeated, tag = "8")]
-        pub ints: Vec<i64>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct TensorProto {
-        #[prost(int64, repeated, tag = "1")]
-        pub dims: Vec<i64>,
-        #[prost(int32, tag = "2")]
-        pub data_type: i32,
-        #[prost(string, tag = "8")]
-        pub name: String,
-        #[prost(bytes, tag = "9")]
-        pub raw_data: Vec<u8>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct ValueInfoProto {
-        #[prost(string, tag = "1")]
-        pub name: String,
-        #[prost(message, optional, tag = "2")]
-        pub r#type: Option<TypeProto>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct TypeProto {
-        #[prost(message, optional, tag = "1")]
-        pub tensor_type: Option<TensorTypeProto>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct TensorTypeProto {
-        #[prost(int32, tag = "1")]
-        pub elem_type: i32,
-        #[prost(message, optional, tag = "2")]
-        pub shape: Option<TensorShapeProto>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct TensorShapeProto {
-        #[prost(message, repeated, tag = "1")]
-        pub dim: Vec<Dimension>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Message)]
-    pub struct Dimension {
-        #[prost(oneof = "DimValue", tags = "1, 2")]
-        pub value: Option<DimValue>,
-    }
-
-    #[derive(Clone, PartialEq, prost::Oneof)]
-    pub enum DimValue {
-        #[prost(int64, tag = "1")]
-        DimValue(i64),
-        #[prost(string, tag = "2")]
-        DimParam(String),
-    }
-
-    pub const FLOAT: i32 = 1;
-    pub const ATTR_FLOAT: i32 = 1;
-    pub const ATTR_INT: i32 = 2;
-    pub const ATTR_INTS: i32 = 7;
-}
+use crate::onnx_proto as onnx_pb;
 
 use onnx_pb::*;
 
@@ -149,7 +25,7 @@ pub fn export_to_onnx(
     let mut initializers = Vec::new();
 
     for (name, dims, data) in weights {
-        initializers.push(make_tensor(name, dims, data));
+        initializers.push(TensorProto::floats(name, dims, data));
     }
 
     let conv_blocks = [
@@ -222,11 +98,15 @@ pub fn export_to_onnx(
         name: "plant_cnn".to_string(),
         node: nodes,
         initializer: initializers,
-        input: vec![make_value_info(
+        input: vec![ValueInfoProto::float_tensor(
             "input",
             &[-1, 3, input_size as i64, input_size as i64],
         )],
-        output: vec![make_value_info("logits", &[-1, num_classes as i64])],
+        output: vec![ValueInfoProto::float_tensor(
+            "logits",
+            &[-1, num_classes as i64],
+        )],
+        ..Default::default()
     };
 
     let model = ModelProto {
@@ -237,6 +117,7 @@ pub fn export_to_onnx(
         }],
         graph: Some(graph),
         producer_name: "yp-ml-training".to_string(),
+        ..Default::default()
     };
 
     let mut buf = Vec::new();
@@ -256,162 +137,70 @@ pub fn export_to_onnx(
     Ok(())
 }
 
-fn make_tensor(name: &str, dims: &[usize], data: &[f32]) -> TensorProto {
-    let raw_data: Vec<u8> = data.iter().flat_map(|f| f.to_le_bytes()).collect();
-    TensorProto {
-        name: name.to_string(),
-        dims: dims.iter().map(|&d| d as i64).collect(),
-        data_type: FLOAT,
-        raw_data,
-    }
-}
-
-fn make_value_info(name: &str, dims: &[i64]) -> ValueInfoProto {
-    ValueInfoProto {
-        name: name.to_string(),
-        r#type: Some(TypeProto {
-            tensor_type: Some(TensorTypeProto {
-                elem_type: FLOAT,
-                shape: Some(TensorShapeProto {
-                    dim: dims
-                        .iter()
-                        .map(|&d| {
-                            if d < 0 {
-                                Dimension {
-                                    value: Some(DimValue::DimParam("batch".to_string())),
-                                }
-                            } else {
-                                Dimension {
-                                    value: Some(DimValue::DimValue(d)),
-                                }
-                            }
-                        })
-                        .collect(),
-                }),
-            }),
-        }),
-    }
-}
-
 fn make_conv_node(name: &str, input: &str, output: &str) -> NodeProto {
     NodeProto {
-        name: name.to_string(),
-        op_type: "Conv".to_string(),
-        input: vec![
-            input.to_string(),
-            format!("{name}.weight"),
-            format!("{name}.bias"),
-        ],
-        output: vec![output.to_string()],
         attribute: vec![
             int_attr("group", 1),
             ints_attr("kernel_shape", &[3, 3]),
             ints_attr("pads", &[1, 1, 1, 1]),
             ints_attr("strides", &[1, 1]),
         ],
+        ..onnx_pb::node(
+            name,
+            "Conv",
+            &[input, &format!("{name}.weight"), &format!("{name}.bias")],
+            &[output],
+        )
     }
 }
 
 fn make_bn_node(name: &str, input: &str, output: &str) -> NodeProto {
     NodeProto {
-        name: name.to_string(),
-        op_type: "BatchNormalization".to_string(),
-        input: vec![
-            input.to_string(),
-            format!("{name}.weight"),
-            format!("{name}.bias"),
-            format!("{name}.running_mean"),
-            format!("{name}.running_var"),
-        ],
-        output: vec![output.to_string()],
         attribute: vec![float_attr("epsilon", 1e-5), float_attr("momentum", 0.1)],
+        ..onnx_pb::node(
+            name,
+            "BatchNormalization",
+            &[
+                input,
+                &format!("{name}.weight"),
+                &format!("{name}.bias"),
+                &format!("{name}.running_mean"),
+                &format!("{name}.running_var"),
+            ],
+            &[output],
+        )
     }
 }
 
 fn make_relu_node(name: &str, input: &str, output: &str) -> NodeProto {
-    NodeProto {
-        name: name.to_string(),
-        op_type: "Relu".to_string(),
-        input: vec![input.to_string()],
-        output: vec![output.to_string()],
-        attribute: vec![],
-    }
+    onnx_pb::node(name, "Relu", &[input], &[output])
 }
 
 fn make_maxpool_node(name: &str, input: &str, output: &str) -> NodeProto {
     NodeProto {
-        name: name.to_string(),
-        op_type: "MaxPool".to_string(),
-        input: vec![input.to_string()],
-        output: vec![output.to_string()],
         attribute: vec![
             ints_attr("kernel_shape", &[2, 2]),
             ints_attr("strides", &[2, 2]),
         ],
+        ..onnx_pb::node(name, "MaxPool", &[input], &[output])
     }
 }
 
 fn make_global_avg_pool_node(name: &str, input: &str, output: &str) -> NodeProto {
-    NodeProto {
-        name: name.to_string(),
-        op_type: "GlobalAveragePool".to_string(),
-        input: vec![input.to_string()],
-        output: vec![output.to_string()],
-        attribute: vec![],
-    }
+    onnx_pb::node(name, "GlobalAveragePool", &[input], &[output])
 }
 
 fn make_flatten_node(name: &str, input: &str, output: &str) -> NodeProto {
     NodeProto {
-        name: name.to_string(),
-        op_type: "Flatten".to_string(),
-        input: vec![input.to_string()],
-        output: vec![output.to_string()],
         attribute: vec![int_attr("axis", 1)],
+        ..onnx_pb::node(name, "Flatten", &[input], &[output])
     }
 }
 
 fn make_gemm_node(name: &str, input: &str, weight: &str, bias: &str, output: &str) -> NodeProto {
-    NodeProto {
-        name: name.to_string(),
-        op_type: "Gemm".to_string(),
-        input: vec![input.to_string(), weight.to_string(), bias.to_string()],
-        output: vec![output.to_string()],
-        attribute: vec![
-            float_attr("alpha", 1.0),
-            float_attr("beta", 1.0),
-            // burn's Linear stores weight as [in_features, out_features], which is
-            // exactly Gemm's B operand when transB = 0 (Y = A[N,in] · B[in,out]).
-            int_attr("transB", 0),
-        ],
-    }
-}
-
-fn float_attr(name: &str, val: f32) -> AttributeProto {
-    AttributeProto {
-        name: name.to_string(),
-        r#type: ATTR_FLOAT,
-        f: val,
-        ..Default::default()
-    }
-}
-
-fn int_attr(name: &str, val: i64) -> AttributeProto {
-    AttributeProto {
-        name: name.to_string(),
-        r#type: ATTR_INT,
-        i: val,
-        ..Default::default()
-    }
-}
-
-fn ints_attr(name: &str, vals: &[i64]) -> AttributeProto {
-    AttributeProto {
-        name: name.to_string(),
-        r#type: ATTR_INTS,
-        ints: vals.to_vec(),
-        ..Default::default()
-    }
+    // burn's Linear stores weight as [in_features, out_features], which is
+    // exactly Gemm's B operand when transB = 0 (Y = A[N,in] · B[in,out]).
+    onnx_pb::gemm_node(name, input, weight, bias, output)
 }
 
 #[cfg(test)]
@@ -430,12 +219,10 @@ mod tests {
             }],
             graph: Some(GraphProto {
                 name: "test_graph".to_string(),
-                node: vec![],
-                initializer: vec![],
-                input: vec![],
-                output: vec![],
+                ..Default::default()
             }),
             producer_name: "test-producer".to_string(),
+            ..Default::default()
         };
 
         let mut buf = Vec::new();
@@ -453,7 +240,7 @@ mod tests {
     #[test]
     fn make_tensor_encodes_floats() {
         let data = vec![1.0f32, 2.0, 3.0, 4.0, 5.0, 6.0];
-        let tensor = make_tensor("w", &[2, 3], &data);
+        let tensor = TensorProto::floats("w", &[2, 3], &data);
         assert_eq!(tensor.name, "w");
         assert_eq!(tensor.dims, vec![2, 3]);
         assert_eq!(tensor.data_type, FLOAT);
@@ -467,7 +254,7 @@ mod tests {
 
     #[test]
     fn make_value_info_static_dims() {
-        let vi = make_value_info("input", &[1, 3, 64, 64]);
+        let vi = ValueInfoProto::float_tensor("input", &[1, 3, 64, 64]);
         assert_eq!(vi.name, "input");
         let shape = vi.r#type.unwrap().tensor_type.unwrap().shape.unwrap();
         assert_eq!(shape.dim.len(), 4);
@@ -481,7 +268,7 @@ mod tests {
 
     #[test]
     fn make_value_info_dynamic_batch() {
-        let vi = make_value_info("x", &[-1, 3, 64, 64]);
+        let vi = ValueInfoProto::float_tensor("x", &[-1, 3, 64, 64]);
         let shape = vi.r#type.unwrap().tensor_type.unwrap().shape.unwrap();
         match &shape.dim[0].value {
             Some(DimValue::DimParam(s)) => assert_eq!(s, "batch"),

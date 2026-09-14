@@ -16,6 +16,9 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png"]
 # ONNX protobuf export
 prost = "0.13"
 
+# Pretrained-backbone feature extraction (pure Rust, CPU); MSRV 1.75.
+tract-onnx = "0.21"
+
 # Tabular yield model (shared with the AI gateway so the same artifact is served)
 yield-prediction-engine = { path = "../rust-engines/yield-prediction-engine" }
 
@@ -44,4 +47,6 @@ plant-ai-inference-engine = { path = "../rust-engines/plant-ai-inference-engine"
 
 [features]
 default = []
+# GPU backends for training; `cuda` takes precedence when both are enabled.
 wgpu = ["burn/wgpu"]
+cuda = ["burn/cuda-jit"]

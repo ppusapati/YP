@@ -1,9 +1,12 @@
 //! Diagnosis operations: disease detection, pest detection, nutrient deficiency, plant classification.
 //!
 //! Each task first tries the trained ONNX classifier configured in
-//! `ModelPaths` (a directory holding `model.onnx` and a label map). When no
-//! model is present or inference fails, the demo detectors answer with a
-//! `*-demo-*` version so the service layer can fall back to external APIs.
+//! `ModelPaths` (a directory holding `model.onnx` and a label map), then the
+//! shared multi-task model when one is configured — that model answers every
+//! task from a single backbone pass, so it is the cheaper option whenever a
+//! task has no specialised model of its own. When neither is present or
+//! inference fails, the demo detectors answer with a `*-demo-*` version so the
+//! service layer can fall back to external APIs.
 
 use std::path::Path;
 use std::time::Instant;
@@ -11,7 +14,7 @@ use std::time::Instant;
 use disease_detection_engine::{DiseaseDetector, ImageBuffer as DiseaseImageBuffer};
 use nutrient_deficiency_engine::{DeficiencyDetector, ImageBuffer as DeficiencyImageBuffer};
 use pest_detection_engine::{ImageBuffer as PestImageBuffer, PestDetector};
-use plant_ai_inference_engine::{ClassificationOutput, OnnxClassifier};
+use plant_ai_inference_engine::{ClassificationOutput, MultiTaskClassifier, OnnxClassifier};
 use plant_classification_engine::{ImageBuffer as ClassificationImageBuffer, PlantClassifier};
 
 use crate::config::ModelPaths;
@@ -51,6 +54,9 @@ pub struct ModelStatus {
     pub loaded: bool,
     pub version: String,
     pub classes: usize,
+    /// True when this task is served by the shared multi-task model rather
+    /// than a model trained for it alone.
+    pub shared: bool,
 }
 
 pub struct DiagnosisEngine {
@@ -62,6 +68,9 @@ pub struct DiagnosisEngine {
     pest_onnx: Option<OnnxClassifier>,
     deficiency_onnx: Option<OnnxClassifier>,
     classification_onnx: Option<OnnxClassifier>,
+    /// One backbone with a head per task, covering whatever the per-task
+    /// models do not.
+    multitask: Option<MultiTaskClassifier>,
 }
 
 /// Labels that mean "nothing detected" for the detection-style tasks.
@@ -114,6 +123,28 @@ fn load_model(task: VisionTask, dir: &str) -> Option<OnnxClassifier> {
     }
 }
 
+fn load_multitask(dir: &str) -> Option<MultiTaskClassifier> {
+    if dir.trim().is_empty() {
+        return None;
+    }
+    match MultiTaskClassifier::load_dir(Path::new(dir)) {
+        Ok(m) => {
+            tracing::info!(
+                dir,
+                version = m.version(),
+                tasks = ?m.tasks(),
+                input = m.input_size(),
+                "loaded shared multi-task vision model"
+            );
+            Some(m)
+        }
+        Err(e) => {
+            tracing::warn!(dir, error = %e, "no usable multi-task model");
+            None
+        }
+    }
+}
+
 impl DiagnosisEngine {
     pub fn new(model_paths: &ModelPaths) -> Result<Self, String> {
         let disease_detector = DiseaseDetector::with_defaults()
@@ -140,6 +171,7 @@ impl DiagnosisEngine {
                 VisionTask::PlantClassification,
                 &model_paths.plant_classification_model,
             ),
+            multitask: load_multitask(&model_paths.multitask_model),
         })
     }
 
@@ -148,17 +180,38 @@ impl DiagnosisEngine {
         VisionTask::ALL
             .iter()
             .map(|&task| {
-                let m = self.onnx_for(task);
+                if let Some(m) = self.onnx_for(task) {
+                    return ModelStatus {
+                        task,
+                        loaded: true,
+                        version: m.version().to_string(),
+                        classes: m.num_classes(),
+                        shared: false,
+                    };
+                }
+                if let Some(mt) = self.multitask_for(task) {
+                    return ModelStatus {
+                        task,
+                        loaded: true,
+                        version: mt.version().to_string(),
+                        classes: mt.num_classes(task.name()),
+                        shared: true,
+                    };
+                }
                 ModelStatus {
                     task,
-                    loaded: m.is_some(),
-                    version: m
-                        .map(|m| m.version().to_string())
-                        .unwrap_or_else(|| format!("{}-demo-v1", task.name().replace('_', "-"))),
-                    classes: m.map(|m| m.num_classes()).unwrap_or(0),
+                    loaded: false,
+                    version: format!("{}-demo-v1", task.name().replace('_', "-")),
+                    classes: 0,
+                    shared: false,
                 }
             })
             .collect()
+    }
+
+    /// The shared multi-task model, when it covers this task.
+    fn multitask_for(&self, task: VisionTask) -> Option<&MultiTaskClassifier> {
+        self.multitask.as_ref().filter(|m| m.has_task(task.name()))
     }
 
     fn onnx_for(&self, task: VisionTask) -> Option<&OnnxClassifier> {
@@ -170,30 +223,45 @@ impl DiagnosisEngine {
         }
     }
 
-    /// Run the ONNX classifier over every image with bytes; returns None when
-    /// the model is absent or no image could be classified.
+    /// Classify every image that carries bytes, preferring the task's own
+    /// model and falling back to the shared multi-task model. Returns None
+    /// when neither is available or no image could be classified.
     fn classify_all(
         &self,
         task: VisionTask,
         images: &[proto::ImageData],
     ) -> Option<(Vec<ClassificationOutput>, String)> {
-        let model = self.onnx_for(task)?;
-        let mut outputs = Vec::new();
-        for img in images {
-            if img.image_bytes.is_empty() {
-                continue;
+        let with_bytes = || images.iter().filter(|img| !img.image_bytes.is_empty());
+
+        if let Some(model) = self.onnx_for(task) {
+            let mut outputs = Vec::new();
+            for img in with_bytes() {
+                match model.classify_image(&img.image_bytes, 3) {
+                    Ok(out) => outputs.push(out),
+                    Err(e) => {
+                        tracing::warn!(task = task.name(), error = %e, "ONNX inference failed for image")
+                    }
+                }
             }
-            match model.classify_image(&img.image_bytes, 3) {
+            if !outputs.is_empty() {
+                return Some((outputs, model.version().to_string()));
+            }
+        }
+
+        let shared = self.multitask_for(task)?;
+        let mut outputs = Vec::new();
+        for img in with_bytes() {
+            match shared.classify_task(task.name(), &img.image_bytes, 3) {
                 Ok(out) => outputs.push(out),
                 Err(e) => {
-                    tracing::warn!(task = task.name(), error = %e, "ONNX inference failed for image")
+                    tracing::warn!(task = task.name(), error = %e, "multi-task inference failed for image")
                 }
             }
         }
         if outputs.is_empty() {
             return None;
         }
-        Some((outputs, model.version().to_string()))
+        Some((outputs, shared.version().to_string()))
     }
 
     fn extract_image_bytes(img: &proto::ImageData, width: u32, height: u32) -> Vec<u8> {
@@ -598,5 +666,35 @@ mod tests {
         };
         let engine = DiagnosisEngine::new(&paths).unwrap();
         assert!(!engine.model_status()[0].loaded);
+    }
+
+    #[test]
+    fn multitask_model_is_optional_and_failures_degrade_to_demo() {
+        // Unset: nothing is loaded and no task claims to be shared.
+        assert!(load_multitask("").is_none());
+        assert!(load_multitask("   ").is_none());
+
+        // Configured but absent: the gateway still starts, on demo models.
+        let paths = ModelPaths {
+            multitask_model: "/definitely/not/here".into(),
+            ..ModelPaths::default()
+        };
+        let engine = DiagnosisEngine::new(&paths).unwrap();
+        let status = engine.model_status();
+        assert_eq!(status.len(), 4);
+        assert!(status.iter().all(|s| !s.loaded && !s.shared));
+        for task in VisionTask::ALL {
+            assert!(engine.multitask_for(task).is_none());
+        }
+
+        // A directory holding an unreadable model is rejected, not fatal.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("model.onnx"), b"not onnx").unwrap();
+        std::fs::write(
+            dir.path().join("multitask.json"),
+            r#"{"input_size":32,"tasks":[{"name":"disease","output":"logits_disease","labels":["a","b"]}]}"#,
+        )
+        .unwrap();
+        assert!(load_multitask(&dir.path().display().to_string()).is_none());
     }
 }

@@ -351,11 +351,14 @@ These build on each other in order. Each step produces inputs the next one needs
 
 **Enhancements:**
 - [x] Serve exported ONNX models locally in the AI gateway (pure-Rust `tract` runtime in `plant-ai-inference-engine`); vision RPCs try the trained model before the external-API/demo fallback, and each model is reported on the gRPC health service. A burn-vs-tract round-trip test guards the export, which fixed three wrong protobuf field tags and a transposed `Gemm` in the exporter
-- [ ] Import a pretrained backbone (ImageNet or agriculture-specific) via ONNX and fine-tune per task
-- [ ] Add multi-task heads sharing one backbone to cut inference cost on mobile
-- [ ] Add augmentation pipeline tuned for field photos: lighting, occlusion, motion blur, background variation
-- [ ] Add mobile-optimized export (quantized ONNX / TFLite) for on-device inference in the Flutter app
-- [ ] Add GPU support in the training Dockerfile (CUDA backend for burn)
+- [x] Import a pretrained backbone (ImageNet or agriculture-specific) via ONNX and train per task — `yp-ml-training train-heads` runs any ONNX checkpoint with `tract` to embed each image once (cached on disk, keyed by backbone hash), then fits a head per task on those embeddings. The backbone stays **frozen**: burn 0.16 imports ONNX only as build-time codegen, so backpropagating into it is not available; frozen-feature transfer is what this pipeline does
+- [x] Add multi-task heads sharing one backbone to cut inference cost on mobile — the trained heads are spliced back onto the backbone graph as one model with a `logits_<task>` output per task, and everything the new outputs do not need is pruned (including the pretrained classifier tail). `MultiTaskClassifier` in `plant-ai-inference-engine` runs all tasks in a single pass; the gateway's `multitask_model` serves any task lacking a model of its own and reports it as shared on the health service
+- [x] Add augmentation pipeline tuned for field photos: lighting, occlusion, motion blur, background variation — `ml-training/src/augment.rs` adds contrast/gamma/colour-cast, occluding patches, directional blur, off-subject re-lighting, and sensor noise on top of the existing flips/rotation/crop. Draws are seeded by sample id and epoch, so runs reproduce; only training batches are augmented
+- [x] Add mobile-optimized export (quantized ONNX) for on-device inference in the Flutter app — `--quantize` writes an int8 weight-quantized copy (per-tensor symmetric scale + `DequantizeLinear`), roughly a quarter the weight bytes. Biases and small tensors stay float, where low precision costs the most and saves the least. A round-trip test asserts the int8 model's logits and its argmax still match the float model. TFLite conversion needs the TensorFlow converter, outside this pure-Rust pipeline; the int8 ONNX is the portable input to it
+- [x] Add GPU support in the training Dockerfile (CUDA backend for burn) — `ml-training/src/backend.rs` selects ndarray / wgpu / cuda-jit at compile time; `Dockerfile` takes a `FEATURES` build arg and `Dockerfile.cuda` builds the CUDA variant on the NVIDIA toolkit image
+- [x] Full ONNX message definitions so third-party models can be read, modified, and re-emitted losslessly (`ml-training/src/onnx_proto.rs`) — the previous write-only structs would have dropped any field they did not model
+- [x] Fixed the training config's `classification` task key, which never matched the `plant_classification` directory the gateway collects into, so that task could never have found its data
+- [ ] Fine-tune the backbone itself (needs an ONNX importer that yields trainable burn weights, or a second training backend)
 - [ ] Benchmark against the external APIs on the held-out set and gate the kill switches on parity
 
 **Effort:** Large | **Impact:** High

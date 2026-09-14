@@ -3,20 +3,23 @@ use std::path::{Path, PathBuf};
 
 use burn::prelude::*;
 use burn::record::{CompactRecorder, Recorder};
-use burn_ndarray::NdArray;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{fmt, EnvFilter};
 
-use yp_ml_training::config::TrainingConfig;
+use yp_ml_training::augment::Augmenter;
+use yp_ml_training::backbone::{Backbone, EmbeddingCache};
+use yp_ml_training::backend::InferBackend;
+use yp_ml_training::compose;
+use yp_ml_training::config::{BackboneConfig, TrainingConfig};
 use yp_ml_training::dataset::{self, prepare_datasets};
 use yp_ml_training::export;
 use yp_ml_training::model::{extract_weights, PlantCnn};
+use yp_ml_training::multitask;
+use yp_ml_training::quantize;
 use yp_ml_training::registry::ModelRegistry;
 use yp_ml_training::tabular;
 use yp_ml_training::training;
 use yp_ml_training::validate;
-
-type InferBackend = NdArray;
 
 #[derive(Parser)]
 #[command(name = "yp-ml-training", about = "YieldPoint ML training pipeline")]
@@ -56,6 +59,28 @@ enum Commands {
         model_dir: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+        /// Also write an int8 weight-quantized copy for on-device inference
+        #[arg(long)]
+        quantize: bool,
+    },
+    /// Transfer learning: fit per-task heads on a frozen pretrained backbone
+    /// and compose them into one multi-output ONNX model
+    TrainHeads {
+        #[arg(long, default_value = "all")]
+        tasks: String,
+        /// Pretrained ONNX backbone (overrides [backbone].path in the config)
+        #[arg(long)]
+        backbone: Option<PathBuf>,
+        #[arg(long)]
+        data_dir: Option<String>,
+        #[arg(long, default_value = "runs/multitask")]
+        output_dir: PathBuf,
+        /// Where to keep cached embeddings (default: <output_dir>/cache)
+        #[arg(long)]
+        cache_dir: Option<PathBuf>,
+        /// Also write an int8 weight-quantized copy for on-device inference
+        #[arg(long)]
+        quantize: bool,
     },
     /// Run the full pipeline: train → validate → export
     Pipeline {
@@ -115,7 +140,25 @@ fn main() -> anyhow::Result<()> {
             task,
             model_dir,
             output,
-        } => cmd_export(&config, &task, &model_dir, output.as_deref()),
+            quantize,
+        } => cmd_export(&config, &task, &model_dir, output.as_deref(), quantize),
+
+        Commands::TrainHeads {
+            tasks,
+            backbone,
+            data_dir,
+            output_dir,
+            cache_dir,
+            quantize,
+        } => cmd_train_heads(
+            &config,
+            &tasks,
+            backbone.as_deref(),
+            data_dir.as_deref(),
+            &output_dir,
+            cache_dir.as_deref(),
+            quantize,
+        ),
 
         Commands::Pipeline {
             tasks,
@@ -241,6 +284,7 @@ fn cmd_train(
         &task_output,
         &loss_opts,
         &idx_to_label,
+        Some(&config.augmentation),
     )?;
 
     std::fs::write(
@@ -324,6 +368,7 @@ fn cmd_export(
     task: &str,
     model_dir: &Path,
     output: Option<&Path>,
+    quantize_int8: bool,
 ) -> anyhow::Result<()> {
     let task_config = config
         .tasks
@@ -379,6 +424,200 @@ fn cmd_export(
     }
 
     println!("ONNX model exported to {}", onnx_path.display());
+
+    if quantize_int8 {
+        let int8_path = onnx_path.with_extension("int8.onnx");
+        let report =
+            quantize::quantize_file(&onnx_path, &int8_path, quantize::DEFAULT_MIN_ELEMENTS)?;
+        if report.tensors_quantized == 0 {
+            println!(
+                "No tensor had {} or more weights; skipped the int8 copy",
+                quantize::DEFAULT_MIN_ELEMENTS
+            );
+        } else {
+            println!(
+                "Int8 model written to {} ({} KB -> {} KB, {:.1}% smaller)",
+                int8_path.display(),
+                report.original_bytes / 1024,
+                report.quantized_bytes / 1024,
+                report.size_reduction_pct()
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Transfer learning: embed once with a frozen backbone, fit a head per task,
+/// then splice the heads back on so all tasks share a single forward pass.
+fn cmd_train_heads(
+    config: &TrainingConfig,
+    tasks: &str,
+    backbone_override: Option<&Path>,
+    data_dir: Option<&str>,
+    output_dir: &Path,
+    cache_dir: Option<&Path>,
+    quantize_int8: bool,
+) -> anyhow::Result<()> {
+    let mut backbone_cfg = config.backbone.clone().unwrap_or_default();
+    if let Some(path) = backbone_override {
+        backbone_cfg.path = path.display().to_string();
+    }
+    if backbone_cfg.path.trim().is_empty() {
+        anyhow::bail!(
+            "no backbone configured: add a [backbone] section with a path, or pass --backbone"
+        );
+    }
+
+    let backbone = Backbone::load(&backbone_cfg)?;
+    println!("{}", "=".repeat(60));
+    println!("Transfer learning on a frozen backbone");
+    println!("{}", "=".repeat(60));
+    println!("Backbone:  {}", backbone.path().display());
+    println!(
+        "Embedding: {} ({}-d, {}x{} input)",
+        backbone.embedding_tensor(),
+        backbone.embedding_dim(),
+        backbone.input_size(),
+        backbone.input_size()
+    );
+    println!("Backend:   {}", yp_ml_training::backend::NAME);
+
+    let task_list: Vec<String> = if tasks == "all" {
+        config.tasks.keys().cloned().collect()
+    } else {
+        tasks.split(',').map(|s| s.trim().to_string()).collect()
+    };
+
+    let cache_dir = cache_dir
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| output_dir.join("cache"));
+    let augmenter = Augmenter::new(&config.augmentation);
+    let head_cfg = &config.heads;
+
+    let mut heads = Vec::new();
+    let mut summaries = Vec::new();
+
+    for task in &task_list {
+        println!("\n{}", "-".repeat(40));
+        println!("Task: {task}");
+        println!("{}", "-".repeat(40));
+
+        let splits = match prepare_datasets(task, &config.data, data_dir) {
+            Ok(s) => s,
+            Err(e) => {
+                println!("  SKIP: {e}");
+                continue;
+            }
+        };
+        let num_classes = splits.label_map.len();
+        dataset::print_report(&splits.report);
+
+        let mut cache = EmbeddingCache::load(
+            &multitask::cache_path(&cache_dir, task, &backbone),
+            backbone.embedding_dim(),
+        );
+        let train = multitask::embed_samples(
+            &backbone,
+            &splits.train,
+            &mut cache,
+            Some(&augmenter),
+            head_cfg.augment_passes,
+        )?;
+        // Validation and test embeddings are never augmented.
+        let val = multitask::embed_samples(&backbone, &splits.val, &mut cache, None, 0)?;
+        let test = multitask::embed_samples(&backbone, &splits.test, &mut cache, None, 0)?;
+        cache.save(&multitask::cache_path(&cache_dir, task, &backbone))?;
+
+        let loss_opts = training::LossOptions {
+            class_weights: multitask::class_weights(&train, num_classes),
+            label_smoothing: head_cfg.label_smoothing,
+        };
+        let result =
+            multitask::train_head(task, head_cfg, num_classes, &train, &val, &test, &loss_opts)?;
+
+        println!(
+            "  val acc {:.4} | test acc {:.4} | best epoch {}",
+            result.best_val_acc, result.test_acc, result.final_epoch
+        );
+
+        let mut labels = vec![String::new(); num_classes];
+        for (name, idx) in &splits.label_map {
+            labels[*idx] = name.clone();
+        }
+        summaries.push(serde_json::json!({
+            "task": task,
+            "classes": num_classes,
+            "train_embeddings": train.len(),
+            "val_embeddings": val.len(),
+            "test_embeddings": test.len(),
+            "best_val_acc": result.best_val_acc,
+            "test_acc": result.test_acc,
+            "best_epoch": result.final_epoch,
+            "dataset_snapshot": splits.snapshot.id,
+        }));
+        heads.push(result.into_head_spec(labels));
+    }
+
+    if heads.is_empty() {
+        anyhow::bail!("no task had enough data to train a head");
+    }
+
+    let manifest = compose::compose_multitask(&backbone, &heads, output_dir)?;
+    let model_path = output_dir.join(compose::MULTITASK_MODEL_FILE);
+    let model_bytes = std::fs::metadata(&model_path)?.len() as usize;
+
+    let mut meta = serde_json::json!({
+        "backend": yp_ml_training::backend::NAME,
+        "backbone": {
+            "path": backbone.path().display().to_string(),
+            "fingerprint": backbone.fingerprint(),
+            "embedding_tensor": backbone.embedding_tensor(),
+            "embedding_dim": backbone.embedding_dim(),
+            "input_size": backbone.input_size(),
+        },
+        "heads": head_cfg,
+        "tasks": summaries,
+        "model_bytes": model_bytes,
+        "created_at": manifest.created_at,
+    });
+
+    if quantize_int8 {
+        let int8_path = output_dir.join("model.int8.onnx");
+        let report =
+            quantize::quantize_file(&model_path, &int8_path, quantize::DEFAULT_MIN_ELEMENTS)?;
+        if report.tensors_quantized == 0 {
+            println!(
+                "\nNo tensor had {} or more weights; skipped the int8 copy",
+                quantize::DEFAULT_MIN_ELEMENTS
+            );
+        } else {
+            println!(
+                "\nInt8 model written to {} ({} KB -> {} KB, {:.1}% smaller)",
+                int8_path.display(),
+                report.original_bytes / 1024,
+                report.quantized_bytes / 1024,
+                report.size_reduction_pct()
+            );
+        }
+        meta["quantized"] = serde_json::to_value(&report)?;
+    }
+
+    std::fs::write(
+        output_dir.join("multitask_meta.json"),
+        serde_json::to_string_pretty(&meta)?,
+    )?;
+
+    println!("\n{}", "=".repeat(60));
+    println!(
+        "Composed {} heads into {} ({} KB)",
+        heads.len(),
+        model_path.display(),
+        model_bytes / 1024
+    );
+    for head in &heads {
+        println!("  {:<24} {} classes", head.task, head.num_classes());
+    }
+    println!("{}", "=".repeat(60));
     Ok(())
 }
 
@@ -432,7 +671,7 @@ fn cmd_pipeline(
                 let task_dir = output_dir.join(task);
 
                 match cmd_validate(config, task, &task_dir, data_dir) {
-                    Ok(()) => match cmd_export(config, task, &task_dir, None) {
+                    Ok(()) => match cmd_export(config, task, &task_dir, None, false) {
                         Ok(()) => {
                             results.push((task.to_string(), "success", 0.0));
                         }

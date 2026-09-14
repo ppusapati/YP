@@ -13,11 +13,11 @@ use burn::data::dataloader::batcher::Batcher;
 use burn::prelude::*;
 use chrono::Utc;
 use image::imageops::FilterType;
-use image::GenericImageView;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::config::{DataConfig, ProvenanceWeights};
+use crate::augment::Augmenter;
+use crate::config::{AugmentationConfig, DataConfig, ProvenanceWeights};
 
 #[derive(Debug, Clone)]
 pub struct Sample {
@@ -114,14 +114,52 @@ impl PlantDataset {
     }
 }
 
+/// Turns samples into normalised NCHW batches. With an augmenter attached
+/// (training only) each image gets a reproducible per-sample, per-epoch draw.
 #[derive(Clone)]
 pub struct PlantBatcher {
     input_size: usize,
+    augmenter: Option<Augmenter>,
+    epoch: u64,
 }
 
 impl PlantBatcher {
+    /// Plain preprocessing: what validation, test, and inference see.
     pub fn new(input_size: usize) -> Self {
-        Self { input_size }
+        Self {
+            input_size,
+            augmenter: None,
+            epoch: 0,
+        }
+    }
+
+    /// Enable field-photo augmentation for training batches.
+    pub fn with_augmentation(mut self, cfg: &AugmentationConfig) -> Self {
+        self.augmenter = Some(Augmenter::new(cfg));
+        self
+    }
+
+    /// Same batcher with a different augmentation salt (call once per epoch).
+    pub fn for_epoch(&self, epoch: u64) -> Self {
+        Self {
+            epoch,
+            ..self.clone()
+        }
+    }
+
+    pub fn is_augmenting(&self) -> bool {
+        self.augmenter.is_some()
+    }
+
+    fn load(&self, sample: &Sample) -> anyhow::Result<Vec<f32>> {
+        match &self.augmenter {
+            Some(aug) => {
+                let img = image::open(&sample.image_path)?;
+                let augmented = aug.apply(&img, &sample.id, self.epoch);
+                Ok(preprocess_rgb(&augmented, self.input_size))
+            }
+            None => load_and_preprocess(&sample.image_path, self.input_size),
+        }
     }
 }
 
@@ -142,7 +180,7 @@ impl<B: Backend> Batcher<Sample, PlantBatch<B>> for PlantBatcher {
         let mut label_data = Vec::with_capacity(batch_size);
 
         for sample in &items {
-            match load_and_preprocess(&sample.image_path, self.input_size) {
+            match self.load(sample) {
                 Ok(pixels) => {
                     image_data.extend_from_slice(&pixels);
                     label_data.push(sample.label_idx as i32);
@@ -164,16 +202,31 @@ impl<B: Backend> Batcher<Sample, PlantBatch<B>> for PlantBatcher {
     }
 }
 
-fn load_and_preprocess(path: &Path, size: usize) -> anyhow::Result<Vec<f32>> {
+/// Decode, resize, and ImageNet-normalise an image file into CHW floats.
+/// This is the exact preprocessing the gateway's ONNX classifier reproduces.
+pub fn load_and_preprocess(path: &Path, size: usize) -> anyhow::Result<Vec<f32>> {
     let img = image::open(path)?;
-    let resized = img.resize_exact(size as u32, size as u32, FilterType::Lanczos3);
-    let rgb = resized.to_rgb8();
+    Ok(preprocess_rgb(&img.to_rgb8(), size))
+}
+
+/// Resize an RGB image to `size`×`size` and ImageNet-normalise to CHW floats.
+pub fn preprocess_rgb(rgb: &image::RgbImage, size: usize) -> Vec<f32> {
+    preprocess_rgb_with(rgb, size, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+}
+
+/// Resize and normalise with explicit per-channel mean/std, for backbones
+/// trained with a different pixel convention.
+pub fn preprocess_rgb_with(
+    rgb: &image::RgbImage,
+    size: usize,
+    mean: [f32; 3],
+    std: [f32; 3],
+) -> Vec<f32> {
+    let resized = image::imageops::resize(rgb, size as u32, size as u32, FilterType::Lanczos3);
+    let rgb = &resized;
 
     let (w, h) = resized.dimensions();
     let mut channels = vec![0.0f32; 3 * (h as usize) * (w as usize)];
-
-    let mean = [0.485f32, 0.456, 0.406];
-    let std = [0.229f32, 0.224, 0.225];
 
     for y in 0..h as usize {
         for x in 0..w as usize {
@@ -186,7 +239,7 @@ fn load_and_preprocess(path: &Path, size: usize) -> anyhow::Result<Vec<f32>> {
         }
     }
 
-    Ok(channels)
+    channels
 }
 
 /// Read the manifest and every label record, applying reviewer decisions and

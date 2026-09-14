@@ -51,6 +51,12 @@ pub struct ModelPaths {
     /// parametric stress-factor model only.
     #[serde(default)]
     pub yield_tabular_model: String,
+    /// Optional directory holding a shared multi-task vision model written by
+    /// `yp-ml-training train-heads` (`model.onnx` + `multitask.json`). It
+    /// serves any vision task that has no model of its own, from a single
+    /// backbone pass.
+    #[serde(default)]
+    pub multitask_model: String,
 }
 
 /// External vision API configuration for production inference fallback.
@@ -154,6 +160,7 @@ impl Default for Config {
                 pest_detection_model: "/models/pest-detection-v1".to_string(),
                 nutrient_deficiency_model: "/models/nutrient-deficiency-v1".to_string(),
                 plant_classification_model: "/models/plant-classification-v1".to_string(),
+                multitask_model: String::new(),
                 yield_prediction_version: "v1.0.0".to_string(),
                 crop_growth_version: "v1.0.0".to_string(),
                 satellite_ndvi_version: "v1.0.0".to_string(),
