@@ -6,6 +6,7 @@ use burn::record::{CompactRecorder, Recorder};
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{fmt, EnvFilter};
 
+use yp_ml_training::assemble;
 use yp_ml_training::augment::Augmenter;
 use yp_ml_training::backbone::{Backbone, EmbeddingCache};
 use yp_ml_training::backend::InferBackend;
@@ -96,6 +97,24 @@ enum Commands {
         data_dir: Option<String>,
         #[arg(long, default_value = "runs")]
         output_dir: PathBuf,
+    },
+    /// Assemble the yield training CSV from exported field-season records
+    BuildYieldDataset {
+        /// JSON Lines of recorded harvests
+        #[arg(long)]
+        yields: PathBuf,
+        /// JSON Lines of daily weather
+        #[arg(long)]
+        weather: PathBuf,
+        /// JSON Lines of NDVI readings (optional)
+        #[arg(long)]
+        ndvi: Option<PathBuf>,
+        /// Where to write the CSV (default: the task's configured data_csv)
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Tabular task whose crop table and output path to use
+        #[arg(long, default_value = "yield")]
+        task: String,
     },
     /// Freeze or run a held-out benchmark suite
     Benchmark {
@@ -216,6 +235,21 @@ fn main() -> anyhow::Result<()> {
             data_dir,
             output_dir,
         } => cmd_pipeline(&config, &tasks, data_dir.as_deref(), &output_dir),
+
+        Commands::BuildYieldDataset {
+            yields,
+            weather,
+            ndvi,
+            output,
+            task,
+        } => cmd_build_yield_dataset(
+            &config,
+            &task,
+            &yields,
+            &weather,
+            ndvi.as_deref(),
+            output.as_deref(),
+        ),
 
         Commands::Benchmark { action } => match action {
             BenchmarkAction::Create {
@@ -964,6 +998,89 @@ fn cmd_benchmark_run(
     if !result.passed {
         // A non-zero exit is what makes this usable as a CI gate.
         anyhow::bail!("{task}: benchmark gate failed, promotion blocked");
+    }
+    Ok(())
+}
+
+/// Read a JSON Lines file into a vector, naming the offending line on error.
+fn read_jsonl<T: serde::de::DeserializeOwned>(path: &Path) -> anyhow::Result<Vec<T>> {
+    let raw = std::fs::read_to_string(path)
+        .map_err(|e| anyhow::anyhow!("cannot read {}: {e}", path.display()))?;
+    let mut out = Vec::new();
+    for (i, line) in raw.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        out.push(serde_json::from_str(line).map_err(|e| {
+            anyhow::anyhow!("{}:{}: {e}", path.display(), i + 1)
+        })?);
+    }
+    Ok(out)
+}
+
+/// Join harvests to their weather and imagery and write the training CSV.
+///
+/// Input is JSON Lines rather than a database connection: the records come out
+/// of whichever store holds them, and keeping the join separate from the query
+/// means this is testable and re-runnable against an export.
+fn cmd_build_yield_dataset(
+    config: &TrainingConfig,
+    task: &str,
+    yields_path: &Path,
+    weather_path: &Path,
+    ndvi_path: Option<&Path>,
+    output: Option<&Path>,
+) -> anyhow::Result<()> {
+    let task_config = config.tabular.get(task).ok_or_else(|| {
+        anyhow::anyhow!("unknown tabular task: {task} (add a [tabular.{task}] section)")
+    })?;
+
+    let yields: Vec<assemble::YieldRecord> = read_jsonl(yields_path)?;
+    let weather: Vec<assemble::WeatherDay> = read_jsonl(weather_path)?;
+    let ndvi: Vec<assemble::NdviReading> = match ndvi_path {
+        Some(p) => read_jsonl(p)?,
+        None => Vec::new(),
+    };
+
+    println!(
+        "Read {} harvests, {} weather days, {} NDVI readings",
+        yields.len(),
+        weather.len(),
+        ndvi.len()
+    );
+
+    // The crop table lives in the yield engine, so training and serving agree
+    // on what each code means.
+    let (csv, report) = assemble::assemble(&yields, &weather, &ndvi, |crop| {
+        yield_prediction_engine::YieldModelParams::crop_code(crop).map(|c| c as f64)
+    });
+
+    let out_path = output
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from(&task_config.data_csv));
+    if let Some(parent) = out_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent)?;
+        }
+    }
+    std::fs::write(&out_path, &csv)?;
+
+    println!("Wrote {} rows to {}", report.rows, out_path.display());
+    if !report.excluded.is_empty() {
+        println!("Excluded {} field-seasons:", report.excluded.len());
+        // Group by reason: a hundred rows dropped for one cause is one
+        // problem, not a hundred.
+        let mut by_reason: std::collections::BTreeMap<&str, usize> =
+            std::collections::BTreeMap::new();
+        for e in &report.excluded {
+            *by_reason.entry(e.reason.as_str()).or_default() += 1;
+        }
+        for (reason, count) in by_reason {
+            println!("  {count:>5}  {reason}");
+        }
+    }
+    if report.rows == 0 {
+        anyhow::bail!("no usable field-seasons; the CSV would train nothing");
     }
     Ok(())
 }

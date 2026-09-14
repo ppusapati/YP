@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -190,6 +191,55 @@ func main() {
 	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
 	go relay.Run(relayCtx)
 
+	// ── Weekly in-season forecast refresh (background) ───────────────────
+	//
+	// A forecast made at sowing is a guess from soil and intent; by flowering
+	// the weather that actually happened is known. Left alone, a farmer plans
+	// against a number computed before the season had any weather in it.
+	//
+	// Tenants are listed explicitly: background work has no request to inherit
+	// a tenant from, and running unscoped would either see nothing under
+	// row-level security or, worse, see everything.
+	if tenants := splitList(envOr("YIELD_REFRESH_TENANTS", "")); len(tenants) > 0 {
+		helper := p9log.NewHelper(logger)
+		interval := application.DefaultRefreshInterval
+		if raw := envOr("YIELD_REFRESH_INTERVAL", ""); raw != "" {
+			if parsed, perr := time.ParseDuration(raw); perr == nil {
+				interval = parsed
+			} else {
+				helper.Warnw("msg", "bad YIELD_REFRESH_INTERVAL; using the default",
+					"value", raw, "error", perr)
+			}
+		}
+		refreshCtx, refreshCancel := context.WithCancel(context.Background())
+		defer refreshCancel()
+		go func() {
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-refreshCtx.Done():
+					return
+				case <-ticker.C:
+					for _, tenant := range tenants {
+						report, rerr := svc.RefreshInSeasonPredictions(refreshCtx, tenant)
+						if rerr != nil {
+							helper.Warnw("msg", "in-season refresh failed",
+								"tenant_id", tenant, "error", rerr)
+							continue
+						}
+						helper.Infow("msg", "in-season forecasts refreshed",
+							"tenant_id", tenant,
+							"refreshed", report.Refreshed,
+							"failed", report.Failed)
+					}
+				}
+			}
+		}()
+		helper.Infow("msg", "in-season yield refresh scheduled",
+			"interval", interval.String(), "tenants", len(tenants))
+	}
+
 	// ── Kafka event consumer (background) ────────────────────────────────
 	if kafkaBroker != "" {
 		eventConsumer := eventsadapter.NewYieldConsumer(svc, logger)
@@ -239,4 +289,15 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// splitList parses a comma-separated environment value, dropping blanks.
+func splitList(raw string) []string {
+	out := make([]string, 0)
+	for _, part := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
 }

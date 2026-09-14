@@ -27,6 +27,13 @@ type nopLogger struct{}
 
 func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
 
+// p9log.Logger grew these after this file was written, which is why the suite
+// stopped compiling — and therefore stopped running.
+func (nopLogger) Debug(_ ...interface{}) {}
+func (nopLogger) Info(_ ...interface{})  {}
+func (nopLogger) Warn(_ ...interface{})  {}
+func (nopLogger) Error(_ ...interface{}) {}
+
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
 // ---------------------------------------------------------------------------

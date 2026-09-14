@@ -23,6 +23,7 @@ gateway collects → data/<task>/ → train → evaluate → benchmark gate → 
 | `benchmark create --task <t>` | Freeze the current test split into a fixed benchmark suite |
 | `benchmark run --task <t> --model-dir <d>` | Score a candidate against the frozen suite and gate promotion |
 | `export --task <t> --model-dir <d>` | Write `model.onnx`, `labels.json` and `version.txt` for serving |
+| `build-yield-dataset` | Join harvests to their season's weather and imagery into the training CSV |
 | `train-tabular --task yield` | Train the gradient-boosted yield model |
 | `pipeline` | train → validate → export for every task |
 
@@ -217,6 +218,33 @@ Point the gateway's `models.*_model` config at that directory, or
 `models.multitask_model` at a `train-heads` output. The gateway prefers a
 task's own model, falls back to the shared multi-task model, then to an external
 API, then to demo weights.
+
+## Assembling the yield training set
+
+Yield is recorded per field per season, weather arrives daily, and NDVI arrives
+per satellite pass. Training needs one row per field-season:
+
+```bash
+yp-ml-training build-yield-dataset \
+  --yields harvests.jsonl --weather weather.jsonl --ndvi ndvi.jsonl
+```
+
+The join is where a training set quietly goes wrong, so the exclusions are
+explicit and reported, grouped by cause:
+
+- Observations outside the season are not folded in, and one field's weather is
+  never borrowed for another.
+- A season with fewer than thirty days of weather is excluded. Its "total
+  rainfall" would be whatever happened to be recorded, and a model fitted on
+  that learns that dry seasons produce good harvests.
+- A crop outside the model's crop table is excluded rather than coded as
+  something else.
+- Missing imagery is recorded as no imagery rather than dropping the row —
+  plenty of seasons have no usable pass, and the model already reads zero that
+  way.
+
+Input is exported JSON Lines rather than a live database connection, which
+keeps the join testable and the run repeatable against a fixed export.
 
 ## Configuration
 

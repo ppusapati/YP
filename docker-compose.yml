@@ -326,6 +326,11 @@ services:
       CROP_SERVICE_URL: http://crop-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
+      # Comma-separated tenants whose in-season forecasts are recomputed
+      # weekly. Background work has no request to inherit a tenant from, so
+      # running unscoped would see nothing under row-level security.
+      YIELD_REFRESH_TENANTS: ""
+      YIELD_REFRESH_INTERVAL: 168h
       WEATHER_SERVICE_URL: http://weather-service:8080
 
   pest-prediction-service:

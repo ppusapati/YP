@@ -4,6 +4,7 @@
 //! vision models from data collected by the AI gateway. This library is used
 //! by the CLI binary (`main.rs`) and can also be consumed programmatically.
 
+pub mod assemble;
 pub mod augment;
 pub mod backbone;
 pub mod backend;
