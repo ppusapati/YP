@@ -1987,6 +1987,158 @@ func (x *IdentifySpeciesResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+// Why a vision model answered the way it did.
+//
+// Produced by Grad-CAM over the serving model's feature map: a heatmap of what
+// the model actually looked at, plus the region it keyed on and a sentence
+// describing it. Absent when the answer came from a model that cannot explain
+// itself — a demo detector or an external provider.
+type Explanation struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Task      string                 `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	ClassName string                 `protobuf:"bytes,2,opt,name=class_name,json=className,proto3" json:"class_name,omitempty"`
+	// Greyscale PNG, brightest where the evidence is.
+	HeatmapPng    []byte `protobuf:"bytes,3,opt,name=heatmap_png,json=heatmapPng,proto3" json:"heatmap_png,omitempty"`
+	HeatmapWidth  int32  `protobuf:"varint,4,opt,name=heatmap_width,json=heatmapWidth,proto3" json:"heatmap_width,omitempty"`
+	HeatmapHeight int32  `protobuf:"varint,5,opt,name=heatmap_height,json=heatmapHeight,proto3" json:"heatmap_height,omitempty"`
+	// Region the model keyed on, normalised to [0,1] from the top left so it
+	// survives any resize of the image it is drawn over.
+	FocusX      float64 `protobuf:"fixed64,6,opt,name=focus_x,json=focusX,proto3" json:"focus_x,omitempty"`
+	FocusY      float64 `protobuf:"fixed64,7,opt,name=focus_y,json=focusY,proto3" json:"focus_y,omitempty"`
+	FocusWidth  float64 `protobuf:"fixed64,8,opt,name=focus_width,json=focusWidth,proto3" json:"focus_width,omitempty"`
+	FocusHeight float64 `protobuf:"fixed64,9,opt,name=focus_height,json=focusHeight,proto3" json:"focus_height,omitempty"`
+	// Share of the image inside that region; near 1 means nothing in particular
+	// was located.
+	FocusCoverage float64 `protobuf:"fixed64,10,opt,name=focus_coverage,json=focusCoverage,proto3" json:"focus_coverage,omitempty"`
+	Summary       string  `protobuf:"bytes,11,opt,name=summary,proto3" json:"summary,omitempty"`
+	Method        string  `protobuf:"bytes,12,opt,name=method,proto3" json:"method,omitempty"`
+	// False when the map was flat and there is nothing to point at.
+	Localised     bool `protobuf:"varint,13,opt,name=localised,proto3" json:"localised,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Explanation) Reset() {
+	*x = Explanation{}
+	mi := &file_diagnosis_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Explanation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Explanation) ProtoMessage() {}
+
+func (x *Explanation) ProtoReflect() protoreflect.Message {
+	mi := &file_diagnosis_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Explanation.ProtoReflect.Descriptor instead.
+func (*Explanation) Descriptor() ([]byte, []int) {
+	return file_diagnosis_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *Explanation) GetTask() string {
+	if x != nil {
+		return x.Task
+	}
+	return ""
+}
+
+func (x *Explanation) GetClassName() string {
+	if x != nil {
+		return x.ClassName
+	}
+	return ""
+}
+
+func (x *Explanation) GetHeatmapPng() []byte {
+	if x != nil {
+		return x.HeatmapPng
+	}
+	return nil
+}
+
+func (x *Explanation) GetHeatmapWidth() int32 {
+	if x != nil {
+		return x.HeatmapWidth
+	}
+	return 0
+}
+
+func (x *Explanation) GetHeatmapHeight() int32 {
+	if x != nil {
+		return x.HeatmapHeight
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusX() float64 {
+	if x != nil {
+		return x.FocusX
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusY() float64 {
+	if x != nil {
+		return x.FocusY
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusWidth() float64 {
+	if x != nil {
+		return x.FocusWidth
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusHeight() float64 {
+	if x != nil {
+		return x.FocusHeight
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusCoverage() float64 {
+	if x != nil {
+		return x.FocusCoverage
+	}
+	return 0
+}
+
+func (x *Explanation) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *Explanation) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *Explanation) GetLocalised() bool {
+	if x != nil {
+		return x.Localised
+	}
+	return false
+}
+
 type DetectNutrientDeficiencyRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	PlantSpeciesId string                 `protobuf:"bytes,1,opt,name=plant_species_id,json=plantSpeciesId,proto3" json:"plant_species_id,omitempty"`
@@ -1997,7 +2149,7 @@ type DetectNutrientDeficiencyRequest struct {
 
 func (x *DetectNutrientDeficiencyRequest) Reset() {
 	*x = DetectNutrientDeficiencyRequest{}
-	mi := &file_diagnosis_proto_msgTypes[24]
+	mi := &file_diagnosis_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2009,7 +2161,7 @@ func (x *DetectNutrientDeficiencyRequest) String() string {
 func (*DetectNutrientDeficiencyRequest) ProtoMessage() {}
 
 func (x *DetectNutrientDeficiencyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[24]
+	mi := &file_diagnosis_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2022,7 +2174,7 @@ func (x *DetectNutrientDeficiencyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectNutrientDeficiencyRequest.ProtoReflect.Descriptor instead.
 func (*DetectNutrientDeficiencyRequest) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{24}
+	return file_diagnosis_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *DetectNutrientDeficiencyRequest) GetPlantSpeciesId() string {
@@ -2044,13 +2196,15 @@ type DetectNutrientDeficiencyResponse struct {
 	Deficiencies     []*NutrientDeficiency  `protobuf:"bytes,1,rep,name=deficiencies,proto3" json:"deficiencies,omitempty"`
 	AiModelVersion   string                 `protobuf:"bytes,2,opt,name=ai_model_version,json=aiModelVersion,proto3" json:"ai_model_version,omitempty"`
 	ProcessingTimeMs int64                  `protobuf:"varint,3,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// One per analysed image, in request order.
+	Explanations  []*Explanation `protobuf:"bytes,4,rep,name=explanations,proto3" json:"explanations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DetectNutrientDeficiencyResponse) Reset() {
 	*x = DetectNutrientDeficiencyResponse{}
-	mi := &file_diagnosis_proto_msgTypes[25]
+	mi := &file_diagnosis_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2062,7 +2216,7 @@ func (x *DetectNutrientDeficiencyResponse) String() string {
 func (*DetectNutrientDeficiencyResponse) ProtoMessage() {}
 
 func (x *DetectNutrientDeficiencyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[25]
+	mi := &file_diagnosis_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2075,7 +2229,7 @@ func (x *DetectNutrientDeficiencyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectNutrientDeficiencyResponse.ProtoReflect.Descriptor instead.
 func (*DetectNutrientDeficiencyResponse) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{25}
+	return file_diagnosis_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DetectNutrientDeficiencyResponse) GetDeficiencies() []*NutrientDeficiency {
@@ -2099,6 +2253,13 @@ func (x *DetectNutrientDeficiencyResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *DetectNutrientDeficiencyResponse) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
+	}
+	return nil
+}
+
 type DetectPestDamageRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	PlantSpeciesId string                 `protobuf:"bytes,1,opt,name=plant_species_id,json=plantSpeciesId,proto3" json:"plant_species_id,omitempty"`
@@ -2109,7 +2270,7 @@ type DetectPestDamageRequest struct {
 
 func (x *DetectPestDamageRequest) Reset() {
 	*x = DetectPestDamageRequest{}
-	mi := &file_diagnosis_proto_msgTypes[26]
+	mi := &file_diagnosis_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2121,7 +2282,7 @@ func (x *DetectPestDamageRequest) String() string {
 func (*DetectPestDamageRequest) ProtoMessage() {}
 
 func (x *DetectPestDamageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[26]
+	mi := &file_diagnosis_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2134,7 +2295,7 @@ func (x *DetectPestDamageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectPestDamageRequest.ProtoReflect.Descriptor instead.
 func (*DetectPestDamageRequest) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{26}
+	return file_diagnosis_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *DetectPestDamageRequest) GetPlantSpeciesId() string {
@@ -2156,13 +2317,14 @@ type DetectPestDamageResponse struct {
 	Pests            []*PestDamage          `protobuf:"bytes,1,rep,name=pests,proto3" json:"pests,omitempty"`
 	AiModelVersion   string                 `protobuf:"bytes,2,opt,name=ai_model_version,json=aiModelVersion,proto3" json:"ai_model_version,omitempty"`
 	ProcessingTimeMs int64                  `protobuf:"varint,3,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
+	Explanations     []*Explanation         `protobuf:"bytes,4,rep,name=explanations,proto3" json:"explanations,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *DetectPestDamageResponse) Reset() {
 	*x = DetectPestDamageResponse{}
-	mi := &file_diagnosis_proto_msgTypes[27]
+	mi := &file_diagnosis_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2174,7 +2336,7 @@ func (x *DetectPestDamageResponse) String() string {
 func (*DetectPestDamageResponse) ProtoMessage() {}
 
 func (x *DetectPestDamageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[27]
+	mi := &file_diagnosis_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2187,7 +2349,7 @@ func (x *DetectPestDamageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectPestDamageResponse.ProtoReflect.Descriptor instead.
 func (*DetectPestDamageResponse) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{27}
+	return file_diagnosis_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DetectPestDamageResponse) GetPests() []*PestDamage {
@@ -2211,6 +2373,13 @@ func (x *DetectPestDamageResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *DetectPestDamageResponse) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
+	}
+	return nil
+}
+
 type TrainingLabel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -2223,7 +2392,7 @@ type TrainingLabel struct {
 
 func (x *TrainingLabel) Reset() {
 	*x = TrainingLabel{}
-	mi := &file_diagnosis_proto_msgTypes[28]
+	mi := &file_diagnosis_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2235,7 +2404,7 @@ func (x *TrainingLabel) String() string {
 func (*TrainingLabel) ProtoMessage() {}
 
 func (x *TrainingLabel) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[28]
+	mi := &file_diagnosis_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2248,7 +2417,7 @@ func (x *TrainingLabel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrainingLabel.ProtoReflect.Descriptor instead.
 func (*TrainingLabel) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{28}
+	return file_diagnosis_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TrainingLabel) GetName() string {
@@ -2292,7 +2461,7 @@ type LabelReview struct {
 
 func (x *LabelReview) Reset() {
 	*x = LabelReview{}
-	mi := &file_diagnosis_proto_msgTypes[29]
+	mi := &file_diagnosis_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2304,7 +2473,7 @@ func (x *LabelReview) String() string {
 func (*LabelReview) ProtoMessage() {}
 
 func (x *LabelReview) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[29]
+	mi := &file_diagnosis_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2317,7 +2486,7 @@ func (x *LabelReview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelReview.ProtoReflect.Descriptor instead.
 func (*LabelReview) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{29}
+	return file_diagnosis_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *LabelReview) GetDecision() LabelReviewDecision {
@@ -2376,7 +2545,7 @@ type LabelReviewSample struct {
 
 func (x *LabelReviewSample) Reset() {
 	*x = LabelReviewSample{}
-	mi := &file_diagnosis_proto_msgTypes[30]
+	mi := &file_diagnosis_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2388,7 +2557,7 @@ func (x *LabelReviewSample) String() string {
 func (*LabelReviewSample) ProtoMessage() {}
 
 func (x *LabelReviewSample) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[30]
+	mi := &file_diagnosis_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2401,7 +2570,7 @@ func (x *LabelReviewSample) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelReviewSample.ProtoReflect.Descriptor instead.
 func (*LabelReviewSample) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{30}
+	return file_diagnosis_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *LabelReviewSample) GetId() string {
@@ -2510,7 +2679,7 @@ type ListLabelReviewQueueRequest struct {
 
 func (x *ListLabelReviewQueueRequest) Reset() {
 	*x = ListLabelReviewQueueRequest{}
-	mi := &file_diagnosis_proto_msgTypes[31]
+	mi := &file_diagnosis_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2522,7 +2691,7 @@ func (x *ListLabelReviewQueueRequest) String() string {
 func (*ListLabelReviewQueueRequest) ProtoMessage() {}
 
 func (x *ListLabelReviewQueueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[31]
+	mi := &file_diagnosis_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2535,7 +2704,7 @@ func (x *ListLabelReviewQueueRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLabelReviewQueueRequest.ProtoReflect.Descriptor instead.
 func (*ListLabelReviewQueueRequest) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{31}
+	return file_diagnosis_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListLabelReviewQueueRequest) GetTask() string {
@@ -2598,7 +2767,7 @@ type ListLabelReviewQueueResponse struct {
 
 func (x *ListLabelReviewQueueResponse) Reset() {
 	*x = ListLabelReviewQueueResponse{}
-	mi := &file_diagnosis_proto_msgTypes[32]
+	mi := &file_diagnosis_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2610,7 +2779,7 @@ func (x *ListLabelReviewQueueResponse) String() string {
 func (*ListLabelReviewQueueResponse) ProtoMessage() {}
 
 func (x *ListLabelReviewQueueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[32]
+	mi := &file_diagnosis_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2623,7 +2792,7 @@ func (x *ListLabelReviewQueueResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLabelReviewQueueResponse.ProtoReflect.Descriptor instead.
 func (*ListLabelReviewQueueResponse) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{32}
+	return file_diagnosis_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ListLabelReviewQueueResponse) GetSamples() []*LabelReviewSample {
@@ -2660,7 +2829,7 @@ type SubmitLabelReviewRequest struct {
 
 func (x *SubmitLabelReviewRequest) Reset() {
 	*x = SubmitLabelReviewRequest{}
-	mi := &file_diagnosis_proto_msgTypes[33]
+	mi := &file_diagnosis_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2672,7 +2841,7 @@ func (x *SubmitLabelReviewRequest) String() string {
 func (*SubmitLabelReviewRequest) ProtoMessage() {}
 
 func (x *SubmitLabelReviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[33]
+	mi := &file_diagnosis_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2685,7 +2854,7 @@ func (x *SubmitLabelReviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitLabelReviewRequest.ProtoReflect.Descriptor instead.
 func (*SubmitLabelReviewRequest) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{33}
+	return file_diagnosis_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *SubmitLabelReviewRequest) GetTask() string {
@@ -2732,7 +2901,7 @@ type SubmitLabelReviewResponse struct {
 
 func (x *SubmitLabelReviewResponse) Reset() {
 	*x = SubmitLabelReviewResponse{}
-	mi := &file_diagnosis_proto_msgTypes[34]
+	mi := &file_diagnosis_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2744,7 +2913,7 @@ func (x *SubmitLabelReviewResponse) String() string {
 func (*SubmitLabelReviewResponse) ProtoMessage() {}
 
 func (x *SubmitLabelReviewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[34]
+	mi := &file_diagnosis_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2757,7 +2926,7 @@ func (x *SubmitLabelReviewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitLabelReviewResponse.ProtoReflect.Descriptor instead.
 func (*SubmitLabelReviewResponse) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{34}
+	return file_diagnosis_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *SubmitLabelReviewResponse) GetSample() *LabelReviewSample {
@@ -2777,7 +2946,7 @@ type GetLabelReviewImageRequest struct {
 
 func (x *GetLabelReviewImageRequest) Reset() {
 	*x = GetLabelReviewImageRequest{}
-	mi := &file_diagnosis_proto_msgTypes[35]
+	mi := &file_diagnosis_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2789,7 +2958,7 @@ func (x *GetLabelReviewImageRequest) String() string {
 func (*GetLabelReviewImageRequest) ProtoMessage() {}
 
 func (x *GetLabelReviewImageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[35]
+	mi := &file_diagnosis_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2802,7 +2971,7 @@ func (x *GetLabelReviewImageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLabelReviewImageRequest.ProtoReflect.Descriptor instead.
 func (*GetLabelReviewImageRequest) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{35}
+	return file_diagnosis_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GetLabelReviewImageRequest) GetTask() string {
@@ -2829,7 +2998,7 @@ type GetLabelReviewImageResponse struct {
 
 func (x *GetLabelReviewImageResponse) Reset() {
 	*x = GetLabelReviewImageResponse{}
-	mi := &file_diagnosis_proto_msgTypes[36]
+	mi := &file_diagnosis_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2841,7 +3010,7 @@ func (x *GetLabelReviewImageResponse) String() string {
 func (*GetLabelReviewImageResponse) ProtoMessage() {}
 
 func (x *GetLabelReviewImageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_diagnosis_proto_msgTypes[36]
+	mi := &file_diagnosis_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2854,7 +3023,7 @@ func (x *GetLabelReviewImageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLabelReviewImageResponse.ProtoReflect.Descriptor instead.
 func (*GetLabelReviewImageResponse) Descriptor() ([]byte, []int) {
-	return file_diagnosis_proto_rawDescGZIP(), []int{36}
+	return file_diagnosis_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetLabelReviewImageResponse) GetImageBytes() []byte {
@@ -3036,21 +3205,41 @@ const file_diagnosis_proto_rawDesc = "" +
 	"\x17IdentifySpeciesResponse\x12@\n" +
 	"\aspecies\x18\x01 \x03(\v2&.agriculture.diagnosis.v1.PlantSpeciesR\aspecies\x12(\n" +
 	"\x10ai_model_version\x18\x02 \x01(\tR\x0eaiModelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x03 \x01(\x03R\x10processingTimeMs\"\x89\x01\n" +
+	"\x12processing_time_ms\x18\x03 \x01(\x03R\x10processingTimeMs\"\x9a\x03\n" +
+	"\vExplanation\x12\x12\n" +
+	"\x04task\x18\x01 \x01(\tR\x04task\x12\x1d\n" +
+	"\n" +
+	"class_name\x18\x02 \x01(\tR\tclassName\x12\x1f\n" +
+	"\vheatmap_png\x18\x03 \x01(\fR\n" +
+	"heatmapPng\x12#\n" +
+	"\rheatmap_width\x18\x04 \x01(\x05R\fheatmapWidth\x12%\n" +
+	"\x0eheatmap_height\x18\x05 \x01(\x05R\rheatmapHeight\x12\x17\n" +
+	"\afocus_x\x18\x06 \x01(\x01R\x06focusX\x12\x17\n" +
+	"\afocus_y\x18\a \x01(\x01R\x06focusY\x12\x1f\n" +
+	"\vfocus_width\x18\b \x01(\x01R\n" +
+	"focusWidth\x12!\n" +
+	"\ffocus_height\x18\t \x01(\x01R\vfocusHeight\x12%\n" +
+	"\x0efocus_coverage\x18\n" +
+	" \x01(\x01R\rfocusCoverage\x12\x18\n" +
+	"\asummary\x18\v \x01(\tR\asummary\x12\x16\n" +
+	"\x06method\x18\f \x01(\tR\x06method\x12\x1c\n" +
+	"\tlocalised\x18\r \x01(\bR\tlocalised\"\x89\x01\n" +
 	"\x1fDetectNutrientDeficiencyRequest\x12(\n" +
 	"\x10plant_species_id\x18\x01 \x01(\tR\x0eplantSpeciesId\x12<\n" +
-	"\x06images\x18\x02 \x03(\v2$.agriculture.diagnosis.v1.ImageInputR\x06images\"\xcc\x01\n" +
+	"\x06images\x18\x02 \x03(\v2$.agriculture.diagnosis.v1.ImageInputR\x06images\"\x97\x02\n" +
 	" DetectNutrientDeficiencyResponse\x12P\n" +
 	"\fdeficiencies\x18\x01 \x03(\v2,.agriculture.diagnosis.v1.NutrientDeficiencyR\fdeficiencies\x12(\n" +
 	"\x10ai_model_version\x18\x02 \x01(\tR\x0eaiModelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x03 \x01(\x03R\x10processingTimeMs\"\x81\x01\n" +
+	"\x12processing_time_ms\x18\x03 \x01(\x03R\x10processingTimeMs\x12I\n" +
+	"\fexplanations\x18\x04 \x03(\v2%.agriculture.diagnosis.v1.ExplanationR\fexplanations\"\x81\x01\n" +
 	"\x17DetectPestDamageRequest\x12(\n" +
 	"\x10plant_species_id\x18\x01 \x01(\tR\x0eplantSpeciesId\x12<\n" +
-	"\x06images\x18\x02 \x03(\v2$.agriculture.diagnosis.v1.ImageInputR\x06images\"\xae\x01\n" +
+	"\x06images\x18\x02 \x03(\v2$.agriculture.diagnosis.v1.ImageInputR\x06images\"\xf9\x01\n" +
 	"\x18DetectPestDamageResponse\x12:\n" +
 	"\x05pests\x18\x01 \x03(\v2$.agriculture.diagnosis.v1.PestDamageR\x05pests\x12(\n" +
 	"\x10ai_model_version\x18\x02 \x01(\tR\x0eaiModelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x03 \x01(\x03R\x10processingTimeMs\"{\n" +
+	"\x12processing_time_ms\x18\x03 \x01(\x03R\x10processingTimeMs\x12I\n" +
+	"\fexplanations\x18\x04 \x03(\v2%.agriculture.diagnosis.v1.ExplanationR\fexplanations\"{\n" +
 	"\rTrainingLabel\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
@@ -3165,7 +3354,7 @@ func file_diagnosis_proto_rawDescGZIP() []byte {
 }
 
 var file_diagnosis_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_diagnosis_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_diagnosis_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_diagnosis_proto_goTypes = []any{
 	(ImageType)(0),                           // 0: agriculture.diagnosis.v1.ImageType
 	(DiagnosisStatus)(0),                     // 1: agriculture.diagnosis.v1.DiagnosisStatus
@@ -3195,40 +3384,41 @@ var file_diagnosis_proto_goTypes = []any{
 	(*GetTreatmentPlanResponse)(nil),         // 25: agriculture.diagnosis.v1.GetTreatmentPlanResponse
 	(*IdentifySpeciesRequest)(nil),           // 26: agriculture.diagnosis.v1.IdentifySpeciesRequest
 	(*IdentifySpeciesResponse)(nil),          // 27: agriculture.diagnosis.v1.IdentifySpeciesResponse
-	(*DetectNutrientDeficiencyRequest)(nil),  // 28: agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
-	(*DetectNutrientDeficiencyResponse)(nil), // 29: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
-	(*DetectPestDamageRequest)(nil),          // 30: agriculture.diagnosis.v1.DetectPestDamageRequest
-	(*DetectPestDamageResponse)(nil),         // 31: agriculture.diagnosis.v1.DetectPestDamageResponse
-	(*TrainingLabel)(nil),                    // 32: agriculture.diagnosis.v1.TrainingLabel
-	(*LabelReview)(nil),                      // 33: agriculture.diagnosis.v1.LabelReview
-	(*LabelReviewSample)(nil),                // 34: agriculture.diagnosis.v1.LabelReviewSample
-	(*ListLabelReviewQueueRequest)(nil),      // 35: agriculture.diagnosis.v1.ListLabelReviewQueueRequest
-	(*ListLabelReviewQueueResponse)(nil),     // 36: agriculture.diagnosis.v1.ListLabelReviewQueueResponse
-	(*SubmitLabelReviewRequest)(nil),         // 37: agriculture.diagnosis.v1.SubmitLabelReviewRequest
-	(*SubmitLabelReviewResponse)(nil),        // 38: agriculture.diagnosis.v1.SubmitLabelReviewResponse
-	(*GetLabelReviewImageRequest)(nil),       // 39: agriculture.diagnosis.v1.GetLabelReviewImageRequest
-	(*GetLabelReviewImageResponse)(nil),      // 40: agriculture.diagnosis.v1.GetLabelReviewImageResponse
-	(*timestamppb.Timestamp)(nil),            // 41: google.protobuf.Timestamp
+	(*Explanation)(nil),                      // 28: agriculture.diagnosis.v1.Explanation
+	(*DetectNutrientDeficiencyRequest)(nil),  // 29: agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
+	(*DetectNutrientDeficiencyResponse)(nil), // 30: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
+	(*DetectPestDamageRequest)(nil),          // 31: agriculture.diagnosis.v1.DetectPestDamageRequest
+	(*DetectPestDamageResponse)(nil),         // 32: agriculture.diagnosis.v1.DetectPestDamageResponse
+	(*TrainingLabel)(nil),                    // 33: agriculture.diagnosis.v1.TrainingLabel
+	(*LabelReview)(nil),                      // 34: agriculture.diagnosis.v1.LabelReview
+	(*LabelReviewSample)(nil),                // 35: agriculture.diagnosis.v1.LabelReviewSample
+	(*ListLabelReviewQueueRequest)(nil),      // 36: agriculture.diagnosis.v1.ListLabelReviewQueueRequest
+	(*ListLabelReviewQueueResponse)(nil),     // 37: agriculture.diagnosis.v1.ListLabelReviewQueueResponse
+	(*SubmitLabelReviewRequest)(nil),         // 38: agriculture.diagnosis.v1.SubmitLabelReviewRequest
+	(*SubmitLabelReviewResponse)(nil),        // 39: agriculture.diagnosis.v1.SubmitLabelReviewResponse
+	(*GetLabelReviewImageRequest)(nil),       // 40: agriculture.diagnosis.v1.GetLabelReviewImageRequest
+	(*GetLabelReviewImageResponse)(nil),      // 41: agriculture.diagnosis.v1.GetLabelReviewImageResponse
+	(*timestamppb.Timestamp)(nil),            // 42: google.protobuf.Timestamp
 }
 var file_diagnosis_proto_depIdxs = []int32{
 	0,  // 0: agriculture.diagnosis.v1.DiagnosisImage.image_type:type_name -> agriculture.diagnosis.v1.ImageType
-	41, // 1: agriculture.diagnosis.v1.DiagnosisImage.uploaded_at:type_name -> google.protobuf.Timestamp
+	42, // 1: agriculture.diagnosis.v1.DiagnosisImage.uploaded_at:type_name -> google.protobuf.Timestamp
 	2,  // 2: agriculture.diagnosis.v1.DiseaseInfo.severity:type_name -> agriculture.diagnosis.v1.Severity
 	2,  // 3: agriculture.diagnosis.v1.NutrientDeficiency.severity:type_name -> agriculture.diagnosis.v1.Severity
 	2,  // 4: agriculture.diagnosis.v1.PestDamage.damage_level:type_name -> agriculture.diagnosis.v1.Severity
 	2,  // 5: agriculture.diagnosis.v1.TreatmentPlan.priority:type_name -> agriculture.diagnosis.v1.Severity
 	10, // 6: agriculture.diagnosis.v1.TreatmentPlan.steps:type_name -> agriculture.diagnosis.v1.TreatmentStep
-	41, // 7: agriculture.diagnosis.v1.TreatmentPlan.created_at:type_name -> google.protobuf.Timestamp
+	42, // 7: agriculture.diagnosis.v1.TreatmentPlan.created_at:type_name -> google.protobuf.Timestamp
 	8,  // 8: agriculture.diagnosis.v1.DiagnosisResult.identified_species:type_name -> agriculture.diagnosis.v1.PlantSpecies
 	5,  // 9: agriculture.diagnosis.v1.DiagnosisResult.detected_diseases:type_name -> agriculture.diagnosis.v1.DiseaseInfo
 	6,  // 10: agriculture.diagnosis.v1.DiagnosisResult.nutrient_deficiencies:type_name -> agriculture.diagnosis.v1.NutrientDeficiency
 	7,  // 11: agriculture.diagnosis.v1.DiagnosisResult.pest_damage:type_name -> agriculture.diagnosis.v1.PestDamage
-	41, // 12: agriculture.diagnosis.v1.DiagnosisResult.created_at:type_name -> google.protobuf.Timestamp
+	42, // 12: agriculture.diagnosis.v1.DiagnosisResult.created_at:type_name -> google.protobuf.Timestamp
 	4,  // 13: agriculture.diagnosis.v1.DiagnosisRequest.images:type_name -> agriculture.diagnosis.v1.DiagnosisImage
 	1,  // 14: agriculture.diagnosis.v1.DiagnosisRequest.status:type_name -> agriculture.diagnosis.v1.DiagnosisStatus
 	11, // 15: agriculture.diagnosis.v1.DiagnosisRequest.result:type_name -> agriculture.diagnosis.v1.DiagnosisResult
-	41, // 16: agriculture.diagnosis.v1.DiagnosisRequest.created_at:type_name -> google.protobuf.Timestamp
-	41, // 17: agriculture.diagnosis.v1.DiagnosisRequest.updated_at:type_name -> google.protobuf.Timestamp
+	42, // 16: agriculture.diagnosis.v1.DiagnosisRequest.created_at:type_name -> google.protobuf.Timestamp
+	42, // 17: agriculture.diagnosis.v1.DiagnosisRequest.updated_at:type_name -> google.protobuf.Timestamp
 	14, // 18: agriculture.diagnosis.v1.SubmitDiagnosisRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
 	0,  // 19: agriculture.diagnosis.v1.ImageInput.image_type:type_name -> agriculture.diagnosis.v1.ImageType
 	12, // 20: agriculture.diagnosis.v1.SubmitDiagnosisResponse.diagnosis:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
@@ -3242,45 +3432,47 @@ var file_diagnosis_proto_depIdxs = []int32{
 	8,  // 28: agriculture.diagnosis.v1.IdentifySpeciesResponse.species:type_name -> agriculture.diagnosis.v1.PlantSpecies
 	14, // 29: agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
 	6,  // 30: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse.deficiencies:type_name -> agriculture.diagnosis.v1.NutrientDeficiency
-	14, // 31: agriculture.diagnosis.v1.DetectPestDamageRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
-	7,  // 32: agriculture.diagnosis.v1.DetectPestDamageResponse.pests:type_name -> agriculture.diagnosis.v1.PestDamage
-	3,  // 33: agriculture.diagnosis.v1.LabelReview.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
-	41, // 34: agriculture.diagnosis.v1.LabelReview.reviewed_at:type_name -> google.protobuf.Timestamp
-	41, // 35: agriculture.diagnosis.v1.LabelReviewSample.collected_at:type_name -> google.protobuf.Timestamp
-	32, // 36: agriculture.diagnosis.v1.LabelReviewSample.labels:type_name -> agriculture.diagnosis.v1.TrainingLabel
-	33, // 37: agriculture.diagnosis.v1.LabelReviewSample.review:type_name -> agriculture.diagnosis.v1.LabelReview
-	34, // 38: agriculture.diagnosis.v1.ListLabelReviewQueueResponse.samples:type_name -> agriculture.diagnosis.v1.LabelReviewSample
-	3,  // 39: agriculture.diagnosis.v1.SubmitLabelReviewRequest.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
-	34, // 40: agriculture.diagnosis.v1.SubmitLabelReviewResponse.sample:type_name -> agriculture.diagnosis.v1.LabelReviewSample
-	13, // 41: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:input_type -> agriculture.diagnosis.v1.SubmitDiagnosisRequest
-	16, // 42: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:input_type -> agriculture.diagnosis.v1.GetDiagnosisRequest
-	18, // 43: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:input_type -> agriculture.diagnosis.v1.ListDiagnosesRequest
-	20, // 44: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:input_type -> agriculture.diagnosis.v1.GetDiseaseInfoRequest
-	24, // 45: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:input_type -> agriculture.diagnosis.v1.GetTreatmentPlanRequest
-	22, // 46: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:input_type -> agriculture.diagnosis.v1.ListDiseasesRequest
-	26, // 47: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:input_type -> agriculture.diagnosis.v1.IdentifySpeciesRequest
-	28, // 48: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:input_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
-	30, // 49: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:input_type -> agriculture.diagnosis.v1.DetectPestDamageRequest
-	35, // 50: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:input_type -> agriculture.diagnosis.v1.ListLabelReviewQueueRequest
-	37, // 51: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:input_type -> agriculture.diagnosis.v1.SubmitLabelReviewRequest
-	39, // 52: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:input_type -> agriculture.diagnosis.v1.GetLabelReviewImageRequest
-	15, // 53: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:output_type -> agriculture.diagnosis.v1.SubmitDiagnosisResponse
-	17, // 54: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:output_type -> agriculture.diagnosis.v1.GetDiagnosisResponse
-	19, // 55: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:output_type -> agriculture.diagnosis.v1.ListDiagnosesResponse
-	21, // 56: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:output_type -> agriculture.diagnosis.v1.GetDiseaseInfoResponse
-	25, // 57: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:output_type -> agriculture.diagnosis.v1.GetTreatmentPlanResponse
-	23, // 58: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:output_type -> agriculture.diagnosis.v1.ListDiseasesResponse
-	27, // 59: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:output_type -> agriculture.diagnosis.v1.IdentifySpeciesResponse
-	29, // 60: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:output_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
-	31, // 61: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:output_type -> agriculture.diagnosis.v1.DetectPestDamageResponse
-	36, // 62: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:output_type -> agriculture.diagnosis.v1.ListLabelReviewQueueResponse
-	38, // 63: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:output_type -> agriculture.diagnosis.v1.SubmitLabelReviewResponse
-	40, // 64: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:output_type -> agriculture.diagnosis.v1.GetLabelReviewImageResponse
-	53, // [53:65] is the sub-list for method output_type
-	41, // [41:53] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	28, // 31: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse.explanations:type_name -> agriculture.diagnosis.v1.Explanation
+	14, // 32: agriculture.diagnosis.v1.DetectPestDamageRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
+	7,  // 33: agriculture.diagnosis.v1.DetectPestDamageResponse.pests:type_name -> agriculture.diagnosis.v1.PestDamage
+	28, // 34: agriculture.diagnosis.v1.DetectPestDamageResponse.explanations:type_name -> agriculture.diagnosis.v1.Explanation
+	3,  // 35: agriculture.diagnosis.v1.LabelReview.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
+	42, // 36: agriculture.diagnosis.v1.LabelReview.reviewed_at:type_name -> google.protobuf.Timestamp
+	42, // 37: agriculture.diagnosis.v1.LabelReviewSample.collected_at:type_name -> google.protobuf.Timestamp
+	33, // 38: agriculture.diagnosis.v1.LabelReviewSample.labels:type_name -> agriculture.diagnosis.v1.TrainingLabel
+	34, // 39: agriculture.diagnosis.v1.LabelReviewSample.review:type_name -> agriculture.diagnosis.v1.LabelReview
+	35, // 40: agriculture.diagnosis.v1.ListLabelReviewQueueResponse.samples:type_name -> agriculture.diagnosis.v1.LabelReviewSample
+	3,  // 41: agriculture.diagnosis.v1.SubmitLabelReviewRequest.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
+	35, // 42: agriculture.diagnosis.v1.SubmitLabelReviewResponse.sample:type_name -> agriculture.diagnosis.v1.LabelReviewSample
+	13, // 43: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:input_type -> agriculture.diagnosis.v1.SubmitDiagnosisRequest
+	16, // 44: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:input_type -> agriculture.diagnosis.v1.GetDiagnosisRequest
+	18, // 45: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:input_type -> agriculture.diagnosis.v1.ListDiagnosesRequest
+	20, // 46: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:input_type -> agriculture.diagnosis.v1.GetDiseaseInfoRequest
+	24, // 47: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:input_type -> agriculture.diagnosis.v1.GetTreatmentPlanRequest
+	22, // 48: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:input_type -> agriculture.diagnosis.v1.ListDiseasesRequest
+	26, // 49: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:input_type -> agriculture.diagnosis.v1.IdentifySpeciesRequest
+	29, // 50: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:input_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
+	31, // 51: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:input_type -> agriculture.diagnosis.v1.DetectPestDamageRequest
+	36, // 52: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:input_type -> agriculture.diagnosis.v1.ListLabelReviewQueueRequest
+	38, // 53: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:input_type -> agriculture.diagnosis.v1.SubmitLabelReviewRequest
+	40, // 54: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:input_type -> agriculture.diagnosis.v1.GetLabelReviewImageRequest
+	15, // 55: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:output_type -> agriculture.diagnosis.v1.SubmitDiagnosisResponse
+	17, // 56: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:output_type -> agriculture.diagnosis.v1.GetDiagnosisResponse
+	19, // 57: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:output_type -> agriculture.diagnosis.v1.ListDiagnosesResponse
+	21, // 58: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:output_type -> agriculture.diagnosis.v1.GetDiseaseInfoResponse
+	25, // 59: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:output_type -> agriculture.diagnosis.v1.GetTreatmentPlanResponse
+	23, // 60: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:output_type -> agriculture.diagnosis.v1.ListDiseasesResponse
+	27, // 61: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:output_type -> agriculture.diagnosis.v1.IdentifySpeciesResponse
+	30, // 62: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:output_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
+	32, // 63: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:output_type -> agriculture.diagnosis.v1.DetectPestDamageResponse
+	37, // 64: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:output_type -> agriculture.diagnosis.v1.ListLabelReviewQueueResponse
+	39, // 65: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:output_type -> agriculture.diagnosis.v1.SubmitLabelReviewResponse
+	41, // 66: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:output_type -> agriculture.diagnosis.v1.GetLabelReviewImageResponse
+	55, // [55:67] is the sub-list for method output_type
+	43, // [43:55] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_diagnosis_proto_init() }
@@ -3294,7 +3486,7 @@ func file_diagnosis_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_diagnosis_proto_rawDesc), len(file_diagnosis_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   37,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

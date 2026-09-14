@@ -370,13 +370,15 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** `ml-training/src/validate.rs` reports per-class metrics only. Explainability is limited to threshold/bbox post-processing in `rust-engines/disease-detection-engine/src/heatmap.rs`. No feature attribution for yield or prescription outputs.
 
 **Enhancements:**
-- [ ] Add confusion matrix, calibration curves, and expected calibration error to validation output
-- [ ] Add a fixed held-out benchmark suite per task that every candidate model must pass before promotion
-- [ ] Add evaluation slicing by crop, region, season, and image source
-- [ ] Add Grad-CAM heatmaps for vision predictions and return them in the diagnosis response
-- [ ] Add SHAP-style feature attribution for yield and prescription outputs
-- [ ] Surface "why this recommendation" explanations in web and mobile diagnosis views
-- [ ] Add regression gates in CI: fail promotion if benchmark accuracy drops or calibration worsens
+- [x] Add confusion matrix, calibration curves, and expected calibration error to validation output — `ml-training/src/eval.rs` reports the matrix with the worst confusions called out, reliability bins, ECE, MCE, Brier and NLL, and fits the temperature that would fix overconfidence (one scalar that changes no prediction but brings confidence back in line with correctness). The maths works on plain prediction values, so it is tested without a model or a backend
+- [x] Add a fixed held-out benchmark suite per task that every candidate model must pass before promotion — `benchmark create` freezes sample ids **and the labels they had at the time**, so a later relabel is reported drift rather than a moved target. Candidates trained on a different class ordering are folded into the benchmark's label space by name, since comparing two index spaces gives metrics that look plausible and mean nothing
+- [x] Add evaluation slicing by crop, region, season, and image source — samples now carry capture location and time; region is a one-degree grid cell and season is derived from the timestamp, flipped below the equator. Slices too small to trust are reported and flagged, never gated on
+- [x] Add Grad-CAM heatmaps for vision predictions and return them in the diagnosis response — with a global average pool between the feature map and the head, the gradient of a class logit has a closed form, so the composed model emits exact per-class maps as an extra output for one small matrix product. Only average pooling is accepted; the same arithmetic on a max-pooled backbone would produce a confident-looking map that means nothing. Returned on all four vision RPCs
+- [x] Add SHAP-style feature attribution for yield and prescription outputs — permutation-sampling Shapley for the 22-feature yield model, exact enumeration for the seven-input prescription rules. Absent features are drawn from real stored rows rather than means, since an "average" field with one district's rainfall and another's soil is not a field any model was fitted on
+- [x] Add regression gates in CI: fail promotion if benchmark accuracy drops or calibration worsens — `scripts/model-gate.sh` plus a `model-gate` job; the gate blocks on absolutes (samples, coverage, accuracy, macro F1, ECE, worst slice) and on regressions against the baseline already live
+- [x] Surface "why this recommendation" explanations in the web diagnosis views — a new Image Analysis page runs the vision models over a field photo and paints the Grad-CAM map over it, with the focus region, the share of the image used, and a sentence describing where the model looked. A model that cannot explain itself says so rather than showing a fabricated heatmap
+- [ ] Surface the same explanations in the Flutter app — the Dart toolchain and `protoc-gen-dart` are not available in this environment, so the generated Dart protos cannot be regenerated to carry the new `Explanation` message. The service side is done; only the mobile client remains
+- [ ] Persist diagnosis results, and their explanations, from Go — `diagnosis_results` has a schema and a read path but nothing writes to it, so a stored diagnosis carries no AI result to explain
 
 **Effort:** Medium | **Impact:** High
 

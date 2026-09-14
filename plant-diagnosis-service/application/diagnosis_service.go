@@ -377,7 +377,7 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 // DetectNutrientDeficiency (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, error) {
+func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, []domain.Explanation, error) {
 	syntheticResult := []domain.NutrientDeficiency{
 		{
 			Nutrient:        "Nitrogen",
@@ -389,12 +389,12 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 
 	for _, img := range images {
 		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
-			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+			return nil, nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
 		}
 	}
 
 	if s.aiClient == nil {
-		return syntheticResult, nil
+		return syntheticResult, nil, nil
 	}
 
 	requestID := p9context.RequestID(ctx)
@@ -414,7 +414,7 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
 		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed, returning synthetic fallback", "error", err)
-		return syntheticResult, nil
+		return syntheticResult, nil, nil
 	}
 
 	deficiencies := make([]domain.NutrientDeficiency, len(result.Deficiencies))
@@ -430,14 +430,14 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 		}
 	}
 
-	return deficiencies, nil
+	return deficiencies, toDomainExplanations(result.Explanations), nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DetectPestDamage (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, error) {
+func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, []domain.Explanation, error) {
 	syntheticResult := []domain.PestDamage{
 		{
 			PestID:          ulid.NewString(),
@@ -449,12 +449,12 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 
 	for _, img := range images {
 		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
-			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+			return nil, nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
 		}
 	}
 
 	if s.aiClient == nil {
-		return syntheticResult, nil
+		return syntheticResult, nil, nil
 	}
 
 	requestID := p9context.RequestID(ctx)
@@ -474,7 +474,7 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 	result, err := s.aiClient.DetectPests(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
 		s.log.Warnw("msg", "AI DetectPests failed, returning synthetic fallback", "error", err)
-		return syntheticResult, nil
+		return syntheticResult, nil, nil
 	}
 
 	pests := make([]domain.PestDamage, len(result.Pests))
@@ -491,7 +491,7 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 		}
 	}
 
-	return pests, nil
+	return pests, toDomainExplanations(result.Explanations), nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -518,4 +518,30 @@ func (s *diagnosisService) emitEvent(ctx context.Context, eventType, aggregateID
 	if err := s.pub.Publish(ctx, eventTopic, aggregateID, raw); err != nil {
 		s.log.Errorw("msg", "failed to publish event", "event_type", eventType, "error", err)
 	}
+}
+
+// toDomainExplanations converts the AI client's explanations for the caller.
+func toDomainExplanations(in []ai.Explanation) []domain.Explanation {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]domain.Explanation, len(in))
+	for i, e := range in {
+		out[i] = domain.Explanation{
+			Task:          e.Task,
+			ClassName:     e.ClassName,
+			HeatmapPNG:    e.HeatmapPNG,
+			HeatmapWidth:  e.HeatmapWidth,
+			HeatmapHeight: e.HeatmapHeight,
+			FocusX:        e.FocusX,
+			FocusY:        e.FocusY,
+			FocusWidth:    e.FocusWidth,
+			FocusHeight:   e.FocusHeight,
+			FocusCoverage: e.FocusCoverage,
+			Summary:       e.Summary,
+			Method:        e.Method,
+			Localised:     e.Localised,
+		}
+	}
+	return out
 }

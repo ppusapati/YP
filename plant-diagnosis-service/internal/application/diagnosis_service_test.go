@@ -505,11 +505,14 @@ func TestDetectNutrientDeficiency_SyntheticFallback(t *testing.T) {
 		{ImageURL: "https://example.com/leaf.jpg", ImageType: "LEAF"},
 	}
 
-	deficiencies, err := svc.DetectNutrientDeficiency(ctx, "species-001", images)
+	deficiencies, explanations, err := svc.DetectNutrientDeficiency(ctx, "species-001", images)
 	require.NoError(t, err)
 	require.Len(t, deficiencies, 1)
 	assert.Equal(t, "Nitrogen", deficiencies[0].Nutrient)
 	assert.Equal(t, domain.SeverityModerate, deficiencies[0].Severity)
+	// The synthetic fallback is a placeholder, not a model output; it must
+	// not come with an explanation of reasoning that never happened.
+	assert.Empty(t, explanations)
 }
 
 // ---------------------------------------------------------------------------
@@ -524,9 +527,10 @@ func TestDetectPestDamage_SyntheticFallback(t *testing.T) {
 		{ImageURL: "https://example.com/leaf.jpg", ImageType: "LEAF"},
 	}
 
-	pests, err := svc.DetectPestDamage(ctx, "species-001", images)
+	pests, explanations, err := svc.DetectPestDamage(ctx, "species-001", images)
 	require.NoError(t, err)
 	require.Len(t, pests, 1)
 	assert.Equal(t, "Analysis pending", pests[0].PestName)
 	assert.Equal(t, domain.SeverityUnspecified, pests[0].DamageLevel)
+	assert.Empty(t, explanations)
 }

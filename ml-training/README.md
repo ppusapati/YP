@@ -112,6 +112,25 @@ that matter in the field:
   relies on it. Slices with too few samples are reported but flagged, never
   gated on.
 
+## Explaining a prediction
+
+A confidence score says how sure a model is; it does not say whether it looked
+at the lesion or at the shadow of the hand holding the leaf. Models composed by
+`train-heads` carry a per-class **Grad-CAM** output alongside their logits.
+
+With a global average pool between the feature map and the head, the gradient
+of a class logit with respect to that feature map has a closed form — the
+head's weight chain, with each hidden layer masked by whether its unit fired —
+and every term is a forward operation on values the graph already computes. So
+the maps are the real gradient rather than an estimate of it, for the cost of
+one small matrix product, and they work in any ONNX runtime with no autodiff.
+
+Only average pooling is accepted. The same arithmetic on a max-pooled backbone
+would produce a confident-looking heatmap that means nothing, so tracing
+refuses it and the model composes without explanations rather than with wrong
+ones. The AI gateway returns the maps on all four vision RPCs and the web
+Image Analysis page paints them over the photo.
+
 ## The benchmark gate
 
 A test split recomputed from the current dataset is not a benchmark: it moves
@@ -194,7 +213,10 @@ knowing:
   motion blur, background, noise). Training batches only; validation, test and
   inference all see plain preprocessing.
 - `[backbone]` and `[heads]` — transfer learning.
-- `[tabular.<name>]` — gradient-boosted regression tasks such as yield.
+- `[tabular.<name>]` — gradient-boosted regression tasks such as yield. A
+  trained model keeps a spread of training rows so the gateway can attribute
+  each prediction across its inputs; models trained before that existed report
+  that they cannot rather than inventing a baseline.
 
 ## Compute backend
 

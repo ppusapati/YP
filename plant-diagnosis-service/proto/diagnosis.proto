@@ -226,6 +226,34 @@ message IdentifySpeciesResponse {
   int64                 processing_time_ms = 3;
 }
 
+// Why a vision model answered the way it did.
+//
+// Produced by Grad-CAM over the serving model's feature map: a heatmap of what
+// the model actually looked at, plus the region it keyed on and a sentence
+// describing it. Absent when the answer came from a model that cannot explain
+// itself — a demo detector or an external provider.
+message Explanation {
+  string task              = 1;
+  string class_name        = 2;
+  // Greyscale PNG, brightest where the evidence is.
+  bytes  heatmap_png       = 3;
+  int32  heatmap_width     = 4;
+  int32  heatmap_height    = 5;
+  // Region the model keyed on, normalised to [0,1] from the top left so it
+  // survives any resize of the image it is drawn over.
+  double focus_x           = 6;
+  double focus_y           = 7;
+  double focus_width       = 8;
+  double focus_height      = 9;
+  // Share of the image inside that region; near 1 means nothing in particular
+  // was located.
+  double focus_coverage    = 10;
+  string summary           = 11;
+  string method            = 12;
+  // False when the map was flat and there is nothing to point at.
+  bool   localised         = 13;
+}
+
 message DetectNutrientDeficiencyRequest {
   string              plant_species_id = 1;
   repeated ImageInput images           = 2;
@@ -235,6 +263,8 @@ message DetectNutrientDeficiencyResponse {
   repeated NutrientDeficiency deficiencies      = 1;
   string                      ai_model_version  = 2;
   int64                       processing_time_ms = 3;
+  // One per analysed image, in request order.
+  repeated Explanation        explanations      = 4;
 }
 
 message DetectPestDamageRequest {
@@ -246,6 +276,7 @@ message DetectPestDamageResponse {
   repeated PestDamage pests              = 1;
   string              ai_model_version   = 2;
   int64               processing_time_ms = 3;
+  repeated Explanation explanations      = 4;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

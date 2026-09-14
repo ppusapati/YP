@@ -212,6 +212,9 @@ export type {
   LabelReviewSample,
   LabelReview,
   TrainingLabel,
+  Explanation,
+  NutrientDeficiency,
+  PestDamage,
 } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
 
 export { LabelReviewDecision } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';

@@ -25,6 +25,11 @@ yield_tabular_model = ""
 # Shared multi-task vision model from `yp-ml-training train-heads`: a directory
 # with model.onnx + multitask.json. It answers any vision task that has no
 # model of its own, from a single backbone pass. Empty disables it.
+#
+# A model composed from an average-pooled backbone also carries Grad-CAM
+# outputs, and the gateway then returns a heatmap with every vision result
+# saying where in the image the answer came from. Per-task models carry no such
+# outputs, so a task served by one gets detections without an explanation.
 multitask_model = ""
 crop_growth_version = "v1.0.0"
 satellite_ndvi_version = "v1.0.0"

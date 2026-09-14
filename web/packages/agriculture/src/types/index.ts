@@ -115,6 +115,13 @@ export type {
   TrainingLabel,
 } from '@samavāya/proto';
 
+// Model explainability: where in an image an answer came from.
+export type {
+  Explanation,
+  NutrientDeficiency,
+  PestDamage,
+} from '@samavāya/proto';
+
 // ─── Common Types ────────────────────────────────────────────────────────────
 
 export interface ListParams {

@@ -73,6 +73,23 @@ type DiagnosisResult struct {
 	ProcessingTimeMs   int64
 }
 
+// Explanation is the gateway's account of where a vision answer came from.
+type Explanation struct {
+	Task          string
+	ClassName     string
+	HeatmapPNG    []byte
+	HeatmapWidth  int32
+	HeatmapHeight int32
+	FocusX        float64
+	FocusY        float64
+	FocusWidth    float64
+	FocusHeight   float64
+	FocusCoverage float64
+	Summary       string
+	Method        string
+	Localised     bool
+}
+
 // DetectedDisease represents a single disease detection from the AI engine.
 type DetectedDisease struct {
 	DiseaseID        string
@@ -92,6 +109,7 @@ type PestDetectionResult struct {
 	Pests            []DetectedPest
 	ModelVersion     string
 	ProcessingTimeMs int64
+	Explanations     []Explanation
 }
 
 // DetectedPest represents a single pest detection.
@@ -112,6 +130,7 @@ type NutrientDeficiencyResult struct {
 	Deficiencies     []DetectedNutrientDeficiency
 	ModelVersion     string
 	ProcessingTimeMs int64
+	Explanations     []Explanation
 }
 
 // DetectedNutrientDeficiency represents a single nutrient deficiency detection.

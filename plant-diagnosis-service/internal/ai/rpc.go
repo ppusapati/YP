@@ -132,6 +132,31 @@ func callGeneratePrescription(ctx context.Context, conn *grpc.ClientConn, reques
 // Response mappers (proto -> typed result)
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+// parseExplanations converts the gateway's explanations, which are absent
+// whenever the answer came from a model with no gradient to explain.
+func parseExplanations(in []*aipb.Explanation) []Explanation {
+	out := make([]Explanation, 0, len(in))
+	for _, e := range in {
+		out = append(out, Explanation{
+			Task:          e.GetTask(),
+			ClassName:     e.GetClassName(),
+			HeatmapPNG:    e.GetHeatmapPng(),
+			HeatmapWidth:  e.GetHeatmapWidth(),
+			HeatmapHeight: e.GetHeatmapHeight(),
+			FocusX:        e.GetFocusX(),
+			FocusY:        e.GetFocusY(),
+			FocusWidth:    e.GetFocusWidth(),
+			FocusHeight:   e.GetFocusHeight(),
+			FocusCoverage: e.GetFocusCoverage(),
+			Summary:       e.GetSummary(),
+			Method:        e.GetMethod(),
+			Localised:     e.GetLocalised(),
+		})
+	}
+	return out
+}
+
 func parseDiagnosisResult(resp *aipb.DiagnoseImageResponse) *DiagnosisResult {
 	result := &DiagnosisResult{}
 	if resp == nil {
@@ -166,6 +191,7 @@ func parsePestDetectionResult(resp *aipb.DetectPestsResponse) *PestDetectionResu
 	result.RequestID = resp.GetRequestId()
 	result.ModelVersion = resp.GetModelVersion()
 	result.ProcessingTimeMs = resp.GetProcessingTimeMs()
+	result.Explanations = parseExplanations(resp.GetExplanations())
 	for _, p := range resp.GetPests() {
 		result.Pests = append(result.Pests, DetectedPest{
 			PestID:          p.GetPestId(),
@@ -189,6 +215,7 @@ func parseNutrientDeficiencyResult(resp *aipb.DetectNutrientDeficiencyResponse) 
 	result.RequestID = resp.GetRequestId()
 	result.ModelVersion = resp.GetModelVersion()
 	result.ProcessingTimeMs = resp.GetProcessingTimeMs()
+	result.Explanations = parseExplanations(resp.GetExplanations())
 	for _, d := range resp.GetDeficiencies() {
 		result.Deficiencies = append(result.Deficiencies, DetectedNutrientDeficiency{
 			Nutrient:               d.GetNutrient(),

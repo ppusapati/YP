@@ -596,6 +596,7 @@ export const MODULE_REGISTRY: ModuleDef[] = [
         title: 'Plant Diagnosis',
         items: [
           { label: 'Diagnose Plant', path: '/crop-intelligence/diagnose' },
+          { label: 'Image Analysis', path: '/crop-intelligence/image-analysis' },
           { label: 'Diagnosis History', path: '/crop-intelligence/diagnosis-history' },
           { label: 'Disease Library', path: '/crop-intelligence/disease-library' },
           { label: 'Label Review', path: '/crop-intelligence/label-review' },

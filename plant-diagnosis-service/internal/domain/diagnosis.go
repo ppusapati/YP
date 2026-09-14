@@ -95,6 +95,27 @@ type DiagnosisResult struct {
 // Detection / AI result value objects
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Explanation says where in an image a vision model's answer came from.
+//
+// A confidence score says how sure the model is; this says what it looked at,
+// which is what lets a farmer check the answer rather than trust it. Empty
+// when the answer came from a model that cannot explain itself.
+type Explanation struct {
+	Task          string  `json:"task"`
+	ClassName     string  `json:"class_name"`
+	HeatmapPNG    []byte  `json:"heatmap_png,omitempty"`
+	HeatmapWidth  int32   `json:"heatmap_width"`
+	HeatmapHeight int32   `json:"heatmap_height"`
+	FocusX        float64 `json:"focus_x"`
+	FocusY        float64 `json:"focus_y"`
+	FocusWidth    float64 `json:"focus_width"`
+	FocusHeight   float64 `json:"focus_height"`
+	FocusCoverage float64 `json:"focus_coverage"`
+	Summary       string  `json:"summary"`
+	Method        string  `json:"method"`
+	Localised     bool    `json:"localised"`
+}
+
 // PlantSpecies represents a plant species identification result.
 type PlantSpecies struct {
 	ID             string  `json:"id"`

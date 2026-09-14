@@ -16,8 +16,8 @@ type DiagnosisService interface {
 	ListDiseases(ctx context.Context, params domain.ListDiseasesParams) ([]domain.DiseaseInfo, int32, error)
 	GetTreatmentPlan(ctx context.Context, diagnosisID string) (*domain.TreatmentPlan, error)
 	IdentifySpecies(ctx context.Context, images []domain.DiagnosisImage) ([]domain.PlantSpecies, error)
-	DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, error)
-	DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, error)
+	DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, []domain.Explanation, error)
+	DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, []domain.Explanation, error)
 
 	// Human-in-the-loop label review of AI-gateway training samples.
 	ListLabelReviewQueue(ctx context.Context, params domain.ListLabelReviewQueueParams) ([]domain.LabelReviewSample, int32, int32, error)
