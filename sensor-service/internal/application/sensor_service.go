@@ -692,7 +692,12 @@ func (s *sensorService) evaluateThresholdAlerts(ctx context.Context, tenantID, s
 			s.log.Warnw("msg", "alert triggered", "sensor_id", sensorID, "condition", alertRule.Condition, "value", value, "threshold", alertRule.Threshold, "severity", alertRule.Severity)
 
 			s.emitEvent(ctx, "agriculture.sensor.alert.triggered", created.ID, map[string]interface{}{
-				"alert_id":     created.ID,
+				"alert_id": created.ID,
+				// Without a tenant a consumer cannot attribute the alert to
+				// anyone, and alert-service drops it rather than guess. The
+				// event carried no tenant until now, so sensor alerts never
+				// reached the farmer's list at all.
+				"tenant_id":    tenantID,
 				"sensor_id":    sensorID,
 				"sensor_type":  string(sensor.SensorType),
 				"field_id":     sensor.FieldID,

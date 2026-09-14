@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -11,18 +12,25 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
-	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/connect/interceptors"
+	connectserver "p9e.in/samavaya/packages/connect/server"
+	"p9e.in/samavaya/packages/database/migrate"
 	"p9e.in/samavaya/packages/deps"
+	kafkaconfig "p9e.in/samavaya/packages/events/config"
+	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
+	eventsdomain "p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/middleware"
 	"p9e.in/samavaya/packages/p9log"
 
 	"p9e.in/samavaya/agriculture/alert-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/alert-service/internal/ai"
+	alertevents "p9e.in/samavaya/agriculture/alert-service/internal/events"
 	"p9e.in/samavaya/agriculture/alert-service/internal/handlers"
+	"p9e.in/samavaya/agriculture/alert-service/internal/repositories"
 	"p9e.in/samavaya/agriculture/alert-service/internal/services"
 )
 
@@ -42,6 +50,28 @@ func main() {
 
 	port := envOr("PORT", "8080")
 	aiGatewayAddr := envOr("AI_GATEWAY_ADDR", "localhost:9090")
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL is required")
+	}
+
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		log.Fatalf("failed to create database pool: %v", err)
+	}
+	defer pool.Close()
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatalf("database not reachable: %v", err)
+	}
+
+	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer migrateCancel()
+	if err := migrate.Up(migrateCtx, pool, os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
+		log.Fatalf("migrations failed: %v", err)
+	}
 
 	// ── AI Client (optional) ────────────────────────────────────────────────
 	logHelper := p9log.NewHelper(p9log.With(logger, "component", "ai_client"))
@@ -50,13 +80,14 @@ func main() {
 		log.Printf("WARNING: failed to create AI client: %v", err)
 	}
 
-	// ── Service deps (stateless — no database pool) ─────────────────────────
 	d := deps.ServiceDeps{
-		Log: logger,
+		Log:  logger,
+		Pool: pool,
 	}
 
 	// Application service
-	svc := services.NewAlertService(d, aiClient)
+	repo := repositories.NewAlertRepository(pool, logger)
+	svc := services.NewAlertService(d, repo, aiClient)
 
 	// Handler
 	handler := handlers.NewAlertHandler(d, svc)
@@ -96,6 +127,43 @@ func main() {
 	serverCfg := connectserver.DefaultServerConfig(port)
 	wrapped := connectserver.WrapAll(mux, serverCfg)
 	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
+
+	// ── Kafka consumer: alerts raised by other services ─────────────────────
+	//
+	// Without this the service only holds alerts created through its own API,
+	// which is nothing: weather, sensor and pest all raise theirs as events.
+	// It is optional so the service still starts in a deployment with no
+	// broker — it is then a store with no writer, and says so in the log.
+	if kafkaBroker == "" {
+		p9log.NewHelper(logger).Warnw("msg",
+			"KAFKA_BROKER not set; weather, sensor and pest alerts will not be ingested")
+	} else {
+		alertConsumer := alertevents.NewAlertConsumer(svc, logger)
+		kc := kafkaconsumer.NewKafkaConsumer(&kafkaconfig.KafkaConfig{
+			Broker:       kafkaBroker,
+			Group:        serviceName,
+			KafkaVersion: "3.5.0",
+			Assignor:     "sticky",
+		}, logger)
+		consumerCtx, consumerCancel := context.WithCancel(context.Background())
+		defer consumerCancel()
+		for _, topic := range alertConsumer.Topics() {
+			if err := kc.Subscribe(consumerCtx, topic, func(ctx context.Context, data []byte) error {
+				var event eventsdomain.DomainEvent
+				if err := json.Unmarshal(data, &event); err != nil {
+					// Not returned: a message that will never parse would be
+					// retried forever and block the partition for every alert
+					// behind it.
+					p9log.NewHelper(logger).Errorw("msg", "unparseable event; skipping",
+						"topic", topic, "error", err)
+					return nil
+				}
+				return alertConsumer.HandleEvent(ctx, &event)
+			}); err != nil {
+				log.Printf("WARNING: failed to subscribe to %s: %v", topic, err)
+			}
+		}
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

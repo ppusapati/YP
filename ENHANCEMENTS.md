@@ -281,7 +281,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [x] Backfill 5 years of historical weather per field for model training
 - [x] Replace caller-supplied weather fields with a server-side lookup by field ID — pest-prediction reads the field's own observations from weather-service and uses the request's numbers only when that lookup fails. Weather is a property of the field, not of whoever is calling: taking it from the request let a caller move the risk score by sending stale or wrong numbers. The lookup belongs in the calling Go service rather than the gateway, which is a pure compute service with no outbound network
 - [x] Raise weather alerts (frost, heat stress, heavy rainfall, high wind, drought) and publish `agriculture.weather.alert.triggered` events
-- [ ] Consume weather alert events in alert-service so they appear alongside pest and sensor alerts — **larger than it reads.** alert-service has no persistence and no consumer: five of its methods are `// Repository call would go here` stubs returning nil, and neither pest nor sensor alerts land there either. The alert store has to exist before a consumer can write to it
+- [x] Consume weather alert events in alert-service so they appear alongside pest and sensor alerts — alert-service now has a schema, a repository and a Kafka consumer covering weather, sensor and pest. The `Alert` proto is narrower than what is stored: `metric_value`/`threshold_value` are folded into the `metrics` map, and `resolved_at`, `expires_at` and an `EXPIRED` status have no field yet. Adding them is a safe, non-breaking proto change, but the generated Dart cannot be regenerated in this environment
 
 **Effort:** Medium | **Impact:** Critical (prerequisite for E-018, E-019, E-021)
 

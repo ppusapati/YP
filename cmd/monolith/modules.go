@@ -159,6 +159,7 @@ import (
 
 	// ── Stateless services — alert ──────────────────────────────────────────
 	alerthandlers "p9e.in/samavaya/agriculture/alert-service/handlers"
+	alertrepos "p9e.in/samavaya/agriculture/alert-service/repositories"
 	alertservices "p9e.in/samavaya/agriculture/alert-service/services"
 
 	// ── Stateless services — analytics ──────────────────────────────────────
@@ -647,9 +648,13 @@ func registerSatelliteProcessingModule(mux *http.ServeMux, infra *sharedInfra) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 func registerAlertModule(mux *http.ServeMux, infra *sharedInfra) {
-	d := deps.ServiceDeps{Log: infra.logger}
+	d := deps.ServiceDeps{Log: infra.logger, Pool: infra.pool}
 
-	svc := alertservices.NewAlertService(d, nil) // nil AI client
+	// The AI client stays nil: field-risk evaluation needs the AI gateway,
+	// which the monolith does not manage. Everything else — the alert list,
+	// acknowledgement, rules — is backed by the shared pool and works.
+	repo := alertrepos.NewAlertRepository(infra.pool, infra.logger)
+	svc := alertservices.NewAlertService(d, repo, nil)
 	handler := alerthandlers.NewAlertHandler(d, svc)
 
 	path, h := alertv1connect.NewAlertServiceHandler(handler,

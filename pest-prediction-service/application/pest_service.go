@@ -217,8 +217,22 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 		}
 	}
 
+	// field_id and risk_score are here so alert-service can turn a high-risk
+	// prediction into an alert. Without a field there is nothing to attach it
+	// to, and without a score there is no way to tell a risk worth waking
+	// someone for from one worth noting.
+	//
+	// risk_score is the domain's 0-100 integer, not a fraction. Consumers
+	// divide; sending a pre-divided value here would make this event disagree
+	// with every other place the score appears.
 	s.emitEvent(ctx, "agriculture.pest-prediction.predicted", created.ID, map[string]interface{}{
-		"prediction_id": created.ID, "tenant_id": tenantID, "risk_level": string(riskLevel),
+		"prediction_id": created.ID,
+		"tenant_id":     tenantID,
+		"field_id":      params.FieldID,
+		"farm_id":       params.FarmID,
+		"risk_level":    string(riskLevel),
+		"risk_score":    riskScore,
+		"crop_type":     params.CropType,
 	})
 	s.log.Infow("msg", "pest risk predicted",
 		"uuid", created.ID, "risk_level", riskLevel, "risk_score", riskScore, "source", riskSource)

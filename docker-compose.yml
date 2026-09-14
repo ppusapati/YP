@@ -458,7 +458,15 @@ services:
       - "8098:8080"
     environment:
       <<: *go-env
+      DATABASE_URL: ${ALERT_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/alert_service?sslmode=disable}
+      AI_GATEWAY_ADDR: ai-gateway:50051
+      # The consumer is what fills this service. Weather, sensor and pest all
+      # raise their alerts as events; without a broker alert-service is a store
+      # with no writer.
+      KAFKA_BROKER: kafka:9092
     depends_on:
+      postgres:
+        condition: service_healthy
       kafka:
         condition: service_healthy
 

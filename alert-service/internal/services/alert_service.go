@@ -2,17 +2,26 @@ package services
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	pb "p9e.in/samavaya/agriculture/alert-service/api/v1"
 	"p9e.in/samavaya/agriculture/alert-service/internal/ai"
+	"p9e.in/samavaya/agriculture/alert-service/internal/models"
+	"p9e.in/samavaya/agriculture/alert-service/internal/repositories"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
-	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+const (
+	defaultPageSize int32 = 50
+	maxPageSize     int32 = 200
 )
 
 // ListAlertsInput holds the filter parameters for listing alerts.
@@ -59,22 +68,38 @@ type AlertService interface {
 
 	// History
 	ListAlertHistory(ctx context.Context, input ListAlertHistoryInput) ([]*pb.Alert, string, int32, error)
+
+	// RecordExternalAlert stores an alert raised by another service. It is the
+	// entry point for the Kafka consumer, and is idempotent on
+	// (source, source alert id); the bool reports whether a row was created.
+	RecordExternalAlert(ctx context.Context, tenantID string, a *models.Alert) (*models.Alert, bool, error)
 }
 
 // alertService is the concrete implementation of AlertService.
 type alertService struct {
 	deps     deps.ServiceDeps
+	repo     repositories.AlertRepository
 	aiClient *ai.AIClient
 	logger   *p9log.Helper
 }
 
 // NewAlertService creates a new AlertService instance.
-func NewAlertService(d deps.ServiceDeps, aiClient *ai.AIClient) AlertService {
+func NewAlertService(d deps.ServiceDeps, repo repositories.AlertRepository, aiClient *ai.AIClient) AlertService {
 	return &alertService{
 		deps:     d,
+		repo:     repo,
 		aiClient: aiClient,
 		logger:   p9log.NewHelper(p9log.With(d.Log, "component", "AlertService")),
 	}
+}
+
+// tenant resolves the caller's tenant, which every query is scoped by.
+func (s *alertService) tenant(ctx context.Context) (string, error) {
+	t := p9context.TenantID(ctx)
+	if strings.TrimSpace(t) == "" {
+		return "", errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	return t, nil
 }
 
 // ---------- Alert CRUD ----------
@@ -83,72 +108,77 @@ func (s *alertService) ListAlerts(ctx context.Context, input ListAlertsInput) ([
 	if strings.TrimSpace(input.FarmID) == "" && strings.TrimSpace(input.FieldID) == "" {
 		return nil, "", 0, errors.BadRequest("INVALID_FILTER", "at least one of farm_id or field_id is required")
 	}
-
-	pageSize := input.PageSize
-	if pageSize <= 0 {
-		pageSize = 50
-	}
-	if pageSize > 200 {
-		pageSize = 200
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, "", 0, err
 	}
 
-	// Repository call would go here.
-	s.logger.Infof("ListAlerts: farm=%s field=%s page_size=%d", input.FarmID, input.FieldID, pageSize)
+	pageSize := clampPageSize(input.PageSize)
+	offset, err := parsePageToken(input.PageToken)
+	if err != nil {
+		return nil, "", 0, err
+	}
 
-	return nil, "", 0, nil
+	alerts, total, err := s.repo.ListAlerts(ctx, tenantID, repositories.AlertFilter{
+		FarmID:   input.FarmID,
+		FieldID:  input.FieldID,
+		Severity: severityFromProto(input.Severity),
+		Statuses: statusesFromProto(input.Status),
+		Offset:   offset,
+		Limit:    pageSize,
+	})
+	if err != nil {
+		return nil, "", 0, err
+	}
+	return alertsToProto(alerts), nextToken(offset, len(alerts), total), total, nil
 }
 
 func (s *alertService) GetAlert(ctx context.Context, id string) (*pb.Alert, error) {
 	if strings.TrimSpace(id) == "" {
 		return nil, errors.BadRequest("INVALID_ID", "id is required")
 	}
-
-	// Repository call would go here.
-	s.logger.Infof("GetAlert: id=%s", id)
-
-	return nil, errors.NotFound("ALERT_NOT_FOUND", "alert not found")
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+	a, err := s.repo.GetAlert(ctx, tenantID, id)
+	if err != nil {
+		return nil, err
+	}
+	return alertToProto(a), nil
 }
 
 func (s *alertService) AcknowledgeAlert(ctx context.Context, alertID, userID string) (*pb.Alert, error) {
-	if strings.TrimSpace(alertID) == "" {
-		return nil, errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
-	}
-	if strings.TrimSpace(userID) == "" {
-		userID = p9context.UserID(ctx)
-	}
-	if strings.TrimSpace(userID) == "" {
-		return nil, errors.BadRequest("INVALID_USER_ID", "user_id is required to acknowledge an alert")
-	}
-
-	// Repository call: update status to ACKNOWLEDGED, set acknowledged_at.
-	s.logger.Infof("Alert acknowledged: id=%s by=%s", alertID, userID)
-
-	return &pb.Alert{
-		Id:             alertID,
-		Status:         pb.AlertStatus_ALERT_STATUS_ACKNOWLEDGED,
-		AcknowledgedAt: timestamppb.Now(),
-		AcknowledgedBy: userID,
-	}, nil
+	return s.transition(ctx, alertID, userID, models.AlertStatusAcknowledged, "acknowledge")
 }
 
 func (s *alertService) ResolveAlert(ctx context.Context, alertID, userID string) (*pb.Alert, error) {
+	return s.transition(ctx, alertID, userID, models.AlertStatusResolved, "resolve")
+}
+
+func (s *alertService) transition(ctx context.Context, alertID, userID string, to models.AlertStatus, verb string) (*pb.Alert, error) {
 	if strings.TrimSpace(alertID) == "" {
 		return nil, errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
 	}
 	if strings.TrimSpace(userID) == "" {
 		userID = p9context.UserID(ctx)
 	}
+	// Who acted on an alert is the whole value of the record afterwards, so an
+	// anonymous transition is refused rather than attributed to nobody.
 	if strings.TrimSpace(userID) == "" {
-		return nil, errors.BadRequest("INVALID_USER_ID", "user_id is required to resolve an alert")
+		return nil, errors.BadRequest("INVALID_USER_ID", "user_id is required to "+verb+" an alert")
+	}
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// Repository call: update status to RESOLVED, set resolved_at.
-	s.logger.Infof("Alert resolved: id=%s by=%s", alertID, userID)
-
-	return &pb.Alert{
-		Id:     alertID,
-		Status: pb.AlertStatus_ALERT_STATUS_RESOLVED,
-	}, nil
+	updated, err := s.repo.SetStatus(ctx, tenantID, alertID, to, userID, time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+	s.logger.Infow("msg", "alert "+verb+"d", "alert_id", alertID, "by", userID)
+	return alertToProto(updated), nil
 }
 
 // ---------- Read Status ----------
@@ -157,37 +187,54 @@ func (s *alertService) MarkAlertRead(ctx context.Context, alertID string) (*pb.A
 	if strings.TrimSpace(alertID) == "" {
 		return nil, errors.BadRequest("INVALID_ALERT_ID", "alert_id is required")
 	}
-
-	// Repository call: set read = true.
-	s.logger.Infof("Alert marked read: id=%s", alertID)
-
-	return &pb.Alert{
-		Id:   alertID,
-		Read: true,
-	}, nil
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+	a, err := s.repo.MarkRead(ctx, tenantID, alertID)
+	if err != nil {
+		return nil, err
+	}
+	return alertToProto(a), nil
 }
 
 func (s *alertService) MarkAllAlertsRead(ctx context.Context, farmID string) (int32, error) {
-	// Repository call: set read = true for all matching alerts.
-	s.logger.Infof("All alerts marked read: farm=%s", farmID)
-
-	return 0, nil
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := s.repo.MarkAllRead(ctx, tenantID, farmID)
+	if err != nil {
+		return 0, err
+	}
+	s.logger.Infow("msg", "alerts marked read", "farm_id", farmID, "count", n)
+	return n, nil
 }
 
 func (s *alertService) GetUnreadCount(ctx context.Context, farmID string) (int32, error) {
-	// Repository call: count where read = false.
-	s.logger.Infof("GetUnreadCount: farm=%s", farmID)
-
-	return 0, nil
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return s.repo.UnreadCount(ctx, tenantID, farmID)
 }
 
 // ---------- Alert Rules ----------
 
 func (s *alertService) ListAlertRules(ctx context.Context, fieldID string) ([]*pb.AlertRule, error) {
-	// Repository call would go here.
-	s.logger.Infof("ListAlertRules: field=%s", fieldID)
-
-	return nil, nil
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rules, err := s.repo.ListRules(ctx, tenantID, fieldID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*pb.AlertRule, 0, len(rules))
+	for _, r := range rules {
+		out = append(out, ruleToProto(r))
+	}
+	return out, nil
 }
 
 func (s *alertService) CreateAlertRule(ctx context.Context, rule *pb.AlertRule) (*pb.AlertRule, error) {
@@ -197,26 +244,36 @@ func (s *alertService) CreateAlertRule(ctx context.Context, rule *pb.AlertRule) 
 	if strings.TrimSpace(rule.GetMetric()) == "" {
 		return nil, errors.BadRequest("INVALID_METRIC", "metric is required")
 	}
-
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if rule.Id == "" {
 		rule.Id = ulid.NewString()
 	}
 
-	// Repository call would persist the rule here.
-	s.logger.Infof("AlertRule created: id=%s metric=%s field=%s", rule.Id, rule.Metric, rule.FieldId)
-
-	return rule, nil
+	created, err := s.repo.CreateRule(ctx, tenantID, ruleFromProto(rule))
+	if err != nil {
+		return nil, err
+	}
+	s.logger.Infow("msg", "alert rule created", "rule_id", created.ID, "metric", created.Metric, "field_id", created.FieldID)
+	return ruleToProto(created), nil
 }
 
 func (s *alertService) UpdateAlertRule(ctx context.Context, rule *pb.AlertRule) (*pb.AlertRule, error) {
 	if strings.TrimSpace(rule.GetId()) == "" {
 		return nil, errors.BadRequest("INVALID_RULE_ID", "rule id is required")
 	}
-
-	// Repository call would update the rule here.
-	s.logger.Infof("AlertRule updated: id=%s", rule.Id)
-
-	return rule, nil
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+	updated, err := s.repo.UpdateRule(ctx, tenantID, ruleFromProto(rule))
+	if err != nil {
+		return nil, err
+	}
+	s.logger.Infow("msg", "alert rule updated", "rule_id", updated.ID)
+	return ruleToProto(updated), nil
 }
 
 // ---------- Field Risk ----------
@@ -225,9 +282,12 @@ func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.Fi
 	if strings.TrimSpace(fieldID) == "" {
 		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
 	}
-
 	if s.aiClient == nil {
 		return nil, errors.InternalServer("AI_CLIENT_UNAVAILABLE", "AI Gateway client is not configured")
+	}
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	requestID := p9context.RequestID(ctx)
@@ -237,7 +297,7 @@ func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.Fi
 
 	result, err := s.aiClient.EvaluateFieldRisk(ctx, requestID, fieldID)
 	if err != nil {
-		s.logger.Errorf("GetFieldRisk failed: field=%s err=%v", fieldID, err)
+		s.logger.Errorw("msg", "field risk evaluation failed", "field_id", fieldID, "error", err)
 		return nil, errors.InternalServer("FIELD_EVALUATION_FAILED", "failed to evaluate field risk")
 	}
 
@@ -250,7 +310,20 @@ func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.Fi
 		"growth":      result.GrowthRisk,
 	}
 
-	s.logger.Infof("Field risk evaluated: field=%s overall=%.2f", result.FieldID, result.OverallRisk)
+	// Cached so that ListFieldRisks can render a farm overview from one query
+	// instead of fanning out a gateway call per field. A cache write failing
+	// must not fail the call the user actually made — they asked for this
+	// field's risk, and they have it.
+	if err := s.repo.UpsertFieldRisk(ctx, tenantID, &models.FieldRiskScore{
+		FieldID:     result.FieldID,
+		OverallRisk: result.OverallRisk,
+		RiskFactors: riskFactors,
+		EvaluatedAt: result.EvaluatedAt,
+	}); err != nil {
+		s.logger.Warnw("msg", "field risk cached failed", "field_id", fieldID, "error", err)
+	}
+
+	s.logger.Infow("msg", "field risk evaluated", "field_id", result.FieldID, "overall", result.OverallRisk)
 
 	return &pb.FieldRiskScore{
 		FieldId:      result.FieldID,
@@ -261,26 +334,301 @@ func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.Fi
 }
 
 func (s *alertService) ListFieldRisks(ctx context.Context) ([]*pb.FieldRiskScore, error) {
-	// Repository call would go here to list all field risk scores.
-	s.logger.Infof("ListFieldRisks")
-
-	return nil, nil
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, err
+	}
+	scores, err := s.repo.ListFieldRisks(ctx, tenantID, "")
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*pb.FieldRiskScore, 0, len(scores))
+	for _, sc := range scores {
+		out = append(out, &pb.FieldRiskScore{
+			FieldId:      sc.FieldID,
+			OverallScore: sc.OverallRisk,
+			RiskFactors:  sc.RiskFactors,
+			CalculatedAt: sc.CalculatedAt,
+		})
+	}
+	return out, nil
 }
 
 // ---------- Alert History ----------
 
 func (s *alertService) ListAlertHistory(ctx context.Context, input ListAlertHistoryInput) ([]*pb.Alert, string, int32, error) {
-	pageSize := input.PageSize
-	if pageSize <= 0 {
-		pageSize = 50
+	tenantID, err := s.tenant(ctx)
+	if err != nil {
+		return nil, "", 0, err
 	}
-	if pageSize > 200 {
-		pageSize = 200
+	pageSize := clampPageSize(input.PageSize)
+	offset, err := parsePageToken(input.PageToken)
+	if err != nil {
+		return nil, "", 0, err
 	}
 
-	// Repository call would go here with date range filtering.
-	s.logger.Infof("ListAlertHistory: start=%s end=%s farm=%s field=%s page_size=%d",
-		input.StartDate, input.EndDate, input.FarmID, input.FieldID, pageSize)
+	since, err := parseDate(input.StartDate, "start_date")
+	if err != nil {
+		return nil, "", 0, err
+	}
+	until, err := parseDate(input.EndDate, "end_date")
+	if err != nil {
+		return nil, "", 0, err
+	}
+	if since != nil && until != nil && until.Before(*since) {
+		return nil, "", 0, errors.BadRequest("INVALID_DATE_RANGE", "end_date is before start_date")
+	}
+	if until != nil {
+		// A bare date means the whole of that day, not its first instant —
+		// otherwise "to the 5th" silently excludes everything on the 5th.
+		end := until.Add(24*time.Hour - time.Nanosecond)
+		until = &end
+	}
 
-	return nil, "", 0, nil
+	alerts, total, err := s.repo.ListAlerts(ctx, tenantID, repositories.AlertFilter{
+		FarmID:  input.FarmID,
+		FieldID: input.FieldID,
+		Since:   since,
+		Until:   until,
+		Offset:  offset,
+		Limit:   pageSize,
+	})
+	if err != nil {
+		return nil, "", 0, err
+	}
+	return alertsToProto(alerts), nextToken(offset, len(alerts), total), total, nil
+}
+
+// ---------- Ingest ----------
+
+func (s *alertService) RecordExternalAlert(ctx context.Context, tenantID string, a *models.Alert) (*models.Alert, bool, error) {
+	if a == nil {
+		return nil, false, errors.BadRequest("INVALID_ALERT", "alert is required")
+	}
+	if a.ID == "" {
+		a.ID = ulid.NewString()
+	}
+	stored, created, err := s.repo.UpsertSourcedAlert(ctx, tenantID, a)
+	if err != nil {
+		return nil, false, err
+	}
+	if created {
+		s.logger.Infow("msg", "alert ingested",
+			"source", a.Source, "source_alert_id", a.SourceAlertID,
+			"field_id", a.FieldID, "type", a.AlertType, "severity", a.Severity)
+	}
+	return stored, created, nil
+}
+
+// ---------- helpers ----------
+
+func clampPageSize(n int32) int32 {
+	if n <= 0 {
+		return defaultPageSize
+	}
+	if n > maxPageSize {
+		return maxPageSize
+	}
+	return n
+}
+
+// parsePageToken reads the offset out of a page token.
+//
+// Rejecting a malformed token rather than silently restarting at zero: a client
+// that has corrupted its token is better told so than handed page one again
+// under the impression it is paging forward.
+func parsePageToken(token string) (int32, error) {
+	if strings.TrimSpace(token) == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(token)
+	if err != nil || n < 0 {
+		return 0, errors.BadRequest("INVALID_PAGE_TOKEN", "page_token is not valid")
+	}
+	return int32(n), nil
+}
+
+// nextToken advances by the rows actually returned, so a short page cannot
+// produce a token that points at where the caller already is.
+func nextToken(offset int32, returned int, total int32) string {
+	next := offset + int32(returned)
+	if returned == 0 || next >= total {
+		return ""
+	}
+	return strconv.Itoa(int(next))
+}
+
+func parseDate(s, field string) (*time.Time, error) {
+	if strings.TrimSpace(s) == "" {
+		return nil, nil
+	}
+	// RFC 3339 first, since that is what the rest of the platform emits;
+	// a bare date is accepted because it is what a human types.
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		u := t.UTC()
+		return &u, nil
+	}
+	if t, err := time.Parse("2006-01-02", s); err == nil {
+		u := t.UTC()
+		return &u, nil
+	}
+	return nil, errors.BadRequest("INVALID_DATE",
+		field+" must be RFC 3339 or YYYY-MM-DD")
+}
+
+func severityFromProto(s pb.AlertSeverity) models.AlertSeverity {
+	switch s {
+	case pb.AlertSeverity_ALERT_SEVERITY_INFO:
+		return models.AlertSeverityInfo
+	case pb.AlertSeverity_ALERT_SEVERITY_WARNING:
+		return models.AlertSeverityWarning
+	case pb.AlertSeverity_ALERT_SEVERITY_CRITICAL:
+		return models.AlertSeverityCritical
+	case pb.AlertSeverity_ALERT_SEVERITY_EMERGENCY:
+		return models.AlertSeverityEmergency
+	default:
+		return ""
+	}
+}
+
+func severityToProto(s models.AlertSeverity) pb.AlertSeverity {
+	switch s {
+	case models.AlertSeverityInfo:
+		return pb.AlertSeverity_ALERT_SEVERITY_INFO
+	case models.AlertSeverityWarning:
+		return pb.AlertSeverity_ALERT_SEVERITY_WARNING
+	case models.AlertSeverityCritical:
+		return pb.AlertSeverity_ALERT_SEVERITY_CRITICAL
+	case models.AlertSeverityEmergency:
+		return pb.AlertSeverity_ALERT_SEVERITY_EMERGENCY
+	default:
+		return pb.AlertSeverity_ALERT_SEVERITY_UNSPECIFIED
+	}
+}
+
+// statusesFromProto expands a requested status into the stored statuses that
+// satisfy it. RESOLVED covers EXPIRED too, because the proto has no separate
+// value for it and a caller asking for closed alerts means both.
+func statusesFromProto(s pb.AlertStatus) []models.AlertStatus {
+	switch s {
+	case pb.AlertStatus_ALERT_STATUS_ACTIVE:
+		return []models.AlertStatus{models.AlertStatusActive}
+	case pb.AlertStatus_ALERT_STATUS_ACKNOWLEDGED:
+		return []models.AlertStatus{models.AlertStatusAcknowledged}
+	case pb.AlertStatus_ALERT_STATUS_RESOLVED:
+		return []models.AlertStatus{models.AlertStatusResolved, models.AlertStatusExpired}
+	default:
+		return nil
+	}
+}
+
+func statusToProto(s models.AlertStatus) pb.AlertStatus {
+	switch s {
+	case models.AlertStatusActive:
+		return pb.AlertStatus_ALERT_STATUS_ACTIVE
+	case models.AlertStatusAcknowledged:
+		return pb.AlertStatus_ALERT_STATUS_ACKNOWLEDGED
+	case models.AlertStatusResolved, models.AlertStatusExpired:
+		// The proto has no EXPIRED. Reported as RESOLVED because both mean the
+		// alert is closed and needs no action, which is the distinction a
+		// client acts on; `resolved_at` being absent is what separates them
+		// internally. Adding the enum value is a safe, non-breaking proto
+		// change, but the generated Dart cannot be regenerated in this
+		// environment, so it waits for a batch that can.
+		return pb.AlertStatus_ALERT_STATUS_RESOLVED
+	default:
+		return pb.AlertStatus_ALERT_STATUS_UNSPECIFIED
+	}
+}
+
+// alertToProto maps the stored alert onto the wire message.
+//
+// The model is wider than the proto: metric_value, threshold_value,
+// resolved_at, expires_at and the source pair are persisted but have no field
+// to go in. Rather than drop the two numeric ones — they are what makes an
+// alert actionable, "soil moisture 0.11 against a threshold of 0.15" rather
+// than "soil is dry" — they are folded into the existing metrics map.
+func alertToProto(a *models.Alert) *pb.Alert {
+	if a == nil {
+		return nil
+	}
+	metrics := make(map[string]float64, len(a.Metrics)+2)
+	for k, v := range a.Metrics {
+		metrics[k] = v
+	}
+	if a.MetricValue != 0 {
+		metrics["value"] = a.MetricValue
+	}
+	if a.ThresholdValue != 0 {
+		metrics["threshold"] = a.ThresholdValue
+	}
+
+	out := &pb.Alert{
+		Id:              a.ID,
+		FieldId:         a.FieldID,
+		FarmId:          a.FarmID,
+		FieldName:       a.FieldName,
+		Type:            string(a.AlertType),
+		Severity:        severityToProto(a.Severity),
+		Status:          statusToProto(a.Status),
+		Title:           a.Title,
+		Message:         a.Message,
+		Read:            a.Read,
+		ActionUrl:       a.ActionURL,
+		Recommendations: a.Recommendations,
+		Metrics:         metrics,
+		AcknowledgedBy:  a.AcknowledgedBy,
+	}
+	if !a.CreatedAt.IsZero() {
+		out.Timestamp = timestamppb.New(a.CreatedAt)
+	}
+	if a.AcknowledgedAt != nil {
+		out.AcknowledgedAt = timestamppb.New(*a.AcknowledgedAt)
+	}
+	return out
+}
+
+func alertsToProto(in []*models.Alert) []*pb.Alert {
+	out := make([]*pb.Alert, 0, len(in))
+	for _, a := range in {
+		out = append(out, alertToProto(a))
+	}
+	return out
+}
+
+func ruleToProto(r *models.AlertRule) *pb.AlertRule {
+	if r == nil {
+		return nil
+	}
+	// alert_type and cooldown_minutes are stored but have no proto field yet.
+	// The cooldown in particular matters — it is what stops a sensor parked
+	// just over its threshold from raising an alert on every reading — so it
+	// is honoured server-side using the column default until the proto can
+	// carry it.
+	return &pb.AlertRule{
+		Id:             r.ID,
+		FieldId:        r.FieldID,
+		Metric:         r.Metric,
+		Condition:      r.Condition,
+		Threshold:      r.Threshold,
+		Severity:       severityToProto(r.Severity),
+		Enabled:        r.Enabled,
+		NotifyChannels: r.NotifyChannels,
+	}
+}
+
+func ruleFromProto(r *pb.AlertRule) *models.AlertRule {
+	if r == nil {
+		return nil
+	}
+	return &models.AlertRule{
+		ID:             r.GetId(),
+		FieldID:        r.GetFieldId(),
+		Metric:         r.GetMetric(),
+		Condition:      r.GetCondition(),
+		Threshold:      r.GetThreshold(),
+		Severity:       severityFromProto(r.GetSeverity()),
+		Enabled:        r.GetEnabled(),
+		NotifyChannels: r.GetNotifyChannels(),
+	}
 }
