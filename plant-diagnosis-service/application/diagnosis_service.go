@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -37,6 +38,7 @@ type diagnosisService struct {
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
 	aiClient    *ai.AIClient
+	fetcher     *ai.ImageFetcher
 }
 
 // NewDiagnosisService creates a new application-layer DiagnosisService.
@@ -57,6 +59,7 @@ func NewDiagnosisService(
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "DiagnosisService")),
 		aiClient:    aiClient,
+		fetcher:     ai.NewImageFetcher(),
 	}
 }
 
@@ -91,8 +94,177 @@ func (s *diagnosisService) SubmitDiagnosis(ctx context.Context, req *domain.Diag
 	s.emitEvent(ctx, "agriculture.plant-diagnosis.created", created.ID, map[string]interface{}{
 		"plant_diagnosis_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "diagnosis submitted", "id", created.ID)
+
+	// Analyse before returning, so the response carries the answer the caller
+	// asked for. The alternative — leaving the request PENDING for a worker —
+	// needs a worker, and until now there was none: every diagnosis ever
+	// submitted stayed pending forever.
+	if result := s.analyse(ctx, created); result != nil {
+		created.Result = result
+		created.Status = domain.DiagnosisStatusCompleted
+	}
+
+	s.log.Infow("msg", "diagnosis submitted", "id", created.ID, "status", string(created.Status))
 	return created, nil
+}
+
+// analyse runs the vision models over a request's images and stores what they
+// found. Returns nil when no result could be produced, leaving the request
+// pending rather than recording an empty diagnosis as if it were an answer.
+func (s *diagnosisService) analyse(ctx context.Context, req *domain.DiagnosisRequest) *domain.DiagnosisResult {
+	if s.aiClient == nil || len(req.Images) == 0 {
+		return nil
+	}
+
+	if err := s.repo.UpdateDiagnosisRequestStatus(ctx, req.ID, req.TenantID, domain.DiagnosisStatusAnalyzing); err != nil {
+		s.log.Warnw("msg", "could not mark diagnosis analysing", "id", req.ID, "error", err)
+	}
+
+	images := make([]ai.ImageInput, 0, len(req.Images))
+	for _, img := range req.Images {
+		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+			s.log.Warnw("msg", "skipping image with a rejected URL", "error", err)
+			continue
+		}
+		images = append(images, ai.ImageInput{
+			ImageURL:  img.ImageURL,
+			ImageType: img.ImageType,
+			MimeType:  img.MimeType,
+		})
+	}
+
+	// The gateway classifies bytes, not URLs: handing it a URL alone makes
+	// every local model skip the image and fall through to demo weights.
+	images, fetchErrs := s.fetcher.FetchAll(ctx, images)
+	for _, err := range fetchErrs {
+		s.log.Warnw("msg", "could not fetch a diagnosis image", "error", err)
+	}
+	if len(images) == 0 {
+		s.log.Warnw("msg", "no usable images; leaving diagnosis pending", "id", req.ID)
+		s.markFailed(ctx, req)
+		return nil
+	}
+
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+	speciesID := ""
+	if req.PlantSpeciesID != nil {
+		speciesID = *req.PlantSpeciesID
+	}
+	sctx := s.sampleContext(ctx, speciesID)
+	result := &domain.DiagnosisResult{
+		TenantID:           req.TenantID,
+		DiagnosisRequestID: req.ID,
+	}
+
+	// Each model answers a different question, and one failing says nothing
+	// about the others: a disease reading is still worth storing when the pest
+	// model is down.
+	var versions []string
+	var explanations []ai.Explanation
+	answered := false
+
+	if diag, err := s.aiClient.DiagnoseImage(ctx, requestID, images, speciesID, sctx); err != nil {
+		s.log.Warnw("msg", "AI DiagnoseImage failed", "error", err)
+	} else {
+		answered = true
+		result.DetectedDiseases = marshalOrNil(diag.Diseases)
+		health := diag.OverallHealthScore
+		result.OverallHealthScore = &health
+		summary := diag.Summary
+		result.Summary = &summary
+		result.ProcessingTimeMs = diag.ProcessingTimeMs
+		versions = append(versions, diag.ModelVersion)
+		explanations = append(explanations, diag.Explanations...)
+	}
+
+	if pest, err := s.aiClient.DetectPests(ctx, requestID, images, speciesID, sctx); err != nil {
+		s.log.Warnw("msg", "AI DetectPests failed", "error", err)
+	} else {
+		answered = true
+		result.PestDamage = marshalOrNil(pest.Pests)
+		versions = append(versions, pest.ModelVersion)
+		explanations = append(explanations, pest.Explanations...)
+	}
+
+	if nutrient, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, images, speciesID, sctx); err != nil {
+		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed", "error", err)
+	} else {
+		answered = true
+		result.NutrientDeficiencies = marshalOrNil(nutrient.Deficiencies)
+		versions = append(versions, nutrient.ModelVersion)
+		explanations = append(explanations, nutrient.Explanations...)
+	}
+
+	if species, err := s.aiClient.ClassifyPlant(ctx, requestID, images, sctx); err != nil {
+		s.log.Warnw("msg", "AI ClassifyPlant failed", "error", err)
+	} else {
+		answered = true
+		result.IdentifiedSpecies = marshalOrNil(domain.PlantSpecies{
+			ID:             species.SpeciesID,
+			CommonName:     species.CommonName,
+			ScientificName: species.ScientificName,
+			Family:         species.Family,
+			Confidence:     species.Confidence,
+		})
+		versions = append(versions, species.ModelVersion)
+	}
+
+	if !answered {
+		s.markFailed(ctx, req)
+		return nil
+	}
+
+	result.AIModelVersion = strings.Join(compact(versions), "+")
+	result.Explanations = marshalOrNil(toDomainExplanations(explanations))
+
+	stored, err := s.repo.CreateDiagnosisResult(ctx, result)
+	if err != nil {
+		s.log.Errorw("msg", "could not store diagnosis result", "id", req.ID, "error", err)
+		s.markFailed(ctx, req)
+		return nil
+	}
+	if err := s.repo.UpdateDiagnosisRequestStatus(ctx, req.ID, req.TenantID, domain.DiagnosisStatusCompleted); err != nil {
+		s.log.Warnw("msg", "result stored but status not updated", "id", req.ID, "error", err)
+	}
+
+	s.emitEvent(ctx, "agriculture.plant-diagnosis.analysed", req.ID, map[string]interface{}{
+		"plant_diagnosis_id": req.ID,
+		"tenant_id":          req.TenantID,
+		"model_version":      result.AIModelVersion,
+	})
+	return stored
+}
+
+func (s *diagnosisService) markFailed(ctx context.Context, req *domain.DiagnosisRequest) {
+	if err := s.repo.UpdateDiagnosisRequestStatus(ctx, req.ID, req.TenantID, domain.DiagnosisStatusFailed); err != nil {
+		s.log.Warnw("msg", "could not mark diagnosis failed", "id", req.ID, "error", err)
+	}
+	req.Status = domain.DiagnosisStatusFailed
+}
+
+// marshalOrNil serialises a value for a JSONB column, dropping it rather than
+// storing a broken document if it cannot be encoded.
+func marshalOrNil(v any) json.RawMessage {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	return raw
+}
+
+// compact drops empty strings, so a missing model version does not leave a
+// stray separator in the combined one.
+func compact(in []string) []string {
+	out := make([]string, 0, len(in))
+	for _, v := range in {
+		if v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -494,32 +666,6 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 	return pests, toDomainExplanations(result.Explanations), nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Event publishing
-// ─────────────────────────────────────────────────────────────────────────────
-
-func (s *diagnosisService) emitEvent(ctx context.Context, eventType, aggregateID string, data map[string]interface{}) {
-	if s.pub == nil {
-		return
-	}
-	payload := map[string]interface{}{
-		"id":             ulid.NewString(),
-		"type":           eventType,
-		"aggregate_id":   aggregateID,
-		"source":         serviceName,
-		"correlation_id": p9context.RequestID(ctx),
-		"data":           data,
-	}
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		s.log.Errorw("msg", "failed to marshal event", "error", err)
-		return
-	}
-	if err := s.pub.Publish(ctx, eventTopic, aggregateID, raw); err != nil {
-		s.log.Errorw("msg", "failed to publish event", "event_type", eventType, "error", err)
-	}
-}
-
 // toDomainExplanations converts the AI client's explanations for the caller.
 func toDomainExplanations(in []ai.Explanation) []domain.Explanation {
 	if len(in) == 0 {
@@ -544,4 +690,30 @@ func toDomainExplanations(in []ai.Explanation) []domain.Explanation {
 		}
 	}
 	return out
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Event publishing
+// ─────────────────────────────────────────────────────────────────────────────
+
+func (s *diagnosisService) emitEvent(ctx context.Context, eventType, aggregateID string, data map[string]interface{}) {
+	if s.pub == nil {
+		return
+	}
+	payload := map[string]interface{}{
+		"id":             ulid.NewString(),
+		"type":           eventType,
+		"aggregate_id":   aggregateID,
+		"source":         serviceName,
+		"correlation_id": p9context.RequestID(ctx),
+		"data":           data,
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		s.log.Errorw("msg", "failed to marshal event", "error", err)
+		return
+	}
+	if err := s.pub.Publish(ctx, eventTopic, aggregateID, raw); err != nil {
+		s.log.Errorw("msg", "failed to publish event", "event_type", eventType, "error", err)
+	}
 }

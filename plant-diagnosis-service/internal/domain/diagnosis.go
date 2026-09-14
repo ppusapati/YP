@@ -87,8 +87,11 @@ type DiagnosisResult struct {
 	ProcessingTimeMs         int64           `json:"processing_time_ms" db:"processing_time_ms"`
 	OverallHealthScore       *float64        `json:"overall_health_score" db:"overall_health_score"`
 	Summary                  *string         `json:"summary" db:"summary"`
-	CreatedAt                time.Time       `json:"created_at" db:"created_at"`
-	UpdatedAt                time.Time       `json:"updated_at" db:"updated_at"`
+	// Per-image model explanations; empty when the serving model could not
+	// explain itself.
+	Explanations json.RawMessage `json:"explanations" db:"explanations"`
+	CreatedAt    time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time       `json:"updated_at" db:"updated_at"`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

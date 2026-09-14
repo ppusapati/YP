@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"p9e.in/samavaya/packages/errors"
@@ -48,6 +49,13 @@ func (r *diagnosisRepository) query(ctx context.Context, sql string, args ...any
 		return r.tx.Query(ctx, sql, args...)
 	}
 	return r.pool.Query(ctx, sql, args...)
+}
+
+func (r *diagnosisRepository) exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	if r.tx != nil {
+		return r.tx.Exec(ctx, sql, args...)
+	}
+	return r.pool.Exec(ctx, sql, args...)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -209,20 +217,13 @@ func (r *diagnosisRepository) GetDiagnosisResultByRequestID(ctx context.Context,
 		`SELECT id, tenant_id, diagnosis_request_id,
 			identified_species, detected_diseases, nutrient_deficiencies, pest_damage,
 			treatment_recommendations, ai_model_version, processing_time_ms,
-			overall_health_score, summary, created_at, updated_at
+			overall_health_score, summary, explanations, created_at, updated_at
 		FROM diagnosis_results
 		WHERE diagnosis_request_id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
 		requestID, tenantID,
 	)
 
-	e := &domain.DiagnosisResult{}
-	var identifiedSpeciesRaw, diseasesRaw, nutrientsRaw, pestsRaw []byte
-	err := row.Scan(
-		&e.ID, &e.TenantID, &e.DiagnosisRequestID,
-		&identifiedSpeciesRaw, &diseasesRaw, &nutrientsRaw, &pestsRaw,
-		&e.TreatmentRecommendations, &e.AIModelVersion, &e.ProcessingTimeMs,
-		&e.OverallHealthScore, &e.Summary, &e.CreatedAt, &e.UpdatedAt,
-	)
+	e, err := scanDiagnosisResult(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil // no result yet is not an error
@@ -230,11 +231,100 @@ func (r *diagnosisRepository) GetDiagnosisResultByRequestID(ctx context.Context,
 		r.log.Errorw("msg", "db error", "error", err)
 		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
+	return e, nil
+}
+
+// scanDiagnosisResult reads one row in the column order both queries select.
+func scanDiagnosisResult(row pgx.Row) (*domain.DiagnosisResult, error) {
+	e := &domain.DiagnosisResult{}
+	var identifiedSpeciesRaw, diseasesRaw, nutrientsRaw, pestsRaw, explanationsRaw []byte
+	if err := row.Scan(
+		&e.ID, &e.TenantID, &e.DiagnosisRequestID,
+		&identifiedSpeciesRaw, &diseasesRaw, &nutrientsRaw, &pestsRaw,
+		&e.TreatmentRecommendations, &e.AIModelVersion, &e.ProcessingTimeMs,
+		&e.OverallHealthScore, &e.Summary, &explanationsRaw, &e.CreatedAt, &e.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
 	e.IdentifiedSpecies = identifiedSpeciesRaw
 	e.DetectedDiseases = diseasesRaw
 	e.NutrientDeficiencies = nutrientsRaw
 	e.PestDamage = pestsRaw
+	e.Explanations = explanationsRaw
 	return e, nil
+}
+
+// CreateDiagnosisResult stores the AI findings for a request.
+//
+// One result per request: the unique index on diagnosis_request_id makes a
+// re-analysis an update rather than a second row, so a retried analysis
+// replaces the old answer instead of leaving two that disagree.
+func (r *diagnosisRepository) CreateDiagnosisResult(ctx context.Context, res *domain.DiagnosisResult) (*domain.DiagnosisResult, error) {
+	if res.ID == "" {
+		res.ID = ulid.NewString()
+	}
+	jsonOrEmpty := func(raw json.RawMessage, empty string) []byte {
+		if len(raw) == 0 {
+			return []byte(empty)
+		}
+		return raw
+	}
+
+	row := r.queryRow(ctx,
+		`INSERT INTO diagnosis_results
+			(id, tenant_id, diagnosis_request_id, identified_species, detected_diseases,
+			 nutrient_deficiencies, pest_damage, treatment_recommendations,
+			 ai_model_version, processing_time_ms, overall_health_score, summary, explanations)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+		ON CONFLICT (diagnosis_request_id) WHERE deleted_at IS NULL DO UPDATE SET
+			identified_species        = EXCLUDED.identified_species,
+			detected_diseases         = EXCLUDED.detected_diseases,
+			nutrient_deficiencies     = EXCLUDED.nutrient_deficiencies,
+			pest_damage               = EXCLUDED.pest_damage,
+			treatment_recommendations = EXCLUDED.treatment_recommendations,
+			ai_model_version          = EXCLUDED.ai_model_version,
+			processing_time_ms        = EXCLUDED.processing_time_ms,
+			overall_health_score      = EXCLUDED.overall_health_score,
+			summary                   = EXCLUDED.summary,
+			explanations              = EXCLUDED.explanations,
+			updated_at                = NOW()
+		RETURNING id, tenant_id, diagnosis_request_id,
+			identified_species, detected_diseases, nutrient_deficiencies, pest_damage,
+			treatment_recommendations, ai_model_version, processing_time_ms,
+			overall_health_score, summary, explanations, created_at, updated_at`,
+		res.ID, res.TenantID, res.DiagnosisRequestID,
+		jsonOrEmpty(res.IdentifiedSpecies, "null"),
+		jsonOrEmpty(res.DetectedDiseases, "[]"),
+		jsonOrEmpty(res.NutrientDeficiencies, "[]"),
+		jsonOrEmpty(res.PestDamage, "[]"),
+		res.TreatmentRecommendations, res.AIModelVersion, res.ProcessingTimeMs,
+		res.OverallHealthScore, res.Summary,
+		jsonOrEmpty(res.Explanations, "[]"),
+	)
+	out, err := scanDiagnosisResult(row)
+	if err != nil {
+		r.log.Errorw("msg", "failed to store diagnosis result", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
+	}
+	return out, nil
+}
+
+// UpdateDiagnosisRequestStatus moves a request through its lifecycle.
+func (r *diagnosisRepository) UpdateDiagnosisRequestStatus(ctx context.Context, id, tenantID string, status domain.DiagnosisStatus) error {
+	tag, err := r.exec(ctx,
+		`UPDATE diagnosis_requests
+		SET status=$3, version=version+1, updated_at=NOW()
+		WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
+		id, tenantID, string(status),
+	)
+	if err != nil {
+		r.log.Errorw("msg", "failed to update diagnosis status", "error", err)
+		return errors.InternalServer("DB_ERROR", "an internal error occurred")
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.NotFound("DIAGNOSIS_NOT_FOUND", fmt.Sprintf("diagnosis not found: %s", id))
+	}
+	return nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

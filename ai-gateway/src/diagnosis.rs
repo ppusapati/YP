@@ -333,12 +333,21 @@ impl DiagnosisEngine {
         })
     }
 
-    fn extract_image_bytes(img: &proto::ImageData, width: u32, height: u32) -> Vec<u8> {
-        if !img.image_bytes.is_empty() {
-            img.image_bytes.clone()
-        } else {
-            vec![0u8; (width * height * 3) as usize]
+    /// Raw pixels for an image, or None when the request carried no bytes.
+    ///
+    /// This used to substitute a black frame, which meant a request that sent
+    /// only a URL got a confident-sounding diagnosis of an all-zero image. An
+    /// image the gateway cannot see is one it must decline to judge: callers
+    /// fetch the bytes and send them.
+    fn extract_image_bytes(img: &proto::ImageData) -> Option<Vec<u8>> {
+        if img.image_bytes.is_empty() {
+            tracing::warn!(
+                url = %img.image_url,
+                "image carried no bytes; skipping it rather than analysing a blank frame"
+            );
+            return None;
         }
+        Some(img.image_bytes.clone())
     }
 
     pub fn diagnose_image(
@@ -409,7 +418,9 @@ impl DiagnosisEngine {
         let mut health_scores = Vec::new();
 
         for img in &request.images {
-            let raw = Self::extract_image_bytes(img, 256, 256);
+            let Some(raw) = Self::extract_image_bytes(img) else {
+                continue;
+            };
             let buffer = match DiseaseImageBuffer::from_rgb(raw, 256, 256) {
                 Ok(b) => b,
                 Err(_) => continue,
@@ -516,7 +527,9 @@ impl DiagnosisEngine {
         let mut all_pests = Vec::new();
 
         for img in &request.images {
-            let raw = Self::extract_image_bytes(img, 640, 640);
+            let Some(raw) = Self::extract_image_bytes(img) else {
+                continue;
+            };
             let buffer = match PestImageBuffer::from_rgb(raw, 640, 640) {
                 Ok(b) => b,
                 Err(_) => continue,
@@ -605,7 +618,9 @@ impl DiagnosisEngine {
         let mut all_deficiencies = Vec::new();
 
         for img in &request.images {
-            let raw = Self::extract_image_bytes(img, 256, 256);
+            let Some(raw) = Self::extract_image_bytes(img) else {
+                continue;
+            };
             let buffer = match DeficiencyImageBuffer::from_rgb(raw, 256, 256) {
                 Ok(b) => b,
                 Err(_) => continue,
@@ -681,7 +696,9 @@ impl DiagnosisEngine {
         let mut best_result: Option<proto::PlantClassification> = None;
 
         for img in &request.images {
-            let raw = Self::extract_image_bytes(img, 224, 224);
+            let Some(raw) = Self::extract_image_bytes(img) else {
+                continue;
+            };
             let buffer = match ClassificationImageBuffer::from_rgb(raw, 224, 224) {
                 Ok(b) => b,
                 Err(_) => continue,
@@ -761,6 +778,45 @@ mod tests {
         };
         let engine = DiagnosisEngine::new(&paths).unwrap();
         assert!(!engine.model_status()[0].loaded);
+    }
+
+    #[test]
+    fn an_image_with_no_bytes_is_declined_not_guessed() {
+        // A URL with no bytes used to be replaced by an all-zero frame, so a
+        // caller that sent only a URL got a confident diagnosis of a black
+        // square. Nothing should be reported for an image the gateway cannot
+        // see.
+        let engine = DiagnosisEngine::new(&ModelPaths::default()).unwrap();
+        let url_only = proto::ImageData {
+            image_url: "https://example.com/leaf.jpg".into(),
+            ..Default::default()
+        };
+
+        let resp = engine.diagnose_image(&proto::DiagnoseImageRequest {
+            request_id: "r".into(),
+            images: vec![url_only.clone()],
+            ..Default::default()
+        });
+        assert!(resp.diseases.is_empty(), "{:?}", resp.diseases);
+        assert_eq!(resp.overall_health_score, 0.0);
+        assert_eq!(resp.summary, "No images processed");
+
+        assert!(engine
+            .detect_pests(&proto::DetectPestsRequest {
+                request_id: "r".into(),
+                images: vec![url_only.clone()],
+                ..Default::default()
+            })
+            .pests
+            .is_empty());
+        assert!(engine
+            .detect_nutrient_deficiency(&proto::DetectNutrientDeficiencyRequest {
+                request_id: "r".into(),
+                images: vec![url_only],
+                ..Default::default()
+            })
+            .deficiencies
+            .is_empty());
     }
 
     #[test]

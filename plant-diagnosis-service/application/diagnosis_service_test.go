@@ -81,6 +81,23 @@ func (m *mockDiagnosisRepo) ListDiagnosisRequests(_ context.Context, params doma
 	return result, int32(len(result)), nil
 }
 
+func (m *mockDiagnosisRepo) CreateDiagnosisResult(_ context.Context, res *domain.DiagnosisResult) (*domain.DiagnosisResult, error) {
+	if res.ID == "" {
+		res.ID = "diag-result-001"
+	}
+	m.results[res.DiagnosisRequestID] = res
+	return res, nil
+}
+
+func (m *mockDiagnosisRepo) UpdateDiagnosisRequestStatus(_ context.Context, id, tenantID string, status domain.DiagnosisStatus) error {
+	req, ok := m.requests[id]
+	if !ok || req.TenantID != tenantID {
+		return errors.NotFound("DIAGNOSIS_NOT_FOUND", "diagnosis not found")
+	}
+	req.Status = status
+	return nil
+}
+
 func (m *mockDiagnosisRepo) GetDiagnosisResultByRequestID(_ context.Context, requestID, tenantID string) (*domain.DiagnosisResult, error) {
 	r, ok := m.results[requestID]
 	if !ok {
@@ -533,4 +550,46 @@ func TestDetectPestDamage_SyntheticFallback(t *testing.T) {
 	assert.Equal(t, "Analysis pending", pests[0].PestName)
 	assert.Equal(t, domain.SeverityUnspecified, pests[0].DamageLevel)
 	assert.Empty(t, explanations)
+}
+
+func TestSubmitDiagnosis_WithoutAnAIClientStaysPending(t *testing.T) {
+	// No AI client configured: the request is still created, but nothing is
+	// invented for it. A result row would be worse than none — it would look
+	// like an answer.
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	created, err := svc.SubmitDiagnosis(ctx, &domain.DiagnosisRequest{
+		FarmID: "farm-001",
+		Images: []domain.DiagnosisImage{{ImageURL: "https://example.com/leaf.jpg"}},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.DiagnosisStatusPending, created.Status)
+	assert.Nil(t, created.Result)
+	assert.Empty(t, repo.results, "no result should be stored without a model")
+}
+
+func TestSubmitDiagnosis_WithNoImagesIsNotAnalysed(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	created, err := svc.SubmitDiagnosis(ctx, &domain.DiagnosisRequest{FarmID: "farm-001"})
+	require.NoError(t, err)
+	assert.Equal(t, domain.DiagnosisStatusPending, created.Status)
+	assert.Empty(t, repo.results)
+}
+
+func TestMarshalOrNil(t *testing.T) {
+	raw := marshalOrNil([]string{"a", "b"})
+	assert.JSONEq(t, `["a","b"]`, string(raw))
+
+	// A value that cannot be encoded is dropped rather than stored as a broken
+	// document that would fail every later read.
+	assert.Nil(t, marshalOrNil(make(chan int)))
+}
+
+func TestCompact(t *testing.T) {
+	assert.Equal(t, []string{"a", "b"}, compact([]string{"a", "", "b", ""}))
+	assert.Empty(t, compact([]string{"", ""}))
+	assert.Empty(t, compact(nil))
 }

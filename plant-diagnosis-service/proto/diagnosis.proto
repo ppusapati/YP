@@ -126,6 +126,9 @@ message DiagnosisResult {
   double                    overall_health_score    = 10;
   string                    summary                 = 11;
   google.protobuf.Timestamp created_at              = 12;
+  // Per-image model explanations, one per analysed photo. Empty when the
+  // serving model could not explain itself.
+  repeated Explanation      explanations            = 13;
 }
 
 message DiagnosisRequest {

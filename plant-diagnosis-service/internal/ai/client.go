@@ -71,6 +71,7 @@ type DiagnosisResult struct {
 	Summary            string
 	ModelVersion       string
 	ProcessingTimeMs   int64
+	Explanations       []Explanation
 }
 
 // Explanation is the gateway's account of where a vision answer came from.
@@ -200,6 +201,9 @@ type ImageInput struct {
 	ImageURL  string
 	ImageType string
 	MimeType  string
+	// Bytes are what the gateway actually classifies. A URL alone makes every
+	// local model skip the image, so these are fetched before the call.
+	Bytes []byte
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

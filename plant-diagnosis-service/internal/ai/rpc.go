@@ -43,9 +43,10 @@ func imagesToProto(images []ImageInput) []*aipb.ImageData {
 	out := make([]*aipb.ImageData, 0, len(images))
 	for _, img := range images {
 		out = append(out, &aipb.ImageData{
-			ImageUrl:  img.ImageURL,
-			ImageType: img.ImageType,
-			MimeType:  img.MimeType,
+			ImageUrl:   img.ImageURL,
+			ImageType:  img.ImageType,
+			MimeType:   img.MimeType,
+			ImageBytes: img.Bytes,
 		})
 	}
 	return out
@@ -167,6 +168,7 @@ func parseDiagnosisResult(resp *aipb.DiagnoseImageResponse) *DiagnosisResult {
 	result.Summary = resp.GetSummary()
 	result.ModelVersion = resp.GetModelVersion()
 	result.ProcessingTimeMs = resp.GetProcessingTimeMs()
+	result.Explanations = parseExplanations(resp.GetExplanations())
 	for _, d := range resp.GetDiseases() {
 		result.Diseases = append(result.Diseases, DetectedDisease{
 			DiseaseID:        d.GetDiseaseId(),

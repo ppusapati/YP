@@ -388,6 +388,15 @@ func diagnosisResultToProto(r *domain.DiagnosisResult) *pb.DiagnosisResult {
 		CreatedAt:                timestamppb.New(r.CreatedAt),
 	}
 
+	// Stored explanations (JSONB array). A result written before explanations
+	// existed simply has none.
+	if len(r.Explanations) > 0 {
+		var explanations []domain.Explanation
+		if json.Unmarshal(r.Explanations, &explanations) == nil {
+			out.Explanations = domainExplanationsToProto(explanations)
+		}
+	}
+
 	// Identified species (JSONB -> single object).
 	if len(r.IdentifiedSpecies) > 0 {
 		var sp domain.PlantSpecies

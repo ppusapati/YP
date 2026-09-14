@@ -925,8 +925,11 @@ type DiagnosisResult struct {
 	OverallHealthScore       float64                `protobuf:"fixed64,10,opt,name=overall_health_score,json=overallHealthScore,proto3" json:"overall_health_score,omitempty"`
 	Summary                  string                 `protobuf:"bytes,11,opt,name=summary,proto3" json:"summary,omitempty"`
 	CreatedAt                *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// Per-image model explanations, one per analysed photo. Empty when the
+	// serving model could not explain itself.
+	Explanations  []*Explanation `protobuf:"bytes,13,rep,name=explanations,proto3" json:"explanations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DiagnosisResult) Reset() {
@@ -1039,6 +1042,13 @@ func (x *DiagnosisResult) GetSummary() string {
 func (x *DiagnosisResult) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *DiagnosisResult) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
 	}
 	return nil
 }
@@ -3115,7 +3125,7 @@ const file_diagnosis_proto_rawDesc = "" +
 	"\x06dosage\x18\x04 \x01(\tR\x06dosage\x12\x1c\n" +
 	"\tfrequency\x18\x05 \x01(\tR\tfrequency\x12\x14\n" +
 	"\x05notes\x18\x06 \x01(\tR\x05notes\x12#\n" +
-	"\rduration_days\x18\a \x01(\x05R\fdurationDays\"\xc4\x05\n" +
+	"\rduration_days\x18\a \x01(\x05R\fdurationDays\"\x8f\x06\n" +
 	"\x0fDiagnosisResult\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x120\n" +
 	"\x14diagnosis_request_id\x18\x02 \x01(\tR\x12diagnosisRequestId\x12U\n" +
@@ -3131,7 +3141,8 @@ const file_diagnosis_proto_rawDesc = "" +
 	" \x01(\x01R\x12overallHealthScore\x12\x18\n" +
 	"\asummary\x18\v \x01(\tR\asummary\x129\n" +
 	"\n" +
-	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xaa\x04\n" +
+	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12I\n" +
+	"\fexplanations\x18\r \x03(\v2%.agriculture.diagnosis.v1.ExplanationR\fexplanations\"\xaa\x04\n" +
 	"\x10DiagnosisRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +
@@ -3414,65 +3425,66 @@ var file_diagnosis_proto_depIdxs = []int32{
 	6,  // 10: agriculture.diagnosis.v1.DiagnosisResult.nutrient_deficiencies:type_name -> agriculture.diagnosis.v1.NutrientDeficiency
 	7,  // 11: agriculture.diagnosis.v1.DiagnosisResult.pest_damage:type_name -> agriculture.diagnosis.v1.PestDamage
 	42, // 12: agriculture.diagnosis.v1.DiagnosisResult.created_at:type_name -> google.protobuf.Timestamp
-	4,  // 13: agriculture.diagnosis.v1.DiagnosisRequest.images:type_name -> agriculture.diagnosis.v1.DiagnosisImage
-	1,  // 14: agriculture.diagnosis.v1.DiagnosisRequest.status:type_name -> agriculture.diagnosis.v1.DiagnosisStatus
-	11, // 15: agriculture.diagnosis.v1.DiagnosisRequest.result:type_name -> agriculture.diagnosis.v1.DiagnosisResult
-	42, // 16: agriculture.diagnosis.v1.DiagnosisRequest.created_at:type_name -> google.protobuf.Timestamp
-	42, // 17: agriculture.diagnosis.v1.DiagnosisRequest.updated_at:type_name -> google.protobuf.Timestamp
-	14, // 18: agriculture.diagnosis.v1.SubmitDiagnosisRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
-	0,  // 19: agriculture.diagnosis.v1.ImageInput.image_type:type_name -> agriculture.diagnosis.v1.ImageType
-	12, // 20: agriculture.diagnosis.v1.SubmitDiagnosisResponse.diagnosis:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
-	12, // 21: agriculture.diagnosis.v1.GetDiagnosisResponse.diagnosis:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
-	1,  // 22: agriculture.diagnosis.v1.ListDiagnosesRequest.status:type_name -> agriculture.diagnosis.v1.DiagnosisStatus
-	12, // 23: agriculture.diagnosis.v1.ListDiagnosesResponse.diagnoses:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
-	5,  // 24: agriculture.diagnosis.v1.GetDiseaseInfoResponse.disease:type_name -> agriculture.diagnosis.v1.DiseaseInfo
-	5,  // 25: agriculture.diagnosis.v1.ListDiseasesResponse.diseases:type_name -> agriculture.diagnosis.v1.DiseaseInfo
-	9,  // 26: agriculture.diagnosis.v1.GetTreatmentPlanResponse.treatment_plan:type_name -> agriculture.diagnosis.v1.TreatmentPlan
-	14, // 27: agriculture.diagnosis.v1.IdentifySpeciesRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
-	8,  // 28: agriculture.diagnosis.v1.IdentifySpeciesResponse.species:type_name -> agriculture.diagnosis.v1.PlantSpecies
-	14, // 29: agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
-	6,  // 30: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse.deficiencies:type_name -> agriculture.diagnosis.v1.NutrientDeficiency
-	28, // 31: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse.explanations:type_name -> agriculture.diagnosis.v1.Explanation
-	14, // 32: agriculture.diagnosis.v1.DetectPestDamageRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
-	7,  // 33: agriculture.diagnosis.v1.DetectPestDamageResponse.pests:type_name -> agriculture.diagnosis.v1.PestDamage
-	28, // 34: agriculture.diagnosis.v1.DetectPestDamageResponse.explanations:type_name -> agriculture.diagnosis.v1.Explanation
-	3,  // 35: agriculture.diagnosis.v1.LabelReview.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
-	42, // 36: agriculture.diagnosis.v1.LabelReview.reviewed_at:type_name -> google.protobuf.Timestamp
-	42, // 37: agriculture.diagnosis.v1.LabelReviewSample.collected_at:type_name -> google.protobuf.Timestamp
-	33, // 38: agriculture.diagnosis.v1.LabelReviewSample.labels:type_name -> agriculture.diagnosis.v1.TrainingLabel
-	34, // 39: agriculture.diagnosis.v1.LabelReviewSample.review:type_name -> agriculture.diagnosis.v1.LabelReview
-	35, // 40: agriculture.diagnosis.v1.ListLabelReviewQueueResponse.samples:type_name -> agriculture.diagnosis.v1.LabelReviewSample
-	3,  // 41: agriculture.diagnosis.v1.SubmitLabelReviewRequest.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
-	35, // 42: agriculture.diagnosis.v1.SubmitLabelReviewResponse.sample:type_name -> agriculture.diagnosis.v1.LabelReviewSample
-	13, // 43: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:input_type -> agriculture.diagnosis.v1.SubmitDiagnosisRequest
-	16, // 44: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:input_type -> agriculture.diagnosis.v1.GetDiagnosisRequest
-	18, // 45: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:input_type -> agriculture.diagnosis.v1.ListDiagnosesRequest
-	20, // 46: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:input_type -> agriculture.diagnosis.v1.GetDiseaseInfoRequest
-	24, // 47: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:input_type -> agriculture.diagnosis.v1.GetTreatmentPlanRequest
-	22, // 48: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:input_type -> agriculture.diagnosis.v1.ListDiseasesRequest
-	26, // 49: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:input_type -> agriculture.diagnosis.v1.IdentifySpeciesRequest
-	29, // 50: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:input_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
-	31, // 51: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:input_type -> agriculture.diagnosis.v1.DetectPestDamageRequest
-	36, // 52: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:input_type -> agriculture.diagnosis.v1.ListLabelReviewQueueRequest
-	38, // 53: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:input_type -> agriculture.diagnosis.v1.SubmitLabelReviewRequest
-	40, // 54: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:input_type -> agriculture.diagnosis.v1.GetLabelReviewImageRequest
-	15, // 55: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:output_type -> agriculture.diagnosis.v1.SubmitDiagnosisResponse
-	17, // 56: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:output_type -> agriculture.diagnosis.v1.GetDiagnosisResponse
-	19, // 57: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:output_type -> agriculture.diagnosis.v1.ListDiagnosesResponse
-	21, // 58: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:output_type -> agriculture.diagnosis.v1.GetDiseaseInfoResponse
-	25, // 59: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:output_type -> agriculture.diagnosis.v1.GetTreatmentPlanResponse
-	23, // 60: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:output_type -> agriculture.diagnosis.v1.ListDiseasesResponse
-	27, // 61: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:output_type -> agriculture.diagnosis.v1.IdentifySpeciesResponse
-	30, // 62: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:output_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
-	32, // 63: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:output_type -> agriculture.diagnosis.v1.DetectPestDamageResponse
-	37, // 64: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:output_type -> agriculture.diagnosis.v1.ListLabelReviewQueueResponse
-	39, // 65: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:output_type -> agriculture.diagnosis.v1.SubmitLabelReviewResponse
-	41, // 66: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:output_type -> agriculture.diagnosis.v1.GetLabelReviewImageResponse
-	55, // [55:67] is the sub-list for method output_type
-	43, // [43:55] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	28, // 13: agriculture.diagnosis.v1.DiagnosisResult.explanations:type_name -> agriculture.diagnosis.v1.Explanation
+	4,  // 14: agriculture.diagnosis.v1.DiagnosisRequest.images:type_name -> agriculture.diagnosis.v1.DiagnosisImage
+	1,  // 15: agriculture.diagnosis.v1.DiagnosisRequest.status:type_name -> agriculture.diagnosis.v1.DiagnosisStatus
+	11, // 16: agriculture.diagnosis.v1.DiagnosisRequest.result:type_name -> agriculture.diagnosis.v1.DiagnosisResult
+	42, // 17: agriculture.diagnosis.v1.DiagnosisRequest.created_at:type_name -> google.protobuf.Timestamp
+	42, // 18: agriculture.diagnosis.v1.DiagnosisRequest.updated_at:type_name -> google.protobuf.Timestamp
+	14, // 19: agriculture.diagnosis.v1.SubmitDiagnosisRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
+	0,  // 20: agriculture.diagnosis.v1.ImageInput.image_type:type_name -> agriculture.diagnosis.v1.ImageType
+	12, // 21: agriculture.diagnosis.v1.SubmitDiagnosisResponse.diagnosis:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
+	12, // 22: agriculture.diagnosis.v1.GetDiagnosisResponse.diagnosis:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
+	1,  // 23: agriculture.diagnosis.v1.ListDiagnosesRequest.status:type_name -> agriculture.diagnosis.v1.DiagnosisStatus
+	12, // 24: agriculture.diagnosis.v1.ListDiagnosesResponse.diagnoses:type_name -> agriculture.diagnosis.v1.DiagnosisRequest
+	5,  // 25: agriculture.diagnosis.v1.GetDiseaseInfoResponse.disease:type_name -> agriculture.diagnosis.v1.DiseaseInfo
+	5,  // 26: agriculture.diagnosis.v1.ListDiseasesResponse.diseases:type_name -> agriculture.diagnosis.v1.DiseaseInfo
+	9,  // 27: agriculture.diagnosis.v1.GetTreatmentPlanResponse.treatment_plan:type_name -> agriculture.diagnosis.v1.TreatmentPlan
+	14, // 28: agriculture.diagnosis.v1.IdentifySpeciesRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
+	8,  // 29: agriculture.diagnosis.v1.IdentifySpeciesResponse.species:type_name -> agriculture.diagnosis.v1.PlantSpecies
+	14, // 30: agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
+	6,  // 31: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse.deficiencies:type_name -> agriculture.diagnosis.v1.NutrientDeficiency
+	28, // 32: agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse.explanations:type_name -> agriculture.diagnosis.v1.Explanation
+	14, // 33: agriculture.diagnosis.v1.DetectPestDamageRequest.images:type_name -> agriculture.diagnosis.v1.ImageInput
+	7,  // 34: agriculture.diagnosis.v1.DetectPestDamageResponse.pests:type_name -> agriculture.diagnosis.v1.PestDamage
+	28, // 35: agriculture.diagnosis.v1.DetectPestDamageResponse.explanations:type_name -> agriculture.diagnosis.v1.Explanation
+	3,  // 36: agriculture.diagnosis.v1.LabelReview.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
+	42, // 37: agriculture.diagnosis.v1.LabelReview.reviewed_at:type_name -> google.protobuf.Timestamp
+	42, // 38: agriculture.diagnosis.v1.LabelReviewSample.collected_at:type_name -> google.protobuf.Timestamp
+	33, // 39: agriculture.diagnosis.v1.LabelReviewSample.labels:type_name -> agriculture.diagnosis.v1.TrainingLabel
+	34, // 40: agriculture.diagnosis.v1.LabelReviewSample.review:type_name -> agriculture.diagnosis.v1.LabelReview
+	35, // 41: agriculture.diagnosis.v1.ListLabelReviewQueueResponse.samples:type_name -> agriculture.diagnosis.v1.LabelReviewSample
+	3,  // 42: agriculture.diagnosis.v1.SubmitLabelReviewRequest.decision:type_name -> agriculture.diagnosis.v1.LabelReviewDecision
+	35, // 43: agriculture.diagnosis.v1.SubmitLabelReviewResponse.sample:type_name -> agriculture.diagnosis.v1.LabelReviewSample
+	13, // 44: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:input_type -> agriculture.diagnosis.v1.SubmitDiagnosisRequest
+	16, // 45: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:input_type -> agriculture.diagnosis.v1.GetDiagnosisRequest
+	18, // 46: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:input_type -> agriculture.diagnosis.v1.ListDiagnosesRequest
+	20, // 47: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:input_type -> agriculture.diagnosis.v1.GetDiseaseInfoRequest
+	24, // 48: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:input_type -> agriculture.diagnosis.v1.GetTreatmentPlanRequest
+	22, // 49: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:input_type -> agriculture.diagnosis.v1.ListDiseasesRequest
+	26, // 50: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:input_type -> agriculture.diagnosis.v1.IdentifySpeciesRequest
+	29, // 51: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:input_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
+	31, // 52: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:input_type -> agriculture.diagnosis.v1.DetectPestDamageRequest
+	36, // 53: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:input_type -> agriculture.diagnosis.v1.ListLabelReviewQueueRequest
+	38, // 54: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:input_type -> agriculture.diagnosis.v1.SubmitLabelReviewRequest
+	40, // 55: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:input_type -> agriculture.diagnosis.v1.GetLabelReviewImageRequest
+	15, // 56: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis:output_type -> agriculture.diagnosis.v1.SubmitDiagnosisResponse
+	17, // 57: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiagnosis:output_type -> agriculture.diagnosis.v1.GetDiagnosisResponse
+	19, // 58: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiagnoses:output_type -> agriculture.diagnosis.v1.ListDiagnosesResponse
+	21, // 59: agriculture.diagnosis.v1.PlantDiagnosisService.GetDiseaseInfo:output_type -> agriculture.diagnosis.v1.GetDiseaseInfoResponse
+	25, // 60: agriculture.diagnosis.v1.PlantDiagnosisService.GetTreatmentPlan:output_type -> agriculture.diagnosis.v1.GetTreatmentPlanResponse
+	23, // 61: agriculture.diagnosis.v1.PlantDiagnosisService.ListDiseases:output_type -> agriculture.diagnosis.v1.ListDiseasesResponse
+	27, // 62: agriculture.diagnosis.v1.PlantDiagnosisService.IdentifySpecies:output_type -> agriculture.diagnosis.v1.IdentifySpeciesResponse
+	30, // 63: agriculture.diagnosis.v1.PlantDiagnosisService.DetectNutrientDeficiency:output_type -> agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
+	32, // 64: agriculture.diagnosis.v1.PlantDiagnosisService.DetectPestDamage:output_type -> agriculture.diagnosis.v1.DetectPestDamageResponse
+	37, // 65: agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue:output_type -> agriculture.diagnosis.v1.ListLabelReviewQueueResponse
+	39, // 66: agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview:output_type -> agriculture.diagnosis.v1.SubmitLabelReviewResponse
+	41, // 67: agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage:output_type -> agriculture.diagnosis.v1.GetLabelReviewImageResponse
+	56, // [56:68] is the sub-list for method output_type
+	44, // [44:56] is the sub-list for method input_type
+	44, // [44:44] is the sub-list for extension type_name
+	44, // [44:44] is the sub-list for extension extendee
+	0,  // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_diagnosis_proto_init() }

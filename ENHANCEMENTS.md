@@ -378,7 +378,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [x] Add regression gates in CI: fail promotion if benchmark accuracy drops or calibration worsens — `scripts/model-gate.sh` plus a `model-gate` job; the gate blocks on absolutes (samples, coverage, accuracy, macro F1, ECE, worst slice) and on regressions against the baseline already live
 - [x] Surface "why this recommendation" explanations in the web diagnosis views — a new Image Analysis page runs the vision models over a field photo and paints the Grad-CAM map over it, with the focus region, the share of the image used, and a sentence describing where the model looked. A model that cannot explain itself says so rather than showing a fabricated heatmap
 - [ ] Surface the same explanations in the Flutter app — the Dart toolchain and `protoc-gen-dart` are not available in this environment, so the generated Dart protos cannot be regenerated to carry the new `Explanation` message. The service side is done; only the mobile client remains
-- [ ] Persist diagnosis results, and their explanations, from Go — `diagnosis_results` has a schema and a read path but nothing writes to it, so a stored diagnosis carries no AI result to explain
+- [x] Persist diagnosis results, and their explanations, from Go — `SubmitDiagnosis` now runs the vision models and stores what they found, so a submitted diagnosis completes instead of staying pending forever. Explanations are stored alongside and returned with the result
 
 **Effort:** Medium | **Impact:** High
 
@@ -425,7 +425,8 @@ These build on each other in order. Each step produces inputs the next one needs
 **Enhancements:**
 - [ ] Triage every marker into: implement, delete, or convert to a tracked issue
 - [ ] Clear mobile, traceability, and field first (top three by count and user-facing impact)
-- [ ] Replace mock data in plant-diagnosis and pest-prediction with real service calls
+- [x] Replace mock data in plant-diagnosis with real service calls — the service fetches the image bytes for the URLs it validated and hands them to the gateway, which previously received a URL and no pixels and silently fell through to demo weights. The gateway now declines an image it cannot see rather than analysing a black frame
+- [ ] Replace mock data in pest-prediction with real service calls
 - [ ] Add a CI check that fails when TODO count increases in a service
 - [ ] Clear web app markers alongside the E-006 component test work
 
