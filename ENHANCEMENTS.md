@@ -172,10 +172,10 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Complete Hindi translations (102 missing keys)
 - [x] Add locales for major agricultural regions: Marathi, Telugu, Tamil, Kannada, Punjabi, Bengali
 - [x] Set up Flutter localization (arb files) for the mobile app
-- [ ] Add date/number/currency formatting per locale
-- [ ] Add RTL language support for future Arabic/Urdu expansion
+- [x] Add date/number/currency formatting per locale
+- [x] Add RTL language support for future Arabic/Urdu expansion
 - [ ] Set up translation management (Crowdin or Lokalise) for community contributions
-- [ ] Add locale detection from user profile and browser settings
+- [x] Add locale detection from user profile and browser settings
 
 **Effort:** Medium | **Impact:** Medium
 
