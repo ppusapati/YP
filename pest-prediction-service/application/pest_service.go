@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -79,10 +80,45 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 	}
 	params.TenantID = tenantID
 
-	// Compute risk score from weather + growth stage
+	// Ask the AI gateway first: it scores the field from the same weather plus
+	// soil, growth and any detections, which the local rules cannot see. The
+	// rules stay as the fallback, because a pest warning that never arrives
+	// because the gateway is down is worse than one computed from weather
+	// alone.
 	riskScore := computeRiskScore(params)
-	riskLevel := domain.RiskLevelFromScore(riskScore)
 	confidence := computeConfidence(params)
+	geographicRisk := 0.0
+	riskSource := "rules"
+	var gatewayAlerts []ai.FieldAlert
+
+	if s.aiClient != nil {
+		requestID := p9context.RequestID(ctx)
+		if requestID == "" {
+			requestID = ulid.NewString()
+		}
+		assessment, err := s.aiClient.EvaluateFieldRisk(ctx, requestID, ai.FieldRiskInput{
+			FieldID:  params.FieldID,
+			FarmID:   params.FarmID,
+			CropType: params.CropType,
+			Weather: ai.FieldWeather{
+				TemperatureCurrent: params.Weather.TemperatureCelsius,
+				PrecipitationMm:    params.Weather.RainfallMm,
+			},
+			Detection: ai.DetectionResults{PestSpecies: params.PestSpeciesID},
+		})
+		switch {
+		case err != nil:
+			s.log.Warnw("msg", "AI EvaluateFieldRisk failed; falling back to rules", "error", err)
+		default:
+			// The gateway reports risk in 0..1; predictions are stored 0..100.
+			riskScore = int(math.Round(assessment.PestRisk * 100))
+			geographicRisk = assessment.OverallRisk
+			gatewayAlerts = assessment.Alerts
+			riskSource = "ai-gateway"
+		}
+	}
+
+	riskLevel := domain.RiskLevelFromScore(riskScore)
 
 	// Historical occurrence count
 	histCount := 0
@@ -122,7 +158,7 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 		ConfidencePct:             confidence,
 		CropType:                  params.CropType,
 		GrowthStage:               gs,
-		GeographicRiskFactor:      0,
+		GeographicRiskFactor:      geographicRisk,
 		HistoricalOccurrenceCount: histCount,
 		TemperatureCelsius:        &params.Weather.TemperatureCelsius,
 		HumidityPct:               &params.Weather.HumidityPct,
@@ -152,7 +188,7 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 			RiskLevel:       riskLevel,
 			Status:          domain.AlertStatusActive,
 			Title:           fmt.Sprintf("%s pest risk alert for field %s", riskLevel, params.FieldID),
-			Message:         fmt.Sprintf("Risk score %d detected. Immediate attention recommended.", riskScore),
+			Message:         alertMessage(riskScore, gatewayAlerts),
 		}
 		if _, err := s.repo.CreateAlert(ctx, alert); err != nil {
 			s.log.Errorw("msg", "failed to auto-create alert", "error", err)
@@ -162,7 +198,8 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 	s.emitEvent(ctx, "agriculture.pest-prediction.predicted", created.ID, map[string]interface{}{
 		"prediction_id": created.ID, "tenant_id": tenantID, "risk_level": string(riskLevel),
 	})
-	s.log.Infow("msg", "pest risk predicted", "uuid", created.ID, "risk_level", riskLevel, "risk_score", riskScore)
+	s.log.Infow("msg", "pest risk predicted",
+		"uuid", created.ID, "risk_level", riskLevel, "risk_score", riskScore, "source", riskSource)
 
 	return created, nil
 }
@@ -352,6 +389,18 @@ func (s *pestService) AcknowledgeAlert(ctx context.Context, id string) (*domain.
 // ---------------------------------------------------------------------------
 // Risk computation helpers
 // ---------------------------------------------------------------------------
+
+// alertMessage explains the risk, preferring what the gateway actually
+// observed over a bare score. A farmer acting on an alert needs to know which
+// condition triggered it.
+func alertMessage(riskScore int, alerts []ai.FieldAlert) string {
+	for _, a := range alerts {
+		if a.Message != "" {
+			return fmt.Sprintf("Risk score %d. %s", riskScore, a.Message)
+		}
+	}
+	return fmt.Sprintf("Risk score %d detected. Immediate attention recommended.", riskScore)
+}
 
 func computeRiskScore(params *domain.PredictPestRiskParams) int {
 	score := 0.0

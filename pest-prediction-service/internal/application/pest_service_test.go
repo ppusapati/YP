@@ -14,6 +14,7 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
 
+	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ai"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/domain"
 	"p9e.in/samavaya/agriculture/pest-prediction-service/internal/ports/outbound"
 )
@@ -25,6 +26,13 @@ import (
 type nopLogger struct{}
 
 func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
+
+// p9log.Logger grew these after this file was written, which is why the suite
+// stopped compiling — and therefore stopped running.
+func (nopLogger) Debug(_ ...interface{}) {}
+func (nopLogger) Info(_ ...interface{})  {}
+func (nopLogger) Warn(_ ...interface{})  {}
+func (nopLogger) Error(_ ...interface{}) {}
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
@@ -753,4 +761,48 @@ func TestComputeRiskScore_LowConditions(t *testing.T) {
 	}
 	score := computeRiskScore(params)
 	assert.Equal(t, 0, score)
+}
+
+func TestPredictPestRisk_FallsBackToRulesWithoutAGateway(t *testing.T) {
+	// No AI client: the rules still answer. A pest warning that never arrives
+	// because the gateway is down is worse than one from weather alone.
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	got, err := svc.PredictPestRisk(ctx, &domain.PredictPestRiskParams{
+		FarmID:   "farm-1",
+		FieldID:  "field-1",
+		CropType: "wheat",
+		Weather: domain.WeatherFactors{
+			TemperatureCelsius: 28,
+			HumidityPct:        85,
+			RainfallMm:         60,
+			WindSpeedKmh:       5,
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+
+	// Warm, humid and wet is what pests like; the rules should say so.
+	assert.Greater(t, got.RiskScore, 50)
+	assert.Equal(t, 0.0, got.GeographicRiskFactor, "only the gateway supplies this")
+	assert.NotEmpty(t, repo.predictions, "the prediction is stored either way")
+}
+
+func TestAlertMessage(t *testing.T) {
+	// With nothing from the gateway, the message is the bare score.
+	plain := alertMessage(72, nil)
+	assert.Contains(t, plain, "72")
+
+	// When the gateway said what it saw, that reaches the farmer: acting on an
+	// alert needs the condition, not just a number.
+	withCause := alertMessage(72, []ai.FieldAlert{
+		{Message: "Soil moisture below the wilting point for 3 days."},
+	})
+	assert.Contains(t, withCause, "72")
+	assert.Contains(t, withCause, "wilting point")
+
+	// An alert carrying no message is skipped rather than producing an empty
+	// sentence.
+	assert.Equal(t, plain, alertMessage(72, []ai.FieldAlert{{Title: "x"}}))
 }

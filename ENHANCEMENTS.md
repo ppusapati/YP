@@ -209,10 +209,10 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Implement automated retraining triggers (when data collection reaches threshold)
 - [x] Add model A/B testing in ai-gateway (serve multiple versions, compare accuracy)
 - [x] Add model performance monitoring (accuracy drift detection in production)
-- [ ] Expand training pipeline to cover pest detection, nutrient deficiency, crop classification
-- [ ] Add transfer learning from pre-trained agricultural vision models
-- [ ] Build labeled dataset management UI for agronomists to review/correct predictions
-- [ ] Add GPU support in training Dockerfile (CUDA backend for burn)
+- [x] Expand training pipeline to cover pest detection, nutrient deficiency, crop classification — all four tasks are configured and trainable, and `train-heads` fits them together on one backbone (E-020)
+- [x] Add transfer learning from pre-trained agricultural vision models — `train-heads` takes any pretrained ONNX checkpoint (E-020)
+- [x] Build labeled dataset management UI for agronomists to review/correct predictions — the label review queue, now also ordered by the labels a trained model disputes (E-019, E-024)
+- [x] Add GPU support in training Dockerfile (CUDA backend for burn) — `backend.rs` selects ndarray/wgpu/cuda-jit at compile time, with `Dockerfile.cuda` (E-020)
 
 **Effort:** Large | **Impact:** Medium
 
@@ -426,7 +426,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [ ] Triage every marker into: implement, delete, or convert to a tracked issue
 - [ ] Clear mobile, traceability, and field first (top three by count and user-facing impact)
 - [x] Replace mock data in plant-diagnosis with real service calls — the service fetches the image bytes for the URLs it validated and hands them to the gateway, which previously received a URL and no pixels and silently fell through to demo weights. The gateway now declines an image it cannot see rather than analysing a black frame
-- [ ] Replace mock data in pest-prediction with real service calls
+- [x] Replace mock data in pest-prediction with real service calls — the service now asks the gateway to score a field and falls back to its weather rules only when that fails. Its AI client previously sent `structpb.Struct` values over hand-written method names, which cannot decode as the typed request the server expects; nothing called it, so the mismatch never surfaced. Its test suite had also stopped compiling against a widened logger interface, so 37 tests had not run in some time
 - [x] Add a CI check that fails when TODO count increases in a service — `scripts/todo-budget.sh` holds a per-area budget in `.todo-budget` and fails the build when an area exceeds it. Budgets only go down; the script names the ones that can now be lowered. A raw count would either be zero and get disabled within a week, or be meaningless
 - [ ] Clear web app markers alongside the E-006 component test work
 
