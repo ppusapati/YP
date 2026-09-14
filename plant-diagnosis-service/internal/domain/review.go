@@ -60,6 +60,19 @@ type LabelReviewSample struct {
 	SubmittedBy    string
 	Review         *LabelReview
 	EffectiveLabel string
+	// Suspect is set when a trained model confidently contradicted this
+	// sample's label, which usually means the label is wrong rather than the
+	// image hard.
+	Suspect *LabelSuspicion
+}
+
+// LabelSuspicion records a trained model's disagreement with a stored label.
+type LabelSuspicion struct {
+	Predicted     string
+	PredictedProb float64
+	LabelProb     float64
+	ModelVersion  string
+	FlaggedAt     string
 }
 
 // ListLabelReviewQueueParams filters the review queue. TenantID is always set
@@ -67,6 +80,7 @@ type LabelReviewSample struct {
 type ListLabelReviewQueueParams struct {
 	TenantID        string
 	Task            string
+	SuspectOnly     bool
 	IncludeReviewed bool
 	MaxConfidence   float64
 	Provenance      string

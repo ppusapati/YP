@@ -399,6 +399,11 @@ pub fn load_manifest(
     Ok(results)
 }
 
+/// Directory holding one task's collected samples.
+pub fn task_directory(task: &str, data_config: &DataConfig, base_dir: Option<&str>) -> PathBuf {
+    PathBuf::from(base_dir.unwrap_or(&data_config.base_dir)).join(task)
+}
+
 /// Apply review + provenance rules to one label record.
 fn resolve_sample(
     id: &str,
@@ -814,8 +819,7 @@ pub fn prepare_datasets(
     data_config: &DataConfig,
     base_dir: Option<&str>,
 ) -> anyhow::Result<SplitDatasets> {
-    let base = PathBuf::from(base_dir.unwrap_or(&data_config.base_dir));
-    let task_dir = base.join(task);
+    let task_dir = task_directory(task, data_config, base_dir);
 
     let raw = load_manifest(
         &task_dir,

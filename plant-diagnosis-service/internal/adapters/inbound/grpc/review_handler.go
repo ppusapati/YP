@@ -31,6 +31,7 @@ func (h *DiagnosisHandler) ListLabelReviewQueue(ctx context.Context, req *connec
 		PageSize:        req.Msg.GetPageSize(),
 		Offset:          req.Msg.GetPageOffset(),
 		NewestFirst:     req.Msg.GetNewestFirst(),
+		SuspectOnly:     req.Msg.GetSuspectOnly(),
 	})
 	if err != nil {
 		return nil, errors.ToConnectError(err)
@@ -130,6 +131,15 @@ func labelReviewSampleToProto(s *domain.LabelReviewSample) *pb.LabelReviewSample
 		Crop:           s.Crop,
 		SubmittedBy:    s.SubmittedBy,
 		EffectiveLabel: s.EffectiveLabel,
+	}
+	if s.Suspect != nil {
+		out.Suspect = &pb.LabelSuspicion{
+			Predicted:     s.Suspect.Predicted,
+			PredictedProb: s.Suspect.PredictedProb,
+			LabelProb:     s.Suspect.LabelProb,
+			ModelVersion:  s.Suspect.ModelVersion,
+			FlaggedAt:     s.Suspect.FlaggedAt,
+		}
 	}
 	if s.CollectedAt != nil {
 		out.CollectedAt = timestamppb.New(*s.CollectedAt)

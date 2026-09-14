@@ -15,6 +15,7 @@ use yp_ml_training::config::TrainingConfig;
 use yp_ml_training::dataset::{self, prepare_datasets};
 use yp_ml_training::eval;
 use yp_ml_training::export;
+use yp_ml_training::feedback;
 use yp_ml_training::model::{extract_weights, PlantCnn};
 use yp_ml_training::multitask;
 use yp_ml_training::quantize;
@@ -43,6 +44,9 @@ enum Commands {
         data_dir: Option<String>,
         #[arg(long, default_value = "runs")]
         output_dir: PathBuf,
+        /// Do not mark contradicted labels for review in the collected data
+        #[arg(long)]
+        skip_feedback: bool,
     },
     /// Validate a trained model against the test set
     Validate {
@@ -168,7 +172,14 @@ fn main() -> anyhow::Result<()> {
             task,
             data_dir,
             output_dir,
-        } => cmd_train(&config, &task, data_dir.as_deref(), &output_dir),
+            skip_feedback,
+        } => cmd_train(
+            &config,
+            &task,
+            data_dir.as_deref(),
+            &output_dir,
+            skip_feedback,
+        ),
 
         Commands::Validate {
             task,
@@ -304,6 +315,7 @@ fn cmd_train(
     task: &str,
     data_dir: Option<&str>,
     output_dir: &Path,
+    skip_feedback: bool,
 ) -> anyhow::Result<()> {
     let task_config = config
         .tasks
@@ -379,6 +391,29 @@ fn cmd_train(
             result.label_noise.len(),
             task_output.join("label_noise_report.json").display()
         );
+    }
+
+    // A report nobody reads changes nothing: mark the suspects in the collected
+    // data so the review queue puts them in front of a human. Flags this run no
+    // longer holds are cleared at the same time.
+    if !skip_feedback {
+        let labels_dir = dataset::task_directory(task, &config.data, data_dir).join("labels");
+        match feedback::flag_suspects(&labels_dir, &result.label_noise, &run_version) {
+            Ok(report) => println!(
+                "Review queue: {} labels flagged, {} cleared{}",
+                report.flagged,
+                report.cleared,
+                if report.missing.is_empty() {
+                    String::new()
+                } else {
+                    format!(
+                        ", {} suspects no longer in the dataset",
+                        report.missing.len()
+                    )
+                }
+            ),
+            Err(e) => println!("Could not update the review queue: {e}"),
+        }
     }
 
     let meta = serde_json::json!({
@@ -978,7 +1013,7 @@ fn cmd_pipeline(
 
         println!("  Data: {count} samples");
 
-        match cmd_train(config, task, data_dir, output_dir) {
+        match cmd_train(config, task, data_dir, output_dir, false) {
             Ok(()) => {
                 let task_dir = output_dir.join(task);
 

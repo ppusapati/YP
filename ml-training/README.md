@@ -131,6 +131,24 @@ refuses it and the model composes without explanations rather than with wrong
 ones. The AI gateway returns the maps on all four vision RPCs and the web
 Image Analysis page paints them over the photo.
 
+### Suspect labels go back to the reviewers
+
+Training already notices when it confidently disagrees with a label and writes
+the list to `label_noise_report.json`. A report nobody reads changes nothing, so
+`train` also marks those samples in the collected data, and the gateway's review
+queue can put them first — `suspect_only` on the queue, or the
+**Model-disputed only** filter in the web review page.
+
+That ordering is worth more than it looks. A low-confidence sample is one the
+model found hard; a contradicted label is one where the *data* is probably
+wrong, and a wrong label does not merely waste an example — it teaches the next
+model the same mistake and counts as an error against any model that gets it
+right.
+
+Flags a later run no longer holds are cleared at the same time, so a label
+vindicated by a newer model leaves the queue instead of occupying a reviewer.
+Pass `--skip-feedback` to train without touching the collected data.
+
 ## The benchmark gate
 
 A test split recomputed from the current dataset is not a benchmark: it moves

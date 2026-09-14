@@ -116,6 +116,28 @@ pub struct Label {
     pub severity: String,
 }
 
+/// A trained model's confident disagreement with a stored label.
+///
+/// Written back by the training pipeline after a run: when a model puts almost
+/// all its probability on a class the label does not name, the label is the
+/// more likely thing to be wrong. Those samples are worth a reviewer's time
+/// long before the merely low-confidence ones, because a wrong label does not
+/// just waste a training example — it teaches the next model the same mistake.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LabelSuspicion {
+    /// What the model predicted instead.
+    pub predicted: String,
+    /// Probability it gave that prediction.
+    pub predicted_prob: f64,
+    /// Probability it gave the stored label.
+    pub label_prob: f64,
+    /// Which model disagreed, so a stale flag can be recognised.
+    #[serde(default)]
+    pub model_version: String,
+    #[serde(default)]
+    pub flagged_at: String,
+}
+
 /// A reviewer's decision about a sample's labels.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LabelReview {
@@ -178,6 +200,9 @@ pub struct TrainingSample {
     pub context: SampleContext,
     #[serde(default)]
     pub review: Option<LabelReview>,
+    /// Set when a trained model confidently contradicted this sample's label.
+    #[serde(default)]
+    pub suspect: Option<LabelSuspicion>,
 }
 
 fn default_provenance() -> Provenance {
@@ -242,6 +267,13 @@ impl TrainingSample {
                 reviewed_at: r.reviewed_at.clone(),
             }),
             effective_label: self.effective_label().unwrap_or_default(),
+            suspect: self.suspect.as_ref().map(|x| proto::LabelSuspicion {
+                predicted: x.predicted.clone(),
+                predicted_prob: x.predicted_prob,
+                label_prob: x.label_prob,
+                model_version: x.model_version.clone(),
+                flagged_at: x.flagged_at.clone(),
+            }),
         }
     }
 }
@@ -277,6 +309,8 @@ pub struct SampleQuery {
     pub min_confidence: Option<f64>,
     pub max_confidence: Option<f64>,
     pub provenance: Option<Provenance>,
+    /// Only samples a trained model contradicted.
+    pub suspect_only: bool,
     pub order: SampleOrder,
     pub offset: usize,
     pub limit: usize,
@@ -296,6 +330,9 @@ pub enum SampleOrder {
     #[default]
     ConfidenceAsc,
     Newest,
+    /// Samples a trained model contradicted, worst disagreement first, then
+    /// everything else in the usual order.
+    SuspectFirst,
 }
 
 pub struct SamplePage {
@@ -581,6 +618,7 @@ impl SampleStore {
             },
             context: job.context,
             review: None,
+            suspect: None,
         };
         write_json_atomic(&label_path, &sample)?;
         append_line(&task_dir.join(MANIFEST_FILE), &manifest_entry(&sample))?;
@@ -638,7 +676,8 @@ impl SampleStore {
                     .map_or(true, |m| sample.top_confidence() >= m)
                 && q.max_confidence
                     .map_or(true, |m| m <= 0.0 || sample.top_confidence() <= m)
-                && q.provenance.map_or(true, |p| sample.provenance == p);
+                && q.provenance.map_or(true, |p| sample.provenance == p)
+                && (!q.suspect_only || sample.suspect.is_some());
             if keep {
                 samples.push(sample);
             }
@@ -651,6 +690,24 @@ impl SampleStore {
                     .then_with(|| a.timestamp.cmp(&b.timestamp))
             }),
             SampleOrder::Newest => samples.sort_by(|a, b| b.timestamp.cmp(&a.timestamp)),
+            SampleOrder::SuspectFirst => samples.sort_by(|a, b| {
+                // Rank by how sure the model was that the label is wrong, so
+                // the clearest mistakes reach a reviewer first.
+                let strength = |s: &TrainingSample| {
+                    s.suspect
+                        .as_ref()
+                        .map(|x| x.predicted_prob - x.label_prob)
+                        .unwrap_or(f64::MIN)
+                };
+                strength(b)
+                    .partial_cmp(&strength(a))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| {
+                        a.top_confidence()
+                            .partial_cmp(&b.top_confidence())
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    })
+            }),
         }
         let total = samples.len();
         let limit = if q.limit == 0 { 50 } else { q.limit.min(500) };

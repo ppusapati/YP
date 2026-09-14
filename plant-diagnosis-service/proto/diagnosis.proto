@@ -312,6 +312,19 @@ message LabelReview {
   google.protobuf.Timestamp reviewed_at = 5;
 }
 
+// A trained model's confident disagreement with a stored label.
+//
+// Worth a reviewer's attention ahead of merely low-confidence samples: a wrong
+// label does not just waste one example, it teaches the next model the same
+// mistake and counts as an error against any model that gets it right.
+message LabelSuspicion {
+  string predicted       = 1;
+  double predicted_prob  = 2;
+  double label_prob      = 3;
+  string model_version   = 4;
+  string flagged_at      = 5;
+}
+
 message LabelReviewSample {
   string id              = 1;  // content hash of the image
   string task            = 2;  // disease, pest, nutrient_deficiency, plant_classification
@@ -326,6 +339,7 @@ message LabelReviewSample {
   string submitted_by    = 11;
   LabelReview review     = 12; // unset until reviewed
   string effective_label = 13; // label after applying the review
+  LabelSuspicion suspect = 14; // unset unless a trained model contradicted it
 }
 
 message ListLabelReviewQueueRequest {
@@ -336,6 +350,9 @@ message ListLabelReviewQueueRequest {
   int32  page_size      = 5;
   int32  page_offset    = 6;
   bool   newest_first   = 7;  // default orders lowest-confidence first (active learning)
+  // Only labels a trained model contradicted, worst disagreement first. These
+  // are where the data is probably wrong rather than merely hard.
+  bool   suspect_only   = 8;
 }
 
 message ListLabelReviewQueueResponse {

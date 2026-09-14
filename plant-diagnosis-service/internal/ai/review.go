@@ -20,7 +20,9 @@ type ListSamplesQuery struct {
 	Provenance    string
 	PageSize      int32
 	PageOffset    int32
-	Order         string // "confidence_asc" (default), "newest"
+	Order         string // "confidence_asc" (default), "newest", "suspect_first"
+	// SuspectOnly restricts the queue to labels a trained model contradicted.
+	SuspectOnly bool
 }
 
 // SampleReview is a reviewer's decision to record on a sample.
@@ -53,6 +55,7 @@ func (c *AIClient) ListTrainingSamples(ctx context.Context, q ListSamplesQuery) 
 			PageSize:      q.PageSize,
 			PageOffset:    q.PageOffset,
 			Order:         q.Order,
+			SuspectOnly:   q.SuspectOnly,
 		})
 		if err != nil {
 			return fmt.Errorf("ListTrainingSamples RPC failed: %w", err)

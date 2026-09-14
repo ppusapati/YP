@@ -63,8 +63,13 @@ func (s *diagnosisService) ListLabelReviewQueue(ctx context.Context, params doma
 	if params.IncludeReviewed {
 		status = "all"
 	}
+	// Suspect ordering wins over "newest": a reviewer who asked for the labels
+	// a model disputes wants the worst disagreements first, not the latest.
 	order := "confidence_asc"
-	if params.NewestFirst {
+	switch {
+	case params.SuspectOnly:
+		order = "suspect_first"
+	case params.NewestFirst:
 		order = "newest"
 	}
 
@@ -77,6 +82,7 @@ func (s *diagnosisService) ListLabelReviewQueue(ctx context.Context, params doma
 		PageSize:      pageSize,
 		PageOffset:    params.Offset,
 		Order:         order,
+		SuspectOnly:   params.SuspectOnly,
 	})
 	if err != nil {
 		return nil, 0, 0, errors.ServiceUnavailable("AI_GATEWAY_ERROR", fmt.Sprintf("list review queue: %v", err))
@@ -194,6 +200,15 @@ func sampleInfoToDomain(info *aipb.TrainingSampleInfo) domain.LabelReviewSample 
 		Provider:       info.GetProvider(),
 		TopConfidence:  info.GetTopConfidence(),
 		EffectiveLabel: info.GetEffectiveLabel(),
+	}
+	if sus := info.GetSuspect(); sus != nil {
+		out.Suspect = &domain.LabelSuspicion{
+			Predicted:     sus.GetPredicted(),
+			PredictedProb: sus.GetPredictedProb(),
+			LabelProb:     sus.GetLabelProb(),
+			ModelVersion:  sus.GetModelVersion(),
+			FlaggedAt:     sus.GetFlaggedAt(),
+		}
 	}
 	for _, l := range info.GetLabels() {
 		out.Labels = append(out.Labels, domain.TrainingLabel{

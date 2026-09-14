@@ -792,8 +792,10 @@ impl AiGatewayService for AiGatewayServiceImpl {
             order: match req.order.as_str() {
                 "" | "confidence_asc" => SampleOrder::ConfidenceAsc,
                 "newest" => SampleOrder::Newest,
+                "suspect_first" => SampleOrder::SuspectFirst,
                 other => return Err(Status::invalid_argument(format!("unknown order {other:?}"))),
             },
+            suspect_only: req.suspect_only,
             offset: req.page_offset.max(0) as usize,
             limit: req.page_size.max(0) as usize,
         };

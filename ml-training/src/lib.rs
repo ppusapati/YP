@@ -13,6 +13,7 @@ pub mod config;
 pub mod dataset;
 pub mod eval;
 pub mod export;
+pub mod feedback;
 pub mod model;
 pub mod monitoring;
 pub mod multitask;

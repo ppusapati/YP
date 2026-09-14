@@ -245,6 +245,25 @@ pub struct LabelReview {
     #[prost(string, tag = "6")]
     pub reviewed_at: ::prost::alloc::string::String,
 }
+/// A trained model's confident disagreement with a stored label.
+///
+/// When a model puts almost all its probability on a class the label does not
+/// name, the label is the more likely thing to be wrong — and a wrong label does
+/// not merely waste one example, it teaches the next model the same mistake.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LabelSuspicion {
+    #[prost(string, tag = "1")]
+    pub predicted: ::prost::alloc::string::String,
+    #[prost(double, tag = "2")]
+    pub predicted_prob: f64,
+    #[prost(double, tag = "3")]
+    pub label_prob: f64,
+    /// which model disagreed, so a stale flag shows
+    #[prost(string, tag = "4")]
+    pub model_version: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
+    pub flagged_at: ::prost::alloc::string::String,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrainingSampleInfo {
     /// sha256 of the image bytes
@@ -273,6 +292,9 @@ pub struct TrainingSampleInfo {
     /// label after applying any review
     #[prost(string, tag = "10")]
     pub effective_label: ::prost::alloc::string::String,
+    /// unset unless a trained model contradicted it
+    #[prost(message, optional, tag = "11")]
+    pub suspect: ::core::option::Option<LabelSuspicion>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListTrainingSamplesRequest {
@@ -298,9 +320,12 @@ pub struct ListTrainingSamplesRequest {
     pub page_size: i32,
     #[prost(int32, tag = "8")]
     pub page_offset: i32,
-    /// "confidence_asc" (default; active learning), "newest"
+    /// "confidence_asc" (default; active learning), "newest", "suspect_first"
     #[prost(string, tag = "9")]
     pub order: ::prost::alloc::string::String,
+    /// only samples a trained model contradicted
+    #[prost(bool, tag = "10")]
+    pub suspect_only: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListTrainingSamplesResponse {

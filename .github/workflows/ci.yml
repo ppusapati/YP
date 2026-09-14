@@ -198,6 +198,16 @@ jobs:
         working-directory: rust-engines
         run: cargo test --workspace
 
+  todo-budget:
+    name: TODO debt ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Budgets only ever go down: a change may not add markers to an area that
+      # is already at its limit. Lower a budget whenever you clear one.
+      - name: Check TODO budgets
+        run: scripts/todo-budget.sh
+
   ml-training:
     name: ML training check & test
     runs-on: ubuntu-latest

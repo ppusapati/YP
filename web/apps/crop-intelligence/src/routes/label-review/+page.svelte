@@ -18,6 +18,10 @@
   let task = 'disease';
   let includeReviewed = false;
   let newestFirst = false;
+  // Labels a trained model confidently contradicted. These are usually wrong
+  // data rather than hard images, and a wrong label teaches the next model the
+  // same mistake — so they are worth a reviewer's time before anything else.
+  let suspectOnly = false;
 
   let samples: LabelReviewSample[] = [];
   let totalCount = 0;
@@ -75,6 +79,7 @@
         task,
         includeReviewed,
         newestFirst,
+        suspectOnly,
         pageSize: PAGE_SIZE,
         pageOffset: offset,
       });
@@ -191,6 +196,10 @@
         <input type="checkbox" bind:checked={newestFirst} on:change={() => loadQueue(0)} />
         Newest first
       </label>
+      <label class="flex items-center gap-2 text-gray-600" title="Labels a trained model disagreed with">
+        <input type="checkbox" bind:checked={suspectOnly} on:change={() => loadQueue(0)} />
+        Model-disputed only
+      </label>
       <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
         {unreviewedCount} awaiting review
       </span>
@@ -296,6 +305,21 @@
                   <li class="text-gray-400">No labels recorded</li>
                 {/each}
               </ul>
+              {#if selected.suspect}
+                <div class="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                  <p class="font-semibold">A trained model disagrees with this label</p>
+                  <p class="mt-1">
+                    {selected.suspect.modelVersion || 'A model'} predicted
+                    <strong>{selected.suspect.predicted}</strong>
+                    at {pct(selected.suspect.predictedProb)}, giving the stored label only
+                    {pct(selected.suspect.labelProb)}.
+                  </p>
+                  <p class="mt-1 text-amber-800">
+                    That usually means the label is wrong rather than the image hard. Confirm it or
+                    correct it — leaving it teaches the next model the same mistake.
+                  </p>
+                </div>
+              {/if}
               <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
                 <dt>Source</dt>
                 <dd class="text-gray-700">{selected.provenance || '—'} · {selected.provider || '—'}</dd>

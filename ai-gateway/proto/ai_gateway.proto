@@ -219,6 +219,19 @@ message LabelReview {
   string reviewed_at = 6;     // RFC3339
 }
 
+// A trained model's confident disagreement with a stored label.
+//
+// When a model puts almost all its probability on a class the label does not
+// name, the label is the more likely thing to be wrong — and a wrong label does
+// not merely waste one example, it teaches the next model the same mistake.
+message LabelSuspicion {
+  string predicted = 1;
+  double predicted_prob = 2;
+  double label_prob = 3;
+  string model_version = 4;   // which model disagreed, so a stale flag shows
+  string flagged_at = 5;
+}
+
 message TrainingSampleInfo {
   string id = 1;              // sha256 of the image bytes
   string task = 2;            // disease, pest, nutrient_deficiency, plant_classification
@@ -230,6 +243,7 @@ message TrainingSampleInfo {
   SampleContext context = 8;
   LabelReview review = 9;     // unset when not yet reviewed
   string effective_label = 10; // label after applying any review
+  LabelSuspicion suspect = 11; // unset unless a trained model contradicted it
 }
 
 message ListTrainingSamplesRequest {
@@ -241,7 +255,8 @@ message ListTrainingSamplesRequest {
   string provenance = 6;      // optional filter
   int32 page_size = 7;        // default 50, max 500
   int32 page_offset = 8;
-  string order = 9;           // "confidence_asc" (default; active learning), "newest"
+  string order = 9;           // "confidence_asc" (default; active learning), "newest", "suspect_first"
+  bool suspect_only = 10;     // only samples a trained model contradicted
 }
 
 message ListTrainingSamplesResponse {

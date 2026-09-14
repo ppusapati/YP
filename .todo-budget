@@ -1,0 +1,15 @@
+# TODO/FIXME budget per area, enforced by scripts/todo-budget.sh.
+# These only ever go down. Lower one whenever you clear markers.
+ai-gateway 0
+ml-training 0
+rust-engines 0
+mobile 13
+web 13
+packages 0
+plant-diagnosis-service 8
+pest-prediction-service 10
+traceability-service 12
+field-service 12
+farm-service 10
+commerce-service 0
+irrigation-service 10

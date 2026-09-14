@@ -339,7 +339,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [x] Add active-learning sampling: surface low-confidence and high-disagreement images for review first — queue defaults to `confidence_asc`; local-model predictions are also collected so the trained model's uncertain cases enter the queue
 - [x] Add geographic and crop-type metadata to every sample for slicing in evaluation — `SampleContext` (tenant, farm, field, crop, lat/lon, submitter) on every vision RPC and stored with the sample; the Go client now uses the generated gateway stubs (the previous `structpb` encoding never matched the gateway's wire format)
 - [ ] Add an "ask a second reviewer" flow and inter-annotator agreement reporting
-- [ ] Feed `label_noise_report.json` suspects back into the review queue automatically
+- [x] Feed `label_noise_report.json` suspects back into the review queue automatically — `train` marks contradicted labels in the collected data, the gateway queue can filter and order by them, and the web review page has a **Model-disputed only** filter that shows what the model predicted instead. Flags a later run no longer holds are cleared, so a vindicated label leaves the queue
 
 **Effort:** Medium | **Impact:** High
 
@@ -427,7 +427,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [ ] Clear mobile, traceability, and field first (top three by count and user-facing impact)
 - [x] Replace mock data in plant-diagnosis with real service calls — the service fetches the image bytes for the URLs it validated and hands them to the gateway, which previously received a URL and no pixels and silently fell through to demo weights. The gateway now declines an image it cannot see rather than analysing a black frame
 - [ ] Replace mock data in pest-prediction with real service calls
-- [ ] Add a CI check that fails when TODO count increases in a service
+- [x] Add a CI check that fails when TODO count increases in a service — `scripts/todo-budget.sh` holds a per-area budget in `.todo-budget` and fails the build when an area exceeds it. Budgets only go down; the script names the ones that can now be lowered. A raw count would either be zero and get disabled within a week, or be meaningless
 - [ ] Clear web app markers alongside the E-006 component test work
 
 **Effort:** Medium | **Impact:** Medium
