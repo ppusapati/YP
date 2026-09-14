@@ -383,6 +383,53 @@ pub struct PredictYieldRequest {
     #[prost(double, tag = "6")]
     pub field_area_hectares: f64,
 }
+/// How much each input moved a numeric prediction away from a typical one.
+///
+/// Shapley values: the contributions sum to prediction minus baseline, an input
+/// the model ignores gets exactly zero, and inputs that act alike get the same
+/// number. That makes the split checkable rather than merely plausible.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FeatureAttribution {
+    #[prost(string, tag = "1")]
+    pub feature: ::prost::alloc::string::String,
+    /// The feature's value for this prediction.
+    #[prost(double, tag = "2")]
+    pub value: f64,
+    /// How much it moved the prediction, in the prediction's own units.
+    #[prost(double, tag = "3")]
+    pub contribution: f64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AttributionSummary {
+    /// What the model says about a typical case: the point contributions are
+    /// measured from.
+    #[prost(double, tag = "1")]
+    pub baseline: f64,
+    /// The prediction that was attributed. For a blended estimate this is the
+    /// learned component, not necessarily the number that was served.
+    #[prost(double, tag = "2")]
+    pub prediction: f64,
+    /// Largest absolute contribution first.
+    #[prost(message, repeated, tag = "3")]
+    pub features: ::prost::alloc::vec::Vec<FeatureAttribution>,
+    /// Share of the served number this attribution accounts for (0..1). Below 1
+    /// when the served value blends an unattributed component.
+    #[prost(double, tag = "4")]
+    pub attributed_share: f64,
+    /// How the split was computed, e.g. "shapley-sampling" or "shapley-exact".
+    #[prost(string, tag = "5")]
+    pub method: ::prost::alloc::string::String,
+    /// Gap the contributions do not explain; zero for exact attribution, Monte
+    /// Carlo error for the sampled estimator.
+    #[prost(double, tag = "6")]
+    pub residual: f64,
+    /// One sentence naming the main drivers, for display.
+    #[prost(string, tag = "7")]
+    pub summary: ::prost::alloc::string::String,
+    /// Units the contributions are expressed in, e.g. "kg/ha".
+    #[prost(string, tag = "8")]
+    pub units: ::prost::alloc::string::String,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PredictYieldResponse {
     #[prost(string, tag = "1")]
@@ -413,6 +460,11 @@ pub struct PredictYieldResponse {
     /// Nominal coverage of \[yield_lower_bound, yield_upper_bound\] (e.g. 0.9); 0 when heuristic.
     #[prost(double, tag = "12")]
     pub interval_coverage: f64,
+    /// Why this number: the learned model's inputs, ranked by how much each moved
+    /// it. Absent when no trained model contributed, or when the model was
+    /// trained before it kept a reference set to compare against.
+    #[prost(message, optional, tag = "14")]
+    pub attribution: ::core::option::Option<AttributionSummary>,
     /// Parametric (stress-factor) estimate, kept for transparency when blended.
     #[prost(double, tag = "13")]
     pub parametric_yield_kg_per_hectare: f64,
@@ -1160,6 +1212,11 @@ pub struct PrescriptionZoneSummary {
     pub max_rate: f64,
     #[prost(double, tag = "7")]
     pub total_amount: f64,
+    /// Why this zone gets this rate rather than the field average, split across
+    /// the measured inputs. Computed for the cell whose rate is most typical of
+    /// the zone, against the field's own cells as the reference.
+    #[prost(message, optional, tag = "8")]
+    pub attribution: ::core::option::Option<AttributionSummary>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AnalyzeTerrainRequest {

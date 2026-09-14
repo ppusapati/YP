@@ -300,6 +300,42 @@ message PredictYieldRequest {
   double field_area_hectares = 6;
 }
 
+// How much each input moved a numeric prediction away from a typical one.
+//
+// Shapley values: the contributions sum to prediction minus baseline, an input
+// the model ignores gets exactly zero, and inputs that act alike get the same
+// number. That makes the split checkable rather than merely plausible.
+message FeatureAttribution {
+  string feature = 1;
+  // The feature's value for this prediction.
+  double value = 2;
+  // How much it moved the prediction, in the prediction's own units.
+  double contribution = 3;
+}
+
+message AttributionSummary {
+  // What the model says about a typical case: the point contributions are
+  // measured from.
+  double baseline = 1;
+  // The prediction that was attributed. For a blended estimate this is the
+  // learned component, not necessarily the number that was served.
+  double prediction = 2;
+  // Largest absolute contribution first.
+  repeated FeatureAttribution features = 3;
+  // Share of the served number this attribution accounts for (0..1). Below 1
+  // when the served value blends an unattributed component.
+  double attributed_share = 4;
+  // How the split was computed, e.g. "shapley-sampling" or "shapley-exact".
+  string method = 5;
+  // Gap the contributions do not explain; zero for exact attribution, Monte
+  // Carlo error for the sampled estimator.
+  double residual = 6;
+  // One sentence naming the main drivers, for display.
+  string summary = 7;
+  // Units the contributions are expressed in, e.g. "kg/ha".
+  string units = 8;
+}
+
 message PredictYieldResponse {
   string request_id = 1;
   double predicted_yield_kg_per_hectare = 2;
@@ -317,6 +353,10 @@ message PredictYieldResponse {
   bool crop_supported = 11;
   // Nominal coverage of [yield_lower_bound, yield_upper_bound] (e.g. 0.9); 0 when heuristic.
   double interval_coverage = 12;
+  // Why this number: the learned model's inputs, ranked by how much each moved
+  // it. Absent when no trained model contributed, or when the model was
+  // trained before it kept a reference set to compare against.
+  AttributionSummary attribution = 14;
   // Parametric (stress-factor) estimate, kept for transparency when blended.
   double parametric_yield_kg_per_hectare = 13;
 }
@@ -764,6 +804,10 @@ message PrescriptionZoneSummary {
   double min_rate = 5;
   double max_rate = 6;
   double total_amount = 7;
+  // Why this zone gets this rate rather than the field average, split across
+  // the measured inputs. Computed for the cell whose rate is most typical of
+  // the zone, against the field's own cells as the reference.
+  AttributionSummary attribution = 8;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

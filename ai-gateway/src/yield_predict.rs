@@ -8,8 +8,8 @@
 use std::time::Instant;
 
 use yield_prediction_engine::{
-    EnvironmentFactors, GradientBoostedModel, ManagementFactors, SoilFactors, YieldFeatures,
-    YieldModelParams, YieldPredictionEngine,
+    AttributionReport, EnvironmentFactors, GradientBoostedModel, ManagementFactors, SoilFactors,
+    YieldFeatures, YieldModelParams, YieldPredictionEngine, DEFAULT_SAMPLES,
 };
 
 use crate::config::ModelPaths;
@@ -36,6 +36,41 @@ impl ModelSource {
             Self::Tabular => "tabular",
             Self::Blended => "blended",
         }
+    }
+}
+
+/// Fixed so the same prediction always comes with the same reasons; two people
+/// looking at one number must not see different explanations for it.
+const ATTRIBUTION_SEED: u64 = 0x5969_656C_6421;
+
+/// Yield contributions are in the prediction's own units.
+const YIELD_UNITS: &str = "kg/ha";
+
+/// Render an attribution report for the wire.
+///
+/// Shared with prescriptions, which attribute in their own units.
+pub fn attribution_proto(
+    report: &AttributionReport,
+    attributed_share: f64,
+    units: &str,
+) -> proto::AttributionSummary {
+    proto::AttributionSummary {
+        baseline: report.baseline,
+        prediction: report.prediction,
+        features: report
+            .attributions
+            .iter()
+            .map(|a| proto::FeatureAttribution {
+                feature: a.feature.clone(),
+                value: a.value,
+                contribution: a.contribution,
+            })
+            .collect(),
+        attributed_share,
+        method: report.method.clone(),
+        residual: report.residual(),
+        summary: report.summary(units),
+        units: units.to_string(),
     }
 }
 
@@ -89,6 +124,7 @@ impl YieldEngine {
         let mut interval_coverage = 0.0;
         let mut model_version = self.model_paths.yield_prediction_version.clone();
 
+        let mut attribution = None;
         if let (Some(model), true) = (&self.tabular, crop_supported) {
             let features =
                 YieldFeatures::from_factors(&request.crop_type, &env, &soil, &mgmt).to_vec();
@@ -123,6 +159,19 @@ impl YieldEngine {
                 if !model.version.is_empty() {
                     model_version = format!("{}+{}", model_version, model.version);
                 }
+
+                // Explain the learned component, which is the part a farmer
+                // cannot reason about from the inputs alone. The parametric
+                // component explains itself through its stress factors, which
+                // are already in this response.
+                match model.attribute(&features, DEFAULT_SAMPLES, ATTRIBUTION_SEED) {
+                    Ok(report) => {
+                        attribution = Some(attribution_proto(&report, tabular_weight, YIELD_UNITS));
+                    }
+                    Err(e) => {
+                        tracing::debug!(error = %e, "yield prediction not attributed");
+                    }
+                }
             }
         }
 
@@ -150,6 +199,7 @@ impl YieldEngine {
             crop_supported,
             interval_coverage,
             parametric_yield_kg_per_hectare: parametric,
+            attribution,
         }
     }
 
@@ -405,6 +455,128 @@ mod tests {
         m.validation.r_squared = r2;
         m.version = "yield-gbm-test".into();
         m
+    }
+
+    /// A model that actually responds to one input, so attribution has
+    /// something real to find.
+    fn responsive_model() -> GradientBoostedModel {
+        let names: Vec<String> = FEATURE_NAMES.iter().map(|s| s.to_string()).collect();
+        let nitrogen = FEATURE_NAMES
+            .iter()
+            .position(|n| *n == "nitrogen_applied_kg_ha")
+            .unwrap();
+        let x: Vec<Vec<f64>> = (0..80)
+            .map(|i| {
+                let mut v = vec![0.0; FEATURE_NAMES.len()];
+                v[1] = 18.0 + (i % 10) as f64;
+                v[nitrogen] = (i % 20) as f64 * 10.0;
+                v
+            })
+            .collect();
+        let y: Vec<f64> = x.iter().map(|r| 2000.0 + 8.0 * r[nitrogen]).collect();
+
+        let mut m = GradientBoostedModel::train(
+            &x,
+            &y,
+            names,
+            GbmParams {
+                n_trees: 40,
+                max_depth: 3,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        m.calibrate(&x, &y, 0.9).unwrap();
+        m.validation.r_squared = 1.0;
+        m.version = "yield-gbm-attrib".into();
+        m
+    }
+
+    #[test]
+    fn a_served_prediction_says_which_inputs_moved_it() {
+        let engine = YieldEngine::with_tabular(ModelPaths::default(), Some(responsive_model()));
+        let mut req = request("wheat");
+        if let Some(m) = req.management.as_mut() {
+            m.fertilizer_rate_kg_per_ha = 190.0;
+        }
+
+        let response = engine.predict_yield(&req);
+        let attribution = response
+            .attribution
+            .expect("a trained model with a reference set explains itself");
+
+        assert_eq!(attribution.units, "kg/ha");
+        assert_eq!(attribution.method, "shapley-sampling");
+        assert_eq!(attribution.features.len(), FEATURE_NAMES.len());
+        // Full weight on the learned model means it explains the whole number.
+        assert!((attribution.attributed_share - 1.0).abs() < 1e-9);
+
+        // Nitrogen is the only input the model was fitted to respond to, so it
+        // must come out on top.
+        assert_eq!(
+            attribution.features[0].feature,
+            "nitrogen_applied_kg_ha",
+            "ranked: {:?}",
+            attribution
+                .features
+                .iter()
+                .take(3)
+                .map(|f| (&f.feature, f.contribution))
+                .collect::<Vec<_>>()
+        );
+        assert!((attribution.features[0].value - 190.0).abs() < 1e-9);
+
+        // The split must account for the gap it claims to explain.
+        let gap = attribution.prediction - attribution.baseline;
+        let total: f64 = attribution.features.iter().map(|f| f.contribution).sum();
+        assert!(
+            (total - gap).abs() < 0.02 * gap.abs().max(1.0),
+            "contributions {total} vs gap {gap}"
+        );
+        assert!(attribution.residual.abs() < 0.02 * gap.abs().max(1.0));
+        assert!(!attribution.summary.is_empty());
+
+        // Two identical requests must produce identical explanations.
+        let again = engine.predict_yield(&req).attribution.unwrap();
+        assert_eq!(again.features, attribution.features);
+    }
+
+    #[test]
+    fn a_blended_prediction_reports_how_much_it_explains() {
+        let mut model = responsive_model();
+        model.validation.r_squared = 0.6;
+        let engine = YieldEngine::with_tabular(ModelPaths::default(), Some(model));
+
+        let attribution = engine.predict_yield(&request("wheat")).attribution.unwrap();
+        // Only 60% of the served number comes from the attributed model, and
+        // the response says so rather than implying it explains everything.
+        assert!((attribution.attributed_share - 0.6).abs() < 1e-9);
+    }
+
+    #[test]
+    fn predictions_with_no_learned_component_carry_no_attribution() {
+        // No tabular model at all.
+        let engine = YieldEngine::with_tabular(ModelPaths::default(), None);
+        assert!(engine
+            .predict_yield(&request("wheat"))
+            .attribution
+            .is_none());
+
+        // An unknown crop is never blended, so there is nothing to attribute.
+        let engine = YieldEngine::with_tabular(ModelPaths::default(), Some(responsive_model()));
+        let response = engine.predict_yield(&request("dragonfruit"));
+        assert!(!response.crop_supported);
+        assert!(response.attribution.is_none());
+
+        // A model trained before reference sets existed reports nothing rather
+        // than inventing a baseline.
+        let mut old = responsive_model();
+        old.set_reference(&[]);
+        let engine = YieldEngine::with_tabular(ModelPaths::default(), Some(old));
+        assert!(engine
+            .predict_yield(&request("wheat"))
+            .attribution
+            .is_none());
     }
 
     #[test]

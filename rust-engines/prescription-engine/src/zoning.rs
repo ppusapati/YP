@@ -1,3 +1,21 @@
+/// Which zone an NDVI value falls in, given a field's zone boundaries.
+///
+/// Split out from [`classify_zones`] so a single cell can be re-classified
+/// without re-deriving the whole field: attribution needs to ask what a cell's
+/// rate would be at a different NDVI, and NDVI acts on the rate precisely by
+/// moving the cell between zones.
+pub fn zone_for(ndvi: f64, boundaries: &[f64]) -> ManagementZone {
+    if boundaries.is_empty() {
+        ManagementZone::Medium
+    } else if ndvi < boundaries[0] {
+        ManagementZone::Low
+    } else if boundaries.len() > 1 && ndvi >= boundaries[boundaries.len() - 1] {
+        ManagementZone::High
+    } else {
+        ManagementZone::Medium
+    }
+}
+
 use crate::types::*;
 
 pub fn classify_zones(ndvi: &[f64], num_zones: usize) -> ZoneClassification {
@@ -18,20 +36,7 @@ pub fn classify_zones(ndvi: &[f64], num_zones: usize) -> ZoneClassification {
         })
         .collect();
 
-    let zones = ndvi
-        .iter()
-        .map(|&v| {
-            if num_zones <= 1 {
-                ManagementZone::Medium
-            } else if v < boundaries[0] {
-                ManagementZone::Low
-            } else if boundaries.len() > 1 && v >= boundaries[boundaries.len() - 1] {
-                ManagementZone::High
-            } else {
-                ManagementZone::Medium
-            }
-        })
-        .collect();
+    let zones = ndvi.iter().map(|&v| zone_for(v, &boundaries)).collect();
 
     ZoneClassification {
         zones,
@@ -115,9 +120,12 @@ mod tests {
         };
         let zones = ZoneClassification {
             zones: vec![
-                ManagementZone::Low, ManagementZone::Low,
-                ManagementZone::Medium, ManagementZone::Medium,
-                ManagementZone::High, ManagementZone::High,
+                ManagementZone::Low,
+                ManagementZone::Low,
+                ManagementZone::Medium,
+                ManagementZone::Medium,
+                ManagementZone::High,
+                ManagementZone::High,
             ],
             zone_boundaries: vec![0.4, 0.7],
         };

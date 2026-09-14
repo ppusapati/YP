@@ -4,11 +4,16 @@
 //! soil data, and management practices. Implements a multiplicative
 //! yield model with stress factors.
 
+pub mod attribution;
 pub mod factors;
 pub mod gbm;
 pub mod model;
 pub mod prediction;
 
+pub use attribution::{
+    shapley_exact, shapley_sampling, Attribution, AttributionError, AttributionReport,
+    DEFAULT_SAMPLES,
+};
 pub use factors::{
     EnvironmentFactors, ManagementFactors, SoilFactors, StressFactor, StressSeverity,
     temperature_stress, water_stress, nitrogen_stress, pest_stress, compaction_stress, frost_stress,

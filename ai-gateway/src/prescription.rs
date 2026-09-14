@@ -1,7 +1,82 @@
+//! Variable-rate prescription maps, with a per-zone explanation of each rate.
+
 use crate::proto;
+use crate::yield_predict::attribution_proto;
 use prescription_engine::prescribe::*;
 use prescription_engine::types::*;
 use std::time::Instant;
+use yield_prediction_engine::shapley_exact;
+
+/// Cells sampled as the reference a zone's rate is compared against.
+///
+/// The reference is the field's own cells, which is the comparison a
+/// variable-rate map is actually making: not "versus some training set" but
+/// "versus the rest of this field".
+const REFERENCE_CELLS: usize = 32;
+
+/// Explain why one zone's rate differs from the field average.
+///
+/// Seven inputs means every coalition can be enumerated, so these attributions
+/// are exact rather than sampled — no residual, no seed.
+fn zone_attribution(
+    kind: PrescriptionType,
+    map: &PrescriptionMap,
+    input: &ZoneInput,
+    requirements: &CropRequirements,
+    zone: ManagementZone,
+    unit: &str,
+) -> Option<proto::AttributionSummary> {
+    let cells: Vec<usize> = (0..map.rates.len())
+        .filter(|&i| map.zones.zones.get(i) == Some(&zone))
+        .collect();
+    if cells.is_empty() {
+        return None;
+    }
+
+    // Explain the cell most typical of the zone rather than an extreme one.
+    let mean = cells.iter().map(|&i| map.rates[i]).sum::<f64>() / cells.len() as f64;
+    let representative = *cells
+        .iter()
+        .min_by(|&&a, &&b| {
+            (map.rates[a] - mean)
+                .abs()
+                .partial_cmp(&(map.rates[b] - mean).abs())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .expect("the zone has at least one cell");
+
+    let stride = (map.rates.len() / REFERENCE_CELLS).max(1);
+    let reference: Vec<Vec<f64>> = (0..map.rates.len())
+        .step_by(stride)
+        .take(REFERENCE_CELLS)
+        .map(|i| CellInputs::at(input, i).to_vec())
+        .collect();
+
+    let boundaries = map.zones.zone_boundaries.clone();
+    let requirements = requirements.clone();
+    let rate = move |values: &[f64]| {
+        cell_rate(
+            kind,
+            &CellInputs::from_slice(values),
+            &requirements,
+            &boundaries,
+        )
+    };
+    let names: Vec<String> = CELL_INPUT_NAMES.iter().map(|s| s.to_string()).collect();
+
+    match shapley_exact(
+        &rate,
+        &CellInputs::at(input, representative).to_vec(),
+        &reference,
+        &names,
+    ) {
+        Ok(report) => Some(attribution_proto(&report, 1.0, unit)),
+        Err(e) => {
+            tracing::debug!(?kind, error = %e, "prescription zone not attributed");
+            None
+        }
+    }
+}
 
 pub struct PrescriptionEngine;
 
@@ -10,12 +85,18 @@ impl PrescriptionEngine {
         Self
     }
 
-    pub fn generate_prescription(&self, req: &proto::GeneratePrescriptionRequest) -> proto::GeneratePrescriptionResponse {
+    pub fn generate_prescription(
+        &self,
+        req: &proto::GeneratePrescriptionRequest,
+    ) -> proto::GeneratePrescriptionResponse {
         let start = Instant::now();
 
         let grid_proto = req.grid.as_ref().expect("grid required");
         let input_proto = req.zone_input.as_ref().expect("zone_input required");
-        let crop_proto = req.crop_requirements.as_ref().expect("crop_requirements required");
+        let crop_proto = req
+            .crop_requirements
+            .as_ref()
+            .expect("crop_requirements required");
 
         let grid = FieldGrid {
             field_id: req.field_id.clone(),
@@ -50,25 +131,41 @@ impl PrescriptionEngine {
 
         let bundle = generate_prescription_bundle(&grid, &input, &requirements);
 
-        let prescriptions = bundle.prescriptions.iter().map(|p| {
-            let zone_summaries = p.zone_summaries.iter().map(|z| proto::PrescriptionZoneSummary {
-                zone: z.zone.label().to_string(),
-                cell_count: z.cell_count as i32,
-                area_ha: z.area_ha,
-                mean_rate: z.mean_rate,
-                min_rate: z.min_rate,
-                max_rate: z.max_rate,
-                total_amount: z.total_amount,
-            }).collect();
+        let prescriptions = bundle
+            .prescriptions
+            .iter()
+            .map(|p| {
+                let zone_summaries = p
+                    .zone_summaries
+                    .iter()
+                    .map(|z| proto::PrescriptionZoneSummary {
+                        zone: z.zone.label().to_string(),
+                        cell_count: z.cell_count as i32,
+                        area_ha: z.area_ha,
+                        mean_rate: z.mean_rate,
+                        min_rate: z.min_rate,
+                        max_rate: z.max_rate,
+                        total_amount: z.total_amount,
+                        attribution: zone_attribution(
+                            p.prescription_type,
+                            p,
+                            &input,
+                            &requirements,
+                            z.zone,
+                            &p.unit,
+                        ),
+                    })
+                    .collect();
 
-            proto::PrescriptionMapResult {
-                prescription_type: p.prescription_type.label().to_string(),
-                rates: p.rates.clone(),
-                unit: p.unit.clone(),
-                total_amount: p.total_amount,
-                zone_summaries,
-            }
-        }).collect();
+                proto::PrescriptionMapResult {
+                    prescription_type: p.prescription_type.label().to_string(),
+                    rates: p.rates.clone(),
+                    unit: p.unit.clone(),
+                    total_amount: p.total_amount,
+                    zone_summaries,
+                }
+            })
+            .collect();
 
         proto::GeneratePrescriptionResponse {
             request_id: req.request_id.clone(),
@@ -84,6 +181,130 @@ impl PrescriptionEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Inputs that vary across the field, so zones are real and there is
+    /// something for attribution to find.
+    fn varied_zone_input(n: usize) -> proto::PrescriptionZoneInput {
+        proto::PrescriptionZoneInput {
+            ndvi: (0..n).map(|i| 0.25 + (i % 9) as f64 * 0.06).collect(),
+            soil_nitrogen: (0..n).map(|i| 15.0 + (i % 7) as f64 * 12.0).collect(),
+            soil_phosphorus: (0..n).map(|i| 8.0 + (i % 5) as f64 * 5.0).collect(),
+            soil_potassium: (0..n).map(|i| 70.0 + (i % 6) as f64 * 18.0).collect(),
+            soil_ph: (0..n).map(|i| 5.2 + (i % 8) as f64 * 0.25).collect(),
+            soil_moisture: (0..n).map(|i| 0.12 + (i % 6) as f64 * 0.05).collect(),
+            soil_organic_matter: (0..n).map(|i| 1.2 + (i % 5) as f64 * 0.7).collect(),
+        }
+    }
+
+    #[test]
+    fn every_zone_explains_its_own_rate() {
+        let engine = PrescriptionEngine::new();
+        let (rows, cols) = (6, 6);
+        let n = (rows * cols) as usize;
+
+        let response = engine.generate_prescription(&proto::GeneratePrescriptionRequest {
+            request_id: "rx-attrib".to_string(),
+            field_id: "field-1".to_string(),
+            grid: Some(make_grid(rows, cols)),
+            zone_input: Some(varied_zone_input(n)),
+            crop_requirements: Some(make_crop_requirements()),
+            prescription_types: vec![],
+        });
+
+        let fertilizer = response
+            .prescriptions
+            .iter()
+            .find(|p| p.prescription_type.starts_with("Fertilizer"))
+            .expect("a fertilizer map is always generated");
+        assert!(
+            fertilizer.zone_summaries.len() >= 2,
+            "the field should zone"
+        );
+
+        for zone in &fertilizer.zone_summaries {
+            let a = zone
+                .attribution
+                .as_ref()
+                .unwrap_or_else(|| panic!("zone {} carries no attribution", zone.zone));
+
+            assert_eq!(a.method, "shapley-exact");
+            assert_eq!(a.units, fertilizer.unit);
+            assert_eq!(a.features.len(), 7);
+            // Enumerating every coalition leaves nothing unexplained.
+            assert!(
+                a.residual.abs() < 1e-9,
+                "zone {} residual {}",
+                zone.zone,
+                a.residual
+            );
+            let total: f64 = a.features.iter().map(|f| f.contribution).sum();
+            assert!((total - (a.prediction - a.baseline)).abs() < 1e-9);
+            assert!(!a.summary.is_empty());
+            // Every zone is compared against the same field average.
+            assert!(
+                (a.baseline
+                    - fertilizer.zone_summaries[0]
+                        .attribution
+                        .as_ref()
+                        .unwrap()
+                        .baseline)
+                    .abs()
+                    < 1e-9
+            );
+        }
+
+        // The low-growth zone is fertilised hardest, and NDVI is part of why.
+        let low = fertilizer
+            .zone_summaries
+            .iter()
+            .find(|z| z.zone.starts_with("Low"))
+            .expect("a low zone exists");
+        let ndvi = low
+            .attribution
+            .as_ref()
+            .unwrap()
+            .features
+            .iter()
+            .find(|f| f.feature == "ndvi")
+            .unwrap();
+        assert!(
+            ndvi.contribution > 0.0,
+            "a low-NDVI zone should be pushed up by NDVI, got {}",
+            ndvi.contribution
+        );
+    }
+
+    #[test]
+    fn a_uniform_field_attributes_nothing_to_anything() {
+        let engine = PrescriptionEngine::new();
+        let n = 16;
+        let response = engine.generate_prescription(&proto::GeneratePrescriptionRequest {
+            request_id: "rx-flat".to_string(),
+            field_id: "field-flat".to_string(),
+            grid: Some(make_grid(4, 4)),
+            zone_input: Some(make_zone_input(n)),
+            crop_requirements: Some(make_crop_requirements()),
+            prescription_types: vec![],
+        });
+
+        // Every cell is identical, so no input can explain a difference that
+        // does not exist. The contributions must be zero, not noise.
+        for p in &response.prescriptions {
+            for z in &p.zone_summaries {
+                let a = z.attribution.as_ref().unwrap();
+                for f in &a.features {
+                    assert!(
+                        f.contribution.abs() < 1e-9,
+                        "{} {} contributed {} on a uniform field",
+                        p.prescription_type,
+                        f.feature,
+                        f.contribution
+                    );
+                }
+                assert!(a.summary.contains("typical"), "{}", a.summary);
+            }
+        }
+    }
 
     #[test]
     fn prescription_engine_constructs() {

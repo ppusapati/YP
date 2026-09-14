@@ -258,6 +258,22 @@ pub struct GbmValidation {
     pub n_samples: usize,
 }
 
+/// Take up to `max` rows spread evenly through `rows`.
+///
+/// Striding rather than sampling keeps the choice deterministic and keeps the
+/// spread of the data, which random picks from a sorted file would not.
+fn subsample(rows: &[Vec<f64>], max: usize) -> Vec<Vec<f64>> {
+    if rows.is_empty() || max == 0 {
+        return Vec::new();
+    }
+    if rows.len() <= max {
+        return rows.to_vec();
+    }
+    (0..max)
+        .map(|i| rows[i * rows.len() / max].clone())
+        .collect()
+}
+
 /// Trained boosted ensemble with conformal interval calibration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GradientBoostedModel {
@@ -270,7 +286,23 @@ pub struct GradientBoostedModel {
     interval_half_width: Option<f64>,
     interval_coverage: f64,
     pub validation: GbmValidation,
+    /// A spread of training rows kept so a prediction can be attributed.
+    ///
+    /// Shapley values need something to compare against: "what would this
+    /// model say about a typical field?" Without real rows to fall back on,
+    /// absent features would have to be filled with means, and a field with
+    /// one district's rainfall and another's soil is not a field the model was
+    /// ever fitted on. Empty on models trained before attribution existed,
+    /// which report that rather than guessing.
+    #[serde(default)]
+    reference: Vec<Vec<f64>>,
 }
+
+/// How many training rows a model keeps for attribution.
+///
+/// Enough to span the data, few enough that the extra JSON is noise next to
+/// the trees and that attribution stays fast.
+pub const REFERENCE_ROWS: usize = 32;
 
 impl GradientBoostedModel {
     /// Train on rows `x` (each `feature_names.len()` long) with targets `y`.
@@ -330,11 +362,48 @@ impl GradientBoostedModel {
             interval_half_width: None,
             interval_coverage: 0.0,
             validation: GbmValidation::default(),
+            reference: subsample(x, REFERENCE_ROWS),
         })
     }
 
     pub fn n_trees(&self) -> usize {
         self.trees.len()
+    }
+
+    /// Training rows kept for attribution; empty if the model predates it.
+    pub fn reference(&self) -> &[Vec<f64>] {
+        &self.reference
+    }
+
+    pub fn explains(&self) -> bool {
+        !self.reference.is_empty()
+    }
+
+    /// Replace the stored reference set, evenly subsampled.
+    pub fn set_reference(&mut self, rows: &[Vec<f64>]) {
+        self.reference = subsample(rows, REFERENCE_ROWS);
+    }
+
+    /// Split this prediction's distance from a typical one across the features.
+    ///
+    /// `samples` trades accuracy for time; [`crate::DEFAULT_SAMPLES`] is a
+    /// reasonable default. The seed makes the explanation reproducible, so the
+    /// same prediction always comes with the same reasons.
+    pub fn attribute(
+        &self,
+        x: &[f64],
+        samples: usize,
+        seed: u64,
+    ) -> Result<crate::AttributionReport, crate::AttributionError> {
+        let predict = |row: &[f64]| self.predict(row).unwrap_or(f64::NAN);
+        crate::shapley_sampling(
+            &predict,
+            x,
+            &self.reference,
+            &self.feature_names,
+            samples,
+            seed,
+        )
     }
 
     /// Point prediction.
@@ -776,5 +845,117 @@ mod tests {
         for c in YieldModelParams::SUPPORTED_CROPS {
             assert!(YieldModelParams::for_crop(c).is_some(), "{c}");
         }
+    }
+    #[test]
+    fn subsampling_spans_the_data_deterministically() {
+        let rows: Vec<Vec<f64>> = (0..100).map(|i| vec![i as f64]).collect();
+        let picked = subsample(&rows, 10);
+        assert_eq!(picked.len(), 10);
+        assert_eq!(picked[0][0], 0.0);
+        assert_eq!(picked[9][0], 90.0, "the sample reaches the far end");
+        assert_eq!(subsample(&rows, 10), picked, "the choice is not random");
+
+        // Fewer rows than asked for are all kept.
+        assert_eq!(subsample(&rows[..4], 10).len(), 4);
+        assert!(subsample(&[], 10).is_empty());
+        assert!(subsample(&rows, 0).is_empty());
+    }
+
+    #[test]
+    fn a_trained_model_can_attribute_its_own_predictions() {
+        // A target driven mostly by feature 0, with feature 2 ignored entirely.
+        let x: Vec<Vec<f64>> = (0..120)
+            .map(|i| {
+                let a = (i % 12) as f64;
+                let b = ((i / 12) % 10) as f64;
+                vec![a, b, 42.0]
+            })
+            .collect();
+        let y: Vec<f64> = x.iter().map(|r| 10.0 * r[0] + r[1]).collect();
+
+        let model = GradientBoostedModel::train(
+            &x,
+            &y,
+            vec!["driver".into(), "minor".into(), "ignored".into()],
+            GbmParams {
+                n_trees: 60,
+                max_depth: 3,
+                learning_rate: 0.15,
+                ..GbmParams::default()
+            },
+        )
+        .unwrap();
+
+        assert!(model.explains());
+        assert_eq!(model.reference().len(), REFERENCE_ROWS);
+
+        // A high-feature-0 row should be attributed mostly to feature 0.
+        let row = vec![11.0, 5.0, 42.0];
+        let report = model.attribute(&row, 200, 1).unwrap();
+        assert_eq!(report.attributions.len(), 3);
+        assert_eq!(report.attributions[0].feature, "driver");
+
+        // The ignored feature is constant across the data, so it can move
+        // nothing: its contribution must be zero, not merely small.
+        let ignored = report
+            .attributions
+            .iter()
+            .find(|a| a.feature == "ignored")
+            .unwrap();
+        assert_eq!(ignored.contribution, 0.0);
+
+        // What the split explains must match the gap it is splitting.
+        let scale = (report.prediction - report.baseline).abs().max(1.0);
+        assert!(
+            report.residual().abs() < 0.05 * scale,
+            "residual {} on a gap of {}",
+            report.residual(),
+            report.prediction - report.baseline
+        );
+        assert!((report.prediction - model.predict(&row).unwrap()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn a_model_without_a_reference_set_says_so() {
+        let x: Vec<Vec<f64>> = (0..40).map(|i| vec![i as f64, (i % 3) as f64]).collect();
+        let y: Vec<f64> = x.iter().map(|r| r[0] * 2.0).collect();
+        let mut model =
+            GradientBoostedModel::train(&x, &y, vec!["a".into(), "b".into()], GbmParams::default())
+                .unwrap();
+
+        model.set_reference(&[]);
+        assert!(!model.explains());
+        assert_eq!(
+            model.attribute(&[1.0, 2.0], 50, 1).unwrap_err(),
+            crate::AttributionError::NoReference
+        );
+
+        // And it can be given one after the fact.
+        model.set_reference(&x);
+        assert!(model.explains());
+        assert!(model.attribute(&[1.0, 2.0], 50, 1).is_ok());
+    }
+
+    #[test]
+    fn the_reference_set_survives_serialisation() {
+        let x: Vec<Vec<f64>> = (0..50).map(|i| vec![i as f64, (i % 5) as f64]).collect();
+        let y: Vec<f64> = x.iter().map(|r| r[0] + r[1]).collect();
+        let model =
+            GradientBoostedModel::train(&x, &y, vec!["a".into(), "b".into()], GbmParams::default())
+                .unwrap();
+
+        let json = serde_json::to_string(&model).unwrap();
+        let back: GradientBoostedModel = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.reference(), model.reference());
+        assert!(back.explains());
+
+        // A model file written before attribution existed still loads.
+        let mut value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        value.as_object_mut().unwrap().remove("reference");
+        let old: GradientBoostedModel = serde_json::from_value(value).unwrap();
+        assert!(!old.explains());
+        assert!(
+            (old.predict(&[1.0, 2.0]).unwrap() - model.predict(&[1.0, 2.0]).unwrap()).abs() < 1e-12
+        );
     }
 }
