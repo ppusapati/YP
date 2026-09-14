@@ -84,6 +84,19 @@ jobs:
       - name: Run package tests
         run: go test -race -count=1 -timeout=5m ./packages/...
 
+  test-python-client:
+    name: Test Python client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install -e clients/python
+      - name: Run tests
+        run: python -m unittest discover -s clients/python/tests -t clients/python
+
   test-services:
     name: Test services
     runs-on: ubuntu-latest

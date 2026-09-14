@@ -156,8 +156,8 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Generate OpenAPI specs for missing services: alert, analytics, prescription, satellite-ingestion, satellite-processing, satellite-tile, vegetation-index, task, agronomy
 - [x] Deploy Swagger UI or Redoc as a service for interactive API exploration
 - [x] Add API changelog and versioning migration guides
-- [ ] Create developer portal with getting-started guides, authentication docs, and code samples
-- [ ] Add API usage examples and SDK generation (Go, Python, TypeScript clients)
+- [x] Create developer portal with getting-started guides, authentication docs, and code samples
+- [x] Add API usage examples and SDK generation (Go, Python, TypeScript clients) — Go/TS/Dart are generated from the protos; Python is a hand-written Connect client in `clients/python/`, since generated Python messages would add a build step and a freshness gate while buying nothing a dict does not
 - [x] Document rate limits, pagination, and error codes
 
 **Effort:** Medium | **Impact:** Medium

@@ -7,6 +7,9 @@ with a JSON body sent to `/<package>.<Service>/<Method>`. Responses are JSON.
 
 Before integrating, read:
 
+- **[GETTING-STARTED.md](GETTING-STARTED.md)** — authentication, a first request, and client
+  code samples in curl, Go, TypeScript and Python.
+
 - **[CONVENTIONS.md](CONVENTIONS.md)** — rate limits, pagination and error codes, as the
   code actually implements them, including where services disagree with each other.
 - **[VERSIONING.md](VERSIONING.md)** — what may change inside `v1`, and what a `v2` would take.
