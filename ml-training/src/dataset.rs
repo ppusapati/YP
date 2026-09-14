@@ -19,7 +19,74 @@ use sha2::{Digest, Sha256};
 use crate::augment::Augmenter;
 use crate::config::{AugmentationConfig, DataConfig, ProvenanceWeights};
 
-#[derive(Debug, Clone)]
+/// Where and when a sample was captured.
+///
+/// Kept so evaluation can slice metrics by region and season: a model that is
+/// fine on average but poor in one district or one growing season is a model
+/// that will be wrong exactly when a farmer relies on it.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Capture {
+    pub latitude: f64,
+    pub longitude: f64,
+    /// RFC 3339 capture time from the manifest.
+    pub timestamp: String,
+}
+
+impl Capture {
+    fn has_location(&self) -> bool {
+        // Null Island is the sentinel for "no location recorded".
+        (self.latitude != 0.0 || self.longitude != 0.0)
+            && self.latitude.abs() <= 90.0
+            && self.longitude.abs() <= 180.0
+    }
+
+    /// One-degree grid cell, e.g. `18N 78E`. Roughly a district; fine enough
+    /// to separate growing areas, coarse enough to keep slices populated.
+    pub fn region(&self) -> String {
+        if !self.has_location() {
+            return String::new();
+        }
+        let lat = self.latitude.floor();
+        let lon = self.longitude.floor();
+        format!(
+            "{}{} {}{}",
+            lat.abs(),
+            if lat >= 0.0 { "N" } else { "S" },
+            lon.abs(),
+            if lon >= 0.0 { "E" } else { "W" }
+        )
+    }
+
+    /// Meteorological season, flipped below the equator. Empty when the
+    /// timestamp cannot be parsed.
+    pub fn season(&self) -> String {
+        let Some(month) = self.month() else {
+            return String::new();
+        };
+        // Shift the southern hemisphere by half a year.
+        let month = if self.latitude < 0.0 {
+            (month + 5) % 12 + 1
+        } else {
+            month
+        };
+        match month {
+            12 | 1 | 2 => "winter",
+            3..=5 => "spring",
+            6..=8 => "summer",
+            _ => "autumn",
+        }
+        .to_string()
+    }
+
+    fn month(&self) -> Option<u32> {
+        use chrono::Datelike;
+        chrono::DateTime::parse_from_rfc3339(self.timestamp.trim())
+            .ok()
+            .map(|dt| dt.month())
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Sample {
     pub id: String,
     pub image_path: PathBuf,
@@ -31,10 +98,30 @@ pub struct Sample {
     pub provenance: String,
     pub crop: String,
     pub reviewed: bool,
+    pub capture: Capture,
+}
+
+impl Sample {
+    /// Dimension → value pairs for evaluation slicing. Blank values are
+    /// omitted so a missing field does not become a slice of its own.
+    pub fn slice_keys(&self) -> std::collections::BTreeMap<String, String> {
+        let mut out = std::collections::BTreeMap::new();
+        for (dim, value) in [
+            ("crop", self.crop.clone()),
+            ("source", self.provenance.clone()),
+            ("region", self.capture.region()),
+            ("season", self.capture.season()),
+        ] {
+            if !value.trim().is_empty() {
+                out.insert(dim.to_string(), value);
+            }
+        }
+        out
+    }
 }
 
 /// A sample after manifest + label-file loading, before label-map indexing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RawSample {
     pub id: String,
     pub image_path: PathBuf,
@@ -44,6 +131,7 @@ pub struct RawSample {
     pub provenance: String,
     pub crop: String,
     pub reviewed: bool,
+    pub capture: Capture,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -52,7 +140,7 @@ struct ManifestEntry {
     image: String,
     #[allow(dead_code)]
     labels: Vec<String>,
-    #[allow(dead_code)]
+    #[serde(default)]
     timestamp: String,
 }
 
@@ -84,6 +172,10 @@ struct ReviewEntry {
 struct ContextEntry {
     #[serde(default)]
     crop: String,
+    #[serde(default)]
+    latitude: f64,
+    #[serde(default)]
+    longitude: f64,
 }
 
 pub struct PlantDataset {
@@ -286,8 +378,19 @@ pub fn load_manifest(
         let Ok(label_data) = serde_json::from_str::<LabelFile>(&label_content) else {
             continue;
         };
-        let Some(raw) = resolve_sample(&entry.id, image_path, &label_data, min_confidence, weights)
-        else {
+        let capture = Capture {
+            latitude: label_data.context.as_ref().map_or(0.0, |c| c.latitude),
+            longitude: label_data.context.as_ref().map_or(0.0, |c| c.longitude),
+            timestamp: entry.timestamp.clone(),
+        };
+        let Some(raw) = resolve_sample(
+            &entry.id,
+            image_path,
+            &label_data,
+            min_confidence,
+            weights,
+            capture,
+        ) else {
             continue;
         };
         results.push(raw);
@@ -303,6 +406,7 @@ fn resolve_sample(
     label_data: &LabelFile,
     min_confidence: f64,
     weights: &ProvenanceWeights,
+    capture: Capture,
 ) -> Option<RawSample> {
     let crop = label_data
         .context
@@ -328,6 +432,7 @@ fn resolve_sample(
                     provenance: "human".to_string(),
                     crop,
                     reviewed: true,
+                    capture,
                 });
             }
             "confirmed" => {
@@ -341,6 +446,7 @@ fn resolve_sample(
                     provenance: "human".to_string(),
                     crop,
                     reviewed: true,
+                    capture,
                 });
             }
             _ => {}
@@ -364,6 +470,7 @@ fn resolve_sample(
         provenance,
         crop,
         reviewed: false,
+        capture,
     })
 }
 
@@ -729,6 +836,7 @@ pub fn prepare_datasets(
                 label_idx: idx,
                 confidence: r.confidence,
                 weight: r.weight,
+                capture: r.capture,
                 provenance: r.provenance,
                 crop: r.crop,
                 reviewed: r.reviewed,
@@ -851,6 +959,87 @@ mod tests {
         assert_eq!(raw.len(), 1);
     }
 
+    #[test]
+    fn capture_derives_a_region_grid_cell() {
+        let c = Capture {
+            latitude: 18.52,
+            longitude: 78.41,
+            timestamp: String::new(),
+        };
+        assert_eq!(c.region(), "18N 78E");
+
+        // Southern and western coordinates floor away from zero, so the cell
+        // name stays the corner the point sits in.
+        let sw = Capture {
+            latitude: -23.7,
+            longitude: -46.6,
+            ..Default::default()
+        };
+        assert_eq!(sw.region(), "24S 47W");
+
+        // No location recorded is not a region.
+        assert_eq!(Capture::default().region(), "");
+        // Out-of-range junk is rejected rather than bucketed.
+        assert_eq!(
+            Capture {
+                latitude: 999.0,
+                longitude: 12.0,
+                ..Default::default()
+            }
+            .region(),
+            ""
+        );
+    }
+
+    #[test]
+    fn capture_derives_a_season_from_the_timestamp() {
+        let at = |ts: &str, lat: f64| {
+            Capture {
+                latitude: lat,
+                longitude: 78.0,
+                timestamp: ts.into(),
+            }
+            .season()
+        };
+
+        assert_eq!(at("2026-01-15T00:00:00Z", 18.5), "winter");
+        assert_eq!(at("2026-04-15T00:00:00Z", 18.5), "spring");
+        assert_eq!(at("2026-07-15T00:00:00Z", 18.5), "summer");
+        assert_eq!(at("2026-10-15T00:00:00Z", 18.5), "autumn");
+
+        // Below the equator the seasons are the opposite ones.
+        assert_eq!(at("2026-01-15T00:00:00Z", -23.5), "summer");
+        assert_eq!(at("2026-07-15T00:00:00Z", -23.5), "winter");
+        assert_eq!(at("2026-04-15T00:00:00Z", -23.5), "autumn");
+        assert_eq!(at("2026-10-15T00:00:00Z", -23.5), "spring");
+
+        // Offsets are honoured, and unparseable stamps yield no slice.
+        assert_eq!(at("2026-07-15T00:00:00+05:30", 18.5), "summer");
+        assert_eq!(at("not a date", 18.5), "");
+        assert_eq!(at("", 18.5), "");
+    }
+
+    #[test]
+    fn slice_keys_skip_missing_metadata() {
+        let mut s = sample("s1", "rust", 0, "external_api");
+        s.crop = "wheat".into();
+        s.capture = Capture {
+            latitude: 18.5,
+            longitude: 78.4,
+            timestamp: "2026-07-15T00:00:00Z".into(),
+        };
+        let keys = s.slice_keys();
+        assert_eq!(keys["crop"], "wheat");
+        assert_eq!(keys["source"], "external_api");
+        assert_eq!(keys["region"], "18N 78E");
+        assert_eq!(keys["season"], "summer");
+
+        // A sample with no crop or location contributes only what it has.
+        let bare = sample("s2", "rust", 0, "human");
+        let keys = bare.slice_keys();
+        assert_eq!(keys.keys().collect::<Vec<_>>(), vec!["source"]);
+    }
+
     fn sample(id: &str, label: &str, idx: usize, provenance: &str) -> Sample {
         Sample {
             id: id.into(),
@@ -861,6 +1050,7 @@ mod tests {
             weight: ProvenanceWeights::default().for_provenance(provenance),
             provenance: provenance.into(),
             crop: String::new(),
+            capture: Capture::default(),
             reviewed: provenance == "human",
         }
     }
@@ -933,6 +1123,7 @@ mod tests {
                 weight: 0.6,
                 provenance: "external_api".into(),
                 crop: "wheat".into(),
+                capture: Capture::default(),
                 reviewed: false,
             })
             .collect();

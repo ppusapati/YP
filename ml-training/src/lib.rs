@@ -7,9 +7,11 @@
 pub mod augment;
 pub mod backbone;
 pub mod backend;
+pub mod benchmark;
 pub mod compose;
 pub mod config;
 pub mod dataset;
+pub mod eval;
 pub mod export;
 pub mod model;
 pub mod monitoring;

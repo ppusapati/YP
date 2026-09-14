@@ -593,6 +593,7 @@ mod tests {
                 weight: 1.0,
                 provenance: "human".into(),
                 crop: String::new(),
+                capture: Default::default(),
                 reviewed: true,
             });
         }
@@ -655,6 +656,7 @@ mod tests {
             weight: 1.0,
             provenance: "human".into(),
             crop: String::new(),
+            capture: Default::default(),
             reviewed: false,
         });
         let mut fresh = EmbeddingCache::new(backbone.embedding_dim());

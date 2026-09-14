@@ -7,7 +7,6 @@
 //!
 //! Configuration lives in the `[retraining]` section of the training TOML config.
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use chrono::{DateTime, Datelike, NaiveTime, Utc, Weekday};
@@ -111,9 +110,7 @@ pub fn check_schedule(config: &ScheduleConfig, now: DateTime<Utc>) -> TriggerRes
     let target_time = NaiveTime::parse_from_str(&config.time, "%H:%M").ok();
 
     let should_retrain = match (target_day, target_time) {
-        (Some(day), Some(time)) => {
-            now.weekday() == day && now.time() >= time
-        }
+        (Some(day), Some(time)) => now.weekday() == day && now.time() >= time,
         _ => false,
     };
 
@@ -265,7 +262,11 @@ mod tests {
         let manifest = task_dir.join("manifest.jsonl");
         let mut f = std::fs::File::create(&manifest).unwrap();
         for i in 0..100 {
-            writeln!(f, r#"{{"id":"s{i}","image":"img.jpg","labels":["a"],"timestamp":"2024-01-01"}}"#).unwrap();
+            writeln!(
+                f,
+                r#"{{"id":"s{i}","image":"img.jpg","labels":["a"],"timestamp":"2024-01-01"}}"#
+            )
+            .unwrap();
         }
 
         let config = DataThresholdConfig {
@@ -523,7 +524,10 @@ accuracy_threshold = 0.85
 predictions_log = "/logs/predictions.jsonl"
 "#;
         let config: TriggerConfig = toml::from_str(toml_str).unwrap();
-        assert_eq!(config.data_threshold.as_ref().unwrap().samples_per_category, 500);
+        assert_eq!(
+            config.data_threshold.as_ref().unwrap().samples_per_category,
+            500
+        );
         assert_eq!(config.schedule.as_ref().unwrap().day_of_week, "sunday");
         assert!((config.drift.as_ref().unwrap().accuracy_threshold - 0.85).abs() < f64::EPSILON);
     }

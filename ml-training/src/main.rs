@@ -9,9 +9,11 @@ use tracing_subscriber::{fmt, EnvFilter};
 use yp_ml_training::augment::Augmenter;
 use yp_ml_training::backbone::{Backbone, EmbeddingCache};
 use yp_ml_training::backend::InferBackend;
+use yp_ml_training::benchmark;
 use yp_ml_training::compose;
-use yp_ml_training::config::{BackboneConfig, TrainingConfig};
+use yp_ml_training::config::TrainingConfig;
 use yp_ml_training::dataset::{self, prepare_datasets};
+use yp_ml_training::eval;
 use yp_ml_training::export;
 use yp_ml_training::model::{extract_weights, PlantCnn};
 use yp_ml_training::multitask;
@@ -91,6 +93,11 @@ enum Commands {
         #[arg(long, default_value = "runs")]
         output_dir: PathBuf,
     },
+    /// Freeze or run a held-out benchmark suite
+    Benchmark {
+        #[command(subcommand)]
+        action: BenchmarkAction,
+    },
     /// Check data collection status
     Status {
         #[arg(long)]
@@ -110,6 +117,39 @@ enum Commands {
         /// Register the model in this registry directory when it passes the R² gate
         #[arg(long)]
         registry: Option<PathBuf>,
+    },
+}
+
+#[derive(Subcommand)]
+enum BenchmarkAction {
+    /// Freeze the current test split into a benchmark suite
+    Create {
+        #[arg(long)]
+        task: String,
+        #[arg(long)]
+        data_dir: Option<String>,
+        /// Where to write the suite (default: benchmarks/<task>.json)
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Overwrite an existing suite. Refused by default: replacing a
+        /// benchmark silently is how a moving target gets introduced.
+        #[arg(long)]
+        force: bool,
+    },
+    /// Score a candidate model against a frozen suite and gate promotion
+    Run {
+        #[arg(long)]
+        task: String,
+        #[arg(long)]
+        model_dir: PathBuf,
+        #[arg(long)]
+        data_dir: Option<String>,
+        /// Suite to run against (default: benchmarks/<task>.json)
+        #[arg(long)]
+        suite: Option<PathBuf>,
+        /// Record this model's scores as the new baseline when it passes
+        #[arg(long)]
+        update_baseline: bool,
     },
 }
 
@@ -165,6 +205,35 @@ fn main() -> anyhow::Result<()> {
             data_dir,
             output_dir,
         } => cmd_pipeline(&config, &tasks, data_dir.as_deref(), &output_dir),
+
+        Commands::Benchmark { action } => match action {
+            BenchmarkAction::Create {
+                task,
+                data_dir,
+                output,
+                force,
+            } => cmd_benchmark_create(
+                &config,
+                &task,
+                data_dir.as_deref(),
+                output.as_deref(),
+                force,
+            ),
+            BenchmarkAction::Run {
+                task,
+                model_dir,
+                data_dir,
+                suite,
+                update_baseline,
+            } => cmd_benchmark_run(
+                &config,
+                &task,
+                &model_dir,
+                data_dir.as_deref(),
+                suite.as_deref(),
+                update_baseline,
+            ),
+        },
 
         Commands::Status { data_dir } => cmd_status(&config, data_dir.as_deref()),
 
@@ -251,6 +320,19 @@ fn cmd_train(
         task_output.join("dataset_report.json"),
         serde_json::to_string_pretty(&splits.report)?,
     )?;
+    // Class indices come from whatever classes this run happened to see, so
+    // the checkpoint is meaningless without the order that produced it.
+    std::fs::write(
+        task_output.join("labels.json"),
+        serde_json::to_string_pretty(&validate::labels_in_order(&splits.label_map))?,
+    )?;
+    // Name the run so evaluations and benchmark results can say which model
+    // produced them without depending on the directory layout.
+    let run_version = output_dir
+        .file_name()
+        .map(|n| format!("{task}-{}", n.to_string_lossy()))
+        .unwrap_or_else(|| task.to_string());
+    std::fs::write(task_output.join("version.txt"), format!("{run_version}\n"))?;
     // Immutable record of exactly which samples (and labels) trained this run.
     std::fs::write(
         task_output.join("dataset_snapshot.json"),
@@ -344,7 +426,12 @@ fn cmd_validate(
         .map_err(|e| anyhow::anyhow!("failed to load model: {e}"))?;
     let model: PlantCnn<InferBackend> = PlantCnn::new(num_classes, &device).load_record(record);
 
-    let report = validate::validate(
+    let model_version = std::fs::read_to_string(model_dir.join("version.txt"))
+        .map(|v| v.trim().to_string())
+        .unwrap_or_else(|_| format!("{task}-local"));
+    let report = validate::evaluate(
+        task,
+        &model_version,
         &model,
         &splits.test,
         &splits.label_map,
@@ -352,6 +439,13 @@ fn cmd_validate(
         task_config.batch_size,
     );
     validate::print_report(&report);
+
+    // The full report is written next to the model so promotion decisions and
+    // later comparisons read the same numbers a human just saw.
+    std::fs::write(
+        model_dir.join("evaluation.json"),
+        serde_json::to_string_pretty(&report)?,
+    )?;
 
     if report.accuracy < 0.70 {
         anyhow::bail!(
@@ -618,6 +712,224 @@ fn cmd_train_heads(
         println!("  {:<24} {} classes", head.task, head.num_classes());
     }
     println!("{}", "=".repeat(60));
+    Ok(())
+}
+
+/// Default location of a task's benchmark suite.
+fn default_suite_path(task: &str) -> PathBuf {
+    PathBuf::from("benchmarks").join(format!("{task}.json"))
+}
+
+/// Freeze the current test split into a benchmark suite.
+fn cmd_benchmark_create(
+    config: &TrainingConfig,
+    task: &str,
+    data_dir: Option<&str>,
+    output: Option<&Path>,
+    force: bool,
+) -> anyhow::Result<()> {
+    let path = output
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| default_suite_path(task));
+    if path.exists() && !force {
+        anyhow::bail!(
+            "{} already exists. A benchmark is only useful while it stays fixed; \
+             pass --force if you really mean to replace it",
+            path.display()
+        );
+    }
+
+    let splits = prepare_datasets(task, &config.data, data_dir)?;
+    let pinned: Vec<(String, String)> = splits
+        .test
+        .iter()
+        .map(|s| (s.id.clone(), s.label.clone()))
+        .collect();
+    let suite = benchmark::BenchmarkSuite::create(
+        task,
+        &pinned,
+        validate::labels_in_order(&splits.label_map),
+        &splits.snapshot.id,
+    )?;
+    suite.save(&path)?;
+
+    println!(
+        "Froze {} test samples across {} classes into {}",
+        suite.samples.len(),
+        suite.labels.len(),
+        path.display()
+    );
+    println!(
+        "  from dataset snapshot {}",
+        &splits.snapshot.id[..12.min(splits.snapshot.id.len())]
+    );
+    println!(
+        "  thresholds: accuracy >= {:.2}, macro F1 >= {:.2}, ECE <= {:.2}, worst slice >= {:.2}",
+        suite.thresholds.min_accuracy,
+        suite.thresholds.min_macro_f1,
+        suite.thresholds.max_ece,
+        suite.thresholds.min_worst_slice_accuracy
+    );
+    println!("  edit the thresholds in the file to match what this task needs");
+    Ok(())
+}
+
+/// Score a candidate against a frozen suite and decide whether it may ship.
+fn cmd_benchmark_run(
+    config: &TrainingConfig,
+    task: &str,
+    model_dir: &Path,
+    data_dir: Option<&str>,
+    suite_path: Option<&Path>,
+    update_baseline: bool,
+) -> anyhow::Result<()> {
+    let task_config = config
+        .tasks
+        .get(task)
+        .ok_or_else(|| anyhow::anyhow!("unknown task: {task}"))?;
+    let suite_path = suite_path
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| default_suite_path(task));
+    let mut suite = benchmark::BenchmarkSuite::load(&suite_path)?;
+    if suite.task != task {
+        anyhow::bail!(
+            "{} is a benchmark for {:?}, not {task:?}",
+            suite_path.display(),
+            suite.task
+        );
+    }
+
+    // Pinned samples may sit in any split, so search the whole dataset.
+    let splits = prepare_datasets(task, &config.data, data_dir)?;
+    let all: Vec<dataset::Sample> = splits
+        .train
+        .iter()
+        .chain(&splits.val)
+        .chain(&splits.test)
+        .cloned()
+        .collect();
+    let coverage = suite.resolve(&all, |s| s.id.as_str());
+    if coverage.found.is_empty() {
+        anyhow::bail!(
+            "none of the {} pinned samples are in the current dataset",
+            coverage.pinned
+        );
+    }
+
+    // Relabelled samples are scored against the label they were frozen with.
+    let drifted: Vec<&str> = coverage
+        .found
+        .iter()
+        .filter(|(pinned, sample)| pinned.label != sample.label)
+        .map(|(pinned, _)| pinned.id.as_str())
+        .collect();
+
+    let samples: Vec<dataset::Sample> = coverage.found.iter().map(|(_, s)| (*s).clone()).collect();
+    let pinned_actual: Vec<usize> = coverage
+        .found
+        .iter()
+        .map(|(pinned, _)| {
+            suite
+                .label_index(&pinned.label)
+                .ok_or_else(|| anyhow::anyhow!("pinned label {:?} left the suite", pinned.label))
+        })
+        .collect::<anyhow::Result<_>>()?;
+
+    // The model's own class order, not the current dataset's: indices mean
+    // whatever the training run that produced this checkpoint decided.
+    let model_labels: Vec<String> = serde_json::from_str(
+        &std::fs::read_to_string(model_dir.join("labels.json")).map_err(|e| {
+            anyhow::anyhow!(
+                "{}/labels.json is required to know the model's class order: {e}",
+                model_dir.display()
+            )
+        })?,
+    )?;
+    let device = <InferBackend as Backend>::Device::default();
+    let record = CompactRecorder::new()
+        .load(model_dir.join("best_model"), &device)
+        .map_err(|e| anyhow::anyhow!("failed to load model: {e}"))?;
+    let model: PlantCnn<InferBackend> =
+        PlantCnn::new(model_labels.len(), &device).load_record(record);
+
+    let raw = validate::predict(
+        &model,
+        &samples,
+        task_config.input_size,
+        task_config.batch_size,
+    );
+    let (mut predictions, extra_classes) =
+        benchmark::fold_into_label_space(&raw, &model_labels, &suite.labels)?;
+    // Score against the frozen labels, not whatever the dataset says today.
+    for (p, &actual) in predictions.iter_mut().zip(&pinned_actual) {
+        p.actual = actual;
+    }
+
+    let model_version = std::fs::read_to_string(model_dir.join("version.txt"))
+        .map(|v| v.trim().to_string())
+        .unwrap_or_else(|_| {
+            model_dir
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| task.to_string())
+        });
+    let report =
+        crate::eval::EvaluationReport::build(task, &model_version, &predictions, &suite.labels);
+    println!("{}", report.render());
+
+    let mut result = benchmark::gate(&suite, &report, coverage.ratio());
+    if !coverage.missing.is_empty() {
+        result.warnings.push(format!(
+            "{} pinned samples are no longer in the dataset (e.g. {})",
+            coverage.missing.len(),
+            coverage
+                .missing
+                .iter()
+                .take(3)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    if !drifted.is_empty() {
+        result.warnings.push(format!(
+            "{} samples were relabelled since the benchmark was frozen and were scored against the frozen label (e.g. {})",
+            drifted.len(),
+            drifted.iter().take(3).cloned().collect::<Vec<_>>().join(", ")
+        ));
+    }
+    if !extra_classes.is_empty() {
+        result.warnings.push(format!(
+            "the model predicts {} classes the benchmark cannot score: {}",
+            extra_classes.len(),
+            extra_classes.join(", ")
+        ));
+    }
+    println!("{}", result.render());
+
+    std::fs::write(
+        model_dir.join("benchmark_result.json"),
+        serde_json::to_string_pretty(&result)?,
+    )?;
+    std::fs::write(
+        model_dir.join("benchmark_evaluation.json"),
+        serde_json::to_string_pretty(&report)?,
+    )?;
+
+    if result.passed && update_baseline {
+        suite.baseline = Some(benchmark::Baseline::from_report(&report));
+        suite.save(&suite_path)?;
+        println!(
+            "Recorded {} as the new baseline in {}",
+            model_version,
+            suite_path.display()
+        );
+    }
+
+    if !result.passed {
+        // A non-zero exit is what makes this usable as a CI gate.
+        anyhow::bail!("{task}: benchmark gate failed, promotion blocked");
+    }
     Ok(())
 }
 

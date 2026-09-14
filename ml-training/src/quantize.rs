@@ -22,7 +22,7 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use crate::compose::decode_model;
-use crate::onnx_proto::{self as onnx, NodeProto, TensorProto};
+use crate::onnx_proto::{self as onnx, TensorProto};
 
 /// Tensors smaller than this keep full precision.
 pub const DEFAULT_MIN_ELEMENTS: usize = 1024;

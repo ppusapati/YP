@@ -1,147 +1,101 @@
+//! Run a trained model over samples and turn its outputs into an evaluation.
+//!
+//! This module is only the model-running half; every metric lives in
+//! [`crate::eval`], which works on plain [`Prediction`] values so the maths can
+//! be tested without a model or a backend.
+
 use std::collections::HashMap;
+
+use burn::data::dataloader::batcher::Batcher;
 
 use crate::backend::InferBackend;
 use crate::dataset::{PlantBatcher, Sample};
+use crate::eval::{self, EvaluationReport, Prediction};
 use crate::model::PlantCnn;
-use burn::data::dataloader::batcher::Batcher;
 
-pub struct ValidationReport {
-    pub accuracy: f64,
-    pub num_samples: usize,
-    pub per_class: HashMap<String, ClassMetrics>,
+/// Class labels ordered by their index, so position `i` is class `i`.
+pub fn labels_in_order(label_map: &HashMap<String, usize>) -> Vec<String> {
+    // Size by the largest index, not the map length: a map with a gap in its
+    // indices is malformed, but dropping the label past the end would silently
+    // misalign every metric that follows.
+    let width = label_map
+        .values()
+        .map(|&i| i + 1)
+        .max()
+        .unwrap_or(0)
+        .max(label_map.len());
+    let mut labels = vec![String::new(); width];
+    for (name, &idx) in label_map {
+        labels[idx] = name.clone();
+    }
+    for (i, label) in labels.iter_mut().enumerate() {
+        if label.is_empty() {
+            *label = format!("class_{i}");
+        }
+    }
+    labels
 }
 
-pub struct ClassMetrics {
-    pub precision: f64,
-    pub recall: f64,
-    pub f1: f64,
-    pub support: usize,
+/// Run the model over every sample, keeping full probability vectors.
+///
+/// Probabilities, not just the argmax, because calibration is measured on how
+/// much confidence a model claims — an answer the predicted label alone cannot
+/// give.
+pub fn predict(
+    model: &PlantCnn<InferBackend>,
+    samples: &[Sample],
+    input_size: usize,
+    batch_size: usize,
+) -> Vec<Prediction> {
+    let batcher = PlantBatcher::new(input_size);
+    let mut out = Vec::with_capacity(samples.len());
+
+    for chunk in samples.chunks(batch_size.max(1)) {
+        let batch = batcher.batch(chunk.to_vec());
+        let logits = model.forward(batch.images);
+        let [rows, classes] = logits.dims();
+        let flat: Vec<f32> = logits.into_data().to_vec().unwrap();
+
+        for (row, sample) in chunk.iter().enumerate().take(rows) {
+            let probs = eval::softmax(&flat[row * classes..(row + 1) * classes]);
+            out.push(Prediction {
+                id: sample.id.clone(),
+                actual: sample.label_idx,
+                predicted: eval::argmax(&probs),
+                probs,
+                slices: sample.slice_keys(),
+            });
+        }
+    }
+    out
 }
 
-pub fn validate(
+/// Run the model and build the full evaluation report.
+pub fn evaluate(
+    task: &str,
+    model_version: &str,
     model: &PlantCnn<InferBackend>,
     samples: &[Sample],
     label_map: &HashMap<String, usize>,
     input_size: usize,
     batch_size: usize,
-) -> ValidationReport {
-    let batcher = PlantBatcher::new(input_size);
-    let idx_to_label: HashMap<usize, String> =
-        label_map.iter().map(|(k, &v)| (v, k.clone())).collect();
-
-    let num_classes = label_map.len();
-    let mut confusion = vec![vec![0usize; num_classes]; num_classes];
-    let mut correct = 0usize;
-    let mut total = 0usize;
-
-    for chunk in samples.chunks(batch_size) {
-        let batch = batcher.batch(chunk.to_vec());
-        let logits = model.forward(batch.images);
-        let preds = logits.argmax(1).squeeze::<1>(1);
-
-        let pred_data: Vec<i64> = preds.into_data().to_vec().unwrap();
-        let label_data: Vec<i64> = batch.labels.into_data().to_vec().unwrap();
-
-        for (pred, actual) in pred_data.iter().zip(label_data.iter()) {
-            let p = *pred as usize;
-            let a = *actual as usize;
-            if p < num_classes && a < num_classes {
-                confusion[a][p] += 1;
-            }
-            if p == a {
-                correct += 1;
-            }
-            total += 1;
-        }
-    }
-
-    let accuracy = if total > 0 {
-        correct as f64 / total as f64
-    } else {
-        0.0
-    };
-
-    let mut per_class = HashMap::new();
-    for class_idx in 0..num_classes {
-        let true_pos = confusion[class_idx][class_idx] as f64;
-        let actual_total: f64 = confusion[class_idx].iter().sum::<usize>() as f64;
-        let predicted_total: f64 = confusion.iter().map(|row| row[class_idx]).sum::<usize>() as f64;
-
-        let precision = if predicted_total > 0.0 {
-            true_pos / predicted_total
-        } else {
-            0.0
-        };
-        let recall = if actual_total > 0.0 {
-            true_pos / actual_total
-        } else {
-            0.0
-        };
-        let f1 = if precision + recall > 0.0 {
-            2.0 * precision * recall / (precision + recall)
-        } else {
-            0.0
-        };
-
-        let label = idx_to_label
-            .get(&class_idx)
-            .cloned()
-            .unwrap_or_else(|| format!("class_{class_idx}"));
-        per_class.insert(
-            label,
-            ClassMetrics {
-                precision,
-                recall,
-                f1,
-                support: actual_total as usize,
-            },
-        );
-    }
-
-    ValidationReport {
-        accuracy,
-        num_samples: total,
-        per_class,
-    }
+) -> EvaluationReport {
+    let labels = labels_in_order(label_map);
+    let predictions = predict(model, samples, input_size, batch_size);
+    EvaluationReport::build(task, model_version, &predictions, &labels)
 }
 
-pub fn print_report(report: &ValidationReport) {
-    println!(
-        "\n{:<30} {:>10} {:>10} {:>10} {:>10}",
-        "Class", "Precision", "Recall", "F1", "Support"
-    );
-    println!("{}", "-".repeat(72));
-
-    let mut classes: Vec<_> = report.per_class.iter().collect();
-    classes.sort_by_key(|(name, _)| name.clone());
-
-    for (name, metrics) in &classes {
-        println!(
-            "{:<30} {:>10.4} {:>10.4} {:>10.4} {:>10}",
-            name, metrics.precision, metrics.recall, metrics.f1, metrics.support
-        );
-    }
-
-    println!("{}", "-".repeat(72));
-    println!(
-        "Overall accuracy: {:.4} ({}/{})",
-        report.accuracy,
-        (report.accuracy * report.num_samples as f64) as usize,
-        report.num_samples
-    );
-
-    let macro_f1: f64 =
-        report.per_class.values().map(|m| m.f1).sum::<f64>() / report.per_class.len() as f64;
-    println!("Macro F1: {macro_f1:.4}");
+/// Print an evaluation to stdout.
+pub fn print_report(report: &EvaluationReport) {
+    println!("{}", report.render());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dataset::Sample;
+    use crate::dataset::{Capture, Sample};
     use crate::model::PlantCnn;
     use burn_ndarray::NdArray;
-    use std::collections::HashMap;
     use std::path::PathBuf;
 
     fn make_samples(labels: &[(usize, &str)]) -> Vec<Sample> {
@@ -156,46 +110,93 @@ mod tests {
                 confidence: 0.95,
                 weight: 1.0,
                 provenance: "external_api".to_string(),
-                crop: String::new(),
+                crop: "wheat".to_string(),
                 reviewed: false,
+                capture: Capture {
+                    latitude: 18.5,
+                    longitude: 78.4,
+                    timestamp: "2026-07-01T00:00:00Z".to_string(),
+                },
             })
             .collect()
     }
 
+    fn label_map(names: &[&str]) -> HashMap<String, usize> {
+        names
+            .iter()
+            .enumerate()
+            .map(|(i, n)| (n.to_string(), i))
+            .collect()
+    }
+
+    #[test]
+    fn labels_come_back_in_index_order() {
+        let map = label_map(&["blight", "healthy", "rust"]);
+        assert_eq!(labels_in_order(&map), vec!["blight", "healthy", "rust"]);
+
+        // A gap in the indices must not panic or silently shift labels.
+        let mut sparse = HashMap::new();
+        sparse.insert("a".to_string(), 0usize);
+        sparse.insert("b".to_string(), 2usize);
+        assert_eq!(labels_in_order(&sparse), vec!["a", "class_1", "b"]);
+    }
+
     #[test]
     fn single_class_perfect_accuracy() {
-        // With 1 output class, argmax always returns 0, so all predictions
-        // match label_idx 0 and accuracy is 1.0.
+        // With one output class, argmax is always 0, so every prediction
+        // matches label_idx 0.
         let device = Default::default();
         let model: PlantCnn<NdArray> = PlantCnn::new(1, &device);
+        let samples = make_samples(&[(0, "healthy"); 4]);
 
-        let samples = make_samples(&[
-            (0, "healthy"),
-            (0, "healthy"),
-            (0, "healthy"),
-            (0, "healthy"),
-        ]);
-        let mut label_map = HashMap::new();
-        label_map.insert("healthy".to_string(), 0usize);
+        let report = evaluate(
+            "disease",
+            "v1",
+            &model,
+            &samples,
+            &label_map(&["healthy"]),
+            32,
+            2,
+        );
 
-        let report = validate(&model, &samples, &label_map, 32, 2);
-
-        assert_eq!(report.num_samples, 4);
+        assert_eq!(report.n_samples, 4);
         assert!((report.accuracy - 1.0).abs() < f64::EPSILON);
         assert_eq!(report.per_class.len(), 1);
+        assert_eq!(report.per_class[0].support, 4);
+        assert!((report.per_class[0].f1 - 1.0).abs() < f64::EPSILON);
+        assert!(report.top_confusions.is_empty());
+    }
 
-        let m = &report.per_class["healthy"];
-        assert!((m.precision - 1.0).abs() < f64::EPSILON);
-        assert!((m.recall - 1.0).abs() < f64::EPSILON);
-        assert!((m.f1 - 1.0).abs() < f64::EPSILON);
-        assert_eq!(m.support, 4);
+    #[test]
+    fn predictions_carry_probabilities_and_slice_keys() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(3, &device);
+        let samples = make_samples(&[(0, "healthy"), (1, "rust"), (2, "blight")]);
+
+        let preds = predict(&model, &samples, 32, 2);
+        assert_eq!(preds.len(), 3);
+        for p in &preds {
+            assert_eq!(p.probs.len(), 3);
+            assert!((p.probs.iter().sum::<f64>() - 1.0).abs() < 1e-9);
+            assert!(p.probs.iter().all(|v| (0.0..=1.0).contains(v)));
+            assert_eq!(p.predicted, eval::argmax(&p.probs));
+            // Slice metadata travels with the prediction.
+            assert_eq!(p.slices.get("crop").map(String::as_str), Some("wheat"));
+            assert_eq!(
+                p.slices.get("source").map(String::as_str),
+                Some("external_api")
+            );
+            assert_eq!(p.slices.get("season").map(String::as_str), Some("summer"));
+            assert!(p.slices.contains_key("region"));
+        }
+        // Ids are preserved so a prediction can be traced back to its image.
+        assert_eq!(preds[0].id, "s0");
     }
 
     #[test]
     fn report_structure_multi_class() {
         let device = Default::default();
         let model: PlantCnn<NdArray> = PlantCnn::new(3, &device);
-
         let samples = make_samples(&[
             (0, "healthy"),
             (0, "healthy"),
@@ -204,65 +205,75 @@ mod tests {
             (2, "blight"),
             (2, "blight"),
         ]);
-        let mut label_map = HashMap::new();
-        label_map.insert("healthy".to_string(), 0);
-        label_map.insert("rust".to_string(), 1);
-        label_map.insert("blight".to_string(), 2);
 
-        let report = validate(&model, &samples, &label_map, 32, 4);
+        let report = evaluate(
+            "disease",
+            "v1",
+            &model,
+            &samples,
+            &label_map(&["healthy", "rust", "blight"]),
+            32,
+            4,
+        );
 
-        assert_eq!(report.num_samples, 6);
-        assert!(report.accuracy >= 0.0 && report.accuracy <= 1.0);
+        assert_eq!(report.n_samples, 6);
+        assert!((0.0..=1.0).contains(&report.accuracy));
         assert_eq!(report.per_class.len(), 3);
+        assert_eq!(report.confusion.total(), 6);
 
-        // Support values must sum to total samples
-        let total_support: usize = report.per_class.values().map(|m| m.support).sum();
+        let total_support: usize = report.per_class.iter().map(|m| m.support).sum();
         assert_eq!(total_support, 6);
 
-        for (name, m) in &report.per_class {
-            assert!(
-                m.precision >= 0.0 && m.precision <= 1.0,
-                "{name} precision out of range"
-            );
-            assert!(
-                m.recall >= 0.0 && m.recall <= 1.0,
-                "{name} recall out of range"
-            );
-            assert!(m.f1 >= 0.0 && m.f1 <= 1.0, "{name} f1 out of range");
-            assert!(m.support > 0, "{name} should have positive support");
+        for m in &report.per_class {
+            assert!((0.0..=1.0).contains(&m.precision), "{} precision", m.label);
+            assert!((0.0..=1.0).contains(&m.recall), "{} recall", m.label);
+            assert!((0.0..=1.0).contains(&m.f1), "{} f1", m.label);
+            assert_eq!(m.support, 2);
         }
-    }
 
-    #[test]
-    fn report_individual_class_support() {
-        let device = Default::default();
-        let model: PlantCnn<NdArray> = PlantCnn::new(2, &device);
-
-        // 3 samples of class 0, 1 sample of class 1
-        let samples = make_samples(&[(0, "a"), (0, "a"), (0, "a"), (1, "b")]);
-        let mut label_map = HashMap::new();
-        label_map.insert("a".to_string(), 0);
-        label_map.insert("b".to_string(), 1);
-
-        let report = validate(&model, &samples, &label_map, 32, 4);
-
-        assert_eq!(report.num_samples, 4);
-        assert_eq!(report.per_class["a"].support, 3);
-        assert_eq!(report.per_class["b"].support, 1);
+        // Calibration is computed over the same samples.
+        assert_eq!(report.calibration.n, 6);
+        assert!(report.calibration.ece >= 0.0);
+        assert!(report.suggested_temperature > 0.0);
     }
 
     #[test]
     fn validate_handles_multiple_batches() {
         let device = Default::default();
-        let model: PlantCnn<NdArray> = PlantCnn::new(1, &device);
+        let model: PlantCnn<NdArray> = PlantCnn::new(2, &device);
+        let samples = make_samples(&[(0, "healthy"); 7]);
 
-        // 5 samples with batch_size=2 means 3 batches (2+2+1)
-        let samples = make_samples(&[(0, "x"), (0, "x"), (0, "x"), (0, "x"), (0, "x")]);
-        let mut label_map = HashMap::new();
-        label_map.insert("x".to_string(), 0);
+        // A batch size that does not divide the sample count must not drop the
+        // remainder.
+        let report = evaluate(
+            "disease",
+            "v1",
+            &model,
+            &samples,
+            &label_map(&["healthy", "rust"]),
+            32,
+            3,
+        );
+        assert_eq!(report.n_samples, 7);
+        assert_eq!(report.confusion.total(), 7);
+    }
 
-        let report = validate(&model, &samples, &label_map, 32, 2);
-        assert_eq!(report.num_samples, 5);
-        assert!((report.accuracy - 1.0).abs() < f64::EPSILON);
+    #[test]
+    fn empty_sample_set_is_reported_not_panicked() {
+        let device = Default::default();
+        let model: PlantCnn<NdArray> = PlantCnn::new(2, &device);
+
+        let report = evaluate(
+            "disease",
+            "v1",
+            &model,
+            &[],
+            &label_map(&["healthy", "rust"]),
+            32,
+            4,
+        );
+        assert_eq!(report.n_samples, 0);
+        assert_eq!(report.accuracy, 0.0);
+        assert!(report.slices.is_empty());
     }
 }

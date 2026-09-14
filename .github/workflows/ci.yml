@@ -198,6 +198,52 @@ jobs:
         working-directory: rust-engines
         run: cargo test --workspace
 
+  ml-training:
+    name: ML training check & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # tract pulls in kstring, which needs a newer toolchain than the
+          # other Rust jobs pin.
+          toolchain: "1.91"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ml-training
+      - name: Cargo check
+        working-directory: ml-training
+        run: cargo check --all-targets
+      - name: Cargo test
+        working-directory: ml-training
+        run: cargo test
+
+  model-gate:
+    name: Model benchmark regression gate
+    runs-on: ubuntu-latest
+    needs: [ml-training]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.91"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ml-training
+      # Candidate models are build artifacts, not repository content. When a
+      # training pipeline uploads them under this name the gate runs for real;
+      # otherwise every task is skipped and the job passes, so the gate never
+      # blocks a change that did not touch a model.
+      - name: Download candidate models
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: candidate-models
+          path: ml-training/models
+      - name: Run benchmark gates
+        working-directory: ml-training
+        run: scripts/model-gate.sh models benchmarks
+
   rust-ai-gateway:
     name: Rust AI gateway check & test
     runs-on: ubuntu-latest
