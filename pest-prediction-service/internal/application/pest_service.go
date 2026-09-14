@@ -29,14 +29,15 @@ const (
 )
 
 type pestService struct {
-	repo         outbound.PestRepository
-	pub          outbound.EventPublisher
-	fieldClient  outbound.FieldClient
-	sensorClient outbound.SensorClient
-	farmClient   outbound.FarmClient
-	pool         *pgxpool.Pool
-	log          *p9log.Helper
-	aiClient     *ai.AIClient
+	repo          outbound.PestRepository
+	pub           outbound.EventPublisher
+	fieldClient   outbound.FieldClient
+	sensorClient  outbound.SensorClient
+	farmClient    outbound.FarmClient
+	pool          *pgxpool.Pool
+	log           *p9log.Helper
+	aiClient      *ai.AIClient
+	weatherClient outbound.WeatherClient
 }
 
 // NewPestService creates a new application-layer PestService.
@@ -49,16 +50,18 @@ func NewPestService(
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 	aiClient *ai.AIClient,
+	weatherClient outbound.WeatherClient,
 ) inbound.PestService {
 	return &pestService{
-		repo:         repo,
-		pub:          pub,
-		fieldClient:  fieldClient,
-		sensorClient: sensorClient,
-		farmClient:   farmClient,
-		pool:         pool,
-		log:          p9log.NewHelper(p9log.With(log, "component", "PestService")),
-		aiClient:     aiClient,
+		repo:          repo,
+		pub:           pub,
+		fieldClient:   fieldClient,
+		sensorClient:  sensorClient,
+		farmClient:    farmClient,
+		pool:          pool,
+		log:           p9log.NewHelper(p9log.With(log, "component", "PestService")),
+		aiClient:      aiClient,
+		weatherClient: weatherClient,
 	}
 }
 
@@ -79,6 +82,25 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 		userID = "system"
 	}
 	params.TenantID = tenantID
+
+	// Weather is a property of the field, not of whoever is calling. Look it up
+	// so a caller cannot move the risk score by sending stale or wrong numbers;
+	// what they supplied is used only when the lookup is unavailable.
+	if s.weatherClient != nil && params.FieldID != "" {
+		observed, err := s.weatherClient.CurrentWeather(ctx, params.FieldID)
+		switch {
+		case err != nil:
+			s.log.Warnw("msg", "weather lookup failed; using the weather supplied with the request",
+				"field_id", params.FieldID, "error", err)
+		case observed != nil:
+			params.Weather = domain.WeatherFactors{
+				TemperatureCelsius: observed.TemperatureCelsius,
+				HumidityPct:        observed.HumidityPct,
+				RainfallMm:         observed.RainfallMm,
+				WindSpeedKmh:       observed.WindSpeedKmh,
+			}
+		}
+	}
 
 	// Ask the AI gateway first: it scores the field from the same weather plus
 	// soil, growth and any detections, which the local rules cannot see. The

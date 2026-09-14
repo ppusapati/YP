@@ -233,6 +233,21 @@ func testContext(tenantID, userID string) context.Context {
 	return ctx
 }
 
+// ---------------------------------------------------------------------------
+// Mock: WeatherClient
+// ---------------------------------------------------------------------------
+
+type mockWeatherClient struct {
+	weather *outbound.FieldWeather
+	err     error
+	calls   []string
+}
+
+func (m *mockWeatherClient) CurrentWeather(_ context.Context, fieldID string) (*outbound.FieldWeather, error) {
+	m.calls = append(m.calls, fieldID)
+	return m.weather, m.err
+}
+
 func newService() (*mockPestRepo, *mockEventPublisher, *pestService) {
 	repo := newMockPestRepo()
 	pub := &mockEventPublisher{}
@@ -244,8 +259,25 @@ func newService() (*mockPestRepo, *mockEventPublisher, *pestService) {
 		nil,
 		nopLogger{},
 		nil,
+		nil,
 	).(*pestService)
 	return repo, pub, svc
+}
+
+// newServiceWithWeather builds the service with a stub weather lookup.
+func newServiceWithWeather(w *mockWeatherClient) (*mockPestRepo, *pestService) {
+	repo := newMockPestRepo()
+	svc := NewPestService(
+		repo, &mockEventPublisher{},
+		&mockFieldClient{existing: map[string]bool{"field-001": true}},
+		&mockSensorClient{},
+		&mockFarmClient{},
+		nil,
+		nopLogger{},
+		nil,
+		w,
+	).(*pestService)
+	return repo, svc
 }
 
 // ---------------------------------------------------------------------------
@@ -805,4 +837,75 @@ func TestAlertMessage(t *testing.T) {
 	// An alert carrying no message is skipped rather than producing an empty
 	// sentence.
 	assert.Equal(t, plain, alertMessage(72, []ai.FieldAlert{{Title: "x"}}))
+}
+
+func TestPredictPestRisk_PrefersTheFieldsOwnWeather(t *testing.T) {
+	// The caller sends conditions pests hate; the field's own observations say
+	// warm, humid and wet. The field wins — otherwise a caller could move the
+	// risk score simply by sending different numbers.
+	weather := &mockWeatherClient{weather: &outbound.FieldWeather{
+		TemperatureCelsius: 28,
+		HumidityPct:        85,
+		RainfallMm:         60,
+		WindSpeedKmh:       4,
+	}}
+	repo, svc := newServiceWithWeather(weather)
+	ctx := testContext("tenant-1", "user-1")
+
+	got, err := svc.PredictPestRisk(ctx, &domain.PredictPestRiskParams{
+		FarmID:   "farm-1",
+		FieldID:  "field-001",
+		CropType: "wheat",
+		Weather: domain.WeatherFactors{
+			TemperatureCelsius: -5,
+			HumidityPct:        5,
+			RainfallMm:         0,
+			WindSpeedKmh:       80,
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"field-001"}, weather.calls)
+
+	// Stored against what was observed, not what was sent.
+	require.NotNil(t, got.TemperatureCelsius)
+	assert.InDelta(t, 28.0, *got.TemperatureCelsius, 1e-9)
+	assert.Greater(t, got.RiskScore, 50, "warm, humid and wet is high pest risk")
+	assert.NotEmpty(t, repo.predictions)
+}
+
+func TestPredictPestRisk_FallsBackWhenTheLookupFails(t *testing.T) {
+	// Weather service down: the request's own numbers are used rather than
+	// refusing to answer at all.
+	weather := &mockWeatherClient{err: fmt.Errorf("weather service unavailable")}
+	_, svc := newServiceWithWeather(weather)
+	ctx := testContext("tenant-1", "user-1")
+
+	got, err := svc.PredictPestRisk(ctx, &domain.PredictPestRiskParams{
+		FarmID:   "farm-1",
+		FieldID:  "field-001",
+		CropType: "wheat",
+		Weather: domain.WeatherFactors{
+			TemperatureCelsius: 28,
+			HumidityPct:        85,
+			RainfallMm:         60,
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, got.TemperatureCelsius)
+	assert.InDelta(t, 28.0, *got.TemperatureCelsius, 1e-9)
+	assert.Greater(t, got.RiskScore, 50)
+}
+
+func TestPredictPestRisk_SkipsTheLookupWithoutAFieldID(t *testing.T) {
+	// Nothing to look weather up for; the request's numbers stand.
+	weather := &mockWeatherClient{weather: &outbound.FieldWeather{TemperatureCelsius: 99}}
+	_, svc := newServiceWithWeather(weather)
+
+	_, err := svc.PredictPestRisk(testContext("tenant-1", "user-1"), &domain.PredictPestRiskParams{
+		FarmID:   "farm-1",
+		CropType: "wheat",
+		Weather:  domain.WeatherFactors{TemperatureCelsius: 22},
+	})
+	require.NoError(t, err)
+	assert.Empty(t, weather.calls, "no field id means no lookup")
 }

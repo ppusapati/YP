@@ -342,6 +342,9 @@ services:
       FIELD_SERVICE_URL: http://field-service:8080
       SENSOR_SERVICE_URL: http://sensor-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      # Without this, pest risk uses whatever weather the caller sent rather
+      # than the field's own observations.
+      WEATHER_SERVICE_URL: http://weather-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
 
   plant-diagnosis-service:
