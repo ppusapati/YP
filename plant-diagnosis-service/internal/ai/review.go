@@ -23,6 +23,8 @@ type ListSamplesQuery struct {
 	Order         string // "confidence_asc" (default), "newest", "suspect_first"
 	// SuspectOnly restricts the queue to labels a trained model contradicted.
 	SuspectOnly bool
+	// SecondOpinionOnly restricts it to samples waiting on another reviewer.
+	SecondOpinionOnly bool
 }
 
 // SampleReview is a reviewer's decision to record on a sample.
@@ -46,16 +48,17 @@ func (c *AIClient) ListTrainingSamples(ctx context.Context, q ListSamplesQuery) 
 	var page *SamplePage
 	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
 		resp, err := gatewayClient(c.conn).ListTrainingSamples(cbCtx, &aipb.ListTrainingSamplesRequest{
-			Task:          q.Task,
-			ReviewStatus:  q.ReviewStatus,
-			TenantId:      q.TenantID,
-			MinConfidence: q.MinConfidence,
-			MaxConfidence: q.MaxConfidence,
-			Provenance:    q.Provenance,
-			PageSize:      q.PageSize,
-			PageOffset:    q.PageOffset,
-			Order:         q.Order,
-			SuspectOnly:   q.SuspectOnly,
+			Task:              q.Task,
+			ReviewStatus:      q.ReviewStatus,
+			TenantId:          q.TenantID,
+			MinConfidence:     q.MinConfidence,
+			MaxConfidence:     q.MaxConfidence,
+			Provenance:        q.Provenance,
+			PageSize:          q.PageSize,
+			PageOffset:        q.PageOffset,
+			Order:             q.Order,
+			SuspectOnly:       q.SuspectOnly,
+			SecondOpinionOnly: q.SecondOpinionOnly,
 		})
 		if err != nil {
 			return fmt.Errorf("ListTrainingSamples RPC failed: %w", err)
@@ -126,4 +129,47 @@ func (c *AIClient) GetTrainingSampleImage(ctx context.Context, task, sampleID, t
 		return nil, "", err
 	}
 	return data, mime, nil
+}
+
+// RequestSecondOpinion flags a sample as wanting another reviewer, or clears
+// the flag once the question is settled.
+func (c *AIClient) RequestSecondOpinion(ctx context.Context, task, sampleID, tenantID string, wanted bool) (*aipb.TrainingSampleInfo, error) {
+	var sample *aipb.TrainingSampleInfo
+	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
+		resp, err := gatewayClient(c.conn).RequestSecondOpinion(cbCtx, &aipb.RequestSecondOpinionRequest{
+			Task:     task,
+			SampleId: sampleID,
+			TenantId: tenantID,
+			Wanted:   wanted,
+		})
+		if err != nil {
+			return fmt.Errorf("RequestSecondOpinion RPC failed: %w", err)
+		}
+		sample = resp.GetSample()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return sample, nil
+}
+
+// ReviewAgreement reports how much reviewers agree on a task's labels.
+func (c *AIClient) ReviewAgreement(ctx context.Context, task, tenantID string) (*aipb.ReviewAgreement, error) {
+	var out *aipb.ReviewAgreement
+	err := c.cb.Execute(ctx, func(cbCtx context.Context) error {
+		resp, err := gatewayClient(c.conn).GetReviewAgreement(cbCtx, &aipb.GetReviewAgreementRequest{
+			Task:     task,
+			TenantId: tenantID,
+		})
+		if err != nil {
+			return fmt.Errorf("GetReviewAgreement RPC failed: %w", err)
+		}
+		out = resp.GetAgreement()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }

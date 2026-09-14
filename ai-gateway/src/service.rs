@@ -796,6 +796,7 @@ impl AiGatewayService for AiGatewayServiceImpl {
                 other => return Err(Status::invalid_argument(format!("unknown order {other:?}"))),
             },
             suspect_only: req.suspect_only,
+            second_opinion_only: req.second_opinion_only,
             offset: req.page_offset.max(0) as usize,
             limit: req.page_size.max(0) as usize,
         };
@@ -863,6 +864,61 @@ impl AiGatewayService for AiGatewayServiceImpl {
         Ok(Response::new(proto::GetTrainingSampleImageResponse {
             image_bytes: bytes,
             mime_type: mime.to_string(),
+        }))
+    }
+
+    async fn request_second_opinion(
+        &self,
+        request: Request<proto::RequestSecondOpinionRequest>,
+    ) -> Result<Response<proto::RequestSecondOpinionResponse>, Status> {
+        let req = request.into_inner();
+        let collector = self.data_collector.clone();
+        let sample = tokio::task::spawn_blocking(move || {
+            if req.wanted {
+                collector.request_second_opinion(&req.task, &req.sample_id, &req.tenant_id)
+            } else {
+                collector.clear_second_opinion(&req.task, &req.sample_id, &req.tenant_id)
+            }
+        })
+        .await
+        .map_err(|e| Status::internal(format!("join error: {e}")))?
+        .map_err(Self::review_error)?;
+
+        Ok(Response::new(proto::RequestSecondOpinionResponse {
+            sample: Some(sample.to_proto()),
+        }))
+    }
+
+    async fn get_review_agreement(
+        &self,
+        request: Request<proto::GetReviewAgreementRequest>,
+    ) -> Result<Response<proto::GetReviewAgreementResponse>, Status> {
+        let req = request.into_inner();
+        let collector = self.data_collector.clone();
+        let tenant = (!req.tenant_id.is_empty()).then_some(req.tenant_id.clone());
+        let report = tokio::task::spawn_blocking(move || {
+            collector.review_agreement(&req.task, tenant.as_deref())
+        })
+        .await
+        .map_err(|e| Status::internal(format!("join error: {e}")))?
+        .map_err(Self::review_error)?;
+
+        Ok(Response::new(proto::GetReviewAgreementResponse {
+            agreement: Some(proto::ReviewAgreement {
+                compared: report.compared as i32,
+                raw_agreement: report.raw_agreement,
+                kappa: report.kappa,
+                strength: report.strength,
+                disagreements: report
+                    .disagreements
+                    .into_iter()
+                    .map(|d| proto::LabelDisagreement {
+                        first: d.first,
+                        second: d.second,
+                        count: d.count as i32,
+                    })
+                    .collect(),
+            }),
         }))
     }
 }

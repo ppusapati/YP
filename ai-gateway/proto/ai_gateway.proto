@@ -60,6 +60,8 @@ service AIGatewayService {
   rpc ListTrainingSamples(ListTrainingSamplesRequest) returns (ListTrainingSamplesResponse);
   rpc SubmitLabelReview(SubmitLabelReviewRequest) returns (SubmitLabelReviewResponse);
   rpc GetTrainingSampleImage(GetTrainingSampleImageRequest) returns (GetTrainingSampleImageResponse);
+  rpc RequestSecondOpinion(RequestSecondOpinionRequest) returns (RequestSecondOpinionResponse);
+  rpc GetReviewAgreement(GetReviewAgreementRequest) returns (GetReviewAgreementResponse);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,6 +246,51 @@ message TrainingSampleInfo {
   LabelReview review = 9;     // unset when not yet reviewed
   string effective_label = 10; // label after applying any review
   LabelSuspicion suspect = 11; // unset unless a trained model contradicted it
+  // True when this sample wants another pair of eyes, because a reviewer asked
+  // or because two reviewers already disagreed.
+  bool needs_second_opinion = 12;
+  // Every review, oldest first. `review` above stays the most recent.
+  repeated LabelReview reviews = 13;
+}
+
+// How much two reviewers agree, and whether that is more than chance.
+//
+// Raw agreement flatters an imbalanced labelling task: two reviewers who both
+// answer "healthy" on a set that is ninety percent healthy agree ninety percent
+// of the time having demonstrated nothing. Kappa measures agreement above what
+// their individual answer rates would produce by chance.
+message ReviewAgreement {
+  int32 compared = 1;          // samples two people both reviewed
+  double raw_agreement = 2;    // share where they chose the same label
+  double kappa = 3;            // Cohen's kappa
+  string strength = 4;         // plain reading of the kappa
+  repeated LabelDisagreement disagreements = 5;
+}
+
+message LabelDisagreement {
+  string first = 1;
+  string second = 2;
+  int32 count = 3;
+}
+
+message RequestSecondOpinionRequest {
+  string task = 1;
+  string sample_id = 2;
+  string tenant_id = 3;
+  bool wanted = 4; // false clears the flag
+}
+
+message RequestSecondOpinionResponse {
+  TrainingSampleInfo sample = 1;
+}
+
+message GetReviewAgreementRequest {
+  string task = 1;
+  string tenant_id = 2; // optional filter
+}
+
+message GetReviewAgreementResponse {
+  ReviewAgreement agreement = 1;
 }
 
 message ListTrainingSamplesRequest {
@@ -257,6 +304,7 @@ message ListTrainingSamplesRequest {
   int32 page_offset = 8;
   string order = 9;           // "confidence_asc" (default; active learning), "newest", "suspect_first"
   bool suspect_only = 10;     // only samples a trained model contradicted
+  bool second_opinion_only = 11; // only samples waiting on another reviewer
 }
 
 message ListTrainingSamplesResponse {

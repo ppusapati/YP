@@ -69,6 +69,12 @@ const (
 	// PlantDiagnosisServiceGetLabelReviewImageProcedure is the fully-qualified name of the
 	// PlantDiagnosisService's GetLabelReviewImage RPC.
 	PlantDiagnosisServiceGetLabelReviewImageProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/GetLabelReviewImage"
+	// PlantDiagnosisServiceRequestSecondOpinionProcedure is the fully-qualified name of the
+	// PlantDiagnosisService's RequestSecondOpinion RPC.
+	PlantDiagnosisServiceRequestSecondOpinionProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/RequestSecondOpinion"
+	// PlantDiagnosisServiceGetReviewAgreementProcedure is the fully-qualified name of the
+	// PlantDiagnosisService's GetReviewAgreement RPC.
+	PlantDiagnosisServiceGetReviewAgreementProcedure = "/agriculture.diagnosis.v1.PlantDiagnosisService/GetReviewAgreement"
 )
 
 // PlantDiagnosisServiceClient is a client for the agriculture.diagnosis.v1.PlantDiagnosisService
@@ -98,6 +104,8 @@ type PlantDiagnosisServiceClient interface {
 	SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error)
 	// Fetch the image behind a review-queue sample
 	GetLabelReviewImage(context.Context, *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error)
+	RequestSecondOpinion(context.Context, *connect.Request[v1.RequestSecondOpinionRequest]) (*connect.Response[v1.RequestSecondOpinionResponse], error)
+	GetReviewAgreement(context.Context, *connect.Request[v1.GetReviewAgreementRequest]) (*connect.Response[v1.GetReviewAgreementResponse], error)
 }
 
 // NewPlantDiagnosisServiceClient constructs a client for the
@@ -184,6 +192,18 @@ func NewPlantDiagnosisServiceClient(httpClient connect.HTTPClient, baseURL strin
 			connect.WithSchema(plantDiagnosisServiceMethods.ByName("GetLabelReviewImage")),
 			connect.WithClientOptions(opts...),
 		),
+		requestSecondOpinion: connect.NewClient[v1.RequestSecondOpinionRequest, v1.RequestSecondOpinionResponse](
+			httpClient,
+			baseURL+PlantDiagnosisServiceRequestSecondOpinionProcedure,
+			connect.WithSchema(plantDiagnosisServiceMethods.ByName("RequestSecondOpinion")),
+			connect.WithClientOptions(opts...),
+		),
+		getReviewAgreement: connect.NewClient[v1.GetReviewAgreementRequest, v1.GetReviewAgreementResponse](
+			httpClient,
+			baseURL+PlantDiagnosisServiceGetReviewAgreementProcedure,
+			connect.WithSchema(plantDiagnosisServiceMethods.ByName("GetReviewAgreement")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -201,6 +221,8 @@ type plantDiagnosisServiceClient struct {
 	listLabelReviewQueue     *connect.Client[v1.ListLabelReviewQueueRequest, v1.ListLabelReviewQueueResponse]
 	submitLabelReview        *connect.Client[v1.SubmitLabelReviewRequest, v1.SubmitLabelReviewResponse]
 	getLabelReviewImage      *connect.Client[v1.GetLabelReviewImageRequest, v1.GetLabelReviewImageResponse]
+	requestSecondOpinion     *connect.Client[v1.RequestSecondOpinionRequest, v1.RequestSecondOpinionResponse]
+	getReviewAgreement       *connect.Client[v1.GetReviewAgreementRequest, v1.GetReviewAgreementResponse]
 }
 
 // SubmitDiagnosis calls agriculture.diagnosis.v1.PlantDiagnosisService.SubmitDiagnosis.
@@ -264,6 +286,16 @@ func (c *plantDiagnosisServiceClient) GetLabelReviewImage(ctx context.Context, r
 	return c.getLabelReviewImage.CallUnary(ctx, req)
 }
 
+// RequestSecondOpinion calls agriculture.diagnosis.v1.PlantDiagnosisService.RequestSecondOpinion.
+func (c *plantDiagnosisServiceClient) RequestSecondOpinion(ctx context.Context, req *connect.Request[v1.RequestSecondOpinionRequest]) (*connect.Response[v1.RequestSecondOpinionResponse], error) {
+	return c.requestSecondOpinion.CallUnary(ctx, req)
+}
+
+// GetReviewAgreement calls agriculture.diagnosis.v1.PlantDiagnosisService.GetReviewAgreement.
+func (c *plantDiagnosisServiceClient) GetReviewAgreement(ctx context.Context, req *connect.Request[v1.GetReviewAgreementRequest]) (*connect.Response[v1.GetReviewAgreementResponse], error) {
+	return c.getReviewAgreement.CallUnary(ctx, req)
+}
+
 // PlantDiagnosisServiceHandler is an implementation of the
 // agriculture.diagnosis.v1.PlantDiagnosisService service.
 type PlantDiagnosisServiceHandler interface {
@@ -291,6 +323,8 @@ type PlantDiagnosisServiceHandler interface {
 	SubmitLabelReview(context.Context, *connect.Request[v1.SubmitLabelReviewRequest]) (*connect.Response[v1.SubmitLabelReviewResponse], error)
 	// Fetch the image behind a review-queue sample
 	GetLabelReviewImage(context.Context, *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error)
+	RequestSecondOpinion(context.Context, *connect.Request[v1.RequestSecondOpinionRequest]) (*connect.Response[v1.RequestSecondOpinionResponse], error)
+	GetReviewAgreement(context.Context, *connect.Request[v1.GetReviewAgreementRequest]) (*connect.Response[v1.GetReviewAgreementResponse], error)
 }
 
 // NewPlantDiagnosisServiceHandler builds an HTTP handler from the service implementation. It
@@ -372,6 +406,18 @@ func NewPlantDiagnosisServiceHandler(svc PlantDiagnosisServiceHandler, opts ...c
 		connect.WithSchema(plantDiagnosisServiceMethods.ByName("GetLabelReviewImage")),
 		connect.WithHandlerOptions(opts...),
 	)
+	plantDiagnosisServiceRequestSecondOpinionHandler := connect.NewUnaryHandler(
+		PlantDiagnosisServiceRequestSecondOpinionProcedure,
+		svc.RequestSecondOpinion,
+		connect.WithSchema(plantDiagnosisServiceMethods.ByName("RequestSecondOpinion")),
+		connect.WithHandlerOptions(opts...),
+	)
+	plantDiagnosisServiceGetReviewAgreementHandler := connect.NewUnaryHandler(
+		PlantDiagnosisServiceGetReviewAgreementProcedure,
+		svc.GetReviewAgreement,
+		connect.WithSchema(plantDiagnosisServiceMethods.ByName("GetReviewAgreement")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/agriculture.diagnosis.v1.PlantDiagnosisService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PlantDiagnosisServiceSubmitDiagnosisProcedure:
@@ -398,6 +444,10 @@ func NewPlantDiagnosisServiceHandler(svc PlantDiagnosisServiceHandler, opts ...c
 			plantDiagnosisServiceSubmitLabelReviewHandler.ServeHTTP(w, r)
 		case PlantDiagnosisServiceGetLabelReviewImageProcedure:
 			plantDiagnosisServiceGetLabelReviewImageHandler.ServeHTTP(w, r)
+		case PlantDiagnosisServiceRequestSecondOpinionProcedure:
+			plantDiagnosisServiceRequestSecondOpinionHandler.ServeHTTP(w, r)
+		case PlantDiagnosisServiceGetReviewAgreementProcedure:
+			plantDiagnosisServiceGetReviewAgreementHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -453,4 +503,12 @@ func (UnimplementedPlantDiagnosisServiceHandler) SubmitLabelReview(context.Conte
 
 func (UnimplementedPlantDiagnosisServiceHandler) GetLabelReviewImage(context.Context, *connect.Request[v1.GetLabelReviewImageRequest]) (*connect.Response[v1.GetLabelReviewImageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage is not implemented"))
+}
+
+func (UnimplementedPlantDiagnosisServiceHandler) RequestSecondOpinion(context.Context, *connect.Request[v1.RequestSecondOpinionRequest]) (*connect.Response[v1.RequestSecondOpinionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.RequestSecondOpinion is not implemented"))
+}
+
+func (UnimplementedPlantDiagnosisServiceHandler) GetReviewAgreement(context.Context, *connect.Request[v1.GetReviewAgreementRequest]) (*connect.Response[v1.GetReviewAgreementResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.diagnosis.v1.PlantDiagnosisService.GetReviewAgreement is not implemented"))
 }

@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { diagnosisClient } from '@samavāya/agriculture/services';
-  import { LabelReviewDecision, type LabelReviewSample } from '@samavāya/agriculture/types';
+  import {
+    LabelReviewDecision,
+    type LabelReviewSample,
+    type ReviewAgreement,
+  } from '@samavāya/agriculture/types';
 
   // Human-in-the-loop label review. Samples come from the AI gateway's training
   // store (proxied tenant-scoped by plant-diagnosis-service), lowest-confidence
@@ -22,6 +26,10 @@
   // data rather than hard images, and a wrong label teaches the next model the
   // same mistake — so they are worth a reviewer's time before anything else.
   let suspectOnly = false;
+  // Samples where two reviewers already disagreed, or where one asked for
+  // another pair of eyes. A disagreement is a question, not a failure.
+  let secondOpinionOnly = false;
+  let agreement: ReviewAgreement | null = null;
 
   let samples: LabelReviewSample[] = [];
   let totalCount = 0;
@@ -80,12 +88,14 @@
         includeReviewed,
         newestFirst,
         suspectOnly,
+        secondOpinionOnly,
         pageSize: PAGE_SIZE,
         pageOffset: offset,
       });
       samples = res.samples;
       totalCount = res.totalCount;
       unreviewedCount = res.unreviewedCount;
+      void loadAgreement();
       if (samples.length > 0) {
         await select(samples[0]);
       } else {
@@ -99,6 +109,36 @@
       releaseImage();
     } finally {
       loading = false;
+    }
+  }
+
+  // How much two reviewers agree on this task, and whether that is more than
+  // chance. Raw agreement flatters an imbalanced set; kappa is the number to
+  // read.
+  async function loadAgreement() {
+    try {
+      const res = await diagnosisClient.getReviewAgreement({ task });
+      agreement = res.agreement ?? null;
+    } catch {
+      // A missing agreement is not worth interrupting the queue for.
+      agreement = null;
+    }
+  }
+
+  async function askSecondOpinion() {
+    if (!selected) return;
+    try {
+      const res = await diagnosisClient.requestSecondOpinion({
+        task: selected.task,
+        sampleId: selected.id,
+        wanted: !selected.needsSecondOpinion,
+      });
+      if (res.sample) selected = res.sample;
+      notice = selected.needsSecondOpinion
+        ? 'Flagged for another reviewer.'
+        : 'Second-opinion flag cleared.';
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Could not flag this sample';
     }
   }
 
@@ -200,9 +240,21 @@
         <input type="checkbox" bind:checked={suspectOnly} on:change={() => loadQueue(0)} />
         Model-disputed only
       </label>
+      <label class="flex items-center gap-2 text-gray-600" title="Samples where reviewers disagreed or a second opinion was asked for">
+        <input type="checkbox" bind:checked={secondOpinionOnly} on:change={() => loadQueue(0)} />
+        Needs a second opinion
+      </label>
       <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
         {unreviewedCount} awaiting review
       </span>
+      {#if agreement && agreement.compared > 0}
+        <span
+          class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+          title="Cohen's kappa over {agreement.compared} samples two people both reviewed. Raw agreement of {Math.round(agreement.rawAgreement * 100)}% flatters an imbalanced set; kappa measures agreement above chance."
+        >
+          reviewer agreement: {agreement.kappa.toFixed(2)} ({agreement.strength})
+        </span>
+      {/if}
     </div>
   </div>
 
@@ -305,6 +357,28 @@
                   <li class="text-gray-400">No labels recorded</li>
                 {/each}
               </ul>
+              {#if selected.needsSecondOpinion}
+                <div class="mt-4 rounded border border-sky-300 bg-sky-50 p-3 text-xs text-sky-900">
+                  <p class="font-semibold">This sample is waiting on another reviewer</p>
+                  <p class="mt-1">
+                    Either two reviewers chose different labels, or someone asked for a second
+                    opinion. Your verdict settles it.
+                  </p>
+                </div>
+              {/if}
+              {#if selected.reviews && selected.reviews.length > 1}
+                <div class="mt-3 rounded border border-gray-200 p-3 text-xs">
+                  <p class="font-semibold text-gray-700">Previous verdicts</p>
+                  <ul class="mt-1 space-y-1 text-gray-600">
+                    {#each selected.reviews as r}
+                      <li>
+                        {r.reviewerId || 'unknown'}: {decisionLabel(r.decision)}
+                        {#if r.correctedLabel}→ <strong>{r.correctedLabel}</strong>{/if}
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
               {#if selected.suspect}
                 <div class="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                   <p class="font-semibold">A trained model disagrees with this label</p>
@@ -385,6 +459,15 @@
                   on:click={() => submit(LabelReviewDecision.REJECTED)}
                 >
                   Reject
+                </button>
+                <button
+                  type="button"
+                  class="rounded-md border border-sky-300 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50"
+                  disabled={submitting}
+                  title="Send this sample to another reviewer instead of deciding it alone"
+                  on:click={askSecondOpinion}
+                >
+                  {selected.needsSecondOpinion ? 'Clear second opinion' : 'Ask a second reviewer'}
                 </button>
               </div>
             </div>

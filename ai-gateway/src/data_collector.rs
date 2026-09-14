@@ -203,7 +203,60 @@ pub struct TrainingSample {
     /// Set when a trained model confidently contradicted this sample's label.
     #[serde(default)]
     pub suspect: Option<LabelSuspicion>,
+    /// Every review this sample has received, oldest first.
+    ///
+    /// `review` above stays the most recent one so existing readers keep
+    /// working; this is what a second opinion is appended to and what
+    /// inter-annotator agreement is computed from.
+    #[serde(default)]
+    pub reviews: Vec<LabelReview>,
+    /// True when this sample has been sent for a second opinion — either
+    /// because a reviewer asked, or because two reviewers already disagreed.
+    #[serde(default)]
+    pub needs_second_opinion: bool,
 }
+
+impl TrainingSample {
+    /// Reviews, healing a sample written before more than one was kept.
+    pub fn all_reviews(&self) -> Vec<LabelReview> {
+        if !self.reviews.is_empty() {
+            return self.reviews.clone();
+        }
+        self.review.iter().cloned().collect()
+    }
+
+    /// The label each distinct reviewer settled on, oldest first.
+    ///
+    /// A reviewer who revisits a sample replaces their own earlier verdict
+    /// rather than counting twice: agreement is between people, not between
+    /// submissions.
+    pub fn reviewer_labels(&self) -> Vec<(String, String)> {
+        let mut out: Vec<(String, String)> = Vec::new();
+        for review in self.all_reviews() {
+            let label = match review.decision {
+                ReviewDecision::Corrected => review.corrected_label.clone(),
+                ReviewDecision::Confirmed => self
+                    .labels
+                    .first()
+                    .map(|l| l.name.clone())
+                    .unwrap_or_default(),
+                ReviewDecision::Rejected => REJECTED_LABEL.to_string(),
+            };
+            if label.is_empty() {
+                continue;
+            }
+            match out.iter_mut().find(|(r, _)| *r == review.reviewer_id) {
+                Some(existing) => existing.1 = label,
+                None => out.push((review.reviewer_id.clone(), label)),
+            }
+        }
+        out
+    }
+}
+
+/// The pseudo-label a rejection contributes, so "this is not usable" can
+/// itself be agreed or disagreed with.
+pub const REJECTED_LABEL: &str = "__rejected__";
 
 fn default_provenance() -> Provenance {
     Provenance::ExternalApi
@@ -267,6 +320,19 @@ impl TrainingSample {
                 reviewed_at: r.reviewed_at.clone(),
             }),
             effective_label: self.effective_label().unwrap_or_default(),
+            needs_second_opinion: self.needs_second_opinion,
+            reviews: self
+                .all_reviews()
+                .iter()
+                .map(|r| proto::LabelReview {
+                    decision: r.decision.as_str().to_string(),
+                    corrected_label: r.corrected_label.clone(),
+                    reviewer_id: r.reviewer_id.clone(),
+                    tenant_id: r.tenant_id.clone(),
+                    notes: r.notes.clone(),
+                    reviewed_at: r.reviewed_at.clone(),
+                })
+                .collect(),
             suspect: self.suspect.as_ref().map(|x| proto::LabelSuspicion {
                 predicted: x.predicted.clone(),
                 predicted_prob: x.predicted_prob,
@@ -311,6 +377,8 @@ pub struct SampleQuery {
     pub provenance: Option<Provenance>,
     /// Only samples a trained model contradicted.
     pub suspect_only: bool,
+    /// Only samples waiting on another reviewer.
+    pub second_opinion_only: bool,
     pub order: SampleOrder,
     pub offset: usize,
     pub limit: usize,
@@ -487,6 +555,35 @@ impl DataCollector {
         SampleStore::new(&self.config).list(query)
     }
 
+    /// Flag a sample for another pair of eyes.
+    pub fn request_second_opinion(
+        &self,
+        task: &str,
+        sample_id: &str,
+        tenant_id: &str,
+    ) -> Result<TrainingSample, ReviewError> {
+        SampleStore::new(&self.config).set_second_opinion(task, sample_id, tenant_id, true)
+    }
+
+    /// Clear the second-opinion flag once the question is settled.
+    pub fn clear_second_opinion(
+        &self,
+        task: &str,
+        sample_id: &str,
+        tenant_id: &str,
+    ) -> Result<TrainingSample, ReviewError> {
+        SampleStore::new(&self.config).set_second_opinion(task, sample_id, tenant_id, false)
+    }
+
+    /// Inter-annotator agreement across every sample two people have reviewed.
+    pub fn review_agreement(
+        &self,
+        task: &str,
+        tenant_id: Option<&str>,
+    ) -> Result<crate::agreement::AgreementReport, ReviewError> {
+        SampleStore::new(&self.config).agreement(task, tenant_id)
+    }
+
     pub fn submit_review(
         &self,
         task: &str,
@@ -508,6 +605,7 @@ impl DataCollector {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SaveOutcome {
     Stored(String),
     Duplicate(String),
@@ -619,6 +717,8 @@ impl SampleStore {
             context: job.context,
             review: None,
             suspect: None,
+            reviews: Vec::new(),
+            needs_second_opinion: false,
         };
         write_json_atomic(&label_path, &sample)?;
         append_line(&task_dir.join(MANIFEST_FILE), &manifest_entry(&sample))?;
@@ -677,7 +777,8 @@ impl SampleStore {
                 && q.max_confidence
                     .map_or(true, |m| m <= 0.0 || sample.top_confidence() <= m)
                 && q.provenance.map_or(true, |p| sample.provenance == p)
-                && (!q.suspect_only || sample.suspect.is_some());
+                && (!q.suspect_only || sample.suspect.is_some())
+                && (!q.second_opinion_only || sample.needs_second_opinion);
             if keep {
                 samples.push(sample);
             }
@@ -719,6 +820,57 @@ impl SampleStore {
         })
     }
 
+    /// Mark a sample as wanting (or no longer wanting) a second opinion.
+    pub fn set_second_opinion(
+        &self,
+        task: &str,
+        id: &str,
+        tenant_id: &str,
+        wanted: bool,
+    ) -> Result<TrainingSample, ReviewError> {
+        let mut sample = self.load(task, id)?;
+        Self::check_tenant(&sample, tenant_id)?;
+        sample.needs_second_opinion = wanted;
+        write_json_atomic(&self.label_path(task, id), &sample)?;
+        Ok(sample)
+    }
+
+    /// Compare the first two distinct reviewers of every doubly-reviewed
+    /// sample.
+    ///
+    /// Only the first two count. A sample argued over by four people is not
+    /// four times the evidence about whether two reviewers agree, and letting
+    /// contested samples carry more weight would bias the measure towards the
+    /// cases that were hardest.
+    pub fn agreement(
+        &self,
+        task: &str,
+        tenant_id: Option<&str>,
+    ) -> Result<crate::agreement::AgreementReport, ReviewError> {
+        validate_task(task)?;
+        let mut pairs = Vec::new();
+        for entry in self.read_manifest(task)? {
+            let Ok(sample) = self.load(task, &entry.id) else {
+                continue;
+            };
+            if let Some(t) = tenant_id {
+                if !t.is_empty() && sample.context.tenant_id != t {
+                    continue;
+                }
+            }
+            let verdicts = sample.reviewer_labels();
+            if verdicts.len() < 2 {
+                continue;
+            }
+            pairs.push(crate::agreement::LabelPair {
+                sample_id: sample.id.clone(),
+                first: verdicts[0].1.clone(),
+                second: verdicts[1].1.clone(),
+            });
+        }
+        Ok(crate::agreement::agreement(&pairs))
+    }
+
     pub fn review(
         &self,
         task: &str,
@@ -741,7 +893,18 @@ impl SampleStore {
         if review.reviewed_at.is_empty() {
             review.reviewed_at = Utc::now().to_rfc3339();
         }
+        // Keep every verdict. Overwriting meant a second opinion erased the
+        // first, which is exactly the comparison a second opinion exists for.
+        sample.reviews = sample.all_reviews();
+        sample.reviews.push(review.clone());
         sample.review = Some(review.clone());
+
+        // Two reviewers who disagree have raised a question, not settled one.
+        let verdicts = sample.reviewer_labels();
+        if verdicts.len() > 1 {
+            let first = &verdicts[0].1;
+            sample.needs_second_opinion = verdicts.iter().any(|(_, l)| l != first);
+        }
         write_json_atomic(&self.label_path(task, id), &sample)?;
         append_line(
             &self.task_dir(task).join(REVIEWS_FILE),
@@ -1156,6 +1319,190 @@ mod tests {
             ))
             .await;
         assert!(!dir.path().join("disease").exists());
+    }
+
+
+    /// The id of a freshly stored sample; the tests here never hit the
+    /// duplicate or quota paths.
+    fn stored_id(outcome: SaveOutcome) -> String {
+        match outcome {
+            SaveOutcome::Stored(id) => id,
+            other => panic!("expected a stored sample, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_second_review_is_kept_alongside_the_first() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = SampleStore::new(&config(dir.path()));
+        let id = stored_id(
+            store
+                .save(CollectionInput::from_vision_result(
+                    vec![1; 4],
+                    vision("disease", "rust", 0.9),
+                    ctx("t1"),
+                ))
+                .unwrap(),
+        );
+
+        let review = |who: &str, label: &str| LabelReview {
+            decision: ReviewDecision::Corrected,
+            corrected_label: label.into(),
+            reviewer_id: who.into(),
+            tenant_id: "t1".into(),
+            notes: String::new(),
+            reviewed_at: String::new(),
+        };
+
+        store.review("disease", &id, review("ana", "rust")).unwrap();
+        let after = store.review("disease", &id, review("bo", "blight")).unwrap();
+
+        // Overwriting would erase the very comparison a second opinion exists
+        // for.
+        assert_eq!(after.all_reviews().len(), 2);
+        assert_eq!(after.review.as_ref().unwrap().reviewer_id, "bo");
+        assert_eq!(
+            after.reviewer_labels(),
+            vec![
+                ("ana".to_string(), "rust".to_string()),
+                ("bo".to_string(), "blight".to_string())
+            ]
+        );
+        // Two people disagreeing raises a question rather than settling one.
+        assert!(after.needs_second_opinion);
+    }
+
+    #[test]
+    fn reviewers_who_agree_do_not_raise_a_question() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = SampleStore::new(&config(dir.path()));
+        let id = stored_id(
+            store
+                .save(CollectionInput::from_vision_result(
+                    vec![2; 4],
+                    vision("disease", "rust", 0.9),
+                    ctx("t1"),
+                ))
+                .unwrap(),
+        );
+
+        let confirm = |who: &str| LabelReview {
+            decision: ReviewDecision::Confirmed,
+            corrected_label: String::new(),
+            reviewer_id: who.into(),
+            tenant_id: "t1".into(),
+            notes: String::new(),
+            reviewed_at: String::new(),
+        };
+        store.review("disease", &id, confirm("ana")).unwrap();
+        let after = store.review("disease", &id, confirm("bo")).unwrap();
+
+        assert!(!after.needs_second_opinion);
+        assert_eq!(after.reviewer_labels().len(), 2);
+    }
+
+    #[test]
+    fn one_reviewer_changing_their_mind_is_not_a_disagreement() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = SampleStore::new(&config(dir.path()));
+        let id = stored_id(
+            store
+                .save(CollectionInput::from_vision_result(
+                    vec![3; 4],
+                    vision("disease", "rust", 0.9),
+                    ctx("t1"),
+                ))
+                .unwrap(),
+        );
+
+        let by_ana = |label: &str| LabelReview {
+            decision: ReviewDecision::Corrected,
+            corrected_label: label.into(),
+            reviewer_id: "ana".into(),
+            tenant_id: "t1".into(),
+            notes: String::new(),
+            reviewed_at: String::new(),
+        };
+        store.review("disease", &id, by_ana("rust")).unwrap();
+        let after = store.review("disease", &id, by_ana("blight")).unwrap();
+
+        // Agreement is between people, not between submissions.
+        assert_eq!(after.reviewer_labels(), vec![("ana".to_string(), "blight".to_string())]);
+        assert!(!after.needs_second_opinion);
+        assert_eq!(after.all_reviews().len(), 2, "both submissions are kept");
+    }
+
+    #[test]
+    fn agreement_is_computed_over_doubly_reviewed_samples_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = SampleStore::new(&config(dir.path()));
+
+        let mut ids = Vec::new();
+        for i in 0..3u8 {
+            ids.push(stored_id(
+                store
+                    .save(CollectionInput::from_vision_result(
+                        vec![i + 10; 4],
+                        vision("disease", "rust", 0.9),
+                        ctx("t1"),
+                    ))
+                    .unwrap(),
+            ));
+        }
+
+        let review = |who: &str, label: &str| LabelReview {
+            decision: ReviewDecision::Corrected,
+            corrected_label: label.into(),
+            reviewer_id: who.into(),
+            tenant_id: "t1".into(),
+            notes: String::new(),
+            reviewed_at: String::new(),
+        };
+
+        // Two agree, one disagrees, one is reviewed only once and so tells us
+        // nothing about agreement.
+        store.review("disease", &ids[0], review("ana", "rust")).unwrap();
+        store.review("disease", &ids[0], review("bo", "rust")).unwrap();
+        store.review("disease", &ids[1], review("ana", "rust")).unwrap();
+        store.review("disease", &ids[1], review("bo", "blight")).unwrap();
+        store.review("disease", &ids[2], review("ana", "rust")).unwrap();
+
+        let report = store.agreement("disease", Some("t1")).unwrap();
+        assert_eq!(report.compared, 2, "the singly-reviewed sample is excluded");
+        assert!((report.raw_agreement - 0.5).abs() < 1e-12);
+        assert_eq!(report.disagreements.len(), 1);
+        assert_eq!(report.disagreements[0].second, "blight");
+
+        // Another tenant's samples are not mixed in.
+        let other = store.agreement("disease", Some("t2")).unwrap();
+        assert_eq!(other.compared, 0);
+    }
+
+    #[test]
+    fn a_second_opinion_can_be_asked_for_explicitly() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = SampleStore::new(&config(dir.path()));
+        let id = stored_id(
+            store
+                .save(CollectionInput::from_vision_result(
+                    vec![4; 4],
+                    vision("disease", "rust", 0.9),
+                    ctx("t1"),
+                ))
+                .unwrap(),
+        );
+
+        assert!(!store.load("disease", &id).unwrap().needs_second_opinion);
+        let flagged = store.set_second_opinion("disease", &id, "t1", true).unwrap();
+        assert!(flagged.needs_second_opinion);
+
+        // It survives a reload, and can be cleared again.
+        assert!(store.load("disease", &id).unwrap().needs_second_opinion);
+        let cleared = store.set_second_opinion("disease", &id, "t1", false).unwrap();
+        assert!(!cleared.needs_second_opinion);
+
+        // Another tenant cannot touch it.
+        assert!(store.set_second_opinion("disease", &id, "t2", true).is_err());
     }
 
     #[test]

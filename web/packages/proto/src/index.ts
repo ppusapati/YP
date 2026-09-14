@@ -215,6 +215,8 @@ export type {
   Explanation,
   NutrientDeficiency,
   PestDamage,
+  ReviewAgreement,
+  LabelDisagreement,
 } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
 
 export { LabelReviewDecision } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';

@@ -23,4 +23,9 @@ type DiagnosisService interface {
 	ListLabelReviewQueue(ctx context.Context, params domain.ListLabelReviewQueueParams) ([]domain.LabelReviewSample, int32, int32, error)
 	SubmitLabelReview(ctx context.Context, input domain.SubmitLabelReviewInput) (*domain.LabelReviewSample, error)
 	GetLabelReviewImage(ctx context.Context, task, sampleID string) (*domain.LabelReviewImage, error)
+	// RequestSecondOpinion flags a sample as wanting another reviewer, or
+	// clears the flag once the question is settled.
+	RequestSecondOpinion(ctx context.Context, task, sampleID string, wanted bool) (*domain.LabelReviewSample, error)
+	// ReviewAgreement reports how much reviewers agree on a task's labels.
+	ReviewAgreement(ctx context.Context, task string) (*domain.ReviewAgreement, error)
 }

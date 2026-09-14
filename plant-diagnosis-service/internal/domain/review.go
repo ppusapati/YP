@@ -64,6 +64,28 @@ type LabelReviewSample struct {
 	// sample's label, which usually means the label is wrong rather than the
 	// image hard.
 	Suspect *LabelSuspicion
+	// NeedsSecondOpinion is true when a reviewer asked for another pair of
+	// eyes, or when two reviewers already disagreed.
+	NeedsSecondOpinion bool
+	// Reviews is every verdict this sample has received, oldest first.
+	Reviews []LabelReview
+}
+
+// ReviewAgreement is how much two reviewers agree, and whether that is more
+// than chance would produce on its own.
+type ReviewAgreement struct {
+	Compared      int32
+	RawAgreement  float64
+	Kappa         float64
+	Strength      string
+	Disagreements []LabelDisagreement
+}
+
+// LabelDisagreement is one pair of labels reviewers chose differently.
+type LabelDisagreement struct {
+	First  string
+	Second string
+	Count  int32
 }
 
 // LabelSuspicion records a trained model's disagreement with a stored label.
@@ -78,15 +100,16 @@ type LabelSuspicion struct {
 // ListLabelReviewQueueParams filters the review queue. TenantID is always set
 // from the caller's context by the application layer.
 type ListLabelReviewQueueParams struct {
-	TenantID        string
-	Task            string
-	SuspectOnly     bool
-	IncludeReviewed bool
-	MaxConfidence   float64
-	Provenance      string
-	PageSize        int32
-	Offset          int32
-	NewestFirst     bool
+	TenantID          string
+	Task              string
+	SuspectOnly       bool
+	SecondOpinionOnly bool
+	IncludeReviewed   bool
+	MaxConfidence     float64
+	Provenance        string
+	PageSize          int32
+	Offset            int32
+	NewestFirst       bool
 }
 
 // SubmitLabelReviewInput is a reviewer's decision on one sample.

@@ -24,14 +24,15 @@ func (h *DiagnosisHandler) ListLabelReviewQueue(ctx context.Context, req *connec
 	h.log.Infow("msg", "ListLabelReviewQueue request", "tenant_id", p9context.TenantID(ctx), "task", req.Msg.GetTask())
 
 	samples, total, unreviewed, err := h.svc.ListLabelReviewQueue(ctx, domain.ListLabelReviewQueueParams{
-		Task:            req.Msg.GetTask(),
-		IncludeReviewed: req.Msg.GetIncludeReviewed(),
-		MaxConfidence:   req.Msg.GetMaxConfidence(),
-		Provenance:      req.Msg.GetProvenance(),
-		PageSize:        req.Msg.GetPageSize(),
-		Offset:          req.Msg.GetPageOffset(),
-		NewestFirst:     req.Msg.GetNewestFirst(),
-		SuspectOnly:     req.Msg.GetSuspectOnly(),
+		Task:              req.Msg.GetTask(),
+		IncludeReviewed:   req.Msg.GetIncludeReviewed(),
+		MaxConfidence:     req.Msg.GetMaxConfidence(),
+		Provenance:        req.Msg.GetProvenance(),
+		PageSize:          req.Msg.GetPageSize(),
+		Offset:            req.Msg.GetPageOffset(),
+		NewestFirst:       req.Msg.GetNewestFirst(),
+		SuspectOnly:       req.Msg.GetSuspectOnly(),
+		SecondOpinionOnly: req.Msg.GetSecondOpinionOnly(),
 	})
 	if err != nil {
 		return nil, errors.ToConnectError(err)
@@ -86,6 +87,43 @@ func (h *DiagnosisHandler) GetLabelReviewImage(ctx context.Context, req *connect
 	}), nil
 }
 
+func (h *DiagnosisHandler) RequestSecondOpinion(ctx context.Context, req *connect.Request[pb.RequestSecondOpinionRequest]) (*connect.Response[pb.RequestSecondOpinionResponse], error) {
+	if req.Msg.GetTask() == "" || req.Msg.GetSampleId() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "task and sample_id are required")
+	}
+	sample, err := h.svc.RequestSecondOpinion(ctx, req.Msg.GetTask(), req.Msg.GetSampleId(), req.Msg.GetWanted())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	return connect.NewResponse(&pb.RequestSecondOpinionResponse{
+		Sample: labelReviewSampleToProto(sample),
+	}), nil
+}
+
+func (h *DiagnosisHandler) GetReviewAgreement(ctx context.Context, req *connect.Request[pb.GetReviewAgreementRequest]) (*connect.Response[pb.GetReviewAgreementResponse], error) {
+	if req.Msg.GetTask() == "" {
+		return nil, errors.BadRequest("INVALID_ARGUMENT", "task is required")
+	}
+	report, err := h.svc.ReviewAgreement(ctx, req.Msg.GetTask())
+	if err != nil {
+		return nil, errors.ToConnectError(err)
+	}
+	out := &pb.ReviewAgreement{
+		Compared:     report.Compared,
+		RawAgreement: report.RawAgreement,
+		Kappa:        report.Kappa,
+		Strength:     report.Strength,
+	}
+	for _, d := range report.Disagreements {
+		out.Disagreements = append(out.Disagreements, &pb.LabelDisagreement{
+			First:  d.First,
+			Second: d.Second,
+			Count:  d.Count,
+		})
+	}
+	return connect.NewResponse(&pb.GetReviewAgreementResponse{Agreement: out}), nil
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mappers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -131,6 +169,15 @@ func labelReviewSampleToProto(s *domain.LabelReviewSample) *pb.LabelReviewSample
 		Crop:           s.Crop,
 		SubmittedBy:    s.SubmittedBy,
 		EffectiveLabel: s.EffectiveLabel,
+	}
+	out.NeedsSecondOpinion = s.NeedsSecondOpinion
+	for _, r := range s.Reviews {
+		out.Reviews = append(out.Reviews, &pb.LabelReview{
+			Decision:       domainDecisionToProto(r.Decision),
+			CorrectedLabel: r.CorrectedLabel,
+			ReviewerId:     r.ReviewerID,
+			Notes:          r.Notes,
+		})
 	}
 	if s.Suspect != nil {
 		out.Suspect = &pb.LabelSuspicion{

@@ -340,6 +340,48 @@ message LabelReviewSample {
   LabelReview review     = 12; // unset until reviewed
   string effective_label = 13; // label after applying the review
   LabelSuspicion suspect = 14; // unset unless a trained model contradicted it
+  // True when this sample wants another pair of eyes, because a reviewer asked
+  // or because two reviewers already disagreed.
+  bool needs_second_opinion = 15;
+  // Every review, oldest first. `review` above stays the most recent.
+  repeated LabelReview reviews = 16;
+}
+
+// How much two reviewers agree, and whether that is more than chance.
+//
+// Raw agreement flatters an imbalanced task: two reviewers who both answer
+// "healthy" on a set that is ninety percent healthy agree ninety percent of the
+// time having demonstrated nothing.
+message ReviewAgreement {
+  int32 compared = 1;
+  double raw_agreement = 2;
+  double kappa = 3;
+  string strength = 4;
+  repeated LabelDisagreement disagreements = 5;
+}
+
+message LabelDisagreement {
+  string first = 1;
+  string second = 2;
+  int32 count = 3;
+}
+
+message RequestSecondOpinionRequest {
+  string task = 1;
+  string sample_id = 2;
+  bool wanted = 3; // false clears the flag
+}
+
+message RequestSecondOpinionResponse {
+  LabelReviewSample sample = 1;
+}
+
+message GetReviewAgreementRequest {
+  string task = 1;
+}
+
+message GetReviewAgreementResponse {
+  ReviewAgreement agreement = 1;
 }
 
 message ListLabelReviewQueueRequest {
@@ -353,6 +395,8 @@ message ListLabelReviewQueueRequest {
   // Only labels a trained model contradicted, worst disagreement first. These
   // are where the data is probably wrong rather than merely hard.
   bool   suspect_only   = 8;
+  // Only samples waiting on another reviewer.
+  bool   second_opinion_only = 9;
 }
 
 message ListLabelReviewQueueResponse {
@@ -423,4 +467,6 @@ service PlantDiagnosisService {
 
   // Fetch the image behind a review-queue sample
   rpc GetLabelReviewImage(GetLabelReviewImageRequest) returns (GetLabelReviewImageResponse);
+  rpc RequestSecondOpinion  (RequestSecondOpinionRequest)  returns (RequestSecondOpinionResponse);
+  rpc GetReviewAgreement    (GetReviewAgreementRequest)    returns (GetReviewAgreementResponse);
 }

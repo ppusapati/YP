@@ -36,6 +36,8 @@ const (
 	AIGatewayService_ListTrainingSamples_FullMethodName      = "/agriculture.ai.v1.AIGatewayService/ListTrainingSamples"
 	AIGatewayService_SubmitLabelReview_FullMethodName        = "/agriculture.ai.v1.AIGatewayService/SubmitLabelReview"
 	AIGatewayService_GetTrainingSampleImage_FullMethodName   = "/agriculture.ai.v1.AIGatewayService/GetTrainingSampleImage"
+	AIGatewayService_RequestSecondOpinion_FullMethodName     = "/agriculture.ai.v1.AIGatewayService/RequestSecondOpinion"
+	AIGatewayService_GetReviewAgreement_FullMethodName       = "/agriculture.ai.v1.AIGatewayService/GetReviewAgreement"
 )
 
 // AIGatewayServiceClient is the client API for AIGatewayService service.
@@ -84,6 +86,8 @@ type AIGatewayServiceClient interface {
 	ListTrainingSamples(ctx context.Context, in *ListTrainingSamplesRequest, opts ...grpc.CallOption) (*ListTrainingSamplesResponse, error)
 	SubmitLabelReview(ctx context.Context, in *SubmitLabelReviewRequest, opts ...grpc.CallOption) (*SubmitLabelReviewResponse, error)
 	GetTrainingSampleImage(ctx context.Context, in *GetTrainingSampleImageRequest, opts ...grpc.CallOption) (*GetTrainingSampleImageResponse, error)
+	RequestSecondOpinion(ctx context.Context, in *RequestSecondOpinionRequest, opts ...grpc.CallOption) (*RequestSecondOpinionResponse, error)
+	GetReviewAgreement(ctx context.Context, in *GetReviewAgreementRequest, opts ...grpc.CallOption) (*GetReviewAgreementResponse, error)
 }
 
 type aIGatewayServiceClient struct {
@@ -264,6 +268,26 @@ func (c *aIGatewayServiceClient) GetTrainingSampleImage(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *aIGatewayServiceClient) RequestSecondOpinion(ctx context.Context, in *RequestSecondOpinionRequest, opts ...grpc.CallOption) (*RequestSecondOpinionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestSecondOpinionResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_RequestSecondOpinion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aIGatewayServiceClient) GetReviewAgreement(ctx context.Context, in *GetReviewAgreementRequest, opts ...grpc.CallOption) (*GetReviewAgreementResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetReviewAgreementResponse)
+	err := c.cc.Invoke(ctx, AIGatewayService_GetReviewAgreement_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AIGatewayServiceServer is the server API for AIGatewayService service.
 // All implementations must embed UnimplementedAIGatewayServiceServer
 // for forward compatibility.
@@ -310,6 +334,8 @@ type AIGatewayServiceServer interface {
 	ListTrainingSamples(context.Context, *ListTrainingSamplesRequest) (*ListTrainingSamplesResponse, error)
 	SubmitLabelReview(context.Context, *SubmitLabelReviewRequest) (*SubmitLabelReviewResponse, error)
 	GetTrainingSampleImage(context.Context, *GetTrainingSampleImageRequest) (*GetTrainingSampleImageResponse, error)
+	RequestSecondOpinion(context.Context, *RequestSecondOpinionRequest) (*RequestSecondOpinionResponse, error)
+	GetReviewAgreement(context.Context, *GetReviewAgreementRequest) (*GetReviewAgreementResponse, error)
 	mustEmbedUnimplementedAIGatewayServiceServer()
 }
 
@@ -370,6 +396,12 @@ func (UnimplementedAIGatewayServiceServer) SubmitLabelReview(context.Context, *S
 }
 func (UnimplementedAIGatewayServiceServer) GetTrainingSampleImage(context.Context, *GetTrainingSampleImageRequest) (*GetTrainingSampleImageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrainingSampleImage not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) RequestSecondOpinion(context.Context, *RequestSecondOpinionRequest) (*RequestSecondOpinionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestSecondOpinion not implemented")
+}
+func (UnimplementedAIGatewayServiceServer) GetReviewAgreement(context.Context, *GetReviewAgreementRequest) (*GetReviewAgreementResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetReviewAgreement not implemented")
 }
 func (UnimplementedAIGatewayServiceServer) mustEmbedUnimplementedAIGatewayServiceServer() {}
 func (UnimplementedAIGatewayServiceServer) testEmbeddedByValue()                          {}
@@ -698,6 +730,42 @@ func _AIGatewayService_GetTrainingSampleImage_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AIGatewayService_RequestSecondOpinion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestSecondOpinionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).RequestSecondOpinion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_RequestSecondOpinion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).RequestSecondOpinion(ctx, req.(*RequestSecondOpinionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AIGatewayService_GetReviewAgreement_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReviewAgreementRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIGatewayServiceServer).GetReviewAgreement(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIGatewayService_GetReviewAgreement_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIGatewayServiceServer).GetReviewAgreement(ctx, req.(*GetReviewAgreementRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AIGatewayService_ServiceDesc is the grpc.ServiceDesc for AIGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -772,6 +840,14 @@ var AIGatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTrainingSampleImage",
 			Handler:    _AIGatewayService_GetTrainingSampleImage_Handler,
+		},
+		{
+			MethodName: "RequestSecondOpinion",
+			Handler:    _AIGatewayService_RequestSecondOpinion_Handler,
+		},
+		{
+			MethodName: "GetReviewAgreement",
+			Handler:    _AIGatewayService_GetReviewAgreement_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

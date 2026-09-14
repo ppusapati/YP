@@ -69,20 +69,24 @@ func (s *diagnosisService) ListLabelReviewQueue(ctx context.Context, params doma
 	switch {
 	case params.SuspectOnly:
 		order = "suspect_first"
+	case params.SecondOpinionOnly:
+		// Contested samples are already ordered by when they were raised.
+		order = "newest"
 	case params.NewestFirst:
 		order = "newest"
 	}
 
 	page, err := client.ListTrainingSamples(ctx, ai.ListSamplesQuery{
-		Task:          params.Task,
-		ReviewStatus:  status,
-		TenantID:      tenantID,
-		MaxConfidence: params.MaxConfidence,
-		Provenance:    params.Provenance,
-		PageSize:      pageSize,
-		PageOffset:    params.Offset,
-		Order:         order,
-		SuspectOnly:   params.SuspectOnly,
+		Task:              params.Task,
+		ReviewStatus:      status,
+		TenantID:          tenantID,
+		MaxConfidence:     params.MaxConfidence,
+		Provenance:        params.Provenance,
+		PageSize:          pageSize,
+		PageOffset:        params.Offset,
+		Order:             order,
+		SuspectOnly:       params.SuspectOnly,
+		SecondOpinionOnly: params.SecondOpinionOnly,
 	})
 	if err != nil {
 		return nil, 0, 0, errors.ServiceUnavailable("AI_GATEWAY_ERROR", fmt.Sprintf("list review queue: %v", err))
@@ -150,6 +154,57 @@ func (s *diagnosisService) SubmitLabelReview(ctx context.Context, input domain.S
 	return &sample, nil
 }
 
+// RequestSecondOpinion flags a sample as wanting another reviewer.
+//
+// Disagreement between two people is a question, not a failure; the flag is
+// how that question stays visible until someone settles it.
+func (s *diagnosisService) RequestSecondOpinion(ctx context.Context, task, sampleID string, wanted bool) (*domain.LabelReviewSample, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	client, err := s.reviewClient()
+	if err != nil {
+		return nil, err
+	}
+	info, err := client.RequestSecondOpinion(ctx, task, sampleID, tenantID, wanted)
+	if err != nil {
+		return nil, mapGatewayError(err, sampleID)
+	}
+	sample := sampleInfoToDomain(info)
+	return &sample, nil
+}
+
+// ReviewAgreement reports how much reviewers agree on a task's labels.
+func (s *diagnosisService) ReviewAgreement(ctx context.Context, task string) (*domain.ReviewAgreement, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	client, err := s.reviewClient()
+	if err != nil {
+		return nil, err
+	}
+	out, err := client.ReviewAgreement(ctx, task, tenantID)
+	if err != nil {
+		return nil, mapGatewayError(err, task)
+	}
+	report := &domain.ReviewAgreement{
+		Compared:     out.GetCompared(),
+		RawAgreement: out.GetRawAgreement(),
+		Kappa:        out.GetKappa(),
+		Strength:     out.GetStrength(),
+	}
+	for _, d := range out.GetDisagreements() {
+		report.Disagreements = append(report.Disagreements, domain.LabelDisagreement{
+			First:  d.GetFirst(),
+			Second: d.GetSecond(),
+			Count:  d.GetCount(),
+		})
+	}
+	return report, nil
+}
+
 func (s *diagnosisService) GetLabelReviewImage(ctx context.Context, task, sampleID string) (*domain.LabelReviewImage, error) {
 	client, err := s.reviewClient()
 	if err != nil {
@@ -193,13 +248,23 @@ func sampleInfoToDomain(info *aipb.TrainingSampleInfo) domain.LabelReviewSample 
 		return domain.LabelReviewSample{}
 	}
 	out := domain.LabelReviewSample{
-		ID:             info.GetId(),
-		Task:           info.GetTask(),
-		CollectedAt:    parseRFC3339(info.GetTimestamp()),
-		Provenance:     info.GetProvenance(),
-		Provider:       info.GetProvider(),
-		TopConfidence:  info.GetTopConfidence(),
-		EffectiveLabel: info.GetEffectiveLabel(),
+		ID:                 info.GetId(),
+		Task:               info.GetTask(),
+		CollectedAt:        parseRFC3339(info.GetTimestamp()),
+		Provenance:         info.GetProvenance(),
+		Provider:           info.GetProvider(),
+		TopConfidence:      info.GetTopConfidence(),
+		EffectiveLabel:     info.GetEffectiveLabel(),
+		NeedsSecondOpinion: info.GetNeedsSecondOpinion(),
+	}
+	for _, r := range info.GetReviews() {
+		out.Reviews = append(out.Reviews, domain.LabelReview{
+			Decision:       domain.LabelReviewDecision(r.GetDecision()),
+			CorrectedLabel: r.GetCorrectedLabel(),
+			ReviewerID:     r.GetReviewerId(),
+			Notes:          r.GetNotes(),
+			ReviewedAt:     parseRFC3339(r.GetReviewedAt()),
+		})
 	}
 	if sus := info.GetSuspect(); sus != nil {
 		out.Suspect = &domain.LabelSuspicion{

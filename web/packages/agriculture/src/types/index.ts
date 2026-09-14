@@ -120,6 +120,8 @@ export type {
   Explanation,
   NutrientDeficiency,
   PestDamage,
+  ReviewAgreement,
+  LabelDisagreement,
 } from '@samavāya/proto';
 
 // ─── Common Types ────────────────────────────────────────────────────────────

@@ -295,6 +295,75 @@ pub struct TrainingSampleInfo {
     /// unset unless a trained model contradicted it
     #[prost(message, optional, tag = "11")]
     pub suspect: ::core::option::Option<LabelSuspicion>,
+    /// True when this sample wants another pair of eyes, because a reviewer asked
+    /// or because two reviewers already disagreed.
+    #[prost(bool, tag = "12")]
+    pub needs_second_opinion: bool,
+    /// Every review, oldest first. `review` above stays the most recent.
+    #[prost(message, repeated, tag = "13")]
+    pub reviews: ::prost::alloc::vec::Vec<LabelReview>,
+}
+/// How much two reviewers agree, and whether that is more than chance.
+///
+/// Raw agreement flatters an imbalanced labelling task: two reviewers who both
+/// answer "healthy" on a set that is ninety percent healthy agree ninety percent
+/// of the time having demonstrated nothing. Kappa measures agreement above what
+/// their individual answer rates would produce by chance.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ReviewAgreement {
+    /// samples two people both reviewed
+    #[prost(int32, tag = "1")]
+    pub compared: i32,
+    /// share where they chose the same label
+    #[prost(double, tag = "2")]
+    pub raw_agreement: f64,
+    /// Cohen's kappa
+    #[prost(double, tag = "3")]
+    pub kappa: f64,
+    /// plain reading of the kappa
+    #[prost(string, tag = "4")]
+    pub strength: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "5")]
+    pub disagreements: ::prost::alloc::vec::Vec<LabelDisagreement>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LabelDisagreement {
+    #[prost(string, tag = "1")]
+    pub first: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub second: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub count: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestSecondOpinionRequest {
+    #[prost(string, tag = "1")]
+    pub task: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub sample_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub tenant_id: ::prost::alloc::string::String,
+    /// false clears the flag
+    #[prost(bool, tag = "4")]
+    pub wanted: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestSecondOpinionResponse {
+    #[prost(message, optional, tag = "1")]
+    pub sample: ::core::option::Option<TrainingSampleInfo>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetReviewAgreementRequest {
+    #[prost(string, tag = "1")]
+    pub task: ::prost::alloc::string::String,
+    /// optional filter
+    #[prost(string, tag = "2")]
+    pub tenant_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetReviewAgreementResponse {
+    #[prost(message, optional, tag = "1")]
+    pub agreement: ::core::option::Option<ReviewAgreement>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListTrainingSamplesRequest {
@@ -326,6 +395,9 @@ pub struct ListTrainingSamplesRequest {
     /// only samples a trained model contradicted
     #[prost(bool, tag = "10")]
     pub suspect_only: bool,
+    /// only samples waiting on another reviewer
+    #[prost(bool, tag = "11")]
+    pub second_opinion_only: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListTrainingSamplesResponse {
@@ -1669,6 +1741,20 @@ pub mod ai_gateway_service_server {
             tonic::Response<super::GetTrainingSampleImageResponse>,
             tonic::Status,
         >;
+        async fn request_second_opinion(
+            &self,
+            request: tonic::Request<super::RequestSecondOpinionRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::RequestSecondOpinionResponse>,
+            tonic::Status,
+        >;
+        async fn get_review_agreement(
+            &self,
+            request: tonic::Request<super::GetReviewAgreementRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetReviewAgreementResponse>,
+            tonic::Status,
+        >;
     }
     /// AIGatewayService is the central gateway that wraps all Rust AI/ML engines
     /// and exposes them over gRPC to Go microservices.
@@ -2545,6 +2631,104 @@ pub mod ai_gateway_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = GetTrainingSampleImageSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/agriculture.ai.v1.AIGatewayService/RequestSecondOpinion" => {
+                    #[allow(non_camel_case_types)]
+                    struct RequestSecondOpinionSvc<T: AiGatewayService>(pub Arc<T>);
+                    impl<
+                        T: AiGatewayService,
+                    > tonic::server::UnaryService<super::RequestSecondOpinionRequest>
+                    for RequestSecondOpinionSvc<T> {
+                        type Response = super::RequestSecondOpinionResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::RequestSecondOpinionRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as AiGatewayService>::request_second_opinion(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = RequestSecondOpinionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/agriculture.ai.v1.AIGatewayService/GetReviewAgreement" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetReviewAgreementSvc<T: AiGatewayService>(pub Arc<T>);
+                    impl<
+                        T: AiGatewayService,
+                    > tonic::server::UnaryService<super::GetReviewAgreementRequest>
+                    for GetReviewAgreementSvc<T> {
+                        type Response = super::GetReviewAgreementResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetReviewAgreementRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as AiGatewayService>::get_review_agreement(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = GetReviewAgreementSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
