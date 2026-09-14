@@ -7,10 +7,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
+	tracedomain "p9e.in/samavaya/agriculture/traceability-service/internal/domain"
 	"p9e.in/samavaya/agriculture/traceability-service/internal/ports/inbound"
 )
 
@@ -74,8 +78,13 @@ func (c *TraceabilityConsumer) HandleEvent(ctx context.Context, event *domain.Do
 	case domain.EventTypeIrrigationCreated:
 		return c.onIrrigationEvent(ctx, event)
 
-	// Yield events: harvest and yield records for traceability
-	case domain.EventTypeYieldCreated:
+	// Yield events: harvest and yield records for traceability.
+	//
+	// Both spellings are handled. The consumer listened only for
+	// "agriculture.yield.created", which yield-service has never emitted — it
+	// publishes "agriculture.yield.record.created" — so this branch would not
+	// have fired even once the handler below did something.
+	case domain.EventTypeYieldCreated, yieldRecordCreated:
 		return c.onYieldRecorded(ctx, event)
 
 	default:
@@ -176,20 +185,116 @@ func (c *TraceabilityConsumer) onIrrigationEvent(ctx context.Context, event *dom
 	return nil
 }
 
-// onYieldRecorded records harvest/yield data for product traceability.
+// yieldRecordCreated is what yield-service actually publishes when a harvest
+// is recorded.
+const yieldRecordCreated domain.EventType = "agriculture.yield.record.created"
+
+// onYieldRecorded opens a traceability record for a harvest.
+//
+// This used to log "creating traceability record for harvest" and return nil,
+// having created nothing. Kafka committed the offset and the harvest was gone.
+// A traceability record is the chain of custody for a batch and the harvest is
+// the link it starts from — so every record downstream traced back to a gap,
+// in the one service that exists to prevent exactly that.
 func (c *TraceabilityConsumer) onYieldRecorded(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onYieldRecorded: %w", err)
 	}
-	yieldID, _ := data["yield_id"].(string)
+
+	recordID, _ := data["record_id"].(string)
+	if recordID == "" {
+		recordID, _ = data["yield_id"].(string)
+	}
+	tenantID, _ := data["tenant_id"].(string)
+	farmID, _ := data["farm_id"].(string)
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "yield recorded, creating traceability record for harvest",
-		"yield_id", yieldID,
-		"field_id", fieldID,
-	)
-	// TODO: call c.svc.CreateRecord to create a traceability record for the harvest
+	cropID, _ := data["crop_id"].(string)
+
+	if tenantID == "" || fieldID == "" {
+		// Nothing to attribute the harvest to. Dropped rather than retried,
+		// since a message that can never succeed would block the partition.
+		c.log.Warnw("msg", "yield event missing tenant or field; no traceability record created",
+			"event_id", event.ID, "record_id", recordID)
+		return nil
+	}
+
+	ctx = c.systemContext(ctx, tenantID)
+
+	// The batch number is derived from the yield record's id rather than
+	// generated, so a replayed event produces the same batch and the record
+	// service can recognise it as a duplicate instead of opening a second
+	// chain of custody for one harvest.
+	input := tracedomain.CreateRecordInput{
+		FarmID:      farmID,
+		FieldID:     fieldID,
+		CropID:      cropID,
+		BatchNumber: batchNumberFor(recordID),
+		ProductType: str(data, "crop_id"),
+		Metadata: map[string]string{
+			"source":          "yield-service",
+			"yield_record_id": recordID,
+			"season":          str(data, "season"),
+			"quality_grade":   str(data, "quality_grade"),
+		},
+	}
+	if harvested := timestamp(data, "harvest_date"); harvested != nil {
+		input.HarvestDate = harvested
+	}
+
+	record, err := c.svc.CreateRecord(ctx, input)
+	if err != nil {
+		// Returned, so the consumer retries: a database that is briefly
+		// unavailable must not lose the harvest.
+		return fmt.Errorf("onYieldRecorded: create record for yield %s: %w", recordID, err)
+	}
+
+	c.log.Infow("msg", "traceability record created for harvest",
+		"record_id", record.ID, "yield_record_id", recordID, "field_id", fieldID)
 	return nil
+}
+
+// batchNumberFor derives a stable batch number from a yield record id.
+func batchNumberFor(yieldRecordID string) string {
+	if yieldRecordID == "" {
+		return ""
+	}
+	return "HARVEST-" + yieldRecordID
+}
+
+// str reads a string field, tolerating a missing or wrongly-typed one — the
+// payload is JSON from another service and nothing here may assume a type.
+func str(data map[string]interface{}, key string) string {
+	v, _ := data[key].(string)
+	return v
+}
+
+// timestamp reads an RFC 3339 string into a time.
+func timestamp(data map[string]interface{}, key string) *time.Time {
+	raw := str(data, key)
+	if raw == "" {
+		return nil
+	}
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return nil
+	}
+	u := t.UTC()
+	return &u
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// A consumer has no request to inherit one from, so without this every query
+// runs unscoped and row-level security returns nothing — which looks like
+// success with no data rather than a failure.
+func (c *TraceabilityConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 func extractEventData(event *domain.DomainEvent) (map[string]interface{}, error) {

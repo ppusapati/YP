@@ -295,12 +295,25 @@ func (s *yieldService) RecordYield(ctx context.Context, record *domain.YieldReco
 		return nil, err
 	}
 
+	// The harvest details travel with the event so traceability-service can
+	// open a record without calling back for them. A traceability record is
+	// the chain of custody for a batch, and the harvest is the link it starts
+	// from: if it is missing, everything downstream traces to nothing.
+	harvestDate := ""
+	if created.HarvestDate != nil {
+		harvestDate = created.HarvestDate.UTC().Format(time.RFC3339)
+	}
 	s.emitEvent(ctx, "agriculture.yield.record.created", created.ID, map[string]interface{}{
-		"record_id": created.ID,
-		"tenant_id": tenantID,
-		"farm_id":   created.FarmID,
-		"field_id":  created.FieldID,
-		"crop_id":   created.CropID,
+		"record_id":      created.ID,
+		"tenant_id":      tenantID,
+		"farm_id":        created.FarmID,
+		"field_id":       created.FieldID,
+		"crop_id":        created.CropID,
+		"season":         created.Season,
+		"year":           created.Year,
+		"total_yield_kg": created.TotalYieldKg,
+		"quality_grade":  created.HarvestQualityGrade,
+		"harvest_date":   harvestDate,
 	})
 	s.log.Infow("msg", "yield record created", "id", created.ID)
 	return created, nil

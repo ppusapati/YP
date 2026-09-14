@@ -17,7 +17,7 @@ auth-service 0
 commerce-service 0
 crop-service 8
 farm-service 10
-field-service 12
+field-service 10
 irrigation-service 10
 pest-prediction-service 10
 plant-diagnosis-service 8
@@ -30,7 +30,7 @@ satellite-tile-service 0
 sensor-service 6
 soil-service 8
 task-service 0
-traceability-service 12
+traceability-service 10
 vegetation-index-service 0
 weather-service 0
 yield-service 10

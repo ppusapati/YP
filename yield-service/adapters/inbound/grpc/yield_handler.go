@@ -688,4 +688,3 @@ func encodeNextPageToken(currentOffset, pageSize, total int32) string {
 	}
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", next)))
 }
-

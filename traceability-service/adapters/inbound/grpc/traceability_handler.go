@@ -924,18 +924,18 @@ func qualityCheckpointToProto(qc *domain.QualityCheckpoint) *pb.QualityCheckpoin
 		return nil
 	}
 	proto := &pb.QualityCheckpoint{
-		Id:               qc.ID,
-		TenantId:         qc.TenantID,
-		RecordId:         qc.RecordID,
-		CheckType:        qualityCheckTypeDomainToProto(qc.CheckType),
-		Result:           qualityCheckResultDomainToProto(qc.Result),
-		InspectorId:      qc.InspectorID,
-		InspectorName:    qc.InspectorName,
-		InspectedAt:      timeToTs(qc.InspectedAt),
-		Location:         qc.Location,
-		EvidenceUrls:     qc.EvidenceURLs,
-		Metadata:         metadataJSONToMap(qc.Metadata),
-		CreatedAt:        timeToTs(qc.CreatedAt),
+		Id:            qc.ID,
+		TenantId:      qc.TenantID,
+		RecordId:      qc.RecordID,
+		CheckType:     qualityCheckTypeDomainToProto(qc.CheckType),
+		Result:        qualityCheckResultDomainToProto(qc.Result),
+		InspectorId:   qc.InspectorID,
+		InspectorName: qc.InspectorName,
+		InspectedAt:   timeToTs(qc.InspectedAt),
+		Location:      qc.Location,
+		EvidenceUrls:  qc.EvidenceURLs,
+		Metadata:      metadataJSONToMap(qc.Metadata),
+		CreatedAt:     timeToTs(qc.CreatedAt),
 	}
 	if qc.SupplyChainEventID != nil {
 		proto.SupplyChainEventId = *qc.SupplyChainEventID

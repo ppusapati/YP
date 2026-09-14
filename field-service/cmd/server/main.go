@@ -19,14 +19,14 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
+	"p9e.in/samavaya/packages/connect/interceptors"
+	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
 	kafkaconfig "p9e.in/samavaya/packages/events/config"
 	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
 	"p9e.in/samavaya/packages/events/domain"
-	"p9e.in/samavaya/packages/outbox"
-	"p9e.in/samavaya/packages/connect/interceptors"
-	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/middleware"
+	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/p9log"
 
 	connectclient "p9e.in/samavaya/packages/connect/client"
@@ -35,11 +35,11 @@ import (
 	fieldv1connect "p9e.in/samavaya/agriculture/field-service/api/v1/fieldv1connect"
 
 	eventsadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/inbound/events"
-	"p9e.in/samavaya/agriculture/field-service/internal/ai"
 	grpcadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/inbound/grpc"
 	clientsadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/outbound/clients"
 	kafkaadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/field-service/internal/adapters/outbound/postgres"
+	"p9e.in/samavaya/agriculture/field-service/internal/ai"
 	"p9e.in/samavaya/agriculture/field-service/internal/application"
 )
 
@@ -128,7 +128,7 @@ func main() {
 		DBPool:          pool,
 		EnableAuth:      true,
 		JWTValidator:    jwtValidator,
-		EnableAuthz:    true,
+		EnableAuthz:     true,
 		EnableRLS:       true,
 		RLSLevel:        interceptors.ScopeLevelTenant,
 	}

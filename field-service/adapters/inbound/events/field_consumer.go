@@ -9,7 +9,9 @@ import (
 	"fmt"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
 	"p9e.in/samavaya/agriculture/field-service/internal/ports/inbound"
 )
@@ -93,19 +95,99 @@ func (c *FieldConsumer) onFarmCreated(ctx context.Context, event *domain.DomainE
 	return nil
 }
 
-// onFarmDeleted handles a farm being deleted.
-// Field-service should cascade-deactivate all fields belonging to this farm.
+// cascadePageSize is how many fields are deleted per round.
+const cascadePageSize = 100
+
+// cascadeMaxRounds bounds the delete loop.
+//
+// The loop re-reads the first page each time rather than advancing an offset,
+// because deleting rows shifts the window and an advancing offset would skip
+// as many fields as it deleted. That makes the loop depend on the deletes
+// actually taking effect, so a delete that silently no-ops would spin forever
+// without this.
+const cascadeMaxRounds = 1000
+
+// onFarmDeleted cascades the deletion to the farm's fields.
+//
+// This used to log "farm deleted, deactivating associated fields" and return
+// nil, having deactivated nothing. Kafka saw a successful handle and committed
+// the offset, so the fields stayed active under a farm that no longer existed —
+// visible in listings, still accruing irrigation schedules and sensor
+// readings, and unreachable through their parent.
 func (c *FieldConsumer) onFarmDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFarmDeleted: %w", err)
 	}
 	farmID, _ := data["farm_id"].(string)
-	c.log.Infow("msg", "farm deleted, deactivating associated fields",
-		"farm_id", farmID,
-	)
-	// TODO: call c.svc.ListFieldsByFarm then deactivate/delete each field
+	tenantID, _ := data["tenant_id"].(string)
+
+	if farmID == "" || tenantID == "" {
+		// Nothing to scope the deletion to. Dropped rather than retried: a
+		// message that can never succeed would block the partition, and
+		// guessing a tenant here would delete another tenant's fields.
+		c.log.Warnw("msg", "farm deleted event missing farm or tenant; cannot cascade",
+			"event_id", event.ID, "farm_id", farmID)
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it every query below runs unscoped and row-level
+	// security returns nothing — which would look exactly like a farm with no
+	// fields.
+	ctx = c.systemContext(ctx, tenantID)
+
+	var deleted int
+	for round := 0; round < cascadeMaxRounds; round++ {
+		fields, _, listErr := c.svc.ListFieldsByFarm(ctx, farmID, cascadePageSize, 0)
+		if listErr != nil {
+			// Returned, so the consumer retries: a database that is briefly
+			// unavailable must not leave the fields orphaned.
+			return fmt.Errorf("onFarmDeleted: list fields for farm %s: %w", farmID, listErr)
+		}
+		if len(fields) == 0 {
+			break
+		}
+
+		var failed int
+		for _, f := range fields {
+			if delErr := c.svc.DeleteField(ctx, f.ID); delErr != nil {
+				// One field failing must not abandon the rest, and a replay
+				// will find whatever is left. Counted so the round can tell
+				// progress from a loop.
+				c.log.Errorw("msg", "failed to delete field during farm cascade",
+					"farm_id", farmID, "field_id", f.ID, "error", delErr)
+				failed++
+				continue
+			}
+			deleted++
+		}
+
+		// Every field in the page failed, so the next round would read the
+		// same page and fail identically. Reported rather than spun on.
+		if failed == len(fields) {
+			return fmt.Errorf("onFarmDeleted: could not delete any of %d fields for farm %s",
+				failed, farmID)
+		}
+	}
+
+	c.log.Infow("msg", "farm deleted, fields cascaded",
+		"farm_id", farmID, "fields_deleted", deleted)
 	return nil
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// Both the RLS scope and the connection info are set: the repository layer
+// reads one and the service layer the other, and setting only one leaves
+// queries running unscoped in a way that returns empty rather than failing.
+func (c *FieldConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 // onFarmBoundarySet handles a farm boundary being set or updated.

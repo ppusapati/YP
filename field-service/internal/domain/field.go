@@ -10,12 +10,12 @@ type FieldStatus string
 
 const (
 	FieldStatusUnspecified FieldStatus = ""
-	FieldStatusActive     FieldStatus = "ACTIVE"
-	FieldStatusFallow     FieldStatus = "FALLOW"
+	FieldStatusActive      FieldStatus = "ACTIVE"
+	FieldStatusFallow      FieldStatus = "FALLOW"
 	FieldStatusPreparation FieldStatus = "PREPARATION"
-	FieldStatusPlanted    FieldStatus = "PLANTED"
-	FieldStatusHarvesting FieldStatus = "HARVESTING"
-	FieldStatusRetired    FieldStatus = "RETIRED"
+	FieldStatusPlanted     FieldStatus = "PLANTED"
+	FieldStatusHarvesting  FieldStatus = "HARVESTING"
+	FieldStatusRetired     FieldStatus = "RETIRED"
 )
 
 func (s FieldStatus) IsValid() bool {
@@ -31,13 +31,13 @@ type FieldType string
 
 const (
 	FieldTypeUnspecified FieldType = ""
-	FieldTypeCropland   FieldType = "CROPLAND"
-	FieldTypePasture    FieldType = "PASTURE"
-	FieldTypeOrchard    FieldType = "ORCHARD"
-	FieldTypeVineyard   FieldType = "VINEYARD"
-	FieldTypeGreenhouse FieldType = "GREENHOUSE"
-	FieldTypeNursery    FieldType = "NURSERY"
-	FieldTypeAgroforest FieldType = "AGROFOREST"
+	FieldTypeCropland    FieldType = "CROPLAND"
+	FieldTypePasture     FieldType = "PASTURE"
+	FieldTypeOrchard     FieldType = "ORCHARD"
+	FieldTypeVineyard    FieldType = "VINEYARD"
+	FieldTypeGreenhouse  FieldType = "GREENHOUSE"
+	FieldTypeNursery     FieldType = "NURSERY"
+	FieldTypeAgroforest  FieldType = "AGROFOREST"
 )
 
 func (t FieldType) IsValid() bool {
@@ -53,27 +53,27 @@ type SoilType string
 
 const (
 	SoilTypeUnspecified SoilType = ""
-	SoilTypeClay       SoilType = "CLAY"
-	SoilTypeSandy      SoilType = "SANDY"
-	SoilTypeLoamy      SoilType = "LOAMY"
-	SoilTypeSilt       SoilType = "SILT"
-	SoilTypePeat       SoilType = "PEAT"
-	SoilTypeChalk      SoilType = "CHALK"
-	SoilTypeClayLoam   SoilType = "CLAY_LOAM"
-	SoilTypeSandyLoam  SoilType = "SANDY_LOAM"
+	SoilTypeClay        SoilType = "CLAY"
+	SoilTypeSandy       SoilType = "SANDY"
+	SoilTypeLoamy       SoilType = "LOAMY"
+	SoilTypeSilt        SoilType = "SILT"
+	SoilTypePeat        SoilType = "PEAT"
+	SoilTypeChalk       SoilType = "CHALK"
+	SoilTypeClayLoam    SoilType = "CLAY_LOAM"
+	SoilTypeSandyLoam   SoilType = "SANDY_LOAM"
 )
 
 type IrrigationType string
 
 const (
 	IrrigationTypeUnspecified IrrigationType = ""
-	IrrigationTypeRainfed    IrrigationType = "RAINFED"
-	IrrigationTypeDrip       IrrigationType = "DRIP"
-	IrrigationTypeSprinkler  IrrigationType = "SPRINKLER"
-	IrrigationTypeFlood      IrrigationType = "FLOOD"
+	IrrigationTypeRainfed     IrrigationType = "RAINFED"
+	IrrigationTypeDrip        IrrigationType = "DRIP"
+	IrrigationTypeSprinkler   IrrigationType = "SPRINKLER"
+	IrrigationTypeFlood       IrrigationType = "FLOOD"
 	IrrigationTypeCenterPivot IrrigationType = "CENTER_PIVOT"
-	IrrigationTypeFurrow     IrrigationType = "FURROW"
-	IrrigationTypeSubsurface IrrigationType = "SUBSURFACE"
+	IrrigationTypeFurrow      IrrigationType = "FURROW"
+	IrrigationTypeSubsurface  IrrigationType = "SUBSURFACE"
 )
 
 type GrowthStage string
@@ -81,29 +81,29 @@ type GrowthStage string
 const (
 	GrowthStageUnspecified GrowthStage = ""
 	GrowthStageGermination GrowthStage = "GERMINATION"
-	GrowthStageSeedling   GrowthStage = "SEEDLING"
-	GrowthStageVegetative GrowthStage = "VEGETATIVE"
-	GrowthStageBudding    GrowthStage = "BUDDING"
-	GrowthStageFlowering  GrowthStage = "FLOWERING"
-	GrowthStageFruitSet   GrowthStage = "FRUIT_SET"
-	GrowthStageRipening   GrowthStage = "RIPENING"
-	GrowthStageMaturity   GrowthStage = "MATURITY"
-	GrowthStageSenescence GrowthStage = "SENESCENCE"
+	GrowthStageSeedling    GrowthStage = "SEEDLING"
+	GrowthStageVegetative  GrowthStage = "VEGETATIVE"
+	GrowthStageBudding     GrowthStage = "BUDDING"
+	GrowthStageFlowering   GrowthStage = "FLOWERING"
+	GrowthStageFruitSet    GrowthStage = "FRUIT_SET"
+	GrowthStageRipening    GrowthStage = "RIPENING"
+	GrowthStageMaturity    GrowthStage = "MATURITY"
+	GrowthStageSenescence  GrowthStage = "SENESCENCE"
 )
 
 type AspectDirection string
 
 const (
 	AspectDirectionUnspecified AspectDirection = ""
-	AspectDirectionNorth      AspectDirection = "NORTH"
-	AspectDirectionNortheast  AspectDirection = "NORTHEAST"
-	AspectDirectionEast       AspectDirection = "EAST"
-	AspectDirectionSoutheast  AspectDirection = "SOUTHEAST"
-	AspectDirectionSouth      AspectDirection = "SOUTH"
-	AspectDirectionSouthwest  AspectDirection = "SOUTHWEST"
-	AspectDirectionWest       AspectDirection = "WEST"
-	AspectDirectionNorthwest  AspectDirection = "NORTHWEST"
-	AspectDirectionFlat       AspectDirection = "FLAT"
+	AspectDirectionNorth       AspectDirection = "NORTH"
+	AspectDirectionNortheast   AspectDirection = "NORTHEAST"
+	AspectDirectionEast        AspectDirection = "EAST"
+	AspectDirectionSoutheast   AspectDirection = "SOUTHEAST"
+	AspectDirectionSouth       AspectDirection = "SOUTH"
+	AspectDirectionSouthwest   AspectDirection = "SOUTHWEST"
+	AspectDirectionWest        AspectDirection = "WEST"
+	AspectDirectionNorthwest   AspectDirection = "NORTHWEST"
+	AspectDirectionFlat        AspectDirection = "FLAT"
 )
 
 type Field struct {
@@ -166,16 +166,16 @@ type CropAssignment struct {
 }
 
 type FieldSegment struct {
-	ID            string   `json:"id"`
-	TenantID      string   `json:"tenant_id"`
-	FieldID       string   `json:"field_id"`
-	Name          string   `json:"name"`
-	Boundary      string   `json:"boundary"`
-	AreaHectares  float64  `json:"area_hectares"`
-	SoilType      SoilType `json:"soil_type"`
-	CurrentCropID string   `json:"current_crop_id"`
-	Notes         string   `json:"notes"`
-	SegmentIndex  int32    `json:"segment_index"`
+	ID            string    `json:"id"`
+	TenantID      string    `json:"tenant_id"`
+	FieldID       string    `json:"field_id"`
+	Name          string    `json:"name"`
+	Boundary      string    `json:"boundary"`
+	AreaHectares  float64   `json:"area_hectares"`
+	SoilType      SoilType  `json:"soil_type"`
+	CurrentCropID string    `json:"current_crop_id"`
+	Notes         string    `json:"notes"`
+	SegmentIndex  int32     `json:"segment_index"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -231,11 +231,11 @@ type CropCycleStatus string
 
 const (
 	CropCycleStatusUnspecified CropCycleStatus = ""
-	CropCycleStatusPlanned    CropCycleStatus = "CYCLE_STATUS_PLANNED"
-	CropCycleStatusActive     CropCycleStatus = "CYCLE_STATUS_ACTIVE"
-	CropCycleStatusHarvesting CropCycleStatus = "CYCLE_STATUS_HARVESTING"
-	CropCycleStatusCompleted  CropCycleStatus = "CYCLE_STATUS_COMPLETED"
-	CropCycleStatusAbandoned  CropCycleStatus = "CYCLE_STATUS_ABANDONED"
+	CropCycleStatusPlanned     CropCycleStatus = "CYCLE_STATUS_PLANNED"
+	CropCycleStatusActive      CropCycleStatus = "CYCLE_STATUS_ACTIVE"
+	CropCycleStatusHarvesting  CropCycleStatus = "CYCLE_STATUS_HARVESTING"
+	CropCycleStatusCompleted   CropCycleStatus = "CYCLE_STATUS_COMPLETED"
+	CropCycleStatusAbandoned   CropCycleStatus = "CYCLE_STATUS_ABANDONED"
 )
 
 func (s CropCycleStatus) IsValid() bool {
@@ -252,16 +252,16 @@ type ActivityCategory string
 
 const (
 	ActivityCategoryUnspecified   ActivityCategory = ""
-	ActivityCategoryLandPrep     ActivityCategory = "CATEGORY_LAND_PREP"
-	ActivityCategoryPlanting     ActivityCategory = "CATEGORY_PLANTING"
-	ActivityCategoryIrrigation   ActivityCategory = "CATEGORY_IRRIGATION"
+	ActivityCategoryLandPrep      ActivityCategory = "CATEGORY_LAND_PREP"
+	ActivityCategoryPlanting      ActivityCategory = "CATEGORY_PLANTING"
+	ActivityCategoryIrrigation    ActivityCategory = "CATEGORY_IRRIGATION"
 	ActivityCategoryFertilization ActivityCategory = "CATEGORY_FERTILIZATION"
-	ActivityCategoryPestControl  ActivityCategory = "CATEGORY_PEST_CONTROL"
-	ActivityCategoryScouting     ActivityCategory = "CATEGORY_SCOUTING"
-	ActivityCategoryHarvesting   ActivityCategory = "CATEGORY_HARVESTING"
-	ActivityCategoryPostHarvest  ActivityCategory = "CATEGORY_POST_HARVEST"
-	ActivityCategorySoilSampling ActivityCategory = "CATEGORY_SOIL_SAMPLING"
-	ActivityCategoryMaintenance  ActivityCategory = "CATEGORY_MAINTENANCE"
+	ActivityCategoryPestControl   ActivityCategory = "CATEGORY_PEST_CONTROL"
+	ActivityCategoryScouting      ActivityCategory = "CATEGORY_SCOUTING"
+	ActivityCategoryHarvesting    ActivityCategory = "CATEGORY_HARVESTING"
+	ActivityCategoryPostHarvest   ActivityCategory = "CATEGORY_POST_HARVEST"
+	ActivityCategorySoilSampling  ActivityCategory = "CATEGORY_SOIL_SAMPLING"
+	ActivityCategoryMaintenance   ActivityCategory = "CATEGORY_MAINTENANCE"
 )
 
 // CropCycle is a season-level aggregate linking field, crop, and lifecycle data.
@@ -308,29 +308,29 @@ type ListCropCyclesParams struct {
 
 // ActivityEvent is an immutable log entry for actions taken on a field.
 type ActivityEvent struct {
-	ID               string           `json:"id"`
-	TenantID         string           `json:"tenant_id"`
-	FieldID          string           `json:"field_id"`
-	CropCycleID      *string          `json:"crop_cycle_id,omitempty"`
-	PerformedBy      string           `json:"performed_by"`
-	ActivityType     string           `json:"activity_type"`
-	Category         ActivityCategory `json:"category"`
-	StartedAt        time.Time        `json:"started_at"`
-	CompletedAt      *time.Time       `json:"completed_at,omitempty"`
-	DurationMinutes  *int32           `json:"duration_minutes,omitempty"`
-	Description      *string          `json:"description,omitempty"`
-	Notes            *string          `json:"notes,omitempty"`
-	InputProductID   *string          `json:"input_product_id,omitempty"`
-	InputQuantity    *float64         `json:"input_quantity,omitempty"`
-	InputUnit        *string          `json:"input_unit,omitempty"`
-	InputCost        int64            `json:"input_cost"`
-	Currency         string           `json:"currency"`
-	AreaHectares     *float64         `json:"area_hectares,omitempty"`
-	WeatherTempC     *float64         `json:"weather_temp_celsius,omitempty"`
-	WeatherHumidity  *float64         `json:"weather_humidity_pct,omitempty"`
-	WeatherWindSpeed *float64         `json:"weather_wind_speed_kmh,omitempty"`
-	WeatherConditions *string         `json:"weather_conditions,omitempty"`
-	CreatedAt        time.Time        `json:"created_at"`
+	ID                string           `json:"id"`
+	TenantID          string           `json:"tenant_id"`
+	FieldID           string           `json:"field_id"`
+	CropCycleID       *string          `json:"crop_cycle_id,omitempty"`
+	PerformedBy       string           `json:"performed_by"`
+	ActivityType      string           `json:"activity_type"`
+	Category          ActivityCategory `json:"category"`
+	StartedAt         time.Time        `json:"started_at"`
+	CompletedAt       *time.Time       `json:"completed_at,omitempty"`
+	DurationMinutes   *int32           `json:"duration_minutes,omitempty"`
+	Description       *string          `json:"description,omitempty"`
+	Notes             *string          `json:"notes,omitempty"`
+	InputProductID    *string          `json:"input_product_id,omitempty"`
+	InputQuantity     *float64         `json:"input_quantity,omitempty"`
+	InputUnit         *string          `json:"input_unit,omitempty"`
+	InputCost         int64            `json:"input_cost"`
+	Currency          string           `json:"currency"`
+	AreaHectares      *float64         `json:"area_hectares,omitempty"`
+	WeatherTempC      *float64         `json:"weather_temp_celsius,omitempty"`
+	WeatherHumidity   *float64         `json:"weather_humidity_pct,omitempty"`
+	WeatherWindSpeed  *float64         `json:"weather_wind_speed_kmh,omitempty"`
+	WeatherConditions *string          `json:"weather_conditions,omitempty"`
+	CreatedAt         time.Time        `json:"created_at"`
 }
 
 type ListActivityEventsParams struct {

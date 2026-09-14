@@ -72,23 +72,23 @@ func (p *YieldPrediction) GetYieldFactors() YieldFactors {
 // YieldRecord represents an actual recorded yield after harvest.
 type YieldRecord struct {
 	models.BaseModel
-	TenantID                  string     `json:"tenant_id" db:"tenant_id"`
-	FarmID                    string     `json:"farm_id" db:"farm_id"`
-	FieldID                   string     `json:"field_id" db:"field_id"`
-	CropID                    string     `json:"crop_id" db:"crop_id"`
-	Season                    string     `json:"season" db:"season"`
-	Year                      int32      `json:"year" db:"year"`
-	ActualYieldKgPerHectare   float64    `json:"actual_yield_kg_per_hectare" db:"actual_yield_kg_per_hectare"`
-	TotalAreaHarvestedHectares float64   `json:"total_area_harvested_hectares" db:"total_area_harvested_hectares"`
-	TotalYieldKg              float64    `json:"total_yield_kg" db:"total_yield_kg"`
-	HarvestQualityGrade       string     `json:"harvest_quality_grade" db:"harvest_quality_grade"`
-	MoistureContentPct        float64    `json:"moisture_content_pct" db:"moisture_content_pct"`
-	HarvestDate               *time.Time `json:"harvest_date" db:"harvest_date"`
-	RevenuePerHectare         float64    `json:"revenue_per_hectare" db:"revenue_per_hectare"`
-	CostPerHectare            float64    `json:"cost_per_hectare" db:"cost_per_hectare"`
-	ProfitPerHectare          float64    `json:"profit_per_hectare" db:"profit_per_hectare"`
-	PredictionID              *string    `json:"prediction_id" db:"prediction_id"`
-	Version                   int64      `json:"version" db:"version"`
+	TenantID                   string     `json:"tenant_id" db:"tenant_id"`
+	FarmID                     string     `json:"farm_id" db:"farm_id"`
+	FieldID                    string     `json:"field_id" db:"field_id"`
+	CropID                     string     `json:"crop_id" db:"crop_id"`
+	Season                     string     `json:"season" db:"season"`
+	Year                       int32      `json:"year" db:"year"`
+	ActualYieldKgPerHectare    float64    `json:"actual_yield_kg_per_hectare" db:"actual_yield_kg_per_hectare"`
+	TotalAreaHarvestedHectares float64    `json:"total_area_harvested_hectares" db:"total_area_harvested_hectares"`
+	TotalYieldKg               float64    `json:"total_yield_kg" db:"total_yield_kg"`
+	HarvestQualityGrade        string     `json:"harvest_quality_grade" db:"harvest_quality_grade"`
+	MoistureContentPct         float64    `json:"moisture_content_pct" db:"moisture_content_pct"`
+	HarvestDate                *time.Time `json:"harvest_date" db:"harvest_date"`
+	RevenuePerHectare          float64    `json:"revenue_per_hectare" db:"revenue_per_hectare"`
+	CostPerHectare             float64    `json:"cost_per_hectare" db:"cost_per_hectare"`
+	ProfitPerHectare           float64    `json:"profit_per_hectare" db:"profit_per_hectare"`
+	PredictionID               *string    `json:"prediction_id" db:"prediction_id"`
+	Version                    int64      `json:"version" db:"version"`
 }
 
 // HarvestPlan represents a planned harvest operation.
@@ -112,27 +112,27 @@ type HarvestPlan struct {
 // CropPerformance represents analytics for a specific crop's performance.
 type CropPerformance struct {
 	models.BaseModel
-	TenantID                      string  `json:"tenant_id" db:"tenant_id"`
-	FarmID                        string  `json:"farm_id" db:"farm_id"`
-	FieldID                       string  `json:"field_id" db:"field_id"`
-	CropID                        string  `json:"crop_id" db:"crop_id"`
-	Season                        string  `json:"season" db:"season"`
-	Year                          int32   `json:"year" db:"year"`
-	ActualYieldKgPerHectare       float64 `json:"actual_yield_kg_per_hectare" db:"actual_yield_kg_per_hectare"`
-	PredictedYieldKgPerHectare    float64 `json:"predicted_yield_kg_per_hectare" db:"predicted_yield_kg_per_hectare"`
-	YieldVariancePct              float64 `json:"yield_variance_pct" db:"yield_variance_pct"`
-	ComparisonToRegionalAvgPct    float64 `json:"comparison_to_regional_avg_pct" db:"comparison_to_regional_avg_pct"`
-	ComparisonToHistoricalAvgPct  float64 `json:"comparison_to_historical_avg_pct" db:"comparison_to_historical_avg_pct"`
-	RevenuePerHectare             float64 `json:"revenue_per_hectare" db:"revenue_per_hectare"`
-	CostPerHectare                float64 `json:"cost_per_hectare" db:"cost_per_hectare"`
-	ProfitPerHectare              float64 `json:"profit_per_hectare" db:"profit_per_hectare"`
-	SoilQualityScore              float64 `json:"soil_quality_score" db:"soil_quality_score"`
-	WeatherScore                  float64 `json:"weather_score" db:"weather_score"`
-	IrrigationScore               float64 `json:"irrigation_score" db:"irrigation_score"`
-	PestPressureScore             float64 `json:"pest_pressure_score" db:"pest_pressure_score"`
-	NutrientScore                 float64 `json:"nutrient_score" db:"nutrient_score"`
-	ManagementScore               float64 `json:"management_score" db:"management_score"`
-	Version                       int64   `json:"version" db:"version"`
+	TenantID                     string  `json:"tenant_id" db:"tenant_id"`
+	FarmID                       string  `json:"farm_id" db:"farm_id"`
+	FieldID                      string  `json:"field_id" db:"field_id"`
+	CropID                       string  `json:"crop_id" db:"crop_id"`
+	Season                       string  `json:"season" db:"season"`
+	Year                         int32   `json:"year" db:"year"`
+	ActualYieldKgPerHectare      float64 `json:"actual_yield_kg_per_hectare" db:"actual_yield_kg_per_hectare"`
+	PredictedYieldKgPerHectare   float64 `json:"predicted_yield_kg_per_hectare" db:"predicted_yield_kg_per_hectare"`
+	YieldVariancePct             float64 `json:"yield_variance_pct" db:"yield_variance_pct"`
+	ComparisonToRegionalAvgPct   float64 `json:"comparison_to_regional_avg_pct" db:"comparison_to_regional_avg_pct"`
+	ComparisonToHistoricalAvgPct float64 `json:"comparison_to_historical_avg_pct" db:"comparison_to_historical_avg_pct"`
+	RevenuePerHectare            float64 `json:"revenue_per_hectare" db:"revenue_per_hectare"`
+	CostPerHectare               float64 `json:"cost_per_hectare" db:"cost_per_hectare"`
+	ProfitPerHectare             float64 `json:"profit_per_hectare" db:"profit_per_hectare"`
+	SoilQualityScore             float64 `json:"soil_quality_score" db:"soil_quality_score"`
+	WeatherScore                 float64 `json:"weather_score" db:"weather_score"`
+	IrrigationScore              float64 `json:"irrigation_score" db:"irrigation_score"`
+	PestPressureScore            float64 `json:"pest_pressure_score" db:"pest_pressure_score"`
+	NutrientScore                float64 `json:"nutrient_score" db:"nutrient_score"`
+	ManagementScore              float64 `json:"management_score" db:"management_score"`
+	Version                      int64   `json:"version" db:"version"`
 }
 
 // GetYieldFactors returns the yield factors as a YieldFactors struct.
@@ -179,17 +179,17 @@ const PredictionModelVersion = "v1.0.0"
 // These are used as starting points in the prediction algorithm and represent
 // average yields under optimal conditions.
 var BaseCropYieldKgPerHectare = map[string]float64{
-	"wheat":      3500.0,
-	"rice":       4500.0,
-	"corn":       9000.0,
-	"soybean":    2800.0,
-	"cotton":     1800.0,
-	"sugarcane":  70000.0,
-	"potato":     20000.0,
-	"tomato":     60000.0,
-	"barley":     3200.0,
-	"sunflower":  1500.0,
-	"default":    4000.0,
+	"wheat":     3500.0,
+	"rice":      4500.0,
+	"corn":      9000.0,
+	"soybean":   2800.0,
+	"cotton":    1800.0,
+	"sugarcane": 70000.0,
+	"potato":    20000.0,
+	"tomato":    60000.0,
+	"barley":    3200.0,
+	"sunflower": 1500.0,
+	"default":   4000.0,
 }
 
 // HarvestDateInput wraps a time value for optional harvest date input.
