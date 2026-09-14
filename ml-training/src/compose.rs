@@ -102,6 +102,10 @@ pub struct MultiTaskManifest {
     pub backbone_fingerprint: String,
     pub backbone_path: String,
     pub embedding_tensor: String,
+    /// The feature map Grad-CAM outputs are computed over, when the backbone
+    /// supports them.
+    #[serde(default)]
+    pub cam: Option<crate::backbone::FeatureMap>,
     pub created_at: String,
     pub producer: String,
 }
@@ -111,6 +115,10 @@ pub struct TaskEntry {
     pub name: String,
     /// Graph output carrying this task's logits.
     pub output: String,
+    /// Graph output carrying this task's per-class Grad-CAM maps, empty when
+    /// the model was composed without them.
+    #[serde(default)]
+    pub cam_output: String,
     pub labels: Vec<String>,
 }
 
@@ -137,7 +145,32 @@ pub fn compose_multitask(
         }
     }
 
-    let bytes = compose_bytes(backbone.onnx_bytes(), backbone.embedding_tensor(), heads)?;
+    // Explanations are a bonus, not a requirement: a backbone whose embedding
+    // cannot be traced back to an average-pooled feature map still composes,
+    // it just serves no heatmaps.
+    let feature_map = match backbone.feature_map() {
+        Ok(fm) => {
+            tracing::info!(
+                tensor = %fm.tensor,
+                channels = fm.channels,
+                height = fm.height,
+                width = fm.width,
+                "Grad-CAM outputs enabled"
+            );
+            Some(fm)
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "composing without Grad-CAM outputs");
+            None
+        }
+    };
+
+    let bytes = compose_bytes(
+        backbone.onnx_bytes(),
+        backbone.embedding_tensor(),
+        heads,
+        feature_map.as_ref(),
+    )?;
 
     std::fs::create_dir_all(output_dir)?;
     let model_path = output_dir.join(MULTITASK_MODEL_FILE);
@@ -152,12 +185,17 @@ pub fn compose_multitask(
             .map(|h| TaskEntry {
                 name: h.task.clone(),
                 output: logits_name(&h.task),
+                cam_output: feature_map
+                    .as_ref()
+                    .map(|_| cam_name(&h.task))
+                    .unwrap_or_default(),
                 labels: h.labels.clone(),
             })
             .collect(),
         backbone_fingerprint: backbone.fingerprint().to_string(),
         backbone_path: backbone.path().display().to_string(),
         embedding_tensor: backbone.embedding_tensor().to_string(),
+        cam: feature_map,
         created_at: chrono::Utc::now().to_rfc3339(),
         producer: "yp-ml-training".to_string(),
     };
@@ -186,11 +224,219 @@ fn sanitize(task: &str) -> String {
         .collect()
 }
 
+/// Wire a per-class Grad-CAM output for one head.
+///
+/// Grad-CAM weights each feature-map channel by the gradient of a class logit
+/// with respect to that channel, then sums and rectifies. With a global
+/// *average* pool between the feature map and the head, that gradient has a
+/// closed form:
+///
+/// ```text
+/// emb_c = (1/HW) . sum_xy A[c,x,y]        so  d(emb_c)/d(A[c,x,y]) = 1/HW
+/// J[k,c] = d(logit_k)/d(emb_c) = (W_0 . D_0 . W_1 . D_1 ... W_n)[c,k]
+/// cam_k(x,y) = relu( sum_c J[k,c] . A[c,x,y] )
+/// ```
+///
+/// where `D_i` is the diagonal of the ReLU derivative at layer `i` — one where
+/// that unit fired, zero where it did not. The `1/HW` is a positive constant
+/// shared by every channel, so it scales the whole map and drops out when the
+/// heatmap is normalised.
+///
+/// Every term is a forward operation on values the graph already computes, so
+/// this is the real gradient rather than an approximation of it, and it costs
+/// one small matrix product on top of the forward pass. It is emitted as a
+/// separate output, so a runtime that does not ask for it pays nothing.
+fn add_cam_subgraph(
+    existing: &std::collections::HashSet<String>,
+    feature_map: &crate::backbone::FeatureMap,
+    wiring: &HeadWiring,
+    nodes: &mut Vec<NodeProto>,
+    initializers: &mut Vec<TensorProto>,
+    outputs: &mut Vec<ValueInfoProto>,
+) -> anyhow::Result<()> {
+    let task = sanitize(&wiring.task);
+    let p = format!("{PREFIX}{task}_cam");
+    let (_, classes) = *wiring
+        .shapes
+        .last()
+        .ok_or_else(|| anyhow::anyhow!("head {:?} has no layers", wiring.task))?;
+    let (embedding_dim, _) = wiring.shapes[0];
+    if embedding_dim != feature_map.channels {
+        anyhow::bail!(
+            "head {:?} takes a {embedding_dim}-d embedding but the feature map has {} channels",
+            wiring.task,
+            feature_map.channels
+        );
+    }
+
+    let name = |suffix: &str| -> anyhow::Result<String> {
+        let n = format!("{p}_{suffix}");
+        guard_name(existing, &n)?;
+        Ok(n)
+    };
+
+    // Fold the head's layers back to front into J^T, shaped (C, K) — or
+    // (N, C, K) once any ReLU mask makes it depend on the input.
+    let last = wiring.weights.len() - 1;
+    let mut acc = wiring.weights[last].clone();
+    let mut acc_is_batched = false;
+
+    for i in (0..last).rev() {
+        let (fan_in, fan_out) = wiring.shapes[i];
+        let sign = name(&format!("sign{i}"))?;
+        let mask = name(&format!("mask{i}"))?;
+        let mask3 = name(&format!("mask3_{i}"))?;
+        let masked = name(&format!("masked{i}"))?;
+        let next = name(&format!("acc{i}"))?;
+        let shape_name = name(&format!("mask_shape{i}"))?;
+
+        // relu(sign(z)) is 1 where the unit fired and 0 where it did not,
+        // which is exactly the ReLU derivative, without needing a cast.
+        nodes.push(onnx::node(
+            &format!("{p}_sign{i}_op"),
+            "Sign",
+            &[&wiring.pre_activations[i]],
+            &[&sign],
+        ));
+        nodes.push(onnx::node(
+            &format!("{p}_mask{i}_op"),
+            "Relu",
+            &[&sign],
+            &[&mask],
+        ));
+        // (N, out) -> (N, 1, out) so it broadcasts across the weight's rows.
+        initializers.push(TensorProto::int64s(
+            &shape_name,
+            &[3],
+            &[-1, 1, fan_out as i64],
+        ));
+        nodes.push(onnx::node(
+            &format!("{p}_mask3_{i}_op"),
+            "Reshape",
+            &[&mask, &shape_name],
+            &[&mask3],
+        ));
+        nodes.push(onnx::node(
+            &format!("{p}_masked{i}_op"),
+            "Mul",
+            &[&wiring.weights[i], &mask3],
+            &[&masked],
+        ));
+        nodes.push(onnx::node(
+            &format!("{p}_acc{i}_op"),
+            "MatMul",
+            &[&masked, &acc],
+            &[&next],
+        ));
+        let _ = fan_in;
+        acc = next;
+        acc_is_batched = true;
+    }
+
+    // J^T -> J, then contract with the feature map over channels.
+    let jt = name("j")?;
+    nodes.push(NodeProto {
+        attribute: vec![onnx::ints_attr(
+            "perm",
+            if acc_is_batched { &[0, 2, 1] } else { &[1, 0] },
+        )],
+        ..onnx::node(&format!("{p}_j_op"), "Transpose", &[&acc], &[&jt])
+    });
+
+    let feat_shape = name("feat_shape")?;
+    let feat2 = name("feat2")?;
+    initializers.push(TensorProto::int64s(
+        &feat_shape,
+        &[3],
+        &[
+            -1,
+            feature_map.channels as i64,
+            feature_map.spatial() as i64,
+        ],
+    ));
+    nodes.push(onnx::node(
+        &format!("{p}_feat2_op"),
+        "Reshape",
+        &[&feature_map.tensor, &feat_shape],
+        &[&feat2],
+    ));
+
+    let flat_cam = name("flat")?;
+    nodes.push(onnx::node(
+        &format!("{p}_matmul_op"),
+        "MatMul",
+        &[&jt, &feat2],
+        &[&flat_cam],
+    ));
+
+    let cam_shape = name("shape")?;
+    let raw = name("raw")?;
+    initializers.push(TensorProto::int64s(
+        &cam_shape,
+        &[4],
+        &[
+            -1,
+            classes as i64,
+            feature_map.height as i64,
+            feature_map.width as i64,
+        ],
+    ));
+    nodes.push(onnx::node(
+        &format!("{p}_reshape_op"),
+        "Reshape",
+        &[&flat_cam, &cam_shape],
+        &[&raw],
+    ));
+
+    // Grad-CAM keeps only evidence *for* the class; negative contributions are
+    // evidence for some other class and would muddy the map.
+    let out = cam_name(&wiring.task);
+    guard_name(existing, &out)?;
+    nodes.push(onnx::node(
+        &format!("{p}_relu_op"),
+        "Relu",
+        &[&raw],
+        &[&out],
+    ));
+
+    outputs.push(ValueInfoProto::float_tensor(
+        &out,
+        &[
+            -1,
+            classes as i64,
+            feature_map.height as i64,
+            feature_map.width as i64,
+        ],
+    ));
+    Ok(())
+}
+
+/// Name of a task's Grad-CAM output.
+pub fn cam_name(task: &str) -> String {
+    format!("cam_{}", sanitize(task))
+}
+
+/// What one head's graph looks like, so the Grad-CAM subgraph can be wired to
+/// the same tensors rather than guessing their names.
+struct HeadWiring {
+    task: String,
+    /// Weight initializer per layer, `(fan_in, fan_out)` shaped.
+    weights: Vec<String>,
+    /// Pre-activation output of every layer but the last.
+    pre_activations: Vec<String>,
+    shapes: Vec<(usize, usize)>,
+}
+
 /// Build the composed ONNX bytes.
+///
+/// When `cam` is given, each task also gets a `cam_<task>` output holding a
+/// per-class Grad-CAM map over the backbone's last feature map. See
+/// [`add_cam_subgraph`] for why that is exact here rather than approximate.
 pub fn compose_bytes(
     backbone_onnx: &[u8],
     embedding_tensor: &str,
     heads: &[HeadSpec],
+    cam: Option<&crate::backbone::FeatureMap>,
 ) -> anyhow::Result<Vec<u8>> {
     let mut model = decode_model(backbone_onnx)?;
     let graph = model
@@ -223,10 +469,17 @@ pub fn compose_bytes(
         )
     });
 
+    let mut wirings = Vec::new();
     for head in heads {
         let task = sanitize(&head.task);
         let mut current = flat.clone();
         let last = head.layers.len() - 1;
+        let mut wiring = HeadWiring {
+            task: head.task.clone(),
+            weights: Vec::new(),
+            pre_activations: Vec::new(),
+            shapes: Vec::new(),
+        };
 
         for (i, (weight, bias, fan_in, fan_out)) in head.layers.iter().enumerate() {
             let w_name = format!("{PREFIX}{task}_fc{i}.weight");
@@ -235,6 +488,8 @@ pub fn compose_bytes(
             guard_name(&existing, &b_name)?;
             new_initializers.push(TensorProto::floats(&w_name, &[*fan_in, *fan_out], weight));
             new_initializers.push(TensorProto::floats(&b_name, &[*fan_out], bias));
+            wiring.weights.push(w_name.clone());
+            wiring.shapes.push((*fan_in, *fan_out));
 
             let out = if i == last {
                 logits_name(&head.task)
@@ -249,6 +504,11 @@ pub fn compose_bytes(
                 &b_name,
                 &out,
             ));
+            if i != last {
+                // The pre-activation is where the ReLU's derivative is read
+                // from when the Grad-CAM weights are computed.
+                wiring.pre_activations.push(out.clone());
+            }
             current = out;
 
             if i != last {
@@ -268,6 +528,26 @@ pub fn compose_bytes(
             &current,
             &[-1, head.num_classes() as i64],
         ));
+        wirings.push(wiring);
+    }
+
+    if let Some(feature_map) = cam {
+        if !graph.produces(&feature_map.tensor) {
+            anyhow::bail!(
+                "feature tensor {:?} is not produced by the backbone graph",
+                feature_map.tensor
+            );
+        }
+        for wiring in &wirings {
+            add_cam_subgraph(
+                &existing,
+                feature_map,
+                wiring,
+                &mut new_nodes,
+                &mut new_initializers,
+                &mut outputs,
+            )?;
+        }
     }
 
     graph.node.extend(new_nodes);
@@ -461,7 +741,7 @@ mod tests {
             linear_head("disease", 8, &["healthy", "rust", "blight"]),
             linear_head("pest", 8, &["none", "aphid"]),
         ];
-        let composed = compose_bytes(&backbone, "embedding", &heads).unwrap();
+        let composed = compose_bytes(&backbone, "embedding", &heads, None).unwrap();
         let graph = decode(&composed);
 
         let outputs: Vec<&str> = graph.output.iter().map(|v| v.name.as_str()).collect();
@@ -487,6 +767,7 @@ mod tests {
             &backbone,
             "embedding",
             &[linear_head("disease", 8, &["a", "b"])],
+            None,
         )
         .unwrap();
         assert!(
@@ -504,6 +785,7 @@ mod tests {
             &backbone,
             "does_not_exist",
             &[linear_head("disease", 4, &["a"])],
+            None,
         )
         .unwrap_err()
         .to_string();
@@ -557,7 +839,7 @@ mod tests {
             ],
             labels: vec!["ok".into(), "low_n".into()],
         };
-        let composed = compose_bytes(&backbone, "embedding", &[head]).unwrap();
+        let composed = compose_bytes(&backbone, "embedding", &[head], None).unwrap();
         let graph = decode(&composed);
         assert_eq!(graph.node.iter().filter(|n| n.op_type == "Gemm").count(), 2);
         // conv relu + head relu
@@ -612,5 +894,384 @@ mod tests {
             }
         }
         assert!(duplicate);
+    }
+    // ── Grad-CAM ─────────────────────────────────────────────────────────────
+
+    /// A two-layer head evaluated in plain Rust, for cross-checking the graph.
+    fn head_forward(emb: &[f32], layers: &[(Vec<f32>, Vec<f32>, usize, usize)]) -> Vec<f32> {
+        let mut current = emb.to_vec();
+        for (i, (w, b, fan_in, fan_out)) in layers.iter().enumerate() {
+            let mut next = b.clone();
+            for o in 0..*fan_out {
+                for c in 0..*fan_in {
+                    next[o] += current[c] * w[c * fan_out + o];
+                }
+            }
+            if i + 1 != layers.len() {
+                for v in next.iter_mut() {
+                    *v = v.max(0.0);
+                }
+            }
+            current = next;
+        }
+        current
+    }
+
+    /// d(logit_k)/d(emb_c) in closed form: the weight chain with each hidden
+    /// layer masked by whether its unit fired.
+    fn analytic_jacobian(
+        emb: &[f32],
+        layers: &[(Vec<f32>, Vec<f32>, usize, usize)],
+    ) -> Vec<Vec<f32>> {
+        let (_, _, embedding_dim, _) = layers[0];
+        let (_, _, _, classes) = layers[layers.len() - 1];
+
+        // Pre-activations of every hidden layer.
+        let mut masks: Vec<Vec<f32>> = Vec::new();
+        let mut current = emb.to_vec();
+        for (i, (w, b, fan_in, fan_out)) in layers.iter().enumerate() {
+            let mut z = b.clone();
+            for o in 0..*fan_out {
+                for c in 0..*fan_in {
+                    z[o] += current[c] * w[c * fan_out + o];
+                }
+            }
+            if i + 1 != layers.len() {
+                masks.push(z.iter().map(|v| if *v > 0.0 { 1.0 } else { 0.0 }).collect());
+                for v in z.iter_mut() {
+                    *v = v.max(0.0);
+                }
+            }
+            current = z;
+        }
+
+        // Fold back to front: acc = W_i . diag(mask_i) . acc
+        let last = layers.len() - 1;
+        let mut acc: Vec<Vec<f32>> = {
+            let (w, _, fan_in, fan_out) = &layers[last];
+            (0..*fan_in)
+                .map(|r| (0..*fan_out).map(|c| w[r * fan_out + c]).collect())
+                .collect()
+        };
+        for i in (0..last).rev() {
+            let (w, _, fan_in, fan_out) = &layers[i];
+            let mask = &masks[i];
+            acc = (0..*fan_in)
+                .map(|r| {
+                    (0..classes)
+                        .map(|k| {
+                            (0..*fan_out)
+                                .map(|h| w[r * fan_out + h] * mask[h] * acc[h][k])
+                                .sum()
+                        })
+                        .collect()
+                })
+                .collect();
+        }
+        // acc is (C, K); return J as (K, C).
+        (0..classes)
+            .map(|k| (0..embedding_dim).map(|c| acc[c][k]).collect())
+            .collect()
+    }
+
+    fn two_layer_head(channels: usize, hidden: usize, classes: usize) -> HeadSpec {
+        HeadSpec {
+            task: "disease".into(),
+            layers: vec![
+                (
+                    (0..channels * hidden)
+                        .map(|i| ((i % 9) as f32 - 4.0) * 0.11)
+                        .collect(),
+                    (0..hidden).map(|i| (i as f32 - 2.0) * 0.3).collect(),
+                    channels,
+                    hidden,
+                ),
+                (
+                    (0..hidden * classes)
+                        .map(|i| ((i % 7) as f32 - 3.0) * 0.17)
+                        .collect(),
+                    (0..classes).map(|i| i as f32 * 0.05).collect(),
+                    hidden,
+                    classes,
+                ),
+            ],
+            labels: (0..classes).map(|i| format!("c{i}")).collect(),
+        }
+    }
+
+    #[test]
+    fn the_closed_form_gradient_matches_a_numeric_one() {
+        let (channels, hidden, classes) = (6, 5, 3);
+        let head = two_layer_head(channels, hidden, classes);
+        let emb: Vec<f32> = (0..channels).map(|i| (i as f32 - 2.5) * 0.4).collect();
+
+        let analytic = analytic_jacobian(&emb, &head.layers);
+
+        // Central differences. The ReLU kink makes this invalid for a unit
+        // sitting on zero, so the step stays well away from one.
+        let eps = 1e-3f32;
+        for k in 0..classes {
+            for c in 0..channels {
+                let mut up = emb.clone();
+                let mut down = emb.clone();
+                up[c] += eps;
+                down[c] -= eps;
+                let numeric = (head_forward(&up, &head.layers)[k]
+                    - head_forward(&down, &head.layers)[k])
+                    / (2.0 * eps);
+                assert!(
+                    (numeric - analytic[k][c]).abs() < 1e-2,
+                    "d(logit {k})/d(emb {c}): numeric {numeric}, analytic {}",
+                    analytic[k][c]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cam_output_matches_the_closed_form_gradient() {
+        use tract_onnx::prelude::*;
+
+        let size = 8i64;
+        let (channels, hidden, classes) = (6usize, 5usize, 3usize);
+        let backbone = synthetic_backbone(size, channels, 4);
+        let head = two_layer_head(channels, hidden, classes);
+        let fm = crate::backbone::FeatureMap {
+            tensor: "relu_out".into(),
+            channels,
+            height: size as usize,
+            width: size as usize,
+        };
+
+        let bytes = compose_bytes(
+            &backbone,
+            "embedding",
+            std::slice::from_ref(&head),
+            Some(&fm),
+        )
+        .unwrap();
+
+        // The manifest promises three outputs; ask for the feature map too so
+        // the expected map can be computed from the same activations.
+        let mut model = tract_onnx::onnx()
+            .model_for_read(&mut std::io::Cursor::new(&bytes))
+            .unwrap();
+        model
+            .set_output_names(["logits_disease", "cam_disease", "relu_out"])
+            .unwrap();
+        let plan = model
+            .with_input_fact(0, f32::fact([1, 3, size, size]).into())
+            .unwrap()
+            .into_optimized()
+            .unwrap()
+            .into_runnable()
+            .unwrap();
+
+        let pixels: Vec<f32> = (0..3 * size * size)
+            .map(|i| ((i % 17) as f32 - 8.0) / 8.0)
+            .collect();
+        let input =
+            tract_ndarray::Array4::from_shape_vec((1, 3, size as usize, size as usize), pixels)
+                .unwrap();
+        let out = plan.run(tvec!(Tensor::from(input).into())).unwrap();
+
+        let logits: Vec<f32> = out[0]
+            .to_array_view::<f32>()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        let cam: Vec<f32> = out[1]
+            .to_array_view::<f32>()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        let features: Vec<f32> = out[2]
+            .to_array_view::<f32>()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+
+        let hw = (size * size) as usize;
+        assert_eq!(out[1].shape(), &[1, classes, size as usize, size as usize]);
+        assert_eq!(features.len(), channels * hw);
+
+        // Global average pool, exactly as the backbone does it.
+        let emb: Vec<f32> = (0..channels)
+            .map(|c| features[c * hw..(c + 1) * hw].iter().sum::<f32>() / hw as f32)
+            .collect();
+
+        // The graph's logits must agree with the head evaluated by hand, or
+        // the CAM is explaining a different function than the one serving.
+        for (k, expected) in head_forward(&emb, &head.layers).iter().enumerate() {
+            assert!(
+                (logits[k] - expected).abs() < 1e-4,
+                "logit {k}: graph {}, expected {expected}",
+                logits[k]
+            );
+        }
+
+        let jacobian = analytic_jacobian(&emb, &head.layers);
+        let mut nonzero = 0;
+        for k in 0..classes {
+            for p in 0..hw {
+                let expected: f32 = (0..channels)
+                    .map(|c| jacobian[k][c] * features[c * hw + p])
+                    .sum::<f32>()
+                    .max(0.0);
+                let actual = cam[k * hw + p];
+                assert!(
+                    (actual - expected).abs() < 1e-4,
+                    "cam[{k}][{p}]: graph {actual}, expected {expected}"
+                );
+                if actual > 1e-6 {
+                    nonzero += 1;
+                }
+            }
+        }
+        // A map that is everywhere zero would pass the comparison above while
+        // explaining nothing.
+        assert!(nonzero > 0, "every CAM value was rectified away");
+    }
+
+    #[test]
+    fn a_single_layer_head_gets_a_cam_too() {
+        use tract_onnx::prelude::*;
+
+        let size = 6i64;
+        let (channels, classes) = (4usize, 2usize);
+        let head = HeadSpec {
+            task: "pest".into(),
+            layers: vec![(
+                (0..channels * classes)
+                    .map(|i| ((i % 5) as f32 - 2.0) * 0.3)
+                    .collect(),
+                vec![0.0; classes],
+                channels,
+                classes,
+            )],
+            labels: vec!["none".into(), "aphid".into()],
+        };
+        let fm = crate::backbone::FeatureMap {
+            tensor: "relu_out".into(),
+            channels,
+            height: size as usize,
+            width: size as usize,
+        };
+        let bytes = compose_bytes(
+            &synthetic_backbone(size, channels, 3),
+            "embedding",
+            std::slice::from_ref(&head),
+            Some(&fm),
+        )
+        .unwrap();
+
+        // With no hidden layer there is no ReLU mask, so the Jacobian is just
+        // the weight matrix and the graph needs no Sign node.
+        let graph = decode(&bytes);
+        assert_eq!(graph.node.iter().filter(|n| n.op_type == "Sign").count(), 0);
+        assert!(graph.produces("cam_pest"));
+
+        let mut model = tract_onnx::onnx()
+            .model_for_read(&mut std::io::Cursor::new(&bytes))
+            .unwrap();
+        model.set_output_names(["cam_pest", "relu_out"]).unwrap();
+        let plan = model
+            .with_input_fact(0, f32::fact([1, 3, size, size]).into())
+            .unwrap()
+            .into_optimized()
+            .unwrap()
+            .into_runnable()
+            .unwrap();
+        let pixels: Vec<f32> = (0..3 * size * size)
+            .map(|i| (i % 11) as f32 / 11.0)
+            .collect();
+        let out = plan
+            .run(tvec!(Tensor::from(
+                tract_ndarray::Array4::from_shape_vec((1, 3, size as usize, size as usize), pixels)
+                    .unwrap()
+            )
+            .into()))
+            .unwrap();
+
+        let cam: Vec<f32> = out[0]
+            .to_array_view::<f32>()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        let features: Vec<f32> = out[1]
+            .to_array_view::<f32>()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        let hw = (size * size) as usize;
+        let (w, _, _, _) = &head.layers[0];
+        for k in 0..classes {
+            for p in 0..hw {
+                let expected: f32 = (0..channels)
+                    .map(|c| w[c * classes + k] * features[c * hw + p])
+                    .sum::<f32>()
+                    .max(0.0);
+                assert!((cam[k * hw + p] - expected).abs() < 1e-4);
+            }
+        }
+    }
+
+    #[test]
+    fn composing_without_a_feature_map_emits_no_cam() {
+        let head = two_layer_head(4, 3, 2);
+        let bytes = compose_bytes(
+            &synthetic_backbone(8, 4, 3),
+            "embedding",
+            std::slice::from_ref(&head),
+            None,
+        )
+        .unwrap();
+        let graph = decode(&bytes);
+        assert!(!graph.produces("cam_disease"));
+        assert_eq!(graph.output.len(), 1);
+        assert!(graph.node.iter().all(|n| n.op_type != "Sign"));
+    }
+
+    #[test]
+    fn a_feature_tensor_the_backbone_lacks_is_refused() {
+        let head = two_layer_head(4, 3, 2);
+        let fm = crate::backbone::FeatureMap {
+            tensor: "not_a_tensor".into(),
+            channels: 4,
+            height: 8,
+            width: 8,
+        };
+        let err = compose_bytes(
+            &synthetic_backbone(8, 4, 3),
+            "embedding",
+            std::slice::from_ref(&head),
+            Some(&fm),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("not_a_tensor"), "{err}");
+
+        // A feature map whose channel count disagrees with the head is a
+        // wiring mistake, not something to silently reshape around.
+        let wrong = crate::backbone::FeatureMap {
+            tensor: "relu_out".into(),
+            channels: 9,
+            height: 8,
+            width: 8,
+        };
+        let err = compose_bytes(
+            &synthetic_backbone(8, 4, 3),
+            "embedding",
+            std::slice::from_ref(&head),
+            Some(&wrong),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("9 channels"), "{err}");
     }
 }

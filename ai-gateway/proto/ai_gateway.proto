@@ -86,6 +86,38 @@ message DiagnoseImageRequest {
   SampleContext context = 5;
 }
 
+// Why a vision model answered the way it did.
+//
+// A confidence score says how sure the model is; this says what it looked at,
+// which is what lets someone check the answer instead of trusting it. Produced
+// by Grad-CAM over the backbone's last feature map, so it reflects the real
+// gradient of the predicted class rather than a generic saliency estimate.
+message Explanation {
+  // Which task and class this explains.
+  string task = 1;
+  string class_name = 2;
+  // Greyscale PNG, brightest where the evidence is. Empty when the serving
+  // model carries no explanation outputs.
+  bytes heatmap_png = 3;
+  int32 heatmap_width = 4;
+  int32 heatmap_height = 5;
+  // Region the model keyed on, normalised to [0,1] with 0,0 at the top left so
+  // it survives any later resize of the image.
+  double focus_x = 6;
+  double focus_y = 7;
+  double focus_width = 8;
+  double focus_height = 9;
+  // Share of the image inside that region. A value near 1 means the model used
+  // the whole picture and located nothing in particular.
+  double focus_coverage = 10;
+  // One sentence describing where the model looked, for display.
+  string summary = 11;
+  // How the explanation was produced, e.g. "grad-cam".
+  string method = 12;
+  // False when the map was flat and nothing can be pointed at.
+  bool localised = 13;
+}
+
 message DiagnoseImageResponse {
   string request_id = 1;
   repeated DiseaseDetection diseases = 2;
@@ -93,6 +125,9 @@ message DiagnoseImageResponse {
   string summary = 4;
   string model_version = 5;
   int64 processing_time_ms = 6;
+  // One per analysed image, in request order. Empty when the serving model
+  // cannot explain itself.
+  repeated Explanation explanations = 7;
 }
 
 message DiseaseDetection {
@@ -119,6 +154,7 @@ message DetectPestsResponse {
   repeated PestDetection pests = 2;
   string model_version = 3;
   int64 processing_time_ms = 4;
+  repeated Explanation explanations = 5;
 }
 
 message PestDetection {
@@ -144,6 +180,7 @@ message DetectNutrientDeficiencyResponse {
   repeated NutrientDeficiency deficiencies = 2;
   string model_version = 3;
   int64 processing_time_ms = 4;
+  repeated Explanation explanations = 5;
 }
 
 message NutrientDeficiency {
@@ -239,6 +276,7 @@ message ClassifyPlantResponse {
   PlantClassification species = 2;
   string model_version = 3;
   int64 processing_time_ms = 4;
+  repeated Explanation explanations = 5;
 }
 
 message PlantClassification {

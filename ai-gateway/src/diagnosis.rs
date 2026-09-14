@@ -14,7 +14,9 @@ use std::time::Instant;
 use disease_detection_engine::{DiseaseDetector, ImageBuffer as DiseaseImageBuffer};
 use nutrient_deficiency_engine::{DeficiencyDetector, ImageBuffer as DeficiencyImageBuffer};
 use pest_detection_engine::{ImageBuffer as PestImageBuffer, PestDetector};
-use plant_ai_inference_engine::{ClassificationOutput, MultiTaskClassifier, OnnxClassifier};
+use plant_ai_inference_engine::{
+    ClassificationOutput, Heatmap, MultiTaskClassifier, OnnxClassifier, DEFAULT_FOCUS_THRESHOLD,
+};
 use plant_classification_engine::{ImageBuffer as ClassificationImageBuffer, PlantClassifier};
 
 use crate::config::ModelPaths;
@@ -120,6 +122,46 @@ fn load_model(task: VisionTask, dir: &str) -> Option<OnnxClassifier> {
             tracing::warn!(task = task.name(), dir, error = %e, "no usable ONNX model; demo/external fallback active");
             None
         }
+    }
+}
+
+/// What one task's models produced for a request.
+struct TaskResults {
+    outputs: Vec<ClassificationOutput>,
+    version: String,
+    /// One per image that could be explained; empty when the serving model
+    /// carries no Grad-CAM outputs.
+    explanations: Vec<proto::Explanation>,
+}
+
+/// Render a heatmap for the wire.
+///
+/// The map is upsampled to the model's own input size before encoding: at
+/// feature resolution it is a handful of cells, and every client would
+/// otherwise have to reinvent the interpolation to draw it over a photo.
+fn explanation_proto(task: VisionTask, heatmap: &Heatmap, input_size: u32) -> proto::Explanation {
+    let target = input_size.clamp(32, 512) as usize;
+    let scaled = heatmap.resized(target, target);
+    let region = heatmap.focus_region(DEFAULT_FOCUS_THRESHOLD);
+    let png = scaled.to_png().unwrap_or_else(|e| {
+        tracing::warn!(task = task.name(), error = %e, "could not encode heatmap");
+        Vec::new()
+    });
+
+    proto::Explanation {
+        task: task.name().to_string(),
+        class_name: heatmap.class_name.clone(),
+        heatmap_width: scaled.width as i32,
+        heatmap_height: scaled.height as i32,
+        heatmap_png: png,
+        focus_x: region.map(|r| r.x).unwrap_or(0.0),
+        focus_y: region.map(|r| r.y).unwrap_or(0.0),
+        focus_width: region.map(|r| r.width).unwrap_or(0.0),
+        focus_height: region.map(|r| r.height).unwrap_or(0.0),
+        focus_coverage: region.map(|r| r.coverage).unwrap_or(0.0),
+        summary: heatmap.summary(DEFAULT_FOCUS_THRESHOLD),
+        method: "grad-cam".to_string(),
+        localised: heatmap.localised,
     }
 }
 
@@ -231,6 +273,17 @@ impl DiagnosisEngine {
         task: VisionTask,
         images: &[proto::ImageData],
     ) -> Option<(Vec<ClassificationOutput>, String)> {
+        self.classify_all_explained(task, images)
+            .map(|r| (r.outputs, r.version))
+    }
+
+    /// As [`Self::classify_all`], but also carrying the heatmaps when the
+    /// serving model can produce them.
+    fn classify_all_explained(
+        &self,
+        task: VisionTask,
+        images: &[proto::ImageData],
+    ) -> Option<TaskResults> {
         let with_bytes = || images.iter().filter(|img| !img.image_bytes.is_empty());
 
         if let Some(model) = self.onnx_for(task) {
@@ -244,15 +297,27 @@ impl DiagnosisEngine {
                 }
             }
             if !outputs.is_empty() {
-                return Some((outputs, model.version().to_string()));
+                // Per-task models carry no Grad-CAM outputs, so there is
+                // nothing honest to return here.
+                return Some(TaskResults {
+                    outputs,
+                    version: model.version().to_string(),
+                    explanations: Vec::new(),
+                });
             }
         }
 
         let shared = self.multitask_for(task)?;
         let mut outputs = Vec::new();
+        let mut explanations = Vec::new();
         for img in with_bytes() {
-            match shared.classify_task(task.name(), &img.image_bytes, 3) {
-                Ok(out) => outputs.push(out),
+            match shared.classify_task_explained(task.name(), &img.image_bytes, 3) {
+                Ok((out, heatmap)) => {
+                    outputs.push(out);
+                    if let Some(map) = heatmap {
+                        explanations.push(explanation_proto(task, &map, shared.input_size()));
+                    }
+                }
                 Err(e) => {
                     tracing::warn!(task = task.name(), error = %e, "multi-task inference failed for image")
                 }
@@ -261,7 +326,11 @@ impl DiagnosisEngine {
         if outputs.is_empty() {
             return None;
         }
-        Some((outputs, shared.version().to_string()))
+        Some(TaskResults {
+            outputs,
+            version: shared.version().to_string(),
+            explanations,
+        })
     }
 
     fn extract_image_bytes(img: &proto::ImageData, width: u32, height: u32) -> Vec<u8> {
@@ -278,7 +347,12 @@ impl DiagnosisEngine {
     ) -> proto::DiagnoseImageResponse {
         let start = Instant::now();
 
-        if let Some((outputs, version)) = self.classify_all(VisionTask::Disease, &request.images) {
+        if let Some(TaskResults {
+            outputs,
+            version,
+            explanations,
+        }) = self.classify_all_explained(VisionTask::Disease, &request.images)
+        {
             let mut diseases = Vec::new();
             let mut health_scores = Vec::new();
             for out in &outputs {
@@ -327,6 +401,7 @@ impl DiagnosisEngine {
                 ),
                 model_version: version,
                 processing_time_ms: start.elapsed().as_millis() as i64,
+                explanations,
             };
         }
 
@@ -390,13 +465,21 @@ impl DiagnosisEngine {
             },
             model_version: "disease-detection-demo-v1".to_string(),
             processing_time_ms: start.elapsed().as_millis() as i64,
+            // The demo detectors are heuristics over colour statistics; there
+            // is no model gradient to explain.
+            explanations: Vec::new(),
         }
     }
 
     pub fn detect_pests(&self, request: &proto::DetectPestsRequest) -> proto::DetectPestsResponse {
         let start = Instant::now();
 
-        if let Some((outputs, version)) = self.classify_all(VisionTask::Pest, &request.images) {
+        if let Some(TaskResults {
+            outputs,
+            version,
+            explanations,
+        }) = self.classify_all_explained(VisionTask::Pest, &request.images)
+        {
             let mut pests = Vec::new();
             for out in &outputs {
                 for t in out
@@ -426,6 +509,7 @@ impl DiagnosisEngine {
                 pests,
                 model_version: version,
                 processing_time_ms: start.elapsed().as_millis() as i64,
+                explanations,
             };
         }
 
@@ -470,6 +554,7 @@ impl DiagnosisEngine {
             pests: all_pests,
             model_version: "pest-detection-demo-v1".to_string(),
             processing_time_ms: start.elapsed().as_millis() as i64,
+            explanations: Vec::new(),
         }
     }
 
@@ -479,8 +564,11 @@ impl DiagnosisEngine {
     ) -> proto::DetectNutrientDeficiencyResponse {
         let start = Instant::now();
 
-        if let Some((outputs, version)) =
-            self.classify_all(VisionTask::NutrientDeficiency, &request.images)
+        if let Some(TaskResults {
+            outputs,
+            version,
+            explanations,
+        }) = self.classify_all_explained(VisionTask::NutrientDeficiency, &request.images)
         {
             let mut deficiencies = Vec::new();
             for out in &outputs {
@@ -510,6 +598,7 @@ impl DiagnosisEngine {
                 deficiencies,
                 model_version: version,
                 processing_time_ms: start.elapsed().as_millis() as i64,
+                explanations,
             };
         }
 
@@ -550,6 +639,7 @@ impl DiagnosisEngine {
             deficiencies: all_deficiencies,
             model_version: "nutrient-deficiency-demo-v1".to_string(),
             processing_time_ms: start.elapsed().as_millis() as i64,
+            explanations: Vec::new(),
         }
     }
 
@@ -559,8 +649,11 @@ impl DiagnosisEngine {
     ) -> proto::ClassifyPlantResponse {
         let start = Instant::now();
 
-        if let Some((outputs, version)) =
-            self.classify_all(VisionTask::PlantClassification, &request.images)
+        if let Some(TaskResults {
+            outputs,
+            version,
+            explanations,
+        }) = self.classify_all_explained(VisionTask::PlantClassification, &request.images)
         {
             let best = outputs
                 .iter()
@@ -581,6 +674,7 @@ impl DiagnosisEngine {
                 species: best,
                 model_version: version,
                 processing_time_ms: start.elapsed().as_millis() as i64,
+                explanations,
             };
         }
 
@@ -619,6 +713,7 @@ impl DiagnosisEngine {
             species: best_result,
             model_version: "plant-classification-demo-v1".to_string(),
             processing_time_ms: start.elapsed().as_millis() as i64,
+            explanations: Vec::new(),
         }
     }
 }
@@ -666,6 +761,44 @@ mod tests {
         };
         let engine = DiagnosisEngine::new(&paths).unwrap();
         assert!(!engine.model_status()[0].loaded);
+    }
+
+    #[test]
+    fn explanations_are_rendered_for_the_wire() {
+        // Hot in the top-left cell of a 4x4 map.
+        let mut raw = vec![0.0f32; 16];
+        raw[0] = 2.0;
+        let heatmap = Heatmap::new("disease", 1, "leaf_rust", 4, 4, &raw);
+
+        let e = explanation_proto(VisionTask::Disease, &heatmap, 64);
+        assert_eq!(e.task, "disease");
+        assert_eq!(e.class_name, "leaf_rust");
+        assert_eq!(e.method, "grad-cam");
+        assert!(e.localised);
+
+        // Upsampled to the model's input size so clients need no interpolation.
+        assert_eq!((e.heatmap_width, e.heatmap_height), (64, 64));
+        assert_eq!(&e.heatmap_png[1..4], b"PNG");
+
+        // The focus box stays in the original normalised coordinates.
+        assert!((e.focus_x - 0.0).abs() < 1e-9);
+        assert!((e.focus_width - 0.25).abs() < 1e-9);
+        assert!((e.focus_coverage - 1.0 / 16.0).abs() < 1e-9);
+        assert!(e.summary.contains("upper left"), "{}", e.summary);
+
+        // A flat map is reported as unlocalised rather than as a false hotspot.
+        let flat = explanation_proto(
+            VisionTask::Pest,
+            &Heatmap::new("pest", 0, "none", 4, 4, &[0.0; 16]),
+            32,
+        );
+        assert!(!flat.localised);
+        assert_eq!(flat.focus_coverage, 0.0);
+        assert!(flat.summary.contains("No single area"), "{}", flat.summary);
+
+        // Absurd input sizes are clamped rather than allocating wildly.
+        let clamped = explanation_proto(VisionTask::Disease, &heatmap, 9999);
+        assert_eq!(clamped.heatmap_width, 512);
     }
 
     #[test]

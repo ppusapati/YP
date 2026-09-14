@@ -584,25 +584,31 @@ func (x *SoilSample) GetVersion() int64 {
 }
 
 type SoilAnalysis struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	TenantId        string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	SampleId        string                 `protobuf:"bytes,3,opt,name=sample_id,json=sampleId,proto3" json:"sample_id,omitempty"`
-	FieldId         string                 `protobuf:"bytes,4,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
-	FarmId          string                 `protobuf:"bytes,5,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
-	Status          AnalysisStatus         `protobuf:"varint,6,opt,name=status,proto3,enum=agriculture.soil.v1.AnalysisStatus" json:"status,omitempty"`
-	AnalysisType    string                 `protobuf:"bytes,7,opt,name=analysis_type,json=analysisType,proto3" json:"analysis_type,omitempty"`
-	SoilHealthScore float64                `protobuf:"fixed64,8,opt,name=soil_health_score,json=soilHealthScore,proto3" json:"soil_health_score,omitempty"`
-	HealthCategory  HealthCategory         `protobuf:"varint,9,opt,name=health_category,json=healthCategory,proto3,enum=agriculture.soil.v1.HealthCategory" json:"health_category,omitempty"`
-	Recommendations []string               `protobuf:"bytes,10,rep,name=recommendations,proto3" json:"recommendations,omitempty"`
-	AnalyzedBy      string                 `protobuf:"bytes,11,opt,name=analyzed_by,json=analyzedBy,proto3" json:"analyzed_by,omitempty"`
-	AnalyzedAt      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=analyzed_at,json=analyzedAt,proto3" json:"analyzed_at,omitempty"`
-	Summary         string                 `protobuf:"bytes,13,opt,name=summary,proto3" json:"summary,omitempty"`
-	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	Version         int64                  `protobuf:"varint,16,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId         string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	SampleId         string                 `protobuf:"bytes,3,opt,name=sample_id,json=sampleId,proto3" json:"sample_id,omitempty"`
+	FieldId          string                 `protobuf:"bytes,4,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	FarmId           string                 `protobuf:"bytes,5,opt,name=farm_id,json=farmId,proto3" json:"farm_id,omitempty"`
+	Status           AnalysisStatus         `protobuf:"varint,6,opt,name=status,proto3,enum=agriculture.soil.v1.AnalysisStatus" json:"status,omitempty"`
+	AnalysisType     string                 `protobuf:"bytes,7,opt,name=analysis_type,json=analysisType,proto3" json:"analysis_type,omitempty"`
+	SoilHealthScore  float64                `protobuf:"fixed64,8,opt,name=soil_health_score,json=soilHealthScore,proto3" json:"soil_health_score,omitempty"`
+	HealthCategory   HealthCategory         `protobuf:"varint,9,opt,name=health_category,json=healthCategory,proto3,enum=agriculture.soil.v1.HealthCategory" json:"health_category,omitempty"`
+	Recommendations  []string               `protobuf:"bytes,10,rep,name=recommendations,proto3" json:"recommendations,omitempty"`
+	AnalyzedBy       string                 `protobuf:"bytes,11,opt,name=analyzed_by,json=analyzedBy,proto3" json:"analyzed_by,omitempty"`
+	AnalyzedAt       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=analyzed_at,json=analyzedAt,proto3" json:"analyzed_at,omitempty"`
+	Summary          string                 `protobuf:"bytes,13,opt,name=summary,proto3" json:"summary,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt        *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Version          int64                  `protobuf:"varint,16,opt,name=version,proto3" json:"version,omitempty"`
+	PH               float64                `protobuf:"fixed64,17,opt,name=pH,proto3" json:"pH,omitempty"`
+	NitrogenPpm      float64                `protobuf:"fixed64,18,opt,name=nitrogen_ppm,json=nitrogenPpm,proto3" json:"nitrogen_ppm,omitempty"`
+	PhosphorusPpm    float64                `protobuf:"fixed64,19,opt,name=phosphorus_ppm,json=phosphorusPpm,proto3" json:"phosphorus_ppm,omitempty"`
+	PotassiumPpm     float64                `protobuf:"fixed64,20,opt,name=potassium_ppm,json=potassiumPpm,proto3" json:"potassium_ppm,omitempty"`
+	OrganicMatterPct float64                `protobuf:"fixed64,21,opt,name=organic_matter_pct,json=organicMatterPct,proto3" json:"organic_matter_pct,omitempty"`
+	Texture          SoilTexture            `protobuf:"varint,22,opt,name=texture,proto3,enum=agriculture.soil.v1.SoilTexture" json:"texture,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *SoilAnalysis) Reset() {
@@ -745,6 +751,48 @@ func (x *SoilAnalysis) GetVersion() int64 {
 		return x.Version
 	}
 	return 0
+}
+
+func (x *SoilAnalysis) GetPH() float64 {
+	if x != nil {
+		return x.PH
+	}
+	return 0
+}
+
+func (x *SoilAnalysis) GetNitrogenPpm() float64 {
+	if x != nil {
+		return x.NitrogenPpm
+	}
+	return 0
+}
+
+func (x *SoilAnalysis) GetPhosphorusPpm() float64 {
+	if x != nil {
+		return x.PhosphorusPpm
+	}
+	return 0
+}
+
+func (x *SoilAnalysis) GetPotassiumPpm() float64 {
+	if x != nil {
+		return x.PotassiumPpm
+	}
+	return 0
+}
+
+func (x *SoilAnalysis) GetOrganicMatterPct() float64 {
+	if x != nil {
+		return x.OrganicMatterPct
+	}
+	return 0
+}
+
+func (x *SoilAnalysis) GetTexture() SoilTexture {
+	if x != nil {
+		return x.Texture
+	}
+	return SoilTexture_SOIL_TEXTURE_UNSPECIFIED
 }
 
 type SoilMap struct {
@@ -2589,7 +2637,7 @@ const file_soil_proto_rawDesc = "" +
 	"created_at\x18\x1c \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x1d \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x18\n" +
-	"\aversion\x18\x1e \x01(\x03R\aversion\"\x9a\x05\n" +
+	"\aversion\x18\x1e \x01(\x03R\aversion\"\x83\a\n" +
 	"\fSoilAnalysis\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x1b\n" +
@@ -2611,7 +2659,13 @@ const file_soil_proto_rawDesc = "" +
 	"created_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x18\n" +
-	"\aversion\x18\x10 \x01(\x03R\aversion\"\xbe\x04\n" +
+	"\aversion\x18\x10 \x01(\x03R\aversion\x12\x0e\n" +
+	"\x02pH\x18\x11 \x01(\x01R\x02pH\x12!\n" +
+	"\fnitrogen_ppm\x18\x12 \x01(\x01R\vnitrogenPpm\x12%\n" +
+	"\x0ephosphorus_ppm\x18\x13 \x01(\x01R\rphosphorusPpm\x12#\n" +
+	"\rpotassium_ppm\x18\x14 \x01(\x01R\fpotassiumPpm\x12,\n" +
+	"\x12organic_matter_pct\x18\x15 \x01(\x01R\x10organicMatterPct\x12:\n" +
+	"\atexture\x18\x16 \x01(\x0e2 .agriculture.soil.v1.SoilTextureR\atexture\"\xbe\x04\n" +
 	"\aSoilMap\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x19\n" +
@@ -2879,60 +2933,61 @@ var file_soil_proto_depIdxs = []int32{
 	30, // 7: agriculture.soil.v1.SoilAnalysis.analyzed_at:type_name -> google.protobuf.Timestamp
 	30, // 8: agriculture.soil.v1.SoilAnalysis.created_at:type_name -> google.protobuf.Timestamp
 	30, // 9: agriculture.soil.v1.SoilAnalysis.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 10: agriculture.soil.v1.SoilMap.bbox_min:type_name -> agriculture.soil.v1.Location
-	4,  // 11: agriculture.soil.v1.SoilMap.bbox_max:type_name -> agriculture.soil.v1.Location
-	30, // 12: agriculture.soil.v1.SoilMap.generated_at:type_name -> google.protobuf.Timestamp
-	30, // 13: agriculture.soil.v1.SoilMap.created_at:type_name -> google.protobuf.Timestamp
-	30, // 14: agriculture.soil.v1.SoilMap.updated_at:type_name -> google.protobuf.Timestamp
-	2,  // 15: agriculture.soil.v1.SoilNutrient.level:type_name -> agriculture.soil.v1.NutrientLevel
-	30, // 16: agriculture.soil.v1.SoilNutrient.created_at:type_name -> google.protobuf.Timestamp
-	3,  // 17: agriculture.soil.v1.SoilHealthScore.category:type_name -> agriculture.soil.v1.HealthCategory
-	10, // 18: agriculture.soil.v1.SoilHealthScore.deficiencies:type_name -> agriculture.soil.v1.NutrientDeficiency
-	30, // 19: agriculture.soil.v1.SoilHealthScore.assessed_at:type_name -> google.protobuf.Timestamp
-	30, // 20: agriculture.soil.v1.SoilHealthScore.created_at:type_name -> google.protobuf.Timestamp
-	30, // 21: agriculture.soil.v1.SoilHealthScore.updated_at:type_name -> google.protobuf.Timestamp
-	2,  // 22: agriculture.soil.v1.NutrientDeficiency.level:type_name -> agriculture.soil.v1.NutrientLevel
-	5,  // 23: agriculture.soil.v1.SoilReport.sample:type_name -> agriculture.soil.v1.SoilSample
-	6,  // 24: agriculture.soil.v1.SoilReport.analysis:type_name -> agriculture.soil.v1.SoilAnalysis
-	9,  // 25: agriculture.soil.v1.SoilReport.health_score:type_name -> agriculture.soil.v1.SoilHealthScore
-	8,  // 26: agriculture.soil.v1.SoilReport.nutrients:type_name -> agriculture.soil.v1.SoilNutrient
-	30, // 27: agriculture.soil.v1.SoilReport.generated_at:type_name -> google.protobuf.Timestamp
-	4,  // 28: agriculture.soil.v1.CreateSoilSampleRequest.sample_location:type_name -> agriculture.soil.v1.Location
-	30, // 29: agriculture.soil.v1.CreateSoilSampleRequest.collection_date:type_name -> google.protobuf.Timestamp
-	0,  // 30: agriculture.soil.v1.CreateSoilSampleRequest.texture:type_name -> agriculture.soil.v1.SoilTexture
-	5,  // 31: agriculture.soil.v1.CreateSoilSampleResponse.sample:type_name -> agriculture.soil.v1.SoilSample
-	5,  // 32: agriculture.soil.v1.GetSoilSampleResponse.sample:type_name -> agriculture.soil.v1.SoilSample
-	31, // 33: agriculture.soil.v1.ListSoilSamplesRequest.fields:type_name -> google.protobuf.FieldMask
-	5,  // 34: agriculture.soil.v1.ListSoilSamplesResponse.samples:type_name -> agriculture.soil.v1.SoilSample
-	6,  // 35: agriculture.soil.v1.AnalyzeSoilResponse.analysis:type_name -> agriculture.soil.v1.SoilAnalysis
-	6,  // 36: agriculture.soil.v1.ListSoilAnalysesResponse.analyses:type_name -> agriculture.soil.v1.SoilAnalysis
-	7,  // 37: agriculture.soil.v1.GetSoilMapResponse.soil_map:type_name -> agriculture.soil.v1.SoilMap
-	9,  // 38: agriculture.soil.v1.GetSoilHealthResponse.health_score:type_name -> agriculture.soil.v1.SoilHealthScore
-	8,  // 39: agriculture.soil.v1.GetNutrientLevelsResponse.nutrients:type_name -> agriculture.soil.v1.SoilNutrient
-	11, // 40: agriculture.soil.v1.GenerateSoilReportResponse.report:type_name -> agriculture.soil.v1.SoilReport
-	12, // 41: agriculture.soil.v1.SoilService.CreateSoilSample:input_type -> agriculture.soil.v1.CreateSoilSampleRequest
-	14, // 42: agriculture.soil.v1.SoilService.GetSoilSample:input_type -> agriculture.soil.v1.GetSoilSampleRequest
-	16, // 43: agriculture.soil.v1.SoilService.ListSoilSamples:input_type -> agriculture.soil.v1.ListSoilSamplesRequest
-	18, // 44: agriculture.soil.v1.SoilService.AnalyzeSoil:input_type -> agriculture.soil.v1.AnalyzeSoilRequest
-	20, // 45: agriculture.soil.v1.SoilService.ListSoilAnalyses:input_type -> agriculture.soil.v1.ListSoilAnalysesRequest
-	22, // 46: agriculture.soil.v1.SoilService.GetSoilMap:input_type -> agriculture.soil.v1.GetSoilMapRequest
-	24, // 47: agriculture.soil.v1.SoilService.GetSoilHealth:input_type -> agriculture.soil.v1.GetSoilHealthRequest
-	26, // 48: agriculture.soil.v1.SoilService.GetNutrientLevels:input_type -> agriculture.soil.v1.GetNutrientLevelsRequest
-	28, // 49: agriculture.soil.v1.SoilService.GenerateSoilReport:input_type -> agriculture.soil.v1.GenerateSoilReportRequest
-	13, // 50: agriculture.soil.v1.SoilService.CreateSoilSample:output_type -> agriculture.soil.v1.CreateSoilSampleResponse
-	15, // 51: agriculture.soil.v1.SoilService.GetSoilSample:output_type -> agriculture.soil.v1.GetSoilSampleResponse
-	17, // 52: agriculture.soil.v1.SoilService.ListSoilSamples:output_type -> agriculture.soil.v1.ListSoilSamplesResponse
-	19, // 53: agriculture.soil.v1.SoilService.AnalyzeSoil:output_type -> agriculture.soil.v1.AnalyzeSoilResponse
-	21, // 54: agriculture.soil.v1.SoilService.ListSoilAnalyses:output_type -> agriculture.soil.v1.ListSoilAnalysesResponse
-	23, // 55: agriculture.soil.v1.SoilService.GetSoilMap:output_type -> agriculture.soil.v1.GetSoilMapResponse
-	25, // 56: agriculture.soil.v1.SoilService.GetSoilHealth:output_type -> agriculture.soil.v1.GetSoilHealthResponse
-	27, // 57: agriculture.soil.v1.SoilService.GetNutrientLevels:output_type -> agriculture.soil.v1.GetNutrientLevelsResponse
-	29, // 58: agriculture.soil.v1.SoilService.GenerateSoilReport:output_type -> agriculture.soil.v1.GenerateSoilReportResponse
-	50, // [50:59] is the sub-list for method output_type
-	41, // [41:50] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	0,  // 10: agriculture.soil.v1.SoilAnalysis.texture:type_name -> agriculture.soil.v1.SoilTexture
+	4,  // 11: agriculture.soil.v1.SoilMap.bbox_min:type_name -> agriculture.soil.v1.Location
+	4,  // 12: agriculture.soil.v1.SoilMap.bbox_max:type_name -> agriculture.soil.v1.Location
+	30, // 13: agriculture.soil.v1.SoilMap.generated_at:type_name -> google.protobuf.Timestamp
+	30, // 14: agriculture.soil.v1.SoilMap.created_at:type_name -> google.protobuf.Timestamp
+	30, // 15: agriculture.soil.v1.SoilMap.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 16: agriculture.soil.v1.SoilNutrient.level:type_name -> agriculture.soil.v1.NutrientLevel
+	30, // 17: agriculture.soil.v1.SoilNutrient.created_at:type_name -> google.protobuf.Timestamp
+	3,  // 18: agriculture.soil.v1.SoilHealthScore.category:type_name -> agriculture.soil.v1.HealthCategory
+	10, // 19: agriculture.soil.v1.SoilHealthScore.deficiencies:type_name -> agriculture.soil.v1.NutrientDeficiency
+	30, // 20: agriculture.soil.v1.SoilHealthScore.assessed_at:type_name -> google.protobuf.Timestamp
+	30, // 21: agriculture.soil.v1.SoilHealthScore.created_at:type_name -> google.protobuf.Timestamp
+	30, // 22: agriculture.soil.v1.SoilHealthScore.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 23: agriculture.soil.v1.NutrientDeficiency.level:type_name -> agriculture.soil.v1.NutrientLevel
+	5,  // 24: agriculture.soil.v1.SoilReport.sample:type_name -> agriculture.soil.v1.SoilSample
+	6,  // 25: agriculture.soil.v1.SoilReport.analysis:type_name -> agriculture.soil.v1.SoilAnalysis
+	9,  // 26: agriculture.soil.v1.SoilReport.health_score:type_name -> agriculture.soil.v1.SoilHealthScore
+	8,  // 27: agriculture.soil.v1.SoilReport.nutrients:type_name -> agriculture.soil.v1.SoilNutrient
+	30, // 28: agriculture.soil.v1.SoilReport.generated_at:type_name -> google.protobuf.Timestamp
+	4,  // 29: agriculture.soil.v1.CreateSoilSampleRequest.sample_location:type_name -> agriculture.soil.v1.Location
+	30, // 30: agriculture.soil.v1.CreateSoilSampleRequest.collection_date:type_name -> google.protobuf.Timestamp
+	0,  // 31: agriculture.soil.v1.CreateSoilSampleRequest.texture:type_name -> agriculture.soil.v1.SoilTexture
+	5,  // 32: agriculture.soil.v1.CreateSoilSampleResponse.sample:type_name -> agriculture.soil.v1.SoilSample
+	5,  // 33: agriculture.soil.v1.GetSoilSampleResponse.sample:type_name -> agriculture.soil.v1.SoilSample
+	31, // 34: agriculture.soil.v1.ListSoilSamplesRequest.fields:type_name -> google.protobuf.FieldMask
+	5,  // 35: agriculture.soil.v1.ListSoilSamplesResponse.samples:type_name -> agriculture.soil.v1.SoilSample
+	6,  // 36: agriculture.soil.v1.AnalyzeSoilResponse.analysis:type_name -> agriculture.soil.v1.SoilAnalysis
+	6,  // 37: agriculture.soil.v1.ListSoilAnalysesResponse.analyses:type_name -> agriculture.soil.v1.SoilAnalysis
+	7,  // 38: agriculture.soil.v1.GetSoilMapResponse.soil_map:type_name -> agriculture.soil.v1.SoilMap
+	9,  // 39: agriculture.soil.v1.GetSoilHealthResponse.health_score:type_name -> agriculture.soil.v1.SoilHealthScore
+	8,  // 40: agriculture.soil.v1.GetNutrientLevelsResponse.nutrients:type_name -> agriculture.soil.v1.SoilNutrient
+	11, // 41: agriculture.soil.v1.GenerateSoilReportResponse.report:type_name -> agriculture.soil.v1.SoilReport
+	12, // 42: agriculture.soil.v1.SoilService.CreateSoilSample:input_type -> agriculture.soil.v1.CreateSoilSampleRequest
+	14, // 43: agriculture.soil.v1.SoilService.GetSoilSample:input_type -> agriculture.soil.v1.GetSoilSampleRequest
+	16, // 44: agriculture.soil.v1.SoilService.ListSoilSamples:input_type -> agriculture.soil.v1.ListSoilSamplesRequest
+	18, // 45: agriculture.soil.v1.SoilService.AnalyzeSoil:input_type -> agriculture.soil.v1.AnalyzeSoilRequest
+	20, // 46: agriculture.soil.v1.SoilService.ListSoilAnalyses:input_type -> agriculture.soil.v1.ListSoilAnalysesRequest
+	22, // 47: agriculture.soil.v1.SoilService.GetSoilMap:input_type -> agriculture.soil.v1.GetSoilMapRequest
+	24, // 48: agriculture.soil.v1.SoilService.GetSoilHealth:input_type -> agriculture.soil.v1.GetSoilHealthRequest
+	26, // 49: agriculture.soil.v1.SoilService.GetNutrientLevels:input_type -> agriculture.soil.v1.GetNutrientLevelsRequest
+	28, // 50: agriculture.soil.v1.SoilService.GenerateSoilReport:input_type -> agriculture.soil.v1.GenerateSoilReportRequest
+	13, // 51: agriculture.soil.v1.SoilService.CreateSoilSample:output_type -> agriculture.soil.v1.CreateSoilSampleResponse
+	15, // 52: agriculture.soil.v1.SoilService.GetSoilSample:output_type -> agriculture.soil.v1.GetSoilSampleResponse
+	17, // 53: agriculture.soil.v1.SoilService.ListSoilSamples:output_type -> agriculture.soil.v1.ListSoilSamplesResponse
+	19, // 54: agriculture.soil.v1.SoilService.AnalyzeSoil:output_type -> agriculture.soil.v1.AnalyzeSoilResponse
+	21, // 55: agriculture.soil.v1.SoilService.ListSoilAnalyses:output_type -> agriculture.soil.v1.ListSoilAnalysesResponse
+	23, // 56: agriculture.soil.v1.SoilService.GetSoilMap:output_type -> agriculture.soil.v1.GetSoilMapResponse
+	25, // 57: agriculture.soil.v1.SoilService.GetSoilHealth:output_type -> agriculture.soil.v1.GetSoilHealthResponse
+	27, // 58: agriculture.soil.v1.SoilService.GetNutrientLevels:output_type -> agriculture.soil.v1.GetNutrientLevelsResponse
+	29, // 59: agriculture.soil.v1.SoilService.GenerateSoilReport:output_type -> agriculture.soil.v1.GenerateSoilReportResponse
+	51, // [51:60] is the sub-list for method output_type
+	42, // [42:51] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_soil_proto_init() }

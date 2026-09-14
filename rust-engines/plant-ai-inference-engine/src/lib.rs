@@ -3,12 +3,14 @@
 //! High-performance image preprocessing and AI model inference pipeline.
 //! Handles image normalization, tiling, batch preparation, and result postprocessing.
 
+pub mod explain;
 pub mod multitask;
 pub mod onnx;
 pub mod pipeline;
 pub mod postprocessing;
 pub mod preprocessing;
 
+pub use explain::{FocusRegion, Heatmap, DEFAULT_FOCUS_THRESHOLD};
 pub use multitask::{
     MultiTaskClassifier, MultiTaskManifest, Normalization, TaskEntry, MANIFEST_FILE_NAME,
 };

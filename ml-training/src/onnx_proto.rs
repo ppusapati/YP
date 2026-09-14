@@ -402,6 +402,17 @@ impl TensorProto {
     }
 
     /// Number of elements implied by `dims`.
+    /// An int64 constant, as `Reshape` and friends take for their shapes.
+    pub fn int64s(name: &str, dims: &[usize], data: &[i64]) -> Self {
+        Self {
+            name: name.to_string(),
+            dims: dims.iter().map(|&d| d as i64).collect(),
+            data_type: INT64,
+            raw_data: data.iter().flat_map(|v| v.to_le_bytes()).collect(),
+            ..Default::default()
+        }
+    }
+
     pub fn element_count(&self) -> usize {
         self.dims.iter().map(|&d| d.max(0) as usize).product()
     }

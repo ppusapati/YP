@@ -323,6 +323,8 @@ impl AiGatewayService for AiGatewayServiceImpl {
                                 summary: format!("Diagnosed via {} API", vr.provider),
                                 model_version: format!("external-{}", vr.provider),
                                 processing_time_ms: result.processing_time_ms,
+                                // External providers return labels only.
+                                explanations: Vec::new(),
                             }));
                         }
                         Err(e) => {
@@ -394,6 +396,8 @@ impl AiGatewayService for AiGatewayServiceImpl {
                                 pests: Self::vision_to_pests(&vr),
                                 model_version: format!("external-{}", vr.provider),
                                 processing_time_ms: result.processing_time_ms,
+                                // External providers return labels only.
+                                explanations: Vec::new(),
                             }));
                         }
                         Err(e) => {
@@ -465,6 +469,8 @@ impl AiGatewayService for AiGatewayServiceImpl {
                                 deficiencies: Self::vision_to_deficiencies(&vr),
                                 model_version: format!("external-{}", vr.provider),
                                 processing_time_ms: result.processing_time_ms,
+                                // External providers return labels only.
+                                explanations: Vec::new(),
                             }));
                         }
                         Err(e) => {
@@ -536,6 +542,8 @@ impl AiGatewayService for AiGatewayServiceImpl {
                                 species: Self::vision_to_classification(&vr),
                                 model_version: format!("external-{}", vr.provider),
                                 processing_time_ms: result.processing_time_ms,
+                                // External providers return labels only.
+                                explanations: Vec::new(),
                             }));
                         }
                         Err(e) => {

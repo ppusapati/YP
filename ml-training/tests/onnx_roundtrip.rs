@@ -230,6 +230,7 @@ fn quantized_model_tracks_the_float_model() {
         &synthetic_backbone(32, dim, 500),
         "embedding",
         &[head.clone()],
+        None,
     )
     .unwrap();
     let (int8_model, report) = quantize_bytes(&float_model, DEFAULT_MIN_ELEMENTS).unwrap();
@@ -289,4 +290,178 @@ fn quantized_model_tracks_the_float_model() {
             .0
     };
     assert_eq!(argmax(float_logits), argmax(int8_logits));
+}
+
+// ── Explainability ───────────────────────────────────────────────────────────
+
+/// Grad-CAM must explain the model that is actually serving. With a
+/// non-negative single-layer head the rectifier is a no-op, which makes an
+/// exact identity available: the mean of the raw map is the logit minus its
+/// bias. If the heatmap were computed from anything other than the real
+/// gradient, that identity would not hold.
+#[test]
+fn grad_cam_explains_the_prediction_it_accompanies() {
+    use plant_ai_inference_engine::MultiTaskClassifier;
+    use yp_ml_training::backbone::Backbone;
+    use yp_ml_training::compose::{compose_multitask, synthetic::synthetic_backbone, HeadSpec};
+    use yp_ml_training::config::BackboneConfig;
+
+    let dir = tempfile::tempdir().unwrap();
+    let backbone_path = dir.path().join("backbone.onnx");
+    let (channels, classes, input_size) = (8usize, 3usize, 32i64);
+    std::fs::write(
+        &backbone_path,
+        synthetic_backbone(input_size, channels, 100),
+    )
+    .unwrap();
+
+    let backbone = Backbone::load(&BackboneConfig {
+        path: backbone_path.display().to_string(),
+        embedding_output: "embedding".into(),
+        ..Default::default()
+    })
+    .unwrap();
+
+    // The backbone convolves with padding and stride 1, so the feature map
+    // keeps the input resolution.
+    let fm = backbone.feature_map().unwrap();
+    assert_eq!(fm.tensor, "relu_out");
+    assert_eq!(fm.channels, channels);
+    assert_eq!((fm.height, fm.width), (32, 32));
+
+    // Non-negative weights, different per class so the maps must differ.
+    let weights: Vec<f32> = (0..channels * classes)
+        .map(|i| ((i % 5) as f32 + 1.0) * 0.1)
+        .collect();
+    let bias: Vec<f32> = (0..classes).map(|k| k as f32 * 0.25).collect();
+    let head = HeadSpec {
+        task: "disease".into(),
+        layers: vec![(weights.clone(), bias.clone(), channels, classes)],
+        labels: vec!["healthy".into(), "leaf_rust".into(), "blight".into()],
+    };
+
+    let model_dir = dir.path().join("multitask");
+    let manifest = compose_multitask(&backbone, &[head], &model_dir).unwrap();
+    let cam = manifest
+        .cam
+        .expect("an average-pooled backbone supports Grad-CAM");
+    assert_eq!((cam.height, cam.width), (32, 32));
+    assert_eq!(manifest.tasks[0].cam_output, "cam_disease");
+
+    let classifier = MultiTaskClassifier::load_dir(&model_dir).unwrap();
+    assert!(classifier.explains());
+    assert!(classifier.explains_task("disease"));
+    assert_eq!(classifier.cam_size(), Some((32, 32)));
+
+    let png = {
+        let image = image::RgbImage::from_fn(48, 40, |x, y| {
+            image::Rgb([(x * 4) as u8, (y * 6 + 30) as u8, ((x + y) * 3) as u8])
+        });
+        let mut buf = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgb8(image)
+            .write_to(&mut buf, image::ImageFormat::Png)
+            .unwrap();
+        buf.into_inner()
+    };
+
+    let (output, heatmap) = classifier
+        .classify_task_explained("disease", &png, 3)
+        .unwrap();
+    let heatmap = heatmap.expect("a CAM-composed model explains its answer");
+
+    // The explanation is for the class the model chose.
+    assert_eq!(heatmap.class_name, output.class_name);
+    assert_eq!(heatmap.width * heatmap.height, 32 * 32);
+    assert!(heatmap.localised);
+    assert!((heatmap.values.iter().cloned().fold(0.0f32, f32::max) - 1.0).abs() < 1e-6);
+
+    // The identity: mean of the raw map is the logit minus its bias.
+    let logits = classifier
+        .run(&classifier.preprocess(&png).unwrap())
+        .unwrap();
+    let k = heatmap.class_index;
+    let mean_raw: f32 =
+        heatmap.values.iter().map(|v| v * heatmap.peak).sum::<f32>() / heatmap.values.len() as f32;
+    let expected = logits[0][k] - bias[k];
+    assert!(
+        (mean_raw - expected).abs() < 1e-3 * expected.abs().max(1.0),
+        "mean raw CAM {mean_raw} should equal logit - bias {expected}"
+    );
+
+    // Grad-CAM is class-specific: asking about a different class must give a
+    // different map, or it is a generic saliency blob rather than an
+    // explanation of this answer.
+    let other = (k + 1) % classes;
+    let other_map = classifier.explain("disease", &png, Some(other)).unwrap();
+    assert_eq!(other_map.class_index, other);
+    let differences = heatmap
+        .values
+        .iter()
+        .zip(&other_map.values)
+        .filter(|(a, b)| (*a - *b).abs() > 1e-4)
+        .count();
+    assert!(
+        differences > 0,
+        "the map for class {other} is identical to the one for class {k}"
+    );
+
+    // And it renders for transport.
+    let png_out = heatmap.resized(64, 64).to_png().unwrap();
+    assert_eq!(&png_out[1..4], b"PNG");
+    assert!(!heatmap.summary(0.5).is_empty());
+}
+
+/// A model composed without Grad-CAM must say so rather than inventing maps.
+#[test]
+fn a_model_without_cam_outputs_refuses_to_explain() {
+    use plant_ai_inference_engine::{MultiTaskClassifier, MultiTaskManifest};
+    use yp_ml_training::compose::{compose_bytes, synthetic::synthetic_backbone, HeadSpec};
+
+    let (channels, classes) = (4usize, 2usize);
+    let head = HeadSpec {
+        task: "pest".into(),
+        layers: vec![(
+            (0..channels * classes).map(|i| i as f32 * 0.1).collect(),
+            vec![0.0; classes],
+            channels,
+            classes,
+        )],
+        labels: vec!["none".into(), "aphid".into()],
+    };
+    let bytes = compose_bytes(
+        &synthetic_backbone(32, channels, 50),
+        "embedding",
+        &[head],
+        None,
+    )
+    .unwrap();
+
+    let manifest: MultiTaskManifest = serde_json::from_value(serde_json::json!({
+        "input_size": 32,
+        "tasks": [{ "name": "pest", "output": "logits_pest", "labels": ["none", "aphid"] }],
+    }))
+    .unwrap();
+    let classifier = MultiTaskClassifier::from_bytes(&bytes, manifest, "v1").unwrap();
+
+    assert!(!classifier.explains());
+    assert!(!classifier.explains_task("pest"));
+    assert_eq!(classifier.cam_size(), None);
+
+    let png = {
+        let mut buf = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgb8(image::RgbImage::new(8, 8))
+            .write_to(&mut buf, image::ImageFormat::Png)
+            .unwrap();
+        buf.into_inner()
+    };
+    // Classification still works; only the explanation is absent.
+    let (output, heatmap) = classifier.classify_task_explained("pest", &png, 2).unwrap();
+    assert!(!output.class_name.is_empty());
+    assert!(heatmap.is_none());
+
+    let err = classifier
+        .explain("pest", &png, None)
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("no Grad-CAM output"), "{err}");
 }

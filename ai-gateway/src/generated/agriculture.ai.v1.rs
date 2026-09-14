@@ -34,6 +34,51 @@ pub struct DiagnoseImageRequest {
     #[prost(message, optional, tag = "5")]
     pub context: ::core::option::Option<SampleContext>,
 }
+/// Why a vision model answered the way it did.
+///
+/// A confidence score says how sure the model is; this says what it looked at,
+/// which is what lets someone check the answer instead of trusting it. Produced
+/// by Grad-CAM over the backbone's last feature map, so it reflects the real
+/// gradient of the predicted class rather than a generic saliency estimate.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Explanation {
+    /// Which task and class this explains.
+    #[prost(string, tag = "1")]
+    pub task: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub class_name: ::prost::alloc::string::String,
+    /// Greyscale PNG, brightest where the evidence is. Empty when the serving
+    /// model carries no explanation outputs.
+    #[prost(bytes = "vec", tag = "3")]
+    pub heatmap_png: ::prost::alloc::vec::Vec<u8>,
+    #[prost(int32, tag = "4")]
+    pub heatmap_width: i32,
+    #[prost(int32, tag = "5")]
+    pub heatmap_height: i32,
+    /// Region the model keyed on, normalised to \[0,1\] with 0,0 at the top left so
+    /// it survives any later resize of the image.
+    #[prost(double, tag = "6")]
+    pub focus_x: f64,
+    #[prost(double, tag = "7")]
+    pub focus_y: f64,
+    #[prost(double, tag = "8")]
+    pub focus_width: f64,
+    #[prost(double, tag = "9")]
+    pub focus_height: f64,
+    /// Share of the image inside that region. A value near 1 means the model used
+    /// the whole picture and located nothing in particular.
+    #[prost(double, tag = "10")]
+    pub focus_coverage: f64,
+    /// One sentence describing where the model looked, for display.
+    #[prost(string, tag = "11")]
+    pub summary: ::prost::alloc::string::String,
+    /// How the explanation was produced, e.g. "grad-cam".
+    #[prost(string, tag = "12")]
+    pub method: ::prost::alloc::string::String,
+    /// False when the map was flat and nothing can be pointed at.
+    #[prost(bool, tag = "13")]
+    pub localised: bool,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DiagnoseImageResponse {
     #[prost(string, tag = "1")]
@@ -48,6 +93,10 @@ pub struct DiagnoseImageResponse {
     pub model_version: ::prost::alloc::string::String,
     #[prost(int64, tag = "6")]
     pub processing_time_ms: i64,
+    /// One per analysed image, in request order. Empty when the serving model
+    /// cannot explain itself.
+    #[prost(message, repeated, tag = "7")]
+    pub explanations: ::prost::alloc::vec::Vec<Explanation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DiseaseDetection {
@@ -92,6 +141,8 @@ pub struct DetectPestsResponse {
     pub model_version: ::prost::alloc::string::String,
     #[prost(int64, tag = "4")]
     pub processing_time_ms: i64,
+    #[prost(message, repeated, tag = "5")]
+    pub explanations: ::prost::alloc::vec::Vec<Explanation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PestDetection {
@@ -134,6 +185,8 @@ pub struct DetectNutrientDeficiencyResponse {
     pub model_version: ::prost::alloc::string::String,
     #[prost(int64, tag = "4")]
     pub processing_time_ms: i64,
+    #[prost(message, repeated, tag = "5")]
+    pub explanations: ::prost::alloc::vec::Vec<Explanation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NutrientDeficiency {
@@ -299,6 +352,8 @@ pub struct ClassifyPlantResponse {
     pub model_version: ::prost::alloc::string::String,
     #[prost(int64, tag = "4")]
     pub processing_time_ms: i64,
+    #[prost(message, repeated, tag = "5")]
+    pub explanations: ::prost::alloc::vec::Vec<Explanation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlantClassification {

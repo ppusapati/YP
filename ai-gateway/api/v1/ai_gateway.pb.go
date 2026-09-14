@@ -191,6 +191,162 @@ func (x *DiagnoseImageRequest) GetContext() *SampleContext {
 	return nil
 }
 
+// Why a vision model answered the way it did.
+//
+// A confidence score says how sure the model is; this says what it looked at,
+// which is what lets someone check the answer instead of trusting it. Produced
+// by Grad-CAM over the backbone's last feature map, so it reflects the real
+// gradient of the predicted class rather than a generic saliency estimate.
+type Explanation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Which task and class this explains.
+	Task      string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	ClassName string `protobuf:"bytes,2,opt,name=class_name,json=className,proto3" json:"class_name,omitempty"`
+	// Greyscale PNG, brightest where the evidence is. Empty when the serving
+	// model carries no explanation outputs.
+	HeatmapPng    []byte `protobuf:"bytes,3,opt,name=heatmap_png,json=heatmapPng,proto3" json:"heatmap_png,omitempty"`
+	HeatmapWidth  int32  `protobuf:"varint,4,opt,name=heatmap_width,json=heatmapWidth,proto3" json:"heatmap_width,omitempty"`
+	HeatmapHeight int32  `protobuf:"varint,5,opt,name=heatmap_height,json=heatmapHeight,proto3" json:"heatmap_height,omitempty"`
+	// Region the model keyed on, normalised to [0,1] with 0,0 at the top left so
+	// it survives any later resize of the image.
+	FocusX      float64 `protobuf:"fixed64,6,opt,name=focus_x,json=focusX,proto3" json:"focus_x,omitempty"`
+	FocusY      float64 `protobuf:"fixed64,7,opt,name=focus_y,json=focusY,proto3" json:"focus_y,omitempty"`
+	FocusWidth  float64 `protobuf:"fixed64,8,opt,name=focus_width,json=focusWidth,proto3" json:"focus_width,omitempty"`
+	FocusHeight float64 `protobuf:"fixed64,9,opt,name=focus_height,json=focusHeight,proto3" json:"focus_height,omitempty"`
+	// Share of the image inside that region. A value near 1 means the model used
+	// the whole picture and located nothing in particular.
+	FocusCoverage float64 `protobuf:"fixed64,10,opt,name=focus_coverage,json=focusCoverage,proto3" json:"focus_coverage,omitempty"`
+	// One sentence describing where the model looked, for display.
+	Summary string `protobuf:"bytes,11,opt,name=summary,proto3" json:"summary,omitempty"`
+	// How the explanation was produced, e.g. "grad-cam".
+	Method string `protobuf:"bytes,12,opt,name=method,proto3" json:"method,omitempty"`
+	// False when the map was flat and nothing can be pointed at.
+	Localised     bool `protobuf:"varint,13,opt,name=localised,proto3" json:"localised,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Explanation) Reset() {
+	*x = Explanation{}
+	mi := &file_ai_gateway_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Explanation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Explanation) ProtoMessage() {}
+
+func (x *Explanation) ProtoReflect() protoreflect.Message {
+	mi := &file_ai_gateway_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Explanation.ProtoReflect.Descriptor instead.
+func (*Explanation) Descriptor() ([]byte, []int) {
+	return file_ai_gateway_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Explanation) GetTask() string {
+	if x != nil {
+		return x.Task
+	}
+	return ""
+}
+
+func (x *Explanation) GetClassName() string {
+	if x != nil {
+		return x.ClassName
+	}
+	return ""
+}
+
+func (x *Explanation) GetHeatmapPng() []byte {
+	if x != nil {
+		return x.HeatmapPng
+	}
+	return nil
+}
+
+func (x *Explanation) GetHeatmapWidth() int32 {
+	if x != nil {
+		return x.HeatmapWidth
+	}
+	return 0
+}
+
+func (x *Explanation) GetHeatmapHeight() int32 {
+	if x != nil {
+		return x.HeatmapHeight
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusX() float64 {
+	if x != nil {
+		return x.FocusX
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusY() float64 {
+	if x != nil {
+		return x.FocusY
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusWidth() float64 {
+	if x != nil {
+		return x.FocusWidth
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusHeight() float64 {
+	if x != nil {
+		return x.FocusHeight
+	}
+	return 0
+}
+
+func (x *Explanation) GetFocusCoverage() float64 {
+	if x != nil {
+		return x.FocusCoverage
+	}
+	return 0
+}
+
+func (x *Explanation) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *Explanation) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *Explanation) GetLocalised() bool {
+	if x != nil {
+		return x.Localised
+	}
+	return false
+}
+
 type DiagnoseImageResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	RequestId          string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -199,13 +355,16 @@ type DiagnoseImageResponse struct {
 	Summary            string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
 	ModelVersion       string                 `protobuf:"bytes,5,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	ProcessingTimeMs   int64                  `protobuf:"varint,6,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// One per analysed image, in request order. Empty when the serving model
+	// cannot explain itself.
+	Explanations  []*Explanation `protobuf:"bytes,7,rep,name=explanations,proto3" json:"explanations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DiagnoseImageResponse) Reset() {
 	*x = DiagnoseImageResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[2]
+	mi := &file_ai_gateway_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -217,7 +376,7 @@ func (x *DiagnoseImageResponse) String() string {
 func (*DiagnoseImageResponse) ProtoMessage() {}
 
 func (x *DiagnoseImageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[2]
+	mi := &file_ai_gateway_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -230,7 +389,7 @@ func (x *DiagnoseImageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiagnoseImageResponse.ProtoReflect.Descriptor instead.
 func (*DiagnoseImageResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{2}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DiagnoseImageResponse) GetRequestId() string {
@@ -275,6 +434,13 @@ func (x *DiagnoseImageResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *DiagnoseImageResponse) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
+	}
+	return nil
+}
+
 type DiseaseDetection struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	DiseaseId        string                 `protobuf:"bytes,1,opt,name=disease_id,json=diseaseId,proto3" json:"disease_id,omitempty"`
@@ -292,7 +458,7 @@ type DiseaseDetection struct {
 
 func (x *DiseaseDetection) Reset() {
 	*x = DiseaseDetection{}
-	mi := &file_ai_gateway_proto_msgTypes[3]
+	mi := &file_ai_gateway_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -304,7 +470,7 @@ func (x *DiseaseDetection) String() string {
 func (*DiseaseDetection) ProtoMessage() {}
 
 func (x *DiseaseDetection) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[3]
+	mi := &file_ai_gateway_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -317,7 +483,7 @@ func (x *DiseaseDetection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiseaseDetection.ProtoReflect.Descriptor instead.
 func (*DiseaseDetection) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{3}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DiseaseDetection) GetDiseaseId() string {
@@ -395,7 +561,7 @@ type DetectPestsRequest struct {
 
 func (x *DetectPestsRequest) Reset() {
 	*x = DetectPestsRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[4]
+	mi := &file_ai_gateway_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -407,7 +573,7 @@ func (x *DetectPestsRequest) String() string {
 func (*DetectPestsRequest) ProtoMessage() {}
 
 func (x *DetectPestsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[4]
+	mi := &file_ai_gateway_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -420,7 +586,7 @@ func (x *DetectPestsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectPestsRequest.ProtoReflect.Descriptor instead.
 func (*DetectPestsRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{4}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DetectPestsRequest) GetRequestId() string {
@@ -457,13 +623,14 @@ type DetectPestsResponse struct {
 	Pests            []*PestDetection       `protobuf:"bytes,2,rep,name=pests,proto3" json:"pests,omitempty"`
 	ModelVersion     string                 `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	ProcessingTimeMs int64                  `protobuf:"varint,4,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
+	Explanations     []*Explanation         `protobuf:"bytes,5,rep,name=explanations,proto3" json:"explanations,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *DetectPestsResponse) Reset() {
 	*x = DetectPestsResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[5]
+	mi := &file_ai_gateway_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -475,7 +642,7 @@ func (x *DetectPestsResponse) String() string {
 func (*DetectPestsResponse) ProtoMessage() {}
 
 func (x *DetectPestsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[5]
+	mi := &file_ai_gateway_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +655,7 @@ func (x *DetectPestsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectPestsResponse.ProtoReflect.Descriptor instead.
 func (*DetectPestsResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{5}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DetectPestsResponse) GetRequestId() string {
@@ -519,6 +686,13 @@ func (x *DetectPestsResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *DetectPestsResponse) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
+	}
+	return nil
+}
+
 type PestDetection struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	PestId          string                 `protobuf:"bytes,1,opt,name=pest_id,json=pestId,proto3" json:"pest_id,omitempty"`
@@ -535,7 +709,7 @@ type PestDetection struct {
 
 func (x *PestDetection) Reset() {
 	*x = PestDetection{}
-	mi := &file_ai_gateway_proto_msgTypes[6]
+	mi := &file_ai_gateway_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -547,7 +721,7 @@ func (x *PestDetection) String() string {
 func (*PestDetection) ProtoMessage() {}
 
 func (x *PestDetection) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[6]
+	mi := &file_ai_gateway_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -560,7 +734,7 @@ func (x *PestDetection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PestDetection.ProtoReflect.Descriptor instead.
 func (*PestDetection) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{6}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PestDetection) GetPestId() string {
@@ -631,7 +805,7 @@ type DetectNutrientDeficiencyRequest struct {
 
 func (x *DetectNutrientDeficiencyRequest) Reset() {
 	*x = DetectNutrientDeficiencyRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[7]
+	mi := &file_ai_gateway_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -643,7 +817,7 @@ func (x *DetectNutrientDeficiencyRequest) String() string {
 func (*DetectNutrientDeficiencyRequest) ProtoMessage() {}
 
 func (x *DetectNutrientDeficiencyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[7]
+	mi := &file_ai_gateway_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -656,7 +830,7 @@ func (x *DetectNutrientDeficiencyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectNutrientDeficiencyRequest.ProtoReflect.Descriptor instead.
 func (*DetectNutrientDeficiencyRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{7}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DetectNutrientDeficiencyRequest) GetRequestId() string {
@@ -693,13 +867,14 @@ type DetectNutrientDeficiencyResponse struct {
 	Deficiencies     []*NutrientDeficiency  `protobuf:"bytes,2,rep,name=deficiencies,proto3" json:"deficiencies,omitempty"`
 	ModelVersion     string                 `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	ProcessingTimeMs int64                  `protobuf:"varint,4,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
+	Explanations     []*Explanation         `protobuf:"bytes,5,rep,name=explanations,proto3" json:"explanations,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *DetectNutrientDeficiencyResponse) Reset() {
 	*x = DetectNutrientDeficiencyResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[8]
+	mi := &file_ai_gateway_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -711,7 +886,7 @@ func (x *DetectNutrientDeficiencyResponse) String() string {
 func (*DetectNutrientDeficiencyResponse) ProtoMessage() {}
 
 func (x *DetectNutrientDeficiencyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[8]
+	mi := &file_ai_gateway_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -724,7 +899,7 @@ func (x *DetectNutrientDeficiencyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectNutrientDeficiencyResponse.ProtoReflect.Descriptor instead.
 func (*DetectNutrientDeficiencyResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{8}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DetectNutrientDeficiencyResponse) GetRequestId() string {
@@ -755,6 +930,13 @@ func (x *DetectNutrientDeficiencyResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *DetectNutrientDeficiencyResponse) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
+	}
+	return nil
+}
+
 type NutrientDeficiency struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Nutrient               string                 `protobuf:"bytes,1,opt,name=nutrient,proto3" json:"nutrient,omitempty"`
@@ -770,7 +952,7 @@ type NutrientDeficiency struct {
 
 func (x *NutrientDeficiency) Reset() {
 	*x = NutrientDeficiency{}
-	mi := &file_ai_gateway_proto_msgTypes[9]
+	mi := &file_ai_gateway_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -782,7 +964,7 @@ func (x *NutrientDeficiency) String() string {
 func (*NutrientDeficiency) ProtoMessage() {}
 
 func (x *NutrientDeficiency) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[9]
+	mi := &file_ai_gateway_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -795,7 +977,7 @@ func (x *NutrientDeficiency) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NutrientDeficiency.ProtoReflect.Descriptor instead.
 func (*NutrientDeficiency) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{9}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *NutrientDeficiency) GetNutrient() string {
@@ -858,7 +1040,7 @@ type ClassifyPlantRequest struct {
 
 func (x *ClassifyPlantRequest) Reset() {
 	*x = ClassifyPlantRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[10]
+	mi := &file_ai_gateway_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -870,7 +1052,7 @@ func (x *ClassifyPlantRequest) String() string {
 func (*ClassifyPlantRequest) ProtoMessage() {}
 
 func (x *ClassifyPlantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[10]
+	mi := &file_ai_gateway_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -883,7 +1065,7 @@ func (x *ClassifyPlantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClassifyPlantRequest.ProtoReflect.Descriptor instead.
 func (*ClassifyPlantRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{10}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ClassifyPlantRequest) GetRequestId() string {
@@ -919,7 +1101,7 @@ type TrainingLabel struct {
 
 func (x *TrainingLabel) Reset() {
 	*x = TrainingLabel{}
-	mi := &file_ai_gateway_proto_msgTypes[11]
+	mi := &file_ai_gateway_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -931,7 +1113,7 @@ func (x *TrainingLabel) String() string {
 func (*TrainingLabel) ProtoMessage() {}
 
 func (x *TrainingLabel) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[11]
+	mi := &file_ai_gateway_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -944,7 +1126,7 @@ func (x *TrainingLabel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrainingLabel.ProtoReflect.Descriptor instead.
 func (*TrainingLabel) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{11}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TrainingLabel) GetName() string {
@@ -989,7 +1171,7 @@ type LabelReview struct {
 
 func (x *LabelReview) Reset() {
 	*x = LabelReview{}
-	mi := &file_ai_gateway_proto_msgTypes[12]
+	mi := &file_ai_gateway_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1001,7 +1183,7 @@ func (x *LabelReview) String() string {
 func (*LabelReview) ProtoMessage() {}
 
 func (x *LabelReview) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[12]
+	mi := &file_ai_gateway_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1014,7 +1196,7 @@ func (x *LabelReview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelReview.ProtoReflect.Descriptor instead.
 func (*LabelReview) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{12}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *LabelReview) GetDecision() string {
@@ -1077,7 +1259,7 @@ type TrainingSampleInfo struct {
 
 func (x *TrainingSampleInfo) Reset() {
 	*x = TrainingSampleInfo{}
-	mi := &file_ai_gateway_proto_msgTypes[13]
+	mi := &file_ai_gateway_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1089,7 +1271,7 @@ func (x *TrainingSampleInfo) String() string {
 func (*TrainingSampleInfo) ProtoMessage() {}
 
 func (x *TrainingSampleInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[13]
+	mi := &file_ai_gateway_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1102,7 +1284,7 @@ func (x *TrainingSampleInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrainingSampleInfo.ProtoReflect.Descriptor instead.
 func (*TrainingSampleInfo) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{13}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *TrainingSampleInfo) GetId() string {
@@ -1192,7 +1374,7 @@ type ListTrainingSamplesRequest struct {
 
 func (x *ListTrainingSamplesRequest) Reset() {
 	*x = ListTrainingSamplesRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[14]
+	mi := &file_ai_gateway_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1204,7 +1386,7 @@ func (x *ListTrainingSamplesRequest) String() string {
 func (*ListTrainingSamplesRequest) ProtoMessage() {}
 
 func (x *ListTrainingSamplesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[14]
+	mi := &file_ai_gateway_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1217,7 +1399,7 @@ func (x *ListTrainingSamplesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrainingSamplesRequest.ProtoReflect.Descriptor instead.
 func (*ListTrainingSamplesRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{14}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListTrainingSamplesRequest) GetTask() string {
@@ -1294,7 +1476,7 @@ type ListTrainingSamplesResponse struct {
 
 func (x *ListTrainingSamplesResponse) Reset() {
 	*x = ListTrainingSamplesResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[15]
+	mi := &file_ai_gateway_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1306,7 +1488,7 @@ func (x *ListTrainingSamplesResponse) String() string {
 func (*ListTrainingSamplesResponse) ProtoMessage() {}
 
 func (x *ListTrainingSamplesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[15]
+	mi := &file_ai_gateway_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1319,7 +1501,7 @@ func (x *ListTrainingSamplesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrainingSamplesResponse.ProtoReflect.Descriptor instead.
 func (*ListTrainingSamplesResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{15}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListTrainingSamplesResponse) GetSamples() []*TrainingSampleInfo {
@@ -1354,7 +1536,7 @@ type SubmitLabelReviewRequest struct {
 
 func (x *SubmitLabelReviewRequest) Reset() {
 	*x = SubmitLabelReviewRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[16]
+	mi := &file_ai_gateway_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1366,7 +1548,7 @@ func (x *SubmitLabelReviewRequest) String() string {
 func (*SubmitLabelReviewRequest) ProtoMessage() {}
 
 func (x *SubmitLabelReviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[16]
+	mi := &file_ai_gateway_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1561,7 @@ func (x *SubmitLabelReviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitLabelReviewRequest.ProtoReflect.Descriptor instead.
 func (*SubmitLabelReviewRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{16}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SubmitLabelReviewRequest) GetTask() string {
@@ -1412,7 +1594,7 @@ type SubmitLabelReviewResponse struct {
 
 func (x *SubmitLabelReviewResponse) Reset() {
 	*x = SubmitLabelReviewResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[17]
+	mi := &file_ai_gateway_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1424,7 +1606,7 @@ func (x *SubmitLabelReviewResponse) String() string {
 func (*SubmitLabelReviewResponse) ProtoMessage() {}
 
 func (x *SubmitLabelReviewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[17]
+	mi := &file_ai_gateway_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1437,7 +1619,7 @@ func (x *SubmitLabelReviewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitLabelReviewResponse.ProtoReflect.Descriptor instead.
 func (*SubmitLabelReviewResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{17}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SubmitLabelReviewResponse) GetSample() *TrainingSampleInfo {
@@ -1458,7 +1640,7 @@ type GetTrainingSampleImageRequest struct {
 
 func (x *GetTrainingSampleImageRequest) Reset() {
 	*x = GetTrainingSampleImageRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[18]
+	mi := &file_ai_gateway_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1470,7 +1652,7 @@ func (x *GetTrainingSampleImageRequest) String() string {
 func (*GetTrainingSampleImageRequest) ProtoMessage() {}
 
 func (x *GetTrainingSampleImageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[18]
+	mi := &file_ai_gateway_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1483,7 +1665,7 @@ func (x *GetTrainingSampleImageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrainingSampleImageRequest.ProtoReflect.Descriptor instead.
 func (*GetTrainingSampleImageRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{18}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetTrainingSampleImageRequest) GetTask() string {
@@ -1517,7 +1699,7 @@ type GetTrainingSampleImageResponse struct {
 
 func (x *GetTrainingSampleImageResponse) Reset() {
 	*x = GetTrainingSampleImageResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[19]
+	mi := &file_ai_gateway_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1529,7 +1711,7 @@ func (x *GetTrainingSampleImageResponse) String() string {
 func (*GetTrainingSampleImageResponse) ProtoMessage() {}
 
 func (x *GetTrainingSampleImageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[19]
+	mi := &file_ai_gateway_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1542,7 +1724,7 @@ func (x *GetTrainingSampleImageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrainingSampleImageResponse.ProtoReflect.Descriptor instead.
 func (*GetTrainingSampleImageResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{19}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetTrainingSampleImageResponse) GetImageBytes() []byte {
@@ -1565,13 +1747,14 @@ type ClassifyPlantResponse struct {
 	Species          *PlantClassification   `protobuf:"bytes,2,opt,name=species,proto3" json:"species,omitempty"`
 	ModelVersion     string                 `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	ProcessingTimeMs int64                  `protobuf:"varint,4,opt,name=processing_time_ms,json=processingTimeMs,proto3" json:"processing_time_ms,omitempty"`
+	Explanations     []*Explanation         `protobuf:"bytes,5,rep,name=explanations,proto3" json:"explanations,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ClassifyPlantResponse) Reset() {
 	*x = ClassifyPlantResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[20]
+	mi := &file_ai_gateway_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1583,7 +1766,7 @@ func (x *ClassifyPlantResponse) String() string {
 func (*ClassifyPlantResponse) ProtoMessage() {}
 
 func (x *ClassifyPlantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[20]
+	mi := &file_ai_gateway_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1596,7 +1779,7 @@ func (x *ClassifyPlantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClassifyPlantResponse.ProtoReflect.Descriptor instead.
 func (*ClassifyPlantResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{20}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ClassifyPlantResponse) GetRequestId() string {
@@ -1627,6 +1810,13 @@ func (x *ClassifyPlantResponse) GetProcessingTimeMs() int64 {
 	return 0
 }
 
+func (x *ClassifyPlantResponse) GetExplanations() []*Explanation {
+	if x != nil {
+		return x.Explanations
+	}
+	return nil
+}
+
 type PlantClassification struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SpeciesId      string                 `protobuf:"bytes,1,opt,name=species_id,json=speciesId,proto3" json:"species_id,omitempty"`
@@ -1640,7 +1830,7 @@ type PlantClassification struct {
 
 func (x *PlantClassification) Reset() {
 	*x = PlantClassification{}
-	mi := &file_ai_gateway_proto_msgTypes[21]
+	mi := &file_ai_gateway_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1652,7 +1842,7 @@ func (x *PlantClassification) String() string {
 func (*PlantClassification) ProtoMessage() {}
 
 func (x *PlantClassification) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[21]
+	mi := &file_ai_gateway_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1665,7 +1855,7 @@ func (x *PlantClassification) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlantClassification.ProtoReflect.Descriptor instead.
 func (*PlantClassification) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{21}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *PlantClassification) GetSpeciesId() string {
@@ -1717,7 +1907,7 @@ type PredictYieldRequest struct {
 
 func (x *PredictYieldRequest) Reset() {
 	*x = PredictYieldRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[22]
+	mi := &file_ai_gateway_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1729,7 +1919,7 @@ func (x *PredictYieldRequest) String() string {
 func (*PredictYieldRequest) ProtoMessage() {}
 
 func (x *PredictYieldRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[22]
+	mi := &file_ai_gateway_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1742,7 +1932,7 @@ func (x *PredictYieldRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PredictYieldRequest.ProtoReflect.Descriptor instead.
 func (*PredictYieldRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{22}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *PredictYieldRequest) GetRequestId() string {
@@ -1813,7 +2003,7 @@ type PredictYieldResponse struct {
 
 func (x *PredictYieldResponse) Reset() {
 	*x = PredictYieldResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[23]
+	mi := &file_ai_gateway_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1825,7 +2015,7 @@ func (x *PredictYieldResponse) String() string {
 func (*PredictYieldResponse) ProtoMessage() {}
 
 func (x *PredictYieldResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[23]
+	mi := &file_ai_gateway_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1838,7 +2028,7 @@ func (x *PredictYieldResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PredictYieldResponse.ProtoReflect.Descriptor instead.
 func (*PredictYieldResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{23}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *PredictYieldResponse) GetRequestId() string {
@@ -1949,7 +2139,7 @@ type EnvironmentFactors struct {
 
 func (x *EnvironmentFactors) Reset() {
 	*x = EnvironmentFactors{}
-	mi := &file_ai_gateway_proto_msgTypes[24]
+	mi := &file_ai_gateway_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1961,7 +2151,7 @@ func (x *EnvironmentFactors) String() string {
 func (*EnvironmentFactors) ProtoMessage() {}
 
 func (x *EnvironmentFactors) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[24]
+	mi := &file_ai_gateway_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1974,7 +2164,7 @@ func (x *EnvironmentFactors) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvironmentFactors.ProtoReflect.Descriptor instead.
 func (*EnvironmentFactors) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{24}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *EnvironmentFactors) GetTemperatureCelsius() float64 {
@@ -2049,7 +2239,7 @@ type SoilFactors struct {
 
 func (x *SoilFactors) Reset() {
 	*x = SoilFactors{}
-	mi := &file_ai_gateway_proto_msgTypes[25]
+	mi := &file_ai_gateway_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2061,7 +2251,7 @@ func (x *SoilFactors) String() string {
 func (*SoilFactors) ProtoMessage() {}
 
 func (x *SoilFactors) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[25]
+	mi := &file_ai_gateway_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2074,7 +2264,7 @@ func (x *SoilFactors) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SoilFactors.ProtoReflect.Descriptor instead.
 func (*SoilFactors) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{25}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *SoilFactors) GetPh() float64 {
@@ -2148,7 +2338,7 @@ type ManagementFactors struct {
 
 func (x *ManagementFactors) Reset() {
 	*x = ManagementFactors{}
-	mi := &file_ai_gateway_proto_msgTypes[26]
+	mi := &file_ai_gateway_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2160,7 +2350,7 @@ func (x *ManagementFactors) String() string {
 func (*ManagementFactors) ProtoMessage() {}
 
 func (x *ManagementFactors) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[26]
+	mi := &file_ai_gateway_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2173,7 +2363,7 @@ func (x *ManagementFactors) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagementFactors.ProtoReflect.Descriptor instead.
 func (*ManagementFactors) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{26}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ManagementFactors) GetIrrigationEfficiency() float64 {
@@ -2236,7 +2426,7 @@ type StressFactor struct {
 
 func (x *StressFactor) Reset() {
 	*x = StressFactor{}
-	mi := &file_ai_gateway_proto_msgTypes[27]
+	mi := &file_ai_gateway_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2248,7 +2438,7 @@ func (x *StressFactor) String() string {
 func (*StressFactor) ProtoMessage() {}
 
 func (x *StressFactor) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[27]
+	mi := &file_ai_gateway_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2261,7 +2451,7 @@ func (x *StressFactor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StressFactor.ProtoReflect.Descriptor instead.
 func (*StressFactor) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{27}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *StressFactor) GetFactorName() string {
@@ -2299,7 +2489,7 @@ type SimulateCropGrowthRequest struct {
 
 func (x *SimulateCropGrowthRequest) Reset() {
 	*x = SimulateCropGrowthRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[28]
+	mi := &file_ai_gateway_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2311,7 +2501,7 @@ func (x *SimulateCropGrowthRequest) String() string {
 func (*SimulateCropGrowthRequest) ProtoMessage() {}
 
 func (x *SimulateCropGrowthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[28]
+	mi := &file_ai_gateway_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2324,7 +2514,7 @@ func (x *SimulateCropGrowthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SimulateCropGrowthRequest.ProtoReflect.Descriptor instead.
 func (*SimulateCropGrowthRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{28}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *SimulateCropGrowthRequest) GetRequestId() string {
@@ -2383,7 +2573,7 @@ type SimulateCropGrowthResponse struct {
 
 func (x *SimulateCropGrowthResponse) Reset() {
 	*x = SimulateCropGrowthResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[29]
+	mi := &file_ai_gateway_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2395,7 +2585,7 @@ func (x *SimulateCropGrowthResponse) String() string {
 func (*SimulateCropGrowthResponse) ProtoMessage() {}
 
 func (x *SimulateCropGrowthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[29]
+	mi := &file_ai_gateway_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2408,7 +2598,7 @@ func (x *SimulateCropGrowthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SimulateCropGrowthResponse.ProtoReflect.Descriptor instead.
 func (*SimulateCropGrowthResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{29}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *SimulateCropGrowthResponse) GetRequestId() string {
@@ -2467,7 +2657,7 @@ type GrowthStageResult struct {
 
 func (x *GrowthStageResult) Reset() {
 	*x = GrowthStageResult{}
-	mi := &file_ai_gateway_proto_msgTypes[30]
+	mi := &file_ai_gateway_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2479,7 +2669,7 @@ func (x *GrowthStageResult) String() string {
 func (*GrowthStageResult) ProtoMessage() {}
 
 func (x *GrowthStageResult) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[30]
+	mi := &file_ai_gateway_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2492,7 +2682,7 @@ func (x *GrowthStageResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GrowthStageResult.ProtoReflect.Descriptor instead.
 func (*GrowthStageResult) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{30}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GrowthStageResult) GetDay() int32 {
@@ -2549,7 +2739,7 @@ type ComputeNDVIRequest struct {
 
 func (x *ComputeNDVIRequest) Reset() {
 	*x = ComputeNDVIRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[31]
+	mi := &file_ai_gateway_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2561,7 +2751,7 @@ func (x *ComputeNDVIRequest) String() string {
 func (*ComputeNDVIRequest) ProtoMessage() {}
 
 func (x *ComputeNDVIRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[31]
+	mi := &file_ai_gateway_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2574,7 +2764,7 @@ func (x *ComputeNDVIRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeNDVIRequest.ProtoReflect.Descriptor instead.
 func (*ComputeNDVIRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{31}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ComputeNDVIRequest) GetRequestId() string {
@@ -2627,7 +2817,7 @@ type RasterBands struct {
 
 func (x *RasterBands) Reset() {
 	*x = RasterBands{}
-	mi := &file_ai_gateway_proto_msgTypes[32]
+	mi := &file_ai_gateway_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2639,7 +2829,7 @@ func (x *RasterBands) String() string {
 func (*RasterBands) ProtoMessage() {}
 
 func (x *RasterBands) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[32]
+	mi := &file_ai_gateway_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2652,7 +2842,7 @@ func (x *RasterBands) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RasterBands.ProtoReflect.Descriptor instead.
 func (*RasterBands) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{32}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *RasterBands) GetNirBand() []float64 {
@@ -2751,7 +2941,7 @@ type BoundingBox struct {
 
 func (x *BoundingBox) Reset() {
 	*x = BoundingBox{}
-	mi := &file_ai_gateway_proto_msgTypes[33]
+	mi := &file_ai_gateway_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2763,7 +2953,7 @@ func (x *BoundingBox) String() string {
 func (*BoundingBox) ProtoMessage() {}
 
 func (x *BoundingBox) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[33]
+	mi := &file_ai_gateway_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2776,7 +2966,7 @@ func (x *BoundingBox) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoundingBox.ProtoReflect.Descriptor instead.
 func (*BoundingBox) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{33}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *BoundingBox) GetMinLon() float64 {
@@ -2831,7 +3021,7 @@ type ComputeNDVIResponse struct {
 
 func (x *ComputeNDVIResponse) Reset() {
 	*x = ComputeNDVIResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[34]
+	mi := &file_ai_gateway_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2843,7 +3033,7 @@ func (x *ComputeNDVIResponse) String() string {
 func (*ComputeNDVIResponse) ProtoMessage() {}
 
 func (x *ComputeNDVIResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[34]
+	mi := &file_ai_gateway_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2856,7 +3046,7 @@ func (x *ComputeNDVIResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeNDVIResponse.ProtoReflect.Descriptor instead.
 func (*ComputeNDVIResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{34}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ComputeNDVIResponse) GetRequestId() string {
@@ -2978,7 +3168,7 @@ type BandStatistics struct {
 
 func (x *BandStatistics) Reset() {
 	*x = BandStatistics{}
-	mi := &file_ai_gateway_proto_msgTypes[35]
+	mi := &file_ai_gateway_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2990,7 +3180,7 @@ func (x *BandStatistics) String() string {
 func (*BandStatistics) ProtoMessage() {}
 
 func (x *BandStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[35]
+	mi := &file_ai_gateway_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3003,7 +3193,7 @@ func (x *BandStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BandStatistics.ProtoReflect.Descriptor instead.
 func (*BandStatistics) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{35}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *BandStatistics) GetMin() float64 {
@@ -3061,7 +3251,7 @@ type NdviZone struct {
 
 func (x *NdviZone) Reset() {
 	*x = NdviZone{}
-	mi := &file_ai_gateway_proto_msgTypes[36]
+	mi := &file_ai_gateway_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3073,7 +3263,7 @@ func (x *NdviZone) String() string {
 func (*NdviZone) ProtoMessage() {}
 
 func (x *NdviZone) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[36]
+	mi := &file_ai_gateway_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3086,7 +3276,7 @@ func (x *NdviZone) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NdviZone.ProtoReflect.Descriptor instead.
 func (*NdviZone) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{36}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *NdviZone) GetClassification() string {
@@ -3138,7 +3328,7 @@ type DetectVegetationStressRequest struct {
 
 func (x *DetectVegetationStressRequest) Reset() {
 	*x = DetectVegetationStressRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[37]
+	mi := &file_ai_gateway_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3150,7 +3340,7 @@ func (x *DetectVegetationStressRequest) String() string {
 func (*DetectVegetationStressRequest) ProtoMessage() {}
 
 func (x *DetectVegetationStressRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[37]
+	mi := &file_ai_gateway_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3163,7 +3353,7 @@ func (x *DetectVegetationStressRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectVegetationStressRequest.ProtoReflect.Descriptor instead.
 func (*DetectVegetationStressRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{37}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *DetectVegetationStressRequest) GetRequestId() string {
@@ -3223,7 +3413,7 @@ type DetectVegetationStressResponse struct {
 
 func (x *DetectVegetationStressResponse) Reset() {
 	*x = DetectVegetationStressResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[38]
+	mi := &file_ai_gateway_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3235,7 +3425,7 @@ func (x *DetectVegetationStressResponse) String() string {
 func (*DetectVegetationStressResponse) ProtoMessage() {}
 
 func (x *DetectVegetationStressResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[38]
+	mi := &file_ai_gateway_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3248,7 +3438,7 @@ func (x *DetectVegetationStressResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectVegetationStressResponse.ProtoReflect.Descriptor instead.
 func (*DetectVegetationStressResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{38}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *DetectVegetationStressResponse) GetRequestId() string {
@@ -3313,7 +3503,7 @@ type StressZone struct {
 
 func (x *StressZone) Reset() {
 	*x = StressZone{}
-	mi := &file_ai_gateway_proto_msgTypes[39]
+	mi := &file_ai_gateway_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3325,7 +3515,7 @@ func (x *StressZone) String() string {
 func (*StressZone) ProtoMessage() {}
 
 func (x *StressZone) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[39]
+	mi := &file_ai_gateway_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3338,7 +3528,7 @@ func (x *StressZone) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StressZone.ProtoReflect.Descriptor instead.
 func (*StressZone) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{39}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *StressZone) GetStressType() string {
@@ -3389,7 +3579,7 @@ type RecommendCropsRequest struct {
 
 func (x *RecommendCropsRequest) Reset() {
 	*x = RecommendCropsRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[40]
+	mi := &file_ai_gateway_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3401,7 +3591,7 @@ func (x *RecommendCropsRequest) String() string {
 func (*RecommendCropsRequest) ProtoMessage() {}
 
 func (x *RecommendCropsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[40]
+	mi := &file_ai_gateway_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3414,7 +3604,7 @@ func (x *RecommendCropsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecommendCropsRequest.ProtoReflect.Descriptor instead.
 func (*RecommendCropsRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{40}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *RecommendCropsRequest) GetRequestId() string {
@@ -3467,7 +3657,7 @@ type SoilConditions struct {
 
 func (x *SoilConditions) Reset() {
 	*x = SoilConditions{}
-	mi := &file_ai_gateway_proto_msgTypes[41]
+	mi := &file_ai_gateway_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3479,7 +3669,7 @@ func (x *SoilConditions) String() string {
 func (*SoilConditions) ProtoMessage() {}
 
 func (x *SoilConditions) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[41]
+	mi := &file_ai_gateway_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3492,7 +3682,7 @@ func (x *SoilConditions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SoilConditions.ProtoReflect.Descriptor instead.
 func (*SoilConditions) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{41}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *SoilConditions) GetPh() float64 {
@@ -3558,7 +3748,7 @@ type ClimateConditions struct {
 
 func (x *ClimateConditions) Reset() {
 	*x = ClimateConditions{}
-	mi := &file_ai_gateway_proto_msgTypes[42]
+	mi := &file_ai_gateway_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3570,7 +3760,7 @@ func (x *ClimateConditions) String() string {
 func (*ClimateConditions) ProtoMessage() {}
 
 func (x *ClimateConditions) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[42]
+	mi := &file_ai_gateway_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3583,7 +3773,7 @@ func (x *ClimateConditions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClimateConditions.ProtoReflect.Descriptor instead.
 func (*ClimateConditions) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{42}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ClimateConditions) GetAvgTemperatureCelsius() float64 {
@@ -3641,7 +3831,7 @@ type EconomicFactors struct {
 
 func (x *EconomicFactors) Reset() {
 	*x = EconomicFactors{}
-	mi := &file_ai_gateway_proto_msgTypes[43]
+	mi := &file_ai_gateway_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3653,7 +3843,7 @@ func (x *EconomicFactors) String() string {
 func (*EconomicFactors) ProtoMessage() {}
 
 func (x *EconomicFactors) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[43]
+	mi := &file_ai_gateway_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3666,7 +3856,7 @@ func (x *EconomicFactors) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EconomicFactors.ProtoReflect.Descriptor instead.
 func (*EconomicFactors) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{43}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *EconomicFactors) GetMarketPricePerKg() float64 {
@@ -3716,7 +3906,7 @@ type RecommendCropsResponse struct {
 
 func (x *RecommendCropsResponse) Reset() {
 	*x = RecommendCropsResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[44]
+	mi := &file_ai_gateway_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3728,7 +3918,7 @@ func (x *RecommendCropsResponse) String() string {
 func (*RecommendCropsResponse) ProtoMessage() {}
 
 func (x *RecommendCropsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[44]
+	mi := &file_ai_gateway_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3741,7 +3931,7 @@ func (x *RecommendCropsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecommendCropsResponse.ProtoReflect.Descriptor instead.
 func (*RecommendCropsResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{44}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *RecommendCropsResponse) GetRequestId() string {
@@ -3790,7 +3980,7 @@ type CropRecommendation struct {
 
 func (x *CropRecommendation) Reset() {
 	*x = CropRecommendation{}
-	mi := &file_ai_gateway_proto_msgTypes[45]
+	mi := &file_ai_gateway_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3802,7 +3992,7 @@ func (x *CropRecommendation) String() string {
 func (*CropRecommendation) ProtoMessage() {}
 
 func (x *CropRecommendation) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[45]
+	mi := &file_ai_gateway_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3815,7 +4005,7 @@ func (x *CropRecommendation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CropRecommendation.ProtoReflect.Descriptor instead.
 func (*CropRecommendation) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{45}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *CropRecommendation) GetCropName() string {
@@ -3900,7 +4090,7 @@ type ImageData struct {
 
 func (x *ImageData) Reset() {
 	*x = ImageData{}
-	mi := &file_ai_gateway_proto_msgTypes[46]
+	mi := &file_ai_gateway_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3912,7 +4102,7 @@ func (x *ImageData) String() string {
 func (*ImageData) ProtoMessage() {}
 
 func (x *ImageData) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[46]
+	mi := &file_ai_gateway_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3925,7 +4115,7 @@ func (x *ImageData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageData.ProtoReflect.Descriptor instead.
 func (*ImageData) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{46}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *ImageData) GetImageUrl() string {
@@ -3972,7 +4162,7 @@ type EvaluateFieldRiskRequest struct {
 
 func (x *EvaluateFieldRiskRequest) Reset() {
 	*x = EvaluateFieldRiskRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[47]
+	mi := &file_ai_gateway_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3984,7 +4174,7 @@ func (x *EvaluateFieldRiskRequest) String() string {
 func (*EvaluateFieldRiskRequest) ProtoMessage() {}
 
 func (x *EvaluateFieldRiskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[47]
+	mi := &file_ai_gateway_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3997,7 +4187,7 @@ func (x *EvaluateFieldRiskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateFieldRiskRequest.ProtoReflect.Descriptor instead.
 func (*EvaluateFieldRiskRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{47}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *EvaluateFieldRiskRequest) GetRequestId() string {
@@ -4071,7 +4261,7 @@ type FieldWeather struct {
 
 func (x *FieldWeather) Reset() {
 	*x = FieldWeather{}
-	mi := &file_ai_gateway_proto_msgTypes[48]
+	mi := &file_ai_gateway_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4083,7 +4273,7 @@ func (x *FieldWeather) String() string {
 func (*FieldWeather) ProtoMessage() {}
 
 func (x *FieldWeather) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[48]
+	mi := &file_ai_gateway_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4096,7 +4286,7 @@ func (x *FieldWeather) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FieldWeather.ProtoReflect.Descriptor instead.
 func (*FieldWeather) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{48}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *FieldWeather) GetTemperatureCurrent() float64 {
@@ -4157,7 +4347,7 @@ type FieldSoilState struct {
 
 func (x *FieldSoilState) Reset() {
 	*x = FieldSoilState{}
-	mi := &file_ai_gateway_proto_msgTypes[49]
+	mi := &file_ai_gateway_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4169,7 +4359,7 @@ func (x *FieldSoilState) String() string {
 func (*FieldSoilState) ProtoMessage() {}
 
 func (x *FieldSoilState) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[49]
+	mi := &file_ai_gateway_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4182,7 +4372,7 @@ func (x *FieldSoilState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FieldSoilState.ProtoReflect.Descriptor instead.
 func (*FieldSoilState) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{49}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *FieldSoilState) GetSoilMoisture() float64 {
@@ -4206,7 +4396,7 @@ type DetectionResults struct {
 
 func (x *DetectionResults) Reset() {
 	*x = DetectionResults{}
-	mi := &file_ai_gateway_proto_msgTypes[50]
+	mi := &file_ai_gateway_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4218,7 +4408,7 @@ func (x *DetectionResults) String() string {
 func (*DetectionResults) ProtoMessage() {}
 
 func (x *DetectionResults) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[50]
+	mi := &file_ai_gateway_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4231,7 +4421,7 @@ func (x *DetectionResults) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetectionResults.ProtoReflect.Descriptor instead.
 func (*DetectionResults) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{50}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *DetectionResults) GetPestConfidence() float64 {
@@ -4288,7 +4478,7 @@ type GrowthState struct {
 
 func (x *GrowthState) Reset() {
 	*x = GrowthState{}
-	mi := &file_ai_gateway_proto_msgTypes[51]
+	mi := &file_ai_gateway_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4300,7 +4490,7 @@ func (x *GrowthState) String() string {
 func (*GrowthState) ProtoMessage() {}
 
 func (x *GrowthState) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[51]
+	mi := &file_ai_gateway_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4313,7 +4503,7 @@ func (x *GrowthState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GrowthState.ProtoReflect.Descriptor instead.
 func (*GrowthState) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{51}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *GrowthState) GetNdviCurrent() float64 {
@@ -4363,7 +4553,7 @@ type EvaluateFieldRiskResponse struct {
 
 func (x *EvaluateFieldRiskResponse) Reset() {
 	*x = EvaluateFieldRiskResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[52]
+	mi := &file_ai_gateway_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4375,7 +4565,7 @@ func (x *EvaluateFieldRiskResponse) String() string {
 func (*EvaluateFieldRiskResponse) ProtoMessage() {}
 
 func (x *EvaluateFieldRiskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[52]
+	mi := &file_ai_gateway_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4388,7 +4578,7 @@ func (x *EvaluateFieldRiskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateFieldRiskResponse.ProtoReflect.Descriptor instead.
 func (*EvaluateFieldRiskResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{52}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *EvaluateFieldRiskResponse) GetRequestId() string {
@@ -4483,7 +4673,7 @@ type FieldAlert struct {
 
 func (x *FieldAlert) Reset() {
 	*x = FieldAlert{}
-	mi := &file_ai_gateway_proto_msgTypes[53]
+	mi := &file_ai_gateway_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4495,7 +4685,7 @@ func (x *FieldAlert) String() string {
 func (*FieldAlert) ProtoMessage() {}
 
 func (x *FieldAlert) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[53]
+	mi := &file_ai_gateway_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4508,7 +4698,7 @@ func (x *FieldAlert) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FieldAlert.ProtoReflect.Descriptor instead.
 func (*FieldAlert) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{53}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *FieldAlert) GetAlertType() string {
@@ -4573,7 +4763,7 @@ type ComputeFieldAnalyticsRequest struct {
 
 func (x *ComputeFieldAnalyticsRequest) Reset() {
 	*x = ComputeFieldAnalyticsRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[54]
+	mi := &file_ai_gateway_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4585,7 +4775,7 @@ func (x *ComputeFieldAnalyticsRequest) String() string {
 func (*ComputeFieldAnalyticsRequest) ProtoMessage() {}
 
 func (x *ComputeFieldAnalyticsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[54]
+	mi := &file_ai_gateway_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4598,7 +4788,7 @@ func (x *ComputeFieldAnalyticsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeFieldAnalyticsRequest.ProtoReflect.Descriptor instead.
 func (*ComputeFieldAnalyticsRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{54}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ComputeFieldAnalyticsRequest) GetRequestId() string {
@@ -4657,7 +4847,7 @@ type SeasonRecord struct {
 
 func (x *SeasonRecord) Reset() {
 	*x = SeasonRecord{}
-	mi := &file_ai_gateway_proto_msgTypes[55]
+	mi := &file_ai_gateway_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4669,7 +4859,7 @@ func (x *SeasonRecord) String() string {
 func (*SeasonRecord) ProtoMessage() {}
 
 func (x *SeasonRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[55]
+	mi := &file_ai_gateway_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4682,7 +4872,7 @@ func (x *SeasonRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SeasonRecord.ProtoReflect.Descriptor instead.
 func (*SeasonRecord) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{55}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *SeasonRecord) GetCropType() string {
@@ -4789,7 +4979,7 @@ type NdviDataPoint struct {
 
 func (x *NdviDataPoint) Reset() {
 	*x = NdviDataPoint{}
-	mi := &file_ai_gateway_proto_msgTypes[56]
+	mi := &file_ai_gateway_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4801,7 +4991,7 @@ func (x *NdviDataPoint) String() string {
 func (*NdviDataPoint) ProtoMessage() {}
 
 func (x *NdviDataPoint) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[56]
+	mi := &file_ai_gateway_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4814,7 +5004,7 @@ func (x *NdviDataPoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NdviDataPoint.ProtoReflect.Descriptor instead.
 func (*NdviDataPoint) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{56}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *NdviDataPoint) GetDate() string {
@@ -4875,7 +5065,7 @@ type ComputeFieldAnalyticsResponse struct {
 
 func (x *ComputeFieldAnalyticsResponse) Reset() {
 	*x = ComputeFieldAnalyticsResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[57]
+	mi := &file_ai_gateway_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4887,7 +5077,7 @@ func (x *ComputeFieldAnalyticsResponse) String() string {
 func (*ComputeFieldAnalyticsResponse) ProtoMessage() {}
 
 func (x *ComputeFieldAnalyticsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[57]
+	mi := &file_ai_gateway_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4900,7 +5090,7 @@ func (x *ComputeFieldAnalyticsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeFieldAnalyticsResponse.ProtoReflect.Descriptor instead.
 func (*ComputeFieldAnalyticsResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{57}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *ComputeFieldAnalyticsResponse) GetRequestId() string {
@@ -5021,7 +5211,7 @@ type RotationAnalysis struct {
 
 func (x *RotationAnalysis) Reset() {
 	*x = RotationAnalysis{}
-	mi := &file_ai_gateway_proto_msgTypes[58]
+	mi := &file_ai_gateway_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5033,7 +5223,7 @@ func (x *RotationAnalysis) String() string {
 func (*RotationAnalysis) ProtoMessage() {}
 
 func (x *RotationAnalysis) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[58]
+	mi := &file_ai_gateway_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5046,7 +5236,7 @@ func (x *RotationAnalysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotationAnalysis.ProtoReflect.Descriptor instead.
 func (*RotationAnalysis) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{58}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *RotationAnalysis) GetRotationPattern() []string {
@@ -5099,7 +5289,7 @@ type SeasonComparisonResult struct {
 
 func (x *SeasonComparisonResult) Reset() {
 	*x = SeasonComparisonResult{}
-	mi := &file_ai_gateway_proto_msgTypes[59]
+	mi := &file_ai_gateway_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5111,7 +5301,7 @@ func (x *SeasonComparisonResult) String() string {
 func (*SeasonComparisonResult) ProtoMessage() {}
 
 func (x *SeasonComparisonResult) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[59]
+	mi := &file_ai_gateway_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5124,7 +5314,7 @@ func (x *SeasonComparisonResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SeasonComparisonResult.ProtoReflect.Descriptor instead.
 func (*SeasonComparisonResult) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{59}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *SeasonComparisonResult) GetSeason() string {
@@ -5190,7 +5380,7 @@ type GeneratePrescriptionRequest struct {
 
 func (x *GeneratePrescriptionRequest) Reset() {
 	*x = GeneratePrescriptionRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[60]
+	mi := &file_ai_gateway_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5202,7 +5392,7 @@ func (x *GeneratePrescriptionRequest) String() string {
 func (*GeneratePrescriptionRequest) ProtoMessage() {}
 
 func (x *GeneratePrescriptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[60]
+	mi := &file_ai_gateway_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5215,7 +5405,7 @@ func (x *GeneratePrescriptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GeneratePrescriptionRequest.ProtoReflect.Descriptor instead.
 func (*GeneratePrescriptionRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{60}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *GeneratePrescriptionRequest) GetRequestId() string {
@@ -5273,7 +5463,7 @@ type PrescriptionGrid struct {
 
 func (x *PrescriptionGrid) Reset() {
 	*x = PrescriptionGrid{}
-	mi := &file_ai_gateway_proto_msgTypes[61]
+	mi := &file_ai_gateway_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5285,7 +5475,7 @@ func (x *PrescriptionGrid) String() string {
 func (*PrescriptionGrid) ProtoMessage() {}
 
 func (x *PrescriptionGrid) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[61]
+	mi := &file_ai_gateway_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5298,7 +5488,7 @@ func (x *PrescriptionGrid) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrescriptionGrid.ProtoReflect.Descriptor instead.
 func (*PrescriptionGrid) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{61}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *PrescriptionGrid) GetRows() int32 {
@@ -5351,7 +5541,7 @@ type PrescriptionZoneInput struct {
 
 func (x *PrescriptionZoneInput) Reset() {
 	*x = PrescriptionZoneInput{}
-	mi := &file_ai_gateway_proto_msgTypes[62]
+	mi := &file_ai_gateway_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5363,7 +5553,7 @@ func (x *PrescriptionZoneInput) String() string {
 func (*PrescriptionZoneInput) ProtoMessage() {}
 
 func (x *PrescriptionZoneInput) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[62]
+	mi := &file_ai_gateway_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5376,7 +5566,7 @@ func (x *PrescriptionZoneInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrescriptionZoneInput.ProtoReflect.Descriptor instead.
 func (*PrescriptionZoneInput) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{62}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *PrescriptionZoneInput) GetNdvi() []float64 {
@@ -5445,7 +5635,7 @@ type PrescriptionCropRequirements struct {
 
 func (x *PrescriptionCropRequirements) Reset() {
 	*x = PrescriptionCropRequirements{}
-	mi := &file_ai_gateway_proto_msgTypes[63]
+	mi := &file_ai_gateway_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5457,7 +5647,7 @@ func (x *PrescriptionCropRequirements) String() string {
 func (*PrescriptionCropRequirements) ProtoMessage() {}
 
 func (x *PrescriptionCropRequirements) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[63]
+	mi := &file_ai_gateway_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5470,7 +5660,7 @@ func (x *PrescriptionCropRequirements) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrescriptionCropRequirements.ProtoReflect.Descriptor instead.
 func (*PrescriptionCropRequirements) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{63}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *PrescriptionCropRequirements) GetCropType() string {
@@ -5550,7 +5740,7 @@ type GeneratePrescriptionResponse struct {
 
 func (x *GeneratePrescriptionResponse) Reset() {
 	*x = GeneratePrescriptionResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[64]
+	mi := &file_ai_gateway_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5562,7 +5752,7 @@ func (x *GeneratePrescriptionResponse) String() string {
 func (*GeneratePrescriptionResponse) ProtoMessage() {}
 
 func (x *GeneratePrescriptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[64]
+	mi := &file_ai_gateway_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5575,7 +5765,7 @@ func (x *GeneratePrescriptionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GeneratePrescriptionResponse.ProtoReflect.Descriptor instead.
 func (*GeneratePrescriptionResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{64}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GeneratePrescriptionResponse) GetRequestId() string {
@@ -5633,7 +5823,7 @@ type PrescriptionMapResult struct {
 
 func (x *PrescriptionMapResult) Reset() {
 	*x = PrescriptionMapResult{}
-	mi := &file_ai_gateway_proto_msgTypes[65]
+	mi := &file_ai_gateway_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5645,7 +5835,7 @@ func (x *PrescriptionMapResult) String() string {
 func (*PrescriptionMapResult) ProtoMessage() {}
 
 func (x *PrescriptionMapResult) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[65]
+	mi := &file_ai_gateway_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5658,7 +5848,7 @@ func (x *PrescriptionMapResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrescriptionMapResult.ProtoReflect.Descriptor instead.
 func (*PrescriptionMapResult) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{65}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *PrescriptionMapResult) GetPrescriptionType() string {
@@ -5711,7 +5901,7 @@ type PrescriptionZoneSummary struct {
 
 func (x *PrescriptionZoneSummary) Reset() {
 	*x = PrescriptionZoneSummary{}
-	mi := &file_ai_gateway_proto_msgTypes[66]
+	mi := &file_ai_gateway_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5723,7 +5913,7 @@ func (x *PrescriptionZoneSummary) String() string {
 func (*PrescriptionZoneSummary) ProtoMessage() {}
 
 func (x *PrescriptionZoneSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[66]
+	mi := &file_ai_gateway_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5736,7 +5926,7 @@ func (x *PrescriptionZoneSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrescriptionZoneSummary.ProtoReflect.Descriptor instead.
 func (*PrescriptionZoneSummary) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{66}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *PrescriptionZoneSummary) GetZone() string {
@@ -5816,7 +6006,7 @@ type AnalyzeTerrainRequest struct {
 
 func (x *AnalyzeTerrainRequest) Reset() {
 	*x = AnalyzeTerrainRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[67]
+	mi := &file_ai_gateway_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5828,7 +6018,7 @@ func (x *AnalyzeTerrainRequest) String() string {
 func (*AnalyzeTerrainRequest) ProtoMessage() {}
 
 func (x *AnalyzeTerrainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[67]
+	mi := &file_ai_gateway_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5841,7 +6031,7 @@ func (x *AnalyzeTerrainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnalyzeTerrainRequest.ProtoReflect.Descriptor instead.
 func (*AnalyzeTerrainRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{67}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *AnalyzeTerrainRequest) GetRequestId() string {
@@ -5964,7 +6154,7 @@ type AnalyzeTerrainResponse struct {
 
 func (x *AnalyzeTerrainResponse) Reset() {
 	*x = AnalyzeTerrainResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[68]
+	mi := &file_ai_gateway_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5976,7 +6166,7 @@ func (x *AnalyzeTerrainResponse) String() string {
 func (*AnalyzeTerrainResponse) ProtoMessage() {}
 
 func (x *AnalyzeTerrainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[68]
+	mi := &file_ai_gateway_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5989,7 +6179,7 @@ func (x *AnalyzeTerrainResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnalyzeTerrainResponse.ProtoReflect.Descriptor instead.
 func (*AnalyzeTerrainResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{68}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *AnalyzeTerrainResponse) GetRequestId() string {
@@ -6115,7 +6305,7 @@ type TerrainContourLine struct {
 
 func (x *TerrainContourLine) Reset() {
 	*x = TerrainContourLine{}
-	mi := &file_ai_gateway_proto_msgTypes[69]
+	mi := &file_ai_gateway_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6127,7 +6317,7 @@ func (x *TerrainContourLine) String() string {
 func (*TerrainContourLine) ProtoMessage() {}
 
 func (x *TerrainContourLine) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[69]
+	mi := &file_ai_gateway_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6140,7 +6330,7 @@ func (x *TerrainContourLine) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerrainContourLine.ProtoReflect.Descriptor instead.
 func (*TerrainContourLine) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{69}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *TerrainContourLine) GetElevation() float64 {
@@ -6171,7 +6361,7 @@ type TerrainDemStatistics struct {
 
 func (x *TerrainDemStatistics) Reset() {
 	*x = TerrainDemStatistics{}
-	mi := &file_ai_gateway_proto_msgTypes[70]
+	mi := &file_ai_gateway_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6183,7 +6373,7 @@ func (x *TerrainDemStatistics) String() string {
 func (*TerrainDemStatistics) ProtoMessage() {}
 
 func (x *TerrainDemStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[70]
+	mi := &file_ai_gateway_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6196,7 +6386,7 @@ func (x *TerrainDemStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerrainDemStatistics.ProtoReflect.Descriptor instead.
 func (*TerrainDemStatistics) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{70}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *TerrainDemStatistics) GetMinElevation() float64 {
@@ -6254,7 +6444,7 @@ type TerrainFlowStats struct {
 
 func (x *TerrainFlowStats) Reset() {
 	*x = TerrainFlowStats{}
-	mi := &file_ai_gateway_proto_msgTypes[71]
+	mi := &file_ai_gateway_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6266,7 +6456,7 @@ func (x *TerrainFlowStats) String() string {
 func (*TerrainFlowStats) ProtoMessage() {}
 
 func (x *TerrainFlowStats) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[71]
+	mi := &file_ai_gateway_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6279,7 +6469,7 @@ func (x *TerrainFlowStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerrainFlowStats.ProtoReflect.Descriptor instead.
 func (*TerrainFlowStats) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{71}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *TerrainFlowStats) GetMaxAccumulation() float64 {
@@ -6332,7 +6522,7 @@ type TerrainWatershedInfo struct {
 
 func (x *TerrainWatershedInfo) Reset() {
 	*x = TerrainWatershedInfo{}
-	mi := &file_ai_gateway_proto_msgTypes[72]
+	mi := &file_ai_gateway_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6344,7 +6534,7 @@ func (x *TerrainWatershedInfo) String() string {
 func (*TerrainWatershedInfo) ProtoMessage() {}
 
 func (x *TerrainWatershedInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[72]
+	mi := &file_ai_gateway_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6357,7 +6547,7 @@ func (x *TerrainWatershedInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerrainWatershedInfo.ProtoReflect.Descriptor instead.
 func (*TerrainWatershedInfo) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{72}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *TerrainWatershedInfo) GetId() uint32 {
@@ -6432,7 +6622,7 @@ type SimulateWaterFlowRequest struct {
 
 func (x *SimulateWaterFlowRequest) Reset() {
 	*x = SimulateWaterFlowRequest{}
-	mi := &file_ai_gateway_proto_msgTypes[73]
+	mi := &file_ai_gateway_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6444,7 +6634,7 @@ func (x *SimulateWaterFlowRequest) String() string {
 func (*SimulateWaterFlowRequest) ProtoMessage() {}
 
 func (x *SimulateWaterFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[73]
+	mi := &file_ai_gateway_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6457,7 +6647,7 @@ func (x *SimulateWaterFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SimulateWaterFlowRequest.ProtoReflect.Descriptor instead.
 func (*SimulateWaterFlowRequest) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{73}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *SimulateWaterFlowRequest) GetRequestId() string {
@@ -6538,7 +6728,7 @@ type WaterFlowMoistureParams struct {
 
 func (x *WaterFlowMoistureParams) Reset() {
 	*x = WaterFlowMoistureParams{}
-	mi := &file_ai_gateway_proto_msgTypes[74]
+	mi := &file_ai_gateway_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6550,7 +6740,7 @@ func (x *WaterFlowMoistureParams) String() string {
 func (*WaterFlowMoistureParams) ProtoMessage() {}
 
 func (x *WaterFlowMoistureParams) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[74]
+	mi := &file_ai_gateway_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6563,7 +6753,7 @@ func (x *WaterFlowMoistureParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaterFlowMoistureParams.ProtoReflect.Descriptor instead.
 func (*WaterFlowMoistureParams) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{74}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *WaterFlowMoistureParams) GetNumLayers() int32 {
@@ -6635,7 +6825,7 @@ type WaterFlowBalanceParams struct {
 
 func (x *WaterFlowBalanceParams) Reset() {
 	*x = WaterFlowBalanceParams{}
-	mi := &file_ai_gateway_proto_msgTypes[75]
+	mi := &file_ai_gateway_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6647,7 +6837,7 @@ func (x *WaterFlowBalanceParams) String() string {
 func (*WaterFlowBalanceParams) ProtoMessage() {}
 
 func (x *WaterFlowBalanceParams) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[75]
+	mi := &file_ai_gateway_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6660,7 +6850,7 @@ func (x *WaterFlowBalanceParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaterFlowBalanceParams.ProtoReflect.Descriptor instead.
 func (*WaterFlowBalanceParams) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{75}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *WaterFlowBalanceParams) GetFieldAreaHa() float64 {
@@ -6749,7 +6939,7 @@ type SimulateWaterFlowResponse struct {
 
 func (x *SimulateWaterFlowResponse) Reset() {
 	*x = SimulateWaterFlowResponse{}
-	mi := &file_ai_gateway_proto_msgTypes[76]
+	mi := &file_ai_gateway_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6761,7 +6951,7 @@ func (x *SimulateWaterFlowResponse) String() string {
 func (*SimulateWaterFlowResponse) ProtoMessage() {}
 
 func (x *SimulateWaterFlowResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[76]
+	mi := &file_ai_gateway_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6774,7 +6964,7 @@ func (x *SimulateWaterFlowResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SimulateWaterFlowResponse.ProtoReflect.Descriptor instead.
 func (*SimulateWaterFlowResponse) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{76}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *SimulateWaterFlowResponse) GetRequestId() string {
@@ -6825,7 +7015,7 @@ type SoilMoistureSnapshot struct {
 
 func (x *SoilMoistureSnapshot) Reset() {
 	*x = SoilMoistureSnapshot{}
-	mi := &file_ai_gateway_proto_msgTypes[77]
+	mi := &file_ai_gateway_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6837,7 +7027,7 @@ func (x *SoilMoistureSnapshot) String() string {
 func (*SoilMoistureSnapshot) ProtoMessage() {}
 
 func (x *SoilMoistureSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[77]
+	mi := &file_ai_gateway_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6850,7 +7040,7 @@ func (x *SoilMoistureSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SoilMoistureSnapshot.ProtoReflect.Descriptor instead.
 func (*SoilMoistureSnapshot) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{77}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *SoilMoistureSnapshot) GetTimeDays() float64 {
@@ -6905,7 +7095,7 @@ type WaterBalanceDay struct {
 
 func (x *WaterBalanceDay) Reset() {
 	*x = WaterBalanceDay{}
-	mi := &file_ai_gateway_proto_msgTypes[78]
+	mi := &file_ai_gateway_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6917,7 +7107,7 @@ func (x *WaterBalanceDay) String() string {
 func (*WaterBalanceDay) ProtoMessage() {}
 
 func (x *WaterBalanceDay) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[78]
+	mi := &file_ai_gateway_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6930,7 +7120,7 @@ func (x *WaterBalanceDay) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaterBalanceDay.ProtoReflect.Descriptor instead.
 func (*WaterBalanceDay) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{78}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *WaterBalanceDay) GetDay() int32 {
@@ -7011,7 +7201,7 @@ type WaterFlowIrrigationSummary struct {
 
 func (x *WaterFlowIrrigationSummary) Reset() {
 	*x = WaterFlowIrrigationSummary{}
-	mi := &file_ai_gateway_proto_msgTypes[79]
+	mi := &file_ai_gateway_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7023,7 +7213,7 @@ func (x *WaterFlowIrrigationSummary) String() string {
 func (*WaterFlowIrrigationSummary) ProtoMessage() {}
 
 func (x *WaterFlowIrrigationSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_ai_gateway_proto_msgTypes[79]
+	mi := &file_ai_gateway_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7036,7 +7226,7 @@ func (x *WaterFlowIrrigationSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaterFlowIrrigationSummary.ProtoReflect.Descriptor instead.
 func (*WaterFlowIrrigationSummary) Descriptor() ([]byte, []int) {
-	return file_ai_gateway_proto_rawDescGZIP(), []int{79}
+	return file_ai_gateway_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *WaterFlowIrrigationSummary) GetTotalIrrigationMm() float64 {
@@ -7109,7 +7299,25 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\n" +
 	"operations\x18\x04 \x03(\tR\n" +
 	"operations\x12:\n" +
-	"\acontext\x18\x05 \x01(\v2 .agriculture.ai.v1.SampleContextR\acontext\"\x96\x02\n" +
+	"\acontext\x18\x05 \x01(\v2 .agriculture.ai.v1.SampleContextR\acontext\"\x9a\x03\n" +
+	"\vExplanation\x12\x12\n" +
+	"\x04task\x18\x01 \x01(\tR\x04task\x12\x1d\n" +
+	"\n" +
+	"class_name\x18\x02 \x01(\tR\tclassName\x12\x1f\n" +
+	"\vheatmap_png\x18\x03 \x01(\fR\n" +
+	"heatmapPng\x12#\n" +
+	"\rheatmap_width\x18\x04 \x01(\x05R\fheatmapWidth\x12%\n" +
+	"\x0eheatmap_height\x18\x05 \x01(\x05R\rheatmapHeight\x12\x17\n" +
+	"\afocus_x\x18\x06 \x01(\x01R\x06focusX\x12\x17\n" +
+	"\afocus_y\x18\a \x01(\x01R\x06focusY\x12\x1f\n" +
+	"\vfocus_width\x18\b \x01(\x01R\n" +
+	"focusWidth\x12!\n" +
+	"\ffocus_height\x18\t \x01(\x01R\vfocusHeight\x12%\n" +
+	"\x0efocus_coverage\x18\n" +
+	" \x01(\x01R\rfocusCoverage\x12\x18\n" +
+	"\asummary\x18\v \x01(\tR\asummary\x12\x16\n" +
+	"\x06method\x18\f \x01(\tR\x06method\x12\x1c\n" +
+	"\tlocalised\x18\r \x01(\bR\tlocalised\"\xda\x02\n" +
 	"\x15DiagnoseImageResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12?\n" +
@@ -7117,7 +7325,8 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\x14overall_health_score\x18\x03 \x01(\x01R\x12overallHealthScore\x12\x18\n" +
 	"\asummary\x18\x04 \x01(\tR\asummary\x12#\n" +
 	"\rmodel_version\x18\x05 \x01(\tR\fmodelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x06 \x01(\x03R\x10processingTimeMs\"\xcf\x02\n" +
+	"\x12processing_time_ms\x18\x06 \x01(\x03R\x10processingTimeMs\x12B\n" +
+	"\fexplanations\x18\a \x03(\v2\x1e.agriculture.ai.v1.ExplanationR\fexplanations\"\xcf\x02\n" +
 	"\x10DiseaseDetection\x12\x1d\n" +
 	"\n" +
 	"disease_id\x18\x01 \x01(\tR\tdiseaseId\x12!\n" +
@@ -7136,13 +7345,14 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x124\n" +
 	"\x06images\x18\x02 \x03(\v2\x1c.agriculture.ai.v1.ImageDataR\x06images\x12(\n" +
 	"\x10plant_species_id\x18\x03 \x01(\tR\x0eplantSpeciesId\x12:\n" +
-	"\acontext\x18\x04 \x01(\v2 .agriculture.ai.v1.SampleContextR\acontext\"\xbf\x01\n" +
+	"\acontext\x18\x04 \x01(\v2 .agriculture.ai.v1.SampleContextR\acontext\"\x83\x02\n" +
 	"\x13DetectPestsResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x126\n" +
 	"\x05pests\x18\x02 \x03(\v2 .agriculture.ai.v1.PestDetectionR\x05pests\x12#\n" +
 	"\rmodel_version\x18\x03 \x01(\tR\fmodelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x04 \x01(\x03R\x10processingTimeMs\"\xae\x02\n" +
+	"\x12processing_time_ms\x18\x04 \x01(\x03R\x10processingTimeMs\x12B\n" +
+	"\fexplanations\x18\x05 \x03(\v2\x1e.agriculture.ai.v1.ExplanationR\fexplanations\"\xae\x02\n" +
 	"\rPestDetection\x12\x17\n" +
 	"\apest_id\x18\x01 \x01(\tR\x06pestId\x12\x1b\n" +
 	"\tpest_name\x18\x02 \x01(\tR\bpestName\x12'\n" +
@@ -7157,13 +7367,14 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x124\n" +
 	"\x06images\x18\x02 \x03(\v2\x1c.agriculture.ai.v1.ImageDataR\x06images\x12(\n" +
 	"\x10plant_species_id\x18\x03 \x01(\tR\x0eplantSpeciesId\x12:\n" +
-	"\acontext\x18\x04 \x01(\v2 .agriculture.ai.v1.SampleContextR\acontext\"\xdf\x01\n" +
+	"\acontext\x18\x04 \x01(\v2 .agriculture.ai.v1.SampleContextR\acontext\"\xa3\x02\n" +
 	" DetectNutrientDeficiencyResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12I\n" +
 	"\fdeficiencies\x18\x02 \x03(\v2%.agriculture.ai.v1.NutrientDeficiencyR\fdeficiencies\x12#\n" +
 	"\rmodel_version\x18\x03 \x01(\tR\fmodelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x04 \x01(\x03R\x10processingTimeMs\"\xaa\x02\n" +
+	"\x12processing_time_ms\x18\x04 \x01(\x03R\x10processingTimeMs\x12B\n" +
+	"\fexplanations\x18\x05 \x03(\v2\x1e.agriculture.ai.v1.ExplanationR\fexplanations\"\xaa\x02\n" +
 	"\x12NutrientDeficiency\x12\x1a\n" +
 	"\bnutrient\x18\x01 \x01(\tR\bnutrient\x12)\n" +
 	"\x10confidence_score\x18\x02 \x01(\x01R\x0fconfidenceScore\x12\x1a\n" +
@@ -7238,13 +7449,14 @@ const file_ai_gateway_proto_rawDesc = "" +
 	"\x1eGetTrainingSampleImageResponse\x12\x1f\n" +
 	"\vimage_bytes\x18\x01 \x01(\fR\n" +
 	"imageBytes\x12\x1b\n" +
-	"\tmime_type\x18\x02 \x01(\tR\bmimeType\"\xcb\x01\n" +
+	"\tmime_type\x18\x02 \x01(\tR\bmimeType\"\x8f\x02\n" +
 	"\x15ClassifyPlantResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12@\n" +
 	"\aspecies\x18\x02 \x01(\v2&.agriculture.ai.v1.PlantClassificationR\aspecies\x12#\n" +
 	"\rmodel_version\x18\x03 \x01(\tR\fmodelVersion\x12,\n" +
-	"\x12processing_time_ms\x18\x04 \x01(\x03R\x10processingTimeMs\"\xb6\x01\n" +
+	"\x12processing_time_ms\x18\x04 \x01(\x03R\x10processingTimeMs\x12B\n" +
+	"\fexplanations\x18\x05 \x03(\v2\x1e.agriculture.ai.v1.ExplanationR\fexplanations\"\xb6\x01\n" +
 	"\x13PlantClassification\x12\x1d\n" +
 	"\n" +
 	"species_id\x18\x01 \x01(\tR\tspeciesId\x12\x1f\n" +
@@ -7834,190 +8046,195 @@ func file_ai_gateway_proto_rawDescGZIP() []byte {
 	return file_ai_gateway_proto_rawDescData
 }
 
-var file_ai_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 80)
+var file_ai_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 81)
 var file_ai_gateway_proto_goTypes = []any{
 	(*SampleContext)(nil),                    // 0: agriculture.ai.v1.SampleContext
 	(*DiagnoseImageRequest)(nil),             // 1: agriculture.ai.v1.DiagnoseImageRequest
-	(*DiagnoseImageResponse)(nil),            // 2: agriculture.ai.v1.DiagnoseImageResponse
-	(*DiseaseDetection)(nil),                 // 3: agriculture.ai.v1.DiseaseDetection
-	(*DetectPestsRequest)(nil),               // 4: agriculture.ai.v1.DetectPestsRequest
-	(*DetectPestsResponse)(nil),              // 5: agriculture.ai.v1.DetectPestsResponse
-	(*PestDetection)(nil),                    // 6: agriculture.ai.v1.PestDetection
-	(*DetectNutrientDeficiencyRequest)(nil),  // 7: agriculture.ai.v1.DetectNutrientDeficiencyRequest
-	(*DetectNutrientDeficiencyResponse)(nil), // 8: agriculture.ai.v1.DetectNutrientDeficiencyResponse
-	(*NutrientDeficiency)(nil),               // 9: agriculture.ai.v1.NutrientDeficiency
-	(*ClassifyPlantRequest)(nil),             // 10: agriculture.ai.v1.ClassifyPlantRequest
-	(*TrainingLabel)(nil),                    // 11: agriculture.ai.v1.TrainingLabel
-	(*LabelReview)(nil),                      // 12: agriculture.ai.v1.LabelReview
-	(*TrainingSampleInfo)(nil),               // 13: agriculture.ai.v1.TrainingSampleInfo
-	(*ListTrainingSamplesRequest)(nil),       // 14: agriculture.ai.v1.ListTrainingSamplesRequest
-	(*ListTrainingSamplesResponse)(nil),      // 15: agriculture.ai.v1.ListTrainingSamplesResponse
-	(*SubmitLabelReviewRequest)(nil),         // 16: agriculture.ai.v1.SubmitLabelReviewRequest
-	(*SubmitLabelReviewResponse)(nil),        // 17: agriculture.ai.v1.SubmitLabelReviewResponse
-	(*GetTrainingSampleImageRequest)(nil),    // 18: agriculture.ai.v1.GetTrainingSampleImageRequest
-	(*GetTrainingSampleImageResponse)(nil),   // 19: agriculture.ai.v1.GetTrainingSampleImageResponse
-	(*ClassifyPlantResponse)(nil),            // 20: agriculture.ai.v1.ClassifyPlantResponse
-	(*PlantClassification)(nil),              // 21: agriculture.ai.v1.PlantClassification
-	(*PredictYieldRequest)(nil),              // 22: agriculture.ai.v1.PredictYieldRequest
-	(*PredictYieldResponse)(nil),             // 23: agriculture.ai.v1.PredictYieldResponse
-	(*EnvironmentFactors)(nil),               // 24: agriculture.ai.v1.EnvironmentFactors
-	(*SoilFactors)(nil),                      // 25: agriculture.ai.v1.SoilFactors
-	(*ManagementFactors)(nil),                // 26: agriculture.ai.v1.ManagementFactors
-	(*StressFactor)(nil),                     // 27: agriculture.ai.v1.StressFactor
-	(*SimulateCropGrowthRequest)(nil),        // 28: agriculture.ai.v1.SimulateCropGrowthRequest
-	(*SimulateCropGrowthResponse)(nil),       // 29: agriculture.ai.v1.SimulateCropGrowthResponse
-	(*GrowthStageResult)(nil),                // 30: agriculture.ai.v1.GrowthStageResult
-	(*ComputeNDVIRequest)(nil),               // 31: agriculture.ai.v1.ComputeNDVIRequest
-	(*RasterBands)(nil),                      // 32: agriculture.ai.v1.RasterBands
-	(*BoundingBox)(nil),                      // 33: agriculture.ai.v1.BoundingBox
-	(*ComputeNDVIResponse)(nil),              // 34: agriculture.ai.v1.ComputeNDVIResponse
-	(*BandStatistics)(nil),                   // 35: agriculture.ai.v1.BandStatistics
-	(*NdviZone)(nil),                         // 36: agriculture.ai.v1.NdviZone
-	(*DetectVegetationStressRequest)(nil),    // 37: agriculture.ai.v1.DetectVegetationStressRequest
-	(*DetectVegetationStressResponse)(nil),   // 38: agriculture.ai.v1.DetectVegetationStressResponse
-	(*StressZone)(nil),                       // 39: agriculture.ai.v1.StressZone
-	(*RecommendCropsRequest)(nil),            // 40: agriculture.ai.v1.RecommendCropsRequest
-	(*SoilConditions)(nil),                   // 41: agriculture.ai.v1.SoilConditions
-	(*ClimateConditions)(nil),                // 42: agriculture.ai.v1.ClimateConditions
-	(*EconomicFactors)(nil),                  // 43: agriculture.ai.v1.EconomicFactors
-	(*RecommendCropsResponse)(nil),           // 44: agriculture.ai.v1.RecommendCropsResponse
-	(*CropRecommendation)(nil),               // 45: agriculture.ai.v1.CropRecommendation
-	(*ImageData)(nil),                        // 46: agriculture.ai.v1.ImageData
-	(*EvaluateFieldRiskRequest)(nil),         // 47: agriculture.ai.v1.EvaluateFieldRiskRequest
-	(*FieldWeather)(nil),                     // 48: agriculture.ai.v1.FieldWeather
-	(*FieldSoilState)(nil),                   // 49: agriculture.ai.v1.FieldSoilState
-	(*DetectionResults)(nil),                 // 50: agriculture.ai.v1.DetectionResults
-	(*GrowthState)(nil),                      // 51: agriculture.ai.v1.GrowthState
-	(*EvaluateFieldRiskResponse)(nil),        // 52: agriculture.ai.v1.EvaluateFieldRiskResponse
-	(*FieldAlert)(nil),                       // 53: agriculture.ai.v1.FieldAlert
-	(*ComputeFieldAnalyticsRequest)(nil),     // 54: agriculture.ai.v1.ComputeFieldAnalyticsRequest
-	(*SeasonRecord)(nil),                     // 55: agriculture.ai.v1.SeasonRecord
-	(*NdviDataPoint)(nil),                    // 56: agriculture.ai.v1.NdviDataPoint
-	(*ComputeFieldAnalyticsResponse)(nil),    // 57: agriculture.ai.v1.ComputeFieldAnalyticsResponse
-	(*RotationAnalysis)(nil),                 // 58: agriculture.ai.v1.RotationAnalysis
-	(*SeasonComparisonResult)(nil),           // 59: agriculture.ai.v1.SeasonComparisonResult
-	(*GeneratePrescriptionRequest)(nil),      // 60: agriculture.ai.v1.GeneratePrescriptionRequest
-	(*PrescriptionGrid)(nil),                 // 61: agriculture.ai.v1.PrescriptionGrid
-	(*PrescriptionZoneInput)(nil),            // 62: agriculture.ai.v1.PrescriptionZoneInput
-	(*PrescriptionCropRequirements)(nil),     // 63: agriculture.ai.v1.PrescriptionCropRequirements
-	(*GeneratePrescriptionResponse)(nil),     // 64: agriculture.ai.v1.GeneratePrescriptionResponse
-	(*PrescriptionMapResult)(nil),            // 65: agriculture.ai.v1.PrescriptionMapResult
-	(*PrescriptionZoneSummary)(nil),          // 66: agriculture.ai.v1.PrescriptionZoneSummary
-	(*AnalyzeTerrainRequest)(nil),            // 67: agriculture.ai.v1.AnalyzeTerrainRequest
-	(*AnalyzeTerrainResponse)(nil),           // 68: agriculture.ai.v1.AnalyzeTerrainResponse
-	(*TerrainContourLine)(nil),               // 69: agriculture.ai.v1.TerrainContourLine
-	(*TerrainDemStatistics)(nil),             // 70: agriculture.ai.v1.TerrainDemStatistics
-	(*TerrainFlowStats)(nil),                 // 71: agriculture.ai.v1.TerrainFlowStats
-	(*TerrainWatershedInfo)(nil),             // 72: agriculture.ai.v1.TerrainWatershedInfo
-	(*SimulateWaterFlowRequest)(nil),         // 73: agriculture.ai.v1.SimulateWaterFlowRequest
-	(*WaterFlowMoistureParams)(nil),          // 74: agriculture.ai.v1.WaterFlowMoistureParams
-	(*WaterFlowBalanceParams)(nil),           // 75: agriculture.ai.v1.WaterFlowBalanceParams
-	(*SimulateWaterFlowResponse)(nil),        // 76: agriculture.ai.v1.SimulateWaterFlowResponse
-	(*SoilMoistureSnapshot)(nil),             // 77: agriculture.ai.v1.SoilMoistureSnapshot
-	(*WaterBalanceDay)(nil),                  // 78: agriculture.ai.v1.WaterBalanceDay
-	(*WaterFlowIrrigationSummary)(nil),       // 79: agriculture.ai.v1.WaterFlowIrrigationSummary
+	(*Explanation)(nil),                      // 2: agriculture.ai.v1.Explanation
+	(*DiagnoseImageResponse)(nil),            // 3: agriculture.ai.v1.DiagnoseImageResponse
+	(*DiseaseDetection)(nil),                 // 4: agriculture.ai.v1.DiseaseDetection
+	(*DetectPestsRequest)(nil),               // 5: agriculture.ai.v1.DetectPestsRequest
+	(*DetectPestsResponse)(nil),              // 6: agriculture.ai.v1.DetectPestsResponse
+	(*PestDetection)(nil),                    // 7: agriculture.ai.v1.PestDetection
+	(*DetectNutrientDeficiencyRequest)(nil),  // 8: agriculture.ai.v1.DetectNutrientDeficiencyRequest
+	(*DetectNutrientDeficiencyResponse)(nil), // 9: agriculture.ai.v1.DetectNutrientDeficiencyResponse
+	(*NutrientDeficiency)(nil),               // 10: agriculture.ai.v1.NutrientDeficiency
+	(*ClassifyPlantRequest)(nil),             // 11: agriculture.ai.v1.ClassifyPlantRequest
+	(*TrainingLabel)(nil),                    // 12: agriculture.ai.v1.TrainingLabel
+	(*LabelReview)(nil),                      // 13: agriculture.ai.v1.LabelReview
+	(*TrainingSampleInfo)(nil),               // 14: agriculture.ai.v1.TrainingSampleInfo
+	(*ListTrainingSamplesRequest)(nil),       // 15: agriculture.ai.v1.ListTrainingSamplesRequest
+	(*ListTrainingSamplesResponse)(nil),      // 16: agriculture.ai.v1.ListTrainingSamplesResponse
+	(*SubmitLabelReviewRequest)(nil),         // 17: agriculture.ai.v1.SubmitLabelReviewRequest
+	(*SubmitLabelReviewResponse)(nil),        // 18: agriculture.ai.v1.SubmitLabelReviewResponse
+	(*GetTrainingSampleImageRequest)(nil),    // 19: agriculture.ai.v1.GetTrainingSampleImageRequest
+	(*GetTrainingSampleImageResponse)(nil),   // 20: agriculture.ai.v1.GetTrainingSampleImageResponse
+	(*ClassifyPlantResponse)(nil),            // 21: agriculture.ai.v1.ClassifyPlantResponse
+	(*PlantClassification)(nil),              // 22: agriculture.ai.v1.PlantClassification
+	(*PredictYieldRequest)(nil),              // 23: agriculture.ai.v1.PredictYieldRequest
+	(*PredictYieldResponse)(nil),             // 24: agriculture.ai.v1.PredictYieldResponse
+	(*EnvironmentFactors)(nil),               // 25: agriculture.ai.v1.EnvironmentFactors
+	(*SoilFactors)(nil),                      // 26: agriculture.ai.v1.SoilFactors
+	(*ManagementFactors)(nil),                // 27: agriculture.ai.v1.ManagementFactors
+	(*StressFactor)(nil),                     // 28: agriculture.ai.v1.StressFactor
+	(*SimulateCropGrowthRequest)(nil),        // 29: agriculture.ai.v1.SimulateCropGrowthRequest
+	(*SimulateCropGrowthResponse)(nil),       // 30: agriculture.ai.v1.SimulateCropGrowthResponse
+	(*GrowthStageResult)(nil),                // 31: agriculture.ai.v1.GrowthStageResult
+	(*ComputeNDVIRequest)(nil),               // 32: agriculture.ai.v1.ComputeNDVIRequest
+	(*RasterBands)(nil),                      // 33: agriculture.ai.v1.RasterBands
+	(*BoundingBox)(nil),                      // 34: agriculture.ai.v1.BoundingBox
+	(*ComputeNDVIResponse)(nil),              // 35: agriculture.ai.v1.ComputeNDVIResponse
+	(*BandStatistics)(nil),                   // 36: agriculture.ai.v1.BandStatistics
+	(*NdviZone)(nil),                         // 37: agriculture.ai.v1.NdviZone
+	(*DetectVegetationStressRequest)(nil),    // 38: agriculture.ai.v1.DetectVegetationStressRequest
+	(*DetectVegetationStressResponse)(nil),   // 39: agriculture.ai.v1.DetectVegetationStressResponse
+	(*StressZone)(nil),                       // 40: agriculture.ai.v1.StressZone
+	(*RecommendCropsRequest)(nil),            // 41: agriculture.ai.v1.RecommendCropsRequest
+	(*SoilConditions)(nil),                   // 42: agriculture.ai.v1.SoilConditions
+	(*ClimateConditions)(nil),                // 43: agriculture.ai.v1.ClimateConditions
+	(*EconomicFactors)(nil),                  // 44: agriculture.ai.v1.EconomicFactors
+	(*RecommendCropsResponse)(nil),           // 45: agriculture.ai.v1.RecommendCropsResponse
+	(*CropRecommendation)(nil),               // 46: agriculture.ai.v1.CropRecommendation
+	(*ImageData)(nil),                        // 47: agriculture.ai.v1.ImageData
+	(*EvaluateFieldRiskRequest)(nil),         // 48: agriculture.ai.v1.EvaluateFieldRiskRequest
+	(*FieldWeather)(nil),                     // 49: agriculture.ai.v1.FieldWeather
+	(*FieldSoilState)(nil),                   // 50: agriculture.ai.v1.FieldSoilState
+	(*DetectionResults)(nil),                 // 51: agriculture.ai.v1.DetectionResults
+	(*GrowthState)(nil),                      // 52: agriculture.ai.v1.GrowthState
+	(*EvaluateFieldRiskResponse)(nil),        // 53: agriculture.ai.v1.EvaluateFieldRiskResponse
+	(*FieldAlert)(nil),                       // 54: agriculture.ai.v1.FieldAlert
+	(*ComputeFieldAnalyticsRequest)(nil),     // 55: agriculture.ai.v1.ComputeFieldAnalyticsRequest
+	(*SeasonRecord)(nil),                     // 56: agriculture.ai.v1.SeasonRecord
+	(*NdviDataPoint)(nil),                    // 57: agriculture.ai.v1.NdviDataPoint
+	(*ComputeFieldAnalyticsResponse)(nil),    // 58: agriculture.ai.v1.ComputeFieldAnalyticsResponse
+	(*RotationAnalysis)(nil),                 // 59: agriculture.ai.v1.RotationAnalysis
+	(*SeasonComparisonResult)(nil),           // 60: agriculture.ai.v1.SeasonComparisonResult
+	(*GeneratePrescriptionRequest)(nil),      // 61: agriculture.ai.v1.GeneratePrescriptionRequest
+	(*PrescriptionGrid)(nil),                 // 62: agriculture.ai.v1.PrescriptionGrid
+	(*PrescriptionZoneInput)(nil),            // 63: agriculture.ai.v1.PrescriptionZoneInput
+	(*PrescriptionCropRequirements)(nil),     // 64: agriculture.ai.v1.PrescriptionCropRequirements
+	(*GeneratePrescriptionResponse)(nil),     // 65: agriculture.ai.v1.GeneratePrescriptionResponse
+	(*PrescriptionMapResult)(nil),            // 66: agriculture.ai.v1.PrescriptionMapResult
+	(*PrescriptionZoneSummary)(nil),          // 67: agriculture.ai.v1.PrescriptionZoneSummary
+	(*AnalyzeTerrainRequest)(nil),            // 68: agriculture.ai.v1.AnalyzeTerrainRequest
+	(*AnalyzeTerrainResponse)(nil),           // 69: agriculture.ai.v1.AnalyzeTerrainResponse
+	(*TerrainContourLine)(nil),               // 70: agriculture.ai.v1.TerrainContourLine
+	(*TerrainDemStatistics)(nil),             // 71: agriculture.ai.v1.TerrainDemStatistics
+	(*TerrainFlowStats)(nil),                 // 72: agriculture.ai.v1.TerrainFlowStats
+	(*TerrainWatershedInfo)(nil),             // 73: agriculture.ai.v1.TerrainWatershedInfo
+	(*SimulateWaterFlowRequest)(nil),         // 74: agriculture.ai.v1.SimulateWaterFlowRequest
+	(*WaterFlowMoistureParams)(nil),          // 75: agriculture.ai.v1.WaterFlowMoistureParams
+	(*WaterFlowBalanceParams)(nil),           // 76: agriculture.ai.v1.WaterFlowBalanceParams
+	(*SimulateWaterFlowResponse)(nil),        // 77: agriculture.ai.v1.SimulateWaterFlowResponse
+	(*SoilMoistureSnapshot)(nil),             // 78: agriculture.ai.v1.SoilMoistureSnapshot
+	(*WaterBalanceDay)(nil),                  // 79: agriculture.ai.v1.WaterBalanceDay
+	(*WaterFlowIrrigationSummary)(nil),       // 80: agriculture.ai.v1.WaterFlowIrrigationSummary
 }
 var file_ai_gateway_proto_depIdxs = []int32{
-	46, // 0: agriculture.ai.v1.DiagnoseImageRequest.images:type_name -> agriculture.ai.v1.ImageData
+	47, // 0: agriculture.ai.v1.DiagnoseImageRequest.images:type_name -> agriculture.ai.v1.ImageData
 	0,  // 1: agriculture.ai.v1.DiagnoseImageRequest.context:type_name -> agriculture.ai.v1.SampleContext
-	3,  // 2: agriculture.ai.v1.DiagnoseImageResponse.diseases:type_name -> agriculture.ai.v1.DiseaseDetection
-	46, // 3: agriculture.ai.v1.DetectPestsRequest.images:type_name -> agriculture.ai.v1.ImageData
-	0,  // 4: agriculture.ai.v1.DetectPestsRequest.context:type_name -> agriculture.ai.v1.SampleContext
-	6,  // 5: agriculture.ai.v1.DetectPestsResponse.pests:type_name -> agriculture.ai.v1.PestDetection
-	46, // 6: agriculture.ai.v1.DetectNutrientDeficiencyRequest.images:type_name -> agriculture.ai.v1.ImageData
-	0,  // 7: agriculture.ai.v1.DetectNutrientDeficiencyRequest.context:type_name -> agriculture.ai.v1.SampleContext
-	9,  // 8: agriculture.ai.v1.DetectNutrientDeficiencyResponse.deficiencies:type_name -> agriculture.ai.v1.NutrientDeficiency
-	46, // 9: agriculture.ai.v1.ClassifyPlantRequest.images:type_name -> agriculture.ai.v1.ImageData
-	0,  // 10: agriculture.ai.v1.ClassifyPlantRequest.context:type_name -> agriculture.ai.v1.SampleContext
-	11, // 11: agriculture.ai.v1.TrainingSampleInfo.labels:type_name -> agriculture.ai.v1.TrainingLabel
-	0,  // 12: agriculture.ai.v1.TrainingSampleInfo.context:type_name -> agriculture.ai.v1.SampleContext
-	12, // 13: agriculture.ai.v1.TrainingSampleInfo.review:type_name -> agriculture.ai.v1.LabelReview
-	13, // 14: agriculture.ai.v1.ListTrainingSamplesResponse.samples:type_name -> agriculture.ai.v1.TrainingSampleInfo
-	12, // 15: agriculture.ai.v1.SubmitLabelReviewRequest.review:type_name -> agriculture.ai.v1.LabelReview
-	13, // 16: agriculture.ai.v1.SubmitLabelReviewResponse.sample:type_name -> agriculture.ai.v1.TrainingSampleInfo
-	21, // 17: agriculture.ai.v1.ClassifyPlantResponse.species:type_name -> agriculture.ai.v1.PlantClassification
-	24, // 18: agriculture.ai.v1.PredictYieldRequest.environment:type_name -> agriculture.ai.v1.EnvironmentFactors
-	25, // 19: agriculture.ai.v1.PredictYieldRequest.soil:type_name -> agriculture.ai.v1.SoilFactors
-	26, // 20: agriculture.ai.v1.PredictYieldRequest.management:type_name -> agriculture.ai.v1.ManagementFactors
-	27, // 21: agriculture.ai.v1.PredictYieldResponse.stress_factors:type_name -> agriculture.ai.v1.StressFactor
-	24, // 22: agriculture.ai.v1.SimulateCropGrowthRequest.initial_environment:type_name -> agriculture.ai.v1.EnvironmentFactors
-	25, // 23: agriculture.ai.v1.SimulateCropGrowthRequest.initial_soil:type_name -> agriculture.ai.v1.SoilFactors
-	30, // 24: agriculture.ai.v1.SimulateCropGrowthResponse.stages:type_name -> agriculture.ai.v1.GrowthStageResult
-	32, // 25: agriculture.ai.v1.ComputeNDVIRequest.bands:type_name -> agriculture.ai.v1.RasterBands
-	33, // 26: agriculture.ai.v1.ComputeNDVIRequest.clip_bounds:type_name -> agriculture.ai.v1.BoundingBox
-	35, // 27: agriculture.ai.v1.ComputeNDVIResponse.statistics:type_name -> agriculture.ai.v1.BandStatistics
-	36, // 28: agriculture.ai.v1.ComputeNDVIResponse.zones:type_name -> agriculture.ai.v1.NdviZone
-	32, // 29: agriculture.ai.v1.DetectVegetationStressRequest.bands:type_name -> agriculture.ai.v1.RasterBands
-	33, // 30: agriculture.ai.v1.DetectVegetationStressRequest.clip_bounds:type_name -> agriculture.ai.v1.BoundingBox
-	39, // 31: agriculture.ai.v1.DetectVegetationStressResponse.stress_zones:type_name -> agriculture.ai.v1.StressZone
-	35, // 32: agriculture.ai.v1.DetectVegetationStressResponse.ndvi_statistics:type_name -> agriculture.ai.v1.BandStatistics
-	33, // 33: agriculture.ai.v1.StressZone.bounds:type_name -> agriculture.ai.v1.BoundingBox
-	41, // 34: agriculture.ai.v1.RecommendCropsRequest.soil:type_name -> agriculture.ai.v1.SoilConditions
-	42, // 35: agriculture.ai.v1.RecommendCropsRequest.climate:type_name -> agriculture.ai.v1.ClimateConditions
-	43, // 36: agriculture.ai.v1.RecommendCropsRequest.economics:type_name -> agriculture.ai.v1.EconomicFactors
-	45, // 37: agriculture.ai.v1.RecommendCropsResponse.recommendations:type_name -> agriculture.ai.v1.CropRecommendation
-	48, // 38: agriculture.ai.v1.EvaluateFieldRiskRequest.weather:type_name -> agriculture.ai.v1.FieldWeather
-	49, // 39: agriculture.ai.v1.EvaluateFieldRiskRequest.soil_state:type_name -> agriculture.ai.v1.FieldSoilState
-	50, // 40: agriculture.ai.v1.EvaluateFieldRiskRequest.detections:type_name -> agriculture.ai.v1.DetectionResults
-	51, // 41: agriculture.ai.v1.EvaluateFieldRiskRequest.growth:type_name -> agriculture.ai.v1.GrowthState
-	53, // 42: agriculture.ai.v1.EvaluateFieldRiskResponse.alerts:type_name -> agriculture.ai.v1.FieldAlert
-	55, // 43: agriculture.ai.v1.ComputeFieldAnalyticsRequest.seasons:type_name -> agriculture.ai.v1.SeasonRecord
-	56, // 44: agriculture.ai.v1.ComputeFieldAnalyticsRequest.ndvi_series:type_name -> agriculture.ai.v1.NdviDataPoint
-	58, // 45: agriculture.ai.v1.ComputeFieldAnalyticsResponse.rotation:type_name -> agriculture.ai.v1.RotationAnalysis
-	59, // 46: agriculture.ai.v1.ComputeFieldAnalyticsResponse.season_comparisons:type_name -> agriculture.ai.v1.SeasonComparisonResult
-	61, // 47: agriculture.ai.v1.GeneratePrescriptionRequest.grid:type_name -> agriculture.ai.v1.PrescriptionGrid
-	62, // 48: agriculture.ai.v1.GeneratePrescriptionRequest.zone_input:type_name -> agriculture.ai.v1.PrescriptionZoneInput
-	63, // 49: agriculture.ai.v1.GeneratePrescriptionRequest.crop_requirements:type_name -> agriculture.ai.v1.PrescriptionCropRequirements
-	65, // 50: agriculture.ai.v1.GeneratePrescriptionResponse.prescriptions:type_name -> agriculture.ai.v1.PrescriptionMapResult
-	66, // 51: agriculture.ai.v1.PrescriptionMapResult.zone_summaries:type_name -> agriculture.ai.v1.PrescriptionZoneSummary
-	69, // 52: agriculture.ai.v1.AnalyzeTerrainResponse.contour_lines:type_name -> agriculture.ai.v1.TerrainContourLine
-	70, // 53: agriculture.ai.v1.AnalyzeTerrainResponse.dem_statistics:type_name -> agriculture.ai.v1.TerrainDemStatistics
-	71, // 54: agriculture.ai.v1.AnalyzeTerrainResponse.flow_statistics:type_name -> agriculture.ai.v1.TerrainFlowStats
-	72, // 55: agriculture.ai.v1.AnalyzeTerrainResponse.watershed_statistics:type_name -> agriculture.ai.v1.TerrainWatershedInfo
-	74, // 56: agriculture.ai.v1.SimulateWaterFlowRequest.moisture_params:type_name -> agriculture.ai.v1.WaterFlowMoistureParams
-	75, // 57: agriculture.ai.v1.SimulateWaterFlowRequest.balance_params:type_name -> agriculture.ai.v1.WaterFlowBalanceParams
-	77, // 58: agriculture.ai.v1.SimulateWaterFlowResponse.moisture_profiles:type_name -> agriculture.ai.v1.SoilMoistureSnapshot
-	78, // 59: agriculture.ai.v1.SimulateWaterFlowResponse.water_balance:type_name -> agriculture.ai.v1.WaterBalanceDay
-	79, // 60: agriculture.ai.v1.SimulateWaterFlowResponse.irrigation_summary:type_name -> agriculture.ai.v1.WaterFlowIrrigationSummary
-	1,  // 61: agriculture.ai.v1.AIGatewayService.DiagnoseImage:input_type -> agriculture.ai.v1.DiagnoseImageRequest
-	4,  // 62: agriculture.ai.v1.AIGatewayService.DetectPests:input_type -> agriculture.ai.v1.DetectPestsRequest
-	7,  // 63: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:input_type -> agriculture.ai.v1.DetectNutrientDeficiencyRequest
-	10, // 64: agriculture.ai.v1.AIGatewayService.ClassifyPlant:input_type -> agriculture.ai.v1.ClassifyPlantRequest
-	22, // 65: agriculture.ai.v1.AIGatewayService.PredictYield:input_type -> agriculture.ai.v1.PredictYieldRequest
-	28, // 66: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:input_type -> agriculture.ai.v1.SimulateCropGrowthRequest
-	31, // 67: agriculture.ai.v1.AIGatewayService.ComputeNDVI:input_type -> agriculture.ai.v1.ComputeNDVIRequest
-	37, // 68: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:input_type -> agriculture.ai.v1.DetectVegetationStressRequest
-	40, // 69: agriculture.ai.v1.AIGatewayService.RecommendCrops:input_type -> agriculture.ai.v1.RecommendCropsRequest
-	47, // 70: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:input_type -> agriculture.ai.v1.EvaluateFieldRiskRequest
-	54, // 71: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:input_type -> agriculture.ai.v1.ComputeFieldAnalyticsRequest
-	60, // 72: agriculture.ai.v1.AIGatewayService.GeneratePrescription:input_type -> agriculture.ai.v1.GeneratePrescriptionRequest
-	67, // 73: agriculture.ai.v1.AIGatewayService.AnalyzeTerrain:input_type -> agriculture.ai.v1.AnalyzeTerrainRequest
-	73, // 74: agriculture.ai.v1.AIGatewayService.SimulateWaterFlow:input_type -> agriculture.ai.v1.SimulateWaterFlowRequest
-	14, // 75: agriculture.ai.v1.AIGatewayService.ListTrainingSamples:input_type -> agriculture.ai.v1.ListTrainingSamplesRequest
-	16, // 76: agriculture.ai.v1.AIGatewayService.SubmitLabelReview:input_type -> agriculture.ai.v1.SubmitLabelReviewRequest
-	18, // 77: agriculture.ai.v1.AIGatewayService.GetTrainingSampleImage:input_type -> agriculture.ai.v1.GetTrainingSampleImageRequest
-	2,  // 78: agriculture.ai.v1.AIGatewayService.DiagnoseImage:output_type -> agriculture.ai.v1.DiagnoseImageResponse
-	5,  // 79: agriculture.ai.v1.AIGatewayService.DetectPests:output_type -> agriculture.ai.v1.DetectPestsResponse
-	8,  // 80: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:output_type -> agriculture.ai.v1.DetectNutrientDeficiencyResponse
-	20, // 81: agriculture.ai.v1.AIGatewayService.ClassifyPlant:output_type -> agriculture.ai.v1.ClassifyPlantResponse
-	23, // 82: agriculture.ai.v1.AIGatewayService.PredictYield:output_type -> agriculture.ai.v1.PredictYieldResponse
-	29, // 83: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:output_type -> agriculture.ai.v1.SimulateCropGrowthResponse
-	34, // 84: agriculture.ai.v1.AIGatewayService.ComputeNDVI:output_type -> agriculture.ai.v1.ComputeNDVIResponse
-	38, // 85: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:output_type -> agriculture.ai.v1.DetectVegetationStressResponse
-	44, // 86: agriculture.ai.v1.AIGatewayService.RecommendCrops:output_type -> agriculture.ai.v1.RecommendCropsResponse
-	52, // 87: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:output_type -> agriculture.ai.v1.EvaluateFieldRiskResponse
-	57, // 88: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:output_type -> agriculture.ai.v1.ComputeFieldAnalyticsResponse
-	64, // 89: agriculture.ai.v1.AIGatewayService.GeneratePrescription:output_type -> agriculture.ai.v1.GeneratePrescriptionResponse
-	68, // 90: agriculture.ai.v1.AIGatewayService.AnalyzeTerrain:output_type -> agriculture.ai.v1.AnalyzeTerrainResponse
-	76, // 91: agriculture.ai.v1.AIGatewayService.SimulateWaterFlow:output_type -> agriculture.ai.v1.SimulateWaterFlowResponse
-	15, // 92: agriculture.ai.v1.AIGatewayService.ListTrainingSamples:output_type -> agriculture.ai.v1.ListTrainingSamplesResponse
-	17, // 93: agriculture.ai.v1.AIGatewayService.SubmitLabelReview:output_type -> agriculture.ai.v1.SubmitLabelReviewResponse
-	19, // 94: agriculture.ai.v1.AIGatewayService.GetTrainingSampleImage:output_type -> agriculture.ai.v1.GetTrainingSampleImageResponse
-	78, // [78:95] is the sub-list for method output_type
-	61, // [61:78] is the sub-list for method input_type
-	61, // [61:61] is the sub-list for extension type_name
-	61, // [61:61] is the sub-list for extension extendee
-	0,  // [0:61] is the sub-list for field type_name
+	4,  // 2: agriculture.ai.v1.DiagnoseImageResponse.diseases:type_name -> agriculture.ai.v1.DiseaseDetection
+	2,  // 3: agriculture.ai.v1.DiagnoseImageResponse.explanations:type_name -> agriculture.ai.v1.Explanation
+	47, // 4: agriculture.ai.v1.DetectPestsRequest.images:type_name -> agriculture.ai.v1.ImageData
+	0,  // 5: agriculture.ai.v1.DetectPestsRequest.context:type_name -> agriculture.ai.v1.SampleContext
+	7,  // 6: agriculture.ai.v1.DetectPestsResponse.pests:type_name -> agriculture.ai.v1.PestDetection
+	2,  // 7: agriculture.ai.v1.DetectPestsResponse.explanations:type_name -> agriculture.ai.v1.Explanation
+	47, // 8: agriculture.ai.v1.DetectNutrientDeficiencyRequest.images:type_name -> agriculture.ai.v1.ImageData
+	0,  // 9: agriculture.ai.v1.DetectNutrientDeficiencyRequest.context:type_name -> agriculture.ai.v1.SampleContext
+	10, // 10: agriculture.ai.v1.DetectNutrientDeficiencyResponse.deficiencies:type_name -> agriculture.ai.v1.NutrientDeficiency
+	2,  // 11: agriculture.ai.v1.DetectNutrientDeficiencyResponse.explanations:type_name -> agriculture.ai.v1.Explanation
+	47, // 12: agriculture.ai.v1.ClassifyPlantRequest.images:type_name -> agriculture.ai.v1.ImageData
+	0,  // 13: agriculture.ai.v1.ClassifyPlantRequest.context:type_name -> agriculture.ai.v1.SampleContext
+	12, // 14: agriculture.ai.v1.TrainingSampleInfo.labels:type_name -> agriculture.ai.v1.TrainingLabel
+	0,  // 15: agriculture.ai.v1.TrainingSampleInfo.context:type_name -> agriculture.ai.v1.SampleContext
+	13, // 16: agriculture.ai.v1.TrainingSampleInfo.review:type_name -> agriculture.ai.v1.LabelReview
+	14, // 17: agriculture.ai.v1.ListTrainingSamplesResponse.samples:type_name -> agriculture.ai.v1.TrainingSampleInfo
+	13, // 18: agriculture.ai.v1.SubmitLabelReviewRequest.review:type_name -> agriculture.ai.v1.LabelReview
+	14, // 19: agriculture.ai.v1.SubmitLabelReviewResponse.sample:type_name -> agriculture.ai.v1.TrainingSampleInfo
+	22, // 20: agriculture.ai.v1.ClassifyPlantResponse.species:type_name -> agriculture.ai.v1.PlantClassification
+	2,  // 21: agriculture.ai.v1.ClassifyPlantResponse.explanations:type_name -> agriculture.ai.v1.Explanation
+	25, // 22: agriculture.ai.v1.PredictYieldRequest.environment:type_name -> agriculture.ai.v1.EnvironmentFactors
+	26, // 23: agriculture.ai.v1.PredictYieldRequest.soil:type_name -> agriculture.ai.v1.SoilFactors
+	27, // 24: agriculture.ai.v1.PredictYieldRequest.management:type_name -> agriculture.ai.v1.ManagementFactors
+	28, // 25: agriculture.ai.v1.PredictYieldResponse.stress_factors:type_name -> agriculture.ai.v1.StressFactor
+	25, // 26: agriculture.ai.v1.SimulateCropGrowthRequest.initial_environment:type_name -> agriculture.ai.v1.EnvironmentFactors
+	26, // 27: agriculture.ai.v1.SimulateCropGrowthRequest.initial_soil:type_name -> agriculture.ai.v1.SoilFactors
+	31, // 28: agriculture.ai.v1.SimulateCropGrowthResponse.stages:type_name -> agriculture.ai.v1.GrowthStageResult
+	33, // 29: agriculture.ai.v1.ComputeNDVIRequest.bands:type_name -> agriculture.ai.v1.RasterBands
+	34, // 30: agriculture.ai.v1.ComputeNDVIRequest.clip_bounds:type_name -> agriculture.ai.v1.BoundingBox
+	36, // 31: agriculture.ai.v1.ComputeNDVIResponse.statistics:type_name -> agriculture.ai.v1.BandStatistics
+	37, // 32: agriculture.ai.v1.ComputeNDVIResponse.zones:type_name -> agriculture.ai.v1.NdviZone
+	33, // 33: agriculture.ai.v1.DetectVegetationStressRequest.bands:type_name -> agriculture.ai.v1.RasterBands
+	34, // 34: agriculture.ai.v1.DetectVegetationStressRequest.clip_bounds:type_name -> agriculture.ai.v1.BoundingBox
+	40, // 35: agriculture.ai.v1.DetectVegetationStressResponse.stress_zones:type_name -> agriculture.ai.v1.StressZone
+	36, // 36: agriculture.ai.v1.DetectVegetationStressResponse.ndvi_statistics:type_name -> agriculture.ai.v1.BandStatistics
+	34, // 37: agriculture.ai.v1.StressZone.bounds:type_name -> agriculture.ai.v1.BoundingBox
+	42, // 38: agriculture.ai.v1.RecommendCropsRequest.soil:type_name -> agriculture.ai.v1.SoilConditions
+	43, // 39: agriculture.ai.v1.RecommendCropsRequest.climate:type_name -> agriculture.ai.v1.ClimateConditions
+	44, // 40: agriculture.ai.v1.RecommendCropsRequest.economics:type_name -> agriculture.ai.v1.EconomicFactors
+	46, // 41: agriculture.ai.v1.RecommendCropsResponse.recommendations:type_name -> agriculture.ai.v1.CropRecommendation
+	49, // 42: agriculture.ai.v1.EvaluateFieldRiskRequest.weather:type_name -> agriculture.ai.v1.FieldWeather
+	50, // 43: agriculture.ai.v1.EvaluateFieldRiskRequest.soil_state:type_name -> agriculture.ai.v1.FieldSoilState
+	51, // 44: agriculture.ai.v1.EvaluateFieldRiskRequest.detections:type_name -> agriculture.ai.v1.DetectionResults
+	52, // 45: agriculture.ai.v1.EvaluateFieldRiskRequest.growth:type_name -> agriculture.ai.v1.GrowthState
+	54, // 46: agriculture.ai.v1.EvaluateFieldRiskResponse.alerts:type_name -> agriculture.ai.v1.FieldAlert
+	56, // 47: agriculture.ai.v1.ComputeFieldAnalyticsRequest.seasons:type_name -> agriculture.ai.v1.SeasonRecord
+	57, // 48: agriculture.ai.v1.ComputeFieldAnalyticsRequest.ndvi_series:type_name -> agriculture.ai.v1.NdviDataPoint
+	59, // 49: agriculture.ai.v1.ComputeFieldAnalyticsResponse.rotation:type_name -> agriculture.ai.v1.RotationAnalysis
+	60, // 50: agriculture.ai.v1.ComputeFieldAnalyticsResponse.season_comparisons:type_name -> agriculture.ai.v1.SeasonComparisonResult
+	62, // 51: agriculture.ai.v1.GeneratePrescriptionRequest.grid:type_name -> agriculture.ai.v1.PrescriptionGrid
+	63, // 52: agriculture.ai.v1.GeneratePrescriptionRequest.zone_input:type_name -> agriculture.ai.v1.PrescriptionZoneInput
+	64, // 53: agriculture.ai.v1.GeneratePrescriptionRequest.crop_requirements:type_name -> agriculture.ai.v1.PrescriptionCropRequirements
+	66, // 54: agriculture.ai.v1.GeneratePrescriptionResponse.prescriptions:type_name -> agriculture.ai.v1.PrescriptionMapResult
+	67, // 55: agriculture.ai.v1.PrescriptionMapResult.zone_summaries:type_name -> agriculture.ai.v1.PrescriptionZoneSummary
+	70, // 56: agriculture.ai.v1.AnalyzeTerrainResponse.contour_lines:type_name -> agriculture.ai.v1.TerrainContourLine
+	71, // 57: agriculture.ai.v1.AnalyzeTerrainResponse.dem_statistics:type_name -> agriculture.ai.v1.TerrainDemStatistics
+	72, // 58: agriculture.ai.v1.AnalyzeTerrainResponse.flow_statistics:type_name -> agriculture.ai.v1.TerrainFlowStats
+	73, // 59: agriculture.ai.v1.AnalyzeTerrainResponse.watershed_statistics:type_name -> agriculture.ai.v1.TerrainWatershedInfo
+	75, // 60: agriculture.ai.v1.SimulateWaterFlowRequest.moisture_params:type_name -> agriculture.ai.v1.WaterFlowMoistureParams
+	76, // 61: agriculture.ai.v1.SimulateWaterFlowRequest.balance_params:type_name -> agriculture.ai.v1.WaterFlowBalanceParams
+	78, // 62: agriculture.ai.v1.SimulateWaterFlowResponse.moisture_profiles:type_name -> agriculture.ai.v1.SoilMoistureSnapshot
+	79, // 63: agriculture.ai.v1.SimulateWaterFlowResponse.water_balance:type_name -> agriculture.ai.v1.WaterBalanceDay
+	80, // 64: agriculture.ai.v1.SimulateWaterFlowResponse.irrigation_summary:type_name -> agriculture.ai.v1.WaterFlowIrrigationSummary
+	1,  // 65: agriculture.ai.v1.AIGatewayService.DiagnoseImage:input_type -> agriculture.ai.v1.DiagnoseImageRequest
+	5,  // 66: agriculture.ai.v1.AIGatewayService.DetectPests:input_type -> agriculture.ai.v1.DetectPestsRequest
+	8,  // 67: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:input_type -> agriculture.ai.v1.DetectNutrientDeficiencyRequest
+	11, // 68: agriculture.ai.v1.AIGatewayService.ClassifyPlant:input_type -> agriculture.ai.v1.ClassifyPlantRequest
+	23, // 69: agriculture.ai.v1.AIGatewayService.PredictYield:input_type -> agriculture.ai.v1.PredictYieldRequest
+	29, // 70: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:input_type -> agriculture.ai.v1.SimulateCropGrowthRequest
+	32, // 71: agriculture.ai.v1.AIGatewayService.ComputeNDVI:input_type -> agriculture.ai.v1.ComputeNDVIRequest
+	38, // 72: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:input_type -> agriculture.ai.v1.DetectVegetationStressRequest
+	41, // 73: agriculture.ai.v1.AIGatewayService.RecommendCrops:input_type -> agriculture.ai.v1.RecommendCropsRequest
+	48, // 74: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:input_type -> agriculture.ai.v1.EvaluateFieldRiskRequest
+	55, // 75: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:input_type -> agriculture.ai.v1.ComputeFieldAnalyticsRequest
+	61, // 76: agriculture.ai.v1.AIGatewayService.GeneratePrescription:input_type -> agriculture.ai.v1.GeneratePrescriptionRequest
+	68, // 77: agriculture.ai.v1.AIGatewayService.AnalyzeTerrain:input_type -> agriculture.ai.v1.AnalyzeTerrainRequest
+	74, // 78: agriculture.ai.v1.AIGatewayService.SimulateWaterFlow:input_type -> agriculture.ai.v1.SimulateWaterFlowRequest
+	15, // 79: agriculture.ai.v1.AIGatewayService.ListTrainingSamples:input_type -> agriculture.ai.v1.ListTrainingSamplesRequest
+	17, // 80: agriculture.ai.v1.AIGatewayService.SubmitLabelReview:input_type -> agriculture.ai.v1.SubmitLabelReviewRequest
+	19, // 81: agriculture.ai.v1.AIGatewayService.GetTrainingSampleImage:input_type -> agriculture.ai.v1.GetTrainingSampleImageRequest
+	3,  // 82: agriculture.ai.v1.AIGatewayService.DiagnoseImage:output_type -> agriculture.ai.v1.DiagnoseImageResponse
+	6,  // 83: agriculture.ai.v1.AIGatewayService.DetectPests:output_type -> agriculture.ai.v1.DetectPestsResponse
+	9,  // 84: agriculture.ai.v1.AIGatewayService.DetectNutrientDeficiency:output_type -> agriculture.ai.v1.DetectNutrientDeficiencyResponse
+	21, // 85: agriculture.ai.v1.AIGatewayService.ClassifyPlant:output_type -> agriculture.ai.v1.ClassifyPlantResponse
+	24, // 86: agriculture.ai.v1.AIGatewayService.PredictYield:output_type -> agriculture.ai.v1.PredictYieldResponse
+	30, // 87: agriculture.ai.v1.AIGatewayService.SimulateCropGrowth:output_type -> agriculture.ai.v1.SimulateCropGrowthResponse
+	35, // 88: agriculture.ai.v1.AIGatewayService.ComputeNDVI:output_type -> agriculture.ai.v1.ComputeNDVIResponse
+	39, // 89: agriculture.ai.v1.AIGatewayService.DetectVegetationStress:output_type -> agriculture.ai.v1.DetectVegetationStressResponse
+	45, // 90: agriculture.ai.v1.AIGatewayService.RecommendCrops:output_type -> agriculture.ai.v1.RecommendCropsResponse
+	53, // 91: agriculture.ai.v1.AIGatewayService.EvaluateFieldRisk:output_type -> agriculture.ai.v1.EvaluateFieldRiskResponse
+	58, // 92: agriculture.ai.v1.AIGatewayService.ComputeFieldAnalytics:output_type -> agriculture.ai.v1.ComputeFieldAnalyticsResponse
+	65, // 93: agriculture.ai.v1.AIGatewayService.GeneratePrescription:output_type -> agriculture.ai.v1.GeneratePrescriptionResponse
+	69, // 94: agriculture.ai.v1.AIGatewayService.AnalyzeTerrain:output_type -> agriculture.ai.v1.AnalyzeTerrainResponse
+	77, // 95: agriculture.ai.v1.AIGatewayService.SimulateWaterFlow:output_type -> agriculture.ai.v1.SimulateWaterFlowResponse
+	16, // 96: agriculture.ai.v1.AIGatewayService.ListTrainingSamples:output_type -> agriculture.ai.v1.ListTrainingSamplesResponse
+	18, // 97: agriculture.ai.v1.AIGatewayService.SubmitLabelReview:output_type -> agriculture.ai.v1.SubmitLabelReviewResponse
+	20, // 98: agriculture.ai.v1.AIGatewayService.GetTrainingSampleImage:output_type -> agriculture.ai.v1.GetTrainingSampleImageResponse
+	82, // [82:99] is the sub-list for method output_type
+	65, // [65:82] is the sub-list for method input_type
+	65, // [65:65] is the sub-list for extension type_name
+	65, // [65:65] is the sub-list for extension extendee
+	0,  // [0:65] is the sub-list for field type_name
 }
 
 func init() { file_ai_gateway_proto_init() }
@@ -8031,7 +8248,7 @@ func file_ai_gateway_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ai_gateway_proto_rawDesc), len(file_ai_gateway_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   80,
+			NumMessages:   81,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

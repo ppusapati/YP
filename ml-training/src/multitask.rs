@@ -506,7 +506,7 @@ mod tests {
 
         // Splicing onto a backbone with a matching embedding width must work.
         let backbone = synthetic_backbone(32, 8, 100);
-        let composed = crate::compose::compose_bytes(&backbone, "embedding", &[spec]).unwrap();
+        let composed = crate::compose::compose_bytes(&backbone, "embedding", &[spec], None).unwrap();
         let graph = crate::compose::decode_model(&composed)
             .unwrap()
             .graph

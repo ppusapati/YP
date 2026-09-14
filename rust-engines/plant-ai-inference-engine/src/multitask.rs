@@ -13,6 +13,7 @@ use image::imageops::FilterType;
 use serde::{Deserialize, Serialize};
 use tract_onnx::prelude::*;
 
+use crate::explain::Heatmap;
 use crate::onnx::{OnnxError, MODEL_FILE_NAME, VERSION_FILE_NAME};
 use crate::postprocessing::{postprocess_classification, ClassificationOutput};
 
@@ -41,7 +42,37 @@ pub struct TaskEntry {
     pub name: String,
     /// Graph output carrying this task's logits.
     pub output: String,
+    /// Graph output carrying per-class Grad-CAM maps, empty when the model was
+    /// composed without them.
+    #[serde(default)]
+    pub cam_output: String,
     pub labels: Vec<String>,
+}
+
+/// Index of the largest logit, ties going to the lower index.
+fn argmax(values: &[f32]) -> usize {
+    values
+        .iter()
+        .enumerate()
+        .fold((0usize, f32::NEG_INFINITY), |best, (i, &v)| {
+            if v > best.1 {
+                (i, v)
+            } else {
+                best
+            }
+        })
+        .0
+}
+
+/// Shape of the feature map Grad-CAM outputs are computed over.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CamInfo {
+    #[serde(default)]
+    pub tensor: String,
+    #[serde(default)]
+    pub channels: usize,
+    pub height: usize,
+    pub width: usize,
 }
 
 /// Contents of `multitask.json`.
@@ -53,6 +84,9 @@ pub struct MultiTaskManifest {
     #[serde(default)]
     pub normalization: Normalization,
     pub tasks: Vec<TaskEntry>,
+    /// Present when the model carries Grad-CAM outputs.
+    #[serde(default)]
+    pub cam: Option<CamInfo>,
     #[serde(default)]
     pub backbone_fingerprint: String,
     #[serde(default)]
@@ -66,6 +100,8 @@ pub struct MultiTaskClassifier {
     version: String,
     /// Task name → index into the plan's outputs.
     task_index: HashMap<String, usize>,
+    /// Task name → index of its Grad-CAM output, when explanations are on.
+    cam_index: HashMap<String, usize>,
 }
 
 impl std::fmt::Debug for MultiTaskClassifier {
@@ -129,10 +165,23 @@ impl MultiTaskClassifier {
 
         let size = manifest.input_size as usize;
         let mut model = tract_onnx::onnx().model_for_read(&mut std::io::Cursor::new(onnx))?;
-        // Pin the output order to the manifest so a task's logits are always
-        // read from the slot the manifest claims.
-        let outputs: Vec<&str> = manifest.tasks.iter().map(|t| t.output.as_str()).collect();
-        model.set_output_names(&outputs).map_err(|e| {
+
+        // Pin the output order so a task's logits are always read from the slot
+        // the manifest claims: logits for every task first, then whichever
+        // Grad-CAM maps the model actually carries.
+        let mut output_names: Vec<String> =
+            manifest.tasks.iter().map(|t| t.output.clone()).collect();
+        let mut cam_index = HashMap::new();
+        if manifest.cam.is_some() {
+            for task in &manifest.tasks {
+                if !task.cam_output.is_empty() {
+                    cam_index.insert(task.name.clone(), output_names.len());
+                    output_names.push(task.cam_output.clone());
+                }
+            }
+        }
+        let refs: Vec<&str> = output_names.iter().map(String::as_str).collect();
+        model.set_output_names(&refs).map_err(|e| {
             OnnxError::Tract(format!("manifest names an output the model lacks: {e:?}"))
         })?;
 
@@ -153,20 +202,56 @@ impl MultiTaskClassifier {
             manifest,
             version: version.into(),
             task_index,
+            cam_index,
         };
 
-        // A dry run proves every head's width matches its label list.
+        // A dry run proves every head's width matches its label list, and that
+        // each Grad-CAM output has the shape the manifest promises.
         let probe = vec![0.0f32; 3 * size * size];
-        let logits = classifier.run(&probe)?;
-        for (task, values) in classifier.manifest.tasks.iter().zip(&logits) {
-            if values.len() != task.labels.len() {
+        let outputs = classifier.run_raw(&probe)?;
+        for (i, task) in classifier.manifest.tasks.iter().enumerate() {
+            if outputs[i].len() != task.labels.len() {
                 return Err(OnnxError::LabelCountMismatch {
-                    got: values.len(),
+                    got: outputs[i].len(),
                     expected: task.labels.len(),
                 });
             }
+            if let Some(&slot) = classifier.cam_index.get(&task.name) {
+                let cam = classifier
+                    .manifest
+                    .cam
+                    .as_ref()
+                    .expect("cam slots imply cam info");
+                let expected = task.labels.len() * cam.height * cam.width;
+                if outputs[slot].len() != expected {
+                    return Err(OnnxError::MalformedLabels(format!(
+                        "task {:?} Grad-CAM output has {} values, expected {} ({} classes x {}x{})",
+                        task.name,
+                        outputs[slot].len(),
+                        expected,
+                        task.labels.len(),
+                        cam.height,
+                        cam.width
+                    )));
+                }
+            }
         }
         Ok(classifier)
+    }
+
+    /// True when this model can explain where a prediction came from.
+    pub fn explains(&self) -> bool {
+        !self.cam_index.is_empty()
+    }
+
+    /// True when this specific task carries a Grad-CAM output.
+    pub fn explains_task(&self, task: &str) -> bool {
+        self.cam_index.contains_key(task)
+    }
+
+    /// Resolution of the Grad-CAM maps, when available.
+    pub fn cam_size(&self) -> Option<(usize, usize)> {
+        self.manifest.cam.as_ref().map(|c| (c.width, c.height))
     }
 
     pub fn version(&self) -> &str {
@@ -233,7 +318,17 @@ impl MultiTaskClassifier {
     }
 
     /// One forward pass; returns raw logits per task in manifest order.
+    ///
+    /// Grad-CAM outputs, if the model has them, are dropped here — use
+    /// [`Self::explain`] or [`Self::classify_task_explained`] for those.
     pub fn run(&self, chw: &[f32]) -> Result<Vec<Vec<f32>>, OnnxError> {
+        let mut outputs = self.run_raw(chw)?;
+        outputs.truncate(self.manifest.tasks.len());
+        Ok(outputs)
+    }
+
+    /// Every pinned output: task logits, then any Grad-CAM maps.
+    fn run_raw(&self, chw: &[f32]) -> Result<Vec<Vec<f32>>, OnnxError> {
         let size = self.manifest.input_size as usize;
         let expected = 3 * size * size;
         if chw.len() != expected {
@@ -275,6 +370,83 @@ impl MultiTaskClassifier {
                 )
             })
             .collect())
+    }
+
+    /// Classify one task and, when the model supports it, say where in the
+    /// image the answer came from — both from a single forward pass.
+    pub fn classify_task_explained(
+        &self,
+        task: &str,
+        encoded: &[u8],
+        top_k: usize,
+    ) -> Result<(ClassificationOutput, Option<Heatmap>), OnnxError> {
+        let index = self.slot_of(task)?;
+        let chw = self.preprocess(encoded)?;
+        let outputs = self.run_raw(&chw)?;
+        let entry = &self.manifest.tasks[index];
+        let output = postprocess_classification(&outputs[index], &entry.labels, top_k.max(1));
+
+        // Explain the class the model actually chose, not a fixed one.
+        let predicted = argmax(&outputs[index]);
+        let heatmap = self.heatmap_from(task, &outputs, predicted);
+        Ok((output, heatmap))
+    }
+
+    /// Grad-CAM for one task, defaulting to the predicted class.
+    pub fn explain(
+        &self,
+        task: &str,
+        encoded: &[u8],
+        class_index: Option<usize>,
+    ) -> Result<Heatmap, OnnxError> {
+        let index = self.slot_of(task)?;
+        if !self.explains_task(task) {
+            return Err(OnnxError::MalformedLabels(format!(
+                "model carries no Grad-CAM output for task {task:?}"
+            )));
+        }
+        let chw = self.preprocess(encoded)?;
+        let outputs = self.run_raw(&chw)?;
+        let class = class_index.unwrap_or_else(|| argmax(&outputs[index]));
+
+        let classes = self.manifest.tasks[index].labels.len();
+        if class >= classes {
+            return Err(OnnxError::MalformedLabels(format!(
+                "class {class} is out of range for task {task:?} ({classes} classes)"
+            )));
+        }
+        self.heatmap_from(task, &outputs, class).ok_or_else(|| {
+            OnnxError::Tract(format!("Grad-CAM output for task {task:?} was unusable"))
+        })
+    }
+
+    /// Slice one class's map out of a task's Grad-CAM output.
+    fn heatmap_from(&self, task: &str, outputs: &[Vec<f32>], class: usize) -> Option<Heatmap> {
+        let slot = *self.cam_index.get(task)?;
+        let cam = self.manifest.cam.as_ref()?;
+        let entry = self
+            .task_index
+            .get(task)
+            .map(|&i| &self.manifest.tasks[i])?;
+        let plane = cam.height * cam.width;
+        let start = class * plane;
+        let values = outputs.get(slot)?.get(start..start + plane)?;
+
+        Some(Heatmap::new(
+            task,
+            class,
+            entry.labels.get(class).cloned().unwrap_or_default(),
+            cam.width,
+            cam.height,
+            values,
+        ))
+    }
+
+    fn slot_of(&self, task: &str) -> Result<usize, OnnxError> {
+        self.task_index
+            .get(task)
+            .copied()
+            .ok_or_else(|| OnnxError::MalformedLabels(format!("model has no task {task:?}")))
     }
 
     /// Classify for a single task. The backbone still runs once; the other
@@ -329,9 +501,11 @@ mod tests {
                 .map(|(name, labels)| TaskEntry {
                     name: name.to_string(),
                     output: format!("logits_{name}"),
+                    cam_output: String::new(),
                     labels: labels.iter().map(|s| s.to_string()).collect(),
                 })
                 .collect(),
+            cam: None,
             backbone_fingerprint: "abcdef0123456789".into(),
             created_at: "2026-01-01T00:00:00Z".into(),
         }

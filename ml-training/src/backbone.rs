@@ -70,6 +70,73 @@ impl Normalization {
     }
 }
 
+/// The last spatial feature map before global pooling, and its shape.
+///
+/// This is what Grad-CAM weights: the activations still carry position, so a
+/// per-channel weighting of them says *where* in the image the evidence for a
+/// class is.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct FeatureMap {
+    /// ONNX tensor name of the pre-pool activations.
+    pub tensor: String,
+    pub channels: usize,
+    pub height: usize,
+    pub width: usize,
+}
+
+impl FeatureMap {
+    pub fn spatial(&self) -> usize {
+        self.height * self.width
+    }
+}
+
+/// Walk back from the embedding to the pooled-over feature map.
+///
+/// Only average pooling is accepted. Grad-CAM's weights come from the
+/// derivative of the embedding with respect to the feature map, which is a
+/// uniform `1/HW` for average pooling but a one-hot for max pooling — the same
+/// arithmetic on a max-pooled backbone would produce a confident-looking
+/// heatmap that means nothing.
+fn trace_to_feature_map(
+    graph: &crate::onnx_proto::GraphProto,
+    embedding: &str,
+) -> anyhow::Result<String> {
+    let mut current = embedding.to_string();
+    // These chains are a handful of reshapes at most; the bound stops a cyclic
+    // or self-referential graph from spinning here.
+    for _ in 0..8 {
+        let node = graph
+            .node
+            .iter()
+            .find(|n| n.output.iter().any(|o| *o == current))
+            .ok_or_else(|| {
+                anyhow::anyhow!("tensor {current:?} is a graph input, not a computed activation")
+            })?;
+        match node.op_type.as_str() {
+            "GlobalAveragePool" | "ReduceMean" => {
+                return node.input.first().cloned().ok_or_else(|| {
+                    anyhow::anyhow!("{} node {:?} has no input", node.op_type, node.name)
+                })
+            }
+            "GlobalMaxPool" | "MaxPool" => anyhow::bail!(
+                "backbone pools with {}; Grad-CAM needs average pooling",
+                node.op_type
+            ),
+            "Flatten" | "Reshape" | "Squeeze" | "Identity" | "Dropout" => {
+                current = node
+                    .input
+                    .first()
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("node {:?} has no input", node.name))?;
+            }
+            other => anyhow::bail!(
+                "cannot trace the embedding back to a pooled feature map: reached a {other} node"
+            ),
+        }
+    }
+    anyhow::bail!("gave up tracing the embedding back to a feature map after 8 hops")
+}
+
 /// A frozen pretrained backbone used as a feature extractor.
 pub struct Backbone {
     plan: Plan,
@@ -217,6 +284,48 @@ impl Backbone {
 
     pub fn onnx_bytes(&self) -> &[u8] {
         &self.onnx_bytes
+    }
+
+    /// Locate the pre-pool feature map and measure it.
+    ///
+    /// The shape is measured by running the backbone rather than inferred,
+    /// because a graph's declared shapes are often symbolic.
+    pub fn feature_map(&self) -> anyhow::Result<FeatureMap> {
+        let model = crate::compose::decode_model(&self.onnx_bytes)?;
+        let graph = model
+            .graph
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("backbone has no graph"))?;
+        let tensor = trace_to_feature_map(graph, &self.embedding_tensor)?;
+
+        let size = self.input_size as usize;
+        let mut m =
+            tract_onnx::onnx().model_for_read(&mut std::io::Cursor::new(&self.onnx_bytes))?;
+        m.set_output_names([tensor.as_str()])
+            .map_err(|e| anyhow::anyhow!("feature tensor {tensor:?} is not usable: {e}"))?;
+        let plan = m
+            .with_input_fact(0, f32::fact([1, 3, size, size]).into())?
+            .into_optimized()?
+            .into_runnable()?;
+
+        let probe = tract_ndarray::Array4::from_shape_vec(
+            (1, 3, size, size),
+            vec![0.0f32; 3 * size * size],
+        )?;
+        let out = plan.run(tvec!(Tensor::from(probe).into()))?;
+        let shape = out[0].shape();
+        if shape.len() != 4 {
+            anyhow::bail!(
+                "feature tensor {tensor:?} has rank {}, expected a rank-4 NCHW map",
+                shape.len()
+            );
+        }
+        Ok(FeatureMap {
+            tensor,
+            channels: shape[1],
+            height: shape[2],
+            width: shape[3],
+        })
     }
 
     pub fn path(&self) -> &Path {
