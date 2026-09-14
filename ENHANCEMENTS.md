@@ -227,7 +227,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Add tenant-level resource quotas (storage limits, API rate limits per tenant)
 - [ ] Build admin dashboard for cross-tenant analytics and health monitoring
 - [x] Add tenant data export API (GDPR/data portability compliance)
-- [ ] Implement tenant offboarding with data archival
+- [x] Implement tenant offboarding with data archival
 - [x] Add tenant-specific feature flags
 
 **Effort:** Medium | **Impact:** Medium
