@@ -428,7 +428,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [x] Replace mock data in plant-diagnosis with real service calls — the service fetches the image bytes for the URLs it validated and hands them to the gateway, which previously received a URL and no pixels and silently fell through to demo weights. The gateway now declines an image it cannot see rather than analysing a black frame
 - [x] Replace mock data in pest-prediction with real service calls — the service now asks the gateway to score a field and falls back to its weather rules only when that fails. Its AI client previously sent `structpb.Struct` values over hand-written method names, which cannot decode as the typed request the server expects; nothing called it, so the mismatch never surfaced. Its test suite had also stopped compiling against a widened logger interface, so 37 tests had not run in some time
 - [x] Add a CI check that fails when TODO count increases in a service — `scripts/todo-budget.sh` holds a per-area budget in `.todo-budget` and fails the build when an area exceeds it. Budgets only go down; the script names the ones that can now be lowered. A raw count would either be zero and get disabled within a week, or be meaningless
-- [ ] Clear web app markers alongside the E-006 component test work
+- [x] Clear web app markers alongside the E-006 component test work — the auth bypass and the fabricated dashboard are gone; `web` is down to one marker (see `docs/stub-debt.md`)
 
 **Effort:** Medium | **Impact:** Medium
 

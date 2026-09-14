@@ -25,7 +25,8 @@
   },
   "devDependencies": {
     "svelte": "^5.0.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "keywords": ["i18n", "internationalization", "svelte", "samavāya", "erp", "multilingual"]
 }

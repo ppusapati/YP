@@ -45,17 +45,118 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  apps/land:
+  apps/crop-intelligence:
     dependencies:
       '@p9e.in/samavaya':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@samavāya/agriculture':
+        specifier: workspace:*
+        version: link:../../packages/agriculture
       '@samavāya/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@samavāya/formrenderer':
+      '@samavāya/stores':
         specifier: workspace:*
-        version: link:../../packages/formrenderer
+        version: link:../../packages/stores
+      '@samavāya/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@p9e.in/configs':
+        specifier: workspace:*
+        version: link:../../packages/configs
+      '@sveltejs/adapter-node':
+        specifier: ^5.5.4
+        version: 5.5.4(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))
+      '@sveltejs/kit':
+        specifier: ^2.10.0
+        version: 2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.0
+        version: 4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.3
+      svelte:
+        specifier: ^5.0.0
+        version: 5.46.1
+      svelte-check:
+        specifier: ^4.1.0
+        version: 4.3.5(picomatch@4.0.3)(svelte@5.46.1)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      unocss:
+        specifier: ^66.3.3
+        version: 66.5.11(postcss@8.5.6)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)
+
+  apps/farm-management:
+    dependencies:
+      '@p9e.in/samavaya':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@samavāya/agriculture':
+        specifier: workspace:*
+        version: link:../../packages/agriculture
+      '@samavāya/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@samavāya/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
+      '@samavāya/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@p9e.in/configs':
+        specifier: workspace:*
+        version: link:../../packages/configs
+      '@sveltejs/adapter-node':
+        specifier: ^5.5.4
+        version: 5.5.4(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))
+      '@sveltejs/kit':
+        specifier: ^2.10.0
+        version: 2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.0
+        version: 4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.3
+      svelte:
+        specifier: ^5.0.0
+        version: 5.46.1
+      svelte-check:
+        specifier: ^4.1.0
+        version: 4.3.5(picomatch@4.0.3)(svelte@5.46.1)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      unocss:
+        specifier: ^66.3.3
+        version: 66.5.11(postcss@8.5.6)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)
+
+  apps/shell:
+    dependencies:
+      '@p9e.in/samavaya':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@samavāya/agriculture':
+        specifier: workspace:*
+        version: link:../../packages/agriculture
+      '@samavāya/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@samavāya/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@samavāya/stores':
         specifier: workspace:*
         version: link:../../packages/stores
@@ -106,17 +207,17 @@ importers:
         specifier: ^6.0.0
         version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)
 
-  apps/shell:
+  apps/smart-agriculture:
     dependencies:
       '@p9e.in/samavaya':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@samavāya/agriculture':
+        specifier: workspace:*
+        version: link:../../packages/agriculture
       '@samavāya/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@samavāya/formrenderer':
-        specifier: workspace:*
-        version: link:../../packages/formrenderer
       '@samavāya/stores':
         specifier: workspace:*
         version: link:../../packages/stores
@@ -124,9 +225,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
-      '@sveltejs/adapter-auto':
-        specifier: ^3.3.0
-        version: 3.3.1(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))
+      '@p9e.in/configs':
+        specifier: workspace:*
+        version: link:../../packages/configs
       '@sveltejs/adapter-node':
         specifier: ^5.5.4
         version: 5.5.4(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))
@@ -139,24 +240,12 @@ importers:
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.3
-      '@unocss/svelte-scoped':
-        specifier: ^66.5.11
-        version: 66.5.11
-      autoprefixer:
-        specifier: ^10.4.23
-        version: 10.4.23(postcss@8.5.6)
-      postcss:
-        specifier: ^8.5.6
-        version: 8.5.6
       svelte:
         specifier: ^5.0.0
         version: 5.46.1
       svelte-check:
         specifier: ^4.1.0
         version: 4.3.5(picomatch@4.0.3)(svelte@5.46.1)(typescript@5.9.3)
-      tailwindcss:
-        specifier: ^4.1.18
-        version: 4.1.18
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -166,6 +255,83 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)
+
+  apps/supply-chain:
+    dependencies:
+      '@p9e.in/samavaya':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@samavāya/agriculture':
+        specifier: workspace:*
+        version: link:../../packages/agriculture
+      '@samavāya/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@samavāya/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
+      '@samavāya/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@p9e.in/configs':
+        specifier: workspace:*
+        version: link:../../packages/configs
+      '@sveltejs/adapter-node':
+        specifier: ^5.5.4
+        version: 5.5.4(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))
+      '@sveltejs/kit':
+        specifier: ^2.10.0
+        version: 2.49.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)))(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^4.0.0
+        version: 4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.3
+      svelte:
+        specifier: ^5.0.0
+        version: 5.46.1
+      svelte-check:
+        specifier: ^4.1.0
+        version: 4.3.5(picomatch@4.0.3)(svelte@5.46.1)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      unocss:
+        specifier: ^66.3.3
+        version: 66.5.11(postcss@8.5.6)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)
+
+  packages/agriculture:
+    dependencies:
+      '@bufbuild/protobuf':
+        specifier: ^2.0.0
+        version: 2.11.0
+      '@connectrpc/connect':
+        specifier: ^2.0.0
+        version: 2.1.1(@bufbuild/protobuf@2.11.0)
+      '@connectrpc/connect-web':
+        specifier: ^2.0.0
+        version: 2.2.0(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0))
+      '@samavāya/core':
+        specifier: workspace:*
+        version: link:../core
+      '@samavāya/proto':
+        specifier: workspace:*
+        version: link:../proto
+      '@samavāya/ui':
+        specifier: workspace:*
+        version: link:../ui
+    devDependencies:
+      svelte:
+        specifier: ^5.0.0
+        version: 5.46.1
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
   packages/configs:
     dependencies:
@@ -284,34 +450,6 @@ importers:
         specifier: ^5.0.1
         version: 5.1.1
 
-  packages/formrenderer:
-    dependencies:
-      '@p9e.in/utils':
-        specifier: workspace:*
-        version: link:../utility
-      '@samavāya/core':
-        specifier: workspace:*
-        version: link:../core
-      '@samavāya/ui':
-        specifier: workspace:*
-        version: link:../ui
-    devDependencies:
-      '@sveltejs/vite-plugin-svelte':
-        specifier: ^4.0.0
-        version: 4.0.4(svelte@5.46.1)(vite@6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0))
-      '@types/node':
-        specifier: ^22.10.0
-        version: 22.19.3
-      svelte:
-        specifier: ^5.0.0
-        version: 5.46.1
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vite:
-        specifier: ^6.0.0
-        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)
-
   packages/i18n:
     devDependencies:
       svelte:
@@ -320,6 +458,9 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.4)(jiti@2.6.1)(jsdom@26.1.0)(tsx@4.21.0)
 
   packages/proto:
     dependencies:
@@ -621,6 +762,12 @@ packages:
 
   '@capsizecss/unpack@2.4.0':
     resolution: {integrity: sha512-GrSU71meACqcmIUxPYOJvGKF0yryjN/L1aCuE9DViCTJI7bfkjgYDPD1zbNDcINJwSSP6UaBZY9GAbYDO7re0Q==}
+
+  '@connectrpc/connect-web@2.2.0':
+    resolution: {integrity: sha512-uuBUcBTYfb/r1o98LzCCZk1H90yx0vmZ5m21dpw/q4EUwsKwkCDGI8H0aEdjcZld+Q2jJ5A5ADvPqfb6lzQ/sg==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.7.0
+      '@connectrpc/connect': 2.2.0
 
   '@connectrpc/connect@2.1.1':
     resolution: {integrity: sha512-JzhkaTvM73m2K1URT6tv53k2RwngSmCXLZJgK580qNQOXRzZRR/BCMfZw3h+90JpnG6XksP5bYT+cz0rpUzUWQ==}
@@ -4425,14 +4572,14 @@ snapshots:
   '@babel/template@7.27.2':
     dependencies:
       '@babel/code-frame': 7.27.1
-      '@babel/parser': 7.27.7
+      '@babel/parser': 7.28.5
       '@babel/types': 7.28.5
 
   '@babel/traverse@7.27.7':
     dependencies:
       '@babel/code-frame': 7.27.1
       '@babel/generator': 7.28.5
-      '@babel/parser': 7.27.7
+      '@babel/parser': 7.28.5
       '@babel/template': 7.27.2
       '@babel/types': 7.28.5
       debug: 4.4.3(supports-color@5.5.0)
@@ -4527,6 +4674,11 @@ snapshots:
       fontkit: 2.0.4
     transitivePeerDependencies:
       - encoding
+
+  '@connectrpc/connect-web@2.2.0(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0))':
+    dependencies:
+      '@bufbuild/protobuf': 2.11.0
+      '@connectrpc/connect': 2.1.1(@bufbuild/protobuf@2.11.0)
 
   '@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0)':
     dependencies:
@@ -8369,7 +8521,7 @@ snapshots:
     dependencies:
       esbuild: 0.21.5
       postcss: 8.5.6
-      rollup: 4.54.0
+      rollup: 4.59.0
     optionalDependencies:
       '@types/node': 22.19.3
       fsevents: 2.3.3
@@ -8380,7 +8532,7 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
       postcss: 8.5.6
-      rollup: 4.54.0
+      rollup: 4.59.0
       tinyglobby: 0.2.15
     optionalDependencies:
       '@types/node': 22.19.3

@@ -41,7 +41,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "xcopy /s /i /y src\\eslint dist\\eslint && xcopy /s /i /y src\\typescript dist\\typescript && xcopy /y src\\uno\\preset-p9e.js dist\\uno\\",
+    "build": "node scripts/build.mjs",
     "dev": "tsc --watch"
   },
   "dependencies": {
