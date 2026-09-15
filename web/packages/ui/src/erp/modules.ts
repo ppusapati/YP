@@ -384,6 +384,7 @@ export const MODULE_REGISTRY: ModuleDef[] = [
       {
         title: 'Platform Services',
         items: [
+          { label: 'Tenant Health', path: '/platform' },
           { label: 'Scheduler', path: '/platform/scheduler' },
           { label: 'File Storage', path: '/platform/file-storage' },
           { label: 'Integrations', path: '/platform/integrations' },

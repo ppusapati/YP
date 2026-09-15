@@ -225,7 +225,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Enhancements:**
 - [x] Build tenant provisioning API (create tenant → create databases → run migrations → seed defaults)
 - [x] Add tenant-level resource quotas (storage limits, API rate limits per tenant)
-- [ ] Build admin dashboard for cross-tenant analytics and health monitoring
+- [x] Build admin dashboard for cross-tenant analytics and health monitoring
 - [x] Add tenant data export API (GDPR/data portability compliance)
 - [x] Implement tenant offboarding with data archival
 - [x] Add tenant-specific feature flags
