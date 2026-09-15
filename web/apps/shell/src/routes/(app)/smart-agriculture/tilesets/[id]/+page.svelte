@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { generateTilesetFormSchema } from '@samavāya/agriculture/schemas';
@@ -25,27 +24,16 @@
     }
   });
 
-  async function handleSubmit(formValues: Record<string, unknown>) {
-    isSubmitting = true;
-    error = null;
-    try {
-      await tileClient.updateTileset({ id, ...formValues } as any);
-      goto('/smart-agriculture/tilesets');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update tileset';
-    } finally {
-      isSubmitting = false;
-    }
+  // This page offered Save and Delete for a record that cannot be either.
+  //
+  // A tileset is the result of an observation or a computation, and its
+  // service declares no Update or Delete — deliberately. Correcting one means
+  // submitting another; removing one erases evidence that a later report is
+  // built on, and the report still renders, which is what makes it dangerous.
+  async function handleSubmit(_formValues: Record<string, unknown>) {
+    error = 'A tileset cannot be edited. Submit a new one instead.';
   }
 
-  async function handleDelete() {
-    try {
-      await tileClient.deleteTileset({ id });
-      goto('/smart-agriculture/tilesets');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete tileset';
-    }
-  }
 </script>
 
 <CrudFormPage
@@ -59,7 +47,6 @@
   {isSubmitting}
   {error}
   cancelHref="/smart-agriculture/tilesets"
-  showDelete={true}
+  showDelete={false}
   onSubmit={handleSubmit}
-  onDelete={handleDelete}
 />

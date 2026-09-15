@@ -14,7 +14,7 @@
     error = null;
     try {
       await traceabilityClient.createRecord(formValues as any);
-      goto('/supply-chain/traceability');
+      goto('/traceability');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create traceability record';
     } finally {
@@ -32,6 +32,6 @@
   {errors}
   {isSubmitting}
   {error}
-  cancelHref="/supply-chain/traceability"
+  cancelHref="/traceability"
   onSubmit={handleSubmit}
 />

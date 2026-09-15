@@ -60,8 +60,11 @@ Neither half works any more:
   and buf fails on `/proc`.
 - `packages/proto` — the shared `context`, `response`, `geo` and `blob` types
   the barrel re-exports — is not in the root `buf.yaml` module list at all, and
-  its files import each other as `packages/proto/query.proto`, so it can only
-  be generated with the repo root as the module root.
+  **cannot simply be added to it.** Its files import each other by repo-root
+  path (`import "packages/proto/query.proto"`), so as its own module those
+  imports resolve to `packages/proto/packages/proto/query.proto` and buf
+  refuses to build it. These protos belong to a module rooted at the repository
+  root, which is precisely what the per-service v2 workspace replaced.
 
 So `proto-check-ts` cannot pass as configured, and the committed TypeScript is
 behind the protos. traceability alone is seven RPCs short: the service declares
@@ -71,15 +74,28 @@ twenty-one and the client has fourteen, missing `RevokeCertification`,
 **This needs a decision before it can be fixed**, because the two options are
 not equivalent:
 
-1. **Move to the flat layout.** Regenerate with the repo root as the module
-   root, add `packages/proto` to the workspace, and rewrite the sixty-odd
-   import paths in `web/packages/proto/src/index.ts`. Nothing outside that
-   barrel imports from `src/gen`, so the blast radius is one file plus the
-   generated tree. This is the smaller change and matches how buf v2 wants to
-   work.
+1. **Change the shared protos' import paths** so `packages/proto` can be a
+   module of its own (`import "query.proto"` rather than
+   `import "packages/proto/query.proto"`), then regenerate everything flat and
+   rewrite the sixty-odd import paths in `web/packages/proto/src/index.ts`.
+   Nothing outside that barrel imports from `src/gen`, so the web blast radius
+   is one file — but the import change moves the Go and Dart output too.
 2. **Keep the nested layout.** Take the repo root out of the workspace for this
    template, or give the web package its own `buf.work.yaml`, so the directory
-   input produces repo-root-relative paths again.
+   input produces repo-root-relative paths again. Smaller, but it keeps two
+   incompatible buf configurations in one repository.
+
+Either way it is a migration across four generated languages, not a
+configuration tweak, which is why it is written down here rather than guessed
+at.
+
+### What this costs today
+
+Six RPCs the platform serves are unreachable from the web app because the
+generated client predates them: `UpdateFarm`, `DeleteFarm`, `UpdateSensor`,
+`UpdateSchedule`, `DeleteSchedule` and `UpdateRecord`. Editing a farm — the
+most ordinary operation in the product — does not work in the web UI for this
+reason alone.
 
 Until then, three pages say so rather than calling methods that are not there:
 the certification detail page disables Revoke, the traceability record page

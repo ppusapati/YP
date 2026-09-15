@@ -14,7 +14,7 @@
     error = null;
     try {
       await traceabilityClient.createBatch(formValues as any);
-      goto('/supply-chain/batches');
+      goto('/batches');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create batch record';
     } finally {
@@ -32,6 +32,6 @@
   {errors}
   {isSubmitting}
   {error}
-  cancelHref="/supply-chain/batches"
+  cancelHref="/batches"
   onSubmit={handleSubmit}
 />

@@ -14,7 +14,7 @@
     error = null;
     try {
       await traceabilityClient.createCertification(formValues as any);
-      goto('/supply-chain/certifications');
+      goto('/certifications');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create certification';
     } finally {
@@ -32,6 +32,6 @@
   {errors}
   {isSubmitting}
   {error}
-  cancelHref="/supply-chain/certifications"
+  cancelHref="/certifications"
   onSubmit={handleSubmit}
 />

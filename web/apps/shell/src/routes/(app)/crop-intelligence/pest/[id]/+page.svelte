@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { pestPredictionRequestSchema } from '@samavāya/agriculture/schemas';
@@ -25,27 +24,16 @@
     }
   });
 
-  async function handleSubmit(formValues: Record<string, unknown>) {
-    isSubmitting = true;
-    error = null;
-    try {
-      await pestClient.updatePrediction({ id, ...formValues } as any);
-      goto('/crop-intelligence/pest');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update prediction';
-    } finally {
-      isSubmitting = false;
-    }
+  // This page offered Save and Delete for a record that cannot be either.
+  //
+  // A prediction is the result of an observation or a computation, and its
+  // service declares no Update or Delete — deliberately. Correcting one means
+  // submitting another; removing one erases evidence that a later report is
+  // built on, and the report still renders, which is what makes it dangerous.
+  async function handleSubmit(_formValues: Record<string, unknown>) {
+    error = 'A prediction cannot be edited. Submit a new one instead.';
   }
 
-  async function handleDelete() {
-    try {
-      await pestClient.deletePrediction({ id } as any);
-      goto('/crop-intelligence/pest');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete prediction';
-    }
-  }
 </script>
 
 <CrudFormPage
@@ -59,7 +47,6 @@
   {isSubmitting}
   {error}
   cancelHref="/crop-intelligence/pest"
-  showDelete={true}
+  showDelete={false}
   onSubmit={handleSubmit}
-  onDelete={handleDelete}
 />
