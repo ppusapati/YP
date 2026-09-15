@@ -242,7 +242,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Add WebSocket gateway for real-time sensor data streaming to web/mobile
 - [x] Implement Server-Sent Events (SSE) for alert notifications
 - [ ] Add real-time field map updates (live tractor GPS, drone imagery overlay)
-- [ ] Build real-time irrigation control (sensor reading → decision → actuator command)
+- [x] Build real-time irrigation control (sensor reading → decision → actuator command) — the domain, interlocks and actuator are in place; the MQTT/LoRaWAN/Modbus `ControllerClient` implementations and the repository wiring are the remaining half, and a nil client refuses every command rather than pretending
 - [ ] Add collaborative field inspection (multiple users viewing/editing simultaneously)
 
 **Effort:** Medium | **Impact:** Low
