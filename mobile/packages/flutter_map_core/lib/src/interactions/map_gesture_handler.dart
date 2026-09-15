@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show Point;
 
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -30,7 +31,7 @@ class MapGestureEvent {
   final LatLng latLng;
 
   /// The screen position of the gesture.
-  final Point<num> screenPoint;
+  final Point<double> screenPoint;
 
   /// Features found at the gesture location (populated for tap/longPress).
   final List<dynamic> features;
@@ -136,7 +137,7 @@ class MapGestureHandler {
   ///
   /// Queries features at the tap location from [selectableLayerIds] and
   /// invokes the appropriate callbacks.
-  Future<void> handleTap(Point<num> screenPoint, LatLng latLng) async {
+  Future<void> handleTap(Point<double> screenPoint, LatLng latLng) async {
     List<dynamic> features = [];
 
     if (selectableLayerIds.isNotEmpty && _controller.isReady) {
@@ -172,7 +173,7 @@ class MapGestureHandler {
 
   /// Handles a map long press event. Call this from the map widget's
   /// onMapLongClick.
-  Future<void> handleLongPress(Point<num> screenPoint, LatLng latLng) async {
+  Future<void> handleLongPress(Point<double> screenPoint, LatLng latLng) async {
     List<dynamic> features = [];
 
     if (selectableLayerIds.isNotEmpty && _controller.isReady) {
@@ -201,16 +202,16 @@ class MapGestureHandler {
   }
 
   /// Creates the onMapClick callback for use with the map widget.
-  void Function(Point<num>, LatLng) get onMapClickHandler => handleTap;
+  void Function(Point<double>, LatLng) get onMapClickHandler => handleTap;
 
   /// Creates the onMapLongClick callback for use with the map widget.
-  void Function(Point<num>, LatLng) get onMapLongClickHandler => handleLongPress;
+  void Function(Point<double>, LatLng) get onMapLongClickHandler => handleLongPress;
 
   /// Queries features at a specific screen point from the given layer IDs.
   ///
   /// Returns a list of GeoJSON feature maps.
   Future<List<dynamic>> queryFeaturesAtPoint(
-    Point<num> screenPoint, {
+    Point<double> screenPoint, {
     List<String>? layerIds,
   }) async {
     if (!_controller.isReady) return [];

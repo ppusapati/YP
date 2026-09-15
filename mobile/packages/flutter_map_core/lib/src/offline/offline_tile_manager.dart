@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:maplibre_gl/maplibre_gl.dart' show LatLngBounds;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
