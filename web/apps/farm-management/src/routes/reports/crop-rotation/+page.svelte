@@ -5,5 +5,5 @@
 
 <div>
   <h1 class="text-xl font-semibold mb-4">Crop Rotation Report</h1>
-  <DynamicReportRenderer schema={cropReportSchema} />
+  <DynamicReportRenderer visualization={cropReportSchema} />
 </div>

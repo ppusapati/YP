@@ -9,7 +9,7 @@
     <p class="subtitle">Comprehensive field health assessment</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={fieldReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
+    <DynamicReportRenderer visualization={fieldReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

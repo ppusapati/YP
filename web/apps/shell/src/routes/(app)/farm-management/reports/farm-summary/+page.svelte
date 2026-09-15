@@ -5,5 +5,5 @@
 
 <div>
   <h1 class="text-xl font-semibold mb-4">Farm Summary Report</h1>
-  <DynamicReportRenderer schema={farmReportSchema} />
+  <DynamicReportRenderer visualization={farmReportSchema} />
 </div>

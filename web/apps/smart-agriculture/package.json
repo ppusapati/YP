@@ -15,11 +15,14 @@
     "@p9e.in/samavaya": "workspace:*",
     "@samavāya/agriculture": "workspace:*",
     "@samavāya/core": "workspace:*",
+    "@samavāya/proto": "workspace:*",
     "@samavāya/stores": "workspace:*",
-    "@samavāya/ui": "workspace:*"
+    "@samavāya/ui": "workspace:*",
+    "proto@workspace:*": "link:@samavāya/proto@workspace:*"
   },
   "devDependencies": {
     "@p9e.in/configs": "workspace:*",
+    "@playwright/test": "^1.63.0",
     "@sveltejs/adapter-node": "^5.5.4",
     "@sveltejs/kit": "^2.10.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",

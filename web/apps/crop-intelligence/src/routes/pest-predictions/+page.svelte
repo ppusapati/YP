@@ -17,12 +17,19 @@
     { key: 'predicted_date', label: 'Predicted Date' },
   ];
 
+  // Token-paginated: the request carries the page_token the previous response
+  // returned. Sending an offset did not typecheck, and had it compiled the
+  // server would have ignored it and returned page one every time.
+  let pageTokens: string[] = [''];
+
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+    const __i = Math.floor(pageOffset / Math.max(pageSize, 1));
     loading = true;
     error = null;
     try {
-      const res = await pestClient.listPredictions({ pageSize, pageOffset });
+      const res = await pestClient.listPredictions({ pageSize, pageToken: pageTokens[__i] ?? '' });
       rows = res.predictions;
+      if (res.nextPageToken) pageTokens[__i + 1] = res.nextPageToken;
       totalCount = res.totalCount;
       return res.totalCount;
     } catch (e) {

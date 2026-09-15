@@ -5,5 +5,5 @@
 
 <div>
   <h1 class="text-xl font-semibold mb-4">Field Utilization Report</h1>
-  <DynamicReportRenderer schema={fieldReportSchema} />
+  <DynamicReportRenderer visualization={fieldReportSchema} />
 </div>

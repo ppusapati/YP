@@ -9,7 +9,7 @@
     <p class="subtitle">Water usage analysis across farms</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={irrigationScheduleReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
+    <DynamicReportRenderer visualization={irrigationScheduleReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

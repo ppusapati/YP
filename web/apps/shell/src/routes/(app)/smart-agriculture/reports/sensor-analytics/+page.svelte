@@ -9,7 +9,7 @@
     <p class="subtitle">Analyze sensor data trends and patterns</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={sensorReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
+    <DynamicReportRenderer visualization={sensorReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

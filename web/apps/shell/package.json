@@ -18,8 +18,10 @@
     "@samavāya/agriculture": "workspace:*",
     "@samavāya/core": "workspace:*",
     "@samavāya/i18n": "workspace:*",
+    "@samavāya/proto": "workspace:*",
     "@samavāya/stores": "workspace:*",
-    "@samavāya/ui": "workspace:*"
+    "@samavāya/ui": "workspace:*",
+    "proto@workspace:*": "link:@samavāya/proto@workspace:*"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.3.0",
