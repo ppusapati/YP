@@ -1,6 +1,6 @@
 <script lang="ts">
   import { DynamicReportRenderer } from '@samavāya/ui';
-  import { fieldHealthReportSchema } from '@samavāya/agriculture/schemas/reports';
+  import { fieldReportSchema } from '@samavāya/agriculture/schemas/reports';
 </script>
 
 <div class="report-page">
@@ -9,7 +9,7 @@
     <p class="subtitle">Comprehensive field health assessment</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={fieldHealthReportSchema} data={{}} />
+    <DynamicReportRenderer visualization={fieldReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

@@ -97,21 +97,21 @@ func DiagnosisResultToProto(r *models.DiagnosisResult) *pb.DiagnosisResult {
 	}
 
 	out := &pb.DiagnosisResult{
-		Id:                    r.ID,
-		DiagnosisRequestId:    "", // populated by caller if needed
-		AiModelVersion:        r.AIModelVersion,
-		ProcessingTimeMs:      r.ProcessingTimeMs,
-		OverallHealthScore:    ptr.Deref(r.OverallHealthScore),
-		Summary:               ptr.Deref(r.Summary),
-		CreatedAt:             timestamppb.New(r.CreatedAt),
+		Id:                 r.ID,
+		DiagnosisRequestId: "", // populated by caller if needed
+		AiModelVersion:     r.AIModelVersion,
+		ProcessingTimeMs:   r.ProcessingTimeMs,
+		OverallHealthScore: ptr.Deref(r.OverallHealthScore),
+		Summary:            ptr.Deref(r.Summary),
+		CreatedAt:          timestamppb.New(r.CreatedAt),
 	}
 
 	// Identified species
 	if r.IdentifiedSpeciesID != nil {
 		out.IdentifiedSpecies = &pb.PlantSpecies{
-			Id:             ptr.Deref(r.IdentifiedSpeciesID),
-			CommonName:     ptr.Deref(r.IdentifiedSpeciesName),
-			Confidence:     ptr.Deref(r.IdentifiedSpeciesConf),
+			Id:         ptr.Deref(r.IdentifiedSpeciesID),
+			CommonName: ptr.Deref(r.IdentifiedSpeciesName),
+			Confidence: ptr.Deref(r.IdentifiedSpeciesConf),
 		}
 	}
 

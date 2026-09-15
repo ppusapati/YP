@@ -1,5 +1,5 @@
-// Package supply_chain provides comprehensive unit tests for supply chain saga handlers
-package supply_chain
+// Package supplychain provides comprehensive unit tests for supply chain saga handlers
+package supplychain
 
 import (
 	"strings"

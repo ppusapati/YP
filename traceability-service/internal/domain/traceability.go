@@ -321,27 +321,27 @@ const (
 
 // QualityCheckpoint records a discrete quality inspection at a supply chain point.
 type QualityCheckpoint struct {
-	ID                string             `json:"id" db:"id"`
-	TenantID          string             `json:"tenant_id" db:"tenant_id"`
-	RecordID          string             `json:"record_id" db:"record_id"`
-	SupplyChainEventID *string           `json:"supply_chain_event_id,omitempty" db:"supply_chain_event_id"`
-	CheckType         QualityCheckType   `json:"check_type" db:"check_type"`
-	Result            QualityCheckResult `json:"result" db:"result"`
-	InspectorID       string             `json:"inspector_id" db:"inspector_id"`
-	InspectorName     string             `json:"inspector_name" db:"inspector_name"`
-	InspectedAt       time.Time          `json:"inspected_at" db:"inspected_at"`
-	Location          string             `json:"location" db:"location"`
-	MeasurementValue  *float64           `json:"measurement_value,omitempty" db:"measurement_value"`
-	MeasurementUnit   *string            `json:"measurement_unit,omitempty" db:"measurement_unit"`
-	MinThreshold      *float64           `json:"min_threshold,omitempty" db:"min_threshold"`
-	MaxThreshold      *float64           `json:"max_threshold,omitempty" db:"max_threshold"`
-	Notes             *string            `json:"notes,omitempty" db:"notes"`
-	EvidenceURLs      []string           `json:"evidence_urls" db:"evidence_urls"`
-	Metadata          json.RawMessage    `json:"metadata" db:"metadata"`
-	Grade             *string            `json:"grade,omitempty" db:"grade"`
-	LabReportURL      *string            `json:"lab_report_url,omitempty" db:"lab_report_url"`
-	CreatedAt         time.Time          `json:"created_at" db:"created_at"`
-	BatchID           *string            `json:"batch_id,omitempty" db:"batch_id"`
+	ID                 string             `json:"id" db:"id"`
+	TenantID           string             `json:"tenant_id" db:"tenant_id"`
+	RecordID           string             `json:"record_id" db:"record_id"`
+	SupplyChainEventID *string            `json:"supply_chain_event_id,omitempty" db:"supply_chain_event_id"`
+	CheckType          QualityCheckType   `json:"check_type" db:"check_type"`
+	Result             QualityCheckResult `json:"result" db:"result"`
+	InspectorID        string             `json:"inspector_id" db:"inspector_id"`
+	InspectorName      string             `json:"inspector_name" db:"inspector_name"`
+	InspectedAt        time.Time          `json:"inspected_at" db:"inspected_at"`
+	Location           string             `json:"location" db:"location"`
+	MeasurementValue   *float64           `json:"measurement_value,omitempty" db:"measurement_value"`
+	MeasurementUnit    *string            `json:"measurement_unit,omitempty" db:"measurement_unit"`
+	MinThreshold       *float64           `json:"min_threshold,omitempty" db:"min_threshold"`
+	MaxThreshold       *float64           `json:"max_threshold,omitempty" db:"max_threshold"`
+	Notes              *string            `json:"notes,omitempty" db:"notes"`
+	EvidenceURLs       []string           `json:"evidence_urls" db:"evidence_urls"`
+	Metadata           json.RawMessage    `json:"metadata" db:"metadata"`
+	Grade              *string            `json:"grade,omitempty" db:"grade"`
+	LabReportURL       *string            `json:"lab_report_url,omitempty" db:"lab_report_url"`
+	CreatedAt          time.Time          `json:"created_at" db:"created_at"`
+	BatchID            *string            `json:"batch_id,omitempty" db:"batch_id"`
 }
 
 // CreateQualityCheckpointInput is the input for creating a quality checkpoint.
@@ -367,10 +367,10 @@ type CreateQualityCheckpointInput struct {
 
 // ListQualityCheckpointsFilter holds filters for listing quality checkpoints.
 type ListQualityCheckpointsFilter struct {
-	RecordID  string
-	CheckType string
-	Result    string
-	PageSize  int32
+	RecordID   string
+	CheckType  string
+	Result     string
+	PageSize   int32
 	PageOffset int32
 }
 

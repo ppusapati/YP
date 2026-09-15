@@ -2,6 +2,7 @@ syntax = "proto3";
 package agriculture.satellite.analytics.v1;
 option go_package = "p9e.in/samavaya/agriculture/satellite-analytics-service/api/v1";
 
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 enum StressType {
@@ -29,6 +30,7 @@ enum AnalysisType {
   ANALYSIS_TYPE_TEMPORAL_TREND = 3;
   ANALYSIS_TYPE_ANOMALY_DETECTION = 4;
   ANALYSIS_TYPE_CROP_CLASSIFICATION = 5;
+  ANALYSIS_TYPE_PHENOLOGY = 6;
 }
 
 message StressAlert {
@@ -64,6 +66,8 @@ message TemporalAnalysis {
   google.protobuf.Timestamp period_start = 12;
   google.protobuf.Timestamp period_end = 13;
   google.protobuf.Timestamp created_at = 14;
+  // Analysis-specific outputs: z-scores, anomaly dates, phenology dates, sample counts.
+  google.protobuf.Struct details = 15;
 }
 
 message DetectStressRequest {

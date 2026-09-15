@@ -11,6 +11,10 @@ var DefaultLogger = NewStdLogger(log.Writer())
 // Logger is a logger interface.
 type Logger interface {
 	Log(level Level, keyvals ...interface{}) error
+	Debug(keyvals ...interface{})
+	Info(keyvals ...interface{})
+	Warn(keyvals ...interface{})
+	Error(keyvals ...interface{})
 }
 
 type logger struct {
@@ -32,6 +36,11 @@ func (c *logger) Log(level Level, keyvals ...interface{}) error {
 	}
 	return nil
 }
+
+func (c *logger) Debug(keyvals ...interface{}) { _ = c.Log(LevelDebug, keyvals...) }
+func (c *logger) Info(keyvals ...interface{})  { _ = c.Log(LevelInfo, keyvals...) }
+func (c *logger) Warn(keyvals ...interface{})  { _ = c.Log(LevelWarn, keyvals...) }
+func (c *logger) Error(keyvals ...interface{}) { _ = c.Log(LevelError, keyvals...) }
 
 // With logger fields.
 func With(l Logger, kv ...interface{}) Logger {

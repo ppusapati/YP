@@ -14,9 +14,12 @@
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
     "@p9e.in/samavaya": "workspace:*",
     "@samavāya/agriculture": "workspace:*",
     "@samavāya/core": "workspace:*",
+    "@samavāya/i18n": "workspace:*",
+    "@samavāya/proto": "workspace:*",
     "@samavāya/stores": "workspace:*",
     "@samavāya/ui": "workspace:*"
   },

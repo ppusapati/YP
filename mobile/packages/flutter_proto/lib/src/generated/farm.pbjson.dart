@@ -110,6 +110,41 @@ final $typed_data.Uint8List climateZoneDescriptor = $convert.base64Decode(
     'TkVfUE9MQVIQBxIeChpDTElNQVRFX1pPTkVfTUVESVRFUlJBTkVBThAIEhgKFENMSU1BVEVfWk'
     '9ORV9NT05TT09OEAk=');
 
+@$core.Deprecated('Use managementUnitTypeDescriptor instead')
+const ManagementUnitType$json = {
+  '1': 'ManagementUnitType',
+  '2': [
+    {'1': 'UNIT_TYPE_UNSPECIFIED', '2': 0},
+    {'1': 'UNIT_TYPE_ZONE', '2': 1},
+    {'1': 'UNIT_TYPE_BLOCK', '2': 2},
+    {'1': 'UNIT_TYPE_SECTION', '2': 3},
+    {'1': 'UNIT_TYPE_PLOT', '2': 4},
+  ],
+};
+
+/// Descriptor for `ManagementUnitType`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List managementUnitTypeDescriptor = $convert.base64Decode(
+    'ChJNYW5hZ2VtZW50VW5pdFR5cGUSGQoVVU5JVF9UWVBFX1VOU1BFQ0lGSUVEEAASEgoOVU5JVF'
+    '9UWVBFX1pPTkUQARITCg9VTklUX1RZUEVfQkxPQ0sQAhIVChFVTklUX1RZUEVfU0VDVElPThAD'
+    'EhIKDlVOSVRfVFlQRV9QTE9UEAQ=');
+
+@$core.Deprecated('Use managementUnitStatusDescriptor instead')
+const ManagementUnitStatus$json = {
+  '1': 'ManagementUnitStatus',
+  '2': [
+    {'1': 'UNIT_STATUS_UNSPECIFIED', '2': 0},
+    {'1': 'UNIT_STATUS_ACTIVE', '2': 1},
+    {'1': 'UNIT_STATUS_INACTIVE', '2': 2},
+    {'1': 'UNIT_STATUS_ARCHIVED', '2': 3},
+  ],
+};
+
+/// Descriptor for `ManagementUnitStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List managementUnitStatusDescriptor = $convert.base64Decode(
+    'ChRNYW5hZ2VtZW50VW5pdFN0YXR1cxIbChdVTklUX1NUQVRVU19VTlNQRUNJRklFRBAAEhYKEl'
+    'VOSVRfU1RBVFVTX0FDVElWRRABEhgKFFVOSVRfU1RBVFVTX0lOQUNUSVZFEAISGAoUVU5JVF9T'
+    'VEFUVVNfQVJDSElWRUQQAw==');
+
 @$core.Deprecated('Use farmLocationDescriptor instead')
 const FarmLocation$json = {
   '1': 'FarmLocation',
@@ -843,6 +878,365 @@ final $typed_data.Uint8List transferOwnershipResponseDescriptor =
         'ChlUcmFuc2Zlck93bmVyc2hpcFJlc3BvbnNlEi0KBGZhcm0YASABKAsyGS5hZ3JpY3VsdHVyZS'
         '5mYXJtLnYxLkZhcm1SBGZhcm0=');
 
+@$core.Deprecated('Use managementUnitDescriptor instead')
+const ManagementUnit$json = {
+  '1': 'ManagementUnit',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'tenant_id', '3': 2, '4': 1, '5': 9, '10': 'tenantId'},
+    {'1': 'farm_id', '3': 3, '4': 1, '5': 9, '10': 'farmId'},
+    {'1': 'parent_unit_id', '3': 4, '4': 1, '5': 9, '10': 'parentUnitId'},
+    {'1': 'name', '3': 5, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'description', '3': 6, '4': 1, '5': 9, '10': 'description'},
+    {
+      '1': 'unit_type',
+      '3': 7,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.farm.v1.ManagementUnitType',
+      '10': 'unitType'
+    },
+    {'1': 'area_hectares', '3': 8, '4': 1, '5': 1, '10': 'areaHectares'},
+    {'1': 'boundary_geojson', '3': 9, '4': 1, '5': 9, '10': 'boundaryGeojson'},
+    {'1': 'manager_id', '3': 10, '4': 1, '5': 9, '10': 'managerId'},
+    {
+      '1': 'status',
+      '3': 11,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.farm.v1.ManagementUnitStatus',
+      '10': 'status'
+    },
+    {'1': 'field_ids', '3': 12, '4': 3, '5': 9, '10': 'fieldIds'},
+    {'1': 'version', '3': 13, '4': 1, '5': 3, '10': 'version'},
+    {'1': 'created_by', '3': 14, '4': 1, '5': 9, '10': 'createdBy'},
+    {
+      '1': 'created_at',
+      '3': 15,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'updated_at',
+      '3': 16,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'updatedAt'
+    },
+  ],
+};
+
+/// Descriptor for `ManagementUnit`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List managementUnitDescriptor = $convert.base64Decode(
+    'Cg5NYW5hZ2VtZW50VW5pdBIOCgJpZBgBIAEoCVICaWQSGwoJdGVuYW50X2lkGAIgASgJUgh0ZW'
+    '5hbnRJZBIXCgdmYXJtX2lkGAMgASgJUgZmYXJtSWQSJAoOcGFyZW50X3VuaXRfaWQYBCABKAlS'
+    'DHBhcmVudFVuaXRJZBISCgRuYW1lGAUgASgJUgRuYW1lEiAKC2Rlc2NyaXB0aW9uGAYgASgJUg'
+    'tkZXNjcmlwdGlvbhJECgl1bml0X3R5cGUYByABKA4yJy5hZ3JpY3VsdHVyZS5mYXJtLnYxLk1h'
+    'bmFnZW1lbnRVbml0VHlwZVIIdW5pdFR5cGUSIwoNYXJlYV9oZWN0YXJlcxgIIAEoAVIMYXJlYU'
+    'hlY3RhcmVzEikKEGJvdW5kYXJ5X2dlb2pzb24YCSABKAlSD2JvdW5kYXJ5R2VvanNvbhIdCgpt'
+    'YW5hZ2VyX2lkGAogASgJUgltYW5hZ2VySWQSQQoGc3RhdHVzGAsgASgOMikuYWdyaWN1bHR1cm'
+    'UuZmFybS52MS5NYW5hZ2VtZW50VW5pdFN0YXR1c1IGc3RhdHVzEhsKCWZpZWxkX2lkcxgMIAMo'
+    'CVIIZmllbGRJZHMSGAoHdmVyc2lvbhgNIAEoA1IHdmVyc2lvbhIdCgpjcmVhdGVkX2J5GA4gAS'
+    'gJUgljcmVhdGVkQnkSOQoKY3JlYXRlZF9hdBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1l'
+    'c3RhbXBSCWNyZWF0ZWRBdBI5Cgp1cGRhdGVkX2F0GBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLl'
+    'RpbWVzdGFtcFIJdXBkYXRlZEF0');
+
+@$core.Deprecated('Use createManagementUnitRequestDescriptor instead')
+const CreateManagementUnitRequest$json = {
+  '1': 'CreateManagementUnitRequest',
+  '2': [
+    {'1': 'farm_id', '3': 1, '4': 1, '5': 9, '10': 'farmId'},
+    {'1': 'parent_unit_id', '3': 2, '4': 1, '5': 9, '10': 'parentUnitId'},
+    {'1': 'name', '3': 3, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'description', '3': 4, '4': 1, '5': 9, '10': 'description'},
+    {
+      '1': 'unit_type',
+      '3': 5,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.farm.v1.ManagementUnitType',
+      '10': 'unitType'
+    },
+    {'1': 'area_hectares', '3': 6, '4': 1, '5': 1, '10': 'areaHectares'},
+    {'1': 'boundary_geojson', '3': 7, '4': 1, '5': 9, '10': 'boundaryGeojson'},
+    {'1': 'manager_id', '3': 8, '4': 1, '5': 9, '10': 'managerId'},
+    {'1': 'field_ids', '3': 9, '4': 3, '5': 9, '10': 'fieldIds'},
+  ],
+};
+
+/// Descriptor for `CreateManagementUnitRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createManagementUnitRequestDescriptor = $convert.base64Decode(
+    'ChtDcmVhdGVNYW5hZ2VtZW50VW5pdFJlcXVlc3QSFwoHZmFybV9pZBgBIAEoCVIGZmFybUlkEi'
+    'QKDnBhcmVudF91bml0X2lkGAIgASgJUgxwYXJlbnRVbml0SWQSEgoEbmFtZRgDIAEoCVIEbmFt'
+    'ZRIgCgtkZXNjcmlwdGlvbhgEIAEoCVILZGVzY3JpcHRpb24SRAoJdW5pdF90eXBlGAUgASgOMi'
+    'cuYWdyaWN1bHR1cmUuZmFybS52MS5NYW5hZ2VtZW50VW5pdFR5cGVSCHVuaXRUeXBlEiMKDWFy'
+    'ZWFfaGVjdGFyZXMYBiABKAFSDGFyZWFIZWN0YXJlcxIpChBib3VuZGFyeV9nZW9qc29uGAcgAS'
+    'gJUg9ib3VuZGFyeUdlb2pzb24SHQoKbWFuYWdlcl9pZBgIIAEoCVIJbWFuYWdlcklkEhsKCWZp'
+    'ZWxkX2lkcxgJIAMoCVIIZmllbGRJZHM=');
+
+@$core.Deprecated('Use createManagementUnitResponseDescriptor instead')
+const CreateManagementUnitResponse$json = {
+  '1': 'CreateManagementUnitResponse',
+  '2': [
+    {
+      '1': 'unit',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.farm.v1.ManagementUnit',
+      '10': 'unit'
+    },
+  ],
+};
+
+/// Descriptor for `CreateManagementUnitResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createManagementUnitResponseDescriptor =
+    $convert.base64Decode(
+        'ChxDcmVhdGVNYW5hZ2VtZW50VW5pdFJlc3BvbnNlEjcKBHVuaXQYASABKAsyIy5hZ3JpY3VsdH'
+        'VyZS5mYXJtLnYxLk1hbmFnZW1lbnRVbml0UgR1bml0');
+
+@$core.Deprecated('Use getManagementUnitRequestDescriptor instead')
+const GetManagementUnitRequest$json = {
+  '1': 'GetManagementUnitRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `GetManagementUnitRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getManagementUnitRequestDescriptor = $convert
+    .base64Decode('ChhHZXRNYW5hZ2VtZW50VW5pdFJlcXVlc3QSDgoCaWQYASABKAlSAmlk');
+
+@$core.Deprecated('Use getManagementUnitResponseDescriptor instead')
+const GetManagementUnitResponse$json = {
+  '1': 'GetManagementUnitResponse',
+  '2': [
+    {
+      '1': 'unit',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.farm.v1.ManagementUnit',
+      '10': 'unit'
+    },
+  ],
+};
+
+/// Descriptor for `GetManagementUnitResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getManagementUnitResponseDescriptor =
+    $convert.base64Decode(
+        'ChlHZXRNYW5hZ2VtZW50VW5pdFJlc3BvbnNlEjcKBHVuaXQYASABKAsyIy5hZ3JpY3VsdHVyZS'
+        '5mYXJtLnYxLk1hbmFnZW1lbnRVbml0UgR1bml0');
+
+@$core.Deprecated('Use listManagementUnitsRequestDescriptor instead')
+const ListManagementUnitsRequest$json = {
+  '1': 'ListManagementUnitsRequest',
+  '2': [
+    {'1': 'farm_id', '3': 1, '4': 1, '5': 9, '10': 'farmId'},
+    {'1': 'page_size', '3': 2, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_offset', '3': 3, '4': 1, '5': 5, '10': 'pageOffset'},
+  ],
+};
+
+/// Descriptor for `ListManagementUnitsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listManagementUnitsRequestDescriptor =
+    $convert.base64Decode(
+        'ChpMaXN0TWFuYWdlbWVudFVuaXRzUmVxdWVzdBIXCgdmYXJtX2lkGAEgASgJUgZmYXJtSWQSGw'
+        'oJcGFnZV9zaXplGAIgASgFUghwYWdlU2l6ZRIfCgtwYWdlX29mZnNldBgDIAEoBVIKcGFnZU9m'
+        'ZnNldA==');
+
+@$core.Deprecated('Use listManagementUnitsResponseDescriptor instead')
+const ListManagementUnitsResponse$json = {
+  '1': 'ListManagementUnitsResponse',
+  '2': [
+    {
+      '1': 'units',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.farm.v1.ManagementUnit',
+      '10': 'units'
+    },
+    {'1': 'total_count', '3': 2, '4': 1, '5': 5, '10': 'totalCount'},
+  ],
+};
+
+/// Descriptor for `ListManagementUnitsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listManagementUnitsResponseDescriptor =
+    $convert.base64Decode(
+        'ChtMaXN0TWFuYWdlbWVudFVuaXRzUmVzcG9uc2USOQoFdW5pdHMYASADKAsyIy5hZ3JpY3VsdH'
+        'VyZS5mYXJtLnYxLk1hbmFnZW1lbnRVbml0UgV1bml0cxIfCgt0b3RhbF9jb3VudBgCIAEoBVIK'
+        'dG90YWxDb3VudA==');
+
+@$core.Deprecated('Use updateManagementUnitRequestDescriptor instead')
+const UpdateManagementUnitRequest$json = {
+  '1': 'UpdateManagementUnitRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'description', '3': 3, '4': 1, '5': 9, '10': 'description'},
+    {
+      '1': 'status',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.farm.v1.ManagementUnitStatus',
+      '10': 'status'
+    },
+    {'1': 'manager_id', '3': 5, '4': 1, '5': 9, '10': 'managerId'},
+    {'1': 'area_hectares', '3': 6, '4': 1, '5': 1, '10': 'areaHectares'},
+    {'1': 'boundary_geojson', '3': 7, '4': 1, '5': 9, '10': 'boundaryGeojson'},
+    {
+      '1': 'update_mask',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.FieldMask',
+      '10': 'updateMask'
+    },
+  ],
+};
+
+/// Descriptor for `UpdateManagementUnitRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateManagementUnitRequestDescriptor = $convert.base64Decode(
+    'ChtVcGRhdGVNYW5hZ2VtZW50VW5pdFJlcXVlc3QSDgoCaWQYASABKAlSAmlkEhIKBG5hbWUYAi'
+    'ABKAlSBG5hbWUSIAoLZGVzY3JpcHRpb24YAyABKAlSC2Rlc2NyaXB0aW9uEkEKBnN0YXR1cxgE'
+    'IAEoDjIpLmFncmljdWx0dXJlLmZhcm0udjEuTWFuYWdlbWVudFVuaXRTdGF0dXNSBnN0YXR1cx'
+    'IdCgptYW5hZ2VyX2lkGAUgASgJUgltYW5hZ2VySWQSIwoNYXJlYV9oZWN0YXJlcxgGIAEoAVIM'
+    'YXJlYUhlY3RhcmVzEikKEGJvdW5kYXJ5X2dlb2pzb24YByABKAlSD2JvdW5kYXJ5R2VvanNvbh'
+    'I7Cgt1cGRhdGVfbWFzaxgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2tSCnVwZGF0'
+    'ZU1hc2s=');
+
+@$core.Deprecated('Use updateManagementUnitResponseDescriptor instead')
+const UpdateManagementUnitResponse$json = {
+  '1': 'UpdateManagementUnitResponse',
+  '2': [
+    {
+      '1': 'unit',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.farm.v1.ManagementUnit',
+      '10': 'unit'
+    },
+  ],
+};
+
+/// Descriptor for `UpdateManagementUnitResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateManagementUnitResponseDescriptor =
+    $convert.base64Decode(
+        'ChxVcGRhdGVNYW5hZ2VtZW50VW5pdFJlc3BvbnNlEjcKBHVuaXQYASABKAsyIy5hZ3JpY3VsdH'
+        'VyZS5mYXJtLnYxLk1hbmFnZW1lbnRVbml0UgR1bml0');
+
+@$core.Deprecated('Use deleteManagementUnitRequestDescriptor instead')
+const DeleteManagementUnitRequest$json = {
+  '1': 'DeleteManagementUnitRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `DeleteManagementUnitRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteManagementUnitRequestDescriptor =
+    $convert.base64Decode(
+        'ChtEZWxldGVNYW5hZ2VtZW50VW5pdFJlcXVlc3QSDgoCaWQYASABKAlSAmlk');
+
+@$core.Deprecated('Use deleteManagementUnitResponseDescriptor instead')
+const DeleteManagementUnitResponse$json = {
+  '1': 'DeleteManagementUnitResponse',
+};
+
+/// Descriptor for `DeleteManagementUnitResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteManagementUnitResponseDescriptor =
+    $convert.base64Decode('ChxEZWxldGVNYW5hZ2VtZW50VW5pdFJlc3BvbnNl');
+
+@$core.Deprecated('Use assignFieldsToUnitRequestDescriptor instead')
+const AssignFieldsToUnitRequest$json = {
+  '1': 'AssignFieldsToUnitRequest',
+  '2': [
+    {
+      '1': 'management_unit_id',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '10': 'managementUnitId'
+    },
+    {'1': 'field_ids', '3': 2, '4': 3, '5': 9, '10': 'fieldIds'},
+  ],
+};
+
+/// Descriptor for `AssignFieldsToUnitRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List assignFieldsToUnitRequestDescriptor =
+    $convert.base64Decode(
+        'ChlBc3NpZ25GaWVsZHNUb1VuaXRSZXF1ZXN0EiwKEm1hbmFnZW1lbnRfdW5pdF9pZBgBIAEoCV'
+        'IQbWFuYWdlbWVudFVuaXRJZBIbCglmaWVsZF9pZHMYAiADKAlSCGZpZWxkSWRz');
+
+@$core.Deprecated('Use assignFieldsToUnitResponseDescriptor instead')
+const AssignFieldsToUnitResponse$json = {
+  '1': 'AssignFieldsToUnitResponse',
+  '2': [
+    {
+      '1': 'unit',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.farm.v1.ManagementUnit',
+      '10': 'unit'
+    },
+  ],
+};
+
+/// Descriptor for `AssignFieldsToUnitResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List assignFieldsToUnitResponseDescriptor =
+    $convert.base64Decode(
+        'ChpBc3NpZ25GaWVsZHNUb1VuaXRSZXNwb25zZRI3CgR1bml0GAEgASgLMiMuYWdyaWN1bHR1cm'
+        'UuZmFybS52MS5NYW5hZ2VtZW50VW5pdFIEdW5pdA==');
+
+@$core.Deprecated('Use removeFieldsFromUnitRequestDescriptor instead')
+const RemoveFieldsFromUnitRequest$json = {
+  '1': 'RemoveFieldsFromUnitRequest',
+  '2': [
+    {
+      '1': 'management_unit_id',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '10': 'managementUnitId'
+    },
+    {'1': 'field_ids', '3': 2, '4': 3, '5': 9, '10': 'fieldIds'},
+  ],
+};
+
+/// Descriptor for `RemoveFieldsFromUnitRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List removeFieldsFromUnitRequestDescriptor =
+    $convert.base64Decode(
+        'ChtSZW1vdmVGaWVsZHNGcm9tVW5pdFJlcXVlc3QSLAoSbWFuYWdlbWVudF91bml0X2lkGAEgAS'
+        'gJUhBtYW5hZ2VtZW50VW5pdElkEhsKCWZpZWxkX2lkcxgCIAMoCVIIZmllbGRJZHM=');
+
+@$core.Deprecated('Use removeFieldsFromUnitResponseDescriptor instead')
+const RemoveFieldsFromUnitResponse$json = {
+  '1': 'RemoveFieldsFromUnitResponse',
+  '2': [
+    {
+      '1': 'unit',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.farm.v1.ManagementUnit',
+      '10': 'unit'
+    },
+  ],
+};
+
+/// Descriptor for `RemoveFieldsFromUnitResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List removeFieldsFromUnitResponseDescriptor =
+    $convert.base64Decode(
+        'ChxSZW1vdmVGaWVsZHNGcm9tVW5pdFJlc3BvbnNlEjcKBHVuaXQYASABKAsyIy5hZ3JpY3VsdH'
+        'VyZS5mYXJtLnYxLk1hbmFnZW1lbnRVbml0UgR1bml0');
+
 const $core.Map<$core.String, $core.dynamic> FarmServiceBase$json = {
   '1': 'FarmService',
   '2': [
@@ -886,6 +1280,41 @@ const $core.Map<$core.String, $core.dynamic> FarmServiceBase$json = {
       '2': '.agriculture.farm.v1.TransferOwnershipRequest',
       '3': '.agriculture.farm.v1.TransferOwnershipResponse'
     },
+    {
+      '1': 'CreateManagementUnit',
+      '2': '.agriculture.farm.v1.CreateManagementUnitRequest',
+      '3': '.agriculture.farm.v1.CreateManagementUnitResponse'
+    },
+    {
+      '1': 'GetManagementUnit',
+      '2': '.agriculture.farm.v1.GetManagementUnitRequest',
+      '3': '.agriculture.farm.v1.GetManagementUnitResponse'
+    },
+    {
+      '1': 'ListManagementUnits',
+      '2': '.agriculture.farm.v1.ListManagementUnitsRequest',
+      '3': '.agriculture.farm.v1.ListManagementUnitsResponse'
+    },
+    {
+      '1': 'UpdateManagementUnit',
+      '2': '.agriculture.farm.v1.UpdateManagementUnitRequest',
+      '3': '.agriculture.farm.v1.UpdateManagementUnitResponse'
+    },
+    {
+      '1': 'DeleteManagementUnit',
+      '2': '.agriculture.farm.v1.DeleteManagementUnitRequest',
+      '3': '.agriculture.farm.v1.DeleteManagementUnitResponse'
+    },
+    {
+      '1': 'AssignFieldsToUnit',
+      '2': '.agriculture.farm.v1.AssignFieldsToUnitRequest',
+      '3': '.agriculture.farm.v1.AssignFieldsToUnitResponse'
+    },
+    {
+      '1': 'RemoveFieldsFromUnit',
+      '2': '.agriculture.farm.v1.RemoveFieldsFromUnitRequest',
+      '3': '.agriculture.farm.v1.RemoveFieldsFromUnitResponse'
+    },
   ],
 };
 
@@ -921,6 +1350,35 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
       TransferOwnershipRequest$json,
   '.agriculture.farm.v1.TransferOwnershipResponse':
       TransferOwnershipResponse$json,
+  '.agriculture.farm.v1.CreateManagementUnitRequest':
+      CreateManagementUnitRequest$json,
+  '.agriculture.farm.v1.CreateManagementUnitResponse':
+      CreateManagementUnitResponse$json,
+  '.agriculture.farm.v1.ManagementUnit': ManagementUnit$json,
+  '.agriculture.farm.v1.GetManagementUnitRequest':
+      GetManagementUnitRequest$json,
+  '.agriculture.farm.v1.GetManagementUnitResponse':
+      GetManagementUnitResponse$json,
+  '.agriculture.farm.v1.ListManagementUnitsRequest':
+      ListManagementUnitsRequest$json,
+  '.agriculture.farm.v1.ListManagementUnitsResponse':
+      ListManagementUnitsResponse$json,
+  '.agriculture.farm.v1.UpdateManagementUnitRequest':
+      UpdateManagementUnitRequest$json,
+  '.agriculture.farm.v1.UpdateManagementUnitResponse':
+      UpdateManagementUnitResponse$json,
+  '.agriculture.farm.v1.DeleteManagementUnitRequest':
+      DeleteManagementUnitRequest$json,
+  '.agriculture.farm.v1.DeleteManagementUnitResponse':
+      DeleteManagementUnitResponse$json,
+  '.agriculture.farm.v1.AssignFieldsToUnitRequest':
+      AssignFieldsToUnitRequest$json,
+  '.agriculture.farm.v1.AssignFieldsToUnitResponse':
+      AssignFieldsToUnitResponse$json,
+  '.agriculture.farm.v1.RemoveFieldsFromUnitRequest':
+      RemoveFieldsFromUnitRequest$json,
+  '.agriculture.farm.v1.RemoveFieldsFromUnitResponse':
+      RemoveFieldsFromUnitResponse$json,
 };
 
 /// Descriptor for `FarmService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -939,4 +1397,20 @@ final $typed_data.Uint8List farmServiceDescriptor = $convert.base64Decode(
     'JpY3VsdHVyZS5mYXJtLnYxLkdldEZhcm1Cb3VuZGFyeVJlcXVlc3QaLC5hZ3JpY3VsdHVyZS5m'
     'YXJtLnYxLkdldEZhcm1Cb3VuZGFyeVJlc3BvbnNlEnIKEVRyYW5zZmVyT3duZXJzaGlwEi0uYW'
     'dyaWN1bHR1cmUuZmFybS52MS5UcmFuc2Zlck93bmVyc2hpcFJlcXVlc3QaLi5hZ3JpY3VsdHVy'
-    'ZS5mYXJtLnYxLlRyYW5zZmVyT3duZXJzaGlwUmVzcG9uc2U=');
+    'ZS5mYXJtLnYxLlRyYW5zZmVyT3duZXJzaGlwUmVzcG9uc2USewoUQ3JlYXRlTWFuYWdlbWVudF'
+    'VuaXQSMC5hZ3JpY3VsdHVyZS5mYXJtLnYxLkNyZWF0ZU1hbmFnZW1lbnRVbml0UmVxdWVzdBox'
+    'LmFncmljdWx0dXJlLmZhcm0udjEuQ3JlYXRlTWFuYWdlbWVudFVuaXRSZXNwb25zZRJyChFHZX'
+    'RNYW5hZ2VtZW50VW5pdBItLmFncmljdWx0dXJlLmZhcm0udjEuR2V0TWFuYWdlbWVudFVuaXRS'
+    'ZXF1ZXN0Gi4uYWdyaWN1bHR1cmUuZmFybS52MS5HZXRNYW5hZ2VtZW50VW5pdFJlc3BvbnNlEn'
+    'gKE0xpc3RNYW5hZ2VtZW50VW5pdHMSLy5hZ3JpY3VsdHVyZS5mYXJtLnYxLkxpc3RNYW5hZ2Vt'
+    'ZW50VW5pdHNSZXF1ZXN0GjAuYWdyaWN1bHR1cmUuZmFybS52MS5MaXN0TWFuYWdlbWVudFVuaX'
+    'RzUmVzcG9uc2USewoUVXBkYXRlTWFuYWdlbWVudFVuaXQSMC5hZ3JpY3VsdHVyZS5mYXJtLnYx'
+    'LlVwZGF0ZU1hbmFnZW1lbnRVbml0UmVxdWVzdBoxLmFncmljdWx0dXJlLmZhcm0udjEuVXBkYX'
+    'RlTWFuYWdlbWVudFVuaXRSZXNwb25zZRJ7ChREZWxldGVNYW5hZ2VtZW50VW5pdBIwLmFncmlj'
+    'dWx0dXJlLmZhcm0udjEuRGVsZXRlTWFuYWdlbWVudFVuaXRSZXF1ZXN0GjEuYWdyaWN1bHR1cm'
+    'UuZmFybS52MS5EZWxldGVNYW5hZ2VtZW50VW5pdFJlc3BvbnNlEnUKEkFzc2lnbkZpZWxkc1Rv'
+    'VW5pdBIuLmFncmljdWx0dXJlLmZhcm0udjEuQXNzaWduRmllbGRzVG9Vbml0UmVxdWVzdBovLm'
+    'FncmljdWx0dXJlLmZhcm0udjEuQXNzaWduRmllbGRzVG9Vbml0UmVzcG9uc2USewoUUmVtb3Zl'
+    'RmllbGRzRnJvbVVuaXQSMC5hZ3JpY3VsdHVyZS5mYXJtLnYxLlJlbW92ZUZpZWxkc0Zyb21Vbm'
+    'l0UmVxdWVzdBoxLmFncmljdWx0dXJlLmZhcm0udjEuUmVtb3ZlRmllbGRzRnJvbVVuaXRSZXNw'
+    'b25zZQ==');

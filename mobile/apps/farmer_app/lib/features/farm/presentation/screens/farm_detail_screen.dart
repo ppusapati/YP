@@ -9,7 +9,6 @@ import '../bloc/farm_event.dart';
 import '../bloc/farm_state.dart';
 import '../bloc/field_bloc.dart';
 import '../bloc/field_event.dart';
-import '../bloc/field_state.dart';
 import '../widgets/farm_stats_row.dart';
 import '../widgets/field_list_tile.dart';
 import 'farm_editor_screen.dart';
@@ -28,6 +27,10 @@ class FarmDetailScreen extends StatefulWidget {
 }
 
 class _FarmDetailScreenState extends State<FarmDetailScreen> {
+  // Held from onMapCreated so the screen can drive the camera; nothing reads
+  // it yet. Kept rather than dropped because removing it means re-adding the
+  // callback wiring the moment anything needs to move the map.
+  // ignore: unused_field
   ml.MaplibreMapController? _mapController;
 
   @override
@@ -41,44 +44,51 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return BlocBuilder<FarmBloc, FarmState>(
-      builder: (context, state) {
-        if (state is FarmLoading) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: const Center(child: CircularProgressIndicator()),
-          );
+    return BlocListener<FarmBloc, FarmState>(
+      listener: (context, state) {
+        if (state is FarmDeleted) {
+          Navigator.of(context).pop();
         }
-        if (state is FarmError) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline,
-                      size: 48, color: colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () {
-                      context
-                          .read<FarmBloc>()
-                          .add(LoadFarmById(farmId: widget.farmId));
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        if (state is FarmLoaded) {
-          return _buildContent(context, state.farm);
-        }
-        return Scaffold(appBar: AppBar());
       },
+      child: BlocBuilder<FarmBloc, FarmState>(
+        builder: (context, state) {
+          if (state is FarmLoading) {
+            return Scaffold(
+              appBar: AppBar(),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is FarmError) {
+            return Scaffold(
+              appBar: AppBar(),
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: colorScheme.error),
+                    const SizedBox(height: 16),
+                    Text(state.message),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () {
+                        context
+                            .read<FarmBloc>()
+                            .add(LoadFarmById(farmId: widget.farmId));
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          if (state is FarmLoaded) {
+            return _buildContent(context, state.farm);
+          }
+          return Scaffold(appBar: AppBar());
+        },
+      ),
     );
   }
 
@@ -264,7 +274,6 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<FarmBloc>().add(DeleteFarm(farmId: farm.id));
-              Navigator.of(context).pop();
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,

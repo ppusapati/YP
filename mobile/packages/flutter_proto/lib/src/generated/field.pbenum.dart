@@ -248,5 +248,113 @@ class AspectDirection extends $pb.ProtobufEnum {
   const AspectDirection._(super.value, super.name);
 }
 
+class CropCycleStatus extends $pb.ProtobufEnum {
+  static const CropCycleStatus CYCLE_STATUS_UNSPECIFIED =
+      CropCycleStatus._(0, _omitEnumNames ? '' : 'CYCLE_STATUS_UNSPECIFIED');
+  static const CropCycleStatus CYCLE_STATUS_PLANNED =
+      CropCycleStatus._(1, _omitEnumNames ? '' : 'CYCLE_STATUS_PLANNED');
+  static const CropCycleStatus CYCLE_STATUS_ACTIVE =
+      CropCycleStatus._(2, _omitEnumNames ? '' : 'CYCLE_STATUS_ACTIVE');
+  static const CropCycleStatus CYCLE_STATUS_HARVESTING =
+      CropCycleStatus._(3, _omitEnumNames ? '' : 'CYCLE_STATUS_HARVESTING');
+  static const CropCycleStatus CYCLE_STATUS_COMPLETED =
+      CropCycleStatus._(4, _omitEnumNames ? '' : 'CYCLE_STATUS_COMPLETED');
+  static const CropCycleStatus CYCLE_STATUS_ABANDONED =
+      CropCycleStatus._(5, _omitEnumNames ? '' : 'CYCLE_STATUS_ABANDONED');
+
+  static const $core.List<CropCycleStatus> values = <CropCycleStatus>[
+    CYCLE_STATUS_UNSPECIFIED,
+    CYCLE_STATUS_PLANNED,
+    CYCLE_STATUS_ACTIVE,
+    CYCLE_STATUS_HARVESTING,
+    CYCLE_STATUS_COMPLETED,
+    CYCLE_STATUS_ABANDONED,
+  ];
+
+  static final $core.List<CropCycleStatus?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static CropCycleStatus? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CropCycleStatus._(super.value, super.name);
+}
+
+class ActivityCategory extends $pb.ProtobufEnum {
+  static const ActivityCategory CATEGORY_UNSPECIFIED =
+      ActivityCategory._(0, _omitEnumNames ? '' : 'CATEGORY_UNSPECIFIED');
+  static const ActivityCategory CATEGORY_LAND_PREP =
+      ActivityCategory._(1, _omitEnumNames ? '' : 'CATEGORY_LAND_PREP');
+  static const ActivityCategory CATEGORY_PLANTING =
+      ActivityCategory._(2, _omitEnumNames ? '' : 'CATEGORY_PLANTING');
+  static const ActivityCategory CATEGORY_IRRIGATION =
+      ActivityCategory._(3, _omitEnumNames ? '' : 'CATEGORY_IRRIGATION');
+  static const ActivityCategory CATEGORY_FERTILIZATION =
+      ActivityCategory._(4, _omitEnumNames ? '' : 'CATEGORY_FERTILIZATION');
+  static const ActivityCategory CATEGORY_PEST_CONTROL =
+      ActivityCategory._(5, _omitEnumNames ? '' : 'CATEGORY_PEST_CONTROL');
+  static const ActivityCategory CATEGORY_SCOUTING =
+      ActivityCategory._(6, _omitEnumNames ? '' : 'CATEGORY_SCOUTING');
+  static const ActivityCategory CATEGORY_HARVESTING =
+      ActivityCategory._(7, _omitEnumNames ? '' : 'CATEGORY_HARVESTING');
+  static const ActivityCategory CATEGORY_POST_HARVEST =
+      ActivityCategory._(8, _omitEnumNames ? '' : 'CATEGORY_POST_HARVEST');
+  static const ActivityCategory CATEGORY_SOIL_SAMPLING =
+      ActivityCategory._(9, _omitEnumNames ? '' : 'CATEGORY_SOIL_SAMPLING');
+  static const ActivityCategory CATEGORY_MAINTENANCE =
+      ActivityCategory._(10, _omitEnumNames ? '' : 'CATEGORY_MAINTENANCE');
+
+  static const $core.List<ActivityCategory> values = <ActivityCategory>[
+    CATEGORY_UNSPECIFIED,
+    CATEGORY_LAND_PREP,
+    CATEGORY_PLANTING,
+    CATEGORY_IRRIGATION,
+    CATEGORY_FERTILIZATION,
+    CATEGORY_PEST_CONTROL,
+    CATEGORY_SCOUTING,
+    CATEGORY_HARVESTING,
+    CATEGORY_POST_HARVEST,
+    CATEGORY_SOIL_SAMPLING,
+    CATEGORY_MAINTENANCE,
+  ];
+
+  static final $core.List<ActivityCategory?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 10);
+  static ActivityCategory? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ActivityCategory._(super.value, super.name);
+}
+
+class EvidenceType extends $pb.ProtobufEnum {
+  static const EvidenceType EVIDENCE_TYPE_UNSPECIFIED =
+      EvidenceType._(0, _omitEnumNames ? '' : 'EVIDENCE_TYPE_UNSPECIFIED');
+  static const EvidenceType EVIDENCE_TYPE_PHOTO =
+      EvidenceType._(1, _omitEnumNames ? '' : 'EVIDENCE_TYPE_PHOTO');
+  static const EvidenceType EVIDENCE_TYPE_DOCUMENT =
+      EvidenceType._(2, _omitEnumNames ? '' : 'EVIDENCE_TYPE_DOCUMENT');
+  static const EvidenceType EVIDENCE_TYPE_VIDEO =
+      EvidenceType._(3, _omitEnumNames ? '' : 'EVIDENCE_TYPE_VIDEO');
+  static const EvidenceType EVIDENCE_TYPE_AUDIO =
+      EvidenceType._(4, _omitEnumNames ? '' : 'EVIDENCE_TYPE_AUDIO');
+  static const EvidenceType EVIDENCE_TYPE_OTHER =
+      EvidenceType._(5, _omitEnumNames ? '' : 'EVIDENCE_TYPE_OTHER');
+
+  static const $core.List<EvidenceType> values = <EvidenceType>[
+    EVIDENCE_TYPE_UNSPECIFIED,
+    EVIDENCE_TYPE_PHOTO,
+    EVIDENCE_TYPE_DOCUMENT,
+    EVIDENCE_TYPE_VIDEO,
+    EVIDENCE_TYPE_AUDIO,
+    EVIDENCE_TYPE_OTHER,
+  ];
+
+  static final $core.List<EvidenceType?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static EvidenceType? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const EvidenceType._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

@@ -16,7 +16,7 @@ export const diagnosisRequestFormSchema: FormSchema<Record<string, unknown>> = {
         return (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
       } },
     { type: 'autocomplete', name: 'plantSpeciesId', label: 'Plant Species', loadOptions: async (query: string) => {
-        const res = await diagnosisClient.listDiseases({ search: query, pageSize: 50 });
+        const res = await diagnosisClient.listDiseases({ searchTerm: query, pageSize: 50 });
         return (res.diseases || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
       } },
     { type: 'textarea', name: 'notes', label: 'Notes', rows: 3 },

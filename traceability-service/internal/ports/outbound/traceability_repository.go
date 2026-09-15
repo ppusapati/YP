@@ -13,6 +13,22 @@ type TraceabilityRepository interface {
 	CreateRecord(ctx context.Context, record *domain.TraceabilityRecord) (*domain.TraceabilityRecord, error)
 	GetRecord(ctx context.Context, id, tenantID string) (*domain.TraceabilityRecord, error)
 	ListRecords(ctx context.Context, tenantID string, filter domain.ListRecordsFilter) ([]domain.TraceabilityRecord, int64, error)
+
+	// FindOpenRecordForField returns the field's current unharvested record, or
+	// (nil, nil) if there is none.
+	//
+	// "Open" means planted and not yet harvested — the window during which
+	// irrigation, spraying and inspection belong to a batch. A field between
+	// seasons has no open record, and that is a legitimate answer rather than
+	// an error, which is why absence is nil rather than NotFound.
+	FindOpenRecordForField(ctx context.Context, fieldID, tenantID string) (*domain.TraceabilityRecord, error)
+
+	// FindRecordByBatchNumber returns the record with this batch number, or
+	// (nil, nil) if there is none. Used to make event handlers idempotent:
+	// batch numbers are derived from the originating event, so a replay finds
+	// the record it created the first time instead of opening a second chain of
+	// custody for one planting.
+	FindRecordByBatchNumber(ctx context.Context, batchNumber, tenantID string) (*domain.TraceabilityRecord, error)
 	UpdateRecordCompliance(ctx context.Context, id, tenantID string, status domain.ComplianceStatusType, updatedBy string) (*domain.TraceabilityRecord, error)
 	UpdateRecordQR(ctx context.Context, id, tenantID, qrData, updatedBy string) (*domain.TraceabilityRecord, error)
 	AppendChainOfCustody(ctx context.Context, id, tenantID, custodyEntry, updatedBy string) (*domain.TraceabilityRecord, error)

@@ -40,6 +40,10 @@ message VegetationIndex {
   int64 pixel_count = 12;
   double coverage_percent = 13;
   string raster_s3_key = 14;
+  // Scene quality. An index computed over cloud is not wrong so much as
+  // meaningless, and these are what let a reader tell that from a clear day.
+  double cloud_fraction = 18;       // share masked as cloud, shadow or snow (0..1)
+  double valid_pixel_fraction = 19; // share that survived masking (0..1)
   google.protobuf.Timestamp acquisition_date = 15;
   google.protobuf.Timestamp computed_at = 16;
   google.protobuf.Timestamp created_at = 17;

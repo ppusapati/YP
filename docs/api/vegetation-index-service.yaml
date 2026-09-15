@@ -1,0 +1,352 @@
+openapi: 3.0.3
+info:
+  title: Vegetation Index Service API
+  description: |
+    Vegetation index computation and field health assessment for the YieldPoint
+    agriculture platform. Computes NDVI, NDWI, EVI, SAVI, MSAVI, NDRE, GNDVI,
+    and LAI indices from processed satellite imagery.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8105
+    description: Local development
+tags:
+  - name: Indices
+    description: Vegetation index computation and retrieval
+  - name: FieldHealth
+    description: Field health and NDVI time series
+
+paths:
+  /agriculture.satellite.vegetation.v1.VegetationIndexService/ComputeIndices:
+    post:
+      tags: [Indices]
+      summary: Compute vegetation indices for a processing job
+      operationId: ComputeIndices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComputeIndicesRequest'
+      responses:
+        '200':
+          description: Compute task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeIndicesResponse'
+
+  /agriculture.satellite.vegetation.v1.VegetationIndexService/GetVegetationIndex:
+    post:
+      tags: [Indices]
+      summary: Get a vegetation index result by ID
+      operationId: GetVegetationIndex
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetVegetationIndexRequest'
+      responses:
+        '200':
+          description: Vegetation index retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetVegetationIndexResponse'
+
+  /agriculture.satellite.vegetation.v1.VegetationIndexService/ListVegetationIndices:
+    post:
+      tags: [Indices]
+      summary: List vegetation indices with filtering and pagination
+      operationId: ListVegetationIndices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListVegetationIndicesRequest'
+      responses:
+        '200':
+          description: Vegetation indices listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListVegetationIndicesResponse'
+
+  /agriculture.satellite.vegetation.v1.VegetationIndexService/GetNDVITimeSeries:
+    post:
+      tags: [FieldHealth]
+      summary: Get NDVI time series for a field
+      operationId: GetNDVITimeSeries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetNDVITimeSeriesRequest'
+      responses:
+        '200':
+          description: NDVI time series retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNDVITimeSeriesResponse'
+
+  /agriculture.satellite.vegetation.v1.VegetationIndexService/GetFieldHealth:
+    post:
+      tags: [FieldHealth]
+      summary: Get current field health assessment
+      operationId: GetFieldHealth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFieldHealthRequest'
+      responses:
+        '200':
+          description: Field health retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFieldHealthResponse'
+
+components:
+  schemas:
+    VegetationIndexType:
+      type: string
+      enum:
+        - VEGETATION_INDEX_TYPE_UNSPECIFIED
+        - VEGETATION_INDEX_TYPE_NDVI
+        - VEGETATION_INDEX_TYPE_NDWI
+        - VEGETATION_INDEX_TYPE_EVI
+        - VEGETATION_INDEX_TYPE_SAVI
+        - VEGETATION_INDEX_TYPE_MSAVI
+        - VEGETATION_INDEX_TYPE_NDRE
+        - VEGETATION_INDEX_TYPE_GNDVI
+        - VEGETATION_INDEX_TYPE_LAI
+
+    ComputeStatus:
+      type: string
+      enum:
+        - COMPUTE_STATUS_UNSPECIFIED
+        - COMPUTE_STATUS_QUEUED
+        - COMPUTE_STATUS_COMPUTING
+        - COMPUTE_STATUS_INTERSECTING
+        - COMPUTE_STATUS_COMPLETED
+        - COMPUTE_STATUS_FAILED
+
+    VegetationIndex:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        processingJobId:
+          type: string
+        indexType:
+          $ref: '#/components/schemas/VegetationIndexType'
+        meanValue:
+          type: number
+          format: double
+        minValue:
+          type: number
+          format: double
+        maxValue:
+          type: number
+          format: double
+        stdDeviation:
+          type: number
+          format: double
+        medianValue:
+          type: number
+          format: double
+        pixelCount:
+          type: string
+          format: int64
+        coveragePercent:
+          type: number
+          format: double
+        rasterS3Key:
+          type: string
+        acquisitionDate:
+          type: string
+          format: date-time
+        computedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ComputeTask:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        processingJobId:
+          type: string
+        farmId:
+          type: string
+        indexTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VegetationIndexType'
+        status:
+          $ref: '#/components/schemas/ComputeStatus'
+        errorMessage:
+          type: string
+        computeTimeSeconds:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    TimeSeriesPoint:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        value:
+          type: number
+          format: double
+        stdDeviation:
+          type: number
+          format: double
+
+    NDVITimeSeries:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeriesPoint'
+
+    ComputeIndicesRequest:
+      type: object
+      properties:
+        processingJobId:
+          type: string
+        farmId:
+          type: string
+        indexTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VegetationIndexType'
+
+    ComputeIndicesResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/ComputeTask'
+
+    GetVegetationIndexRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetVegetationIndexResponse:
+      type: object
+      properties:
+        index:
+          $ref: '#/components/schemas/VegetationIndex'
+
+    ListVegetationIndicesRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        indexType:
+          $ref: '#/components/schemas/VegetationIndexType'
+        dateFrom:
+          type: string
+          format: date-time
+        dateTo:
+          type: string
+          format: date-time
+
+    ListVegetationIndicesResponse:
+      type: object
+      properties:
+        indices:
+          type: array
+          items:
+            $ref: '#/components/schemas/VegetationIndex'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    GetNDVITimeSeriesRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        dateFrom:
+          type: string
+          format: date-time
+        dateTo:
+          type: string
+          format: date-time
+
+    GetNDVITimeSeriesResponse:
+      type: object
+      properties:
+        timeSeries:
+          $ref: '#/components/schemas/NDVITimeSeries'
+
+    GetFieldHealthRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+
+    GetFieldHealthResponse:
+      type: object
+      properties:
+        currentNdvi:
+          type: number
+          format: double
+        ndviTrend:
+          type: number
+          format: double
+        healthScore:
+          type: number
+          format: double
+        healthCategory:
+          type: string
+        lastComputed:
+          type: string
+          format: date-time

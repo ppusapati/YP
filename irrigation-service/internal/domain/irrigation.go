@@ -190,7 +190,21 @@ type DecisionOutput struct {
 	OptimalTime         *time.Time `json:"optimal_time"`
 	Reasoning           string     `json:"reasoning"`
 	ConfidenceScore     float64    `json:"confidence_score"`
+	// Method is "water_balance" when the FAO-56 simulation drove the decision,
+	// "heuristic" when only the threshold rules were available.
+	Method string `json:"method"`
+	// RecommendedDepthMM is the irrigation depth in mm (0 when not irrigating).
+	RecommendedDepthMM float64 `json:"recommended_depth_mm"`
+	// CropCoefficient and ET0MMDay record the inputs behind a water-balance decision.
+	CropCoefficient float64 `json:"crop_coefficient"`
+	ET0MMDay        float64 `json:"et0_mm_day"`
 }
+
+// Decision methods.
+const (
+	DecisionMethodHeuristic    = "heuristic"
+	DecisionMethodWaterBalance = "water_balance"
+)
 
 // IrrigationDecision represents an AI-driven irrigation decision record.
 type IrrigationDecision struct {

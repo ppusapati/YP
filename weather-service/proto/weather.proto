@@ -1,0 +1,264 @@
+syntax = "proto3";
+
+package agriculture.weather.v1;
+
+option go_package = "p9e.in/samavaya/agriculture/weather-service/api/v1;weatherv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum WeatherProvider {
+  WEATHER_PROVIDER_UNSPECIFIED = 0;
+  WEATHER_PROVIDER_OPEN_METEO  = 1;
+  WEATHER_PROVIDER_OPENWEATHER = 2;
+  WEATHER_PROVIDER_IMD         = 3;
+}
+
+enum WeatherAlertType {
+  WEATHER_ALERT_TYPE_UNSPECIFIED    = 0;
+  WEATHER_ALERT_TYPE_FROST          = 1;
+  WEATHER_ALERT_TYPE_HEAT_STRESS    = 2;
+  WEATHER_ALERT_TYPE_HEAVY_RAINFALL = 3;
+  WEATHER_ALERT_TYPE_HIGH_WIND      = 4;
+  WEATHER_ALERT_TYPE_DROUGHT        = 5;
+}
+
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_INFO        = 1;
+  ALERT_SEVERITY_WARNING     = 2;
+  ALERT_SEVERITY_CRITICAL    = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Core Messages
+// ---------------------------------------------------------------------------
+
+message FieldLocation {
+  string                    id             = 1;
+  string                    tenant_id      = 2;
+  string                    field_id       = 3;
+  string                    farm_id        = 4;
+  double                    latitude       = 5;
+  double                    longitude      = 6;
+  double                    elevation_m    = 7;
+  string                    timezone       = 8;
+  WeatherProvider           provider       = 9;
+  google.protobuf.Timestamp last_polled_at = 10;
+  google.protobuf.Timestamp created_at     = 11;
+  google.protobuf.Timestamp updated_at     = 12;
+}
+
+message Observation {
+  string                    id                   = 1;
+  string                    tenant_id            = 2;
+  string                    field_id             = 3;
+  google.protobuf.Timestamp observed_at          = 4;
+  double                    temperature_c        = 5;
+  double                    humidity_pct         = 6;
+  double                    precipitation_mm     = 7;
+  double                    wind_speed_ms        = 8;
+  double                    wind_direction_deg   = 9;
+  double                    pressure_hpa         = 10;
+  double                    solar_radiation_wm2  = 11;
+  double                    cloud_cover_pct      = 12;
+  double                    dew_point_c          = 13;
+  double                    soil_temperature_c   = 14;
+  double                    soil_moisture_m3m3   = 15;
+  WeatherProvider           provider             = 16;
+}
+
+message DailyForecast {
+  string                    id                 = 1;
+  string                    tenant_id          = 2;
+  string                    field_id           = 3;
+  google.protobuf.Timestamp forecast_date      = 4;
+  google.protobuf.Timestamp issued_at          = 5;
+  double                    temperature_min_c  = 6;
+  double                    temperature_max_c  = 7;
+  double                    temperature_mean_c = 8;
+  double                    precipitation_mm   = 9;
+  double                    precipitation_prob = 10;
+  double                    humidity_mean_pct  = 11;
+  double                    wind_speed_max_ms  = 12;
+  double                    solar_radiation_mj = 13;
+  double                    et0_mm             = 14;
+  string                    condition          = 15;
+  WeatherProvider           provider           = 16;
+}
+
+// DailyAgroMetrics holds derived agronomic values for one field-day.
+message DailyAgroMetrics {
+  string                    field_id           = 1;
+  google.protobuf.Timestamp date               = 2;
+  double                    temperature_min_c  = 3;
+  double                    temperature_max_c  = 4;
+  double                    temperature_mean_c = 5;
+  double                    precipitation_mm   = 6;
+  double                    gdd                = 7;  // growing degree days for the day
+  double                    et0_mm             = 8;  // FAO-56 Penman-Monteith reference ET
+  double                    chill_hours        = 9;  // hours between 0 and 7.2 C
+  double                    rainfall_deficit_mm = 10; // et0 - precipitation, floored at 0
+  double                    humidity_mean_pct  = 11;
+  double                    solar_radiation_mj = 12;
+}
+
+message AgroMetricsSummary {
+  double cumulative_gdd              = 1;
+  double cumulative_et0_mm           = 2;
+  double cumulative_precipitation_mm = 3;
+  double cumulative_chill_hours      = 4;
+  double cumulative_deficit_mm       = 5;
+  int32  days                        = 6;
+  int32  frost_days                  = 7;
+  int32  heat_stress_days            = 8;
+}
+
+message WeatherAlert {
+  string                    id          = 1;
+  string                    tenant_id   = 2;
+  string                    field_id    = 3;
+  WeatherAlertType          type        = 4;
+  AlertSeverity             severity    = 5;
+  string                    message     = 6;
+  double                    value       = 7;
+  double                    threshold   = 8;
+  google.protobuf.Timestamp valid_from  = 9;
+  google.protobuf.Timestamp valid_to    = 10;
+  google.protobuf.Timestamp created_at  = 11;
+}
+
+// ---------------------------------------------------------------------------
+// Requests / Responses
+// ---------------------------------------------------------------------------
+
+message RegisterFieldLocationRequest {
+  string          field_id    = 1;
+  string          farm_id     = 2;
+  double          latitude    = 3;
+  double          longitude   = 4;
+  double          elevation_m = 5;
+  string          timezone    = 6;
+  WeatherProvider provider    = 7;
+}
+
+message RegisterFieldLocationResponse {
+  FieldLocation location = 1;
+}
+
+message GetFieldLocationRequest {
+  string field_id = 1;
+}
+
+message GetFieldLocationResponse {
+  FieldLocation location = 1;
+}
+
+message ListFieldLocationsRequest {
+  string farm_id     = 1;
+  int32  page_size   = 2;
+  int32  page_offset = 3;
+}
+
+message ListFieldLocationsResponse {
+  repeated FieldLocation locations   = 1;
+  int32                  total_count = 2;
+}
+
+message GetCurrentWeatherRequest {
+  string field_id = 1;
+}
+
+message GetCurrentWeatherResponse {
+  Observation observation = 1;
+}
+
+message GetForecastRequest {
+  string field_id = 1;
+  int32  days     = 2; // 1..16, default 7
+}
+
+message GetForecastResponse {
+  repeated DailyForecast forecasts = 1;
+}
+
+message ListObservationsRequest {
+  string                    field_id    = 1;
+  google.protobuf.Timestamp start       = 2;
+  google.protobuf.Timestamp end         = 3;
+  int32                     page_size   = 4;
+  int32                     page_offset = 5;
+}
+
+message ListObservationsResponse {
+  repeated Observation observations = 1;
+  int32                total_count  = 2;
+}
+
+message GetAgroMetricsRequest {
+  string                    field_id  = 1;
+  google.protobuf.Timestamp start     = 2;
+  google.protobuf.Timestamp end       = 3;
+  double                    base_temp_c = 4; // GDD base temperature, default 10
+  double                    cap_temp_c  = 5; // GDD upper cap, default 30
+}
+
+message GetAgroMetricsResponse {
+  repeated DailyAgroMetrics daily   = 1;
+  AgroMetricsSummary        summary = 2;
+}
+
+message RefreshFieldWeatherRequest {
+  string field_id = 1;
+}
+
+message RefreshFieldWeatherResponse {
+  int32 observations_ingested = 1;
+  int32 forecasts_ingested    = 2;
+}
+
+message BackfillHistoryRequest {
+  string field_id = 1;
+  int32  years    = 2; // default 5, max 10
+}
+
+message BackfillHistoryResponse {
+  int32                     days_ingested = 1;
+  google.protobuf.Timestamp from          = 2;
+  google.protobuf.Timestamp to            = 3;
+}
+
+message ListWeatherAlertsRequest {
+  string field_id    = 1;
+  bool   active_only = 2;
+  int32  page_size   = 3;
+  int32  page_offset = 4;
+}
+
+message ListWeatherAlertsResponse {
+  repeated WeatherAlert alerts      = 1;
+  int32                 total_count = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service WeatherService {
+  rpc RegisterFieldLocation (RegisterFieldLocationRequest) returns (RegisterFieldLocationResponse);
+  rpc GetFieldLocation      (GetFieldLocationRequest)      returns (GetFieldLocationResponse);
+  rpc ListFieldLocations    (ListFieldLocationsRequest)    returns (ListFieldLocationsResponse);
+
+  rpc GetCurrentWeather     (GetCurrentWeatherRequest)     returns (GetCurrentWeatherResponse);
+  rpc GetForecast           (GetForecastRequest)           returns (GetForecastResponse);
+  rpc ListObservations      (ListObservationsRequest)      returns (ListObservationsResponse);
+  rpc GetAgroMetrics        (GetAgroMetricsRequest)        returns (GetAgroMetricsResponse);
+
+  rpc RefreshFieldWeather   (RefreshFieldWeatherRequest)   returns (RefreshFieldWeatherResponse);
+  rpc BackfillHistory       (BackfillHistoryRequest)       returns (BackfillHistoryResponse);
+
+  rpc ListWeatherAlerts     (ListWeatherAlertsRequest)     returns (ListWeatherAlertsResponse);
+}

@@ -1,0 +1,91 @@
+# Loki: log aggregation for the platform.
+#
+# Single-binary mode with filesystem storage, which is the right shape for a
+# development stack and for a small deployment. A cluster would split this into
+# read/write/backend and put chunks in object storage; the configuration below
+# is deliberately the simple one, and says where it stops being suitable.
+
+auth_enabled: false  # No multi-tenancy in Loki itself — see promtail-config.yml
+                     # for why tenant is a log field here rather than a label.
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  # Loki logs its own rejections at this level; below `info` a dropped batch is
+  # invisible, which is the failure you least want to be quiet.
+  log_level: info
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      # Not /loki/rules: that path is a read-only bind mount of the checked-in
+      # alert rules, and the common storage expects to be able to write to
+      # whatever it is given.
+      rules_directory: /loki/common-rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # Logs arriving out of order are normal when several containers ship at once,
+  # and rejecting them loses lines for no benefit.
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h   # a week
+
+  # The guard that matters. Loki's index is built from labels, so every distinct
+  # combination of label values is a separate stream. A label with many values —
+  # a request id, a tenant id, a field id — creates a stream per value and the
+  # index stops fitting in memory. This cap turns that mistake into a visible
+  # rejection rather than a slow collapse.
+  max_streams_per_user: 5000
+  max_label_names_per_series: 15
+
+  # A single enormous line is nearly always a stack trace or a dumped payload,
+  # and truncating it is better than refusing the batch it arrived in.
+  max_line_size: 256KB
+  max_line_size_truncate: true
+
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
+
+  # Retention. Logs grow without bound and nothing else here will stop them.
+  # Thirty-one days covers a monthly incident review and a billing cycle;
+  # anything needed longer than that belongs in an export, not in Loki.
+  retention_period: 744h
+
+compactor:
+  working_directory: /loki/compactor
+  # Retention only takes effect when the compactor is told to apply it. Without
+  # these two the retention_period above is decorative — a common and quiet
+  # misconfiguration, since nothing errors and the disk simply fills.
+  retention_enabled: true
+  delete_request_store: filesystem
+  compaction_interval: 10m
+
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules-temp
+  # Alerts on log patterns go to the same Alertmanager as the metric alerts, so
+  # an on-call engineer has one place to look rather than two.
+  alertmanager_url: http://alertmanager:9093
+  enable_api: true
+
+analytics:
+  reporting_enabled: false

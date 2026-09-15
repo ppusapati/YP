@@ -85,20 +85,19 @@ class MapControllerWrapper {
   /// Returns the current zoom level.
   Future<double> getZoom() async {
     if (!isReady) return 0.0;
-    return await controller.getZoom();
+    return controller.cameraPosition?.zoom ?? 0.0;
   }
 
   /// Returns the current camera target (center of the map).
   Future<LatLng> getCameraTarget() async {
     if (!isReady) return const LatLng(0, 0);
-    final position = await controller.getCameraPosition();
-    return position?.target ?? const LatLng(0, 0);
+    return controller.cameraPosition?.target ?? const LatLng(0, 0);
   }
 
   /// Returns the current camera position, if available.
   Future<CameraPosition?> getCameraPosition() async {
     if (!isReady) return null;
-    return await controller.getCameraPosition();
+    return controller.cameraPosition;
   }
 
   // ---------------------------------------------------------------------------
@@ -143,7 +142,7 @@ class MapControllerWrapper {
       sourceId,
       RasterSourceProperties(
         tiles: tiles,
-        tileSize: tileSize,
+        tileSize: tileSize.toDouble(),
         minzoom: minZoom,
         maxzoom: maxZoom,
       ),
@@ -286,9 +285,9 @@ class MapControllerWrapper {
   /// Returns a list of feature maps matching the optional [layerIds] and
   /// [filter] criteria.
   Future<List<dynamic>> queryRenderedFeatures(
-    Point<num> point, {
+    Point<double> point, {
     List<String>? layerIds,
-    List<dynamic>? filter,
+    List<Object>? filter,
   }) async {
     if (!isReady) return [];
     return await controller.queryRenderedFeatures(
@@ -302,7 +301,9 @@ class MapControllerWrapper {
   Future<List<dynamic>> queryRenderedFeaturesInRect(
     Rect rect, {
     List<String>? layerIds,
-    List<dynamic>? filter,
+    // The rect variant takes a single filter expression as a string, not a
+    // list — the two query methods differ and the wrapper had them the same.
+    String? filter,
   }) async {
     if (!isReady) return [];
     return await controller.queryRenderedFeaturesInRect(

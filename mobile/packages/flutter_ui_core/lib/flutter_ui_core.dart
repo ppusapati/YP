@@ -20,6 +20,16 @@ export 'src/widgets/section_header.dart';
 export 'src/widgets/sensor_gauge.dart';
 export 'src/widgets/stat_card.dart';
 
+// ─── Explainability ─────────────────────────────────────────────────
+//
+// Both apps show a diagnosis and both need to show what the model looked at,
+// so the card lives here rather than in either one. The entity comes with it
+// because it describes a model's output rather than a domain object — each
+// app maps its own protos onto it.
+export 'src/explainability/analysed_image.dart';
+export 'src/explainability/explanation_card.dart';
+export 'src/explainability/model_explanation.dart';
+
 // ─── Charts ─────────────────────────────────────────────────────────
 export 'src/charts/crop_growth_chart.dart';
 export 'src/charts/ndvi_chart.dart';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { soilSampleFormSchema } from '@samavāya/agriculture/schemas';
+  import { createSoilSampleSchema } from '@samavāya/agriculture/schemas';
   import { soilClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'pending' };
@@ -27,7 +27,7 @@
   title="New Soil Sample"
   subtitle="Record a new soil sample and analysis"
   mode="create"
-  schema={soilSampleFormSchema}
+  schema={createSoilSampleSchema}
   {values}
   {errors}
   {isSubmitting}

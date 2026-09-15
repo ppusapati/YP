@@ -49,6 +49,11 @@ func NewStdLogger(w io.Writer) Logger {
 	}
 }
 
+func (l *stdLogger) Debug(keyvals ...interface{}) { _ = l.Log(LevelDebug, keyvals...) }
+func (l *stdLogger) Info(keyvals ...interface{})  { _ = l.Log(LevelInfo, keyvals...) }
+func (l *stdLogger) Warn(keyvals ...interface{})  { _ = l.Log(LevelWarn, keyvals...) }
+func (l *stdLogger) Error(keyvals ...interface{}) { _ = l.Log(LevelError, keyvals...) }
+
 // Log print the kv pairs log.
 func (l *stdLogger) Log(level Level, keyvals ...interface{}) error {
 	if len(keyvals) == 0 {

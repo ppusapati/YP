@@ -384,6 +384,7 @@ export const MODULE_REGISTRY: ModuleDef[] = [
       {
         title: 'Platform Services',
         items: [
+          { label: 'Tenant Health', path: '/platform' },
           { label: 'Scheduler', path: '/platform/scheduler' },
           { label: 'File Storage', path: '/platform/file-storage' },
           { label: 'Integrations', path: '/platform/integrations' },
@@ -596,8 +597,10 @@ export const MODULE_REGISTRY: ModuleDef[] = [
         title: 'Plant Diagnosis',
         items: [
           { label: 'Diagnose Plant', path: '/crop-intelligence/diagnose' },
+          { label: 'Image Analysis', path: '/crop-intelligence/image-analysis' },
           { label: 'Diagnosis History', path: '/crop-intelligence/diagnosis-history' },
           { label: 'Disease Library', path: '/crop-intelligence/disease-library' },
+          { label: 'Label Review', path: '/crop-intelligence/label-review' },
         ],
       },
       {

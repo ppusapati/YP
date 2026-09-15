@@ -51,6 +51,20 @@ abstract class TraceabilityServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.VerifyQRCodeRequest request);
   $async.Future<$1.GenerateComplianceReportResponse> generateComplianceReport(
       $pb.ServerContext ctx, $1.GenerateComplianceReportRequest request);
+  $async.Future<$1.CreateQualityCheckpointResponse> createQualityCheckpoint(
+      $pb.ServerContext ctx, $1.CreateQualityCheckpointRequest request);
+  $async.Future<$1.GetQualityCheckpointResponse> getQualityCheckpoint(
+      $pb.ServerContext ctx, $1.GetQualityCheckpointRequest request);
+  $async.Future<$1.ListQualityCheckpointsResponse> listQualityCheckpoints(
+      $pb.ServerContext ctx, $1.ListQualityCheckpointsRequest request);
+  $async.Future<$1.UpdateRecordResponse> updateRecord(
+      $pb.ServerContext ctx, $1.UpdateRecordRequest request);
+  $async.Future<$1.RevokeCertificationResponse> revokeCertification(
+      $pb.ServerContext ctx, $1.RevokeCertificationRequest request);
+  $async.Future<$1.GetComplianceReportResponse> getComplianceReport(
+      $pb.ServerContext ctx, $1.GetComplianceReportRequest request);
+  $async.Future<$1.ListComplianceReportsResponse> listComplianceReports(
+      $pb.ServerContext ctx, $1.ListComplianceReportsRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -84,6 +98,20 @@ abstract class TraceabilityServiceBase extends $pb.GeneratedService {
         return $1.VerifyQRCodeRequest();
       case 'GenerateComplianceReport':
         return $1.GenerateComplianceReportRequest();
+      case 'CreateQualityCheckpoint':
+        return $1.CreateQualityCheckpointRequest();
+      case 'GetQualityCheckpoint':
+        return $1.GetQualityCheckpointRequest();
+      case 'ListQualityCheckpoints':
+        return $1.ListQualityCheckpointsRequest();
+      case 'UpdateRecord':
+        return $1.UpdateRecordRequest();
+      case 'RevokeCertification':
+        return $1.RevokeCertificationRequest();
+      case 'GetComplianceReport':
+        return $1.GetComplianceReportRequest();
+      case 'ListComplianceReports':
+        return $1.ListComplianceReportsRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -126,6 +154,26 @@ abstract class TraceabilityServiceBase extends $pb.GeneratedService {
       case 'GenerateComplianceReport':
         return generateComplianceReport(
             ctx, request as $1.GenerateComplianceReportRequest);
+      case 'CreateQualityCheckpoint':
+        return createQualityCheckpoint(
+            ctx, request as $1.CreateQualityCheckpointRequest);
+      case 'GetQualityCheckpoint':
+        return getQualityCheckpoint(
+            ctx, request as $1.GetQualityCheckpointRequest);
+      case 'ListQualityCheckpoints':
+        return listQualityCheckpoints(
+            ctx, request as $1.ListQualityCheckpointsRequest);
+      case 'UpdateRecord':
+        return updateRecord(ctx, request as $1.UpdateRecordRequest);
+      case 'RevokeCertification':
+        return revokeCertification(
+            ctx, request as $1.RevokeCertificationRequest);
+      case 'GetComplianceReport':
+        return getComplianceReport(
+            ctx, request as $1.GetComplianceReportRequest);
+      case 'ListComplianceReports':
+        return listComplianceReports(
+            ctx, request as $1.ListComplianceReportsRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

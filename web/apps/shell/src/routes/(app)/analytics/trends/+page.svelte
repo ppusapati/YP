@@ -1,18 +1,39 @@
 <script lang="ts">
   import { fieldAnalyticsClient, fieldClient } from '@samavāya/agriculture/services';
+  import type { CrossFieldTrendPoint } from '@samavāya/proto';
+
+  /**
+   * Cross-field comparison, over the shape the service returns.
+   *
+   * `GetCrossFieldTrendsResponse.trends` is a list of `CrossFieldTrendPoint`,
+   * one per field, each holding parallel `values` and `labels` arrays. This
+   * page treated it as a map from field id to a list of
+   * `{ season, yield, ndvi }` objects — so `trendData[fieldId]` was always
+   * undefined, `Object.keys(trendData).length` was always 0, and the chart
+   * never rendered however many fields were picked.
+   *
+   * The season axis is now the union of every series' labels, which is what
+   * lets fields with different histories line up in one chart.
+   */
 
   let fieldOptions: { label: string; value: string }[] = [];
   let selectedFields: string[] = [];
   let metric: 'yield' | 'ndvi' = 'yield';
-  let trendData: Record<string, any[]> = {};
+  let series: CrossFieldTrendPoint[] = [];
   let loading = false;
   let error: string | null = null;
+
+  /** Every label any series carries, in order, so the axis covers all of them. */
+  $: allSeasons = [...new Set(series.flatMap((s) => s.labels))].sort();
+
+  const colors = ['#3b82f6', '#16a34a', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
 
   async function loadFields(query = '') {
     try {
       const res = await fieldClient.listFields({ search: query, pageSize: 100 });
-      fieldOptions = (res.fields || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
-    } catch {
+      fieldOptions = (res.fields || []).map((r) => ({ label: r.name || r.id, value: r.id }));
+    } catch (e) {
+      error = e instanceof Error ? `Could not load fields: ${e.message}` : 'Could not load fields';
       fieldOptions = [];
     }
   }
@@ -29,13 +50,13 @@
     if (selectedFields.length === 0) return;
     loading = true;
     error = null;
-    trendData = {};
+    series = [];
     try {
       const res = await fieldAnalyticsClient.getCrossFieldTrends({
         fieldIds: selectedFields,
         metric,
       });
-      trendData = (res as any).trends || {};
+      series = res.trends ?? [];
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load trend data';
     } finally {
@@ -43,11 +64,24 @@
     }
   }
 
-  function getFieldLabel(fieldId: string): string {
-    return fieldOptions.find((f) => f.value === fieldId)?.label ?? fieldId;
+  /** The value one series recorded for a season, or null if it has none. */
+  function valueAt(point: CrossFieldTrendPoint, season: string): number | null {
+    const i = point.labels.indexOf(season);
+    return i === -1 ? null : (point.values[i] ?? null);
   }
 
-  const colors = ['#3b82f6', '#16a34a', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
+  /**
+   * Bar height as a percentage of the largest value on the chart.
+   *
+   * Previously hard-coded to 20 t/ha and 1.0 NDVI, which squashed every bar on
+   * a farm yielding 6 t/ha into the bottom third of the chart.
+   */
+  $: maxValue = Math.max(1e-9, ...series.flatMap((s) => s.values));
+
+  function formatValue(v: number | null): string {
+    if (v === null) return '—';
+    return metric === 'ndvi' ? v.toFixed(2) : String(v);
+  }
 
   loadFields();
 </script>
@@ -95,35 +129,32 @@
     <div class="page-content mt-4 error-banner">
       <p>{error}</p>
     </div>
-  {:else if Object.keys(trendData).length > 0}
+  {:else if series.length > 0}
     <div class="page-content mt-4">
       <h2 class="section-title">{metric === 'yield' ? 'Yield' : 'NDVI'} Comparison</h2>
 
       <!-- Legend -->
       <div class="legend">
-        {#each selectedFields as fieldId, i}
+        {#each series as point, i}
           <div class="legend-item">
             <span class="legend-swatch" style="background: {colors[i % colors.length]}"></span>
-            <span>{getFieldLabel(fieldId)}</span>
+            <span>{point.fieldName || point.fieldId}</span>
           </div>
         {/each}
       </div>
 
       <!-- Side-by-side bar chart -->
       <div class="chart-area">
-        {@const allSeasons = [...new Set(selectedFields.flatMap((fid) => (trendData[fid] || []).map((p: any) => p.season || p.year)))].sort()}
         <div class="comparison-chart">
           {#each allSeasons as season}
             <div class="season-group">
               <div class="bars-row">
-                {#each selectedFields as fieldId, i}
-                  {@const point = (trendData[fieldId] || []).find((p: any) => (p.season || p.year) === season)}
-                  {@const val = point ? (metric === 'yield' ? point.yield : point.ndvi) : 0}
-                  {@const maxVal = metric === 'yield' ? 20 : 1}
+                {#each series as point, i}
+                  {@const val = valueAt(point, season)}
                   <div
                     class="comp-bar"
-                    style="height: {Math.min((val / maxVal) * 100, 100)}%; background: {colors[i % colors.length]}"
-                    title="{getFieldLabel(fieldId)}: {val}"
+                    style="height: {((val ?? 0) / maxValue) * 100}%; background: {colors[i % colors.length]}"
+                    title="{point.fieldName || point.fieldId}: {formatValue(val)}"
                   ></div>
                 {/each}
               </div>
@@ -139,19 +170,17 @@
           <thead>
             <tr>
               <th>Season</th>
-              {#each selectedFields as fieldId}
-                <th>{getFieldLabel(fieldId)}</th>
+              {#each series as point}
+                <th>{point.fieldName || point.fieldId}</th>
               {/each}
             </tr>
           </thead>
           <tbody>
-            {@const allSeasons = [...new Set(selectedFields.flatMap((fid) => (trendData[fid] || []).map((p: any) => p.season || p.year)))].sort()}
             {#each allSeasons as season}
               <tr>
                 <td class="font-medium">{season}</td>
-                {#each selectedFields as fieldId}
-                  {@const point = (trendData[fieldId] || []).find((p: any) => (p.season || p.year) === season)}
-                  <td>{point ? (metric === 'yield' ? point.yield : point.ndvi?.toFixed(2)) : '—'}</td>
+                {#each series as point}
+                  <td>{formatValue(valueAt(point, season))}</td>
                 {/each}
               </tr>
             {/each}

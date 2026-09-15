@@ -1,22 +1,32 @@
 //! Satellite NDVI Engine
 //!
-//! Processes satellite rasters to compute vegetation indices including NDVI, NDWI, and EVI.
-//! Provides vegetation classification, stress detection, and zonal statistics.
+//! Processes satellite rasters to compute vegetation indices including NDVI, NDWI, EVI,
+//! NDRE, and LAI. Provides per-pixel cloud masking from SCL / QA_PIXEL layers,
+//! processing-level checks, cross-sensor harmonization, vegetation classification,
+//! stress detection, and zonal statistics.
 
+pub mod cloudmask;
 pub mod evi;
+pub mod lai;
 pub mod ndvi;
 pub mod ndwi;
+pub mod processing;
 pub mod raster;
 pub mod statistics;
 pub mod stress_detector;
 pub mod vegetation_classifier;
 
 // Re-export key types for convenience.
+pub use cloudmask::{CloudMask, MaskParams};
 pub use evi::{
     compute_evi, compute_evi2, compute_gndvi, compute_msavi, compute_ndre, compute_savi,
     EviParams,
 };
+pub use lai::{compute_lai, lai_from_savi, lai_pixel, LaiParams};
 pub use ndvi::{compute_ndvi, classify_ndvi, ndvi_pixel, NdviClass, NdviParams};
+pub use processing::{
+    harmonize_ndvi, harmonize_ndvi_band, ndvi_harmonization_coefficients, ProcessingLevel, Sensor,
+};
 pub use ndwi::{compute_ndwi, classify_ndwi, ndwi_pixel, NdwiParams, WaterClass};
 pub use raster::{
     clip_to_polygon, clip_to_window, resample_bilinear, resample_nearest, apply_operation,
@@ -99,6 +109,29 @@ impl SatelliteNDVIEngine {
         self
     }
 
+    /// Apply a cloud/shadow mask to every band so masked pixels become nodata
+    /// in all derived indices.
+    pub fn with_cloud_mask(mut self, mask: &CloudMask) -> Result<Self, RasterError> {
+        const MASKED: f64 = -9999.0;
+        self.nir = mask.apply(&self.nir, MASKED)?;
+        self.red = mask.apply(&self.red, MASKED)?;
+        if let Some(g) = &self.green {
+            self.green = Some(mask.apply(g, MASKED)?);
+        }
+        if let Some(b) = &self.blue {
+            self.blue = Some(mask.apply(b, MASKED)?);
+        }
+        if let Some(re) = &self.red_edge {
+            self.red_edge = Some(mask.apply(re, MASKED)?);
+        }
+        Ok(self)
+    }
+
+    /// Compute LAI (SAVI-based estimate).
+    pub fn compute_lai(&self) -> Result<RasterBand, RasterError> {
+        compute_lai(&self.nir, &self.red, &LaiParams::default())
+    }
+
     /// Compute NDVI.
     pub fn compute_ndvi(&self) -> Result<RasterBand, RasterError> {
         compute_ndvi(&self.nir, &self.red, &NdviParams::default())
@@ -160,6 +193,7 @@ impl SatelliteNDVIEngine {
             msavi: self.compute_msavi().ok(),
             ndre: self.compute_ndre().ok(),
             gndvi: self.compute_gndvi().ok(),
+            lai: self.compute_lai().ok(),
         }
     }
 }
@@ -174,6 +208,7 @@ pub struct VegetationIndices {
     pub msavi: Option<RasterBand>,
     pub ndre: Option<RasterBand>,
     pub gndvi: Option<RasterBand>,
+    pub lai: Option<RasterBand>,
 }
 
 #[cfg(test)]
@@ -213,6 +248,35 @@ mod tests {
         assert!(indices.savi.is_some());
         assert!(indices.msavi.is_some());
         assert!(indices.gndvi.is_some());
+        assert!(indices.lai.is_some());
+        assert!(indices.ndre.is_none(), "no red-edge band supplied");
+    }
+
+    #[test]
+    fn test_engine_with_red_edge_computes_ndre_and_lai() {
+        let engine = SatelliteNDVIEngine::new(make_band(0.8, 2, 2), make_band(0.2, 2, 2))
+            .unwrap()
+            .with_red_edge(make_band(0.4, 2, 2));
+        let indices = engine.compute_all_indices();
+        let ndre = indices.ndre.unwrap();
+        assert!((ndre.data[[0, 0]] - (0.4 / 1.2)).abs() < 1e-10);
+        let lai = indices.lai.unwrap();
+        assert!(lai.data[[0, 0]] > 1.0 && lai.data[[0, 0]] <= 8.0);
+    }
+
+    #[test]
+    fn test_engine_cloud_mask_propagates_to_indices() {
+        let scl = RasterBand::from_vec(vec![4.0, 9.0, 4.0, 3.0], 2, 2, None).unwrap();
+        let mask = CloudMask::from_scl(&scl, &MaskParams { buffer_pixels: 0, ..MaskParams::default() });
+        let engine = SatelliteNDVIEngine::new(make_band(0.8, 2, 2), make_band(0.2, 2, 2))
+            .unwrap()
+            .with_cloud_mask(&mask)
+            .unwrap();
+        let ndvi = engine.compute_ndvi().unwrap();
+        assert!(!ndvi.is_nodata(0, 0));
+        assert!(ndvi.is_nodata(0, 1), "cloud pixel must be nodata");
+        assert!(ndvi.is_nodata(1, 1), "shadow pixel must be nodata");
+        assert_eq!(ndvi.valid_pixel_count(), 2);
     }
 
     #[test]

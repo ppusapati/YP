@@ -12,47 +12,47 @@ var SupplyChainSagasModule = fx.Module("supply-chain-sagas",
 	fx.Provide(
 		// SAGA-SC01: Inbound Logistics & Supplier Receipt (Phase 6B)
 		fx.Annotate(
-			NewInboundLogisticsSaga,
+			NewInboundLogisticsReceivingSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC02: Warehouse Operations & Movement (Phase 6B)
 		fx.Annotate(
-			NewWarehouseOpsSaga,
+			NewWarehouseOperationsManagementSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC03: Third-Party Logistics Coordination (Phase 6B)
 		fx.Annotate(
-			NewThreePLCoordinationSaga,
+			NewThirdPartyLogisticsCoordinationSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC04: Order Fulfillment & Shipment (Phase 6B)
 		fx.Annotate(
-			NewOrderFulfillmentSaga,
+			NewOrderFulfillmentOutboundLogisticsSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC05: Distribution Center Management (Phase 6B)
 		fx.Annotate(
-			NewDistributionCenterSaga,
+			NewDistributionCenterOperationsSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC06: Route Optimization & Last-Mile Delivery (Phase 6B)
 		fx.Annotate(
-			NewRouteOptimizationSaga,
+			NewRouteOptimizationSchedulingSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC07: Supply Chain Visibility & Tracking (Phase 6B)
 		fx.Annotate(
-			NewSupplyChainVisibilitySaga,
+			NewSupplyChainVisibilityTrackingSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC08: Supplier Performance & Metrics (Phase 6B)
 		fx.Annotate(
-			NewSupplierPerformanceSaga,
+			NewSupplierPerformanceCollaborationSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-SC09: Reverse Logistics & Returns (Phase 6B)
 		fx.Annotate(
-			NewReverseLogisticsSaga,
+			NewReverseLogisticsReturnsManagementSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 	),
@@ -74,14 +74,14 @@ func RegisterSupplyChainSagaHandlers(handlers []saga.SagaHandler) {
 // This is a convenience function for cases where manual aggregation is needed
 func ProvideSupplyChainSagaHandlers() []saga.SagaHandler {
 	return []saga.SagaHandler{
-		NewInboundLogisticsSaga(),
-		NewWarehouseOpsSaga(),
-		NewThreePLCoordinationSaga(),
-		NewOrderFulfillmentSaga(),
-		NewDistributionCenterSaga(),
-		NewRouteOptimizationSaga(),
-		NewSupplyChainVisibilitySaga(),
-		NewSupplierPerformanceSaga(),
-		NewReverseLogisticsSaga(),
+		NewInboundLogisticsReceivingSaga(),
+		NewWarehouseOperationsManagementSaga(),
+		NewThirdPartyLogisticsCoordinationSaga(),
+		NewOrderFulfillmentOutboundLogisticsSaga(),
+		NewDistributionCenterOperationsSaga(),
+		NewRouteOptimizationSchedulingSaga(),
+		NewSupplyChainVisibilityTrackingSaga(),
+		NewSupplierPerformanceCollaborationSaga(),
+		NewReverseLogisticsReturnsManagementSaga(),
 	}
 }

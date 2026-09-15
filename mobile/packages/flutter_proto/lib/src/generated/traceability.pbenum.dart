@@ -177,5 +177,71 @@ class ComplianceStatus extends $pb.ProtobufEnum {
   const ComplianceStatus._(super.value, super.name);
 }
 
+/// QualityCheckType classifies quality inspections.
+class QualityCheckType extends $pb.ProtobufEnum {
+  static const QualityCheckType QUALITY_CHECK_TYPE_UNSPECIFIED =
+      QualityCheckType._(
+          0, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_UNSPECIFIED');
+  static const QualityCheckType QUALITY_CHECK_TYPE_VISUAL =
+      QualityCheckType._(1, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_VISUAL');
+  static const QualityCheckType QUALITY_CHECK_TYPE_LAB =
+      QualityCheckType._(2, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_LAB');
+  static const QualityCheckType QUALITY_CHECK_TYPE_TEMPERATURE =
+      QualityCheckType._(
+          3, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_TEMPERATURE');
+  static const QualityCheckType QUALITY_CHECK_TYPE_MOISTURE =
+      QualityCheckType._(
+          4, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_MOISTURE');
+  static const QualityCheckType QUALITY_CHECK_TYPE_WEIGHT =
+      QualityCheckType._(5, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_WEIGHT');
+  static const QualityCheckType QUALITY_CHECK_TYPE_SENSORY =
+      QualityCheckType._(6, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_SENSORY');
+  static const QualityCheckType QUALITY_CHECK_TYPE_OTHER =
+      QualityCheckType._(7, _omitEnumNames ? '' : 'QUALITY_CHECK_TYPE_OTHER');
+
+  static const $core.List<QualityCheckType> values = <QualityCheckType>[
+    QUALITY_CHECK_TYPE_UNSPECIFIED,
+    QUALITY_CHECK_TYPE_VISUAL,
+    QUALITY_CHECK_TYPE_LAB,
+    QUALITY_CHECK_TYPE_TEMPERATURE,
+    QUALITY_CHECK_TYPE_MOISTURE,
+    QUALITY_CHECK_TYPE_WEIGHT,
+    QUALITY_CHECK_TYPE_SENSORY,
+    QUALITY_CHECK_TYPE_OTHER,
+  ];
+
+  static final $core.List<QualityCheckType?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
+  static QualityCheckType? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const QualityCheckType._(super.value, super.name);
+}
+
+class QualityCheckResult extends $pb.ProtobufEnum {
+  static const QualityCheckResult QUALITY_CHECK_RESULT_UNSPECIFIED =
+      QualityCheckResult._(
+          0, _omitEnumNames ? '' : 'QUALITY_CHECK_RESULT_UNSPECIFIED');
+  static const QualityCheckResult QUALITY_CHECK_RESULT_PASS =
+      QualityCheckResult._(
+          1, _omitEnumNames ? '' : 'QUALITY_CHECK_RESULT_PASS');
+  static const QualityCheckResult QUALITY_CHECK_RESULT_FAIL =
+      QualityCheckResult._(
+          2, _omitEnumNames ? '' : 'QUALITY_CHECK_RESULT_FAIL');
+
+  static const $core.List<QualityCheckResult> values = <QualityCheckResult>[
+    QUALITY_CHECK_RESULT_UNSPECIFIED,
+    QUALITY_CHECK_RESULT_PASS,
+    QUALITY_CHECK_RESULT_FAIL,
+  ];
+
+  static final $core.List<QualityCheckResult?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static QualityCheckResult? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const QualityCheckResult._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

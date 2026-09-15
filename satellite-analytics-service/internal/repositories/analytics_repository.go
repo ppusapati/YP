@@ -120,7 +120,7 @@ func (r *analyticsRepository) CreateStressAlert(ctx context.Context, alert *anal
 	result := &analyticsmodels.StressAlert{}
 	if err := scanStressAlert(row, result); err != nil {
 		r.log.Errorw("msg", "failed to create stress alert", "error", err)
-		return nil, errors.InternalServer("STRESS_ALERT_CREATE_FAILED", fmt.Sprintf("failed to create stress alert: %v", err))
+		return nil, errors.InternalServer("STRESS_ALERT_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "stress alert created", "uuid", result.ID, "tenant_id", result.TenantID)
@@ -145,7 +145,7 @@ func (r *analyticsRepository) GetStressAlertByUUID(ctx context.Context, uuid, te
 			return nil, errors.NotFound("STRESS_ALERT_NOT_FOUND", fmt.Sprintf("stress alert not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get stress alert", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("STRESS_ALERT_GET_FAILED", fmt.Sprintf("failed to get stress alert: %v", err))
+		return nil, errors.InternalServer("STRESS_ALERT_GET_FAILED", "an internal error occurred")
 	}
 
 	return alert, nil
@@ -171,7 +171,7 @@ func (r *analyticsRepository) ListStressAlerts(ctx context.Context, params analy
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count stress alerts", "error", err)
-		return nil, 0, errors.InternalServer("STRESS_ALERT_COUNT_FAILED", fmt.Sprintf("failed to count stress alerts: %v", err))
+		return nil, 0, errors.InternalServer("STRESS_ALERT_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -201,7 +201,7 @@ func (r *analyticsRepository) ListStressAlerts(ctx context.Context, params analy
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list stress alerts", "error", err)
-		return nil, 0, errors.InternalServer("STRESS_ALERT_LIST_FAILED", fmt.Sprintf("failed to list stress alerts: %v", err))
+		return nil, 0, errors.InternalServer("STRESS_ALERT_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -210,12 +210,13 @@ func (r *analyticsRepository) ListStressAlerts(ctx context.Context, params analy
 		var alert analyticsmodels.StressAlert
 		if err := scanStressAlertFromRows(rows, &alert); err != nil {
 			r.log.Errorw("msg", "failed to scan stress alert row", "error", err)
-			return nil, 0, errors.InternalServer("STRESS_ALERT_SCAN_FAILED", fmt.Sprintf("failed to scan stress alert: %v", err))
+			return nil, 0, errors.InternalServer("STRESS_ALERT_SCAN_FAILED", "an internal error occurred")
 		}
 		alerts = append(alerts, alert)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("STRESS_ALERT_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("STRESS_ALERT_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return alerts, totalCount, nil
@@ -234,7 +235,7 @@ func (r *analyticsRepository) AcknowledgeStressAlert(ctx context.Context, uuid, 
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to acknowledge stress alert", "uuid", uuid, "error", err)
-		return errors.InternalServer("STRESS_ALERT_ACK_FAILED", fmt.Sprintf("failed to acknowledge stress alert: %v", err))
+		return errors.InternalServer("STRESS_ALERT_ACK_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "stress alert acknowledged", "uuid", uuid)
@@ -255,7 +256,7 @@ func (r *analyticsRepository) ListStressAlertsByProcessingJob(ctx context.Contex
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list stress alerts by processing job", "processing_job_id", processingJobID, "error", err)
-		return nil, errors.InternalServer("STRESS_ALERT_LIST_FAILED", fmt.Sprintf("failed to list stress alerts: %v", err))
+		return nil, errors.InternalServer("STRESS_ALERT_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -263,12 +264,14 @@ func (r *analyticsRepository) ListStressAlertsByProcessingJob(ctx context.Contex
 	for rows.Next() {
 		var alert analyticsmodels.StressAlert
 		if err := scanStressAlertFromRows(rows, &alert); err != nil {
-			return nil, errors.InternalServer("STRESS_ALERT_SCAN_FAILED", fmt.Sprintf("failed to scan stress alert: %v", err))
+			r.log.Errorw("msg", "failed to scan stress alert", "error", err)
+			return nil, errors.InternalServer("STRESS_ALERT_SCAN_FAILED", "an internal error occurred")
 		}
 		alerts = append(alerts, alert)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("STRESS_ALERT_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, errors.InternalServer("STRESS_ALERT_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return alerts, nil
@@ -283,7 +286,8 @@ func (r *analyticsRepository) CountActiveStressAlerts(ctx context.Context, tenan
 		tenantID, farmID, fieldID,
 	)
 	if err := row.Scan(&count); err != nil {
-		return 0, errors.InternalServer("STRESS_ALERT_COUNT_FAILED", fmt.Sprintf("failed to count active stress alerts: %v", err))
+		r.log.Errorw("msg", "failed to count active stress alerts", "error", err)
+		return 0, errors.InternalServer("STRESS_ALERT_COUNT_FAILED", "an internal error occurred")
 	}
 	return count, nil
 }
@@ -303,7 +307,8 @@ func (r *analyticsRepository) GetDominantStressType(ctx context.Context, tenantI
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		return nil, errors.InternalServer("STRESS_TYPE_GET_FAILED", fmt.Sprintf("failed to get dominant stress type: %v", err))
+		r.log.Errorw("msg", "failed to get dominant stress type", "error", err)
+		return nil, errors.InternalServer("STRESS_TYPE_GET_FAILED", "an internal error occurred")
 	}
 	return &stressType, nil
 }
@@ -320,27 +325,27 @@ func (r *analyticsRepository) CreateTemporalAnalysis(ctx context.Context, analys
 			uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at
+			is_active, created_by, created_at, details
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9,
 			$10, $11, $12, $13,
-			TRUE, $14, NOW()
+			TRUE, $14, NOW(), $15
 		)
 		RETURNING id, uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at`,
+			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at, details`,
 		analysis.ID, analysis.TenantID, analysis.FarmID, analysis.FieldID, analysis.AnalysisType,
 		analysis.MetricName, analysis.TrendSlope, analysis.TrendRSquared, analysis.CurrentValue,
 		analysis.BaselineValue, analysis.DeviationPercent, analysis.PeriodStart, analysis.PeriodEnd,
-		analysis.CreatedBy,
+		analysis.CreatedBy, detailsOrEmpty(analysis.Details),
 	)
 
 	result := &analyticsmodels.TemporalAnalysis{}
 	if err := scanTemporalAnalysis(row, result); err != nil {
 		r.log.Errorw("msg", "failed to create temporal analysis", "error", err)
-		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_CREATE_FAILED", fmt.Sprintf("failed to create temporal analysis: %v", err))
+		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "temporal analysis created", "uuid", result.ID, "tenant_id", result.TenantID)
@@ -352,7 +357,7 @@ func (r *analyticsRepository) GetTemporalAnalysisByUUID(ctx context.Context, uui
 		SELECT id, uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at
+			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at, details
 		FROM temporal_analyses
 		WHERE uuid = $1 AND tenant_id = $2 AND is_active = TRUE AND deleted_at IS NULL`,
 		uuid, tenantID,
@@ -364,7 +369,7 @@ func (r *analyticsRepository) GetTemporalAnalysisByUUID(ctx context.Context, uui
 			return nil, errors.NotFound("TEMPORAL_ANALYSIS_NOT_FOUND", fmt.Sprintf("temporal analysis not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get temporal analysis", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_GET_FAILED", fmt.Sprintf("failed to get temporal analysis: %v", err))
+		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_GET_FAILED", "an internal error occurred")
 	}
 
 	return analysis, nil
@@ -375,7 +380,7 @@ func (r *analyticsRepository) GetLatestTemporalAnalysis(ctx context.Context, ten
 		SELECT id, uuid, tenant_id, farm_id, field_id, analysis_type,
 			metric_name, trend_slope, trend_r_squared, current_value,
 			baseline_value, deviation_percent, period_start, period_end,
-			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at
+			is_active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at, details
 		FROM temporal_analyses
 		WHERE tenant_id = $1 AND farm_id = $2 AND field_id = $3
 			AND is_active = TRUE AND deleted_at IS NULL
@@ -390,7 +395,7 @@ func (r *analyticsRepository) GetLatestTemporalAnalysis(ctx context.Context, ten
 			return nil, nil
 		}
 		r.log.Errorw("msg", "failed to get latest temporal analysis", "error", err)
-		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_GET_FAILED", fmt.Sprintf("failed to get latest temporal analysis: %v", err))
+		return nil, errors.InternalServer("TEMPORAL_ANALYSIS_GET_FAILED", "an internal error occurred")
 	}
 
 	return analysis, nil
@@ -424,7 +429,15 @@ func scanTemporalAnalysis(row pgx.Row, t *analyticsmodels.TemporalAnalysis) erro
 		&t.MetricName, &t.TrendSlope, &t.TrendRSquared, &t.CurrentValue,
 		&t.BaselineValue, &t.DeviationPercent, &t.PeriodStart, &t.PeriodEnd,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
+		&t.Details,
 	)
+}
+
+func detailsOrEmpty(d map[string]interface{}) map[string]interface{} {
+	if d == nil {
+		return map[string]interface{}{}
+	}
+	return d
 }
 
 func scanTemporalAnalysisFromRows(rows pgx.Rows, t *analyticsmodels.TemporalAnalysis) error {
@@ -433,6 +446,7 @@ func scanTemporalAnalysisFromRows(rows pgx.Rows, t *analyticsmodels.TemporalAnal
 		&t.MetricName, &t.TrendSlope, &t.TrendRSquared, &t.CurrentValue,
 		&t.BaselineValue, &t.DeviationPercent, &t.PeriodStart, &t.PeriodEnd,
 		&t.IsActive, &t.CreatedBy, &t.CreatedAt, &t.UpdatedBy, &t.UpdatedAt, &t.DeletedBy, &t.DeletedAt,
+		&t.Details,
 	)
 }
 

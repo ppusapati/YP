@@ -192,6 +192,17 @@ export function usePagination(options: UsePaginationOptions = {}): UsePagination
     return items.slice($startIndex, $startIndex + $pageSize);
   }
 
+  /**
+   * The page numbers to show in a paginator, with -1 marking an ellipsis.
+   *
+   * `maxVisible` caps the length of the returned array — every entry, the
+   * first and last page and the ellipsis markers included. It used to bound
+   * only the window around the current page, so `getVisiblePages(7)` could
+   * return eleven entries and overflow a control laid out for seven. Below
+   * five it is treated as five, because the first page, the last page, the
+   * current page and two ellipses are the least that can be shown without
+   * losing one of them.
+   */
   function getVisiblePages(maxVisible = 7): number[] {
     const $page = get(page);
     const $totalPages = get(totalPages);
@@ -200,41 +211,33 @@ export function usePagination(options: UsePaginationOptions = {}): UsePagination
       return Array.from({ length: $totalPages }, (_, i) => i + 1);
     }
 
-    const halfVisible = Math.floor(maxVisible / 2);
-    let startPage = Math.max(1, $page - halfVisible);
-    let endPage = Math.min($totalPages, $page + halfVisible);
+    const slots = Math.max(5, maxVisible);
 
-    // Adjust if we're near the start or end
-    if ($page <= halfVisible) {
-      endPage = maxVisible;
-    } else if ($page >= $totalPages - halfVisible) {
-      startPage = $totalPages - maxVisible + 1;
-    }
+    // Widest window first, narrowing until the assembled list fits. Computing
+    // the window size directly would need to know in advance how many ellipsis
+    // markers it will produce, which depends on the window.
+    for (let window = slots; window >= 1; window--) {
+      const half = Math.floor(window / 2);
+      const end = Math.min($totalPages, Math.max(1, $page - half) + window - 1);
+      const start = Math.max(1, end - window + 1);
 
-    const pages: number[] = [];
-
-    // Always show first page
-    if (startPage > 1) {
-      pages.push(1);
-      if (startPage > 2) {
-        pages.push(-1); // Ellipsis marker
+      const pages: number[] = [];
+      if (start > 1) {
+        pages.push(1);
+        if (start > 2) pages.push(-1);
       }
-    }
-
-    // Middle pages
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    // Always show last page
-    if (endPage < $totalPages) {
-      if (endPage < $totalPages - 1) {
-        pages.push(-1); // Ellipsis marker
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (end < $totalPages) {
+        if (end < $totalPages - 1) pages.push(-1);
+        pages.push($totalPages);
       }
-      pages.push($totalPages);
+
+      if (pages.length <= slots) return pages;
     }
 
-    return pages;
+    // Unreachable: a window of one always fits in five slots. Present so the
+    // function has no path that returns undefined.
+    return [$page];
   }
 
   // ============================================================================

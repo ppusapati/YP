@@ -2827,11 +2827,2735 @@ class GetCropHistoryResponse extends $pb.GeneratedMessage {
   void clearTotalCount() => $_clearField(2);
 }
 
+class CropCycle extends $pb.GeneratedMessage {
+  factory CropCycle({
+    $core.String? id,
+    $core.String? tenantId,
+    $core.String? fieldId,
+    $core.String? cropId,
+    $core.String? cropAssignmentId,
+    $core.String? season,
+    $core.int? cycleYear,
+    $core.String? name,
+    $0.Timestamp? plannedPlantingDate,
+    $0.Timestamp? actualPlantingDate,
+    $0.Timestamp? plannedHarvestDate,
+    $0.Timestamp? actualHarvestDate,
+    CropCycleStatus? status,
+    $core.double? targetYieldPerHectare,
+    $core.double? actualYieldPerHectare,
+    $core.String? yieldUnit,
+    $fixnum.Int64? totalInputCost,
+    $fixnum.Int64? totalRevenue,
+    $core.String? currency,
+    $core.String? notes,
+    $fixnum.Int64? version,
+    $core.String? createdBy,
+    $0.Timestamp? createdAt,
+    $0.Timestamp? updatedAt,
+    $core.String? managementUnitId,
+    $core.String? cropVariety,
+    $core.String? seedSource,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (tenantId != null) result.tenantId = tenantId;
+    if (fieldId != null) result.fieldId = fieldId;
+    if (cropId != null) result.cropId = cropId;
+    if (cropAssignmentId != null) result.cropAssignmentId = cropAssignmentId;
+    if (season != null) result.season = season;
+    if (cycleYear != null) result.cycleYear = cycleYear;
+    if (name != null) result.name = name;
+    if (plannedPlantingDate != null)
+      result.plannedPlantingDate = plannedPlantingDate;
+    if (actualPlantingDate != null)
+      result.actualPlantingDate = actualPlantingDate;
+    if (plannedHarvestDate != null)
+      result.plannedHarvestDate = plannedHarvestDate;
+    if (actualHarvestDate != null) result.actualHarvestDate = actualHarvestDate;
+    if (status != null) result.status = status;
+    if (targetYieldPerHectare != null)
+      result.targetYieldPerHectare = targetYieldPerHectare;
+    if (actualYieldPerHectare != null)
+      result.actualYieldPerHectare = actualYieldPerHectare;
+    if (yieldUnit != null) result.yieldUnit = yieldUnit;
+    if (totalInputCost != null) result.totalInputCost = totalInputCost;
+    if (totalRevenue != null) result.totalRevenue = totalRevenue;
+    if (currency != null) result.currency = currency;
+    if (notes != null) result.notes = notes;
+    if (version != null) result.version = version;
+    if (createdBy != null) result.createdBy = createdBy;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    if (managementUnitId != null) result.managementUnitId = managementUnitId;
+    if (cropVariety != null) result.cropVariety = cropVariety;
+    if (seedSource != null) result.seedSource = seedSource;
+    return result;
+  }
+
+  CropCycle._();
+
+  factory CropCycle.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CropCycle.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CropCycle',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'tenantId')
+    ..aOS(3, _omitFieldNames ? '' : 'fieldId')
+    ..aOS(4, _omitFieldNames ? '' : 'cropId')
+    ..aOS(5, _omitFieldNames ? '' : 'cropAssignmentId')
+    ..aOS(6, _omitFieldNames ? '' : 'season')
+    ..aI(7, _omitFieldNames ? '' : 'cycleYear')
+    ..aOS(8, _omitFieldNames ? '' : 'name')
+    ..aOM<$0.Timestamp>(9, _omitFieldNames ? '' : 'plannedPlantingDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(10, _omitFieldNames ? '' : 'actualPlantingDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'plannedHarvestDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(12, _omitFieldNames ? '' : 'actualHarvestDate',
+        subBuilder: $0.Timestamp.create)
+    ..aE<CropCycleStatus>(13, _omitFieldNames ? '' : 'status',
+        enumValues: CropCycleStatus.values)
+    ..aD(14, _omitFieldNames ? '' : 'targetYieldPerHectare')
+    ..aD(15, _omitFieldNames ? '' : 'actualYieldPerHectare')
+    ..aOS(16, _omitFieldNames ? '' : 'yieldUnit')
+    ..aInt64(17, _omitFieldNames ? '' : 'totalInputCost')
+    ..aInt64(18, _omitFieldNames ? '' : 'totalRevenue')
+    ..aOS(19, _omitFieldNames ? '' : 'currency')
+    ..aOS(20, _omitFieldNames ? '' : 'notes')
+    ..aInt64(21, _omitFieldNames ? '' : 'version')
+    ..aOS(22, _omitFieldNames ? '' : 'createdBy')
+    ..aOM<$0.Timestamp>(23, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(24, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOS(25, _omitFieldNames ? '' : 'managementUnitId')
+    ..aOS(26, _omitFieldNames ? '' : 'cropVariety')
+    ..aOS(27, _omitFieldNames ? '' : 'seedSource')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CropCycle clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CropCycle copyWith(void Function(CropCycle) updates) =>
+      super.copyWith((message) => updates(message as CropCycle)) as CropCycle;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CropCycle create() => CropCycle._();
+  @$core.override
+  CropCycle createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CropCycle getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CropCycle>(create);
+  static CropCycle? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get tenantId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set tenantId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTenantId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTenantId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get fieldId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set fieldId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFieldId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFieldId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get cropId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set cropId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCropId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCropId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get cropAssignmentId => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set cropAssignmentId($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasCropAssignmentId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearCropAssignmentId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get season => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set season($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSeason() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSeason() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.int get cycleYear => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set cycleYear($core.int value) => $_setSignedInt32(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCycleYear() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCycleYear() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get name => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set name($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasName() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearName() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $0.Timestamp get plannedPlantingDate => $_getN(8);
+  @$pb.TagNumber(9)
+  set plannedPlantingDate($0.Timestamp value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasPlannedPlantingDate() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearPlannedPlantingDate() => $_clearField(9);
+  @$pb.TagNumber(9)
+  $0.Timestamp ensurePlannedPlantingDate() => $_ensure(8);
+
+  @$pb.TagNumber(10)
+  $0.Timestamp get actualPlantingDate => $_getN(9);
+  @$pb.TagNumber(10)
+  set actualPlantingDate($0.Timestamp value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasActualPlantingDate() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearActualPlantingDate() => $_clearField(10);
+  @$pb.TagNumber(10)
+  $0.Timestamp ensureActualPlantingDate() => $_ensure(9);
+
+  @$pb.TagNumber(11)
+  $0.Timestamp get plannedHarvestDate => $_getN(10);
+  @$pb.TagNumber(11)
+  set plannedHarvestDate($0.Timestamp value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasPlannedHarvestDate() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearPlannedHarvestDate() => $_clearField(11);
+  @$pb.TagNumber(11)
+  $0.Timestamp ensurePlannedHarvestDate() => $_ensure(10);
+
+  @$pb.TagNumber(12)
+  $0.Timestamp get actualHarvestDate => $_getN(11);
+  @$pb.TagNumber(12)
+  set actualHarvestDate($0.Timestamp value) => $_setField(12, value);
+  @$pb.TagNumber(12)
+  $core.bool hasActualHarvestDate() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearActualHarvestDate() => $_clearField(12);
+  @$pb.TagNumber(12)
+  $0.Timestamp ensureActualHarvestDate() => $_ensure(11);
+
+  @$pb.TagNumber(13)
+  CropCycleStatus get status => $_getN(12);
+  @$pb.TagNumber(13)
+  set status(CropCycleStatus value) => $_setField(13, value);
+  @$pb.TagNumber(13)
+  $core.bool hasStatus() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearStatus() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.double get targetYieldPerHectare => $_getN(13);
+  @$pb.TagNumber(14)
+  set targetYieldPerHectare($core.double value) => $_setDouble(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasTargetYieldPerHectare() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearTargetYieldPerHectare() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.double get actualYieldPerHectare => $_getN(14);
+  @$pb.TagNumber(15)
+  set actualYieldPerHectare($core.double value) => $_setDouble(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasActualYieldPerHectare() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearActualYieldPerHectare() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.String get yieldUnit => $_getSZ(15);
+  @$pb.TagNumber(16)
+  set yieldUnit($core.String value) => $_setString(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasYieldUnit() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearYieldUnit() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $fixnum.Int64 get totalInputCost => $_getI64(16);
+  @$pb.TagNumber(17)
+  set totalInputCost($fixnum.Int64 value) => $_setInt64(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasTotalInputCost() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearTotalInputCost() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $fixnum.Int64 get totalRevenue => $_getI64(17);
+  @$pb.TagNumber(18)
+  set totalRevenue($fixnum.Int64 value) => $_setInt64(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasTotalRevenue() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearTotalRevenue() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.String get currency => $_getSZ(18);
+  @$pb.TagNumber(19)
+  set currency($core.String value) => $_setString(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasCurrency() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearCurrency() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $core.String get notes => $_getSZ(19);
+  @$pb.TagNumber(20)
+  set notes($core.String value) => $_setString(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasNotes() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearNotes() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $fixnum.Int64 get version => $_getI64(20);
+  @$pb.TagNumber(21)
+  set version($fixnum.Int64 value) => $_setInt64(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasVersion() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearVersion() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $core.String get createdBy => $_getSZ(21);
+  @$pb.TagNumber(22)
+  set createdBy($core.String value) => $_setString(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasCreatedBy() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearCreatedBy() => $_clearField(22);
+
+  @$pb.TagNumber(23)
+  $0.Timestamp get createdAt => $_getN(22);
+  @$pb.TagNumber(23)
+  set createdAt($0.Timestamp value) => $_setField(23, value);
+  @$pb.TagNumber(23)
+  $core.bool hasCreatedAt() => $_has(22);
+  @$pb.TagNumber(23)
+  void clearCreatedAt() => $_clearField(23);
+  @$pb.TagNumber(23)
+  $0.Timestamp ensureCreatedAt() => $_ensure(22);
+
+  @$pb.TagNumber(24)
+  $0.Timestamp get updatedAt => $_getN(23);
+  @$pb.TagNumber(24)
+  set updatedAt($0.Timestamp value) => $_setField(24, value);
+  @$pb.TagNumber(24)
+  $core.bool hasUpdatedAt() => $_has(23);
+  @$pb.TagNumber(24)
+  void clearUpdatedAt() => $_clearField(24);
+  @$pb.TagNumber(24)
+  $0.Timestamp ensureUpdatedAt() => $_ensure(23);
+
+  @$pb.TagNumber(25)
+  $core.String get managementUnitId => $_getSZ(24);
+  @$pb.TagNumber(25)
+  set managementUnitId($core.String value) => $_setString(24, value);
+  @$pb.TagNumber(25)
+  $core.bool hasManagementUnitId() => $_has(24);
+  @$pb.TagNumber(25)
+  void clearManagementUnitId() => $_clearField(25);
+
+  @$pb.TagNumber(26)
+  $core.String get cropVariety => $_getSZ(25);
+  @$pb.TagNumber(26)
+  set cropVariety($core.String value) => $_setString(25, value);
+  @$pb.TagNumber(26)
+  $core.bool hasCropVariety() => $_has(25);
+  @$pb.TagNumber(26)
+  void clearCropVariety() => $_clearField(26);
+
+  @$pb.TagNumber(27)
+  $core.String get seedSource => $_getSZ(26);
+  @$pb.TagNumber(27)
+  set seedSource($core.String value) => $_setString(26, value);
+  @$pb.TagNumber(27)
+  $core.bool hasSeedSource() => $_has(26);
+  @$pb.TagNumber(27)
+  void clearSeedSource() => $_clearField(27);
+}
+
+class CreateCropCycleRequest extends $pb.GeneratedMessage {
+  factory CreateCropCycleRequest({
+    $core.String? fieldId,
+    $core.String? cropId,
+    $core.String? season,
+    $core.int? cycleYear,
+    $core.String? name,
+    $0.Timestamp? plannedPlantingDate,
+    $0.Timestamp? plannedHarvestDate,
+    $core.double? targetYieldPerHectare,
+    $core.String? yieldUnit,
+    $core.String? notes,
+    $core.String? managementUnitId,
+    $core.String? cropVariety,
+    $core.String? seedSource,
+  }) {
+    final result = create();
+    if (fieldId != null) result.fieldId = fieldId;
+    if (cropId != null) result.cropId = cropId;
+    if (season != null) result.season = season;
+    if (cycleYear != null) result.cycleYear = cycleYear;
+    if (name != null) result.name = name;
+    if (plannedPlantingDate != null)
+      result.plannedPlantingDate = plannedPlantingDate;
+    if (plannedHarvestDate != null)
+      result.plannedHarvestDate = plannedHarvestDate;
+    if (targetYieldPerHectare != null)
+      result.targetYieldPerHectare = targetYieldPerHectare;
+    if (yieldUnit != null) result.yieldUnit = yieldUnit;
+    if (notes != null) result.notes = notes;
+    if (managementUnitId != null) result.managementUnitId = managementUnitId;
+    if (cropVariety != null) result.cropVariety = cropVariety;
+    if (seedSource != null) result.seedSource = seedSource;
+    return result;
+  }
+
+  CreateCropCycleRequest._();
+
+  factory CreateCropCycleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateCropCycleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateCropCycleRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'fieldId')
+    ..aOS(2, _omitFieldNames ? '' : 'cropId')
+    ..aOS(3, _omitFieldNames ? '' : 'season')
+    ..aI(4, _omitFieldNames ? '' : 'cycleYear')
+    ..aOS(5, _omitFieldNames ? '' : 'name')
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'plannedPlantingDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(7, _omitFieldNames ? '' : 'plannedHarvestDate',
+        subBuilder: $0.Timestamp.create)
+    ..aD(8, _omitFieldNames ? '' : 'targetYieldPerHectare')
+    ..aOS(9, _omitFieldNames ? '' : 'yieldUnit')
+    ..aOS(10, _omitFieldNames ? '' : 'notes')
+    ..aOS(11, _omitFieldNames ? '' : 'managementUnitId')
+    ..aOS(12, _omitFieldNames ? '' : 'cropVariety')
+    ..aOS(13, _omitFieldNames ? '' : 'seedSource')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateCropCycleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateCropCycleRequest copyWith(
+          void Function(CreateCropCycleRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateCropCycleRequest))
+          as CreateCropCycleRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateCropCycleRequest create() => CreateCropCycleRequest._();
+  @$core.override
+  CreateCropCycleRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateCropCycleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateCropCycleRequest>(create);
+  static CreateCropCycleRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get fieldId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set fieldId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFieldId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFieldId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get cropId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set cropId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCropId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCropId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get season => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set season($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSeason() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSeason() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get cycleYear => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set cycleYear($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCycleYear() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCycleYear() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get name => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set name($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasName() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $0.Timestamp get plannedPlantingDate => $_getN(5);
+  @$pb.TagNumber(6)
+  set plannedPlantingDate($0.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasPlannedPlantingDate() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearPlannedPlantingDate() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $0.Timestamp ensurePlannedPlantingDate() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  $0.Timestamp get plannedHarvestDate => $_getN(6);
+  @$pb.TagNumber(7)
+  set plannedHarvestDate($0.Timestamp value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasPlannedHarvestDate() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearPlannedHarvestDate() => $_clearField(7);
+  @$pb.TagNumber(7)
+  $0.Timestamp ensurePlannedHarvestDate() => $_ensure(6);
+
+  @$pb.TagNumber(8)
+  $core.double get targetYieldPerHectare => $_getN(7);
+  @$pb.TagNumber(8)
+  set targetYieldPerHectare($core.double value) => $_setDouble(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasTargetYieldPerHectare() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearTargetYieldPerHectare() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get yieldUnit => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set yieldUnit($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasYieldUnit() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearYieldUnit() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get notes => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set notes($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasNotes() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearNotes() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get managementUnitId => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set managementUnitId($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasManagementUnitId() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearManagementUnitId() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get cropVariety => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set cropVariety($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasCropVariety() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearCropVariety() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.String get seedSource => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set seedSource($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasSeedSource() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearSeedSource() => $_clearField(13);
+}
+
+class CreateCropCycleResponse extends $pb.GeneratedMessage {
+  factory CreateCropCycleResponse({
+    CropCycle? cycle,
+  }) {
+    final result = create();
+    if (cycle != null) result.cycle = cycle;
+    return result;
+  }
+
+  CreateCropCycleResponse._();
+
+  factory CreateCropCycleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateCropCycleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateCropCycleResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOM<CropCycle>(1, _omitFieldNames ? '' : 'cycle',
+        subBuilder: CropCycle.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateCropCycleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateCropCycleResponse copyWith(
+          void Function(CreateCropCycleResponse) updates) =>
+      super.copyWith((message) => updates(message as CreateCropCycleResponse))
+          as CreateCropCycleResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateCropCycleResponse create() => CreateCropCycleResponse._();
+  @$core.override
+  CreateCropCycleResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateCropCycleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateCropCycleResponse>(create);
+  static CreateCropCycleResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  CropCycle get cycle => $_getN(0);
+  @$pb.TagNumber(1)
+  set cycle(CropCycle value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCycle() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCycle() => $_clearField(1);
+  @$pb.TagNumber(1)
+  CropCycle ensureCycle() => $_ensure(0);
+}
+
+class GetCropCycleRequest extends $pb.GeneratedMessage {
+  factory GetCropCycleRequest({
+    $core.String? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  GetCropCycleRequest._();
+
+  factory GetCropCycleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetCropCycleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetCropCycleRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetCropCycleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetCropCycleRequest copyWith(void Function(GetCropCycleRequest) updates) =>
+      super.copyWith((message) => updates(message as GetCropCycleRequest))
+          as GetCropCycleRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetCropCycleRequest create() => GetCropCycleRequest._();
+  @$core.override
+  GetCropCycleRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetCropCycleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetCropCycleRequest>(create);
+  static GetCropCycleRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class GetCropCycleResponse extends $pb.GeneratedMessage {
+  factory GetCropCycleResponse({
+    CropCycle? cycle,
+  }) {
+    final result = create();
+    if (cycle != null) result.cycle = cycle;
+    return result;
+  }
+
+  GetCropCycleResponse._();
+
+  factory GetCropCycleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetCropCycleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetCropCycleResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOM<CropCycle>(1, _omitFieldNames ? '' : 'cycle',
+        subBuilder: CropCycle.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetCropCycleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetCropCycleResponse copyWith(void Function(GetCropCycleResponse) updates) =>
+      super.copyWith((message) => updates(message as GetCropCycleResponse))
+          as GetCropCycleResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetCropCycleResponse create() => GetCropCycleResponse._();
+  @$core.override
+  GetCropCycleResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetCropCycleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetCropCycleResponse>(create);
+  static GetCropCycleResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  CropCycle get cycle => $_getN(0);
+  @$pb.TagNumber(1)
+  set cycle(CropCycle value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCycle() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCycle() => $_clearField(1);
+  @$pb.TagNumber(1)
+  CropCycle ensureCycle() => $_ensure(0);
+}
+
+class ListCropCyclesRequest extends $pb.GeneratedMessage {
+  factory ListCropCyclesRequest({
+    $core.String? fieldId,
+    CropCycleStatus? status,
+    $core.int? pageSize,
+    $core.int? pageOffset,
+    $core.String? managementUnitId,
+  }) {
+    final result = create();
+    if (fieldId != null) result.fieldId = fieldId;
+    if (status != null) result.status = status;
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageOffset != null) result.pageOffset = pageOffset;
+    if (managementUnitId != null) result.managementUnitId = managementUnitId;
+    return result;
+  }
+
+  ListCropCyclesRequest._();
+
+  factory ListCropCyclesRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListCropCyclesRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListCropCyclesRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'fieldId')
+    ..aE<CropCycleStatus>(2, _omitFieldNames ? '' : 'status',
+        enumValues: CropCycleStatus.values)
+    ..aI(3, _omitFieldNames ? '' : 'pageSize')
+    ..aI(4, _omitFieldNames ? '' : 'pageOffset')
+    ..aOS(5, _omitFieldNames ? '' : 'managementUnitId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCropCyclesRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCropCyclesRequest copyWith(
+          void Function(ListCropCyclesRequest) updates) =>
+      super.copyWith((message) => updates(message as ListCropCyclesRequest))
+          as ListCropCyclesRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListCropCyclesRequest create() => ListCropCyclesRequest._();
+  @$core.override
+  ListCropCyclesRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListCropCyclesRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListCropCyclesRequest>(create);
+  static ListCropCyclesRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get fieldId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set fieldId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFieldId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFieldId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  CropCycleStatus get status => $_getN(1);
+  @$pb.TagNumber(2)
+  set status(CropCycleStatus value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasStatus() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearStatus() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get pageSize => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set pageSize($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPageSize() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPageSize() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get pageOffset => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set pageOffset($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPageOffset() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPageOffset() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get managementUnitId => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set managementUnitId($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasManagementUnitId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearManagementUnitId() => $_clearField(5);
+}
+
+class ListCropCyclesResponse extends $pb.GeneratedMessage {
+  factory ListCropCyclesResponse({
+    $core.Iterable<CropCycle>? cycles,
+    $core.int? totalCount,
+  }) {
+    final result = create();
+    if (cycles != null) result.cycles.addAll(cycles);
+    if (totalCount != null) result.totalCount = totalCount;
+    return result;
+  }
+
+  ListCropCyclesResponse._();
+
+  factory ListCropCyclesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListCropCyclesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListCropCyclesResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..pPM<CropCycle>(1, _omitFieldNames ? '' : 'cycles',
+        subBuilder: CropCycle.create)
+    ..aI(2, _omitFieldNames ? '' : 'totalCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCropCyclesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCropCyclesResponse copyWith(
+          void Function(ListCropCyclesResponse) updates) =>
+      super.copyWith((message) => updates(message as ListCropCyclesResponse))
+          as ListCropCyclesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListCropCyclesResponse create() => ListCropCyclesResponse._();
+  @$core.override
+  ListCropCyclesResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListCropCyclesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListCropCyclesResponse>(create);
+  static ListCropCyclesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<CropCycle> get cycles => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.int get totalCount => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set totalCount($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTotalCount() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalCount() => $_clearField(2);
+}
+
+class UpdateCropCycleRequest extends $pb.GeneratedMessage {
+  factory UpdateCropCycleRequest({
+    $core.String? id,
+    CropCycleStatus? status,
+    $0.Timestamp? actualPlantingDate,
+    $0.Timestamp? actualHarvestDate,
+    $core.double? actualYieldPerHectare,
+    $fixnum.Int64? totalInputCost,
+    $fixnum.Int64? totalRevenue,
+    $core.String? notes,
+    $1.FieldMask? updateMask,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (status != null) result.status = status;
+    if (actualPlantingDate != null)
+      result.actualPlantingDate = actualPlantingDate;
+    if (actualHarvestDate != null) result.actualHarvestDate = actualHarvestDate;
+    if (actualYieldPerHectare != null)
+      result.actualYieldPerHectare = actualYieldPerHectare;
+    if (totalInputCost != null) result.totalInputCost = totalInputCost;
+    if (totalRevenue != null) result.totalRevenue = totalRevenue;
+    if (notes != null) result.notes = notes;
+    if (updateMask != null) result.updateMask = updateMask;
+    return result;
+  }
+
+  UpdateCropCycleRequest._();
+
+  factory UpdateCropCycleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateCropCycleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateCropCycleRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aE<CropCycleStatus>(2, _omitFieldNames ? '' : 'status',
+        enumValues: CropCycleStatus.values)
+    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'actualPlantingDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(4, _omitFieldNames ? '' : 'actualHarvestDate',
+        subBuilder: $0.Timestamp.create)
+    ..aD(5, _omitFieldNames ? '' : 'actualYieldPerHectare')
+    ..aInt64(6, _omitFieldNames ? '' : 'totalInputCost')
+    ..aInt64(7, _omitFieldNames ? '' : 'totalRevenue')
+    ..aOS(8, _omitFieldNames ? '' : 'notes')
+    ..aOM<$1.FieldMask>(9, _omitFieldNames ? '' : 'updateMask',
+        subBuilder: $1.FieldMask.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCropCycleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCropCycleRequest copyWith(
+          void Function(UpdateCropCycleRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateCropCycleRequest))
+          as UpdateCropCycleRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateCropCycleRequest create() => UpdateCropCycleRequest._();
+  @$core.override
+  UpdateCropCycleRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateCropCycleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateCropCycleRequest>(create);
+  static UpdateCropCycleRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  CropCycleStatus get status => $_getN(1);
+  @$pb.TagNumber(2)
+  set status(CropCycleStatus value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasStatus() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearStatus() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $0.Timestamp get actualPlantingDate => $_getN(2);
+  @$pb.TagNumber(3)
+  set actualPlantingDate($0.Timestamp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasActualPlantingDate() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearActualPlantingDate() => $_clearField(3);
+  @$pb.TagNumber(3)
+  $0.Timestamp ensureActualPlantingDate() => $_ensure(2);
+
+  @$pb.TagNumber(4)
+  $0.Timestamp get actualHarvestDate => $_getN(3);
+  @$pb.TagNumber(4)
+  set actualHarvestDate($0.Timestamp value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasActualHarvestDate() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearActualHarvestDate() => $_clearField(4);
+  @$pb.TagNumber(4)
+  $0.Timestamp ensureActualHarvestDate() => $_ensure(3);
+
+  @$pb.TagNumber(5)
+  $core.double get actualYieldPerHectare => $_getN(4);
+  @$pb.TagNumber(5)
+  set actualYieldPerHectare($core.double value) => $_setDouble(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasActualYieldPerHectare() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearActualYieldPerHectare() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get totalInputCost => $_getI64(5);
+  @$pb.TagNumber(6)
+  set totalInputCost($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTotalInputCost() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTotalInputCost() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get totalRevenue => $_getI64(6);
+  @$pb.TagNumber(7)
+  set totalRevenue($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasTotalRevenue() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearTotalRevenue() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get notes => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set notes($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasNotes() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearNotes() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $1.FieldMask get updateMask => $_getN(8);
+  @$pb.TagNumber(9)
+  set updateMask($1.FieldMask value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasUpdateMask() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearUpdateMask() => $_clearField(9);
+  @$pb.TagNumber(9)
+  $1.FieldMask ensureUpdateMask() => $_ensure(8);
+}
+
+class UpdateCropCycleResponse extends $pb.GeneratedMessage {
+  factory UpdateCropCycleResponse({
+    CropCycle? cycle,
+  }) {
+    final result = create();
+    if (cycle != null) result.cycle = cycle;
+    return result;
+  }
+
+  UpdateCropCycleResponse._();
+
+  factory UpdateCropCycleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateCropCycleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateCropCycleResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOM<CropCycle>(1, _omitFieldNames ? '' : 'cycle',
+        subBuilder: CropCycle.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCropCycleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCropCycleResponse copyWith(
+          void Function(UpdateCropCycleResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdateCropCycleResponse))
+          as UpdateCropCycleResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateCropCycleResponse create() => UpdateCropCycleResponse._();
+  @$core.override
+  UpdateCropCycleResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateCropCycleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateCropCycleResponse>(create);
+  static UpdateCropCycleResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  CropCycle get cycle => $_getN(0);
+  @$pb.TagNumber(1)
+  set cycle(CropCycle value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCycle() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCycle() => $_clearField(1);
+  @$pb.TagNumber(1)
+  CropCycle ensureCycle() => $_ensure(0);
+}
+
+class ActivityEvent extends $pb.GeneratedMessage {
+  factory ActivityEvent({
+    $core.String? id,
+    $core.String? tenantId,
+    $core.String? fieldId,
+    $core.String? cropCycleId,
+    $core.String? performedBy,
+    $core.String? activityType,
+    ActivityCategory? category,
+    $0.Timestamp? startedAt,
+    $0.Timestamp? completedAt,
+    $core.int? durationMinutes,
+    $core.String? description,
+    $core.String? notes,
+    $core.String? inputProductId,
+    $core.double? inputQuantity,
+    $core.String? inputUnit,
+    $fixnum.Int64? inputCost,
+    $core.String? currency,
+    $core.double? areaHectares,
+    $core.double? weatherTempCelsius,
+    $core.double? weatherHumidityPct,
+    $core.double? weatherWindSpeedKmh,
+    $core.String? weatherConditions,
+    $0.Timestamp? createdAt,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (tenantId != null) result.tenantId = tenantId;
+    if (fieldId != null) result.fieldId = fieldId;
+    if (cropCycleId != null) result.cropCycleId = cropCycleId;
+    if (performedBy != null) result.performedBy = performedBy;
+    if (activityType != null) result.activityType = activityType;
+    if (category != null) result.category = category;
+    if (startedAt != null) result.startedAt = startedAt;
+    if (completedAt != null) result.completedAt = completedAt;
+    if (durationMinutes != null) result.durationMinutes = durationMinutes;
+    if (description != null) result.description = description;
+    if (notes != null) result.notes = notes;
+    if (inputProductId != null) result.inputProductId = inputProductId;
+    if (inputQuantity != null) result.inputQuantity = inputQuantity;
+    if (inputUnit != null) result.inputUnit = inputUnit;
+    if (inputCost != null) result.inputCost = inputCost;
+    if (currency != null) result.currency = currency;
+    if (areaHectares != null) result.areaHectares = areaHectares;
+    if (weatherTempCelsius != null)
+      result.weatherTempCelsius = weatherTempCelsius;
+    if (weatherHumidityPct != null)
+      result.weatherHumidityPct = weatherHumidityPct;
+    if (weatherWindSpeedKmh != null)
+      result.weatherWindSpeedKmh = weatherWindSpeedKmh;
+    if (weatherConditions != null) result.weatherConditions = weatherConditions;
+    if (createdAt != null) result.createdAt = createdAt;
+    return result;
+  }
+
+  ActivityEvent._();
+
+  factory ActivityEvent.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ActivityEvent.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ActivityEvent',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'tenantId')
+    ..aOS(3, _omitFieldNames ? '' : 'fieldId')
+    ..aOS(4, _omitFieldNames ? '' : 'cropCycleId')
+    ..aOS(5, _omitFieldNames ? '' : 'performedBy')
+    ..aOS(6, _omitFieldNames ? '' : 'activityType')
+    ..aE<ActivityCategory>(7, _omitFieldNames ? '' : 'category',
+        enumValues: ActivityCategory.values)
+    ..aOM<$0.Timestamp>(8, _omitFieldNames ? '' : 'startedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(9, _omitFieldNames ? '' : 'completedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aI(10, _omitFieldNames ? '' : 'durationMinutes')
+    ..aOS(11, _omitFieldNames ? '' : 'description')
+    ..aOS(12, _omitFieldNames ? '' : 'notes')
+    ..aOS(13, _omitFieldNames ? '' : 'inputProductId')
+    ..aD(14, _omitFieldNames ? '' : 'inputQuantity')
+    ..aOS(15, _omitFieldNames ? '' : 'inputUnit')
+    ..aInt64(16, _omitFieldNames ? '' : 'inputCost')
+    ..aOS(17, _omitFieldNames ? '' : 'currency')
+    ..aD(18, _omitFieldNames ? '' : 'areaHectares')
+    ..aD(19, _omitFieldNames ? '' : 'weatherTempCelsius')
+    ..aD(20, _omitFieldNames ? '' : 'weatherHumidityPct')
+    ..aD(21, _omitFieldNames ? '' : 'weatherWindSpeedKmh')
+    ..aOS(22, _omitFieldNames ? '' : 'weatherConditions')
+    ..aOM<$0.Timestamp>(23, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ActivityEvent clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ActivityEvent copyWith(void Function(ActivityEvent) updates) =>
+      super.copyWith((message) => updates(message as ActivityEvent))
+          as ActivityEvent;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ActivityEvent create() => ActivityEvent._();
+  @$core.override
+  ActivityEvent createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ActivityEvent getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ActivityEvent>(create);
+  static ActivityEvent? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get tenantId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set tenantId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTenantId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTenantId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get fieldId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set fieldId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFieldId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFieldId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get cropCycleId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set cropCycleId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCropCycleId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCropCycleId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get performedBy => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set performedBy($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPerformedBy() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPerformedBy() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get activityType => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set activityType($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasActivityType() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearActivityType() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  ActivityCategory get category => $_getN(6);
+  @$pb.TagNumber(7)
+  set category(ActivityCategory value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCategory() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCategory() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $0.Timestamp get startedAt => $_getN(7);
+  @$pb.TagNumber(8)
+  set startedAt($0.Timestamp value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasStartedAt() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearStartedAt() => $_clearField(8);
+  @$pb.TagNumber(8)
+  $0.Timestamp ensureStartedAt() => $_ensure(7);
+
+  @$pb.TagNumber(9)
+  $0.Timestamp get completedAt => $_getN(8);
+  @$pb.TagNumber(9)
+  set completedAt($0.Timestamp value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasCompletedAt() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearCompletedAt() => $_clearField(9);
+  @$pb.TagNumber(9)
+  $0.Timestamp ensureCompletedAt() => $_ensure(8);
+
+  @$pb.TagNumber(10)
+  $core.int get durationMinutes => $_getIZ(9);
+  @$pb.TagNumber(10)
+  set durationMinutes($core.int value) => $_setSignedInt32(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasDurationMinutes() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearDurationMinutes() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get description => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set description($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasDescription() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearDescription() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get notes => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set notes($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasNotes() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearNotes() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.String get inputProductId => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set inputProductId($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasInputProductId() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearInputProductId() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.double get inputQuantity => $_getN(13);
+  @$pb.TagNumber(14)
+  set inputQuantity($core.double value) => $_setDouble(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasInputQuantity() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearInputQuantity() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.String get inputUnit => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set inputUnit($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasInputUnit() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearInputUnit() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $fixnum.Int64 get inputCost => $_getI64(15);
+  @$pb.TagNumber(16)
+  set inputCost($fixnum.Int64 value) => $_setInt64(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasInputCost() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearInputCost() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.String get currency => $_getSZ(16);
+  @$pb.TagNumber(17)
+  set currency($core.String value) => $_setString(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasCurrency() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearCurrency() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.double get areaHectares => $_getN(17);
+  @$pb.TagNumber(18)
+  set areaHectares($core.double value) => $_setDouble(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasAreaHectares() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearAreaHectares() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.double get weatherTempCelsius => $_getN(18);
+  @$pb.TagNumber(19)
+  set weatherTempCelsius($core.double value) => $_setDouble(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasWeatherTempCelsius() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearWeatherTempCelsius() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $core.double get weatherHumidityPct => $_getN(19);
+  @$pb.TagNumber(20)
+  set weatherHumidityPct($core.double value) => $_setDouble(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasWeatherHumidityPct() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearWeatherHumidityPct() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $core.double get weatherWindSpeedKmh => $_getN(20);
+  @$pb.TagNumber(21)
+  set weatherWindSpeedKmh($core.double value) => $_setDouble(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasWeatherWindSpeedKmh() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearWeatherWindSpeedKmh() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $core.String get weatherConditions => $_getSZ(21);
+  @$pb.TagNumber(22)
+  set weatherConditions($core.String value) => $_setString(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasWeatherConditions() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearWeatherConditions() => $_clearField(22);
+
+  @$pb.TagNumber(23)
+  $0.Timestamp get createdAt => $_getN(22);
+  @$pb.TagNumber(23)
+  set createdAt($0.Timestamp value) => $_setField(23, value);
+  @$pb.TagNumber(23)
+  $core.bool hasCreatedAt() => $_has(22);
+  @$pb.TagNumber(23)
+  void clearCreatedAt() => $_clearField(23);
+  @$pb.TagNumber(23)
+  $0.Timestamp ensureCreatedAt() => $_ensure(22);
+}
+
+class LogActivityEventRequest extends $pb.GeneratedMessage {
+  factory LogActivityEventRequest({
+    $core.String? fieldId,
+    $core.String? cropCycleId,
+    $core.String? activityType,
+    ActivityCategory? category,
+    $0.Timestamp? startedAt,
+    $0.Timestamp? completedAt,
+    $core.int? durationMinutes,
+    $core.String? description,
+    $core.String? notes,
+    $core.String? inputProductId,
+    $core.double? inputQuantity,
+    $core.String? inputUnit,
+    $fixnum.Int64? inputCost,
+    $core.String? currency,
+    $core.double? areaHectares,
+    $core.double? weatherTempCelsius,
+    $core.double? weatherHumidityPct,
+    $core.double? weatherWindSpeedKmh,
+    $core.String? weatherConditions,
+  }) {
+    final result = create();
+    if (fieldId != null) result.fieldId = fieldId;
+    if (cropCycleId != null) result.cropCycleId = cropCycleId;
+    if (activityType != null) result.activityType = activityType;
+    if (category != null) result.category = category;
+    if (startedAt != null) result.startedAt = startedAt;
+    if (completedAt != null) result.completedAt = completedAt;
+    if (durationMinutes != null) result.durationMinutes = durationMinutes;
+    if (description != null) result.description = description;
+    if (notes != null) result.notes = notes;
+    if (inputProductId != null) result.inputProductId = inputProductId;
+    if (inputQuantity != null) result.inputQuantity = inputQuantity;
+    if (inputUnit != null) result.inputUnit = inputUnit;
+    if (inputCost != null) result.inputCost = inputCost;
+    if (currency != null) result.currency = currency;
+    if (areaHectares != null) result.areaHectares = areaHectares;
+    if (weatherTempCelsius != null)
+      result.weatherTempCelsius = weatherTempCelsius;
+    if (weatherHumidityPct != null)
+      result.weatherHumidityPct = weatherHumidityPct;
+    if (weatherWindSpeedKmh != null)
+      result.weatherWindSpeedKmh = weatherWindSpeedKmh;
+    if (weatherConditions != null) result.weatherConditions = weatherConditions;
+    return result;
+  }
+
+  LogActivityEventRequest._();
+
+  factory LogActivityEventRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory LogActivityEventRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LogActivityEventRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'fieldId')
+    ..aOS(2, _omitFieldNames ? '' : 'cropCycleId')
+    ..aOS(3, _omitFieldNames ? '' : 'activityType')
+    ..aE<ActivityCategory>(4, _omitFieldNames ? '' : 'category',
+        enumValues: ActivityCategory.values)
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'startedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'completedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aI(7, _omitFieldNames ? '' : 'durationMinutes')
+    ..aOS(8, _omitFieldNames ? '' : 'description')
+    ..aOS(9, _omitFieldNames ? '' : 'notes')
+    ..aOS(10, _omitFieldNames ? '' : 'inputProductId')
+    ..aD(11, _omitFieldNames ? '' : 'inputQuantity')
+    ..aOS(12, _omitFieldNames ? '' : 'inputUnit')
+    ..aInt64(13, _omitFieldNames ? '' : 'inputCost')
+    ..aOS(14, _omitFieldNames ? '' : 'currency')
+    ..aD(15, _omitFieldNames ? '' : 'areaHectares')
+    ..aD(16, _omitFieldNames ? '' : 'weatherTempCelsius')
+    ..aD(17, _omitFieldNames ? '' : 'weatherHumidityPct')
+    ..aD(18, _omitFieldNames ? '' : 'weatherWindSpeedKmh')
+    ..aOS(19, _omitFieldNames ? '' : 'weatherConditions')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LogActivityEventRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LogActivityEventRequest copyWith(
+          void Function(LogActivityEventRequest) updates) =>
+      super.copyWith((message) => updates(message as LogActivityEventRequest))
+          as LogActivityEventRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LogActivityEventRequest create() => LogActivityEventRequest._();
+  @$core.override
+  LogActivityEventRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static LogActivityEventRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LogActivityEventRequest>(create);
+  static LogActivityEventRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get fieldId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set fieldId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFieldId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFieldId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get cropCycleId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set cropCycleId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCropCycleId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCropCycleId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get activityType => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set activityType($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasActivityType() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearActivityType() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  ActivityCategory get category => $_getN(3);
+  @$pb.TagNumber(4)
+  set category(ActivityCategory value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCategory() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCategory() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $0.Timestamp get startedAt => $_getN(4);
+  @$pb.TagNumber(5)
+  set startedAt($0.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasStartedAt() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearStartedAt() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $0.Timestamp ensureStartedAt() => $_ensure(4);
+
+  @$pb.TagNumber(6)
+  $0.Timestamp get completedAt => $_getN(5);
+  @$pb.TagNumber(6)
+  set completedAt($0.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCompletedAt() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearCompletedAt() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $0.Timestamp ensureCompletedAt() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  $core.int get durationMinutes => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set durationMinutes($core.int value) => $_setSignedInt32(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasDurationMinutes() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearDurationMinutes() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get description => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set description($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDescription() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearDescription() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get notes => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set notes($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasNotes() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearNotes() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get inputProductId => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set inputProductId($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasInputProductId() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearInputProductId() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.double get inputQuantity => $_getN(10);
+  @$pb.TagNumber(11)
+  set inputQuantity($core.double value) => $_setDouble(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasInputQuantity() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearInputQuantity() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get inputUnit => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set inputUnit($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasInputUnit() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearInputUnit() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get inputCost => $_getI64(12);
+  @$pb.TagNumber(13)
+  set inputCost($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasInputCost() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearInputCost() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.String get currency => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set currency($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasCurrency() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearCurrency() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.double get areaHectares => $_getN(14);
+  @$pb.TagNumber(15)
+  set areaHectares($core.double value) => $_setDouble(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasAreaHectares() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearAreaHectares() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.double get weatherTempCelsius => $_getN(15);
+  @$pb.TagNumber(16)
+  set weatherTempCelsius($core.double value) => $_setDouble(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasWeatherTempCelsius() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearWeatherTempCelsius() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.double get weatherHumidityPct => $_getN(16);
+  @$pb.TagNumber(17)
+  set weatherHumidityPct($core.double value) => $_setDouble(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasWeatherHumidityPct() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearWeatherHumidityPct() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.double get weatherWindSpeedKmh => $_getN(17);
+  @$pb.TagNumber(18)
+  set weatherWindSpeedKmh($core.double value) => $_setDouble(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasWeatherWindSpeedKmh() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearWeatherWindSpeedKmh() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.String get weatherConditions => $_getSZ(18);
+  @$pb.TagNumber(19)
+  set weatherConditions($core.String value) => $_setString(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasWeatherConditions() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearWeatherConditions() => $_clearField(19);
+}
+
+class LogActivityEventResponse extends $pb.GeneratedMessage {
+  factory LogActivityEventResponse({
+    ActivityEvent? event,
+  }) {
+    final result = create();
+    if (event != null) result.event = event;
+    return result;
+  }
+
+  LogActivityEventResponse._();
+
+  factory LogActivityEventResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory LogActivityEventResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LogActivityEventResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOM<ActivityEvent>(1, _omitFieldNames ? '' : 'event',
+        subBuilder: ActivityEvent.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LogActivityEventResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LogActivityEventResponse copyWith(
+          void Function(LogActivityEventResponse) updates) =>
+      super.copyWith((message) => updates(message as LogActivityEventResponse))
+          as LogActivityEventResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LogActivityEventResponse create() => LogActivityEventResponse._();
+  @$core.override
+  LogActivityEventResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static LogActivityEventResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LogActivityEventResponse>(create);
+  static LogActivityEventResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ActivityEvent get event => $_getN(0);
+  @$pb.TagNumber(1)
+  set event(ActivityEvent value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasEvent() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEvent() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ActivityEvent ensureEvent() => $_ensure(0);
+}
+
+class ListActivityEventsRequest extends $pb.GeneratedMessage {
+  factory ListActivityEventsRequest({
+    $core.String? fieldId,
+    $core.String? cropCycleId,
+    ActivityCategory? category,
+    $core.int? pageSize,
+    $core.int? pageOffset,
+  }) {
+    final result = create();
+    if (fieldId != null) result.fieldId = fieldId;
+    if (cropCycleId != null) result.cropCycleId = cropCycleId;
+    if (category != null) result.category = category;
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageOffset != null) result.pageOffset = pageOffset;
+    return result;
+  }
+
+  ListActivityEventsRequest._();
+
+  factory ListActivityEventsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListActivityEventsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListActivityEventsRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'fieldId')
+    ..aOS(2, _omitFieldNames ? '' : 'cropCycleId')
+    ..aE<ActivityCategory>(3, _omitFieldNames ? '' : 'category',
+        enumValues: ActivityCategory.values)
+    ..aI(4, _omitFieldNames ? '' : 'pageSize')
+    ..aI(5, _omitFieldNames ? '' : 'pageOffset')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEventsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEventsRequest copyWith(
+          void Function(ListActivityEventsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListActivityEventsRequest))
+          as ListActivityEventsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEventsRequest create() => ListActivityEventsRequest._();
+  @$core.override
+  ListActivityEventsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEventsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListActivityEventsRequest>(create);
+  static ListActivityEventsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get fieldId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set fieldId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFieldId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFieldId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get cropCycleId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set cropCycleId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCropCycleId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCropCycleId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  ActivityCategory get category => $_getN(2);
+  @$pb.TagNumber(3)
+  set category(ActivityCategory value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCategory() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCategory() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get pageSize => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set pageSize($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPageSize() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPageSize() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get pageOffset => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set pageOffset($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPageOffset() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPageOffset() => $_clearField(5);
+}
+
+class ListActivityEventsResponse extends $pb.GeneratedMessage {
+  factory ListActivityEventsResponse({
+    $core.Iterable<ActivityEvent>? events,
+    $core.int? totalCount,
+  }) {
+    final result = create();
+    if (events != null) result.events.addAll(events);
+    if (totalCount != null) result.totalCount = totalCount;
+    return result;
+  }
+
+  ListActivityEventsResponse._();
+
+  factory ListActivityEventsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListActivityEventsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListActivityEventsResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..pPM<ActivityEvent>(1, _omitFieldNames ? '' : 'events',
+        subBuilder: ActivityEvent.create)
+    ..aI(2, _omitFieldNames ? '' : 'totalCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEventsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEventsResponse copyWith(
+          void Function(ListActivityEventsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListActivityEventsResponse))
+          as ListActivityEventsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEventsResponse create() => ListActivityEventsResponse._();
+  @$core.override
+  ListActivityEventsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEventsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListActivityEventsResponse>(create);
+  static ListActivityEventsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<ActivityEvent> get events => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.int get totalCount => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set totalCount($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTotalCount() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalCount() => $_clearField(2);
+}
+
+class ActivityEvidence extends $pb.GeneratedMessage {
+  factory ActivityEvidence({
+    $core.String? id,
+    $core.String? tenantId,
+    $core.String? activityEventId,
+    EvidenceType? evidenceType,
+    $core.String? fileUrl,
+    $core.String? fileName,
+    $fixnum.Int64? fileSizeBytes,
+    $core.String? mimeType,
+    $core.String? thumbnailUrl,
+    $core.String? caption,
+    $core.double? latitude,
+    $core.double? longitude,
+    $0.Timestamp? capturedAt,
+    $core.String? capturedBy,
+    $0.Timestamp? createdAt,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (tenantId != null) result.tenantId = tenantId;
+    if (activityEventId != null) result.activityEventId = activityEventId;
+    if (evidenceType != null) result.evidenceType = evidenceType;
+    if (fileUrl != null) result.fileUrl = fileUrl;
+    if (fileName != null) result.fileName = fileName;
+    if (fileSizeBytes != null) result.fileSizeBytes = fileSizeBytes;
+    if (mimeType != null) result.mimeType = mimeType;
+    if (thumbnailUrl != null) result.thumbnailUrl = thumbnailUrl;
+    if (caption != null) result.caption = caption;
+    if (latitude != null) result.latitude = latitude;
+    if (longitude != null) result.longitude = longitude;
+    if (capturedAt != null) result.capturedAt = capturedAt;
+    if (capturedBy != null) result.capturedBy = capturedBy;
+    if (createdAt != null) result.createdAt = createdAt;
+    return result;
+  }
+
+  ActivityEvidence._();
+
+  factory ActivityEvidence.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ActivityEvidence.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ActivityEvidence',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'tenantId')
+    ..aOS(3, _omitFieldNames ? '' : 'activityEventId')
+    ..aE<EvidenceType>(4, _omitFieldNames ? '' : 'evidenceType',
+        enumValues: EvidenceType.values)
+    ..aOS(5, _omitFieldNames ? '' : 'fileUrl')
+    ..aOS(6, _omitFieldNames ? '' : 'fileName')
+    ..aInt64(7, _omitFieldNames ? '' : 'fileSizeBytes')
+    ..aOS(8, _omitFieldNames ? '' : 'mimeType')
+    ..aOS(9, _omitFieldNames ? '' : 'thumbnailUrl')
+    ..aOS(10, _omitFieldNames ? '' : 'caption')
+    ..aD(11, _omitFieldNames ? '' : 'latitude')
+    ..aD(12, _omitFieldNames ? '' : 'longitude')
+    ..aOM<$0.Timestamp>(13, _omitFieldNames ? '' : 'capturedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOS(14, _omitFieldNames ? '' : 'capturedBy')
+    ..aOM<$0.Timestamp>(15, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ActivityEvidence clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ActivityEvidence copyWith(void Function(ActivityEvidence) updates) =>
+      super.copyWith((message) => updates(message as ActivityEvidence))
+          as ActivityEvidence;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ActivityEvidence create() => ActivityEvidence._();
+  @$core.override
+  ActivityEvidence createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ActivityEvidence getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ActivityEvidence>(create);
+  static ActivityEvidence? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get tenantId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set tenantId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTenantId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTenantId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get activityEventId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set activityEventId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasActivityEventId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearActivityEventId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  EvidenceType get evidenceType => $_getN(3);
+  @$pb.TagNumber(4)
+  set evidenceType(EvidenceType value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasEvidenceType() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearEvidenceType() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get fileUrl => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set fileUrl($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasFileUrl() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearFileUrl() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get fileName => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set fileName($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasFileName() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearFileName() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get fileSizeBytes => $_getI64(6);
+  @$pb.TagNumber(7)
+  set fileSizeBytes($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasFileSizeBytes() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearFileSizeBytes() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get mimeType => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set mimeType($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasMimeType() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearMimeType() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get thumbnailUrl => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set thumbnailUrl($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasThumbnailUrl() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearThumbnailUrl() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get caption => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set caption($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasCaption() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearCaption() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.double get latitude => $_getN(10);
+  @$pb.TagNumber(11)
+  set latitude($core.double value) => $_setDouble(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasLatitude() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearLatitude() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.double get longitude => $_getN(11);
+  @$pb.TagNumber(12)
+  set longitude($core.double value) => $_setDouble(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasLongitude() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearLongitude() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $0.Timestamp get capturedAt => $_getN(12);
+  @$pb.TagNumber(13)
+  set capturedAt($0.Timestamp value) => $_setField(13, value);
+  @$pb.TagNumber(13)
+  $core.bool hasCapturedAt() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearCapturedAt() => $_clearField(13);
+  @$pb.TagNumber(13)
+  $0.Timestamp ensureCapturedAt() => $_ensure(12);
+
+  @$pb.TagNumber(14)
+  $core.String get capturedBy => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set capturedBy($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasCapturedBy() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearCapturedBy() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $0.Timestamp get createdAt => $_getN(14);
+  @$pb.TagNumber(15)
+  set createdAt($0.Timestamp value) => $_setField(15, value);
+  @$pb.TagNumber(15)
+  $core.bool hasCreatedAt() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearCreatedAt() => $_clearField(15);
+  @$pb.TagNumber(15)
+  $0.Timestamp ensureCreatedAt() => $_ensure(14);
+}
+
+class AddActivityEvidenceRequest extends $pb.GeneratedMessage {
+  factory AddActivityEvidenceRequest({
+    $core.String? activityEventId,
+    EvidenceType? evidenceType,
+    $core.String? fileUrl,
+    $core.String? fileName,
+    $fixnum.Int64? fileSizeBytes,
+    $core.String? mimeType,
+    $core.String? thumbnailUrl,
+    $core.String? caption,
+    $core.double? latitude,
+    $core.double? longitude,
+    $0.Timestamp? capturedAt,
+  }) {
+    final result = create();
+    if (activityEventId != null) result.activityEventId = activityEventId;
+    if (evidenceType != null) result.evidenceType = evidenceType;
+    if (fileUrl != null) result.fileUrl = fileUrl;
+    if (fileName != null) result.fileName = fileName;
+    if (fileSizeBytes != null) result.fileSizeBytes = fileSizeBytes;
+    if (mimeType != null) result.mimeType = mimeType;
+    if (thumbnailUrl != null) result.thumbnailUrl = thumbnailUrl;
+    if (caption != null) result.caption = caption;
+    if (latitude != null) result.latitude = latitude;
+    if (longitude != null) result.longitude = longitude;
+    if (capturedAt != null) result.capturedAt = capturedAt;
+    return result;
+  }
+
+  AddActivityEvidenceRequest._();
+
+  factory AddActivityEvidenceRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AddActivityEvidenceRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AddActivityEvidenceRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'activityEventId')
+    ..aE<EvidenceType>(2, _omitFieldNames ? '' : 'evidenceType',
+        enumValues: EvidenceType.values)
+    ..aOS(3, _omitFieldNames ? '' : 'fileUrl')
+    ..aOS(4, _omitFieldNames ? '' : 'fileName')
+    ..aInt64(5, _omitFieldNames ? '' : 'fileSizeBytes')
+    ..aOS(6, _omitFieldNames ? '' : 'mimeType')
+    ..aOS(7, _omitFieldNames ? '' : 'thumbnailUrl')
+    ..aOS(8, _omitFieldNames ? '' : 'caption')
+    ..aD(9, _omitFieldNames ? '' : 'latitude')
+    ..aD(10, _omitFieldNames ? '' : 'longitude')
+    ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'capturedAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AddActivityEvidenceRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AddActivityEvidenceRequest copyWith(
+          void Function(AddActivityEvidenceRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as AddActivityEvidenceRequest))
+          as AddActivityEvidenceRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AddActivityEvidenceRequest create() => AddActivityEvidenceRequest._();
+  @$core.override
+  AddActivityEvidenceRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static AddActivityEvidenceRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AddActivityEvidenceRequest>(create);
+  static AddActivityEvidenceRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get activityEventId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set activityEventId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasActivityEventId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearActivityEventId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  EvidenceType get evidenceType => $_getN(1);
+  @$pb.TagNumber(2)
+  set evidenceType(EvidenceType value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEvidenceType() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEvidenceType() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get fileUrl => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set fileUrl($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFileUrl() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFileUrl() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get fileName => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set fileName($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasFileName() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearFileName() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get fileSizeBytes => $_getI64(4);
+  @$pb.TagNumber(5)
+  set fileSizeBytes($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasFileSizeBytes() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearFileSizeBytes() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get mimeType => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set mimeType($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasMimeType() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearMimeType() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get thumbnailUrl => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set thumbnailUrl($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasThumbnailUrl() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearThumbnailUrl() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get caption => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set caption($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasCaption() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearCaption() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.double get latitude => $_getN(8);
+  @$pb.TagNumber(9)
+  set latitude($core.double value) => $_setDouble(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasLatitude() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearLatitude() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.double get longitude => $_getN(9);
+  @$pb.TagNumber(10)
+  set longitude($core.double value) => $_setDouble(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasLongitude() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearLongitude() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $0.Timestamp get capturedAt => $_getN(10);
+  @$pb.TagNumber(11)
+  set capturedAt($0.Timestamp value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasCapturedAt() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearCapturedAt() => $_clearField(11);
+  @$pb.TagNumber(11)
+  $0.Timestamp ensureCapturedAt() => $_ensure(10);
+}
+
+class AddActivityEvidenceResponse extends $pb.GeneratedMessage {
+  factory AddActivityEvidenceResponse({
+    ActivityEvidence? evidence,
+  }) {
+    final result = create();
+    if (evidence != null) result.evidence = evidence;
+    return result;
+  }
+
+  AddActivityEvidenceResponse._();
+
+  factory AddActivityEvidenceResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AddActivityEvidenceResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AddActivityEvidenceResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOM<ActivityEvidence>(1, _omitFieldNames ? '' : 'evidence',
+        subBuilder: ActivityEvidence.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AddActivityEvidenceResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AddActivityEvidenceResponse copyWith(
+          void Function(AddActivityEvidenceResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as AddActivityEvidenceResponse))
+          as AddActivityEvidenceResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AddActivityEvidenceResponse create() =>
+      AddActivityEvidenceResponse._();
+  @$core.override
+  AddActivityEvidenceResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static AddActivityEvidenceResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AddActivityEvidenceResponse>(create);
+  static AddActivityEvidenceResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ActivityEvidence get evidence => $_getN(0);
+  @$pb.TagNumber(1)
+  set evidence(ActivityEvidence value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasEvidence() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEvidence() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ActivityEvidence ensureEvidence() => $_ensure(0);
+}
+
+class ListActivityEvidenceRequest extends $pb.GeneratedMessage {
+  factory ListActivityEvidenceRequest({
+    $core.String? activityEventId,
+    $core.int? pageSize,
+    $core.int? pageOffset,
+  }) {
+    final result = create();
+    if (activityEventId != null) result.activityEventId = activityEventId;
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageOffset != null) result.pageOffset = pageOffset;
+    return result;
+  }
+
+  ListActivityEvidenceRequest._();
+
+  factory ListActivityEvidenceRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListActivityEvidenceRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListActivityEvidenceRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'activityEventId')
+    ..aI(2, _omitFieldNames ? '' : 'pageSize')
+    ..aI(3, _omitFieldNames ? '' : 'pageOffset')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEvidenceRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEvidenceRequest copyWith(
+          void Function(ListActivityEvidenceRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListActivityEvidenceRequest))
+          as ListActivityEvidenceRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEvidenceRequest create() =>
+      ListActivityEvidenceRequest._();
+  @$core.override
+  ListActivityEvidenceRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEvidenceRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListActivityEvidenceRequest>(create);
+  static ListActivityEvidenceRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get activityEventId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set activityEventId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasActivityEventId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearActivityEventId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get pageSize => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set pageSize($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPageSize() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPageSize() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get pageOffset => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set pageOffset($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPageOffset() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPageOffset() => $_clearField(3);
+}
+
+class ListActivityEvidenceResponse extends $pb.GeneratedMessage {
+  factory ListActivityEvidenceResponse({
+    $core.Iterable<ActivityEvidence>? evidence,
+    $core.int? totalCount,
+  }) {
+    final result = create();
+    if (evidence != null) result.evidence.addAll(evidence);
+    if (totalCount != null) result.totalCount = totalCount;
+    return result;
+  }
+
+  ListActivityEvidenceResponse._();
+
+  factory ListActivityEvidenceResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListActivityEvidenceResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListActivityEvidenceResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..pPM<ActivityEvidence>(1, _omitFieldNames ? '' : 'evidence',
+        subBuilder: ActivityEvidence.create)
+    ..aI(2, _omitFieldNames ? '' : 'totalCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEvidenceResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListActivityEvidenceResponse copyWith(
+          void Function(ListActivityEvidenceResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListActivityEvidenceResponse))
+          as ListActivityEvidenceResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEvidenceResponse create() =>
+      ListActivityEvidenceResponse._();
+  @$core.override
+  ListActivityEvidenceResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListActivityEvidenceResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListActivityEvidenceResponse>(create);
+  static ListActivityEvidenceResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<ActivityEvidence> get evidence => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.int get totalCount => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set totalCount($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTotalCount() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalCount() => $_clearField(2);
+}
+
+class DeleteActivityEvidenceRequest extends $pb.GeneratedMessage {
+  factory DeleteActivityEvidenceRequest({
+    $core.String? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteActivityEvidenceRequest._();
+
+  factory DeleteActivityEvidenceRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteActivityEvidenceRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteActivityEvidenceRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteActivityEvidenceRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteActivityEvidenceRequest copyWith(
+          void Function(DeleteActivityEvidenceRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as DeleteActivityEvidenceRequest))
+          as DeleteActivityEvidenceRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteActivityEvidenceRequest create() =>
+      DeleteActivityEvidenceRequest._();
+  @$core.override
+  DeleteActivityEvidenceRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteActivityEvidenceRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteActivityEvidenceRequest>(create);
+  static DeleteActivityEvidenceRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class DeleteActivityEvidenceResponse extends $pb.GeneratedMessage {
+  factory DeleteActivityEvidenceResponse() => create();
+
+  DeleteActivityEvidenceResponse._();
+
+  factory DeleteActivityEvidenceResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteActivityEvidenceResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteActivityEvidenceResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.field.v1'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteActivityEvidenceResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteActivityEvidenceResponse copyWith(
+          void Function(DeleteActivityEvidenceResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as DeleteActivityEvidenceResponse))
+          as DeleteActivityEvidenceResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteActivityEvidenceResponse create() =>
+      DeleteActivityEvidenceResponse._();
+  @$core.override
+  DeleteActivityEvidenceResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteActivityEvidenceResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteActivityEvidenceResponse>(create);
+  static DeleteActivityEvidenceResponse? _defaultInstance;
+}
+
 class FieldServiceApi {
   final $pb.RpcClient _client;
 
   FieldServiceApi(this._client);
 
+  /// Field CRUD
   $async.Future<CreateFieldResponse> createField(
           $pb.ClientContext? ctx, CreateFieldRequest request) =>
       _client.invoke<CreateFieldResponse>(
@@ -2876,6 +5600,48 @@ class FieldServiceApi {
           $pb.ClientContext? ctx, GetCropHistoryRequest request) =>
       _client.invoke<GetCropHistoryResponse>(ctx, 'FieldService',
           'GetCropHistory', request, GetCropHistoryResponse());
+
+  /// Crop Cycles
+  $async.Future<CreateCropCycleResponse> createCropCycle(
+          $pb.ClientContext? ctx, CreateCropCycleRequest request) =>
+      _client.invoke<CreateCropCycleResponse>(ctx, 'FieldService',
+          'CreateCropCycle', request, CreateCropCycleResponse());
+  $async.Future<GetCropCycleResponse> getCropCycle(
+          $pb.ClientContext? ctx, GetCropCycleRequest request) =>
+      _client.invoke<GetCropCycleResponse>(
+          ctx, 'FieldService', 'GetCropCycle', request, GetCropCycleResponse());
+  $async.Future<ListCropCyclesResponse> listCropCycles(
+          $pb.ClientContext? ctx, ListCropCyclesRequest request) =>
+      _client.invoke<ListCropCyclesResponse>(ctx, 'FieldService',
+          'ListCropCycles', request, ListCropCyclesResponse());
+  $async.Future<UpdateCropCycleResponse> updateCropCycle(
+          $pb.ClientContext? ctx, UpdateCropCycleRequest request) =>
+      _client.invoke<UpdateCropCycleResponse>(ctx, 'FieldService',
+          'UpdateCropCycle', request, UpdateCropCycleResponse());
+
+  /// Activity Events
+  $async.Future<LogActivityEventResponse> logActivityEvent(
+          $pb.ClientContext? ctx, LogActivityEventRequest request) =>
+      _client.invoke<LogActivityEventResponse>(ctx, 'FieldService',
+          'LogActivityEvent', request, LogActivityEventResponse());
+  $async.Future<ListActivityEventsResponse> listActivityEvents(
+          $pb.ClientContext? ctx, ListActivityEventsRequest request) =>
+      _client.invoke<ListActivityEventsResponse>(ctx, 'FieldService',
+          'ListActivityEvents', request, ListActivityEventsResponse());
+
+  /// Activity Evidence
+  $async.Future<AddActivityEvidenceResponse> addActivityEvidence(
+          $pb.ClientContext? ctx, AddActivityEvidenceRequest request) =>
+      _client.invoke<AddActivityEvidenceResponse>(ctx, 'FieldService',
+          'AddActivityEvidence', request, AddActivityEvidenceResponse());
+  $async.Future<ListActivityEvidenceResponse> listActivityEvidence(
+          $pb.ClientContext? ctx, ListActivityEvidenceRequest request) =>
+      _client.invoke<ListActivityEvidenceResponse>(ctx, 'FieldService',
+          'ListActivityEvidence', request, ListActivityEvidenceResponse());
+  $async.Future<DeleteActivityEvidenceResponse> deleteActivityEvidence(
+          $pb.ClientContext? ctx, DeleteActivityEvidenceRequest request) =>
+      _client.invoke<DeleteActivityEvidenceResponse>(ctx, 'FieldService',
+          'DeleteActivityEvidence', request, DeleteActivityEvidenceResponse());
 }
 
 const $core.bool _omitFieldNames =

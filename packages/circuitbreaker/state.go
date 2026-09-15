@@ -137,4 +137,6 @@ type CheckResult struct {
 	RecoveryAt *time.Time
 	// WaitTime is the remaining wait time if blocked.
 	WaitTime time.Duration
+	// Reason describes why the request was blocked, when Allowed is false.
+	Reason string
 }

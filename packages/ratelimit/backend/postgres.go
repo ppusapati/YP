@@ -104,7 +104,7 @@ func (pr *PostgresRateLimiter) AllowN(ctx context.Context, key string, n int) (b
 		service := extractServiceName(key)
 		pr.pool.Exec(ctx, insertQuery, key, service, rejected)
 
-		pr.logger.Debug("request rejected",
+		pr.logger.Log(p9log.LevelDebug, "msg", "request rejected",
 			"key", key,
 			"reason", "rate limit exceeded",
 		)

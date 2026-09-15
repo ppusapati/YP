@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:logging/logging.dart';
@@ -40,11 +39,6 @@ class DiagnosisRepositoryImpl implements DiagnosisRepository {
     );
     await _localDataSource.cacheDiagnosis(model);
     return model.toEntity();
-  }
-
-  @override
-  Future<String> uploadImage(Uint8List imageBytes, String fileName) async {
-    return _remoteDataSource.uploadImage(imageBytes, fileName);
   }
 
   @override

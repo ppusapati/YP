@@ -161,6 +161,73 @@ final $typed_data.Uint8List aspectDirectionDescriptor = $convert.base64Decode(
     'VEhXRVNUEAYSGQoVQVNQRUNUX0RJUkVDVElPTl9XRVNUEAcSHgoaQVNQRUNUX0RJUkVDVElPTl'
     '9OT1JUSFdFU1QQCBIZChVBU1BFQ1RfRElSRUNUSU9OX0ZMQVQQCQ==');
 
+@$core.Deprecated('Use cropCycleStatusDescriptor instead')
+const CropCycleStatus$json = {
+  '1': 'CropCycleStatus',
+  '2': [
+    {'1': 'CYCLE_STATUS_UNSPECIFIED', '2': 0},
+    {'1': 'CYCLE_STATUS_PLANNED', '2': 1},
+    {'1': 'CYCLE_STATUS_ACTIVE', '2': 2},
+    {'1': 'CYCLE_STATUS_HARVESTING', '2': 3},
+    {'1': 'CYCLE_STATUS_COMPLETED', '2': 4},
+    {'1': 'CYCLE_STATUS_ABANDONED', '2': 5},
+  ],
+};
+
+/// Descriptor for `CropCycleStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List cropCycleStatusDescriptor = $convert.base64Decode(
+    'Cg9Dcm9wQ3ljbGVTdGF0dXMSHAoYQ1lDTEVfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGAoUQ1lDTE'
+    'VfU1RBVFVTX1BMQU5ORUQQARIXChNDWUNMRV9TVEFUVVNfQUNUSVZFEAISGwoXQ1lDTEVfU1RB'
+    'VFVTX0hBUlZFU1RJTkcQAxIaChZDWUNMRV9TVEFUVVNfQ09NUExFVEVEEAQSGgoWQ1lDTEVfU1'
+    'RBVFVTX0FCQU5ET05FRBAF');
+
+@$core.Deprecated('Use activityCategoryDescriptor instead')
+const ActivityCategory$json = {
+  '1': 'ActivityCategory',
+  '2': [
+    {'1': 'CATEGORY_UNSPECIFIED', '2': 0},
+    {'1': 'CATEGORY_LAND_PREP', '2': 1},
+    {'1': 'CATEGORY_PLANTING', '2': 2},
+    {'1': 'CATEGORY_IRRIGATION', '2': 3},
+    {'1': 'CATEGORY_FERTILIZATION', '2': 4},
+    {'1': 'CATEGORY_PEST_CONTROL', '2': 5},
+    {'1': 'CATEGORY_SCOUTING', '2': 6},
+    {'1': 'CATEGORY_HARVESTING', '2': 7},
+    {'1': 'CATEGORY_POST_HARVEST', '2': 8},
+    {'1': 'CATEGORY_SOIL_SAMPLING', '2': 9},
+    {'1': 'CATEGORY_MAINTENANCE', '2': 10},
+  ],
+};
+
+/// Descriptor for `ActivityCategory`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List activityCategoryDescriptor = $convert.base64Decode(
+    'ChBBY3Rpdml0eUNhdGVnb3J5EhgKFENBVEVHT1JZX1VOU1BFQ0lGSUVEEAASFgoSQ0FURUdPUl'
+    'lfTEFORF9QUkVQEAESFQoRQ0FURUdPUllfUExBTlRJTkcQAhIXChNDQVRFR09SWV9JUlJJR0FU'
+    'SU9OEAMSGgoWQ0FURUdPUllfRkVSVElMSVpBVElPThAEEhkKFUNBVEVHT1JZX1BFU1RfQ09OVF'
+    'JPTBAFEhUKEUNBVEVHT1JZX1NDT1VUSU5HEAYSFwoTQ0FURUdPUllfSEFSVkVTVElORxAHEhkK'
+    'FUNBVEVHT1JZX1BPU1RfSEFSVkVTVBAIEhoKFkNBVEVHT1JZX1NPSUxfU0FNUExJTkcQCRIYCh'
+    'RDQVRFR09SWV9NQUlOVEVOQU5DRRAK');
+
+@$core.Deprecated('Use evidenceTypeDescriptor instead')
+const EvidenceType$json = {
+  '1': 'EvidenceType',
+  '2': [
+    {'1': 'EVIDENCE_TYPE_UNSPECIFIED', '2': 0},
+    {'1': 'EVIDENCE_TYPE_PHOTO', '2': 1},
+    {'1': 'EVIDENCE_TYPE_DOCUMENT', '2': 2},
+    {'1': 'EVIDENCE_TYPE_VIDEO', '2': 3},
+    {'1': 'EVIDENCE_TYPE_AUDIO', '2': 4},
+    {'1': 'EVIDENCE_TYPE_OTHER', '2': 5},
+  ],
+};
+
+/// Descriptor for `EvidenceType`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List evidenceTypeDescriptor = $convert.base64Decode(
+    'CgxFdmlkZW5jZVR5cGUSHQoZRVZJREVOQ0VfVFlQRV9VTlNQRUNJRklFRBAAEhcKE0VWSURFTk'
+    'NFX1RZUEVfUEhPVE8QARIaChZFVklERU5DRV9UWVBFX0RPQ1VNRU5UEAISFwoTRVZJREVOQ0Vf'
+    'VFlQRV9WSURFTxADEhcKE0VWSURFTkNFX1RZUEVfQVVESU8QBBIXChNFVklERU5DRV9UWVBFX0'
+    '9USEVSEAU=');
+
 @$core.Deprecated('Use geoPointDescriptor instead')
 const GeoPoint$json = {
   '1': 'GeoPoint',
@@ -1088,6 +1155,833 @@ final $typed_data.Uint8List getCropHistoryResponseDescriptor = $convert.base64De
     'R1cmUuZmllbGQudjEuRmllbGRDcm9wQXNzaWdubWVudFILYXNzaWdubWVudHMSHwoLdG90YWxf'
     'Y291bnQYAiABKAVSCnRvdGFsQ291bnQ=');
 
+@$core.Deprecated('Use cropCycleDescriptor instead')
+const CropCycle$json = {
+  '1': 'CropCycle',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'tenant_id', '3': 2, '4': 1, '5': 9, '10': 'tenantId'},
+    {'1': 'field_id', '3': 3, '4': 1, '5': 9, '10': 'fieldId'},
+    {'1': 'crop_id', '3': 4, '4': 1, '5': 9, '10': 'cropId'},
+    {
+      '1': 'crop_assignment_id',
+      '3': 5,
+      '4': 1,
+      '5': 9,
+      '10': 'cropAssignmentId'
+    },
+    {'1': 'season', '3': 6, '4': 1, '5': 9, '10': 'season'},
+    {'1': 'cycle_year', '3': 7, '4': 1, '5': 5, '10': 'cycleYear'},
+    {'1': 'name', '3': 8, '4': 1, '5': 9, '10': 'name'},
+    {
+      '1': 'planned_planting_date',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'plannedPlantingDate'
+    },
+    {
+      '1': 'actual_planting_date',
+      '3': 10,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'actualPlantingDate'
+    },
+    {
+      '1': 'planned_harvest_date',
+      '3': 11,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'plannedHarvestDate'
+    },
+    {
+      '1': 'actual_harvest_date',
+      '3': 12,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'actualHarvestDate'
+    },
+    {
+      '1': 'status',
+      '3': 13,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.CropCycleStatus',
+      '10': 'status'
+    },
+    {
+      '1': 'target_yield_per_hectare',
+      '3': 14,
+      '4': 1,
+      '5': 1,
+      '10': 'targetYieldPerHectare'
+    },
+    {
+      '1': 'actual_yield_per_hectare',
+      '3': 15,
+      '4': 1,
+      '5': 1,
+      '10': 'actualYieldPerHectare'
+    },
+    {'1': 'yield_unit', '3': 16, '4': 1, '5': 9, '10': 'yieldUnit'},
+    {'1': 'total_input_cost', '3': 17, '4': 1, '5': 3, '10': 'totalInputCost'},
+    {'1': 'total_revenue', '3': 18, '4': 1, '5': 3, '10': 'totalRevenue'},
+    {'1': 'currency', '3': 19, '4': 1, '5': 9, '10': 'currency'},
+    {'1': 'notes', '3': 20, '4': 1, '5': 9, '10': 'notes'},
+    {'1': 'version', '3': 21, '4': 1, '5': 3, '10': 'version'},
+    {'1': 'created_by', '3': 22, '4': 1, '5': 9, '10': 'createdBy'},
+    {
+      '1': 'created_at',
+      '3': 23,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'updated_at',
+      '3': 24,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'updatedAt'
+    },
+    {
+      '1': 'management_unit_id',
+      '3': 25,
+      '4': 1,
+      '5': 9,
+      '10': 'managementUnitId'
+    },
+    {'1': 'crop_variety', '3': 26, '4': 1, '5': 9, '10': 'cropVariety'},
+    {'1': 'seed_source', '3': 27, '4': 1, '5': 9, '10': 'seedSource'},
+  ],
+};
+
+/// Descriptor for `CropCycle`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cropCycleDescriptor = $convert.base64Decode(
+    'CglDcm9wQ3ljbGUSDgoCaWQYASABKAlSAmlkEhsKCXRlbmFudF9pZBgCIAEoCVIIdGVuYW50SW'
+    'QSGQoIZmllbGRfaWQYAyABKAlSB2ZpZWxkSWQSFwoHY3JvcF9pZBgEIAEoCVIGY3JvcElkEiwK'
+    'EmNyb3BfYXNzaWdubWVudF9pZBgFIAEoCVIQY3JvcEFzc2lnbm1lbnRJZBIWCgZzZWFzb24YBi'
+    'ABKAlSBnNlYXNvbhIdCgpjeWNsZV95ZWFyGAcgASgFUgljeWNsZVllYXISEgoEbmFtZRgIIAEo'
+    'CVIEbmFtZRJOChVwbGFubmVkX3BsYW50aW5nX2RhdGUYCSABKAsyGi5nb29nbGUucHJvdG9idW'
+    'YuVGltZXN0YW1wUhNwbGFubmVkUGxhbnRpbmdEYXRlEkwKFGFjdHVhbF9wbGFudGluZ19kYXRl'
+    'GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFISYWN0dWFsUGxhbnRpbmdEYXRlEk'
+    'wKFHBsYW5uZWRfaGFydmVzdF9kYXRlGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFt'
+    'cFIScGxhbm5lZEhhcnZlc3REYXRlEkoKE2FjdHVhbF9oYXJ2ZXN0X2RhdGUYDCABKAsyGi5nb2'
+    '9nbGUucHJvdG9idWYuVGltZXN0YW1wUhFhY3R1YWxIYXJ2ZXN0RGF0ZRI9CgZzdGF0dXMYDSAB'
+    'KA4yJS5hZ3JpY3VsdHVyZS5maWVsZC52MS5Dcm9wQ3ljbGVTdGF0dXNSBnN0YXR1cxI3Chh0YX'
+    'JnZXRfeWllbGRfcGVyX2hlY3RhcmUYDiABKAFSFXRhcmdldFlpZWxkUGVySGVjdGFyZRI3Chhh'
+    'Y3R1YWxfeWllbGRfcGVyX2hlY3RhcmUYDyABKAFSFWFjdHVhbFlpZWxkUGVySGVjdGFyZRIdCg'
+    'p5aWVsZF91bml0GBAgASgJUgl5aWVsZFVuaXQSKAoQdG90YWxfaW5wdXRfY29zdBgRIAEoA1IO'
+    'dG90YWxJbnB1dENvc3QSIwoNdG90YWxfcmV2ZW51ZRgSIAEoA1IMdG90YWxSZXZlbnVlEhoKCG'
+    'N1cnJlbmN5GBMgASgJUghjdXJyZW5jeRIUCgVub3RlcxgUIAEoCVIFbm90ZXMSGAoHdmVyc2lv'
+    'bhgVIAEoA1IHdmVyc2lvbhIdCgpjcmVhdGVkX2J5GBYgASgJUgljcmVhdGVkQnkSOQoKY3JlYX'
+    'RlZF9hdBgXIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI5Cgp1'
+    'cGRhdGVkX2F0GBggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJdXBkYXRlZEF0Ei'
+    'wKEm1hbmFnZW1lbnRfdW5pdF9pZBgZIAEoCVIQbWFuYWdlbWVudFVuaXRJZBIhCgxjcm9wX3Zh'
+    'cmlldHkYGiABKAlSC2Nyb3BWYXJpZXR5Eh8KC3NlZWRfc291cmNlGBsgASgJUgpzZWVkU291cm'
+    'Nl');
+
+@$core.Deprecated('Use createCropCycleRequestDescriptor instead')
+const CreateCropCycleRequest$json = {
+  '1': 'CreateCropCycleRequest',
+  '2': [
+    {'1': 'field_id', '3': 1, '4': 1, '5': 9, '10': 'fieldId'},
+    {'1': 'crop_id', '3': 2, '4': 1, '5': 9, '10': 'cropId'},
+    {'1': 'season', '3': 3, '4': 1, '5': 9, '10': 'season'},
+    {'1': 'cycle_year', '3': 4, '4': 1, '5': 5, '10': 'cycleYear'},
+    {'1': 'name', '3': 5, '4': 1, '5': 9, '10': 'name'},
+    {
+      '1': 'planned_planting_date',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'plannedPlantingDate'
+    },
+    {
+      '1': 'planned_harvest_date',
+      '3': 7,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'plannedHarvestDate'
+    },
+    {
+      '1': 'target_yield_per_hectare',
+      '3': 8,
+      '4': 1,
+      '5': 1,
+      '10': 'targetYieldPerHectare'
+    },
+    {'1': 'yield_unit', '3': 9, '4': 1, '5': 9, '10': 'yieldUnit'},
+    {'1': 'notes', '3': 10, '4': 1, '5': 9, '10': 'notes'},
+    {
+      '1': 'management_unit_id',
+      '3': 11,
+      '4': 1,
+      '5': 9,
+      '10': 'managementUnitId'
+    },
+    {'1': 'crop_variety', '3': 12, '4': 1, '5': 9, '10': 'cropVariety'},
+    {'1': 'seed_source', '3': 13, '4': 1, '5': 9, '10': 'seedSource'},
+  ],
+};
+
+/// Descriptor for `CreateCropCycleRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createCropCycleRequestDescriptor = $convert.base64Decode(
+    'ChZDcmVhdGVDcm9wQ3ljbGVSZXF1ZXN0EhkKCGZpZWxkX2lkGAEgASgJUgdmaWVsZElkEhcKB2'
+    'Nyb3BfaWQYAiABKAlSBmNyb3BJZBIWCgZzZWFzb24YAyABKAlSBnNlYXNvbhIdCgpjeWNsZV95'
+    'ZWFyGAQgASgFUgljeWNsZVllYXISEgoEbmFtZRgFIAEoCVIEbmFtZRJOChVwbGFubmVkX3BsYW'
+    '50aW5nX2RhdGUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUhNwbGFubmVkUGxh'
+    'bnRpbmdEYXRlEkwKFHBsYW5uZWRfaGFydmVzdF9kYXRlGAcgASgLMhouZ29vZ2xlLnByb3RvYn'
+    'VmLlRpbWVzdGFtcFIScGxhbm5lZEhhcnZlc3REYXRlEjcKGHRhcmdldF95aWVsZF9wZXJfaGVj'
+    'dGFyZRgIIAEoAVIVdGFyZ2V0WWllbGRQZXJIZWN0YXJlEh0KCnlpZWxkX3VuaXQYCSABKAlSCX'
+    'lpZWxkVW5pdBIUCgVub3RlcxgKIAEoCVIFbm90ZXMSLAoSbWFuYWdlbWVudF91bml0X2lkGAsg'
+    'ASgJUhBtYW5hZ2VtZW50VW5pdElkEiEKDGNyb3BfdmFyaWV0eRgMIAEoCVILY3JvcFZhcmlldH'
+    'kSHwoLc2VlZF9zb3VyY2UYDSABKAlSCnNlZWRTb3VyY2U=');
+
+@$core.Deprecated('Use createCropCycleResponseDescriptor instead')
+const CreateCropCycleResponse$json = {
+  '1': 'CreateCropCycleResponse',
+  '2': [
+    {
+      '1': 'cycle',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.field.v1.CropCycle',
+      '10': 'cycle'
+    },
+  ],
+};
+
+/// Descriptor for `CreateCropCycleResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createCropCycleResponseDescriptor =
+    $convert.base64Decode(
+        'ChdDcmVhdGVDcm9wQ3ljbGVSZXNwb25zZRI1CgVjeWNsZRgBIAEoCzIfLmFncmljdWx0dXJlLm'
+        'ZpZWxkLnYxLkNyb3BDeWNsZVIFY3ljbGU=');
+
+@$core.Deprecated('Use getCropCycleRequestDescriptor instead')
+const GetCropCycleRequest$json = {
+  '1': 'GetCropCycleRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `GetCropCycleRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getCropCycleRequestDescriptor = $convert
+    .base64Decode('ChNHZXRDcm9wQ3ljbGVSZXF1ZXN0Eg4KAmlkGAEgASgJUgJpZA==');
+
+@$core.Deprecated('Use getCropCycleResponseDescriptor instead')
+const GetCropCycleResponse$json = {
+  '1': 'GetCropCycleResponse',
+  '2': [
+    {
+      '1': 'cycle',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.field.v1.CropCycle',
+      '10': 'cycle'
+    },
+  ],
+};
+
+/// Descriptor for `GetCropCycleResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getCropCycleResponseDescriptor = $convert.base64Decode(
+    'ChRHZXRDcm9wQ3ljbGVSZXNwb25zZRI1CgVjeWNsZRgBIAEoCzIfLmFncmljdWx0dXJlLmZpZW'
+    'xkLnYxLkNyb3BDeWNsZVIFY3ljbGU=');
+
+@$core.Deprecated('Use listCropCyclesRequestDescriptor instead')
+const ListCropCyclesRequest$json = {
+  '1': 'ListCropCyclesRequest',
+  '2': [
+    {'1': 'field_id', '3': 1, '4': 1, '5': 9, '10': 'fieldId'},
+    {
+      '1': 'status',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.CropCycleStatus',
+      '10': 'status'
+    },
+    {'1': 'page_size', '3': 3, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_offset', '3': 4, '4': 1, '5': 5, '10': 'pageOffset'},
+    {
+      '1': 'management_unit_id',
+      '3': 5,
+      '4': 1,
+      '5': 9,
+      '10': 'managementUnitId'
+    },
+  ],
+};
+
+/// Descriptor for `ListCropCyclesRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listCropCyclesRequestDescriptor = $convert.base64Decode(
+    'ChVMaXN0Q3JvcEN5Y2xlc1JlcXVlc3QSGQoIZmllbGRfaWQYASABKAlSB2ZpZWxkSWQSPQoGc3'
+    'RhdHVzGAIgASgOMiUuYWdyaWN1bHR1cmUuZmllbGQudjEuQ3JvcEN5Y2xlU3RhdHVzUgZzdGF0'
+    'dXMSGwoJcGFnZV9zaXplGAMgASgFUghwYWdlU2l6ZRIfCgtwYWdlX29mZnNldBgEIAEoBVIKcG'
+    'FnZU9mZnNldBIsChJtYW5hZ2VtZW50X3VuaXRfaWQYBSABKAlSEG1hbmFnZW1lbnRVbml0SWQ=');
+
+@$core.Deprecated('Use listCropCyclesResponseDescriptor instead')
+const ListCropCyclesResponse$json = {
+  '1': 'ListCropCyclesResponse',
+  '2': [
+    {
+      '1': 'cycles',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.field.v1.CropCycle',
+      '10': 'cycles'
+    },
+    {'1': 'total_count', '3': 2, '4': 1, '5': 5, '10': 'totalCount'},
+  ],
+};
+
+/// Descriptor for `ListCropCyclesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listCropCyclesResponseDescriptor = $convert.base64Decode(
+    'ChZMaXN0Q3JvcEN5Y2xlc1Jlc3BvbnNlEjcKBmN5Y2xlcxgBIAMoCzIfLmFncmljdWx0dXJlLm'
+    'ZpZWxkLnYxLkNyb3BDeWNsZVIGY3ljbGVzEh8KC3RvdGFsX2NvdW50GAIgASgFUgp0b3RhbENv'
+    'dW50');
+
+@$core.Deprecated('Use updateCropCycleRequestDescriptor instead')
+const UpdateCropCycleRequest$json = {
+  '1': 'UpdateCropCycleRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {
+      '1': 'status',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.CropCycleStatus',
+      '10': 'status'
+    },
+    {
+      '1': 'actual_planting_date',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'actualPlantingDate'
+    },
+    {
+      '1': 'actual_harvest_date',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'actualHarvestDate'
+    },
+    {
+      '1': 'actual_yield_per_hectare',
+      '3': 5,
+      '4': 1,
+      '5': 1,
+      '10': 'actualYieldPerHectare'
+    },
+    {'1': 'total_input_cost', '3': 6, '4': 1, '5': 3, '10': 'totalInputCost'},
+    {'1': 'total_revenue', '3': 7, '4': 1, '5': 3, '10': 'totalRevenue'},
+    {'1': 'notes', '3': 8, '4': 1, '5': 9, '10': 'notes'},
+    {
+      '1': 'update_mask',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.FieldMask',
+      '10': 'updateMask'
+    },
+  ],
+};
+
+/// Descriptor for `UpdateCropCycleRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateCropCycleRequestDescriptor = $convert.base64Decode(
+    'ChZVcGRhdGVDcm9wQ3ljbGVSZXF1ZXN0Eg4KAmlkGAEgASgJUgJpZBI9CgZzdGF0dXMYAiABKA'
+    '4yJS5hZ3JpY3VsdHVyZS5maWVsZC52MS5Dcm9wQ3ljbGVTdGF0dXNSBnN0YXR1cxJMChRhY3R1'
+    'YWxfcGxhbnRpbmdfZGF0ZRgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSEmFjdH'
+    'VhbFBsYW50aW5nRGF0ZRJKChNhY3R1YWxfaGFydmVzdF9kYXRlGAQgASgLMhouZ29vZ2xlLnBy'
+    'b3RvYnVmLlRpbWVzdGFtcFIRYWN0dWFsSGFydmVzdERhdGUSNwoYYWN0dWFsX3lpZWxkX3Blcl'
+    '9oZWN0YXJlGAUgASgBUhVhY3R1YWxZaWVsZFBlckhlY3RhcmUSKAoQdG90YWxfaW5wdXRfY29z'
+    'dBgGIAEoA1IOdG90YWxJbnB1dENvc3QSIwoNdG90YWxfcmV2ZW51ZRgHIAEoA1IMdG90YWxSZX'
+    'ZlbnVlEhQKBW5vdGVzGAggASgJUgVub3RlcxI7Cgt1cGRhdGVfbWFzaxgJIAEoCzIaLmdvb2ds'
+    'ZS5wcm90b2J1Zi5GaWVsZE1hc2tSCnVwZGF0ZU1hc2s=');
+
+@$core.Deprecated('Use updateCropCycleResponseDescriptor instead')
+const UpdateCropCycleResponse$json = {
+  '1': 'UpdateCropCycleResponse',
+  '2': [
+    {
+      '1': 'cycle',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.field.v1.CropCycle',
+      '10': 'cycle'
+    },
+  ],
+};
+
+/// Descriptor for `UpdateCropCycleResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateCropCycleResponseDescriptor =
+    $convert.base64Decode(
+        'ChdVcGRhdGVDcm9wQ3ljbGVSZXNwb25zZRI1CgVjeWNsZRgBIAEoCzIfLmFncmljdWx0dXJlLm'
+        'ZpZWxkLnYxLkNyb3BDeWNsZVIFY3ljbGU=');
+
+@$core.Deprecated('Use activityEventDescriptor instead')
+const ActivityEvent$json = {
+  '1': 'ActivityEvent',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'tenant_id', '3': 2, '4': 1, '5': 9, '10': 'tenantId'},
+    {'1': 'field_id', '3': 3, '4': 1, '5': 9, '10': 'fieldId'},
+    {'1': 'crop_cycle_id', '3': 4, '4': 1, '5': 9, '10': 'cropCycleId'},
+    {'1': 'performed_by', '3': 5, '4': 1, '5': 9, '10': 'performedBy'},
+    {'1': 'activity_type', '3': 6, '4': 1, '5': 9, '10': 'activityType'},
+    {
+      '1': 'category',
+      '3': 7,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.ActivityCategory',
+      '10': 'category'
+    },
+    {
+      '1': 'started_at',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'startedAt'
+    },
+    {
+      '1': 'completed_at',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'completedAt'
+    },
+    {'1': 'duration_minutes', '3': 10, '4': 1, '5': 5, '10': 'durationMinutes'},
+    {'1': 'description', '3': 11, '4': 1, '5': 9, '10': 'description'},
+    {'1': 'notes', '3': 12, '4': 1, '5': 9, '10': 'notes'},
+    {'1': 'input_product_id', '3': 13, '4': 1, '5': 9, '10': 'inputProductId'},
+    {'1': 'input_quantity', '3': 14, '4': 1, '5': 1, '10': 'inputQuantity'},
+    {'1': 'input_unit', '3': 15, '4': 1, '5': 9, '10': 'inputUnit'},
+    {'1': 'input_cost', '3': 16, '4': 1, '5': 3, '10': 'inputCost'},
+    {'1': 'currency', '3': 17, '4': 1, '5': 9, '10': 'currency'},
+    {'1': 'area_hectares', '3': 18, '4': 1, '5': 1, '10': 'areaHectares'},
+    {
+      '1': 'weather_temp_celsius',
+      '3': 19,
+      '4': 1,
+      '5': 1,
+      '10': 'weatherTempCelsius'
+    },
+    {
+      '1': 'weather_humidity_pct',
+      '3': 20,
+      '4': 1,
+      '5': 1,
+      '10': 'weatherHumidityPct'
+    },
+    {
+      '1': 'weather_wind_speed_kmh',
+      '3': 21,
+      '4': 1,
+      '5': 1,
+      '10': 'weatherWindSpeedKmh'
+    },
+    {
+      '1': 'weather_conditions',
+      '3': 22,
+      '4': 1,
+      '5': 9,
+      '10': 'weatherConditions'
+    },
+    {
+      '1': 'created_at',
+      '3': 23,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+  ],
+};
+
+/// Descriptor for `ActivityEvent`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List activityEventDescriptor = $convert.base64Decode(
+    'Cg1BY3Rpdml0eUV2ZW50Eg4KAmlkGAEgASgJUgJpZBIbCgl0ZW5hbnRfaWQYAiABKAlSCHRlbm'
+    'FudElkEhkKCGZpZWxkX2lkGAMgASgJUgdmaWVsZElkEiIKDWNyb3BfY3ljbGVfaWQYBCABKAlS'
+    'C2Nyb3BDeWNsZUlkEiEKDHBlcmZvcm1lZF9ieRgFIAEoCVILcGVyZm9ybWVkQnkSIwoNYWN0aX'
+    'ZpdHlfdHlwZRgGIAEoCVIMYWN0aXZpdHlUeXBlEkIKCGNhdGVnb3J5GAcgASgOMiYuYWdyaWN1'
+    'bHR1cmUuZmllbGQudjEuQWN0aXZpdHlDYXRlZ29yeVIIY2F0ZWdvcnkSOQoKc3RhcnRlZF9hdB'
+    'gIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXN0YXJ0ZWRBdBI9Cgxjb21wbGV0'
+    'ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgtjb21wbGV0ZWRBdBIpCh'
+    'BkdXJhdGlvbl9taW51dGVzGAogASgFUg9kdXJhdGlvbk1pbnV0ZXMSIAoLZGVzY3JpcHRpb24Y'
+    'CyABKAlSC2Rlc2NyaXB0aW9uEhQKBW5vdGVzGAwgASgJUgVub3RlcxIoChBpbnB1dF9wcm9kdW'
+    'N0X2lkGA0gASgJUg5pbnB1dFByb2R1Y3RJZBIlCg5pbnB1dF9xdWFudGl0eRgOIAEoAVINaW5w'
+    'dXRRdWFudGl0eRIdCgppbnB1dF91bml0GA8gASgJUglpbnB1dFVuaXQSHQoKaW5wdXRfY29zdB'
+    'gQIAEoA1IJaW5wdXRDb3N0EhoKCGN1cnJlbmN5GBEgASgJUghjdXJyZW5jeRIjCg1hcmVhX2hl'
+    'Y3RhcmVzGBIgASgBUgxhcmVhSGVjdGFyZXMSMAoUd2VhdGhlcl90ZW1wX2NlbHNpdXMYEyABKA'
+    'FSEndlYXRoZXJUZW1wQ2Vsc2l1cxIwChR3ZWF0aGVyX2h1bWlkaXR5X3BjdBgUIAEoAVISd2Vh'
+    'dGhlckh1bWlkaXR5UGN0EjMKFndlYXRoZXJfd2luZF9zcGVlZF9rbWgYFSABKAFSE3dlYXRoZX'
+    'JXaW5kU3BlZWRLbWgSLQoSd2VhdGhlcl9jb25kaXRpb25zGBYgASgJUhF3ZWF0aGVyQ29uZGl0'
+    'aW9ucxI5CgpjcmVhdGVkX2F0GBcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3'
+    'JlYXRlZEF0');
+
+@$core.Deprecated('Use logActivityEventRequestDescriptor instead')
+const LogActivityEventRequest$json = {
+  '1': 'LogActivityEventRequest',
+  '2': [
+    {'1': 'field_id', '3': 1, '4': 1, '5': 9, '10': 'fieldId'},
+    {'1': 'crop_cycle_id', '3': 2, '4': 1, '5': 9, '10': 'cropCycleId'},
+    {'1': 'activity_type', '3': 3, '4': 1, '5': 9, '10': 'activityType'},
+    {
+      '1': 'category',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.ActivityCategory',
+      '10': 'category'
+    },
+    {
+      '1': 'started_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'startedAt'
+    },
+    {
+      '1': 'completed_at',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'completedAt'
+    },
+    {'1': 'duration_minutes', '3': 7, '4': 1, '5': 5, '10': 'durationMinutes'},
+    {'1': 'description', '3': 8, '4': 1, '5': 9, '10': 'description'},
+    {'1': 'notes', '3': 9, '4': 1, '5': 9, '10': 'notes'},
+    {'1': 'input_product_id', '3': 10, '4': 1, '5': 9, '10': 'inputProductId'},
+    {'1': 'input_quantity', '3': 11, '4': 1, '5': 1, '10': 'inputQuantity'},
+    {'1': 'input_unit', '3': 12, '4': 1, '5': 9, '10': 'inputUnit'},
+    {'1': 'input_cost', '3': 13, '4': 1, '5': 3, '10': 'inputCost'},
+    {'1': 'currency', '3': 14, '4': 1, '5': 9, '10': 'currency'},
+    {'1': 'area_hectares', '3': 15, '4': 1, '5': 1, '10': 'areaHectares'},
+    {
+      '1': 'weather_temp_celsius',
+      '3': 16,
+      '4': 1,
+      '5': 1,
+      '10': 'weatherTempCelsius'
+    },
+    {
+      '1': 'weather_humidity_pct',
+      '3': 17,
+      '4': 1,
+      '5': 1,
+      '10': 'weatherHumidityPct'
+    },
+    {
+      '1': 'weather_wind_speed_kmh',
+      '3': 18,
+      '4': 1,
+      '5': 1,
+      '10': 'weatherWindSpeedKmh'
+    },
+    {
+      '1': 'weather_conditions',
+      '3': 19,
+      '4': 1,
+      '5': 9,
+      '10': 'weatherConditions'
+    },
+  ],
+};
+
+/// Descriptor for `LogActivityEventRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List logActivityEventRequestDescriptor = $convert.base64Decode(
+    'ChdMb2dBY3Rpdml0eUV2ZW50UmVxdWVzdBIZCghmaWVsZF9pZBgBIAEoCVIHZmllbGRJZBIiCg'
+    '1jcm9wX2N5Y2xlX2lkGAIgASgJUgtjcm9wQ3ljbGVJZBIjCg1hY3Rpdml0eV90eXBlGAMgASgJ'
+    'UgxhY3Rpdml0eVR5cGUSQgoIY2F0ZWdvcnkYBCABKA4yJi5hZ3JpY3VsdHVyZS5maWVsZC52MS'
+    '5BY3Rpdml0eUNhdGVnb3J5UghjYXRlZ29yeRI5CgpzdGFydGVkX2F0GAUgASgLMhouZ29vZ2xl'
+    'LnByb3RvYnVmLlRpbWVzdGFtcFIJc3RhcnRlZEF0Ej0KDGNvbXBsZXRlZF9hdBgGIAEoCzIaLm'
+    'dvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSC2NvbXBsZXRlZEF0EikKEGR1cmF0aW9uX21pbnV0'
+    'ZXMYByABKAVSD2R1cmF0aW9uTWludXRlcxIgCgtkZXNjcmlwdGlvbhgIIAEoCVILZGVzY3JpcH'
+    'Rpb24SFAoFbm90ZXMYCSABKAlSBW5vdGVzEigKEGlucHV0X3Byb2R1Y3RfaWQYCiABKAlSDmlu'
+    'cHV0UHJvZHVjdElkEiUKDmlucHV0X3F1YW50aXR5GAsgASgBUg1pbnB1dFF1YW50aXR5Eh0KCm'
+    'lucHV0X3VuaXQYDCABKAlSCWlucHV0VW5pdBIdCgppbnB1dF9jb3N0GA0gASgDUglpbnB1dENv'
+    'c3QSGgoIY3VycmVuY3kYDiABKAlSCGN1cnJlbmN5EiMKDWFyZWFfaGVjdGFyZXMYDyABKAFSDG'
+    'FyZWFIZWN0YXJlcxIwChR3ZWF0aGVyX3RlbXBfY2Vsc2l1cxgQIAEoAVISd2VhdGhlclRlbXBD'
+    'ZWxzaXVzEjAKFHdlYXRoZXJfaHVtaWRpdHlfcGN0GBEgASgBUhJ3ZWF0aGVySHVtaWRpdHlQY3'
+    'QSMwoWd2VhdGhlcl93aW5kX3NwZWVkX2ttaBgSIAEoAVITd2VhdGhlcldpbmRTcGVlZEttaBIt'
+    'ChJ3ZWF0aGVyX2NvbmRpdGlvbnMYEyABKAlSEXdlYXRoZXJDb25kaXRpb25z');
+
+@$core.Deprecated('Use logActivityEventResponseDescriptor instead')
+const LogActivityEventResponse$json = {
+  '1': 'LogActivityEventResponse',
+  '2': [
+    {
+      '1': 'event',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.field.v1.ActivityEvent',
+      '10': 'event'
+    },
+  ],
+};
+
+/// Descriptor for `LogActivityEventResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List logActivityEventResponseDescriptor =
+    $convert.base64Decode(
+        'ChhMb2dBY3Rpdml0eUV2ZW50UmVzcG9uc2USOQoFZXZlbnQYASABKAsyIy5hZ3JpY3VsdHVyZS'
+        '5maWVsZC52MS5BY3Rpdml0eUV2ZW50UgVldmVudA==');
+
+@$core.Deprecated('Use listActivityEventsRequestDescriptor instead')
+const ListActivityEventsRequest$json = {
+  '1': 'ListActivityEventsRequest',
+  '2': [
+    {'1': 'field_id', '3': 1, '4': 1, '5': 9, '10': 'fieldId'},
+    {'1': 'crop_cycle_id', '3': 2, '4': 1, '5': 9, '10': 'cropCycleId'},
+    {
+      '1': 'category',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.ActivityCategory',
+      '10': 'category'
+    },
+    {'1': 'page_size', '3': 4, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_offset', '3': 5, '4': 1, '5': 5, '10': 'pageOffset'},
+  ],
+};
+
+/// Descriptor for `ListActivityEventsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listActivityEventsRequestDescriptor = $convert.base64Decode(
+    'ChlMaXN0QWN0aXZpdHlFdmVudHNSZXF1ZXN0EhkKCGZpZWxkX2lkGAEgASgJUgdmaWVsZElkEi'
+    'IKDWNyb3BfY3ljbGVfaWQYAiABKAlSC2Nyb3BDeWNsZUlkEkIKCGNhdGVnb3J5GAMgASgOMiYu'
+    'YWdyaWN1bHR1cmUuZmllbGQudjEuQWN0aXZpdHlDYXRlZ29yeVIIY2F0ZWdvcnkSGwoJcGFnZV'
+    '9zaXplGAQgASgFUghwYWdlU2l6ZRIfCgtwYWdlX29mZnNldBgFIAEoBVIKcGFnZU9mZnNldA==');
+
+@$core.Deprecated('Use listActivityEventsResponseDescriptor instead')
+const ListActivityEventsResponse$json = {
+  '1': 'ListActivityEventsResponse',
+  '2': [
+    {
+      '1': 'events',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.field.v1.ActivityEvent',
+      '10': 'events'
+    },
+    {'1': 'total_count', '3': 2, '4': 1, '5': 5, '10': 'totalCount'},
+  ],
+};
+
+/// Descriptor for `ListActivityEventsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listActivityEventsResponseDescriptor =
+    $convert.base64Decode(
+        'ChpMaXN0QWN0aXZpdHlFdmVudHNSZXNwb25zZRI7CgZldmVudHMYASADKAsyIy5hZ3JpY3VsdH'
+        'VyZS5maWVsZC52MS5BY3Rpdml0eUV2ZW50UgZldmVudHMSHwoLdG90YWxfY291bnQYAiABKAVS'
+        'CnRvdGFsQ291bnQ=');
+
+@$core.Deprecated('Use activityEvidenceDescriptor instead')
+const ActivityEvidence$json = {
+  '1': 'ActivityEvidence',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'tenant_id', '3': 2, '4': 1, '5': 9, '10': 'tenantId'},
+    {'1': 'activity_event_id', '3': 3, '4': 1, '5': 9, '10': 'activityEventId'},
+    {
+      '1': 'evidence_type',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.EvidenceType',
+      '10': 'evidenceType'
+    },
+    {'1': 'file_url', '3': 5, '4': 1, '5': 9, '10': 'fileUrl'},
+    {'1': 'file_name', '3': 6, '4': 1, '5': 9, '10': 'fileName'},
+    {'1': 'file_size_bytes', '3': 7, '4': 1, '5': 3, '10': 'fileSizeBytes'},
+    {'1': 'mime_type', '3': 8, '4': 1, '5': 9, '10': 'mimeType'},
+    {'1': 'thumbnail_url', '3': 9, '4': 1, '5': 9, '10': 'thumbnailUrl'},
+    {'1': 'caption', '3': 10, '4': 1, '5': 9, '10': 'caption'},
+    {'1': 'latitude', '3': 11, '4': 1, '5': 1, '10': 'latitude'},
+    {'1': 'longitude', '3': 12, '4': 1, '5': 1, '10': 'longitude'},
+    {
+      '1': 'captured_at',
+      '3': 13,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'capturedAt'
+    },
+    {'1': 'captured_by', '3': 14, '4': 1, '5': 9, '10': 'capturedBy'},
+    {
+      '1': 'created_at',
+      '3': 15,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+  ],
+};
+
+/// Descriptor for `ActivityEvidence`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List activityEvidenceDescriptor = $convert.base64Decode(
+    'ChBBY3Rpdml0eUV2aWRlbmNlEg4KAmlkGAEgASgJUgJpZBIbCgl0ZW5hbnRfaWQYAiABKAlSCH'
+    'RlbmFudElkEioKEWFjdGl2aXR5X2V2ZW50X2lkGAMgASgJUg9hY3Rpdml0eUV2ZW50SWQSRwoN'
+    'ZXZpZGVuY2VfdHlwZRgEIAEoDjIiLmFncmljdWx0dXJlLmZpZWxkLnYxLkV2aWRlbmNlVHlwZV'
+    'IMZXZpZGVuY2VUeXBlEhkKCGZpbGVfdXJsGAUgASgJUgdmaWxlVXJsEhsKCWZpbGVfbmFtZRgG'
+    'IAEoCVIIZmlsZU5hbWUSJgoPZmlsZV9zaXplX2J5dGVzGAcgASgDUg1maWxlU2l6ZUJ5dGVzEh'
+    'sKCW1pbWVfdHlwZRgIIAEoCVIIbWltZVR5cGUSIwoNdGh1bWJuYWlsX3VybBgJIAEoCVIMdGh1'
+    'bWJuYWlsVXJsEhgKB2NhcHRpb24YCiABKAlSB2NhcHRpb24SGgoIbGF0aXR1ZGUYCyABKAFSCG'
+    'xhdGl0dWRlEhwKCWxvbmdpdHVkZRgMIAEoAVIJbG9uZ2l0dWRlEjsKC2NhcHR1cmVkX2F0GA0g'
+    'ASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKY2FwdHVyZWRBdBIfCgtjYXB0dXJlZF'
+    '9ieRgOIAEoCVIKY2FwdHVyZWRCeRI5CgpjcmVhdGVkX2F0GA8gASgLMhouZ29vZ2xlLnByb3Rv'
+    'YnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0');
+
+@$core.Deprecated('Use addActivityEvidenceRequestDescriptor instead')
+const AddActivityEvidenceRequest$json = {
+  '1': 'AddActivityEvidenceRequest',
+  '2': [
+    {'1': 'activity_event_id', '3': 1, '4': 1, '5': 9, '10': 'activityEventId'},
+    {
+      '1': 'evidence_type',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.field.v1.EvidenceType',
+      '10': 'evidenceType'
+    },
+    {'1': 'file_url', '3': 3, '4': 1, '5': 9, '10': 'fileUrl'},
+    {'1': 'file_name', '3': 4, '4': 1, '5': 9, '10': 'fileName'},
+    {'1': 'file_size_bytes', '3': 5, '4': 1, '5': 3, '10': 'fileSizeBytes'},
+    {'1': 'mime_type', '3': 6, '4': 1, '5': 9, '10': 'mimeType'},
+    {'1': 'thumbnail_url', '3': 7, '4': 1, '5': 9, '10': 'thumbnailUrl'},
+    {'1': 'caption', '3': 8, '4': 1, '5': 9, '10': 'caption'},
+    {'1': 'latitude', '3': 9, '4': 1, '5': 1, '10': 'latitude'},
+    {'1': 'longitude', '3': 10, '4': 1, '5': 1, '10': 'longitude'},
+    {
+      '1': 'captured_at',
+      '3': 11,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'capturedAt'
+    },
+  ],
+};
+
+/// Descriptor for `AddActivityEvidenceRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List addActivityEvidenceRequestDescriptor = $convert.base64Decode(
+    'ChpBZGRBY3Rpdml0eUV2aWRlbmNlUmVxdWVzdBIqChFhY3Rpdml0eV9ldmVudF9pZBgBIAEoCV'
+    'IPYWN0aXZpdHlFdmVudElkEkcKDWV2aWRlbmNlX3R5cGUYAiABKA4yIi5hZ3JpY3VsdHVyZS5m'
+    'aWVsZC52MS5FdmlkZW5jZVR5cGVSDGV2aWRlbmNlVHlwZRIZCghmaWxlX3VybBgDIAEoCVIHZm'
+    'lsZVVybBIbCglmaWxlX25hbWUYBCABKAlSCGZpbGVOYW1lEiYKD2ZpbGVfc2l6ZV9ieXRlcxgF'
+    'IAEoA1INZmlsZVNpemVCeXRlcxIbCgltaW1lX3R5cGUYBiABKAlSCG1pbWVUeXBlEiMKDXRodW'
+    '1ibmFpbF91cmwYByABKAlSDHRodW1ibmFpbFVybBIYCgdjYXB0aW9uGAggASgJUgdjYXB0aW9u'
+    'EhoKCGxhdGl0dWRlGAkgASgBUghsYXRpdHVkZRIcCglsb25naXR1ZGUYCiABKAFSCWxvbmdpdH'
+    'VkZRI7CgtjYXB0dXJlZF9hdBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCmNh'
+    'cHR1cmVkQXQ=');
+
+@$core.Deprecated('Use addActivityEvidenceResponseDescriptor instead')
+const AddActivityEvidenceResponse$json = {
+  '1': 'AddActivityEvidenceResponse',
+  '2': [
+    {
+      '1': 'evidence',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.field.v1.ActivityEvidence',
+      '10': 'evidence'
+    },
+  ],
+};
+
+/// Descriptor for `AddActivityEvidenceResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List addActivityEvidenceResponseDescriptor =
+    $convert.base64Decode(
+        'ChtBZGRBY3Rpdml0eUV2aWRlbmNlUmVzcG9uc2USQgoIZXZpZGVuY2UYASABKAsyJi5hZ3JpY3'
+        'VsdHVyZS5maWVsZC52MS5BY3Rpdml0eUV2aWRlbmNlUghldmlkZW5jZQ==');
+
+@$core.Deprecated('Use listActivityEvidenceRequestDescriptor instead')
+const ListActivityEvidenceRequest$json = {
+  '1': 'ListActivityEvidenceRequest',
+  '2': [
+    {'1': 'activity_event_id', '3': 1, '4': 1, '5': 9, '10': 'activityEventId'},
+    {'1': 'page_size', '3': 2, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_offset', '3': 3, '4': 1, '5': 5, '10': 'pageOffset'},
+  ],
+};
+
+/// Descriptor for `ListActivityEvidenceRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listActivityEvidenceRequestDescriptor =
+    $convert.base64Decode(
+        'ChtMaXN0QWN0aXZpdHlFdmlkZW5jZVJlcXVlc3QSKgoRYWN0aXZpdHlfZXZlbnRfaWQYASABKA'
+        'lSD2FjdGl2aXR5RXZlbnRJZBIbCglwYWdlX3NpemUYAiABKAVSCHBhZ2VTaXplEh8KC3BhZ2Vf'
+        'b2Zmc2V0GAMgASgFUgpwYWdlT2Zmc2V0');
+
+@$core.Deprecated('Use listActivityEvidenceResponseDescriptor instead')
+const ListActivityEvidenceResponse$json = {
+  '1': 'ListActivityEvidenceResponse',
+  '2': [
+    {
+      '1': 'evidence',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.field.v1.ActivityEvidence',
+      '10': 'evidence'
+    },
+    {'1': 'total_count', '3': 2, '4': 1, '5': 5, '10': 'totalCount'},
+  ],
+};
+
+/// Descriptor for `ListActivityEvidenceResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listActivityEvidenceResponseDescriptor =
+    $convert.base64Decode(
+        'ChxMaXN0QWN0aXZpdHlFdmlkZW5jZVJlc3BvbnNlEkIKCGV2aWRlbmNlGAEgAygLMiYuYWdyaW'
+        'N1bHR1cmUuZmllbGQudjEuQWN0aXZpdHlFdmlkZW5jZVIIZXZpZGVuY2USHwoLdG90YWxfY291'
+        'bnQYAiABKAVSCnRvdGFsQ291bnQ=');
+
+@$core.Deprecated('Use deleteActivityEvidenceRequestDescriptor instead')
+const DeleteActivityEvidenceRequest$json = {
+  '1': 'DeleteActivityEvidenceRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `DeleteActivityEvidenceRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteActivityEvidenceRequestDescriptor =
+    $convert.base64Decode(
+        'Ch1EZWxldGVBY3Rpdml0eUV2aWRlbmNlUmVxdWVzdBIOCgJpZBgBIAEoCVICaWQ=');
+
+@$core.Deprecated('Use deleteActivityEvidenceResponseDescriptor instead')
+const DeleteActivityEvidenceResponse$json = {
+  '1': 'DeleteActivityEvidenceResponse',
+};
+
+/// Descriptor for `DeleteActivityEvidenceResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteActivityEvidenceResponseDescriptor =
+    $convert.base64Decode('Ch5EZWxldGVBY3Rpdml0eUV2aWRlbmNlUmVzcG9uc2U=');
+
 const $core.Map<$core.String, $core.dynamic> FieldServiceBase$json = {
   '1': 'FieldService',
   '2': [
@@ -1146,6 +2040,51 @@ const $core.Map<$core.String, $core.dynamic> FieldServiceBase$json = {
       '2': '.agriculture.field.v1.GetCropHistoryRequest',
       '3': '.agriculture.field.v1.GetCropHistoryResponse'
     },
+    {
+      '1': 'CreateCropCycle',
+      '2': '.agriculture.field.v1.CreateCropCycleRequest',
+      '3': '.agriculture.field.v1.CreateCropCycleResponse'
+    },
+    {
+      '1': 'GetCropCycle',
+      '2': '.agriculture.field.v1.GetCropCycleRequest',
+      '3': '.agriculture.field.v1.GetCropCycleResponse'
+    },
+    {
+      '1': 'ListCropCycles',
+      '2': '.agriculture.field.v1.ListCropCyclesRequest',
+      '3': '.agriculture.field.v1.ListCropCyclesResponse'
+    },
+    {
+      '1': 'UpdateCropCycle',
+      '2': '.agriculture.field.v1.UpdateCropCycleRequest',
+      '3': '.agriculture.field.v1.UpdateCropCycleResponse'
+    },
+    {
+      '1': 'LogActivityEvent',
+      '2': '.agriculture.field.v1.LogActivityEventRequest',
+      '3': '.agriculture.field.v1.LogActivityEventResponse'
+    },
+    {
+      '1': 'ListActivityEvents',
+      '2': '.agriculture.field.v1.ListActivityEventsRequest',
+      '3': '.agriculture.field.v1.ListActivityEventsResponse'
+    },
+    {
+      '1': 'AddActivityEvidence',
+      '2': '.agriculture.field.v1.AddActivityEvidenceRequest',
+      '3': '.agriculture.field.v1.AddActivityEvidenceResponse'
+    },
+    {
+      '1': 'ListActivityEvidence',
+      '2': '.agriculture.field.v1.ListActivityEvidenceRequest',
+      '3': '.agriculture.field.v1.ListActivityEvidenceResponse'
+    },
+    {
+      '1': 'DeleteActivityEvidence',
+      '2': '.agriculture.field.v1.DeleteActivityEvidenceRequest',
+      '3': '.agriculture.field.v1.DeleteActivityEvidenceResponse'
+    },
   ],
 };
 
@@ -1186,6 +2125,36 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
       GetFieldSegmentsResponse$json,
   '.agriculture.field.v1.GetCropHistoryRequest': GetCropHistoryRequest$json,
   '.agriculture.field.v1.GetCropHistoryResponse': GetCropHistoryResponse$json,
+  '.agriculture.field.v1.CreateCropCycleRequest': CreateCropCycleRequest$json,
+  '.agriculture.field.v1.CreateCropCycleResponse': CreateCropCycleResponse$json,
+  '.agriculture.field.v1.CropCycle': CropCycle$json,
+  '.agriculture.field.v1.GetCropCycleRequest': GetCropCycleRequest$json,
+  '.agriculture.field.v1.GetCropCycleResponse': GetCropCycleResponse$json,
+  '.agriculture.field.v1.ListCropCyclesRequest': ListCropCyclesRequest$json,
+  '.agriculture.field.v1.ListCropCyclesResponse': ListCropCyclesResponse$json,
+  '.agriculture.field.v1.UpdateCropCycleRequest': UpdateCropCycleRequest$json,
+  '.agriculture.field.v1.UpdateCropCycleResponse': UpdateCropCycleResponse$json,
+  '.agriculture.field.v1.LogActivityEventRequest': LogActivityEventRequest$json,
+  '.agriculture.field.v1.LogActivityEventResponse':
+      LogActivityEventResponse$json,
+  '.agriculture.field.v1.ActivityEvent': ActivityEvent$json,
+  '.agriculture.field.v1.ListActivityEventsRequest':
+      ListActivityEventsRequest$json,
+  '.agriculture.field.v1.ListActivityEventsResponse':
+      ListActivityEventsResponse$json,
+  '.agriculture.field.v1.AddActivityEvidenceRequest':
+      AddActivityEvidenceRequest$json,
+  '.agriculture.field.v1.AddActivityEvidenceResponse':
+      AddActivityEvidenceResponse$json,
+  '.agriculture.field.v1.ActivityEvidence': ActivityEvidence$json,
+  '.agriculture.field.v1.ListActivityEvidenceRequest':
+      ListActivityEvidenceRequest$json,
+  '.agriculture.field.v1.ListActivityEvidenceResponse':
+      ListActivityEvidenceResponse$json,
+  '.agriculture.field.v1.DeleteActivityEvidenceRequest':
+      DeleteActivityEvidenceRequest$json,
+  '.agriculture.field.v1.DeleteActivityEvidenceResponse':
+      DeleteActivityEvidenceResponse$json,
 };
 
 /// Descriptor for `FieldService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -1210,4 +2179,23 @@ final $typed_data.Uint8List fieldServiceDescriptor = $convert.base64Decode(
     'RTZWdtZW50cxItLmFncmljdWx0dXJlLmZpZWxkLnYxLkdldEZpZWxkU2VnbWVudHNSZXF1ZXN0'
     'Gi4uYWdyaWN1bHR1cmUuZmllbGQudjEuR2V0RmllbGRTZWdtZW50c1Jlc3BvbnNlEmsKDkdldE'
     'Nyb3BIaXN0b3J5EisuYWdyaWN1bHR1cmUuZmllbGQudjEuR2V0Q3JvcEhpc3RvcnlSZXF1ZXN0'
-    'GiwuYWdyaWN1bHR1cmUuZmllbGQudjEuR2V0Q3JvcEhpc3RvcnlSZXNwb25zZQ==');
+    'GiwuYWdyaWN1bHR1cmUuZmllbGQudjEuR2V0Q3JvcEhpc3RvcnlSZXNwb25zZRJuCg9DcmVhdG'
+    'VDcm9wQ3ljbGUSLC5hZ3JpY3VsdHVyZS5maWVsZC52MS5DcmVhdGVDcm9wQ3ljbGVSZXF1ZXN0'
+    'Gi0uYWdyaWN1bHR1cmUuZmllbGQudjEuQ3JlYXRlQ3JvcEN5Y2xlUmVzcG9uc2USZQoMR2V0Q3'
+    'JvcEN5Y2xlEikuYWdyaWN1bHR1cmUuZmllbGQudjEuR2V0Q3JvcEN5Y2xlUmVxdWVzdBoqLmFn'
+    'cmljdWx0dXJlLmZpZWxkLnYxLkdldENyb3BDeWNsZVJlc3BvbnNlEmsKDkxpc3RDcm9wQ3ljbG'
+    'VzEisuYWdyaWN1bHR1cmUuZmllbGQudjEuTGlzdENyb3BDeWNsZXNSZXF1ZXN0GiwuYWdyaWN1'
+    'bHR1cmUuZmllbGQudjEuTGlzdENyb3BDeWNsZXNSZXNwb25zZRJuCg9VcGRhdGVDcm9wQ3ljbG'
+    'USLC5hZ3JpY3VsdHVyZS5maWVsZC52MS5VcGRhdGVDcm9wQ3ljbGVSZXF1ZXN0Gi0uYWdyaWN1'
+    'bHR1cmUuZmllbGQudjEuVXBkYXRlQ3JvcEN5Y2xlUmVzcG9uc2UScQoQTG9nQWN0aXZpdHlFdm'
+    'VudBItLmFncmljdWx0dXJlLmZpZWxkLnYxLkxvZ0FjdGl2aXR5RXZlbnRSZXF1ZXN0Gi4uYWdy'
+    'aWN1bHR1cmUuZmllbGQudjEuTG9nQWN0aXZpdHlFdmVudFJlc3BvbnNlEncKEkxpc3RBY3Rpdm'
+    'l0eUV2ZW50cxIvLmFncmljdWx0dXJlLmZpZWxkLnYxLkxpc3RBY3Rpdml0eUV2ZW50c1JlcXVl'
+    'c3QaMC5hZ3JpY3VsdHVyZS5maWVsZC52MS5MaXN0QWN0aXZpdHlFdmVudHNSZXNwb25zZRJ6Ch'
+    'NBZGRBY3Rpdml0eUV2aWRlbmNlEjAuYWdyaWN1bHR1cmUuZmllbGQudjEuQWRkQWN0aXZpdHlF'
+    'dmlkZW5jZVJlcXVlc3QaMS5hZ3JpY3VsdHVyZS5maWVsZC52MS5BZGRBY3Rpdml0eUV2aWRlbm'
+    'NlUmVzcG9uc2USfQoUTGlzdEFjdGl2aXR5RXZpZGVuY2USMS5hZ3JpY3VsdHVyZS5maWVsZC52'
+    'MS5MaXN0QWN0aXZpdHlFdmlkZW5jZVJlcXVlc3QaMi5hZ3JpY3VsdHVyZS5maWVsZC52MS5MaX'
+    'N0QWN0aXZpdHlFdmlkZW5jZVJlc3BvbnNlEoMBChZEZWxldGVBY3Rpdml0eUV2aWRlbmNlEjMu'
+    'YWdyaWN1bHR1cmUuZmllbGQudjEuRGVsZXRlQWN0aXZpdHlFdmlkZW5jZVJlcXVlc3QaNC5hZ3'
+    'JpY3VsdHVyZS5maWVsZC52MS5EZWxldGVBY3Rpdml0eUV2aWRlbmNlUmVzcG9uc2U=');

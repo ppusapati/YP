@@ -1,0 +1,122 @@
+syntax = "proto3";
+package agriculture.task.v1;
+option go_package = "p9e.in/samavaya/agriculture/task/v1;taskv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED  = 0;
+  TASK_STATUS_PENDING      = 1;
+  TASK_STATUS_IN_PROGRESS  = 2;
+  TASK_STATUS_COMPLETED    = 3;
+  TASK_STATUS_CANCELLED    = 4;
+}
+
+enum TaskPriority {
+  TASK_PRIORITY_UNSPECIFIED = 0;
+  TASK_PRIORITY_LOW         = 1;
+  TASK_PRIORITY_MEDIUM      = 2;
+  TASK_PRIORITY_HIGH        = 3;
+  TASK_PRIORITY_URGENT      = 4;
+}
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+// Task represents a farm task assignment.
+message Task {
+  string                    id          = 1;
+  string                    title       = 2;
+  string                    description = 3;
+  TaskStatus                status      = 4;
+  TaskPriority              priority    = 5;
+  string                    assigned_to = 6;
+  string                    farm_id     = 7;
+  string                    field_id    = 8;
+  google.protobuf.Timestamp due_date    = 9;
+  google.protobuf.Timestamp created_at  = 10;
+  google.protobuf.Timestamp updated_at  = 11;
+}
+
+// -----------------------------------------------------------------------------
+// Requests / Responses
+// -----------------------------------------------------------------------------
+
+message GetTaskRequest {
+  string id = 1;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message ListTasksRequest {
+  string       farm_id    = 1;
+  string       field_id   = 2;
+  string       assigned_to = 3;
+  TaskStatus   status     = 4;
+  TaskPriority priority   = 5;
+  int32        page_size  = 6;
+  string       page_token = 7;
+}
+
+message ListTasksResponse {
+  repeated Task tasks           = 1;
+  string        next_page_token = 2;
+  int32         total_count     = 3;
+}
+
+message CreateTaskRequest {
+  string                    title       = 1;
+  string                    description = 2;
+  TaskPriority              priority    = 3;
+  string                    assigned_to = 4;
+  string                    farm_id     = 5;
+  string                    field_id    = 6;
+  google.protobuf.Timestamp due_date    = 7;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message UpdateTaskRequest {
+  string                     id          = 1;
+  string                     title       = 2;
+  string                     description = 3;
+  TaskStatus                 status      = 4;
+  TaskPriority               priority    = 5;
+  string                     assigned_to = 6;
+  string                     field_id    = 7;
+  google.protobuf.Timestamp  due_date    = 8;
+  google.protobuf.FieldMask  update_mask = 9;
+}
+
+message UpdateTaskResponse {
+  Task task = 1;
+}
+
+message DeleteTaskRequest {
+  string id = 1;
+}
+
+message DeleteTaskResponse {}
+
+// -----------------------------------------------------------------------------
+// Service
+// -----------------------------------------------------------------------------
+
+// TaskService provides farm task management operations.
+service TaskService {
+  rpc GetTask    (GetTaskRequest)    returns (GetTaskResponse);
+  rpc ListTasks  (ListTasksRequest)  returns (ListTasksResponse);
+  rpc CreateTask (CreateTaskRequest) returns (CreateTaskResponse);
+  rpc UpdateTask (UpdateTaskRequest) returns (UpdateTaskResponse);
+  rpc DeleteTask (DeleteTaskRequest) returns (DeleteTaskResponse);
+}

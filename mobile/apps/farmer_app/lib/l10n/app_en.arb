@@ -1,0 +1,168 @@
+{
+  "@@locale": "en",
+  "@@last_modified": "2026-09-12",
+
+  "commonSave": "Save",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonEdit": "Edit",
+  "commonCreate": "Create",
+  "commonUpdate": "Update",
+  "commonClose": "Close",
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "commonSubmit": "Submit",
+  "commonReset": "Reset",
+  "commonSearch": "Search",
+  "commonFilter": "Filter",
+  "commonSort": "Sort",
+  "commonExport": "Export",
+  "commonImport": "Import",
+  "commonPrint": "Print",
+  "commonLoading": "Loading...",
+  "commonError": "Error",
+  "commonSuccess": "Success",
+  "commonWarning": "Warning",
+  "commonInfo": "Info",
+  "commonConfirm": "Confirm",
+  "commonYes": "Yes",
+  "commonNo": "No",
+  "commonOk": "OK",
+  "commonRequired": "Required",
+  "commonOptional": "Optional",
+  "commonAll": "All",
+  "commonNone": "None",
+  "commonSelect": "Select",
+  "commonClear": "Clear",
+  "commonApply": "Apply",
+  "commonActions": "Actions",
+  "commonStatus": "Status",
+  "commonName": "Name",
+  "commonDescription": "Description",
+  "commonDate": "Date",
+  "commonAmount": "Amount",
+  "commonTotal": "Total",
+  "commonNotes": "Notes",
+
+  "validationRequired": "This field is required",
+  "validationMinLength": "Minimum {min} characters required",
+  "@validationMinLength": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "validationMaxLength": "Maximum {max} characters allowed",
+  "@validationMaxLength": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "validationEmail": "Please enter a valid email address",
+  "validationPhone": "Please enter a valid phone number",
+  "validationNumber": "Please enter a valid number",
+  "validationMin": "Value must be at least {min}",
+  "@validationMin": {
+    "placeholders": {
+      "min": { "type": "String" }
+    }
+  },
+  "validationMax": "Value must be at most {max}",
+  "@validationMax": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  },
+  "validationPattern": "Invalid format",
+  "validationUrl": "Please enter a valid URL",
+
+  "authLogin": "Login",
+  "authLogout": "Logout",
+  "authEmail": "Email",
+  "authPassword": "Password",
+  "authForgotPassword": "Forgot password?",
+  "authSignIn": "Sign in",
+  "authSignOut": "Sign out",
+  "authWelcome": "Welcome, {name}",
+  "@authWelcome": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "navDashboard": "Dashboard",
+  "navSettings": "Settings",
+  "navProfile": "Profile",
+  "navHelp": "Help",
+
+  "agricultureCrop": "Crop",
+  "agricultureFarm": "Farm",
+  "agricultureHarvest": "Harvest",
+  "agricultureSeason": "Season",
+  "agricultureField": "Field",
+  "agricultureYield": "Yield",
+  "agricultureIrrigation": "Irrigation",
+  "agricultureFertilizer": "Fertilizer",
+  "agriculturePesticide": "Pesticide",
+  "agricultureEquipment": "Equipment",
+
+  "manufacturingProduction": "Production",
+  "manufacturingWorkOrder": "Work Order",
+  "manufacturingBom": "Bill of Materials",
+  "manufacturingInventory": "Inventory",
+  "manufacturingQuality": "Quality",
+  "manufacturingMachine": "Machine",
+  "manufacturingShift": "Shift",
+  "manufacturingOperator": "Operator",
+  "manufacturingDefect": "Defect",
+  "manufacturingBatch": "Batch",
+
+  "waterSupply": "Water Supply",
+  "waterTreatment": "Treatment",
+  "waterDistribution": "Distribution",
+  "waterMeter": "Meter",
+  "waterConnection": "Connection",
+  "waterBill": "Bill",
+  "waterConsumption": "Consumption",
+  "waterPipeline": "Pipeline",
+  "waterPump": "Pump",
+  "waterReservoir": "Reservoir",
+
+  "constructionProject": "Project",
+  "constructionSite": "Site",
+  "constructionContractor": "Contractor",
+  "constructionMaterial": "Material",
+  "constructionLabour": "Labour",
+  "constructionDrawing": "Drawing",
+  "constructionInspection": "Inspection",
+  "constructionMilestone": "Milestone",
+  "constructionBoq": "Bill of Quantities",
+  "constructionEstimate": "Estimate",
+
+  "financeInvoice": "Invoice",
+  "financePayment": "Payment",
+  "financeReceipt": "Receipt",
+  "financeExpense": "Expense",
+  "financeBudget": "Budget",
+  "financeLedger": "Ledger",
+  "financeAccount": "Account",
+  "financeBalance": "Balance",
+  "financeTax": "Tax",
+  "financeCurrency": "Currency",
+
+  "hrEmployee": "Employee",
+  "hrDepartment": "Department",
+  "hrLeave": "Leave",
+  "hrAttendance": "Attendance",
+  "hrPayroll": "Payroll",
+  "hrSalary": "Salary",
+  "hrDesignation": "Designation",
+  "hrShift": "Shift",
+  "hrPerformance": "Performance",
+  "hrTraining": "Training",
+
+  "errorNotFound": "Not found",
+  "errorUnauthorized": "Unauthorized",
+  "errorServerError": "Server error. Please try again.",
+  "errorNetworkError": "Network error. Check your connection.",
+  "errorSessionExpired": "Session expired. Please login again."
+}

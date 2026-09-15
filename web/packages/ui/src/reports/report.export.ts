@@ -8,7 +8,7 @@
  */
 
 import type { TableColumn } from '../tables/table.types';
-import { exportToCSV, exportToXLSX, exportToPDF, printTable } from '../tables/table.export';
+import { exportToCSV, exportToXLSX, exportToPDF, exportToJSON, printTable } from '../tables/table.export';
 import type { ExportOptions, ExportFormat } from '../tables/table.export';
 import {
   buildTableColumns,
@@ -33,7 +33,12 @@ export type { ExportFormat } from '../tables/table.export';
 // TYPES
 // ============================================================================
 
-export type ReportExportFormat = 'csv' | 'xlsx' | 'pdf' | 'print';
+// Includes 'json' because the table widget's own export menu offers it, and
+// the report renderer forwards whatever that menu emits. Without it a reader
+// could pick JSON from a table inside a report and have the call rejected by
+// the type system at build time — or, once the build was made to pass, do
+// nothing at runtime.
+export type ReportExportFormat = 'csv' | 'xlsx' | 'pdf' | 'json' | 'print';
 
 export interface ReportExportOptions {
   /** Report visualization schema */
@@ -119,20 +124,23 @@ export async function exportWidget(options: WidgetExportOptions): Promise<void> 
       case 'csv': exportToCSV(exportOpts); break;
       case 'xlsx': await exportToXLSX(exportOpts); break;
       case 'pdf': await exportToPDF(exportOpts); break;
+      case 'json': exportToJSON(exportOpts); break;
       case 'print': printTable(exportOpts); break;
     }
     return;
   }
 
   // Generic fallback — export raw data rows
-  if (rows.length > 0) {
-    const keys = Object.keys(rows[0]);
+  const firstRow = rows[0];
+  if (firstRow) {
+    const keys = Object.keys(firstRow);
     const columns: TableColumn[] = keys.map((k) => ({ key: k, header: k }));
     const exportOpts: ExportOptions = { data: rows, columns, filename, format, title: title ?? widget.title };
     switch (format) {
       case 'csv': exportToCSV(exportOpts); break;
       case 'xlsx': await exportToXLSX(exportOpts); break;
       case 'pdf': await exportToPDF(exportOpts); break;
+      case 'json': exportToJSON(exportOpts); break;
       case 'print': printTable(exportOpts); break;
     }
   }
@@ -281,7 +289,11 @@ export async function exportReportPDF(options: ReportExportOptions): Promise<voi
       const kpiColWidth = (pageWidth - 28) / Math.min(kpiWidgets.length, 4);
 
       for (let i = 0; i < kpiWidgets.length; i++) {
-        const kpi = kpiWidgets[i].kpi_config!;
+        // The filter above kept only widgets with a kpi_config, but the index
+        // access is still typed as possibly undefined, so it is narrowed here
+        // rather than asserted away.
+        const kpi = kpiWidgets[i]?.kpi_config;
+        if (!kpi) continue;
         const val = data.aggregates?.[kpi.value_field_code] ??
           computeAggregate(data.rows, kpi.value_field_code, kpi.aggregate);
         const formatted = formatValue(val, kpi.format);
@@ -542,12 +554,34 @@ export async function exportReport(
     case 'pdf':
       await exportReportPDF(options);
       break;
+    case 'json':
+      exportReportJSON(options);
+      break;
     case 'print':
       printReport(options);
       break;
     default:
       throw new Error(`Unsupported report export format: ${format}`);
   }
+}
+
+/**
+ * Export the whole report as JSON — the rows, and the column metadata needed to
+ * read them.
+ *
+ * Columns are included rather than just the rows: a bare array of records loses
+ * the labels and the field order, which is most of what makes an exported
+ * report legible a month later.
+ */
+export function exportReportJSON(options: ReportExportOptions): void {
+  const { data, filename, title } = options;
+  exportToJSON({
+    data: data.rows as Array<Record<string, unknown>>,
+    columns: dataColumnsToTableColumns(data),
+    filename,
+    format: 'json',
+    title,
+  });
 }
 
 // ============================================================================

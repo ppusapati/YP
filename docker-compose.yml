@@ -10,13 +10,13 @@ x-go-service: &go-service
     dockerfile: Dockerfile
   restart: unless-stopped
   environment: &go-env
-    JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
+    JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
     KAFKA_BROKER: kafka:9092
     GRPC_PLAINTEXT: "1"
     PORT: "8080"
     S3_ENDPOINT: http://minio:9000
-    S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-minioadmin}
-    S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+    S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+    S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
     S3_BUCKET: yieldpoint
     S3_FORCE_PATH_STYLE: "true"
     S3_REGION: us-east-1
@@ -30,19 +30,59 @@ x-go-service: &go-service
     interval: 10s
     timeout: 3s
     retries: 5
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+        cpus: '1.0'
+      reservations:
+        memory: 128M
+        cpus: '0.25'
 
 services:
   # ── Infrastructure ────────────────────────────────────────────────────────
 
   postgres:
-    image: postgres:16-alpine
+    # TimescaleDB rather than stock PostgreSQL.
+    #
+    # This image is PostgreSQL 16 with the timescaledb extension available; it
+    # is a drop-in, and the twenty-odd service databases that do not use
+    # hypertables are unaffected. sensor-service needs it: sensor_readings is
+    # the one table here that grows without bound, and migration 000006 turns
+    # it into a hypertable.
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-yieldpoint}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yieldpoint}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-yieldpoint}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    # Log anything slower than a second and keep per-statement timings.
+    # Without this the answer to "which query is slow" is a guess; with it,
+    # pg_stat_statements ranks them and the log names the offending call.
+    # One second is deliberately not aggressive: a threshold that fires on
+    # ordinary queries produces a log nobody reads.
+    command:
+      - postgres
+      - -c
+      # timescaledb must come first in the list; it refuses to load otherwise.
+      - shared_preload_libraries=timescaledb,pg_stat_statements
+      - -c
+      - pg_stat_statements.max=10000
+      - -c
+      - pg_stat_statements.track=top
+      - -c
+      - log_min_duration_statement=1000
+      - -c
+      - log_checkpoints=on
+      - -c
+      - log_lock_waits=on
+      - -c
+      - log_temp_files=0
+      - -c
+      - log_autovacuum_min_duration=0
     ports:
       - "5432:5432"
     healthcheck:
@@ -50,17 +90,34 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.7.1
+    restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
       - zkdata:/var/lib/zookeeper/data
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   kafka:
     image: confluentinc/cp-kafka:7.7.1
+    restart: unless-stopped
     depends_on:
       - zookeeper
     environment:
@@ -80,13 +137,19 @@ services:
       retries: 10
     volumes:
       - kafkadata:/var/lib/kafka/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
 
   minio:
     image: minio/minio:latest
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
     volumes:
       - miniodata:/data
     ports:
@@ -97,18 +160,31 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
 
   minio-init:
     image: minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
     entrypoint: >
       /bin/sh -c "
-      mc alias set yp http://minio:9000 minioadmin minioadmin;
+      mc alias set yp http://minio:9000 $$S3_ACCESS_KEY_ID $$S3_SECRET_ACCESS_KEY;
       mc mb --ignore-existing yp/yieldpoint;
       exit 0;
       "
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
   # ── API Gateway (single entry point) ───────────────────────────────────────
 
@@ -120,7 +196,7 @@ services:
       - "8080:8080"
     environment:
       GATEWAY_PORT: "8080"
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     depends_on:
       auth-service:
         condition: service_healthy
@@ -130,11 +206,54 @@ services:
         condition: service_healthy
       crop-service:
         condition: service_healthy
+      sensor-service:
+        condition: service_healthy
+      irrigation-service:
+        condition: service_healthy
+      soil-service:
+        condition: service_healthy
+      yield-service:
+        condition: service_healthy
+      pest-prediction-service:
+        condition: service_healthy
+      plant-diagnosis-service:
+        condition: service_healthy
+      satellite-service:
+        condition: service_healthy
+      traceability-service:
+        condition: service_healthy
+      commerce-service:
+        condition: service_healthy
+      alert-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+      prescription-service:
+        condition: service_healthy
+      satellite-ingestion-service:
+        condition: service_healthy
+      satellite-processing-service:
+        condition: service_healthy
+      satellite-analytics-service:
+        condition: service_healthy
+      satellite-tile-service:
+        condition: service_healthy
+      vegetation-index-service:
+        condition: service_healthy
+      task-service:
+        condition: service_healthy
+      agronomy-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
       interval: 10s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   # ── Go Agriculture Services ───────────────────────────────────────────────
 
@@ -203,6 +322,8 @@ services:
       DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/irrigation_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      WEATHER_SERVICE_URL: http://weather-service:8080
+      AI_GATEWAY_URL: ai-gateway:50051
 
   soil-service:
     <<: *go-service
@@ -236,6 +357,12 @@ services:
       CROP_SERVICE_URL: http://crop-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
+      # Comma-separated tenants whose in-season forecasts are recomputed
+      # weekly. Background work has no request to inherit a tenant from, so
+      # running unscoped would see nothing under row-level security.
+      YIELD_REFRESH_TENANTS: ""
+      YIELD_REFRESH_INTERVAL: 168h
+      WEATHER_SERVICE_URL: http://weather-service:8080
 
   pest-prediction-service:
     <<: *go-service
@@ -251,6 +378,9 @@ services:
       FIELD_SERVICE_URL: http://field-service:8080
       SENSOR_SERVICE_URL: http://sensor-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
+      # Without this, pest risk uses whatever weather the caller sent rather
+      # than the field's own observations.
+      WEATHER_SERVICE_URL: http://weather-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
 
   plant-diagnosis-service:
@@ -326,6 +456,220 @@ services:
       <<: *go-env
       DATABASE_URL: ${AUTH_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/auth_service?sslmode=disable}
 
+  alert-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: alert-service
+    ports:
+      - "8098:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${ALERT_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/alert_service?sslmode=disable}
+      AI_GATEWAY_ADDR: ai-gateway:50051
+      # The consumer is what fills this service. Weather, sensor and pest all
+      # raise their alerts as events; without a broker alert-service is a store
+      # with no writer.
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  analytics-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: analytics-service
+    ports:
+      - "8099:8080"
+    environment:
+      <<: *go-env
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  prescription-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: prescription-service
+    ports:
+      - "8100:8080"
+    environment:
+      <<: *go-env
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  satellite-ingestion-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-ingestion-service
+    ports:
+      - "8101:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_INGESTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_ingestion_service?sslmode=disable}
+
+  satellite-processing-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-processing-service
+    ports:
+      - "8102:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_PROCESSING_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_processing_service?sslmode=disable}
+
+  satellite-analytics-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-analytics-service
+    ports:
+      - "8103:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_ANALYTICS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_analytics_service?sslmode=disable}
+      VEGETATION_INDEX_SERVICE_URL: http://vegetation-index-service:8080
+
+  satellite-tile-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: satellite-tile-service
+    ports:
+      - "8104:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SATELLITE_TILE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_tile_service?sslmode=disable}
+
+  vegetation-index-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: vegetation-index-service
+    ports:
+      - "8105:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${VEGETATION_INDEX_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/vegetation_index_service?sslmode=disable}
+
+  task-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: task-service
+    ports:
+      - "8106:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${TASK_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/task_service?sslmode=disable}
+
+  agronomy-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: agronomy-service
+    ports:
+      - "8107:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${AGRONOMY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/agronomy_service?sslmode=disable}
+
+  weather-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: weather-service
+    ports:
+      - "8108:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${WEATHER_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/weather_service?sslmode=disable}
+      FIELD_SERVICE_URL: http://field-service:8080
+      WEATHER_POLL_INTERVAL: ${WEATHER_POLL_INTERVAL:-1h}
+      WEATHER_DEFAULT_PROVIDER: ${WEATHER_DEFAULT_PROVIDER:-OPEN_METEO}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      # Left empty, the adapters call the real public APIs. Point these at the
+      # mockserver below to develop and test without network access or a key:
+      #   docker compose --profile offline up
+      # and set the three in .env — see .env.example.
+      OPEN_METEO_FORECAST_URL: ${OPEN_METEO_FORECAST_URL:-}
+      OPEN_METEO_ARCHIVE_URL: ${OPEN_METEO_ARCHIVE_URL:-}
+      OPENWEATHER_BASE_URL: ${OPENWEATHER_BASE_URL:-}
+
+  # ── Offline development ────────────────────────────────────────────────────
+  # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
+  # Vision), so the platform runs with no network access, no API keys, and
+  # nobody else's rate limit. Responses are deterministic, so tests can assert
+  # on them. Opt in with: docker compose --profile offline up
+  mockserver:
+    build:
+      context: .
+      args:
+        CMD_PATH: ./cmd/mockserver
+    profiles: ["offline"]
+    restart: unless-stopped
+    command: ["-addr", ":8199", "-v"]
+    ports:
+      # 8199, not 8099: the 8080-8108 block is already spoken for by the
+      # services, and analytics-service publishes 8099.
+      - "8199:8199"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8199/__mock/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ── Monolith (all services in one binary) ──────────────────────────────────
+  # Start with: docker compose --profile monolith up
+  # Plain `docker compose up` still starts only the microservices above.
+
+  monolith:
+    build:
+      context: .
+      dockerfile: cmd/monolith/Dockerfile
+    restart: unless-stopped
+    profiles: ["monolith"]
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      KAFKA_BROKER: kafka:9092
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.5'
+
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 
   ai-gateway:
@@ -342,9 +686,190 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+
+  # Transaction pooling in front of Postgres.
+  #
+  # Every service keeps its own connection pool, and the sum of two dozen of
+  # them is what exhausts max_connections long before the database runs out of
+  # anything else. Services reach this by pointing DATABASE_URL at pgbouncer
+  # instead of postgres; it is not in the default path because transaction
+  # pooling forbids session state (prepared statements, LISTEN, advisory locks
+  # held across statements), so a service has to be checked before it moves.
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.23.1-p2
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-yieldpoint}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-yieldpoint}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: "25"
+      # Without this, transaction pooling breaks any driver that prepares
+      # statements — which is most of them.
+      SERVER_RESET_QUERY: DISCARD ALL
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits,options
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - "6432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+
+  # ── Metric exporters ────────────────────────────────────────────────────────
+  #
+  # Prometheus scraped postgres:5432 and kafka:9092 directly, which serve the
+  # Postgres and Kafka wire protocols rather than metrics — those jobs never
+  # produced a single sample. These translate.
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # sslmode=disable is correct inside the compose network; the exporter
+      # never leaves it.
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-yieldpoint}:${POSTGRES_PASSWORD:-yieldpoint}@postgres:5432/${POSTGRES_DB:-yieldpoint}?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+    ports:
+      - "9187:9187"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    command: ["--kafka.server=kafka:9092"]
+    ports:
+      - "9308:9308"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+  # ── Monitoring ──────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9091:9090"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # ── Log aggregation ────────────────────────────────────────────────────────
+  #
+  # Metrics say a service is failing; logs say why. Prometheus and Grafana were
+  # already here, so this adds the half that was missing.
+  loki:
+    image: grafana/loki:3.1.0
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      # Alert rules. The `fake/` subdirectory is the tenant id Loki uses when
+      # auth_enabled is false; rules outside it are silently never loaded.
+      - ./monitoring/loki/rules:/loki/rules:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # Loki reports not-ready for a while after start while it joins its own
+      # ring; failing the healthcheck during that window would restart it in a
+      # loop.
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      # Read-only, and only for discovery and log reads. Promtail never needs
+      # to start or stop anything.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # Persisted so a restart does not re-ship every line from the beginning.
+      - promtail_positions:/tmp
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      # The dashboards themselves. The provisioning config has always pointed
+      # at /var/lib/grafana/dashboards, and nothing was mounted there — so the
+      # four checked-in dashboards had never loaded.
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
 volumes:
   pgdata:
   zkdata:
   kafkadata:
   miniodata:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  promtail_positions:

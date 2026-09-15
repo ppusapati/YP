@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../domain/entities/crop_recommendation_entity.dart';
 import 'planting_window_indicator.dart';

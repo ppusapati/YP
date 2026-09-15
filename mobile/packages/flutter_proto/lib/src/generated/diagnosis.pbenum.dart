@@ -101,5 +101,34 @@ class Severity extends $pb.ProtobufEnum {
   const Severity._(super.value, super.name);
 }
 
+class LabelReviewDecision extends $pb.ProtobufEnum {
+  static const LabelReviewDecision LABEL_REVIEW_DECISION_UNSPECIFIED =
+      LabelReviewDecision._(
+          0, _omitEnumNames ? '' : 'LABEL_REVIEW_DECISION_UNSPECIFIED');
+  static const LabelReviewDecision LABEL_REVIEW_DECISION_CONFIRMED =
+      LabelReviewDecision._(
+          1, _omitEnumNames ? '' : 'LABEL_REVIEW_DECISION_CONFIRMED');
+  static const LabelReviewDecision LABEL_REVIEW_DECISION_CORRECTED =
+      LabelReviewDecision._(
+          2, _omitEnumNames ? '' : 'LABEL_REVIEW_DECISION_CORRECTED');
+  static const LabelReviewDecision LABEL_REVIEW_DECISION_REJECTED =
+      LabelReviewDecision._(
+          3, _omitEnumNames ? '' : 'LABEL_REVIEW_DECISION_REJECTED');
+
+  static const $core.List<LabelReviewDecision> values = <LabelReviewDecision>[
+    LABEL_REVIEW_DECISION_UNSPECIFIED,
+    LABEL_REVIEW_DECISION_CONFIRMED,
+    LABEL_REVIEW_DECISION_CORRECTED,
+    LABEL_REVIEW_DECISION_REJECTED,
+  ];
+
+  static final $core.List<LabelReviewDecision?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static LabelReviewDecision? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const LabelReviewDecision._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

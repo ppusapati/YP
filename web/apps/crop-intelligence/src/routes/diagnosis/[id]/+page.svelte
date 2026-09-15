@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { diagnosisRequestFormSchema } from '@samavāya/agriculture/schemas';
@@ -17,7 +16,7 @@
   onMount(async () => {
     try {
       const res = await diagnosisClient.getDiagnosis({ id });
-      values = { ...res.request };
+      values = { ...res.diagnosis };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load diagnosis request';
     } finally {
@@ -25,27 +24,16 @@
     }
   });
 
-  async function handleSubmit(formValues: Record<string, unknown>) {
-    isSubmitting = true;
-    error = null;
-    try {
-      await diagnosisClient.updateDiagnosis({ id, ...formValues } as any);
-      goto('/diagnosis');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update diagnosis request';
-    } finally {
-      isSubmitting = false;
-    }
+  // This page offered Save and Delete for a record that cannot be either.
+  //
+  // A diagnosis request is the result of an observation or a computation, and its
+  // service declares no Update or Delete — deliberately. Correcting one means
+  // submitting another; removing one erases evidence that a later report is
+  // built on, and the report still renders, which is what makes it dangerous.
+  async function handleSubmit(_formValues: Record<string, unknown>) {
+    error = 'A diagnosis request cannot be edited. Submit a new one instead.';
   }
 
-  async function handleDelete() {
-    try {
-      await diagnosisClient.deleteDiagnosis({ id } as any);
-      goto('/diagnosis');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete diagnosis request';
-    }
-  }
 </script>
 
 <CrudFormPage
@@ -59,7 +47,6 @@
   {isSubmitting}
   {error}
   cancelHref="/diagnosis"
-  showDelete={true}
+  showDelete={false}
   onSubmit={handleSubmit}
-  onDelete={handleDelete}
 />

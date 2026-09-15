@@ -1,3 +1,5 @@
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ModelExplanation;
+
 import '../../domain/entities/diagnosis_entity.dart';
 
 class DiagnosisModel {
@@ -8,6 +10,7 @@ class DiagnosisModel {
   final String severity;
   final String treatment;
   final String? imageUrl;
+  final List<ModelExplanation> explanations;
   final DateTime diagnosedAt;
 
   const DiagnosisModel({
@@ -18,6 +21,7 @@ class DiagnosisModel {
     required this.severity,
     required this.treatment,
     this.imageUrl,
+    this.explanations = const [],
     required this.diagnosedAt,
   });
 
@@ -30,6 +34,10 @@ class DiagnosisModel {
       severity: json['severity'] as String? ?? 'mild',
       treatment: json['treatment'] as String? ?? '',
       imageUrl: json['image_url'] as String?,
+      explanations: (json['explanations'] as List<dynamic>?)
+              ?.map((e) => ModelExplanation.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       diagnosedAt: DateTime.parse(json['diagnosed_at'] as String),
     );
   }
@@ -43,6 +51,7 @@ class DiagnosisModel {
       'severity': severity,
       'treatment': treatment,
       if (imageUrl != null) 'image_url': imageUrl,
+      'explanations': explanations.map((e) => e.toJson()).toList(),
       'diagnosed_at': diagnosedAt.toIso8601String(),
     };
   }
@@ -59,6 +68,7 @@ class DiagnosisModel {
       ),
       treatment: treatment,
       imageUrl: imageUrl,
+      explanations: explanations,
       diagnosedAt: diagnosedAt,
     );
   }
@@ -72,6 +82,7 @@ class DiagnosisModel {
       severity: entity.severity.name,
       treatment: entity.treatment,
       imageUrl: entity.imageUrl,
+      explanations: entity.explanations,
       diagnosedAt: entity.diagnosedAt,
     );
   }

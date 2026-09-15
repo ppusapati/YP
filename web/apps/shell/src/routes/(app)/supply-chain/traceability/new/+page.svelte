@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { traceabilityRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { traceabilityRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'created', unit: 'kg' };
@@ -14,7 +14,7 @@
     error = null;
     try {
       await traceabilityClient.createRecord(formValues as any);
-      goto('/supply-chain/traceability');
+      goto('/traceability');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create traceability record';
     } finally {
@@ -27,11 +27,11 @@
   title="New Traceability Record"
   subtitle="Create a new product traceability record"
   mode="create"
-  schema={traceabilityRecordFormSchema}
+  schema={traceabilityRecordSchema}
   {values}
   {errors}
   {isSubmitting}
   {error}
-  cancelHref="/supply-chain/traceability"
+  cancelHref="/traceability"
   onSubmit={handleSubmit}
 />

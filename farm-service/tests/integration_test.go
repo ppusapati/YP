@@ -267,7 +267,7 @@ func startTestServer(t *testing.T, pool *pgxpool.Pool) (baseURL string, shutdown
 	pub := kafkaadapter.NewEventPublisher(nil, logger) // nil producer = no-op events
 
 	// Application service
-	svc := application.NewFarmService(repo, pub, pool, logger)
+	svc := application.NewFarmService(repo, pub, pool, logger, nil)
 
 	// Inbound adapter (ConnectRPC handler)
 	handler := grpcadapter.NewFarmHandler(svc, logger)

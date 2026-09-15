@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { irrigationScheduleFormSchema } from '@samavāya/agriculture/schemas';
+  import { irrigationScheduleSchema } from '@samavāya/agriculture/schemas';
   import { irrigationClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'draft', is_active: false, schedule_type: 'time_based', trigger_condition: 'none' };
@@ -27,7 +27,7 @@
   title="New Irrigation Schedule"
   subtitle="Create a new irrigation schedule"
   mode="create"
-  schema={irrigationScheduleFormSchema}
+  schema={irrigationScheduleSchema}
   {values}
   {errors}
   {isSubmitting}

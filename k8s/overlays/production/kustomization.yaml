@@ -1,0 +1,134 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: yieldpoint
+
+resources:
+  - ../../base
+
+patches:
+  # --- Production replicas: scale up critical services ---
+  - target:
+      kind: Deployment
+      name: auth-service
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  - target:
+      kind: Deployment
+      name: farm-service
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  - target:
+      kind: Deployment
+      name: ai-gateway
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 2Gi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "4"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 512Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 500m
+
+  # --- Strict resource limits for application services ---
+  - target:
+      kind: Deployment
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 512Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 128Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 100m
+
+  # --- Production ingress host ---
+  - target:
+      kind: Ingress
+      name: yieldpoint-ingress
+    patch: |
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: api.yieldpoint.io
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.yieldpoint.io
+
+  # --- Node affinity: schedule on dedicated node pool ---
+  - target:
+      kind: Deployment
+    patch: |
+      - op: add
+        path: /spec/template/spec/affinity
+        value:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: node-pool
+                      operator: In
+                      values:
+                        - yieldpoint-production
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/part-of
+                        operator: In
+                        values:
+                          - yieldpoint
+                  topologyKey: kubernetes.io/hostname
+
+  # --- ConfigMap: production log level ---
+  - target:
+      kind: ConfigMap
+      name: yieldpoint-config
+    patch: |
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: warn
+
+  # --- PostgreSQL: larger storage in production ---
+  - target:
+      kind: StatefulSet
+      name: postgres
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 4Gi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "4"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 1Gi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "1"
+
+commonLabels:
+  environment: production
+
+commonAnnotations:
+  yieldpoint.io/environment: production

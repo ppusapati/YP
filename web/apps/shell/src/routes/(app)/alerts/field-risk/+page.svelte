@@ -24,7 +24,10 @@
     error = null;
     try {
       const res = await alertClient.listFieldRisks({});
-      fieldRisks = res.fieldRisks ?? [];
+      // The response field is `risk_scores` — `fieldRisks` was always
+      // undefined, so this page showed "No field risk data available." for
+      // every farm, including ones with scores.
+      fieldRisks = res.riskScores ?? [];
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load field risk scores';
     } finally {
@@ -40,6 +43,17 @@
     }
     return sortDesc ? b.overallScore - a.overallScore : a.overallScore - b.overallScore;
   });
+
+  function sortBy(key: 'overallScore' | 'fieldName') {
+    if (sortKey === key) {
+      sortDesc = !sortDesc;
+    } else {
+      sortKey = key;
+      // Highest risk first, but names A–Z: "descending" means something
+      // different for each, and the useful default differs with it.
+      sortDesc = key === 'overallScore';
+    }
+  }
 
   function riskColor(score: number): string {
     if (score >= 80) return '#dc2626';
@@ -108,6 +122,24 @@
   <div class="page-header">
     <h1>Field Risk Overview</h1>
     <p class="subtitle">Risk scores per field displayed as cards with gauge indicators</p>
+  </div>
+
+  <!--
+    `sortKey` and `sortDesc` were declared and read, and nothing ever set
+    them: the sort was fixed at highest-score-first with no way to change it.
+    These two controls are what the state was written for.
+  -->
+  <div class="sort-bar">
+    <span class="sort-label">Sort by</span>
+    <button class="sort-btn" class:active={sortKey === 'overallScore'} on:click={() => sortBy('overallScore')}>
+      Risk score
+    </button>
+    <button class="sort-btn" class:active={sortKey === 'fieldName'} on:click={() => sortBy('fieldName')}>
+      Field name
+    </button>
+    <button class="sort-btn" on:click={() => (sortDesc = !sortDesc)} title="Reverse order">
+      {sortDesc ? 'Descending' : 'Ascending'}
+    </button>
   </div>
 
   {#if loading}
@@ -190,7 +222,12 @@
   .field-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
   .field-name { font-size: 1rem; font-weight: 600; margin: 0; }
   .trend { font-size: 0.75rem; font-weight: 500; }
-  .risk-badge { padding: 0.25rem: 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; padding: 0.25rem 0.5rem; }
+  .risk-badge { border-radius: 0.25rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; padding: 0.25rem 0.5rem; }
+  .sort-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .sort-label { font-size: 0.75rem; font-weight: 500; color: #6b7280; text-transform: uppercase; }
+  .sort-btn { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; border: 1px solid #d1d5db; background: #fff; color: #374151; cursor: pointer; }
+  .sort-btn:hover { background: #f3f4f6; }
+  .sort-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
   .gauge-container { display: flex; justify-content: center; padding: 0.25rem 0; }
   .gauge-svg { width: 120px; height: 120px; }
   .risk-breakdown { display: flex; flex-direction: column; gap: 0.375rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #f3f4f6; }

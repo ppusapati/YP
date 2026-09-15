@@ -1,0 +1,116 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# docker-compose.backup.yml — Backup infrastructure overlay for YieldPoint
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d
+#
+# Adds:
+#   - MinIO bucket for backup storage (reuses existing MinIO from main compose)
+#   - Backup cron container running daily pg_dump for all 20 databases
+#   - Weekly verification cron container
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── Initialize backup bucket in MinIO ───────────────────────────────────────
+  minio-backup-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${S3_ACCESS_KEY_ID} $${S3_SECRET_ACCESS_KEY};
+        mc mb --ignore-existing local/yieldpoint-backups;
+        mc version enable local/yieldpoint-backups;
+        mc ilm rule add local/yieldpoint-backups --expire-days 30 --prefix '' 2>/dev/null || true;
+        mc alias set backup http://minio:9000 $${S3_ACCESS_KEY_ID} $${S3_SECRET_ACCESS_KEY};
+        echo 'Backup bucket initialized.';
+      "
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
+    restart: "no"
+
+  # ── Daily backup cron container ─────────────────────────────────────────────
+  pg-backup:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-backup-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./scripts/backup/pg-backup.sh:/scripts/pg-backup.sh:ro
+      - backup-scratch:/tmp/yp-pg-backups
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      BACKUP_BUCKET: yieldpoint-backups
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      RETENTION_DAYS: "30"
+    entrypoint: >
+      /bin/sh -c "
+        apk add --no-cache aws-cli bash > /dev/null 2>&1;
+        echo '0 2 * * * /bin/bash /scripts/pg-backup.sh >> /var/log/pg-backup.log 2>&1' > /etc/crontabs/root;
+        echo 'Backup cron installed — daily at 02:00 UTC';
+        echo 'Running initial backup...';
+        /bin/bash /scripts/pg-backup.sh;
+        echo 'Initial backup complete. Starting cron...';
+        crond -f -l 2;
+      "
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # ── Weekly backup verification ──────────────────────────────────────────────
+  pg-backup-verify:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-backup-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./scripts/backup/verify-backup.sh:/scripts/verify-backup.sh:ro
+      - verify-scratch:/tmp/yp-pg-verify
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      BACKUP_BUCKET: yieldpoint-backups
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+    entrypoint: >
+      /bin/sh -c "
+        apk add --no-cache aws-cli bash curl > /dev/null 2>&1;
+        echo '0 6 * * 0 /bin/bash /scripts/verify-backup.sh >> /var/log/pg-verify.log 2>&1' > /etc/crontabs/root;
+        echo 'Verify cron installed — weekly on Sunday at 06:00 UTC';
+        crond -f -l 2;
+      "
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+volumes:
+  backup-scratch:
+    driver: local
+  verify-scratch:
+    driver: local

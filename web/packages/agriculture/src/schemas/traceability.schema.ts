@@ -109,3 +109,60 @@ export const supplyEventSchema: FormSchema<Record<string, unknown>> = {
     ],
   },
 };
+
+/**
+ * Form for a batch record (CreateBatchRequest / UpdateBatchRequest).
+ *
+ * Three pages imported `batchRecordFormSchema` from this package and no batch
+ * schema existed, so the batch create and edit pages did not typecheck. The
+ * fields are traceability.proto's BatchRecord, minus the ones the server owns
+ * — id, tenant_id, version and the timestamps.
+ */
+export const batchRecordSchema: FormSchema<Record<string, unknown>> = {
+  fields: [
+    { type: 'text', name: 'record_id', label: 'Traceability Record ID', required: true, placeholder: 'Linked record ID' },
+    { type: 'text', name: 'batch_number', label: 'Batch Number', required: true, placeholder: 'e.g. HARVEST-01H8Z…' },
+    { type: 'number', name: 'quantity', label: 'Quantity', required: true, min: 0 },
+    { type: 'text', name: 'unit', label: 'Unit', required: true, placeholder: 'kg, quintal, crate' },
+    { type: 'number', name: 'weight_kg', label: 'Weight (kg)', min: 0, step: 0.01 },
+    { type: 'date', name: 'production_date', label: 'Production Date' },
+    // Not required: a fresh crate leaving the farm has no expiry yet, and
+    // making this mandatory would have people invent one.
+    { type: 'date', name: 'expiry_date', label: 'Expiry Date' },
+    { type: 'text', name: 'quality_grade', label: 'Quality Grade', placeholder: 'A, B, Export' },
+    { type: 'textarea', name: 'storage_conditions', label: 'Storage Conditions', placeholder: 'Temperature, humidity, handling notes' },
+    { type: 'text', name: 'crop_cycle_id', label: 'Crop Cycle ID' },
+    { type: 'text', name: 'yield_record_id', label: 'Yield Record ID' },
+  ],
+  layout: {
+    type: 'grid',
+    columns: 2,
+    gap: 'md',
+    sections: [
+      {
+        id: 'identity',
+        title: 'Batch',
+        fields: ['record_id', 'batch_number', 'quality_grade'],
+        columns: 2,
+      },
+      {
+        id: 'quantity',
+        title: 'Quantity',
+        fields: ['quantity', 'unit', 'weight_kg'],
+        columns: 3,
+      },
+      {
+        id: 'dates',
+        title: 'Dates and Storage',
+        fields: ['production_date', 'expiry_date', 'storage_conditions'],
+        columns: 2,
+      },
+      {
+        id: 'links',
+        title: 'Linked Records',
+        fields: ['crop_cycle_id', 'yield_record_id'],
+        columns: 2,
+      },
+    ],
+  },
+};

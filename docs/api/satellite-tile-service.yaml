@@ -1,0 +1,293 @@
+openapi: 3.0.3
+info:
+  title: Satellite Tile Service API
+  description: |
+    Map tile generation and serving for the YieldPoint agriculture platform.
+    Generates tilesets from processed satellite imagery for visualization layers
+    including RGB, NDVI, NDWI, EVI, stress, false color, and thermal.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8104
+    description: Local development
+tags:
+  - name: Tilesets
+    description: Tileset generation and management
+  - name: Tiles
+    description: Individual tile retrieval
+
+paths:
+  /agriculture.satellite.tile.v1.SatelliteTileService/GenerateTileset:
+    post:
+      tags: [Tilesets]
+      summary: Generate a tileset from a processed satellite scene
+      operationId: GenerateTileset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateTilesetRequest'
+      responses:
+        '200':
+          description: Tileset generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateTilesetResponse'
+
+  /agriculture.satellite.tile.v1.SatelliteTileService/GetTileset:
+    post:
+      tags: [Tilesets]
+      summary: Get a tileset by ID
+      operationId: GetTileset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTilesetRequest'
+      responses:
+        '200':
+          description: Tileset retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTilesetResponse'
+
+  /agriculture.satellite.tile.v1.SatelliteTileService/ListTilesets:
+    post:
+      tags: [Tilesets]
+      summary: List tilesets with filtering and pagination
+      operationId: ListTilesets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListTilesetsRequest'
+      responses:
+        '200':
+          description: Tilesets listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTilesetsResponse'
+
+  /agriculture.satellite.tile.v1.SatelliteTileService/GetTile:
+    post:
+      tags: [Tiles]
+      summary: Get a single tile by z/x/y coordinates
+      operationId: GetTile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTileRequest'
+      responses:
+        '200':
+          description: Tile data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTileResponse'
+
+  /agriculture.satellite.tile.v1.SatelliteTileService/DeleteTileset:
+    post:
+      tags: [Tilesets]
+      summary: Delete a tileset and its tiles
+      operationId: DeleteTileset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteTilesetRequest'
+      responses:
+        '200':
+          description: Tileset deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTilesetResponse'
+
+components:
+  schemas:
+    TileFormat:
+      type: string
+      enum:
+        - TILE_FORMAT_UNSPECIFIED
+        - TILE_FORMAT_PNG
+        - TILE_FORMAT_JPEG
+        - TILE_FORMAT_WEBP
+        - TILE_FORMAT_MVT
+
+    TilesetStatus:
+      type: string
+      enum:
+        - TILESET_STATUS_UNSPECIFIED
+        - TILESET_STATUS_QUEUED
+        - TILESET_STATUS_GENERATING
+        - TILESET_STATUS_COMPLETED
+        - TILESET_STATUS_FAILED
+
+    TileLayer:
+      type: string
+      enum:
+        - TILE_LAYER_UNSPECIFIED
+        - TILE_LAYER_RGB
+        - TILE_LAYER_NDVI
+        - TILE_LAYER_NDWI
+        - TILE_LAYER_EVI
+        - TILE_LAYER_STRESS
+        - TILE_LAYER_FALSE_COLOR
+        - TILE_LAYER_THERMAL
+
+    Tileset:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        farmId:
+          type: string
+        processingJobId:
+          type: string
+        layer:
+          $ref: '#/components/schemas/TileLayer'
+        format:
+          $ref: '#/components/schemas/TileFormat'
+        status:
+          $ref: '#/components/schemas/TilesetStatus'
+        minZoom:
+          type: integer
+          format: int32
+        maxZoom:
+          type: integer
+          format: int32
+        s3Prefix:
+          type: string
+        totalTiles:
+          type: string
+          format: int64
+        bboxGeojson:
+          type: string
+        errorMessage:
+          type: string
+        acquisitionDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    GenerateTilesetRequest:
+      type: object
+      properties:
+        processingJobId:
+          type: string
+        farmId:
+          type: string
+        layer:
+          $ref: '#/components/schemas/TileLayer'
+        format:
+          $ref: '#/components/schemas/TileFormat'
+        minZoom:
+          type: integer
+          format: int32
+        maxZoom:
+          type: integer
+          format: int32
+
+    GenerateTilesetResponse:
+      type: object
+      properties:
+        tileset:
+          $ref: '#/components/schemas/Tileset'
+
+    GetTilesetRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetTilesetResponse:
+      type: object
+      properties:
+        tileset:
+          $ref: '#/components/schemas/Tileset'
+
+    ListTilesetsRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+        farmId:
+          type: string
+        layer:
+          $ref: '#/components/schemas/TileLayer'
+        status:
+          $ref: '#/components/schemas/TilesetStatus'
+
+    ListTilesetsResponse:
+      type: object
+      properties:
+        tilesets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tileset'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    GetTileRequest:
+      type: object
+      properties:
+        tilesetId:
+          type: string
+        z:
+          type: integer
+          format: int32
+          description: Zoom level
+        x:
+          type: integer
+          format: int32
+          description: Column index
+        "y":
+          type: integer
+          format: int32
+          description: Row index
+
+    GetTileResponse:
+      type: object
+      properties:
+        tileData:
+          type: string
+          format: byte
+          description: Base64-encoded tile image data
+        contentType:
+          type: string
+
+    DeleteTilesetRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    DeleteTilesetResponse:
+      type: object
+      properties:
+        success:
+          type: boolean

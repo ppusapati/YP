@@ -1,0 +1,74 @@
+syntax = "proto3";
+package agriculture.agronomy.v1;
+option go_package = "p9e.in/samavaya/agriculture/agronomy-service/api/v1;agronomyv1";
+
+import "google/protobuf/timestamp.proto";
+
+// AdvisorySeverity represents the severity level of a crop advisory.
+enum AdvisorySeverity {
+  ADVISORY_SEVERITY_UNSPECIFIED = 0;
+  ADVISORY_SEVERITY_LOW = 1;
+  ADVISORY_SEVERITY_MEDIUM = 2;
+  ADVISORY_SEVERITY_HIGH = 3;
+  ADVISORY_SEVERITY_CRITICAL = 4;
+}
+
+// Advisory represents a crop advisory issued by an agronomist.
+message Advisory {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string crop_type = 4;
+  AdvisorySeverity severity = 5;
+  string region = 6;
+  string farm_id = 7;
+  string field_id = 8;
+  string created_by = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message GetAdvisoryRequest {
+  string id = 1;
+}
+
+message GetAdvisoryResponse {
+  Advisory advisory = 1;
+}
+
+message ListAdvisoriesRequest {
+  string farm_id = 1;
+  string field_id = 2;
+  string crop_type = 3;
+  AdvisorySeverity severity = 4;
+  string region = 5;
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message ListAdvisoriesResponse {
+  repeated Advisory advisories = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateAdvisoryRequest {
+  string title = 1;
+  string content = 2;
+  string crop_type = 3;
+  AdvisorySeverity severity = 4;
+  string region = 5;
+  string farm_id = 6;
+  string field_id = 7;
+}
+
+message CreateAdvisoryResponse {
+  Advisory advisory = 1;
+}
+
+// AdvisoryService provides crop advisory management operations.
+service AdvisoryService {
+  rpc GetAdvisory(GetAdvisoryRequest) returns (GetAdvisoryResponse);
+  rpc ListAdvisories(ListAdvisoriesRequest) returns (ListAdvisoriesResponse);
+  rpc CreateAdvisory(CreateAdvisoryRequest) returns (CreateAdvisoryResponse);
+}

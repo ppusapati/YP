@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 
 import '../entities/diagnosis_entity.dart';
 
@@ -11,7 +10,6 @@ abstract class DiagnosisRepository {
   });
 
   /// Uploads raw image bytes for diagnosis.
-  Future<String> uploadImage(Uint8List imageBytes, String fileName);
 
   /// Retrieves past diagnosis history, optionally filtered by field.
   Future<List<Diagnosis>> getDiagnosisHistory({String? fieldId});

@@ -19,11 +19,22 @@
     { key: 'status', label: 'Status' },
   ];
 
+  // Token-paginated, like batches and certifications: the request carries the
+  // page_token the previous response returned, not an offset.
+  let pageTokens: string[] = [''];
+
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
     loading = true;
     error = null;
     try {
-      const res = await traceabilityClient.listRecords({ pageSize, pageOffset });
+      const index = Math.floor(pageOffset / Math.max(pageSize, 1));
+      const res = await traceabilityClient.listRecords({
+        pageSize,
+        pageToken: pageTokens[index] ?? '',
+      });
+      if (res.nextPageToken) {
+        pageTokens[index + 1] = res.nextPageToken;
+      }
       rows = res.records;
       totalCount = res.totalCount;
       return res.totalCount;

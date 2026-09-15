@@ -32,19 +32,30 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - agronomy-service
+          - alert-service
+          - analytics-service
+          - auth-service
+          - commerce-service
+          - crop-service
           - farm-service
           - field-service
-          - crop-service
-          - sensor-service
           - irrigation-service
-          - soil-service
-          - yield-service
           - pest-prediction-service
           - plant-diagnosis-service
+          - prescription-service
+          - satellite-analytics-service
+          - satellite-ingestion-service
+          - satellite-processing-service
           - satellite-service
+          - satellite-tile-service
+          - sensor-service
+          - soil-service
+          - task-service
           - traceability-service
-          - commerce-service
-          - auth-service
+          - vegetation-index-service
+          - weather-service
+          - yield-service
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -52,7 +63,12 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Build ${{ matrix.service }}
-        run: go build -trimpath ./${{ matrix.service }}/cmd/server
+        run: |
+          if [ -d "./${{ matrix.service }}/cmd/server" ]; then
+            go build -trimpath ./${{ matrix.service }}/cmd/server
+          else
+            echo "No cmd/server entrypoint — skipping binary build"
+          fi
       - name: Vet ${{ matrix.service }}
         run: go vet ./${{ matrix.service }}/...
 
@@ -68,6 +84,19 @@ jobs:
       - name: Run package tests
         run: go test -race -count=1 -timeout=5m ./packages/...
 
+  test-python-client:
+    name: Test Python client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install -e clients/python
+      - name: Run tests
+        run: python -m unittest discover -s clients/python/tests -t clients/python
+
   test-services:
     name: Test services
     runs-on: ubuntu-latest
@@ -80,19 +109,30 @@ jobs:
       - name: Run service tests
         run: |
           go test -race -count=1 -timeout=5m \
+            ./agronomy-service/... \
+            ./alert-service/... \
+            ./analytics-service/... \
+            ./auth-service/... \
+            ./commerce-service/... \
+            ./crop-service/... \
             ./farm-service/... \
             ./field-service/... \
-            ./crop-service/... \
-            ./sensor-service/... \
             ./irrigation-service/... \
-            ./soil-service/... \
-            ./yield-service/... \
             ./pest-prediction-service/... \
             ./plant-diagnosis-service/... \
+            ./prescription-service/... \
+            ./satellite-analytics-service/... \
+            ./satellite-ingestion-service/... \
+            ./satellite-processing-service/... \
             ./satellite-service/... \
+            ./satellite-tile-service/... \
+            ./sensor-service/... \
+            ./soil-service/... \
+            ./task-service/... \
             ./traceability-service/... \
-            ./commerce-service/... \
-            ./auth-service/...
+            ./vegetation-index-service/... \
+            ./weather-service/... \
+            ./yield-service/...
 
   proto-check:
     name: Proto freshness
@@ -111,11 +151,51 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
           go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
-      - name: Generate and check for drift
+      - name: Generate and check Go proto drift
         run: |
           buf generate
           git diff --exit-code -- '*.pb.go' '*.connect.go' || \
             (echo "Proto generated code is stale — run 'buf generate' and commit" && exit 1)
+
+  proto-check-dart:
+    name: Proto freshness (Dart)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - uses: dart-lang/setup-dart@v1
+      - name: Install protoc-gen-dart
+        # Pinned: 24.x resolves the well-known types to locally generated files
+        # instead of package:protobuf, and 25.1.0 changes how message factories
+        # construct. Either produces a diff against the committed tree that
+        # looks like drift and is not. See docs/proto-generation.md.
+        run: dart pub global activate protoc_plugin 25.0.0
+      - name: Generate and check Dart proto drift
+        run: |
+          buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
+          git diff --exit-code -- 'mobile/packages/flutter_proto/lib/src/generated/' || \
+            (echo "Dart proto generated code is stale — run 'buf generate --template mobile/packages/flutter_proto/buf.gen.yaml' and commit" && exit 1)
+
+  proto-check-ts:
+    name: Proto freshness (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install protoc-gen-es
+        run: npm install -g @bufbuild/protoc-gen-es@2.2.3
+      - name: Generate and check TypeScript proto drift
+        run: |
+          buf generate --template web/packages/proto/buf.gen.yaml
+          git diff --exit-code -- 'web/packages/proto/src/gen/' || \
+            (echo "TypeScript proto generated code is stale — run the generate script in web/packages/proto/ and commit" && exit 1)
 
   rust-engines:
     name: Rust engines check & test
@@ -134,6 +214,177 @@ jobs:
       - name: Cargo test
         working-directory: rust-engines
         run: cargo test --workspace
+
+  web:
+    name: Web lint, typecheck & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        working-directory: web
+        run: pnpm lint
+      - name: Typecheck
+        working-directory: web
+        run: pnpm typecheck
+      # The web suite had no CI job at all, so a broken test only surfaced
+      # when someone happened to run it locally.
+      - name: Test
+        working-directory: web
+        run: pnpm test
+
+  mobile:
+    name: Mobile analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # A pub workspace: one resolution at the root covers both apps and all
+      # seven packages, so a version conflict between them fails here rather
+      # than on whichever machine happens to build next.
+      - name: Resolve workspace
+        working-directory: mobile
+        run: flutter pub get
+
+      # The mobile suite had no CI job at all. Two apps and seven packages —
+      # every test in them only ran when someone remembered to, which is how
+      # 379 analyzer errors accumulated unnoticed.
+      #
+      # `--fatal-infos` is deliberately not set: the repository carries about a
+      # thousand lint infos (trailing commas, redundant defaults) and failing
+      # on them would mean this job is red from its first run and gets ignored.
+      # Errors and warnings fail; infos are reported.
+      - name: Analyze
+        working-directory: mobile
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        working-directory: mobile
+        run: |
+          set -e
+          for target in \
+            apps/farmer_app \
+            apps/agronomist_app \
+            packages/flutter_analytics \
+            packages/flutter_map_core \
+            packages/flutter_proto \
+            packages/flutter_ui_core; do
+            echo "── $target"
+            (cd "$target" && flutter test)
+          done
+
+  mobile-integration:
+    name: Mobile integration tests (emulator)
+    runs-on: ubuntu-latest
+    # Only on the shared branches and on PRs into them: booting an emulator
+    # takes several minutes, which is too slow to sit in front of every push
+    # to a topic branch.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    needs: [mobile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        working-directory: mobile
+        run: flutter pub get
+
+      # KVM has to be enabled explicitly on GitHub's Ubuntu runners or the
+      # emulator falls back to software rendering and times out.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # These tests start the whole app — twenty-five blocs out of a Riverpod
+      # graph, three Drift schemas, a router with sixty routes. A provider that
+      # throws at read time or a migration that fails on a fresh install passes
+      # every unit test in the repository and gives a white screen on a phone.
+      - name: Run integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: cd mobile/apps/farmer_app && flutter test integration_test
+
+  todo-budget:
+    name: TODO debt ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Budgets only ever go down: a change may not add markers to an area that
+      # is already at its limit. Lower a budget whenever you clear one.
+      - name: Check TODO budgets
+        run: scripts/todo-budget.sh
+
+  ml-training:
+    name: ML training check & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # tract pulls in kstring, which needs a newer toolchain than the
+          # other Rust jobs pin.
+          toolchain: "1.91"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ml-training
+      - name: Cargo check
+        working-directory: ml-training
+        run: cargo check --all-targets
+      - name: Cargo test
+        working-directory: ml-training
+        run: cargo test
+
+  model-gate:
+    name: Model benchmark regression gate
+    runs-on: ubuntu-latest
+    needs: [ml-training]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.91"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ml-training
+      # Candidate models are build artifacts, not repository content. When a
+      # training pipeline uploads them under this name the gate runs for real;
+      # otherwise every task is skipped and the job passes, so the gate never
+      # blocks a change that did not touch a model.
+      - name: Download candidate models
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: candidate-models
+          path: ml-training/models
+      - name: Run benchmark gates
+        working-directory: ml-training
+        run: scripts/model-gate.sh models benchmarks
 
   rust-ai-gateway:
     name: Rust AI gateway check & test
@@ -194,9 +445,30 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - agronomy-service
+          - alert-service
+          - analytics-service
+          - auth-service
+          - commerce-service
+          - crop-service
           - farm-service
           - field-service
-          - crop-service
+          - irrigation-service
+          - pest-prediction-service
+          - plant-diagnosis-service
+          - prescription-service
+          - satellite-analytics-service
+          - satellite-ingestion-service
+          - satellite-processing-service
+          - satellite-service
+          - satellite-tile-service
+          - sensor-service
+          - soil-service
+          - task-service
+          - traceability-service
+          - vegetation-index-service
+          - weather-service
+          - yield-service
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
@@ -204,6 +476,19 @@ jobs:
           docker build \
             --build-arg SERVICE=${{ matrix.service }} \
             -t yieldpoint/${{ matrix.service }}:ci \
+            .
+
+  docker-build-monolith:
+    name: Docker build (monolith)
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Monolith Docker image
+        run: |
+          docker build \
+            -f cmd/monolith/Dockerfile \
+            -t yieldpoint/monolith:ci \
             .
 
   docker-build-ai-gateway:

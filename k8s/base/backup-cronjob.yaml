@@ -1,0 +1,227 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# backup-cronjob.yaml — Kubernetes CronJob for automated daily PostgreSQL backups
+#
+# Schedule: Daily at 02:00 UTC (off-peak for most agriculture regions)
+# Weekly verification: Sundays at 06:00 UTC
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-scripts
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: pg-backup
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: backup
+data:
+  pg-backup.sh: |
+    # Mounted from scripts/backup/pg-backup.sh via ConfigMap.
+    # In production, build a container image that includes the script
+    # or mount it from a Git-synced volume.
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup-daily
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: pg-backup
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 2 * * *"            # Daily at 02:00 UTC
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid        # Never run two backups concurrently
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 5
+  startingDeadlineSeconds: 3600    # Skip if more than 1 hour late
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pg-backup
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 7200  # Timeout after 2 hours
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: pg-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: pg-backup
+          containers:
+            - name: pg-backup
+              image: postgres:16-alpine
+              command:
+                - /bin/bash
+                - /scripts/pg-backup.sh
+              env:
+                - name: PGHOST
+                  value: postgres.yieldpoint.svc.cluster.local
+                - name: PGPORT
+                  value: "5432"
+                - name: PGUSER
+                  value: yieldpoint
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: yieldpoint-secrets
+                      key: POSTGRES_PASSWORD
+                - name: BACKUP_BUCKET
+                  value: yieldpoint-backups
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: backup-config
+                      key: S3_ENDPOINT
+                      optional: true
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-s3-credentials
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-s3-credentials
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: RETENTION_DAYS
+                  value: "30"
+              volumeMounts:
+                - name: backup-scripts
+                  mountPath: /scripts
+                  readOnly: true
+                - name: backup-scratch
+                  mountPath: /tmp/yp-pg-backups
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "250m"
+                limits:
+                  memory: "1Gi"
+                  cpu: "1000m"
+          volumes:
+            - name: backup-scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0755
+            - name: backup-scratch
+              emptyDir:
+                sizeLimit: 10Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup-verify-weekly
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: pg-backup-verify
+    app.kubernetes.io/part-of: yieldpoint
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 6 * * 0"            # Sundays at 06:00 UTC
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pg-backup-verify
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 14400  # Timeout after 4 hours
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: pg-backup-verify
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: pg-backup
+          containers:
+            - name: pg-verify
+              image: postgres:16-alpine
+              command:
+                - /bin/bash
+                - /scripts/verify-backup.sh
+              env:
+                - name: PGHOST
+                  value: postgres.yieldpoint.svc.cluster.local
+                - name: PGPORT
+                  value: "5432"
+                - name: PGUSER
+                  value: yieldpoint
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: yieldpoint-secrets
+                      key: POSTGRES_PASSWORD
+                - name: BACKUP_BUCKET
+                  value: yieldpoint-backups
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: backup-config
+                      key: S3_ENDPOINT
+                      optional: true
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-s3-credentials
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backup-s3-credentials
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: REPORT_WEBHOOK
+                  valueFrom:
+                    configMapKeyRef:
+                      name: backup-config
+                      key: REPORT_WEBHOOK
+                      optional: true
+              volumeMounts:
+                - name: backup-scripts
+                  mountPath: /scripts
+                  readOnly: true
+                - name: verify-scratch
+                  mountPath: /tmp/yp-pg-verify
+              resources:
+                requests:
+                  memory: "512Mi"
+                  cpu: "500m"
+                limits:
+                  memory: "2Gi"
+                  cpu: "2000m"
+          volumes:
+            - name: backup-scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0755
+            - name: verify-scratch
+              emptyDir:
+                sizeLimit: 20Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-config
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: pg-backup
+    app.kubernetes.io/part-of: yieldpoint
+data:
+  S3_ENDPOINT: ""
+  REPORT_WEBHOOK: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pg-backup
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: pg-backup
+    app.kubernetes.io/part-of: yieldpoint

@@ -3,10 +3,91 @@
  * Handles authentication state, tokens, and session management
  */
 
-import { writable, derived, get, type Writable, type Readable } from 'svelte/store';
+import { writable, derived, get, type Readable } from 'svelte/store';
 
-// Static type-only imports — erased at runtime, no circular dependency risk
-// import type { LoginResponse, RefreshTokenResponse, ValidateTokenResponse } from '@samavāya/proto/gen/core/identity/auth/proto/auth_pb.js';
+// ============================================================================
+// AUTH SERVICE ENDPOINT
+// ============================================================================
+
+/**
+ * Where auth-service is reachable from the browser.
+ *
+ * The api-gateway publishes it under `/auth/*` at the origin root — not under
+ * `/api/`, which is where the ConnectRPC services live. A relative default
+ * means the app talks to whatever origin served it, which is what both the
+ * dev proxy and the deployed gateway arrange.
+ */
+let authBaseUrl = '/auth';
+
+/** Points the store at a different auth-service origin (tests, native shells). */
+export function configureAuth(options: { baseUrl: string }): void {
+  authBaseUrl = options.baseUrl.replace(/\/$/, '');
+}
+
+/** The shape auth-service returns for a user, on `/auth/login` and `/auth/me`. */
+interface AuthServiceUser {
+  id: string;
+  tenant_id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+/** The shape auth-service returns for a token pair. */
+interface AuthServiceToken {
+  access_token: string;
+  refresh_token: string;
+  /** Unix seconds. */
+  expires_at: number;
+}
+
+/**
+ * Turns auth-service's flat user into the store's.
+ *
+ * auth-service holds one `name` column rather than a given/family pair, so the
+ * split here is positional and the display name is the original string. That
+ * ordering is wrong for a good part of the world, which is why `displayName`
+ * — not `firstName lastName` — is what the UI shows.
+ */
+function toUser(u: AuthServiceUser): User {
+  const parts = u.name.trim().split(/\s+/);
+  return {
+    id: u.id,
+    email: u.email,
+    firstName: parts[0] ?? '',
+    lastName: parts.slice(1).join(' '),
+    displayName: u.name || u.email,
+    role: u.role,
+    tenantId: u.tenant_id,
+  };
+}
+
+function toTokens(t: AuthServiceToken): AuthTokens {
+  return {
+    accessToken: t.access_token,
+    refreshToken: t.refresh_token,
+    expiresAt: new Date(t.expires_at * 1000),
+    tokenType: 'Bearer',
+  };
+}
+
+/**
+ * Reads an error message out of an auth-service response.
+ *
+ * It answers `{"error": "invalid credentials"}` with the right status, so the
+ * message is worth surfacing: "invalid credentials" tells someone to check
+ * their password, and "Login failed (500)" tells them to try again later.
+ * Collapsing both into one string loses that.
+ */
+async function messageFor(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body.error) return body.error;
+  } catch {
+    // Not JSON — a gateway 502 page, say.
+  }
+  return `${fallback} (${res.status})`;
+}
 
 // ============================================================================
 // TYPES
@@ -18,6 +99,10 @@ export interface User {
   firstName: string;
   lastName: string;
   displayName: string;
+  /** Role name as auth-service issues it, e.g. `admin`, `agronomist`, `platform`. */
+  role?: string;
+  /** The tenant this user belongs to; every backend call is scoped by it. */
+  tenantId?: string;
   avatar?: string;
   phone?: string;
   locale?: string;
@@ -133,6 +218,24 @@ export interface AuthStoreActions {
 // INITIAL STATE
 // ============================================================================
 
+/** Storage key for the persisted token pair. */
+const TOKEN_KEY = 'auth_tokens';
+
+/**
+ * Whether web storage is usable.
+ *
+ * It is absent during SSR and throws in a browser with site data blocked, and
+ * the store has to keep working in both: a private-window user should be able
+ * to sign in for the session, not see the app fail to start.
+ */
+function hasStorage(): boolean {
+  try {
+    return typeof localStorage !== 'undefined' && typeof sessionStorage !== 'undefined';
+  } catch {
+    return false;
+  }
+}
+
 const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
@@ -153,8 +256,8 @@ function createAuthStore() {
   const store = writable<AuthState>(initialState);
   const { subscribe, set, update } = store;
 
-  // Token refresh interval
-  let refreshInterval: ReturnType<typeof setInterval> | null = null;
+  // Scheduled pre-expiry token refresh.
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ============================================================================
   // DERIVED STORES
@@ -170,161 +273,129 @@ function createAuthStore() {
   // ACTIONS
   // ============================================================================
 
-  // async function login(credentials: LoginCredentials): Promise<void> {
-  //   update((s) => ({ ...s, isLoading: true, error: null }));
-
-  //   try {
-  //     // Dynamic imports to avoid circular deps (stores ← api ← stores)
-  //     const { create } = await import('@bufbuild/protobuf');
-  //     // const { getAuthService } = await import('@samavāya/api');
-  //     const { LoginRequestSchema } = await import(
-  //       '@samavāya/proto/gen/core/identity/auth/proto/auth_pb.js'
-  //     );
-
-  //     const res: LoginResponse = await getAuthService().login(
-  //       create(LoginRequestSchema, {
-  //         identifier: { case: 'email', value: credentials.email },
-  //         password: credentials.password,
-  //         rememberMe: credentials.rememberMe ?? false,
-  //       }),
-  //     ) as LoginResponse;
-
-  //     if (res.requiresTwoFactor) {
-  //       update((s) => ({ ...s, isLoading: false }));
-  //       return;
-  //     }
-
-  //     const user = res.user;
-  //     const expiresAt = res.expiresAt
-  //       ? new Date(Number(res.expiresAt.seconds) * 1000)
-  //       : new Date(Date.now() + 3600000);
-
-  //     const tokens: AuthTokens = {
-  //       accessToken: res.accessToken,
-  //       refreshToken: res.refreshToken,
-  //       expiresAt,
-  //       tokenType: 'Bearer',
-  //     };
-
-  //     update((s) => ({
-  //       ...s,
-  //       isAuthenticated: true,
-  //       isLoading: false,
-  //       user: {
-  //         id: user?.userId ?? '',
-  //         email: user?.email ?? '',
-  //         firstName: user?.fullname?.split(' ')[0] ?? '',
-  //         lastName: user?.fullname?.split(' ').slice(1).join(' ') ?? '',
-  //         displayName: user?.fullname ?? '',
-  //       },
-  //       tokens,
-  //       error: null,
-  //     }));
-
-  //     // Store tokens
-  //     const tokenJson = JSON.stringify(tokens);
-  //     if (credentials.rememberMe) {
-  //       localStorage.setItem('auth_tokens', tokenJson);
-  //     } else {
-  //       sessionStorage.setItem('auth_tokens', tokenJson);
-  //     }
-
-  //     startTokenRefresh();
-  //   } catch (error) {
-  //     const authError: AuthError = {
-  //       code: 'LOGIN_FAILED',
-  //       message: error instanceof Error ? error.message : 'Login failed',
-  //     };
-  //     update((s) => ({ ...s, isLoading: false, error: authError }));
-  //     throw error;
-  //   }
-  // }
-
-  // async function logout(): Promise<void> {
-  //   update((s) => ({ ...s, isLoading: true }));
-
-  //   try {
-  //     const state = get(store);
-  //     if (state.session?.id) {
-  //       const { create } = await import('@bufbuild/protobuf');
-  //       const { getAuthService } = await import('@samavāya/api');
-  //       const { LogoutRequestSchema } = await import(
-  //         '@samavāya/proto/gen/core/identity/auth/proto/auth_pb.js'
-  //       );
-  //       await getAuthService().logout(
-  //         create(LogoutRequestSchema, { sessionId: state.session.id }),
-  //       );
-  //     }
-  //   } catch {
-  //     // Still logout locally even if API fails
-  //   } finally {
-  //     localStorage.removeItem('auth_tokens');
-  //     sessionStorage.removeItem('auth_tokens');
-  //     stopTokenRefresh();
-  //     set(initialState);
-  //   }
-  // }
-
-  async function register(data: RegisterData): Promise<void> {
+  async function login(credentials: LoginCredentials): Promise<void> {
     update((s) => ({ ...s, isLoading: true, error: null }));
 
     try {
-      // API call would go here
-      // await authApi.register(data);
+      const res = await fetch(`${authBaseUrl}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
+      });
 
-      update((s) => ({ ...s, isLoading: false }));
+      if (!res.ok) {
+        throw new Error(await messageFor(res, 'Login failed'));
+      }
+
+      const body = (await res.json()) as {
+        token: AuthServiceToken;
+        user: AuthServiceUser;
+      };
+
+      const tokens = toTokens(body.token);
+      const user = toUser(body.user);
+
+      update((s) => ({
+        ...s,
+        isAuthenticated: true,
+        isLoading: false,
+        user,
+        tokens,
+        // auth-service issues a single role per user rather than a role list
+        // with embedded permissions. Representing it as a one-element list
+        // keeps hasRole/hasAnyRole working against real data instead of
+        // against an empty array that answers "no" to everything.
+        roles: [{ id: user.role ?? '', name: user.role ?? '', displayName: user.role ?? '', permissions: [] }],
+        error: null,
+      }));
+
+      persistTokens(tokens, credentials.rememberMe ?? false);
+      startTokenRefresh();
     } catch (error) {
       const authError: AuthError = {
-        code: 'REGISTER_FAILED',
-        message: error instanceof Error ? error.message : 'Registration failed',
+        code: 'LOGIN_FAILED',
+        message: error instanceof Error ? error.message : 'Login failed',
       };
       update((s) => ({ ...s, isLoading: false, error: authError }));
       throw error;
     }
   }
 
-  // async function refreshTokens(): Promise<void> {
-  //   const state = get(store);
-  //   if (!state.tokens?.refreshToken) return;
+  async function logout(): Promise<void> {
+    update((s) => ({ ...s, isLoading: true }));
 
-  //   try {
-  //     const { create } = await import('@bufbuild/protobuf');
-  //     const { getAuthService } = await import('@samavāya/api');
-  //     const { RefreshTokenRequestSchema } = await import(
-  //       '@samavāya/proto/gen/core/identity/auth/proto/auth_pb.js'
-  //     );
+    try {
+      const token = get(store).tokens?.accessToken;
+      if (token) {
+        // Revokes the session server-side so the refresh token cannot be
+        // replayed. Best-effort: a failure here must not leave the browser
+        // logged in, which is why the local teardown is in `finally`.
+        await fetch(`${authBaseUrl}/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch {
+      // Network down; the local half still has to happen.
+    } finally {
+      clearPersistedTokens();
+      stopTokenRefresh();
+      set(initialState);
+    }
+  }
 
-  //     const res: RefreshTokenResponse = await getAuthService().refreshToken(
-  //       create(RefreshTokenRequestSchema, {
-  //         refreshToken: state.tokens.refreshToken,
-  //       }),
-  //     ) as RefreshTokenResponse;
+  /**
+   * Self-registration, which this platform does not have.
+   *
+   * auth-service serves login, refresh, me and logout — there is no signup
+   * route, because accounts are created by a tenant administrator against a
+   * tenant that already exists. This used to resolve successfully without
+   * calling anything, so a registration form would clear, congratulate the
+   * user, and leave them with no account.
+   */
+  async function register(_data: RegisterData): Promise<void> {
+    const authError: AuthError = {
+      code: 'REGISTER_UNSUPPORTED',
+      message: 'Accounts are created by a tenant administrator, not by signing up.',
+    };
+    update((s) => ({ ...s, isLoading: false, error: authError }));
+    throw new Error(authError.message);
+  }
 
-  //     const expiresAt = res.expiresAt
-  //       ? new Date(Number(res.expiresAt.seconds) * 1000)
-  //       : new Date(Date.now() + 3600000);
+  async function refreshTokens(): Promise<void> {
+    const state = get(store);
+    if (!state.tokens?.refreshToken) return;
 
-  //     const newTokens: AuthTokens = {
-  //       accessToken: res.accessToken,
-  //       refreshToken: res.refreshToken,
-  //       expiresAt,
-  //       tokenType: 'Bearer',
-  //     };
+    try {
+      const res = await fetch(`${authBaseUrl}/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: state.tokens.refreshToken }),
+      });
 
-  //     update((s) => ({ ...s, tokens: newTokens }));
+      if (!res.ok) {
+        throw new Error(await messageFor(res, 'Token refresh failed'));
+      }
 
-  //     // Update storage
-  //     const tokenJson = JSON.stringify(newTokens);
-  //     if (localStorage.getItem('auth_tokens')) {
-  //       localStorage.setItem('auth_tokens', tokenJson);
-  //     } else {
-  //       sessionStorage.setItem('auth_tokens', tokenJson);
-  //     }
-  //   } catch {
-  //     // Token refresh failed - logout
-  //     await logout();
-  //   }
-  // }
+      // auth-service rotates the refresh token on every use: the old one is
+      // revoked as part of the exchange, so keeping it would log the user out
+      // at the next refresh.
+      const body = (await res.json()) as { token: AuthServiceToken };
+      const newTokens = toTokens(body.token);
+
+      update((s) => ({ ...s, tokens: newTokens }));
+      persistTokens(newTokens, localStorage.getItem(TOKEN_KEY) !== null);
+      startTokenRefresh();
+    } catch {
+      // The refresh token is gone or rejected; there is no way back to an
+      // authenticated state from here, so end the session rather than leave
+      // the UI looking signed in with credentials that no longer work.
+      await logout();
+    }
+  }
 
   function setTokens(tokens: AuthTokens): void {
     update((s) => ({ ...s, tokens }));
@@ -332,8 +403,7 @@ function createAuthStore() {
 
   function clearTokens(): void {
     update((s) => ({ ...s, tokens: null }));
-    localStorage.removeItem('auth_tokens');
-    sessionStorage.removeItem('auth_tokens');
+    clearPersistedTokens();
   }
 
   function setUser(user: User): void {
@@ -391,67 +461,76 @@ function createAuthStore() {
     return roleNames.every((name) => state.roles.some((r) => r.name === name));
   }
 
-  // async function initialize(): Promise<void> {
-  //   update((s) => ({ ...s, isLoading: true }));
+  /**
+   * Restores a session from stored tokens on app start.
+   *
+   * Always ends with `isInitialized: true`, however it goes: a guard that
+   * waits for initialization would otherwise hang forever on a failure, which
+   * looks to the user like the app never loads rather than like they are
+   * signed out.
+   */
+  async function initialize(): Promise<void> {
+    update((s) => ({ ...s, isLoading: true }));
 
-  //   try {
-  //     // Check for stored tokens
-  //     const storedTokens =
-  //       localStorage.getItem('auth_tokens') ||
-  //       sessionStorage.getItem('auth_tokens');
+    try {
+      const stored = readPersistedTokens();
 
-  //     if (storedTokens) {
-  //       const tokens: AuthTokens = JSON.parse(storedTokens);
-  //       tokens.expiresAt = new Date(tokens.expiresAt);
+      if (stored) {
+        update((s) => ({ ...s, tokens: stored }));
 
-  //       if (tokens.expiresAt > new Date()) {
-  //         update((s) => ({ ...s, tokens }));
+        if (stored.expiresAt <= new Date()) {
+          // Access token has expired. Refreshing is the only way to recover,
+          // and it logs out on its own if the refresh token is dead too.
+          await refreshTokens();
+        }
 
-  //         // Validate token and get user info from backend
-  //         try {
-  //           const { create } = await import('@bufbuild/protobuf');
-  //           const { getAuthService } = await import('@samavāya/api');
-  //           const { ValidateTokenRequestSchema } = await import(
-  //             '@samavāya/proto/gen/core/identity/auth/proto/auth_pb.js'
-  //           );
+        // Fetch the user with whatever access token we now hold. This is also
+        // what proves the token is genuinely still valid — an unexpired
+        // `expiresAt` says nothing about a session the server has revoked.
+        const token = get(store).tokens?.accessToken;
+        if (token) {
+          const res = await fetch(`${authBaseUrl}/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
 
-  //           const res: ValidateTokenResponse = await getAuthService().validateToken(
-  //             create(ValidateTokenRequestSchema, { token: tokens.accessToken }),
-  //           ) as ValidateTokenResponse;
+          if (res.ok) {
+            const user = toUser((await res.json()) as AuthServiceUser);
+            update((s) => ({
+              ...s,
+              isAuthenticated: true,
+              user,
+              roles: [
+                {
+                  id: user.role ?? '',
+                  name: user.role ?? '',
+                  displayName: user.role ?? '',
+                  permissions: [],
+                },
+              ],
+            }));
+            startTokenRefresh();
+          } else {
+            // The server does not recognise this token. Drop it rather than
+            // keep retrying with a credential that will never work.
+            clearPersistedTokens();
+            update((s) => ({ ...s, tokens: null, isAuthenticated: false, user: null }));
+          }
+        }
+      }
 
-  //           if (res.valid && res.user) {
-  //             update((s) => ({
-  //               ...s,
-  //               isAuthenticated: true,
-  //               user: {
-  //                 id: res.user!.userId,
-  //                 email: res.user!.email,
-  //                 firstName: res.user!.fullname?.split(' ')[0] ?? '',
-  //                 lastName: res.user!.fullname?.split(' ').slice(1).join(' ') ?? '',
-  //                 displayName: res.user!.fullname ?? '',
-  //               },
-  //             }));
-  //           }
-  //         } catch {
-  //           // Validation failed — token may be invalid, still try refresh
-  //         }
-
-  //         startTokenRefresh();
-  //       } else {
-  //         // Tokens expired - try to refresh
-  //         update((s) => ({ ...s, tokens }));
-  //         await refreshTokens();
-  //       }
-  //     }
-
-  //     update((s) => ({ ...s, isLoading: false, isInitialized: true }));
-  //   } catch {
-  //     // Clear invalid tokens
-  //     localStorage.removeItem('auth_tokens');
-  //     sessionStorage.removeItem('auth_tokens');
-  //     update((s) => ({ ...s, isLoading: false, isInitialized: true }));
-  //   }
-  // }
+      update((s) => ({ ...s, isLoading: false, isInitialized: true }));
+    } catch {
+      clearPersistedTokens();
+      update((s) => ({
+        ...s,
+        tokens: null,
+        isAuthenticated: false,
+        user: null,
+        isLoading: false,
+        isInitialized: true,
+      }));
+    }
+  }
 
   function reset(): void {
     stopTokenRefresh();
@@ -470,22 +549,69 @@ function createAuthStore() {
   // HELPERS
   // ============================================================================
 
-  // function startTokenRefresh(): void {
-  //   // Refresh tokens 5 minutes before expiry
-  //   const state = get(store);
-  //   if (!state.tokens) return;
+  /**
+   * Schedules a single refresh five minutes before the access token expires.
+   *
+   * A `setTimeout` rather than a `setInterval`, because the rotation gives a
+   * new expiry each time and a fixed interval drifts away from it. Each
+   * successful refresh arms the next one.
+   */
+  function startTokenRefresh(): void {
+    const state = get(store);
+    if (!state.tokens) return;
+    if (typeof setTimeout !== 'function') return;
 
-  //   const expiresIn = state.tokens.expiresAt.getTime() - Date.now();
-  //   const refreshIn = Math.max(expiresIn - 5 * 60 * 1000, 60 * 1000); // At least 1 minute
+    const expiresIn = state.tokens.expiresAt.getTime() - Date.now();
+    const refreshIn = Math.max(expiresIn - 5 * 60 * 1000, 60 * 1000);
 
-  //   stopTokenRefresh();
-  //   refreshInterval = setInterval(refreshTokens, refreshIn);
-  // }
+    stopTokenRefresh();
+    refreshTimer = setTimeout(() => {
+      void refreshTokens();
+    }, refreshIn);
+  }
+
+  /**
+   * Tokens live in `localStorage` when "remember me" was ticked and in
+   * `sessionStorage` otherwise, which is the difference the tick box promises.
+   * Both are written through the same pair of helpers so a refresh cannot
+   * quietly move a session from one to the other.
+   */
+  function persistTokens(tokens: AuthTokens, remember: boolean): void {
+    if (!hasStorage()) return;
+    const json = JSON.stringify(tokens);
+    if (remember) {
+      localStorage.setItem(TOKEN_KEY, json);
+      sessionStorage.removeItem(TOKEN_KEY);
+    } else {
+      sessionStorage.setItem(TOKEN_KEY, json);
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  }
+
+  function readPersistedTokens(): AuthTokens | null {
+    if (!hasStorage()) return null;
+    const raw = localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as AuthTokens;
+      // JSON has no Date, so `expiresAt` comes back as a string and every
+      // comparison against it silently succeeds until it is rebuilt.
+      return { ...parsed, expiresAt: new Date(parsed.expiresAt) };
+    } catch {
+      return null;
+    }
+  }
+
+  function clearPersistedTokens(): void {
+    if (!hasStorage()) return;
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+  }
 
   function stopTokenRefresh(): void {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-      refreshInterval = null;
+    if (refreshTimer) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
     }
   }
 
@@ -502,10 +628,10 @@ function createAuthStore() {
     roles,
     permissions,
     // Actions
-    // login,
-    // logout,
+    login,
+    logout,
     register,
-    // refreshTokens,
+    refreshTokens,
     setTokens,
     clearTokens,
     setUser,
@@ -519,7 +645,7 @@ function createAuthStore() {
     hasRole,
     hasAnyRole,
     hasAllRoles,
-    // initialize,
+    initialize,
     reset,
     setError,
     setLoading,

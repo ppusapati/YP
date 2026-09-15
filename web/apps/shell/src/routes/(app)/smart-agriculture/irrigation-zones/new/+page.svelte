@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { irrigationZoneFormSchema } from '@samavāya/agriculture/schemas';
+  import { irrigationZoneSchema } from '@samavāya/agriculture/schemas';
   import { irrigationClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = {};
@@ -27,7 +27,7 @@
   title="Create Irrigation Zone"
   subtitle="Define a new irrigation zone and its boundaries"
   mode="create"
-  schema={irrigationZoneFormSchema}
+  schema={irrigationZoneSchema}
   {values}
   {errors}
   {isSubmitting}

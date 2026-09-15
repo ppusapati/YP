@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -35,9 +36,75 @@ type yieldService struct {
 	pestClient       outbound.PestClient
 	cropClient       outbound.CropClient
 	farmClient       outbound.FarmClient
+	weatherClient    outbound.WeatherClient
 	pool             *pgxpool.Pool
 	log              *p9log.Helper
 	aiClient         *ai.AIClient
+	now              func() time.Time
+}
+
+var _ inbound.YieldService = (*yieldService)(nil)
+
+// WithWeatherClient enables observed-weather features for AI yield predictions.
+func (s *yieldService) WithWeatherClient(w outbound.WeatherClient) *yieldService {
+	s.weatherClient = w
+	return s
+}
+
+// observedEnvironment fetches season-to-date agro metrics for the field so the
+// gateway sees real GDD, rainfall, and stress-day counts instead of placeholders.
+// Returns nil (placeholders) when weather is unavailable.
+func (s *yieldService) observedEnvironment(ctx context.Context, p *domain.YieldPrediction) *ai.EnvironmentInput {
+	if s.weatherClient == nil || p.FieldID == "" {
+		return nil
+	}
+	now := time.Now()
+	if s.now != nil {
+		now = s.now()
+	}
+	start, end := SeasonWindow(p.Season, int(p.Year), now)
+	if !end.After(start) {
+		return nil
+	}
+	w, err := s.weatherClient.SeasonWeather(ctx, p.FieldID, start, end)
+	if err != nil || w == nil || w.Days == 0 {
+		s.log.Warnw("msg", "season weather unavailable; using score-derived environment", "field_id", p.FieldID, "error", err)
+		return nil
+	}
+	return &ai.EnvironmentInput{
+		AvgTemperatureC:   w.AvgTemperatureC,
+		HumidityPct:       w.AvgHumidityPct,
+		RainfallMM:        w.TotalPrecipMM,
+		SolarRadiationMJ:  w.AvgSolarMJ,
+		GrowingDegreeDays: w.GrowingDegreeDays,
+		FrostDays:         w.FrostDays,
+		HeatStressDays:    w.HeatStressDays,
+	}
+}
+
+// SeasonWindow maps an Indian cropping season and year onto a date range,
+// clipped to `now` so in-season predictions use season-to-date weather.
+// Unknown seasons use the calendar year.
+func SeasonWindow(season string, year int, now time.Time) (time.Time, time.Time) {
+	var start, end time.Time
+	switch strings.ToLower(strings.TrimSpace(season)) {
+	case "kharif", "monsoon", "khariff":
+		start = time.Date(year, time.June, 1, 0, 0, 0, 0, time.UTC)
+		end = time.Date(year, time.October, 31, 0, 0, 0, 0, time.UTC)
+	case "rabi", "winter":
+		start = time.Date(year, time.November, 1, 0, 0, 0, 0, time.UTC)
+		end = time.Date(year+1, time.March, 31, 0, 0, 0, 0, time.UTC)
+	case "zaid", "summer", "spring":
+		start = time.Date(year, time.March, 1, 0, 0, 0, 0, time.UTC)
+		end = time.Date(year, time.June, 30, 0, 0, 0, 0, time.UTC)
+	default:
+		start = time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
+		end = time.Date(year, time.December, 31, 0, 0, 0, 0, time.UTC)
+	}
+	if end.After(now) {
+		end = now
+	}
+	return start, end
 }
 
 // NewYieldService creates a new application-layer YieldService.
@@ -53,7 +120,7 @@ func NewYieldService(
 	pool *pgxpool.Pool,
 	log p9log.Logger,
 	aiClient *ai.AIClient,
-) inbound.YieldService {
+) *yieldService {
 	return &yieldService{
 		repo:             repo,
 		pub:              pub,
@@ -118,13 +185,19 @@ func (s *yieldService) PredictYield(ctx context.Context, prediction *domain.Yiel
 			NutrientScore:     factors.NutrientScore / 100.0,
 			ManagementScore:   factors.ManagementScore / 100.0,
 		}
-		result, aiErr := s.aiClient.PredictYield(ctx, requestID, prediction.CropID, aiFactors, 1.0)
+		env := s.observedEnvironment(ctx, prediction)
+		result, aiErr := s.aiClient.PredictYieldWithEnvironment(ctx, requestID, prediction.CropID, aiFactors, env, 1.0)
 		if aiErr != nil {
 			s.log.Warnw("msg", "AI PredictYield failed, falling back to formula", "error", aiErr)
 		} else {
 			prediction.PredictedYieldKgPerHectare = result.PredictedYieldKgPerHectare
 			prediction.PredictionConfidencePct = result.ConfidencePct
 			prediction.PredictionModelVersion = result.ModelVersion
+			s.log.Infow("msg", "AI yield prediction",
+				"field_id", prediction.FieldID, "model_source", result.ModelSource,
+				"tabular_weight", result.TabularWeight, "crop_supported", result.CropSupported,
+				"lower", result.YieldLowerBound, "upper", result.YieldUpperBound,
+				"observed_weather", env != nil)
 		}
 	}
 
@@ -222,12 +295,25 @@ func (s *yieldService) RecordYield(ctx context.Context, record *domain.YieldReco
 		return nil, err
 	}
 
+	// The harvest details travel with the event so traceability-service can
+	// open a record without calling back for them. A traceability record is
+	// the chain of custody for a batch, and the harvest is the link it starts
+	// from: if it is missing, everything downstream traces to nothing.
+	harvestDate := ""
+	if created.HarvestDate != nil {
+		harvestDate = created.HarvestDate.UTC().Format(time.RFC3339)
+	}
 	s.emitEvent(ctx, "agriculture.yield.record.created", created.ID, map[string]interface{}{
-		"record_id": created.ID,
-		"tenant_id": tenantID,
-		"farm_id":   created.FarmID,
-		"field_id":  created.FieldID,
-		"crop_id":   created.CropID,
+		"record_id":      created.ID,
+		"tenant_id":      tenantID,
+		"farm_id":        created.FarmID,
+		"field_id":       created.FieldID,
+		"crop_id":        created.CropID,
+		"season":         created.Season,
+		"year":           created.Year,
+		"total_yield_kg": created.TotalYieldKg,
+		"quality_grade":  created.HarvestQualityGrade,
+		"harvest_date":   harvestDate,
 	})
 	s.log.Infow("msg", "yield record created", "id", created.ID)
 	return created, nil

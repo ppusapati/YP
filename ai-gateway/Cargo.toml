@@ -7,6 +7,7 @@ description = "AI Gateway gRPC service wrapping Rust ML engines for Go microserv
 [dependencies]
 # gRPC / protobuf
 tonic = "0.12"
+tonic-health = "0.12"
 prost = "0.13"
 prost-types = "0.13"
 
@@ -28,6 +29,8 @@ climate-response-engine = { path = "../rust-engines/climate-response-engine" }
 alert-engine = { path = "../rust-engines/alert-engine" }
 analytics-engine = { path = "../rust-engines/analytics-engine" }
 prescription-engine = { path = "../rust-engines/prescription-engine" }
+terrain-analysis-engine = { path = "../rust-engines/terrain-analysis-engine" }
+water-flow-simulation-engine = { path = "../rust-engines/water-flow-simulation-engine" }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Serialization
@@ -45,9 +48,17 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "2"
 anyhow = "1"
 
+# HTTP client for external vision APIs
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+base64 = "0.22"
+
 # Utilities
 uuid = { version = "1", features = ["v4"] }
 ndarray = "0.16"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"
 
 [build-dependencies]
 tonic-build = "0.12"

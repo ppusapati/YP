@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:uuid/uuid.dart';
 
+import 'package:flutter_auth/flutter_auth.dart';
+
 import '../../domain/entities/farm_entity.dart';
 import '../bloc/farm_bloc.dart';
 import '../bloc/farm_event.dart';
@@ -25,6 +27,10 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   final List<LatLng> _boundaryPoints = [];
+  // Held from onMapCreated so the screen can drive the camera; nothing reads
+  // it yet. Kept rather than dropped because removing it means re-adding the
+  // callback wiring the moment anything needs to move the map.
+  // ignore: unused_field
   ml.MaplibreMapController? _mapController;
   bool _isDrawing = false;
   bool _isSaving = false;
@@ -71,7 +77,7 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
     return math.cos(degrees * math.pi / 180.0);
   }
 
-  void _onMapTap(ml.Point point, ml.LatLng coordinates) {
+  void _onMapTap(math.Point<double> point, ml.LatLng coordinates) {
     if (!_isDrawing) return;
     setState(() {
       _boundaryPoints.add(LatLng(coordinates.latitude, coordinates.longitude));
@@ -126,10 +132,12 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
       );
       context.read<FarmBloc>().add(UpdateFarm(farm: updated));
     } else {
+      final authState = context.read<AuthBloc>().state;
+      final ownerId = authState is Authenticated ? authState.user.id : '';
       final farm = FarmEntity(
         id: const Uuid().v4(),
         name: _nameController.text.trim(),
-        ownerId: '',
+        ownerId: ownerId,
         boundaries: List.of(_boundaryPoints),
         totalAreaHectares: area,
         fields: const [],

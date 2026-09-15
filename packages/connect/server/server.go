@@ -52,7 +52,7 @@ type ServerConfig struct {
 func DefaultServerConfig(port string) ServerConfig {
 	return ServerConfig{
 		Port:               port,
-		AllowedOrigins:     []string{"*"},
+		AllowedOrigins:     []string{},
 		ReadHeaderTimeout:  30 * time.Second,
 		ReadTimeout:        60 * time.Second,
 		WriteTimeout:       60 * time.Second,
@@ -132,7 +132,7 @@ func DefaultMiddlewareConfig() MiddlewareConfig {
 }
 
 // BuildInterceptors builds the interceptor chain based on configuration.
-// The order is: Recovery -> RequestID -> Logging -> DB -> Auth -> RLS
+// The order is: Recovery -> Errors -> RequestID -> Logging -> DB -> Auth -> RLS
 func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 	var chain []connect.Interceptor
 
@@ -141,12 +141,24 @@ func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 		chain = append(chain, interceptors.RecoveryInterceptor())
 	}
 
-	// 2. Request ID (early for tracing/correlation)
+	// 2. Error translation, outside everything that can fail.
+	//
+	// Handlers return the platform's own *errors.Error, which ConnectRPC does
+	// not recognise — it looks only for a *connect.Error and wraps anything
+	// else in CodeUnknown. Left unconverted, a "farm not found" reaches the
+	// client as HTTP 500 with *Error.Error()'s debug string as the message.
+	//
+	// It sits directly inside Recovery so that every other interceptor's
+	// errors pass through it too, and so that logging further down still sees
+	// the original error with its cause intact.
+	chain = append(chain, interceptors.ErrorInterceptor())
+
+	// 3. Request ID (early for tracing/correlation)
 	if cfg.EnableRequestID {
 		chain = append(chain, interceptors.RequestIDInterceptor())
 	}
 
-	// 3. Logging (after request ID so logs have correlation ID)
+	// 4. Logging (after request ID so logs have correlation ID)
 	if cfg.EnableLogging {
 		opts := []interceptors.LoggingInterceptorOption{}
 		if cfg.Logger != nil {
@@ -158,7 +170,7 @@ func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 		chain = append(chain, interceptors.LoggingInterceptor(opts...))
 	}
 
-	// 4. Database pool resolution (before auth so auth can use DB if needed)
+	// 5. Database pool resolution (before auth so auth can use DB if needed)
 	if cfg.EnableDB && cfg.DBPool != nil {
 		opts := []interceptors.DBInterceptorOption{}
 		if cfg.DBPoolResolver != nil {
@@ -167,7 +179,7 @@ func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 		chain = append(chain, interceptors.DBInterceptor(cfg.DBPool, opts...))
 	}
 
-	// 5. Authentication (extracts user context)
+	// 6. Authentication (extracts user context)
 	if cfg.EnableAuth && cfg.JWTValidator != nil {
 		opts := []interceptors.AuthInterceptorOption{}
 		if len(cfg.SkipAuthProcedures) > 0 {
@@ -179,12 +191,15 @@ func BuildInterceptors(cfg MiddlewareConfig) []connect.Interceptor {
 		chain = append(chain, interceptors.AuthInterceptor(cfg.JWTValidator, opts...))
 	}
 
-	// 6. Authorization (checks role against procedure, must be after auth)
+	// 7. Authorization (checks role against procedure, must be after auth)
 	if cfg.EnableAuthz {
 		chain = append(chain, interceptors.AuthzInterceptor(cfg.AuthzOptions...))
 	}
 
-	// 7. RLS (sets scope based on user context, must be after auth)
+	// 8. Input validation (enforces max field lengths, page size bounds)
+	chain = append(chain, interceptors.ValidationInterceptor())
+
+	// 9. RLS (sets scope based on user context, must be after auth)
 	if cfg.EnableRLS {
 		switch cfg.RLSLevel {
 		case interceptors.ScopeLevelCompany:

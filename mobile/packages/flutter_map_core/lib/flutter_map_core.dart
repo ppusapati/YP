@@ -18,6 +18,7 @@ export 'src/layers/raster_layer.dart';
 export 'src/layers/vector_layer.dart';
 
 // Tools
+export 'src/tools/boundary_walk_tool.dart';
 export 'src/tools/gps_location_tool.dart';
 export 'src/tools/measurement_tool.dart';
 export 'src/tools/polygon_draw_tool.dart';

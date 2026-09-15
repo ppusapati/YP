@@ -3,6 +3,7 @@ import 'package:flutter_proto/src/generated/diagnosis.pb.dart' as diagnosis_pb;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/diagnosis_model.dart';
+import '../models/explanation_mapper.dart';
 
 abstract class DiagnosisRemoteDataSource {
   Future<DiagnosisModel> submitDiagnosis(DiagnosisModel diagnosis);
@@ -87,6 +88,12 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
       treatment: pb.notes,
       imageUrl:
           pb.images.isNotEmpty ? pb.images.first.imageUrl : null,
+      // Why the model answered this way. The service returns these on the
+      // result and this mapper used to drop them, so an agronomist reviewing
+      // a diagnosis had the model's answer and no way to check its working.
+      explanations:
+          result?.explanations.map(modelExplanationFromProto).toList() ??
+              const [],
       diagnosedAt: diagnosedAt,
     );
   }

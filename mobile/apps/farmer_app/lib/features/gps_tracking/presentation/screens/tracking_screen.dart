@@ -4,7 +4,6 @@ import 'package:flutter_map_core/src/engine/map_config.dart';
 import 'package:flutter_map_core/src/engine/map_engine.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import '../../domain/entities/crop_issue_entity.dart';
 import '../bloc/gps_tracking_bloc.dart';
 import '../bloc/gps_tracking_event.dart';
 import '../bloc/gps_tracking_state.dart';

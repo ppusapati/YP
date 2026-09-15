@@ -137,6 +137,21 @@ class CachedDiagnosisEntry extends DataClass {
     required this.createdAt,
     required this.cachedAt,
   });
+
+  /// drift's DataClass declares toJson abstract, so a hand-written row
+  /// class has to provide it. Dates go out as ISO 8601 rather than as a
+  /// DateTime, because the only thing that reads this is json.encode and it
+  /// cannot serialise one.
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    return <String, dynamic>{
+      'id': id,
+      'fieldId': fieldId,
+      'dataJson': dataJson,
+      'createdAt': createdAt.toIso8601String(),
+      'cachedAt': cachedAt.toIso8601String(),
+    };
+  }
 }
 
 class CachedDiagnosesCompanion extends UpdateCompanion<CachedDiagnosisEntry> {

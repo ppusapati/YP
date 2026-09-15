@@ -18,17 +18,37 @@ const (
 	RoleWorker  Role = "worker"
 	RoleManager Role = "manager"
 	RoleAdmin   Role = "admin"
+
+	// RolePlatform operates the platform itself, across tenants.
+	//
+	// Every role below it is scoped to one tenant: an `admin` is the highest
+	// authority *within* their tenant and has no business seeing another's
+	// data. This one exists because operating the platform requires a view
+	// that crosses that boundary — which tenants exist, which are healthy,
+	// what they are consuming — and that view is a deliberate hole in the
+	// isolation model rather than an extension of tenant admin.
+	//
+	// It therefore must not be grantable by a tenant admin, and anything it
+	// reaches should be aggregate rather than a tenant's actual records. See
+	// packages/tenant/admin.
+	RolePlatform Role = "platform"
 )
 
 var roleRank = map[Role]int{
-	RoleViewer:  0,
-	RoleWorker:  1,
-	RoleManager: 2,
-	RoleAdmin:   3,
+	RoleViewer:   0,
+	RoleWorker:   1,
+	RoleManager:  2,
+	RoleAdmin:    3,
+	RolePlatform: 4,
 }
 
 // RoleAtLeast returns true if the user's role is at least the required role
-// in the hierarchy: viewer < worker < manager < admin.
+// in the hierarchy: viewer < worker < manager < admin < platform.
+//
+// Note that platform now satisfies every check written as
+// RoleAtLeast(role, RoleAdmin). That is intended — a platform operator can do
+// anything a tenant admin can — but it means adding a role above admin widened
+// what those existing checks admit, which is worth knowing when reading them.
 func RoleAtLeast(userRole, requiredRole Role) bool {
 	ur, ok1 := roleRank[userRole]
 	rr, ok2 := roleRank[requiredRole]

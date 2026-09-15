@@ -19,12 +19,17 @@
     { key: 'acquisitionDate', label: 'Date' },
   ];
 
+  // Token-paginated.
+  let pageTokens: string[] = [''];
+
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+    const __i = Math.floor(pageOffset / Math.max(pageSize, 1));
     loading = true;
     error = null;
     try {
-      const res = await vegetationIndexClient.listVegetationIndices({ pageSize, pageOffset });
+      const res = await vegetationIndexClient.listVegetationIndices({ pageSize, pageToken: pageTokens[__i] ?? '' });
       rows = res.indices;
+      if (res.nextPageToken) pageTokens[__i + 1] = res.nextPageToken;
       totalCount = res.totalCount;
       return res.totalCount;
     } catch (e) {

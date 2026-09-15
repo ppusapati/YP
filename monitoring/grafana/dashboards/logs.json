@@ -1,0 +1,196 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Platform logs from Loki. Start at the error rate, then read the lines behind the spike.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Rates",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "${datasource}" },
+      "description": "Errors per second by service. This is the panel to look at first: a spike here says which service to open, and the log panel below is already filtered to it.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "stacking": { "group": "A", "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "${datasource}" },
+          "expr": "sum by (service) (rate({container=~\".+\", level=\"error\"} |= `` [$__auto]))",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Error rate by service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "${datasource}" },
+      "description": "Total lines per second, by level. A sudden collapse to zero usually means a service stopped rather than that it went quiet.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "stacking": { "group": "A", "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "warn" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "${datasource}" },
+          "expr": "sum by (level) (rate({container=~\".+\"} [$__auto]))",
+          "legendFormat": "{{level}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Log volume by level",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 101,
+      "title": "Lines",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "${datasource}" },
+      "description": "The lines themselves. `search` does a substring match; to filter by tenant or request id use the query editor with `| json | tenant_id=\"…\"`, since those are fields rather than labels — see monitoring/promtail/promtail-config.yml for why.",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 10 },
+      "id": 3,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "${datasource}" },
+          "expr": "{service=~\"$service\", level=~\"$level\"} |= `$search`",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs",
+      "type": "logs"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["logs", "yieldpoint"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "name": "datasource",
+        "label": "Data source",
+        "query": "loki",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": { "text": "All", "value": ".+" },
+        "datasource": { "type": "loki", "uid": "${datasource}" },
+        "definition": "label_values(service)",
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "label": "Service",
+        "name": "service",
+        "query": { "label": "service", "refId": "LokiVariableQueryEditor-VariableQuery", "type": 1 },
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "current": { "text": "All", "value": ".+" },
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "label": "Level",
+        "name": "level",
+        "options": [
+          { "selected": false, "text": "debug", "value": "debug" },
+          { "selected": false, "text": "info", "value": "info" },
+          { "selected": false, "text": "warn", "value": "warn" },
+          { "selected": false, "text": "error", "value": "error" }
+        ],
+        "query": "debug,info,warn,error",
+        "type": "custom"
+      },
+      {
+        "current": { "text": "", "value": "" },
+        "label": "Search",
+        "name": "search",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "Logs",
+  "uid": "yieldpoint-logs",
+  "version": 1
+}

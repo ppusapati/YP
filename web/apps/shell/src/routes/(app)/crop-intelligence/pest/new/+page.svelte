@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { pestPredictionFormSchema } from '@samavāya/agriculture/schemas';
+  import { pestPredictionRequestSchema } from '@samavāya/agriculture/schemas';
   import { pestClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active', risk_level: 'medium' };
@@ -27,7 +27,7 @@
   title="New Pest Prediction"
   subtitle="Create a new pest risk prediction"
   mode="create"
-  schema={pestPredictionFormSchema}
+  schema={pestPredictionRequestSchema}
   {values}
   {errors}
   {isSubmitting}

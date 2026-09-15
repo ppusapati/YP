@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"p9e.in/samavaya/packages/loadbalancer"
 	"p9e.in/samavaya/packages/registry"
@@ -139,5 +140,3 @@ func (rb *RoundRobinBalancer) getConnections(instanceID string) int64 {
 	defer rb.mu.RUnlock()
 	return rb.conns[instanceID]
 }
-
-import "time"

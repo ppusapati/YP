@@ -12,7 +12,7 @@ var ManufacturingSagasModule = fx.Module("manufacturing-sagas",
 	fx.Provide(
 		// SAGA-M01: Production Order Execution Saga (Phase 4C - Critical)
 		fx.Annotate(
-			NewProductionOrderExecutionSaga,
+			NewProductionOrderSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-M02: Subcontracting Saga (Phase 4C - Critical)
@@ -89,7 +89,7 @@ func RegisterManufacturingSagaHandlers(handlers []saga.SagaHandler) {
 // This is a convenience function for cases where manual aggregation is needed
 func ProvideManufacturingSagaHandlers() []saga.SagaHandler {
 	return []saga.SagaHandler{
-		NewProductionOrderExecutionSaga(),
+		NewProductionOrderSaga(),
 		NewSubcontractingSaga(),
 		NewBOMExplosionMRPSaga(),
 		NewJobCardConsumptionSaga(),

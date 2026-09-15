@@ -16,6 +16,11 @@ func NewLogger(zlog *zap.Logger) *ZLogger {
 	return &ZLogger{zlog}
 }
 
+func (l *ZLogger) Debug(keyvals ...interface{}) { _ = l.Log(LevelDebug, keyvals...) }
+func (l *ZLogger) Info(keyvals ...interface{})  { _ = l.Log(LevelInfo, keyvals...) }
+func (l *ZLogger) Warn(keyvals ...interface{})  { _ = l.Log(LevelWarn, keyvals...) }
+func (l *ZLogger) Error(keyvals ...interface{}) { _ = l.Log(LevelError, keyvals...) }
+
 func (l *ZLogger) Log(level Level, keyvals ...interface{}) error {
 	if len(keyvals) == 0 || len(keyvals)%2 != 0 {
 		l.log.Warn(fmt.Sprint("Keyvalues must appear in pairs: ", keyvals))

@@ -989,18 +989,18 @@ func cropCycleToProto(c *domain.CropCycle) *pb.CropCycle {
 		return nil
 	}
 	out := &pb.CropCycle{
-		Id:              c.ID,
-		TenantId:        c.TenantID,
-		FieldId:         c.FieldID,
-		CropId:          c.CropID,
-		Season:          c.Season,
-		CycleYear:       c.CycleYear,
-		Status:          domainCropCycleStatusToProto(c.Status),
-		TotalInputCost:  c.TotalInputCost,
-		TotalRevenue:    c.TotalRevenue,
-		Currency:        c.Currency,
-		Version:         c.Version,
-		CreatedBy:       c.CreatedBy,
+		Id:             c.ID,
+		TenantId:       c.TenantID,
+		FieldId:        c.FieldID,
+		CropId:         c.CropID,
+		Season:         c.Season,
+		CycleYear:      c.CycleYear,
+		Status:         domainCropCycleStatusToProto(c.Status),
+		TotalInputCost: c.TotalInputCost,
+		TotalRevenue:   c.TotalRevenue,
+		Currency:       c.Currency,
+		Version:        c.Version,
+		CreatedBy:      c.CreatedBy,
 	}
 	if c.CropAssignmentID != nil {
 		out.CropAssignmentId = *c.CropAssignmentID

@@ -1,0 +1,367 @@
+openapi: 3.0.3
+info:
+  title: Analytics Service API
+  description: |
+    Field analytics, yield trends, season comparisons, crop rotation analysis,
+    and cross-field trend comparison for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8099
+    description: Local development
+tags:
+  - name: FieldAnalytics
+    description: Per-field analytics summaries and trends
+  - name: Comparisons
+    description: Season and cross-field comparisons
+  - name: RotationAnalysis
+    description: Crop rotation analysis
+
+paths:
+  /agriculture.field.analytics.v1.FieldAnalyticsService/GetHistoricalMetrics:
+    post:
+      tags: [FieldAnalytics]
+      summary: Get aggregate historical metrics
+      operationId: GetHistoricalMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetHistoricalMetricsRequest'
+      responses:
+        '200':
+          description: Historical metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHistoricalMetricsResponse'
+
+  /agriculture.field.analytics.v1.FieldAnalyticsService/ListFieldAnalytics:
+    post:
+      tags: [FieldAnalytics]
+      summary: List analytics summaries for all fields
+      operationId: ListFieldAnalytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListFieldAnalyticsRequest'
+      responses:
+        '200':
+          description: Field analytics listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListFieldAnalyticsResponse'
+
+  /agriculture.field.analytics.v1.FieldAnalyticsService/GetFieldAnalytics:
+    post:
+      tags: [FieldAnalytics]
+      summary: Get detailed analytics for a single field
+      operationId: GetFieldAnalytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFieldAnalyticsRequest'
+      responses:
+        '200':
+          description: Field analytics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFieldAnalyticsResponse'
+
+  /agriculture.field.analytics.v1.FieldAnalyticsService/GetSeasonComparisons:
+    post:
+      tags: [Comparisons]
+      summary: Get season-by-season comparison data for a field
+      operationId: GetSeasonComparisons
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetSeasonComparisonsRequest'
+      responses:
+        '200':
+          description: Season comparisons retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSeasonComparisonsResponse'
+
+  /agriculture.field.analytics.v1.FieldAnalyticsService/GetRotationAnalysis:
+    post:
+      tags: [RotationAnalysis]
+      summary: Get crop rotation analysis for a field
+      operationId: GetRotationAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetRotationAnalysisRequest'
+      responses:
+        '200':
+          description: Rotation analysis retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRotationAnalysisResponse'
+
+  /agriculture.field.analytics.v1.FieldAnalyticsService/GetCrossFieldTrends:
+    post:
+      tags: [Comparisons]
+      summary: Get multi-field trend comparison data
+      operationId: GetCrossFieldTrends
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetCrossFieldTrendsRequest'
+      responses:
+        '200':
+          description: Cross-field trends retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCrossFieldTrendsResponse'
+
+components:
+  schemas:
+    FieldAnalyticsSummary:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        fieldName:
+          type: string
+        meanYield:
+          type: number
+          format: double
+        peakYield:
+          type: number
+          format: double
+        yieldTrend:
+          type: string
+          description: '"increasing", "decreasing", or "stable"'
+        avgStressDays:
+          type: number
+          format: double
+        avgNdvi:
+          type: number
+          format: double
+        seasonsAnalyzed:
+          type: integer
+          format: int32
+
+    YieldTrendPoint:
+      type: object
+      properties:
+        season:
+          type: string
+        crop:
+          type: string
+        yieldValue:
+          type: number
+          format: double
+        ndvi:
+          type: number
+          format: double
+
+    SeasonComparison:
+      type: object
+      properties:
+        season:
+          type: string
+        crop:
+          type: string
+        yieldValue:
+          type: number
+          format: double
+        yieldVsMeanPct:
+          type: number
+          format: double
+        stressDays:
+          type: integer
+          format: int32
+        stressVsMeanPct:
+          type: number
+          format: double
+        ndviPeak:
+          type: number
+          format: double
+        ndviVsMeanPct:
+          type: number
+          format: double
+        notableEvents:
+          type: array
+          items:
+            type: string
+
+    RotationAnalysis:
+      type: object
+      properties:
+        effectivenessScore:
+          type: number
+          format: double
+        diversityIndex:
+          type: number
+          format: double
+        rotationLength:
+          type: integer
+          format: int32
+        soilHealthImpact:
+          type: string
+        rotationPattern:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    HistoricalMetrics:
+      type: object
+      properties:
+        meanYield:
+          type: number
+          format: double
+        peakYield:
+          type: number
+          format: double
+        yieldTrend:
+          type: string
+        avgStressDays:
+          type: number
+          format: double
+        avgNdvi:
+          type: number
+          format: double
+        seasonsAnalyzed:
+          type: integer
+          format: int32
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldAnalyticsSummary'
+
+    CrossFieldTrendPoint:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        fieldName:
+          type: string
+        values:
+          type: array
+          items:
+            type: number
+            format: double
+        labels:
+          type: array
+          items:
+            type: string
+
+    GetHistoricalMetricsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+          description: Optional farm filter
+        fieldId:
+          type: string
+          description: Optional field filter
+        timePeriod:
+          type: string
+          description: '"all", "3y", "5y", or "10y"'
+
+    GetHistoricalMetricsResponse:
+      type: object
+      properties:
+        metrics:
+          $ref: '#/components/schemas/HistoricalMetrics'
+
+    ListFieldAnalyticsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+          description: Optional farm filter
+
+    ListFieldAnalyticsResponse:
+      type: object
+      properties:
+        summaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldAnalyticsSummary'
+
+    GetFieldAnalyticsRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+
+    GetFieldAnalyticsResponse:
+      type: object
+      properties:
+        summary:
+          $ref: '#/components/schemas/FieldAnalyticsSummary'
+        yieldTrends:
+          type: array
+          items:
+            $ref: '#/components/schemas/YieldTrendPoint'
+
+    GetSeasonComparisonsRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+
+    GetSeasonComparisonsResponse:
+      type: object
+      properties:
+        comparisons:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonComparison'
+
+    GetRotationAnalysisRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+
+    GetRotationAnalysisResponse:
+      type: object
+      properties:
+        analysis:
+          $ref: '#/components/schemas/RotationAnalysis'
+
+    GetCrossFieldTrendsRequest:
+      type: object
+      properties:
+        fieldIds:
+          type: array
+          items:
+            type: string
+        metric:
+          type: string
+          description: '"yield" or "ndvi"'
+
+    GetCrossFieldTrendsResponse:
+      type: object
+      properties:
+        trends:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrossFieldTrendPoint'

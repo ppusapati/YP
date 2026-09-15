@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter_analytics/flutter_analytics.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_auth/flutter_auth.dart';
 import 'package:flutter_network/flutter_network.dart';
@@ -12,6 +15,7 @@ import '../../features/alerts/data/datasources/alert_local_datasource.dart';
 import '../../features/alerts/data/datasources/alert_remote_datasource.dart';
 import '../../features/alerts/data/repositories/alert_repository_impl.dart';
 import '../../features/alerts/domain/repositories/alert_repository.dart';
+import '../../features/alerts/domain/usecases/acknowledge_alert_usecase.dart';
 import '../../features/alerts/domain/usecases/get_alerts_usecase.dart';
 import '../../features/alerts/domain/usecases/get_unread_count_usecase.dart';
 import '../../features/alerts/domain/usecases/mark_alert_read_usecase.dart';
@@ -328,6 +332,13 @@ final getUnreadCountUseCaseProvider = Provider<GetUnreadCountUseCase>((ref) {
   return GetUnreadCountUseCase(ref.watch(alertRepositoryProvider));
 });
 
+// AlertBloc requires this and there was no provider for it, so the bloc could
+// not be constructed at all — acknowledging an alert was unreachable.
+final acknowledgeAlertUseCaseProvider =
+    Provider<AcknowledgeAlertUseCase>((ref) {
+  return AcknowledgeAlertUseCase(ref.watch(alertRepositoryProvider));
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 // GPS Tracking feature
 // ═══════════════════════════════════════════════════════════════════════
@@ -455,7 +466,7 @@ final createFieldUseCaseProvider = Provider<CreateFieldUseCase>((ref) {
 
 final diagnosisRemoteDataSourceProvider =
     Provider<DiagnosisRemoteDataSource>((ref) {
-  return DiagnosisRemoteDataSourceImpl(ref.watch(connectClientProvider));
+  return DiagnosisRemoteDataSourceImpl(client: ref.watch(connectClientProvider));
 });
 
 final diagnosisLocalDataSourceProvider =
@@ -488,7 +499,7 @@ final getDiagnosisHistoryUseCaseProvider =
 
 final satelliteRemoteDataSourceProvider =
     Provider<SatelliteRemoteDataSource>((ref) {
-  return SatelliteRemoteDataSourceImpl(ref.watch(connectClientProvider));
+  return SatelliteRemoteDataSourceImpl(client: ref.watch(connectClientProvider));
 });
 
 final satelliteLocalDataSourceProvider =
@@ -941,4 +952,23 @@ final generatePrescriptionUseCaseProvider =
     Provider<GeneratePrescriptionUseCase>((ref) {
   return GeneratePrescriptionUseCase(
       ref.watch(prescriptionRepositoryProvider));
+});
+
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+/// Product analytics, provider-agnostic and consent-gated.
+///
+/// The provider is a no-op until one is configured. That is deliberate: the
+/// app exercises the whole path — consent, buffering, flushing — whether or
+/// not a vendor is wired up, so the build that ships does not take a different
+/// branch from the one under test.
+///
+/// Swapping in Firebase or PostHog is an override here and a
+/// `flutter_analytics` provider implementation; nothing else moves.
+final analyticsProvider = Provider<Analytics>((ref) {
+  final analytics = Analytics(
+    preferences: ref.watch(sharedPreferencesProvider),
+  );
+  unawaited(analytics.initialize());
+  return analytics;
 });

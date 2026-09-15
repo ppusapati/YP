@@ -207,10 +207,12 @@ export function validateWithYup<T>(
     if (yupError.inner) {
       for (const inner of yupError.inner) {
         if (inner.path) {
-          if (!fieldErrors[inner.path]) {
-            fieldErrors[inner.path] = [];
-          }
-          fieldErrors[inner.path].push(...inner.errors);
+          // Held in a local rather than indexed twice: under
+          // noUncheckedIndexedAccess the second lookup is `string[] | undefined`
+          // however the first one was guarded, so this is what actually
+          // compiles as well as being one lookup instead of three.
+          const bucket = (fieldErrors[inner.path] ??= []);
+          bucket.push(...inner.errors);
         }
       }
     }
@@ -246,10 +248,12 @@ export async function validateWithYupAsync<T>(
     if (yupError.inner) {
       for (const inner of yupError.inner) {
         if (inner.path) {
-          if (!fieldErrors[inner.path]) {
-            fieldErrors[inner.path] = [];
-          }
-          fieldErrors[inner.path].push(...inner.errors);
+          // Held in a local rather than indexed twice: under
+          // noUncheckedIndexedAccess the second lookup is `string[] | undefined`
+          // however the first one was guarded, so this is what actually
+          // compiles as well as being one lookup instead of three.
+          const bucket = (fieldErrors[inner.path] ??= []);
+          bucket.push(...inner.errors);
         }
       }
     }
@@ -413,8 +417,12 @@ export function mapToFormErrors(
   const formErrors: Record<string, string> = {};
 
   for (const [field, errors] of Object.entries(result.fieldErrors)) {
-    if (errors.length > 0) {
-      formErrors[field] = errors[0];
+    // Destructured rather than length-checked: `errors[0]` is `string |
+    // undefined` regardless of the length check, because the checker cannot
+    // connect the two.
+    const [first] = errors;
+    if (first !== undefined) {
+      formErrors[field] = first;
     }
   }
 

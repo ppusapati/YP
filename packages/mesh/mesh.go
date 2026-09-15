@@ -3,7 +3,7 @@ package mesh
 import (
 	"context"
 	"fmt"
-	"math"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -17,7 +17,7 @@ import (
 type ServiceMesh struct {
 	registry       registry.ServiceRegistry
 	lb             loadbalancer.LoadBalancer
-	breaker        *circuitbreaker.SimpleCircuitBreaker
+	breaker        *circuitbreaker.CircuitBreaker
 	logger         p9log.Logger
 	opts           Options
 	policies       map[string]*RoutingPolicy
@@ -33,7 +33,7 @@ type ServiceMesh struct {
 func New(
 	reg registry.ServiceRegistry,
 	lb loadbalancer.LoadBalancer,
-	breaker *circuitbreaker.SimpleCircuitBreaker,
+	breaker *circuitbreaker.CircuitBreaker,
 	logger p9log.Logger,
 	opts ...Option,
 ) *ServiceMesh {
@@ -258,7 +258,7 @@ func calculateBackoff(attempt int, policy RetryPolicy) time.Duration {
 	}
 
 	// Add jitter (random between 0 and backoff)
-	jitter := time.Duration(math.Rand.Float64() * backoff)
+	jitter := time.Duration(rand.Float64() * backoff)
 	return time.Duration(backoff) + jitter
 }
 

@@ -21,7 +21,7 @@
     loading = true;
     error = null;
     try {
-      const res = await satelliteClient.listSatelliteImages({ pageSize, pageOffset });
+      const res = await satelliteClient.listImages({ pageSize, pageOffset });
       rows = res.images;
       totalCount = res.totalCount;
       return res.totalCount;

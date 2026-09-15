@@ -1,0 +1,22 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000
+      # Links a trace id found in a log line to the tracing backend, so an
+      # error line becomes one click from the span that produced it. The
+      # pattern matches the request id this platform puts on every log.
+      derivedFields:
+        - name: RequestID
+          matcherRegex: '"request_id":"([^"]+)"'
+          # Searches Loki itself for every line sharing the id: without a
+          # tracing backend wired up, the other logs from the same request are
+          # the most useful thing to reach.
+          datasourceUid: loki
+          url: '${__value.raw}'
+          urlDisplayLabel: 'All logs for this request'

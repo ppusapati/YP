@@ -36,15 +36,15 @@ func (s AlertSeverity) IsValid() bool {
 type AlertType string
 
 const (
-	AlertTypeFrostRisk           AlertType = "FROST_RISK"
-	AlertTypeHeatStress          AlertType = "HEAT_STRESS"
-	AlertTypeDroughtWarning      AlertType = "DROUGHT_WARNING"
-	AlertTypeExcessiveRain       AlertType = "EXCESSIVE_RAIN"
-	AlertTypePestOutbreak        AlertType = "PEST_OUTBREAK"
-	AlertTypeDiseaseDetected     AlertType = "DISEASE_DETECTED"
-	AlertTypeNutrientDeficiency  AlertType = "NUTRIENT_DEFICIENCY"
-	AlertTypeWaterStress         AlertType = "WATER_STRESS"
-	AlertTypeGrowthAnomaly       AlertType = "GROWTH_ANOMALY"
+	AlertTypeFrostRisk          AlertType = "FROST_RISK"
+	AlertTypeHeatStress         AlertType = "HEAT_STRESS"
+	AlertTypeDroughtWarning     AlertType = "DROUGHT_WARNING"
+	AlertTypeExcessiveRain      AlertType = "EXCESSIVE_RAIN"
+	AlertTypePestOutbreak       AlertType = "PEST_OUTBREAK"
+	AlertTypeDiseaseDetected    AlertType = "DISEASE_DETECTED"
+	AlertTypeNutrientDeficiency AlertType = "NUTRIENT_DEFICIENCY"
+	AlertTypeWaterStress        AlertType = "WATER_STRESS"
+	AlertTypeGrowthAnomaly      AlertType = "GROWTH_ANOMALY"
 )
 
 // ValidAlertTypes returns all valid alert types.
@@ -106,26 +106,36 @@ func (s AlertStatus) IsValid() bool {
 
 // Alert represents a field-level alert raised by the system.
 type Alert struct {
-	ID              string        `json:"id" db:"id"`
-	FieldID         string        `json:"field_id" db:"field_id"`
-	FarmID          string        `json:"farm_id" db:"farm_id"`
-	FieldName       string        `json:"field_name" db:"field_name"`
-	AlertType       AlertType     `json:"alert_type" db:"alert_type"`
-	Severity        AlertSeverity `json:"severity" db:"severity"`
-	Status          AlertStatus   `json:"status" db:"status"`
-	Title           string        `json:"title" db:"title"`
-	Message         string        `json:"message" db:"message"`
-	Read            bool          `json:"read" db:"read"`
-	ActionURL       string        `json:"action_url,omitempty" db:"action_url"`
-	Recommendations []string      `json:"recommendations" db:"recommendations"`
+	ID        string        `json:"id" db:"id"`
+	FieldID   string        `json:"field_id" db:"field_id"`
+	FarmID    string        `json:"farm_id" db:"farm_id"`
+	FieldName string        `json:"field_name" db:"field_name"`
+	AlertType AlertType     `json:"alert_type" db:"alert_type"`
+	Severity  AlertSeverity `json:"severity" db:"severity"`
+	Status    AlertStatus   `json:"status" db:"status"`
+	Title     string        `json:"title" db:"title"`
+	Message   string        `json:"message" db:"message"`
+	Read      bool          `json:"read" db:"read"`
+	ActionURL string        `json:"action_url,omitempty" db:"action_url"`
+
+	// Source names the service that raised the alert, and SourceAlertID is
+	// that service's own identifier for it.
+	//
+	// The pair is what makes consuming alert events safe. Kafka delivery is
+	// at-least-once and a consumer-group rebalance replays whatever was in
+	// flight, so without a stable key the same frost warning lands in the
+	// farmer's list several times over and the list stops being believed.
+	Source          string             `json:"source,omitempty" db:"source"`
+	SourceAlertID   string             `json:"source_alert_id,omitempty" db:"source_alert_id"`
+	Recommendations []string           `json:"recommendations" db:"recommendations"`
 	Metrics         map[string]float64 `json:"metrics,omitempty" db:"metrics"`
-	MetricValue     float64       `json:"metric_value" db:"metric_value"`
-	ThresholdValue  float64       `json:"threshold_value" db:"threshold_value"`
-	CreatedAt       time.Time     `json:"created_at" db:"created_at"`
-	AcknowledgedAt  *time.Time    `json:"acknowledged_at,omitempty" db:"acknowledged_at"`
-	AcknowledgedBy  string        `json:"acknowledged_by,omitempty" db:"acknowledged_by"`
-	ResolvedAt      *time.Time    `json:"resolved_at,omitempty" db:"resolved_at"`
-	ExpiresAt       *time.Time    `json:"expires_at,omitempty" db:"expires_at"`
+	MetricValue     float64            `json:"metric_value" db:"metric_value"`
+	ThresholdValue  float64            `json:"threshold_value" db:"threshold_value"`
+	CreatedAt       time.Time          `json:"created_at" db:"created_at"`
+	AcknowledgedAt  *time.Time         `json:"acknowledged_at,omitempty" db:"acknowledged_at"`
+	AcknowledgedBy  string             `json:"acknowledged_by,omitempty" db:"acknowledged_by"`
+	ResolvedAt      *time.Time         `json:"resolved_at,omitempty" db:"resolved_at"`
+	ExpiresAt       *time.Time         `json:"expires_at,omitempty" db:"expires_at"`
 }
 
 // AlertRule defines a user-configurable rule that triggers alerts.

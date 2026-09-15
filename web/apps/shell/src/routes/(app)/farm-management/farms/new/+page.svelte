@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { farmFormSchema } from '@samavāya/agriculture/schemas';
+  import { createFarmSchema } from '@samavāya/agriculture/schemas';
   import { farmClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active', area_unit: 'hectares', country: 'India' };
@@ -27,7 +27,7 @@
   title="New Farm"
   subtitle="Create a new farm profile"
   mode="create"
-  schema={farmFormSchema}
+  schema={createFarmSchema}
   {values}
   {errors}
   {isSubmitting}

@@ -9,3 +9,15 @@ target/
 # Go build artifacts
 *-service/server
 
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Stray build artifacts
+/server
+
+
+# Compiled service binaries, which land here when a build is run without -o.
+/monolith

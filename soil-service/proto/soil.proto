@@ -106,6 +106,12 @@ message SoilAnalysis {
   google.protobuf.Timestamp created_at       = 14;
   google.protobuf.Timestamp updated_at       = 15;
   int64                     version          = 16;
+  double                    pH               = 17;
+  double                    nitrogen_ppm     = 18;
+  double                    phosphorus_ppm   = 19;
+  double                    potassium_ppm    = 20;
+  double                    organic_matter_pct = 21;
+  SoilTexture               texture          = 22;
 }
 
 message SoilMap {

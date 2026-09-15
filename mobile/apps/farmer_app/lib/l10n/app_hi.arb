@@ -1,0 +1,168 @@
+{
+  "@@locale": "hi",
+  "@@last_modified": "2026-09-12",
+
+  "commonSave": "सहेजें",
+  "commonCancel": "रद्द करें",
+  "commonDelete": "हटाएं",
+  "commonEdit": "संपादित करें",
+  "commonCreate": "बनाएं",
+  "commonUpdate": "अपडेट करें",
+  "commonClose": "बंद करें",
+  "commonBack": "वापस",
+  "commonNext": "अगला",
+  "commonSubmit": "जमा करें",
+  "commonReset": "रीसेट",
+  "commonSearch": "खोजें",
+  "commonFilter": "फ़िल्टर",
+  "commonSort": "क्रमबद्ध",
+  "commonExport": "निर्यात",
+  "commonImport": "आयात",
+  "commonPrint": "प्रिंट",
+  "commonLoading": "लोड हो रहा है...",
+  "commonError": "त्रुटि",
+  "commonSuccess": "सफल",
+  "commonWarning": "चेतावनी",
+  "commonInfo": "जानकारी",
+  "commonConfirm": "पुष्टि करें",
+  "commonYes": "हाँ",
+  "commonNo": "नहीं",
+  "commonOk": "ठीक है",
+  "commonRequired": "आवश्यक",
+  "commonOptional": "वैकल्पिक",
+  "commonAll": "सभी",
+  "commonNone": "कोई नहीं",
+  "commonSelect": "चुनें",
+  "commonClear": "साफ़ करें",
+  "commonApply": "लागू करें",
+  "commonActions": "क्रियाएं",
+  "commonStatus": "स्थिति",
+  "commonName": "नाम",
+  "commonDescription": "विवरण",
+  "commonDate": "तारीख",
+  "commonAmount": "राशि",
+  "commonTotal": "कुल",
+  "commonNotes": "टिप्पणियां",
+
+  "validationRequired": "यह फ़ील्ड आवश्यक है",
+  "validationMinLength": "न्यूनतम {min} अक्षर आवश्यक हैं",
+  "@validationMinLength": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "validationMaxLength": "अधिकतम {max} अक्षर अनुमत हैं",
+  "@validationMaxLength": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "validationEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+  "validationPhone": "कृपया एक मान्य फ़ोन नंबर दर्ज करें",
+  "validationNumber": "कृपया एक मान्य संख्या दर्ज करें",
+  "validationMin": "मान कम से कम {min} होना चाहिए",
+  "@validationMin": {
+    "placeholders": {
+      "min": { "type": "String" }
+    }
+  },
+  "validationMax": "मान अधिकतम {max} होना चाहिए",
+  "@validationMax": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  },
+  "validationPattern": "अमान्य प्रारूप",
+  "validationUrl": "कृपया एक मान्य URL दर्ज करें",
+
+  "authLogin": "लॉगिन",
+  "authLogout": "लॉगआउट",
+  "authEmail": "ईमेल",
+  "authPassword": "पासवर्ड",
+  "authForgotPassword": "पासवर्ड भूल गए?",
+  "authSignIn": "साइन इन",
+  "authSignOut": "साइन आउट",
+  "authWelcome": "स्वागत है, {name}",
+  "@authWelcome": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "navDashboard": "डैशबोर्ड",
+  "navSettings": "सेटिंग्स",
+  "navProfile": "प्रोफ़ाइल",
+  "navHelp": "सहायता",
+
+  "agricultureCrop": "फसल",
+  "agricultureFarm": "खेत",
+  "agricultureHarvest": "कटाई",
+  "agricultureSeason": "मौसम",
+  "agricultureField": "खेत",
+  "agricultureYield": "उपज",
+  "agricultureIrrigation": "सिंचाई",
+  "agricultureFertilizer": "उर्वरक",
+  "agriculturePesticide": "कीटनाशक",
+  "agricultureEquipment": "उपकरण",
+
+  "manufacturingProduction": "उत्पादन",
+  "manufacturingWorkOrder": "कार्य आदेश",
+  "manufacturingBom": "सामग्री विवरण",
+  "manufacturingInventory": "इन्वेंटरी",
+  "manufacturingQuality": "गुणवत्ता",
+  "manufacturingMachine": "मशीन",
+  "manufacturingShift": "पाली",
+  "manufacturingOperator": "ऑपरेटर",
+  "manufacturingDefect": "दोष",
+  "manufacturingBatch": "बैच",
+
+  "waterSupply": "जल आपूर्ति",
+  "waterTreatment": "उपचार",
+  "waterDistribution": "वितरण",
+  "waterMeter": "मीटर",
+  "waterConnection": "कनेक्शन",
+  "waterBill": "बिल",
+  "waterConsumption": "खपत",
+  "waterPipeline": "पाइपलाइन",
+  "waterPump": "पंप",
+  "waterReservoir": "जलाशय",
+
+  "constructionProject": "परियोजना",
+  "constructionSite": "स्थल",
+  "constructionContractor": "ठेकेदार",
+  "constructionMaterial": "सामग्री",
+  "constructionLabour": "श्रम",
+  "constructionDrawing": "चित्र",
+  "constructionInspection": "निरीक्षण",
+  "constructionMilestone": "माइलस्टोन",
+  "constructionBoq": "मात्रा विवरण",
+  "constructionEstimate": "अनुमान",
+
+  "financeInvoice": "चालान",
+  "financePayment": "भुगतान",
+  "financeReceipt": "रसीद",
+  "financeExpense": "व्यय",
+  "financeBudget": "बजट",
+  "financeLedger": "खाता बही",
+  "financeAccount": "खाता",
+  "financeBalance": "शेष",
+  "financeTax": "कर",
+  "financeCurrency": "मुद्रा",
+
+  "hrEmployee": "कर्मचारी",
+  "hrDepartment": "विभाग",
+  "hrLeave": "छुट्टी",
+  "hrAttendance": "उपस्थिति",
+  "hrPayroll": "वेतन पत्रक",
+  "hrSalary": "वेतन",
+  "hrDesignation": "पदनाम",
+  "hrShift": "पाली",
+  "hrPerformance": "प्रदर्शन",
+  "hrTraining": "प्रशिक्षण",
+
+  "errorNotFound": "नहीं मिला",
+  "errorUnauthorized": "अनधिकृत",
+  "errorServerError": "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
+  "errorNetworkError": "नेटवर्क त्रुटि। अपना कनेक्शन जांचें।",
+  "errorSessionExpired": "सत्र समाप्त। कृपया फिर से लॉगिन करें।"
+}

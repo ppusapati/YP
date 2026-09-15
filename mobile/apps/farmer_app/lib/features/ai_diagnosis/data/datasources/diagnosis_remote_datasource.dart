@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_network/flutter_network.dart';
@@ -7,6 +8,9 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../../domain/entities/diagnosis_entity.dart' show DiagnosisSeverity;
 import '../models/diagnosis_model.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ModelExplanation;
+
+import '../models/explanation_mapper.dart';
 
 /// Remote data source for AI diagnosis using ConnectRPC.
 abstract class DiagnosisRemoteDataSource {
@@ -15,7 +19,6 @@ abstract class DiagnosisRemoteDataSource {
     required String imagePath,
   });
 
-  Future<String> uploadImage(Uint8List imageBytes, String fileName);
 
   Future<List<DiagnosisModel>> getDiagnosisHistory({String? fieldId});
   Future<DiagnosisModel> getDiagnosisById(String diagnosisId);
@@ -51,14 +54,46 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     required String fieldId,
     required String imagePath,
   }) async {
+    // Read the photo off the device and send it.
+    //
+    // This used to pass `imagePath` straight through as `imageUrl`, which
+    // meant the server received something like
+    // `/data/user/0/in.p9e.farmer/cache/CAP1234.jpg` — a path only this phone
+    // can resolve. plant-diagnosis-service accepts https and s3 URLs only, so
+    // it rejected every one, the AI gateway got no bytes, and the diagnosis
+    // came back empty. The photo never left the device.
+    final file = File(imagePath);
+    final Uint8List bytes;
     try {
-      // The proto SubmitDiagnosisRequest uses structured ImageInput objects
-      // with imageUrl (not a raw path). The imagePath should be a URL obtained
-      // from a prior uploadImage call.
+      bytes = await file.readAsBytes();
+    } on FileSystemException catch (e) {
+      // Said plainly: the capture is gone from the cache, which is a
+      // different problem from the server refusing it.
+      throw ConnectException(
+        code: 'not_found',
+        message: 'Could not read the photo at $imagePath: ${e.message}',
+      );
+    }
+
+    if (bytes.length > maxImageBytes) {
+      // Rejected here rather than after a slow upload on a rural connection
+      // that then fails at the far end with a transport error.
+      throw ConnectException(
+        code: 'invalid_argument',
+        message: 'That photo is ${(bytes.length / (1 << 20)).toStringAsFixed(1)} MB; '
+            'the limit is ${maxImageBytes >> 20} MB.',
+      );
+    }
+
+    try {
       final request = SubmitDiagnosisRequest(
         fieldId: fieldId,
         images: [
-          ImageInput(imageUrl: imagePath),
+          ImageInput(
+            imageBytes: bytes,
+            mimeType: _mimeTypeFor(imagePath),
+            imageType: ImageType.IMAGE_TYPE_LEAF,
+          ),
         ],
       );
       final response = await _call('SubmitDiagnosis', request);
@@ -71,15 +106,19 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     }
   }
 
-  @override
-  Future<String> uploadImage(Uint8List imageBytes, String fileName) async {
-    // TODO: The proto has no UploadImage RPC. Image upload is not defined in
-    // the PlantDiagnosisService proto. This likely needs a separate upload
-    // endpoint or a different service. Keeping the interface for compatibility.
-    throw UnimplementedError(
-      'uploadImage is not supported by the diagnosis proto. '
-      'No UploadImage RPC exists in PlantDiagnosisService.',
-    );
+  /// The ceiling plant-diagnosis-service enforces on a single image.
+  static const maxImageBytes = 16 << 20;
+
+  /// Best-effort content type from the file extension.
+  ///
+  /// image_picker writes JPEG for a camera capture but keeps the original
+  /// format for a gallery pick, and the server stores whatever it is told.
+  static String _mimeTypeFor(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.heic') || lower.endsWith('.heif')) return 'image/heic';
+    return 'image/jpeg';
   }
 
   @override
@@ -132,6 +171,11 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     String description = '';
     List<String> recommendations = [];
     String plantSpecies = '';
+    // Why the model answered the way it did, one per analysed photo. The
+    // service returns these on the result and this mapper used to drop them,
+    // so the app had no way to show what the model looked at even though the
+    // bytes arrived over the wire.
+    List<ModelExplanation> explanations = const [];
 
     if (diagnosis.hasResult()) {
       final diagResult = diagnosis.result;
@@ -150,6 +194,8 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
       if (description.isEmpty) {
         description = diagResult.summary;
       }
+      explanations =
+          diagResult.explanations.map(modelExplanationFromProto).toList();
     }
 
     return DiagnosisModel(
@@ -164,6 +210,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
       severity: severity,
       description: description.isNotEmpty ? description : diagnosis.notes,
       recommendations: recommendations,
+      explanations: explanations,
       createdAt: diagnosis.hasCreatedAt()
           ? diagnosis.createdAt.toDateTime()
           : DateTime.now(),

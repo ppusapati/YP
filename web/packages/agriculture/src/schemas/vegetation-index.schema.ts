@@ -8,7 +8,7 @@ export const computeIndicesFormSchema: FormSchema<Record<string, unknown>> = {
         const res = await farmClient.listFarms({ search: query, pageSize: 50 });
         return (res.farms || []).map((r: any) => ({ label: r.name || r.id, value: r.id }));
       } },
-    { type: 'multiselect', name: 'indexTypes', label: 'Index Types', options: [
+    { type: 'select', multiple: true, name: 'indexTypes', label: 'Index Types', options: [
         { label: 'NDVI', value: '1' },
         { label: 'NDWI', value: '2' },
         { label: 'EVI', value: '3' },

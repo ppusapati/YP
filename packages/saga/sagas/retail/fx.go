@@ -52,7 +52,7 @@ var RetailSagasModule = fx.Module("retail-sagas",
 		),
 		// SAGA-R09: Merchandise Planning & Assortment (Phase 6A)
 		fx.Annotate(
-			NewMerchandisePlaningSaga,
+			NewMerchandisePlanningallocation,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 	),
@@ -82,6 +82,6 @@ func ProvideRetailSagaHandlers() []saga.SagaHandler {
 		NewStockTransferSaga(),
 		NewCustomerAccountSaga(),
 		NewAnalyticsReportingSaga(),
-		NewMerchandisePlaningSaga(),
+		NewMerchandisePlanningallocation(),
 	}
 }

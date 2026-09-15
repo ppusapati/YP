@@ -120,7 +120,7 @@ func (r *vegetationIndexRepository) InsertComputeTask(ctx context.Context, task 
 	result := &vimodels.ComputeTask{}
 	if err := scanComputeTask(row, result); err != nil {
 		r.log.Errorw("msg", "failed to insert compute task", "error", err)
-		return nil, errors.InternalServer("COMPUTE_TASK_CREATE_FAILED", fmt.Sprintf("failed to create compute task: %v", err))
+		return nil, errors.InternalServer("COMPUTE_TASK_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "compute task created", "uuid", result.ID, "tenant_id", result.TenantID)
@@ -144,7 +144,7 @@ func (r *vegetationIndexRepository) GetComputeTaskByUUID(ctx context.Context, uu
 			return nil, errors.NotFound("COMPUTE_TASK_NOT_FOUND", fmt.Sprintf("compute task not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get compute task", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("COMPUTE_TASK_GET_FAILED", fmt.Sprintf("failed to get compute task: %v", err))
+		return nil, errors.InternalServer("COMPUTE_TASK_GET_FAILED", "an internal error occurred")
 	}
 
 	return task, nil
@@ -172,7 +172,7 @@ func (r *vegetationIndexRepository) ListComputeTasks(ctx context.Context, params
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list compute tasks", "error", err)
-		return nil, errors.InternalServer("COMPUTE_TASK_LIST_FAILED", fmt.Sprintf("failed to list compute tasks: %v", err))
+		return nil, errors.InternalServer("COMPUTE_TASK_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -181,12 +181,13 @@ func (r *vegetationIndexRepository) ListComputeTasks(ctx context.Context, params
 		var task vimodels.ComputeTask
 		if err := scanComputeTaskFromRows(rows, &task); err != nil {
 			r.log.Errorw("msg", "failed to scan compute task row", "error", err)
-			return nil, errors.InternalServer("COMPUTE_TASK_SCAN_FAILED", fmt.Sprintf("failed to scan compute task: %v", err))
+			return nil, errors.InternalServer("COMPUTE_TASK_SCAN_FAILED", "an internal error occurred")
 		}
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("COMPUTE_TASK_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, errors.InternalServer("COMPUTE_TASK_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return tasks, nil
@@ -216,7 +217,7 @@ func (r *vegetationIndexRepository) UpdateComputeStatus(ctx context.Context, uui
 			return nil, errors.NotFound("COMPUTE_TASK_NOT_FOUND", fmt.Sprintf("compute task not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to update compute task status", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("COMPUTE_STATUS_UPDATE_FAILED", fmt.Sprintf("failed to update compute status: %v", err))
+		return nil, errors.InternalServer("COMPUTE_STATUS_UPDATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "compute task status updated", "uuid", result.ID, "status", string(result.Status))
@@ -236,31 +237,34 @@ func (r *vegetationIndexRepository) InsertVegetationIndex(ctx context.Context, v
 			uuid, tenant_id, farm_uuid, field_uuid, processing_job_uuid,
 			compute_task_uuid, index_type, mean_value, min_value, max_value,
 			std_deviation, median_value, pixel_count, coverage_percent,
+			cloud_fraction, valid_pixel_fraction,
 			raster_s3_key, acquisition_date, computed_at,
 			is_active, created_by, created_at
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7::vegetation_index_type, $8, $9, $10,
 			$11, $12, $13, $14,
-			$15, $16, NOW(),
-			TRUE, $17, NOW()
+			$15, $16,
+			$17, $18, NOW(),
+			TRUE, $19, NOW()
 		)
 		RETURNING id, uuid, tenant_id, farm_uuid, field_uuid,
 			processing_job_uuid, compute_task_uuid, index_type,
 			mean_value, min_value, max_value, std_deviation, median_value,
-			pixel_count, coverage_percent, raster_s3_key,
+			pixel_count, coverage_percent, cloud_fraction, valid_pixel_fraction, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by`,
 		vi.ID, vi.TenantID, vi.FarmUUID, vi.FieldUUID, vi.ProcessingJobUUID,
 		vi.ComputeTaskUUID, string(vi.IndexType), vi.MeanValue, vi.MinValue, vi.MaxValue,
 		vi.StdDeviation, vi.MedianValue, vi.PixelCount, vi.CoveragePercent,
+		vi.CloudFraction, vi.ValidPixelFraction,
 		vi.RasterS3Key, vi.AcquisitionDate, vi.CreatedBy,
 	)
 
 	result := &vimodels.VegetationIndex{}
 	if err := scanVegetationIndex(row, result); err != nil {
 		r.log.Errorw("msg", "failed to insert vegetation index", "error", err)
-		return nil, errors.InternalServer("VI_CREATE_FAILED", fmt.Sprintf("failed to create vegetation index: %v", err))
+		return nil, errors.InternalServer("VI_CREATE_FAILED", "an internal error occurred")
 	}
 
 	r.log.Infow("msg", "vegetation index created", "uuid", result.ID, "index_type", string(result.IndexType))
@@ -272,7 +276,7 @@ func (r *vegetationIndexRepository) GetVegetationIndexByUUID(ctx context.Context
 		SELECT id, uuid, tenant_id, farm_uuid, field_uuid,
 			processing_job_uuid, compute_task_uuid, index_type,
 			mean_value, min_value, max_value, std_deviation, median_value,
-			pixel_count, coverage_percent, raster_s3_key,
+			pixel_count, coverage_percent, cloud_fraction, valid_pixel_fraction, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by
 		FROM vegetation_indices
@@ -286,7 +290,7 @@ func (r *vegetationIndexRepository) GetVegetationIndexByUUID(ctx context.Context
 			return nil, errors.NotFound("VI_NOT_FOUND", fmt.Sprintf("vegetation index not found: %s", uuid))
 		}
 		r.log.Errorw("msg", "failed to get vegetation index", "uuid", uuid, "error", err)
-		return nil, errors.InternalServer("VI_GET_FAILED", fmt.Sprintf("failed to get vegetation index: %v", err))
+		return nil, errors.InternalServer("VI_GET_FAILED", "an internal error occurred")
 	}
 
 	return vi, nil
@@ -314,7 +318,7 @@ func (r *vegetationIndexRepository) ListVegetationIndices(ctx context.Context, p
 	)
 	if err := countRow.Scan(&totalCount); err != nil {
 		r.log.Errorw("msg", "failed to count vegetation indices", "error", err)
-		return nil, 0, errors.InternalServer("VI_COUNT_FAILED", fmt.Sprintf("failed to count vegetation indices: %v", err))
+		return nil, 0, errors.InternalServer("VI_COUNT_FAILED", "an internal error occurred")
 	}
 
 	// Fetch the page
@@ -322,7 +326,7 @@ func (r *vegetationIndexRepository) ListVegetationIndices(ctx context.Context, p
 		SELECT id, uuid, tenant_id, farm_uuid, field_uuid,
 			processing_job_uuid, compute_task_uuid, index_type,
 			mean_value, min_value, max_value, std_deviation, median_value,
-			pixel_count, coverage_percent, raster_s3_key,
+			pixel_count, coverage_percent, cloud_fraction, valid_pixel_fraction, raster_s3_key,
 			acquisition_date, computed_at, is_active, created_by, created_at,
 			deleted_at, deleted_by
 		FROM vegetation_indices
@@ -347,7 +351,7 @@ func (r *vegetationIndexRepository) ListVegetationIndices(ctx context.Context, p
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to list vegetation indices", "error", err)
-		return nil, 0, errors.InternalServer("VI_LIST_FAILED", fmt.Sprintf("failed to list vegetation indices: %v", err))
+		return nil, 0, errors.InternalServer("VI_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -356,12 +360,13 @@ func (r *vegetationIndexRepository) ListVegetationIndices(ctx context.Context, p
 		var vi vimodels.VegetationIndex
 		if err := scanVegetationIndexFromRows(rows, &vi); err != nil {
 			r.log.Errorw("msg", "failed to scan vegetation index row", "error", err)
-			return nil, 0, errors.InternalServer("VI_SCAN_FAILED", fmt.Sprintf("failed to scan vegetation index: %v", err))
+			return nil, 0, errors.InternalServer("VI_SCAN_FAILED", "an internal error occurred")
 		}
 		indices = append(indices, vi)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, errors.InternalServer("VI_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, 0, errors.InternalServer("VI_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return indices, totalCount, nil
@@ -386,7 +391,7 @@ func (r *vegetationIndexRepository) GetNDVITimeSeries(ctx context.Context, tenan
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to get NDVI time series", "farm_uuid", farmUUID, "error", err)
-		return nil, errors.InternalServer("NDVI_TIMESERIES_FAILED", fmt.Sprintf("failed to get NDVI time series: %v", err))
+		return nil, errors.InternalServer("NDVI_TIMESERIES_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -395,12 +400,13 @@ func (r *vegetationIndexRepository) GetNDVITimeSeries(ctx context.Context, tenan
 		var p vimodels.TimeSeriesPoint
 		if err := rows.Scan(&p.Date, &p.Value, &p.StdDeviation); err != nil {
 			r.log.Errorw("msg", "failed to scan time series point", "error", err)
-			return nil, errors.InternalServer("NDVI_SCAN_FAILED", fmt.Sprintf("failed to scan time series point: %v", err))
+			return nil, errors.InternalServer("NDVI_SCAN_FAILED", "an internal error occurred")
 		}
 		points = append(points, p)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("NDVI_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, errors.InternalServer("NDVI_ROWS_ERROR", "an internal error occurred")
 	}
 
 	return points, nil
@@ -423,7 +429,7 @@ func (r *vegetationIndexRepository) GetFieldHealthSummary(ctx context.Context, t
 	)
 	if err != nil {
 		r.log.Errorw("msg", "failed to get field health summary", "farm_uuid", farmUUID, "error", err)
-		return nil, errors.InternalServer("HEALTH_SUMMARY_FAILED", fmt.Sprintf("failed to get field health summary: %v", err))
+		return nil, errors.InternalServer("HEALTH_SUMMARY_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -435,12 +441,14 @@ func (r *vegetationIndexRepository) GetFieldHealthSummary(ctx context.Context, t
 	for rows.Next() {
 		var rec ndviRecord
 		if err := rows.Scan(&rec.MeanValue, &rec.AcquisitionDate); err != nil {
-			return nil, errors.InternalServer("HEALTH_SCAN_FAILED", fmt.Sprintf("failed to scan health record: %v", err))
+			r.log.Errorw("msg", "failed to scan health record", "error", err)
+			return nil, errors.InternalServer("HEALTH_SCAN_FAILED", "an internal error occurred")
 		}
 		records = append(records, rec)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, errors.InternalServer("HEALTH_ROWS_ERROR", fmt.Sprintf("row iteration error: %v", err))
+		r.log.Errorw("msg", "row iteration error", "error", err)
+		return nil, errors.InternalServer("HEALTH_ROWS_ERROR", "an internal error occurred")
 	}
 
 	if len(records) == 0 {
@@ -504,7 +512,7 @@ func scanVegetationIndex(row pgx.Row, vi *vimodels.VegetationIndex) error {
 		&vi.ID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
 		&vi.ProcessingJobUUID, &vi.ComputeTaskUUID, &vi.IndexType,
 		&vi.MeanValue, &vi.MinValue, &vi.MaxValue, &vi.StdDeviation, &vi.MedianValue,
-		&vi.PixelCount, &vi.CoveragePercent, &vi.RasterS3Key,
+		&vi.PixelCount, &vi.CoveragePercent, &vi.CloudFraction, &vi.ValidPixelFraction, &vi.RasterS3Key,
 		&vi.AcquisitionDate, &vi.ComputedAt, &vi.IsActive, &vi.CreatedBy, &vi.CreatedAt,
 		&vi.DeletedAt, &vi.DeletedBy,
 	)
@@ -515,7 +523,7 @@ func scanVegetationIndexFromRows(rows pgx.Rows, vi *vimodels.VegetationIndex) er
 		&vi.ID, &vi.TenantID, &vi.FarmUUID, &vi.FieldUUID,
 		&vi.ProcessingJobUUID, &vi.ComputeTaskUUID, &vi.IndexType,
 		&vi.MeanValue, &vi.MinValue, &vi.MaxValue, &vi.StdDeviation, &vi.MedianValue,
-		&vi.PixelCount, &vi.CoveragePercent, &vi.RasterS3Key,
+		&vi.PixelCount, &vi.CoveragePercent, &vi.CloudFraction, &vi.ValidPixelFraction, &vi.RasterS3Key,
 		&vi.AcquisitionDate, &vi.ComputedAt, &vi.IsActive, &vi.CreatedBy, &vi.CreatedAt,
 		&vi.DeletedAt, &vi.DeletedBy,
 	)

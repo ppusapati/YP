@@ -223,7 +223,7 @@ func (h *DiagnosisHandler) IdentifySpecies(ctx context.Context, req *connect.Req
 func (h *DiagnosisHandler) DetectNutrientDeficiency(ctx context.Context, req *connect.Request[pb.DetectNutrientDeficiencyRequest]) (*connect.Response[pb.DetectNutrientDeficiencyResponse], error) {
 	images := protoImageInputsToDomain(req.Msg.GetImages())
 
-	deficiencies, err := h.svc.DetectNutrientDeficiency(ctx, req.Msg.GetPlantSpeciesId(), images)
+	deficiencies, explanations, err := h.svc.DetectNutrientDeficiency(ctx, req.Msg.GetPlantSpeciesId(), images)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
@@ -245,6 +245,7 @@ func (h *DiagnosisHandler) DetectNutrientDeficiency(ctx context.Context, req *co
 		Deficiencies:     protos,
 		AiModelVersion:   placeholderModelVersion,
 		ProcessingTimeMs: 0,
+		Explanations:     domainExplanationsToProto(explanations),
 	}), nil
 }
 
@@ -255,7 +256,7 @@ func (h *DiagnosisHandler) DetectNutrientDeficiency(ctx context.Context, req *co
 func (h *DiagnosisHandler) DetectPestDamage(ctx context.Context, req *connect.Request[pb.DetectPestDamageRequest]) (*connect.Response[pb.DetectPestDamageResponse], error) {
 	images := protoImageInputsToDomain(req.Msg.GetImages())
 
-	pests, err := h.svc.DetectPestDamage(ctx, req.Msg.GetPlantSpeciesId(), images)
+	pests, explanations, err := h.svc.DetectPestDamage(ctx, req.Msg.GetPlantSpeciesId(), images)
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
@@ -278,6 +279,7 @@ func (h *DiagnosisHandler) DetectPestDamage(ctx context.Context, req *connect.Re
 		Pests:            protos,
 		AiModelVersion:   placeholderModelVersion,
 		ProcessingTimeMs: 0,
+		Explanations:     domainExplanationsToProto(explanations),
 	}), nil
 }
 
@@ -292,6 +294,7 @@ func protoImageInputsToDomain(inputs []*pb.ImageInput) []domain.DiagnosisImage {
 			ImageURL:  in.GetImageUrl(),
 			ImageType: protoImageTypeToString(in.GetImageType()),
 			MimeType:  in.GetMimeType(),
+			Bytes:     in.GetImageBytes(),
 		})
 	}
 	return out
@@ -384,6 +387,15 @@ func diagnosisResultToProto(r *domain.DiagnosisResult) *pb.DiagnosisResult {
 		Summary:                  derefString(r.Summary),
 		TreatmentRecommendations: r.TreatmentRecommendations,
 		CreatedAt:                timestamppb.New(r.CreatedAt),
+	}
+
+	// Stored explanations (JSONB array). A result written before explanations
+	// existed simply has none.
+	if len(r.Explanations) > 0 {
+		var explanations []domain.Explanation
+		if json.Unmarshal(r.Explanations, &explanations) == nil {
+			out.Explanations = domainExplanationsToProto(explanations)
+		}
 	}
 
 	// Identified species (JSONB -> single object).
@@ -599,4 +611,29 @@ func derefInt32(p *int32) int32 {
 		return *p
 	}
 	return 0
+}
+
+// domainExplanationsToProto renders explanations for clients. Empty whenever
+// the answer came from a model with no gradient to explain — a demo detector
+// or an external provider — rather than a fabricated one.
+func domainExplanationsToProto(in []domain.Explanation) []*pb.Explanation {
+	out := make([]*pb.Explanation, 0, len(in))
+	for _, e := range in {
+		out = append(out, &pb.Explanation{
+			Task:          e.Task,
+			ClassName:     e.ClassName,
+			HeatmapPng:    e.HeatmapPNG,
+			HeatmapWidth:  e.HeatmapWidth,
+			HeatmapHeight: e.HeatmapHeight,
+			FocusX:        e.FocusX,
+			FocusY:        e.FocusY,
+			FocusWidth:    e.FocusWidth,
+			FocusHeight:   e.FocusHeight,
+			FocusCoverage: e.FocusCoverage,
+			Summary:       e.Summary,
+			Method:        e.Method,
+			Localised:     e.Localised,
+		})
+	}
+	return out
 }

@@ -76,7 +76,7 @@ func (t *Tracer) StartSpan(ctx context.Context, name string) *SpanImpl {
 	t.spans[spanID] = span
 	t.mu.Unlock()
 
-	t.logger.Debug("started span",
+	t.logger.Log(p9log.LevelDebug, "msg", "started span",
 		"trace_id", traceID,
 		"span_id", spanID,
 		"span_name", name,

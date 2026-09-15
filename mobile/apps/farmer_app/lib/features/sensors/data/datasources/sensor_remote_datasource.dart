@@ -7,6 +7,7 @@ import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
 
 import '../models/sensor_model.dart';
 import '../models/sensor_reading_model.dart';
+import '../../domain/entities/sensor_entity.dart';
 
 abstract class SensorRemoteDataSource {
   Future<List<SensorModel>> getSensors();

@@ -72,9 +72,8 @@ pub fn compute_water_balance(
     daily_rainfall_mm: &[f64],
     initial_depletion_mm: f64,
 ) -> Vec<WaterBalance> {
-    let total_available_water = (params.field_capacity - params.wilting_point)
-        * params.root_zone_depth_m
-        * 1000.0; // mm
+    let total_available_water =
+        (params.field_capacity - params.wilting_point) * params.root_zone_depth_m * 1000.0; // mm
 
     let readily_available_water = total_available_water * params.management_allowed_depletion;
 
@@ -281,24 +280,196 @@ impl CropCoefficients {
     /// Kc for wheat (typical values).
     pub fn wheat() -> Self {
         Self {
-            kc_ini: 0.3, kc_mid: 1.15, kc_end: 0.25,
-            days_ini: 30, days_dev: 40, days_mid: 40, days_late: 30,
+            kc_ini: 0.3,
+            kc_mid: 1.15,
+            kc_end: 0.25,
+            days_ini: 30,
+            days_dev: 40,
+            days_mid: 40,
+            days_late: 30,
         }
     }
 
     /// Kc for corn (typical values).
     pub fn corn() -> Self {
         Self {
-            kc_ini: 0.3, kc_mid: 1.20, kc_end: 0.35,
-            days_ini: 25, days_dev: 35, days_mid: 45, days_late: 25,
+            kc_ini: 0.3,
+            kc_mid: 1.20,
+            kc_end: 0.35,
+            days_ini: 25,
+            days_dev: 35,
+            days_mid: 45,
+            days_late: 25,
         }
     }
 
     /// Kc for rice (typical values).
     pub fn rice() -> Self {
         Self {
-            kc_ini: 1.05, kc_mid: 1.20, kc_end: 0.90,
-            days_ini: 30, days_dev: 30, days_mid: 60, days_late: 30,
+            kc_ini: 1.05,
+            kc_mid: 1.20,
+            kc_end: 0.90,
+            days_ini: 30,
+            days_dev: 30,
+            days_mid: 60,
+            days_late: 30,
+        }
+    }
+
+    pub fn soybean() -> Self {
+        Self {
+            kc_ini: 0.4,
+            kc_mid: 1.15,
+            kc_end: 0.50,
+            days_ini: 20,
+            days_dev: 30,
+            days_mid: 60,
+            days_late: 25,
+        }
+    }
+
+    pub fn cotton() -> Self {
+        Self {
+            kc_ini: 0.35,
+            kc_mid: 1.18,
+            kc_end: 0.60,
+            days_ini: 30,
+            days_dev: 50,
+            days_mid: 55,
+            days_late: 45,
+        }
+    }
+
+    pub fn sugarcane() -> Self {
+        Self {
+            kc_ini: 0.40,
+            kc_mid: 1.25,
+            kc_end: 0.75,
+            days_ini: 35,
+            days_dev: 60,
+            days_mid: 190,
+            days_late: 120,
+        }
+    }
+
+    pub fn chickpea() -> Self {
+        Self {
+            kc_ini: 0.40,
+            kc_mid: 1.00,
+            kc_end: 0.35,
+            days_ini: 20,
+            days_dev: 30,
+            days_mid: 35,
+            days_late: 15,
+        }
+    }
+
+    pub fn pigeon_pea() -> Self {
+        Self {
+            kc_ini: 0.40,
+            kc_mid: 1.10,
+            kc_end: 0.45,
+            days_ini: 25,
+            days_dev: 40,
+            days_mid: 60,
+            days_late: 35,
+        }
+    }
+
+    pub fn groundnut() -> Self {
+        Self {
+            kc_ini: 0.40,
+            kc_mid: 1.15,
+            kc_end: 0.60,
+            days_ini: 25,
+            days_dev: 35,
+            days_mid: 45,
+            days_late: 25,
+        }
+    }
+
+    pub fn mustard() -> Self {
+        Self {
+            kc_ini: 0.35,
+            kc_mid: 1.10,
+            kc_end: 0.35,
+            days_ini: 20,
+            days_dev: 35,
+            days_mid: 40,
+            days_late: 25,
+        }
+    }
+
+    pub fn tomato() -> Self {
+        Self {
+            kc_ini: 0.60,
+            kc_mid: 1.15,
+            kc_end: 0.80,
+            days_ini: 30,
+            days_dev: 40,
+            days_mid: 40,
+            days_late: 25,
+        }
+    }
+
+    pub fn potato() -> Self {
+        Self {
+            kc_ini: 0.50,
+            kc_mid: 1.15,
+            kc_end: 0.75,
+            days_ini: 25,
+            days_dev: 30,
+            days_mid: 45,
+            days_late: 30,
+        }
+    }
+
+    pub fn onion() -> Self {
+        Self {
+            kc_ini: 0.70,
+            kc_mid: 1.05,
+            kc_end: 0.75,
+            days_ini: 15,
+            days_dev: 25,
+            days_mid: 70,
+            days_late: 40,
+        }
+    }
+
+    /// Look up FAO-56 coefficients by crop name (case-insensitive, aliases accepted).
+    pub fn for_crop(name: &str) -> Option<Self> {
+        let key = name.trim().to_ascii_lowercase().replace([' ', '-'], "_");
+        match key.as_str() {
+            "wheat" => Some(Self::wheat()),
+            "corn" | "maize" => Some(Self::corn()),
+            "rice" | "paddy" => Some(Self::rice()),
+            "soybean" | "soya" | "soy" => Some(Self::soybean()),
+            "cotton" => Some(Self::cotton()),
+            "sugarcane" | "sugar_cane" | "cane" => Some(Self::sugarcane()),
+            "chickpea" | "gram" | "bengal_gram" | "chana" => Some(Self::chickpea()),
+            "pigeon_pea" | "pigeonpea" | "tur" | "arhar" | "red_gram" => Some(Self::pigeon_pea()),
+            "groundnut" | "peanut" => Some(Self::groundnut()),
+            "mustard" | "rapeseed" | "canola" => Some(Self::mustard()),
+            "tomato" => Some(Self::tomato()),
+            "potato" => Some(Self::potato()),
+            "onion" => Some(Self::onion()),
+            _ => None,
+        }
+    }
+
+    /// Kc for a named growth stage when the day after planting is unknown.
+    pub fn kc_for_stage(&self, stage: &str) -> f64 {
+        match stage.trim().to_ascii_lowercase().as_str() {
+            "initial" | "germination" | "seedling" | "emergence" | "establishment" => self.kc_ini,
+            "development" | "vegetative" | "tillering" | "branching" => {
+                (self.kc_ini + self.kc_mid) / 2.0
+            }
+            "mid" | "mid_season" | "flowering" | "reproductive" | "grain_fill" | "fruiting"
+            | "boll" => self.kc_mid,
+            "late" | "late_season" | "maturation" | "ripening" | "senescence" | "harvest" => {
+                (self.kc_mid + self.kc_end) / 2.0
+            }
+            _ => self.kc_mid,
         }
     }
 

@@ -1,0 +1,36 @@
+# TODO/FIXME budget per area, enforced by scripts/todo-budget.sh.
+# These only ever go down. Lower one whenever you clear markers.
+ai-gateway 0
+ml-training 0
+rust-engines 0
+mobile 11
+web 1
+packages 0
+scripts 6
+cmd 0
+internal 0
+tests 0
+agronomy-service 0
+alert-service 0
+analytics-service 0
+auth-service 0
+commerce-service 0
+crop-service 8
+farm-service 10
+field-service 5
+irrigation-service 10
+pest-prediction-service 10
+plant-diagnosis-service 8
+prescription-service 0
+satellite-analytics-service 0
+satellite-ingestion-service 0
+satellite-processing-service 0
+satellite-service 10
+satellite-tile-service 0
+sensor-service 6
+soil-service 8
+task-service 0
+traceability-service 0
+vegetation-index-service 0
+weather-service 0
+yield-service 10

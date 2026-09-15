@@ -9,23 +9,23 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/errors"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/saas"
+	"p9e.in/samavaya/packages/testutil"
 
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/domain"
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/outbound"
 )
 
-// ---------------------------------------------------------------------------
-// No-op logger satisfying p9log.Logger
-// ---------------------------------------------------------------------------
-
-type nopLogger struct{}
-
-func (nopLogger) Log(_ p9log.Level, _ ...interface{}) error { return nil }
+// nopLogger aliases the shared test logger. Each service package used to
+// define its own, and all of them broke at once when p9log.Logger gained
+// Debug/Info/Warn/Error — silently, because a _test.go file that does not
+// compile is a test suite that does not run.
+type nopLogger = testutil.NopLogger
 
 // ---------------------------------------------------------------------------
 // Mock: EventPublisher
@@ -362,7 +362,7 @@ func newService() (*mockIrrigationRepo, *mockEventPublisher, *irrigationService)
 	pub := &mockEventPublisher{}
 	fieldClient := &mockFieldClient{existing: map[string]bool{"field-001": true}}
 	farmClient := &mockFarmClient{existing: map[string]bool{"farm-001": true}}
-	svc := NewIrrigationService(repo, pub, fieldClient, farmClient, nil, nopLogger{})
+	svc := NewIrrigationService(repo, pub, fieldClient, farmClient, nil, p9log.NewLogger(zap.NewNop()))
 	return repo, pub, svc
 }
 

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ModelExplanation;
 
 import 'treatment_entity.dart';
 
@@ -31,6 +32,13 @@ class Diagnosis extends Equatable {
   final String description;
   final List<String> recommendations;
   final List<TreatmentEntity> treatments;
+
+  /// What the model looked at, one per analysed photo.
+  ///
+  /// Empty when the serving model cannot explain itself. The UI says so
+  /// rather than drawing a heatmap that was never produced.
+  final List<ModelExplanation> explanations;
+
   final DateTime createdAt;
 
   const Diagnosis({
@@ -46,6 +54,7 @@ class Diagnosis extends Equatable {
     required this.description,
     required this.recommendations,
     this.treatments = const [],
+    this.explanations = const [],
     required this.createdAt,
   });
 
@@ -62,6 +71,7 @@ class Diagnosis extends Equatable {
     String? description,
     List<String>? recommendations,
     List<TreatmentEntity>? treatments,
+    List<ModelExplanation>? explanations,
     DateTime? createdAt,
   }) {
     return Diagnosis(
@@ -77,6 +87,7 @@ class Diagnosis extends Equatable {
       description: description ?? this.description,
       recommendations: recommendations ?? this.recommendations,
       treatments: treatments ?? this.treatments,
+      explanations: explanations ?? this.explanations,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -101,6 +112,7 @@ class Diagnosis extends Equatable {
         description,
         recommendations,
         treatments,
+        explanations,
         createdAt,
       ];
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { batchRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { batchRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active', unit: 'kg', quality_check_status: 'pending' };
@@ -14,7 +14,7 @@
     error = null;
     try {
       await traceabilityClient.createBatch(formValues as any);
-      goto('/supply-chain/batches');
+      goto('/batches');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create batch record';
     } finally {
@@ -27,11 +27,11 @@
   title="New Batch Record"
   subtitle="Register a new production batch"
   mode="create"
-  schema={batchRecordFormSchema}
+  schema={batchRecordSchema}
   {values}
   {errors}
   {isSubmitting}
   {error}
-  cancelHref="/supply-chain/batches"
+  cancelHref="/batches"
   onSubmit={handleSubmit}
 />

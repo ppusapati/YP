@@ -15,9 +15,11 @@ type DiagnosisRepository interface {
 	CreateDiagnosisRequest(ctx context.Context, req *domain.DiagnosisRequest) (*domain.DiagnosisRequest, error)
 	GetDiagnosisRequestByID(ctx context.Context, id, tenantID string) (*domain.DiagnosisRequest, error)
 	ListDiagnosisRequests(ctx context.Context, params domain.ListDiagnosesParams) ([]domain.DiagnosisRequest, int32, error)
+	UpdateDiagnosisRequestStatus(ctx context.Context, id, tenantID string, status domain.DiagnosisStatus) error
 
 	// diagnosis_results
 	GetDiagnosisResultByRequestID(ctx context.Context, requestID, tenantID string) (*domain.DiagnosisResult, error)
+	CreateDiagnosisResult(ctx context.Context, res *domain.DiagnosisResult) (*domain.DiagnosisResult, error)
 
 	// diseases (reference data)
 	GetDiseaseByID(ctx context.Context, id, tenantID string) (*domain.DiseaseInfo, error)

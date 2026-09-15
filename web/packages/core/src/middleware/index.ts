@@ -13,4 +13,5 @@ export * from './types.js';
 export * from './authGuard.js';
 export * from './tenantGuard.js';
 export * from './routeGuard.js';
+export * from './csrf.js';
 export * from './compose.js';

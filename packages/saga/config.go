@@ -5,31 +5,32 @@ import (
 	"time"
 )
 
-// DefaultConfig provides default saga engine configuration
+// DefaultConfig provides default saga engine configuration.
+// Use NewDefaultConfig() to obtain an instance pre-populated with defaults.
 type DefaultConfig struct {
 	// Timeout configuration
-	DefaultTimeoutSeconds   int32         = 60
-	MaxTimeoutSeconds       int32         = 3600
+	DefaultTimeoutSeconds    int32
+	MaxTimeoutSeconds        int32
 
 	// Retry configuration
-	DefaultMaxRetries       int32         = 3
-	DefaultInitialBackoff   time.Duration = 1 * time.Second
-	DefaultMaxBackoff       time.Duration = 30 * time.Second
-	BackoffMultiplier       float64       = 2.0
-	JitterFraction          float64       = 0.1
+	DefaultMaxRetries        int32
+	DefaultInitialBackoff    time.Duration
+	DefaultMaxBackoff        time.Duration
+	BackoffMultiplier        float64
+	JitterFraction           float64
 
 	// Circuit breaker configuration
-	CircuitBreakerThreshold int32         = 5
-	CircuitBreakerResetMs   int32         = 60000 // 1 minute
+	CircuitBreakerThreshold  int32
+	CircuitBreakerResetMs    int32
 
 	// Kafka configuration
-	KafkaTopic              string        = "saga-events"
-	KafkaPartitions         int32         = 5
+	KafkaTopic               string
+	KafkaPartitions          int32
 
 	// Database configuration
-	SagaExecutionLogTable   string        = "saga_execution_log"
-	SagaTimeoutTrackerTable string        = "saga_timeout_tracker"
-	SagaCompensationLogTable string       = "saga_compensation_log"
+	SagaExecutionLogTable    string
+	SagaTimeoutTrackerTable  string
+	SagaCompensationLogTable string
 }
 
 // Config holds runtime configuration for saga engine

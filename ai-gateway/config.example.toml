@@ -1,0 +1,65 @@
+# AI Gateway configuration.
+#
+# Copy to config.toml and fill in values for your environment.
+
+[server]
+address = "0.0.0.0:50051"
+max_concurrent_requests = 256
+request_timeout_secs = 30
+
+[models]
+# Each vision model path is a directory produced by `yp-ml-training export`:
+#   model.onnx    — the network (input "input" [N,3,S,S] float32, output "logits")
+#   labels.json   — index-ordered class names (or training_meta.json with label_map)
+#   version.txt   — optional version tag reported in responses (defaults to the dir name)
+# A directory that is missing or unreadable leaves that task on the demo /
+# external-API fallback and is reported NOT_SERVING on the gRPC health service.
+disease_detection_model = "/models/disease-detection-v1"
+pest_detection_model = "/models/pest-detection-v1"
+nutrient_deficiency_model = "/models/nutrient-deficiency-v1"
+plant_classification_model = "/models/plant-classification-v1"
+yield_prediction_version = "v1.0.0"
+# Trained tabular yield model (JSON from `yp-ml-training train-tabular --task yield`).
+# Leave empty to use the parametric stress-factor model only.
+yield_tabular_model = ""
+# Shared multi-task vision model from `yp-ml-training train-heads`: a directory
+# with model.onnx + multitask.json. It answers any vision task that has no
+# model of its own, from a single backbone pass. Empty disables it.
+#
+# A model composed from an average-pooled backbone also carries Grad-CAM
+# outputs, and the gateway then returns a heatmap with every vision result
+# saying where in the image the answer came from. Per-task models carry no such
+# outputs, so a task served by one gets detections without an explanation.
+multitask_model = ""
+crop_growth_version = "v1.0.0"
+satellite_ndvi_version = "v1.0.0"
+crop_recommendation_version = "v1.0.0"
+
+# External vision API for production inference when local ONNX models are
+# unavailable. The gateway falls back: ONNX → External API → Demo weights.
+[external_api]
+enabled = false
+# Options: "plant_net", "google_vision", "custom"
+provider = "plant_net"
+# Get a free API key at https://my.plantnet.org/
+api_key = ""
+base_url = "https://my-api.plantnet.org/v2"
+timeout_secs = 15
+max_retries = 2
+
+# Data collection for model training. When enabled, every external API call
+# saves the input image and response labels to disk. The Python training
+# pipeline in ml-training/ consumes this data to train custom ONNX models.
+# Training-data collection. Every vision result served by an external API or a
+# trained local model is stored under storage_dir as
+#   {task}/images/{sha256}.jpg, {task}/labels/{sha256}.json, {task}/manifest.jsonl
+# with label provenance (external_api / local_model / human) and the caller's
+# SampleContext (tenant, farm, field, crop, location). Agronomists confirm,
+# correct, or reject labels through ListTrainingSamples / SubmitLabelReview
+# (proxied tenant-scoped by plant-diagnosis-service); decisions are appended to
+# {task}/reviews.jsonl and applied by ml-training at load time.
+[data_collection]
+enabled = false
+storage_dir = "/data/training-collection"
+max_images_per_category = 50000
+save_raw_response = true

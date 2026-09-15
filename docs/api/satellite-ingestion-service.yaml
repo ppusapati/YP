@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Satellite Ingestion Service API
+  description: |
+    Satellite imagery ingestion pipeline for the YieldPoint agriculture platform.
+    Manages download and storage of raw satellite scenes from Sentinel-2, Landsat,
+    and PlanetScope providers.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8101
+    description: Local development
+tags:
+  - name: Ingestion
+    description: Satellite imagery ingestion tasks
+
+paths:
+  /agriculture.satellite.ingestion.v1.SatelliteIngestionService/RequestIngestion:
+    post:
+      tags: [Ingestion]
+      summary: Request ingestion of satellite imagery for a farm
+      operationId: RequestIngestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestIngestionRequest'
+      responses:
+        '200':
+          description: Ingestion task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestIngestionResponse'
+
+  /agriculture.satellite.ingestion.v1.SatelliteIngestionService/GetIngestionTask:
+    post:
+      tags: [Ingestion]
+      summary: Get an ingestion task by ID
+      operationId: GetIngestionTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetIngestionTaskRequest'
+      responses:
+        '200':
+          description: Ingestion task retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetIngestionTaskResponse'
+
+  /agriculture.satellite.ingestion.v1.SatelliteIngestionService/ListIngestionTasks:
+    post:
+      tags: [Ingestion]
+      summary: List ingestion tasks with filtering and pagination
+      operationId: ListIngestionTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListIngestionTasksRequest'
+      responses:
+        '200':
+          description: Ingestion tasks listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListIngestionTasksResponse'
+
+  /agriculture.satellite.ingestion.v1.SatelliteIngestionService/CancelIngestion:
+    post:
+      tags: [Ingestion]
+      summary: Cancel a pending or in-progress ingestion task
+      operationId: CancelIngestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelIngestionRequest'
+      responses:
+        '200':
+          description: Ingestion cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelIngestionResponse'
+
+  /agriculture.satellite.ingestion.v1.SatelliteIngestionService/RetryIngestion:
+    post:
+      tags: [Ingestion]
+      summary: Retry a failed ingestion task
+      operationId: RetryIngestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetryIngestionRequest'
+      responses:
+        '200':
+          description: Ingestion retried
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetryIngestionResponse'
+
+  /agriculture.satellite.ingestion.v1.SatelliteIngestionService/GetIngestionStats:
+    post:
+      tags: [Ingestion]
+      summary: Get ingestion statistics for a farm or provider
+      operationId: GetIngestionStats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetIngestionStatsRequest'
+      responses:
+        '200':
+          description: Ingestion stats retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetIngestionStatsResponse'
+
+components:
+  schemas:
+    SatelliteProvider:
+      type: string
+      enum:
+        - SATELLITE_PROVIDER_UNSPECIFIED
+        - SATELLITE_PROVIDER_SENTINEL2
+        - SATELLITE_PROVIDER_LANDSAT
+        - SATELLITE_PROVIDER_PLANETSCOPE
+
+    IngestionStatus:
+      type: string
+      enum:
+        - INGESTION_STATUS_UNSPECIFIED
+        - INGESTION_STATUS_QUEUED
+        - INGESTION_STATUS_DOWNLOADING
+        - INGESTION_STATUS_VALIDATING
+        - INGESTION_STATUS_STORED
+        - INGESTION_STATUS_FAILED
+
+    SpectralBand:
+      type: string
+      enum:
+        - SPECTRAL_BAND_UNSPECIFIED
+        - SPECTRAL_BAND_BLUE
+        - SPECTRAL_BAND_GREEN
+        - SPECTRAL_BAND_RED
+        - SPECTRAL_BAND_NIR
+        - SPECTRAL_BAND_SWIR1
+        - SPECTRAL_BAND_SWIR2
+        - SPECTRAL_BAND_RED_EDGE1
+        - SPECTRAL_BAND_RED_EDGE2
+        - SPECTRAL_BAND_RED_EDGE3
+
+    IngestionTask:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        farmId:
+          type: string
+        provider:
+          $ref: '#/components/schemas/SatelliteProvider'
+        sceneId:
+          type: string
+        status:
+          $ref: '#/components/schemas/IngestionStatus'
+        s3Bucket:
+          type: string
+        s3Key:
+          type: string
+        cloudCoverPercent:
+          type: number
+          format: double
+        resolutionMeters:
+          type: number
+          format: double
+        bands:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpectralBand'
+        bboxGeojson:
+          type: string
+        fileSizeBytes:
+          type: string
+          format: int64
+        checksumSha256:
+          type: string
+        errorMessage:
+          type: string
+        retryCount:
+          type: integer
+          format: int32
+        acquisitionDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    RequestIngestionRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        provider:
+          $ref: '#/components/schemas/SatelliteProvider'
+        dateFrom:
+          type: string
+          format: date-time
+        dateTo:
+          type: string
+          format: date-time
+        maxCloudCover:
+          type: number
+          format: double
+        bands:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpectralBand'
+
+    RequestIngestionResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/IngestionTask'
+
+    GetIngestionTaskRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetIngestionTaskResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/IngestionTask'
+
+    ListIngestionTasksRequest:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+        farmId:
+          type: string
+        provider:
+          $ref: '#/components/schemas/SatelliteProvider'
+        status:
+          $ref: '#/components/schemas/IngestionStatus'
+
+    ListIngestionTasksResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestionTask'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    CancelIngestionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    CancelIngestionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+    RetryIngestionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    RetryIngestionResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/IngestionTask'
+
+    GetIngestionStatsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        provider:
+          $ref: '#/components/schemas/SatelliteProvider'
+
+    GetIngestionStatsResponse:
+      type: object
+      properties:
+        totalTasks:
+          type: string
+          format: int64
+        completedTasks:
+          type: string
+          format: int64
+        failedTasks:
+          type: string
+          format: int64
+        pendingTasks:
+          type: string
+          format: int64
+        totalBytesStored:
+          type: string
+          format: int64

@@ -81,7 +81,7 @@ func (r *Registry) Register(ctx context.Context, instance *ServiceInstance) erro
 	// Register in backend
 	err := r.backend.Register(ctx, instance)
 	if err != nil {
-		r.logger.Error("failed to register instance",
+		r.logger.Log(p9log.LevelError, "msg", "failed to register instance",
 			"instance_id", instance.ID,
 			"service_name", instance.ServiceName,
 			"error", err,
@@ -89,7 +89,7 @@ func (r *Registry) Register(ctx context.Context, instance *ServiceInstance) erro
 		return err
 	}
 
-	r.logger.Info("instance registered",
+	r.logger.Log(p9log.LevelInfo, "msg", "instance registered",
 		"instance_id", instance.ID,
 		"service_name", instance.ServiceName,
 		"host", instance.Host,
@@ -116,14 +116,14 @@ func (r *Registry) Deregister(ctx context.Context, instanceID string) error {
 
 	err = r.backend.Deregister(ctx, instanceID)
 	if err != nil {
-		r.logger.Error("failed to deregister instance",
+		r.logger.Log(p9log.LevelError, "msg", "failed to deregister instance",
 			"instance_id", instanceID,
 			"error", err,
 		)
 		return err
 	}
 
-	r.logger.Info("instance deregistered", "instance_id", instanceID)
+	r.logger.Log(p9log.LevelInfo, "msg", "instance deregistered", "instance_id", instanceID)
 
 	// Broadcast deregistration event
 	if instance != nil {
@@ -167,7 +167,7 @@ func (r *Registry) UpdateHealth(ctx context.Context, instanceID string, health H
 
 	err = r.backend.UpdateHealth(ctx, instanceID, health)
 	if err != nil {
-		r.logger.Error("failed to update health",
+		r.logger.Log(p9log.LevelError, "msg", "failed to update health",
 			"instance_id", instanceID,
 			"health", health,
 			"error", err,
@@ -176,7 +176,7 @@ func (r *Registry) UpdateHealth(ctx context.Context, instanceID string, health H
 	}
 
 	if instance != nil {
-		r.logger.Info("instance health updated",
+		r.logger.Log(p9log.LevelInfo, "msg", "instance health updated",
 			"instance_id", instanceID,
 			"service_name", instance.ServiceName,
 			"health", health,
@@ -204,7 +204,7 @@ func (r *Registry) UpdateMetadata(ctx context.Context, instanceID string, metada
 
 	err = r.backend.UpdateMetadata(ctx, instanceID, metadata)
 	if err != nil {
-		r.logger.Error("failed to update metadata",
+		r.logger.Log(p9log.LevelError, "msg", "failed to update metadata",
 			"instance_id", instanceID,
 			"error", err,
 		)
@@ -212,7 +212,7 @@ func (r *Registry) UpdateMetadata(ctx context.Context, instanceID string, metada
 	}
 
 	if instance != nil {
-		r.logger.Info("instance metadata updated",
+		r.logger.Log(p9log.LevelInfo, "msg", "instance metadata updated",
 			"instance_id", instanceID,
 			"service_name", instance.ServiceName,
 		)
@@ -326,9 +326,9 @@ func (r *Registry) cleanupWorker() {
 			cancel()
 
 			if err != nil {
-				r.logger.Error("cleanup failed", "error", err)
+				r.logger.Log(p9log.LevelError, "msg", "cleanup failed", "error", err)
 			} else if count > 0 {
-				r.logger.Info("cleanup completed", "removed_count", count)
+				r.logger.Log(p9log.LevelInfo, "msg", "cleanup completed", "removed_count", count)
 			}
 		}
 	}

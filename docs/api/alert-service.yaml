@@ -1,0 +1,567 @@
+openapi: 3.0.3
+info:
+  title: Alert Service API
+  description: |
+    Alert management and field risk scoring for the YieldPoint agriculture platform.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8098
+    description: Local development
+tags:
+  - name: Alerts
+    description: Alert CRUD and lifecycle operations
+  - name: AlertRules
+    description: Alert rule configuration
+  - name: FieldRisk
+    description: Field risk scoring
+
+paths:
+  /agriculture.alert.v1.AlertService/ListAlerts:
+    post:
+      tags: [Alerts]
+      summary: List alerts with filtering and pagination
+      operationId: ListAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAlertsRequest'
+      responses:
+        '200':
+          description: Alerts listed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAlertsResponse'
+
+  /agriculture.alert.v1.AlertService/GetAlert:
+    post:
+      tags: [Alerts]
+      summary: Get an alert by ID
+      operationId: GetAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAlertRequest'
+      responses:
+        '200':
+          description: Alert retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAlertResponse'
+
+  /agriculture.alert.v1.AlertService/AcknowledgeAlert:
+    post:
+      tags: [Alerts]
+      summary: Acknowledge an active alert
+      operationId: AcknowledgeAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcknowledgeAlertRequest'
+      responses:
+        '200':
+          description: Alert acknowledged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcknowledgeAlertResponse'
+
+  /agriculture.alert.v1.AlertService/ResolveAlert:
+    post:
+      tags: [Alerts]
+      summary: Resolve an alert
+      operationId: ResolveAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveAlertRequest'
+      responses:
+        '200':
+          description: Alert resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveAlertResponse'
+
+  /agriculture.alert.v1.AlertService/MarkAlertRead:
+    post:
+      tags: [Alerts]
+      summary: Mark a single alert as read
+      operationId: MarkAlertRead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkAlertReadRequest'
+      responses:
+        '200':
+          description: Alert marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkAlertReadResponse'
+
+  /agriculture.alert.v1.AlertService/MarkAllAlertsRead:
+    post:
+      tags: [Alerts]
+      summary: Mark all alerts as read for a farm
+      operationId: MarkAllAlertsRead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkAllAlertsReadRequest'
+      responses:
+        '200':
+          description: All alerts marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkAllAlertsReadResponse'
+
+  /agriculture.alert.v1.AlertService/GetUnreadCount:
+    post:
+      tags: [Alerts]
+      summary: Get count of unread alerts for a farm
+      operationId: GetUnreadCount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetUnreadCountRequest'
+      responses:
+        '200':
+          description: Unread count retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUnreadCountResponse'
+
+  /agriculture.alert.v1.AlertService/ListAlertRules:
+    post:
+      tags: [AlertRules]
+      summary: List alert rules for a field
+      operationId: ListAlertRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAlertRulesRequest'
+      responses:
+        '200':
+          description: Alert rules listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAlertRulesResponse'
+
+  /agriculture.alert.v1.AlertService/CreateAlertRule:
+    post:
+      tags: [AlertRules]
+      summary: Create a new alert rule
+      operationId: CreateAlertRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRuleRequest'
+      responses:
+        '200':
+          description: Alert rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAlertRuleResponse'
+
+  /agriculture.alert.v1.AlertService/UpdateAlertRule:
+    post:
+      tags: [AlertRules]
+      summary: Update an existing alert rule
+      operationId: UpdateAlertRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAlertRuleRequest'
+      responses:
+        '200':
+          description: Alert rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAlertRuleResponse'
+
+  /agriculture.alert.v1.AlertService/GetFieldRisk:
+    post:
+      tags: [FieldRisk]
+      summary: Get risk score for a field
+      operationId: GetFieldRisk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFieldRiskRequest'
+      responses:
+        '200':
+          description: Field risk score retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFieldRiskResponse'
+
+  /agriculture.alert.v1.AlertService/ListFieldRisks:
+    post:
+      tags: [FieldRisk]
+      summary: List risk scores for all fields
+      operationId: ListFieldRisks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListFieldRisksRequest'
+      responses:
+        '200':
+          description: Field risk scores listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListFieldRisksResponse'
+
+  /agriculture.alert.v1.AlertService/ListAlertHistory:
+    post:
+      tags: [Alerts]
+      summary: List historical alerts with date range filtering
+      operationId: ListAlertHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAlertHistoryRequest'
+      responses:
+        '200':
+          description: Alert history listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAlertHistoryResponse'
+
+components:
+  schemas:
+    AlertSeverity:
+      type: string
+      enum:
+        - ALERT_SEVERITY_UNSPECIFIED
+        - ALERT_SEVERITY_INFO
+        - ALERT_SEVERITY_WARNING
+        - ALERT_SEVERITY_CRITICAL
+        - ALERT_SEVERITY_EMERGENCY
+
+    AlertStatus:
+      type: string
+      enum:
+        - ALERT_STATUS_UNSPECIFIED
+        - ALERT_STATUS_ACTIVE
+        - ALERT_STATUS_ACKNOWLEDGED
+        - ALERT_STATUS_RESOLVED
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        severity:
+          $ref: '#/components/schemas/AlertSeverity'
+        status:
+          $ref: '#/components/schemas/AlertStatus'
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        fieldName:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+        actionUrl:
+          type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        acknowledgedAt:
+          type: string
+          format: date-time
+        acknowledgedBy:
+          type: string
+        metrics:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+        fieldId:
+          type: string
+        metric:
+          type: string
+        condition:
+          type: string
+        threshold:
+          type: number
+          format: double
+        severity:
+          $ref: '#/components/schemas/AlertSeverity'
+        enabled:
+          type: boolean
+        notifyChannels:
+          type: array
+          items:
+            type: string
+
+    FieldRiskScore:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        fieldName:
+          type: string
+        overallScore:
+          type: number
+          format: double
+        riskFactors:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        calculatedAt:
+          type: string
+        trend:
+          type: string
+
+    ListAlertsRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        severity:
+          $ref: '#/components/schemas/AlertSeverity'
+        status:
+          $ref: '#/components/schemas/AlertStatus'
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+
+    ListAlertsResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    GetAlertRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetAlertResponse:
+      type: object
+      properties:
+        alert:
+          $ref: '#/components/schemas/Alert'
+
+    AcknowledgeAlertRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    AcknowledgeAlertResponse:
+      type: object
+      properties:
+        alert:
+          $ref: '#/components/schemas/Alert'
+
+    ResolveAlertRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    ResolveAlertResponse:
+      type: object
+      properties:
+        alert:
+          $ref: '#/components/schemas/Alert'
+
+    MarkAlertReadRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    MarkAlertReadResponse:
+      type: object
+      properties:
+        alert:
+          $ref: '#/components/schemas/Alert'
+
+    MarkAllAlertsReadRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+
+    MarkAllAlertsReadResponse:
+      type: object
+      properties:
+        updatedCount:
+          type: integer
+          format: int32
+
+    GetUnreadCountRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+
+    GetUnreadCountResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int32
+
+    ListAlertRulesRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+
+    ListAlertRulesResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertRule'
+
+    CreateAlertRuleRequest:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/AlertRule'
+
+    CreateAlertRuleResponse:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/AlertRule'
+
+    UpdateAlertRuleRequest:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/AlertRule'
+
+    UpdateAlertRuleResponse:
+      type: object
+      properties:
+        rule:
+          $ref: '#/components/schemas/AlertRule'
+
+    GetFieldRiskRequest:
+      type: object
+      properties:
+        fieldId:
+          type: string
+
+    GetFieldRiskResponse:
+      type: object
+      properties:
+        riskScore:
+          $ref: '#/components/schemas/FieldRiskScore'
+
+    ListFieldRisksRequest:
+      type: object
+
+    ListFieldRisksResponse:
+      type: object
+      properties:
+        riskScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldRiskScore'
+
+    ListAlertHistoryRequest:
+      type: object
+      properties:
+        startDate:
+          type: string
+        endDate:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+
+    ListAlertHistoryResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32

@@ -78,6 +78,12 @@ void main() {
           code: 'not_found',
           message: 'QR code not recognized',
         ));
+        // The repository falls back to the cache on a ConnectException and only
+        // rethrows when there is nothing there. Without this stub the fallback
+        // returned null and the test saw a type error instead of the rethrow it
+        // is asserting on.
+        when(() => mockLocal.getCachedRecord('invalid'))
+            .thenAnswer((_) async => null);
 
         expect(
           () => repository.scanQrCode('invalid'),

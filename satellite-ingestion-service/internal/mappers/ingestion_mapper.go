@@ -1,6 +1,8 @@
 package mappers
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "p9e.in/samavaya/agriculture/satellite-ingestion-service/api/v1"
@@ -19,6 +21,8 @@ func ProtoProviderToDomain(p pb.SatelliteProvider) ingestionmodels.SatelliteProv
 		return ingestionmodels.SatelliteProviderLandsat
 	case pb.SatelliteProvider_SATELLITE_PROVIDER_PLANETSCOPE:
 		return ingestionmodels.SatelliteProviderPlanetScope
+	case pb.SatelliteProvider_SATELLITE_PROVIDER_UAV:
+		return ingestionmodels.SatelliteProviderUAV
 	default:
 		return ingestionmodels.SatelliteProviderUnspecified
 	}
@@ -33,6 +37,8 @@ func DomainProviderToProto(p ingestionmodels.SatelliteProvider) pb.SatelliteProv
 		return pb.SatelliteProvider_SATELLITE_PROVIDER_LANDSAT
 	case ingestionmodels.SatelliteProviderPlanetScope:
 		return pb.SatelliteProvider_SATELLITE_PROVIDER_PLANETSCOPE
+	case ingestionmodels.SatelliteProviderUAV:
+		return pb.SatelliteProvider_SATELLITE_PROVIDER_UAV
 	default:
 		return pb.SatelliteProvider_SATELLITE_PROVIDER_UNSPECIFIED
 	}
@@ -95,6 +101,10 @@ func ProtoSpectralBandToDomain(b pb.SpectralBand) ingestionmodels.SpectralBand {
 		return ingestionmodels.SpectralBandRedEdge2
 	case pb.SpectralBand_SPECTRAL_BAND_RED_EDGE3:
 		return ingestionmodels.SpectralBandRedEdge3
+	case pb.SpectralBand_SPECTRAL_BAND_SCL:
+		return ingestionmodels.SpectralBandSCL
+	case pb.SpectralBand_SPECTRAL_BAND_QA_PIXEL:
+		return ingestionmodels.SpectralBandQAPixel
 	default:
 		return ingestionmodels.SpectralBandUnspecified
 	}
@@ -121,6 +131,10 @@ func DomainSpectralBandToProto(b ingestionmodels.SpectralBand) pb.SpectralBand {
 		return pb.SpectralBand_SPECTRAL_BAND_RED_EDGE2
 	case ingestionmodels.SpectralBandRedEdge3:
 		return pb.SpectralBand_SPECTRAL_BAND_RED_EDGE3
+	case ingestionmodels.SpectralBandSCL:
+		return pb.SpectralBand_SPECTRAL_BAND_SCL
+	case ingestionmodels.SpectralBandQAPixel:
+		return pb.SpectralBand_SPECTRAL_BAND_QA_PIXEL
 	default:
 		return pb.SpectralBand_SPECTRAL_BAND_UNSPECIFIED
 	}
@@ -144,6 +158,7 @@ func IngestionTaskToProto(t *ingestionmodels.IngestionTask) *pb.IngestionTask {
 		S3Bucket:          ptr.Deref(t.S3Bucket),
 		S3Key:             ptr.Deref(t.S3Key),
 		CloudCoverPercent: t.CloudCoverPercent,
+		ProcessingLevel:   string(t.ProcessingLevel),
 		ResolutionMeters:  t.ResolutionMeters,
 		BboxGeojson:       ptr.Deref(t.BboxGeoJSON),
 		FileSizeBytes:     t.FileSizeBytes,
@@ -197,6 +212,7 @@ func RequestIngestionToDomain(req *pb.RequestIngestionRequest, tenantID, userID 
 		FarmUUID:          req.GetFarmId(),
 		Provider:          ProtoProviderToDomain(req.GetProvider()),
 		CloudCoverPercent: req.GetMaxCloudCover(),
+		ProcessingLevel:   ingestionmodels.ProcessingLevel(strings.ToUpper(strings.TrimSpace(req.GetProcessingLevel()))),
 		Status:            ingestionmodels.IngestionStatusQueued,
 	}
 

@@ -166,5 +166,59 @@ class ClimateZone extends $pb.ProtobufEnum {
   const ClimateZone._(super.value, super.name);
 }
 
+class ManagementUnitType extends $pb.ProtobufEnum {
+  static const ManagementUnitType UNIT_TYPE_UNSPECIFIED =
+      ManagementUnitType._(0, _omitEnumNames ? '' : 'UNIT_TYPE_UNSPECIFIED');
+  static const ManagementUnitType UNIT_TYPE_ZONE =
+      ManagementUnitType._(1, _omitEnumNames ? '' : 'UNIT_TYPE_ZONE');
+  static const ManagementUnitType UNIT_TYPE_BLOCK =
+      ManagementUnitType._(2, _omitEnumNames ? '' : 'UNIT_TYPE_BLOCK');
+  static const ManagementUnitType UNIT_TYPE_SECTION =
+      ManagementUnitType._(3, _omitEnumNames ? '' : 'UNIT_TYPE_SECTION');
+  static const ManagementUnitType UNIT_TYPE_PLOT =
+      ManagementUnitType._(4, _omitEnumNames ? '' : 'UNIT_TYPE_PLOT');
+
+  static const $core.List<ManagementUnitType> values = <ManagementUnitType>[
+    UNIT_TYPE_UNSPECIFIED,
+    UNIT_TYPE_ZONE,
+    UNIT_TYPE_BLOCK,
+    UNIT_TYPE_SECTION,
+    UNIT_TYPE_PLOT,
+  ];
+
+  static final $core.List<ManagementUnitType?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static ManagementUnitType? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ManagementUnitType._(super.value, super.name);
+}
+
+class ManagementUnitStatus extends $pb.ProtobufEnum {
+  static const ManagementUnitStatus UNIT_STATUS_UNSPECIFIED =
+      ManagementUnitStatus._(
+          0, _omitEnumNames ? '' : 'UNIT_STATUS_UNSPECIFIED');
+  static const ManagementUnitStatus UNIT_STATUS_ACTIVE =
+      ManagementUnitStatus._(1, _omitEnumNames ? '' : 'UNIT_STATUS_ACTIVE');
+  static const ManagementUnitStatus UNIT_STATUS_INACTIVE =
+      ManagementUnitStatus._(2, _omitEnumNames ? '' : 'UNIT_STATUS_INACTIVE');
+  static const ManagementUnitStatus UNIT_STATUS_ARCHIVED =
+      ManagementUnitStatus._(3, _omitEnumNames ? '' : 'UNIT_STATUS_ARCHIVED');
+
+  static const $core.List<ManagementUnitStatus> values = <ManagementUnitStatus>[
+    UNIT_STATUS_UNSPECIFIED,
+    UNIT_STATUS_ACTIVE,
+    UNIT_STATUS_INACTIVE,
+    UNIT_STATUS_ARCHIVED,
+  ];
+
+  static final $core.List<ManagementUnitStatus?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ManagementUnitStatus? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ManagementUnitStatus._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

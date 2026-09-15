@@ -7,6 +7,9 @@ abstract class SensorRemoteDataSource {
 }
 
 class SensorRemoteDataSourceImpl implements SensorRemoteDataSource {
+  // Unused while getSensorReadings is unimplemented below; it is what the
+  // replacement call will go through.
+  // ignore: unused_field
   final ConnectClient _client;
   SensorRemoteDataSourceImpl(this._client);
 

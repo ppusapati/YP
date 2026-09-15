@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { fieldFormSchema } from '@samavāya/agriculture/schemas';
+  import { createFieldSchema } from '@samavāya/agriculture/schemas';
   import { fieldClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Field"
   subtitle="Update field details"
   mode="edit"
-  schema={fieldFormSchema}
+  schema={createFieldSchema}
   {values}
   {errors}
   {isLoading}

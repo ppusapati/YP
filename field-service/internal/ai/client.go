@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"p9e.in/samavaya/packages/grpcdial"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/structpb"
+	"p9e.in/samavaya/packages/grpcdial"
 
 	"p9e.in/samavaya/packages/p9log"
 )
@@ -68,42 +68,42 @@ type FieldAlert struct {
 }
 
 type EvaluateFieldRiskRequest struct {
-	FieldID              string
-	FarmID               string
-	CropType             string
-	TempCurrent          float64
-	TempMinForecast      float64
-	TempMaxForecast      float64
-	PrecipitationMM      float64
-	PrecipForecastMM     float64
-	SoilMoisture         float64
-	EtReferenceMM        float64
-	CO2PPM               float64
-	PestConfidence       float64
-	PestSpecies          string
-	DiseaseConfidence    float64
-	DiseaseName          string
-	NutrientSeverity     float64
-	NutrientType         string
-	NDVICurrent          float64
-	NDVIPrevious         float64
-	GrowthExpected       float64
-	GrowthActual         float64
+	FieldID           string
+	FarmID            string
+	CropType          string
+	TempCurrent       float64
+	TempMinForecast   float64
+	TempMaxForecast   float64
+	PrecipitationMM   float64
+	PrecipForecastMM  float64
+	SoilMoisture      float64
+	EtReferenceMM     float64
+	CO2PPM            float64
+	PestConfidence    float64
+	PestSpecies       string
+	DiseaseConfidence float64
+	DiseaseName       string
+	NutrientSeverity  float64
+	NutrientType      string
+	NDVICurrent       float64
+	NDVIPrevious      float64
+	GrowthExpected    float64
+	GrowthActual      float64
 }
 
 func (c *AIClient) EvaluateFieldRisk(ctx context.Context, req *EvaluateFieldRiskRequest) (*FieldRiskResult, error) {
 	in, err := structpb.NewStruct(map[string]interface{}{
-		"field_id":                 req.FieldID,
-		"farm_id":                  req.FarmID,
-		"crop_type":                req.CropType,
-		"temperature_current":      req.TempCurrent,
-		"temperature_min_forecast": req.TempMinForecast,
-		"temperature_max_forecast": req.TempMaxForecast,
-		"precipitation_mm":         req.PrecipitationMM,
+		"field_id":                  req.FieldID,
+		"farm_id":                   req.FarmID,
+		"crop_type":                 req.CropType,
+		"temperature_current":       req.TempCurrent,
+		"temperature_min_forecast":  req.TempMinForecast,
+		"temperature_max_forecast":  req.TempMaxForecast,
+		"precipitation_mm":          req.PrecipitationMM,
 		"precipitation_forecast_mm": req.PrecipForecastMM,
-		"soil_moisture":            req.SoilMoisture,
-		"pest_confidence":          req.PestConfidence,
-		"disease_confidence":       req.DiseaseConfidence,
+		"soil_moisture":             req.SoilMoisture,
+		"pest_confidence":           req.PestConfidence,
+		"disease_confidence":        req.DiseaseConfidence,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
@@ -155,13 +155,13 @@ func parseFieldRiskResult(s *structpb.Struct) *FieldRiskResult {
 }
 
 type FieldAnalyticsResult struct {
-	SeasonCount            int
-	YieldTrend             string
-	YieldTrendPctPerYear   float64
-	MeanYield              float64
-	BestYield              float64
-	WorstYield             float64
-	NDVITrend              string
+	SeasonCount             int
+	YieldTrend              string
+	YieldTrendPctPerYear    float64
+	MeanYield               float64
+	BestYield               float64
+	WorstYield              float64
+	NDVITrend               string
 	MeanStressDaysPerSeason float64
 }
 
@@ -230,7 +230,7 @@ func (c *AIClient) ComputeFieldAnalytics(ctx context.Context, fieldID, farmID st
 }
 
 type PrescriptionResult struct {
-	Prescriptions          []PrescriptionMapResult
+	Prescriptions           []PrescriptionMapResult
 	EstimatedCostSavingsPct float64
 	EstimatedYieldGainPct   float64
 }
@@ -249,11 +249,11 @@ func (c *AIClient) GeneratePrescription(ctx context.Context, fieldID string, gri
 	}
 
 	in, err := structpb.NewStruct(map[string]interface{}{
-		"field_id":  fieldID,
-		"crop_type": cropType,
-		"grid_rows": float64(gridRows),
-		"grid_cols": float64(gridCols),
-		"cell_size_m": cellSizeM,
+		"field_id":           fieldID,
+		"crop_type":          cropType,
+		"grid_rows":          float64(gridRows),
+		"grid_cols":          float64(gridCols),
+		"cell_size_m":        cellSizeM,
 		"target_yield_kg_ha": targetYield,
 	})
 	if err != nil {

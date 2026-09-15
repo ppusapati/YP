@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { sensorFormSchema } from '@samavāya/agriculture/schemas';
+  import { registerSensorSchema } from '@samavāya/agriculture/schemas';
   import { sensorClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'online', reading_interval_seconds: 300 };
@@ -27,7 +27,7 @@
   title="New Sensor"
   subtitle="Register a new IoT sensor"
   mode="create"
-  schema={sensorFormSchema}
+  schema={registerSensorSchema}
   {values}
   {errors}
   {isSubmitting}

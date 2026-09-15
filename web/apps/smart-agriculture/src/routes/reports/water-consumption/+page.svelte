@@ -1,6 +1,6 @@
 <script lang="ts">
   import { DynamicReportRenderer } from '@samavāya/ui';
-  import { waterConsumptionReportSchema } from '@samavāya/agriculture/schemas/reports';
+  import { irrigationScheduleReportSchema } from '@samavāya/agriculture/schemas/reports';
 </script>
 
 <div class="report-page">
@@ -9,7 +9,7 @@
     <p class="subtitle">Water usage analysis across farms</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={waterConsumptionReportSchema} data={{}} />
+    <DynamicReportRenderer visualization={irrigationScheduleReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

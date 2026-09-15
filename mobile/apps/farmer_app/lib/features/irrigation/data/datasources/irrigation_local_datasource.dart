@@ -27,7 +27,7 @@ class IrrigationLocalDataSourceImpl implements IrrigationLocalDataSource {
   Future<List<IrrigationZoneModel>> getCachedZones(String fieldId) async {
     final jsonString = _prefs.getString('$_zonesPrefix$fieldId');
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) => IrrigationZoneModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -45,7 +45,7 @@ class IrrigationLocalDataSourceImpl implements IrrigationLocalDataSource {
       String zoneId) async {
     final jsonString = _prefs.getString('$_schedulesPrefix$zoneId');
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map(
             (e) => IrrigationScheduleModel.fromJson(e as Map<String, dynamic>))

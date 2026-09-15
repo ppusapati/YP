@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file plant-diagnosis-service/proto/diagnosis.proto.
  */
 export const file_plant_diagnosis_service_proto_diagnosis: GenFile = /*@__PURE__*/
-  fileDesc("Ci1wbGFudC1kaWFnbm9zaXMtc2VydmljZS9wcm90by9kaWFnbm9zaXMucHJvdG8SGGFncmljdWx0dXJlLmRpYWdub3Npcy52MSLSAQoORGlhZ25vc2lzSW1hZ2USCgoCaWQYASABKAkSEQoJaW1hZ2VfdXJsGAIgASgJEjcKCmltYWdlX3R5cGUYAyABKA4yIy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuSW1hZ2VUeXBlEhIKCnNpemVfYnl0ZXMYBCABKAMSEQoJbWltZV90eXBlGAUgASgJEhAKCGNoZWNrc3VtGAYgASgJEi8KC3VwbG9hZGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCL2AQoLRGlzZWFzZUluZm8SEgoKZGlzZWFzZV9pZBgBIAEoCRIUCgxkaXNlYXNlX25hbWUYAiABKAkSFwoPc2NpZW50aWZpY19uYW1lGAMgASgJEhgKEGNvbmZpZGVuY2Vfc2NvcmUYBCABKAESNAoIc2V2ZXJpdHkYBSABKA4yIi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU2V2ZXJpdHkSEwoLZGVzY3JpcHRpb24YBiABKAkSEAoIc3ltcHRvbXMYByABKAkSGQoRdHJlYXRtZW50X29wdGlvbnMYCCADKAkSEgoKcHJldmVudGlvbhgJIAEoCSLhAQoSTnV0cmllbnREZWZpY2llbmN5EhAKCG51dHJpZW50GAEgASgJEhgKEGNvbmZpZGVuY2Vfc2NvcmUYAiABKAESNAoIc2V2ZXJpdHkYAyABKA4yIi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU2V2ZXJpdHkSEwoLZGVzY3JpcHRpb24YBCABKAkSFwoPdmlzdWFsX3N5bXB0b21zGAUgASgJEh8KF3JlY29tbWVuZGVkX2ZlcnRpbGl6ZXJzGAYgAygJEhoKEmFwcGxpY2F0aW9uX21ldGhvZBgHIAEoCSLjAQoKUGVzdERhbWFnZRIPCgdwZXN0X2lkGAEgASgJEhEKCXBlc3RfbmFtZRgCIAEoCRIXCg9zY2llbnRpZmljX25hbWUYAyABKAkSGAoQY29uZmlkZW5jZV9zY29yZRgEIAEoARI4CgxkYW1hZ2VfbGV2ZWwYBSABKA4yIi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU2V2ZXJpdHkSEwoLZGVzY3JpcHRpb24YBiABKAkSFgoOZGFtYWdlX3BhdHRlcm4YByABKAkSFwoPY29udHJvbF9tZXRob2RzGAggAygJImwKDFBsYW50U3BlY2llcxIKCgJpZBgBIAEoCRITCgtjb21tb25fbmFtZRgCIAEoCRIXCg9zY2llbnRpZmljX25hbWUYAyABKAkSDgoGZmFtaWx5GAQgASgJEhIKCmNvbmZpZGVuY2UYBSABKAEiowIKDVRyZWF0bWVudFBsYW4SCgoCaWQYASABKAkSFAoMZGlhZ25vc2lzX2lkGAIgASgJEg0KBXRpdGxlGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEjQKCHByaW9yaXR5GAUgASgOMiIuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlNldmVyaXR5EjYKBXN0ZXBzGAYgAygLMicuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlRyZWF0bWVudFN0ZXASFgoOZXN0aW1hdGVkX2Nvc3QYByABKAkSFgoOZXN0aW1hdGVkX2RheXMYCCABKAUSLgoKY3JlYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAijgEKDVRyZWF0bWVudFN0ZXASEwoLc3RlcF9udW1iZXIYASABKAUSDgoGYWN0aW9uGAIgASgJEg8KB3Byb2R1Y3QYAyABKAkSDgoGZG9zYWdlGAQgASgJEhEKCWZyZXF1ZW5jeRgFIAEoCRINCgVub3RlcxgGIAEoCRIVCg1kdXJhdGlvbl9kYXlzGAcgASgFIoEECg9EaWFnbm9zaXNSZXN1bHQSCgoCaWQYASABKAkSHAoUZGlhZ25vc2lzX3JlcXVlc3RfaWQYAiABKAkSQgoSaWRlbnRpZmllZF9zcGVjaWVzGAMgASgLMiYuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlBsYW50U3BlY2llcxJAChFkZXRlY3RlZF9kaXNlYXNlcxgEIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaXNlYXNlSW5mbxJLChVudXRyaWVudF9kZWZpY2llbmNpZXMYBSADKAsyLC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTnV0cmllbnREZWZpY2llbmN5EjkKC3Blc3RfZGFtYWdlGAYgAygLMiQuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlBlc3REYW1hZ2USIQoZdHJlYXRtZW50X3JlY29tbWVuZGF0aW9ucxgHIAMoCRIYChBhaV9tb2RlbF92ZXJzaW9uGAggASgJEhoKEnByb2Nlc3NpbmdfdGltZV9tcxgJIAEoAxIcChRvdmVyYWxsX2hlYWx0aF9zY29yZRgKIAEoARIPCgdzdW1tYXJ5GAsgASgJEi4KCmNyZWF0ZWRfYXQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIrIDChBEaWFnbm9zaXNSZXF1ZXN0EgoKAmlkGAEgASgJEhEKCXRlbmFudF9pZBgCIAEoCRIPCgdmYXJtX2lkGAMgASgJEhAKCGZpZWxkX2lkGAQgASgJEhgKEHBsYW50X3NwZWNpZXNfaWQYBSABKAkSOAoGaW1hZ2VzGAYgAygLMiguYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRpYWdub3Npc0ltYWdlEjkKBnN0YXR1cxgHIAEoDjIpLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaWFnbm9zaXNTdGF0dXMSOQoGcmVzdWx0GAggASgLMikuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRpYWdub3Npc1Jlc3VsdBINCgVub3RlcxgJIAEoCRISCgpjcmVhdGVkX2J5GAogASgJEi4KCmNyZWF0ZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg8KB3ZlcnNpb24YDSABKAUimgEKFlN1Ym1pdERpYWdub3Npc1JlcXVlc3QSDwoHZmFybV9pZBgBIAEoCRIQCghmaWVsZF9pZBgCIAEoCRIYChBwbGFudF9zcGVjaWVzX2lkGAMgASgJEjQKBmltYWdlcxgEIAMoCzIkLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JbWFnZUlucHV0Eg0KBW5vdGVzGAUgASgJImsKCkltYWdlSW5wdXQSEQoJaW1hZ2VfdXJsGAEgASgJEjcKCmltYWdlX3R5cGUYAiABKA4yIy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuSW1hZ2VUeXBlEhEKCW1pbWVfdHlwZRgDIAEoCSJYChdTdWJtaXREaWFnbm9zaXNSZXNwb25zZRI9CglkaWFnbm9zaXMYASABKAsyKi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlhZ25vc2lzUmVxdWVzdCIhChNHZXREaWFnbm9zaXNSZXF1ZXN0EgoKAmlkGAEgASgJIlUKFEdldERpYWdub3Npc1Jlc3BvbnNlEj0KCWRpYWdub3NpcxgBIAEoCzIqLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaWFnbm9zaXNSZXF1ZXN0IsABChRMaXN0RGlhZ25vc2VzUmVxdWVzdBIPCgdmYXJtX2lkGAEgASgJEhAKCGZpZWxkX2lkGAIgASgJEjkKBnN0YXR1cxgDIAEoDjIpLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaWFnbm9zaXNTdGF0dXMSEQoJcGFnZV9zaXplGAQgASgFEhMKC3BhZ2Vfb2Zmc2V0GAUgASgFEg8KB3NvcnRfYnkYBiABKAkSEQoJc29ydF9kZXNjGAcgASgIImsKFUxpc3REaWFnbm9zZXNSZXNwb25zZRI9CglkaWFnbm9zZXMYASADKAsyKi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlhZ25vc2lzUmVxdWVzdBITCgt0b3RhbF9jb3VudBgCIAEoBSIrChVHZXREaXNlYXNlSW5mb1JlcXVlc3QSEgoKZGlzZWFzZV9pZBgBIAEoCSJQChZHZXREaXNlYXNlSW5mb1Jlc3BvbnNlEjYKB2Rpc2Vhc2UYASABKAsyJS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlzZWFzZUluZm8iUgoTTGlzdERpc2Vhc2VzUmVxdWVzdBITCgtzZWFyY2hfdGVybRgBIAEoCRIRCglwYWdlX3NpemUYAiABKAUSEwoLcGFnZV9vZmZzZXQYAyABKAUiZAoUTGlzdERpc2Vhc2VzUmVzcG9uc2USNwoIZGlzZWFzZXMYASADKAsyJS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlzZWFzZUluZm8SEwoLdG90YWxfY291bnQYAiABKAUiLwoXR2V0VHJlYXRtZW50UGxhblJlcXVlc3QSFAoMZGlhZ25vc2lzX2lkGAEgASgJIlsKGEdldFRyZWF0bWVudFBsYW5SZXNwb25zZRI/Cg50cmVhdG1lbnRfcGxhbhgBIAEoCzInLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5UcmVhdG1lbnRQbGFuIk4KFklkZW50aWZ5U3BlY2llc1JlcXVlc3QSNAoGaW1hZ2VzGAEgAygLMiQuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkltYWdlSW5wdXQiiAEKF0lkZW50aWZ5U3BlY2llc1Jlc3BvbnNlEjcKB3NwZWNpZXMYASADKAsyJi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuUGxhbnRTcGVjaWVzEhgKEGFpX21vZGVsX3ZlcnNpb24YAiABKAkSGgoScHJvY2Vzc2luZ190aW1lX21zGAMgASgDInEKH0RldGVjdE51dHJpZW50RGVmaWNpZW5jeVJlcXVlc3QSGAoQcGxhbnRfc3BlY2llc19pZBgBIAEoCRI0CgZpbWFnZXMYAiADKAsyJC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuSW1hZ2VJbnB1dCKcAQogRGV0ZWN0TnV0cmllbnREZWZpY2llbmN5UmVzcG9uc2USQgoMZGVmaWNpZW5jaWVzGAEgAygLMiwuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLk51dHJpZW50RGVmaWNpZW5jeRIYChBhaV9tb2RlbF92ZXJzaW9uGAIgASgJEhoKEnByb2Nlc3NpbmdfdGltZV9tcxgDIAEoAyJpChdEZXRlY3RQZXN0RGFtYWdlUmVxdWVzdBIYChBwbGFudF9zcGVjaWVzX2lkGAEgASgJEjQKBmltYWdlcxgCIAMoCzIkLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JbWFnZUlucHV0IoUBChhEZXRlY3RQZXN0RGFtYWdlUmVzcG9uc2USMwoFcGVzdHMYASADKAsyJC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuUGVzdERhbWFnZRIYChBhaV9tb2RlbF92ZXJzaW9uGAIgASgJEhoKEnByb2Nlc3NpbmdfdGltZV9tcxgDIAEoAyqYAQoJSW1hZ2VUeXBlEhoKFklNQUdFX1RZUEVfVU5TUEVDSUZJRUQQABITCg9JTUFHRV9UWVBFX0xFQUYQARITCg9JTUFHRV9UWVBFX1NURU0QAhIUChBJTUFHRV9UWVBFX0ZSVUlUEAMSGgoWSU1BR0VfVFlQRV9XSE9MRV9QTEFOVBAEEhMKD0lNQUdFX1RZUEVfUk9PVBAFKq4BCg9EaWFnbm9zaXNTdGF0dXMSIAocRElBR05PU0lTX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGERJQUdOT1NJU19TVEFUVVNfUEVORElORxABEh4KGkRJQUdOT1NJU19TVEFUVVNfQU5BTFlaSU5HEAISHgoaRElBR05PU0lTX1NUQVRVU19DT01QTEVURUQQAxIbChdESUFHTk9TSVNfU1RBVFVTX0ZBSUxFRBAEKnoKCFNldmVyaXR5EhgKFFNFVkVSSVRZX1VOU1BFQ0lGSUVEEAASEQoNU0VWRVJJVFlfTUlMRBABEhUKEVNFVkVSSVRZX01PREVSQVRFEAISEwoPU0VWRVJJVFlfU0VWRVJFEAMSFQoRU0VWRVJJVFlfQ1JJVElDQUwQBDLWCAoVUGxhbnREaWFnbm9zaXNTZXJ2aWNlEnYKD1N1Ym1pdERpYWdub3NpcxIwLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5TdWJtaXREaWFnbm9zaXNSZXF1ZXN0GjEuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlN1Ym1pdERpYWdub3Npc1Jlc3BvbnNlEm0KDEdldERpYWdub3NpcxItLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXREaWFnbm9zaXNSZXF1ZXN0Gi4uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkdldERpYWdub3Npc1Jlc3BvbnNlEnAKDUxpc3REaWFnbm9zZXMSLi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGlzdERpYWdub3Nlc1JlcXVlc3QaLy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGlzdERpYWdub3Nlc1Jlc3BvbnNlEnMKDkdldERpc2Vhc2VJbmZvEi8uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkdldERpc2Vhc2VJbmZvUmVxdWVzdBowLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXREaXNlYXNlSW5mb1Jlc3BvbnNlEnkKEEdldFRyZWF0bWVudFBsYW4SMS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0VHJlYXRtZW50UGxhblJlcXVlc3QaMi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0VHJlYXRtZW50UGxhblJlc3BvbnNlEm0KDExpc3REaXNlYXNlcxItLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5MaXN0RGlzZWFzZXNSZXF1ZXN0Gi4uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxpc3REaXNlYXNlc1Jlc3BvbnNlEnYKD0lkZW50aWZ5U3BlY2llcxIwLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JZGVudGlmeVNwZWNpZXNSZXF1ZXN0GjEuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLklkZW50aWZ5U3BlY2llc1Jlc3BvbnNlEpEBChhEZXRlY3ROdXRyaWVudERlZmljaWVuY3kSOS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGV0ZWN0TnV0cmllbnREZWZpY2llbmN5UmVxdWVzdBo6LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EZXRlY3ROdXRyaWVudERlZmljaWVuY3lSZXNwb25zZRJ5ChBEZXRlY3RQZXN0RGFtYWdlEjEuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRldGVjdFBlc3REYW1hZ2VSZXF1ZXN0GjIuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRldGVjdFBlc3REYW1hZ2VSZXNwb25zZUI8WjpwOWUuaW4vc2FtYXZheWEvYWdyaWN1bHR1cmUvcGxhbnQtZGlhZ25vc2lzLXNlcnZpY2UvYXBpL3YxYgZwcm90bzM", [file_google_protobuf_timestamp, file_google_protobuf_field_mask]);
+  fileDesc("Ci1wbGFudC1kaWFnbm9zaXMtc2VydmljZS9wcm90by9kaWFnbm9zaXMucHJvdG8SGGFncmljdWx0dXJlLmRpYWdub3Npcy52MSLSAQoORGlhZ25vc2lzSW1hZ2USCgoCaWQYASABKAkSEQoJaW1hZ2VfdXJsGAIgASgJEjcKCmltYWdlX3R5cGUYAyABKA4yIy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuSW1hZ2VUeXBlEhIKCnNpemVfYnl0ZXMYBCABKAMSEQoJbWltZV90eXBlGAUgASgJEhAKCGNoZWNrc3VtGAYgASgJEi8KC3VwbG9hZGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCL2AQoLRGlzZWFzZUluZm8SEgoKZGlzZWFzZV9pZBgBIAEoCRIUCgxkaXNlYXNlX25hbWUYAiABKAkSFwoPc2NpZW50aWZpY19uYW1lGAMgASgJEhgKEGNvbmZpZGVuY2Vfc2NvcmUYBCABKAESNAoIc2V2ZXJpdHkYBSABKA4yIi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU2V2ZXJpdHkSEwoLZGVzY3JpcHRpb24YBiABKAkSEAoIc3ltcHRvbXMYByABKAkSGQoRdHJlYXRtZW50X29wdGlvbnMYCCADKAkSEgoKcHJldmVudGlvbhgJIAEoCSLhAQoSTnV0cmllbnREZWZpY2llbmN5EhAKCG51dHJpZW50GAEgASgJEhgKEGNvbmZpZGVuY2Vfc2NvcmUYAiABKAESNAoIc2V2ZXJpdHkYAyABKA4yIi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU2V2ZXJpdHkSEwoLZGVzY3JpcHRpb24YBCABKAkSFwoPdmlzdWFsX3N5bXB0b21zGAUgASgJEh8KF3JlY29tbWVuZGVkX2ZlcnRpbGl6ZXJzGAYgAygJEhoKEmFwcGxpY2F0aW9uX21ldGhvZBgHIAEoCSLjAQoKUGVzdERhbWFnZRIPCgdwZXN0X2lkGAEgASgJEhEKCXBlc3RfbmFtZRgCIAEoCRIXCg9zY2llbnRpZmljX25hbWUYAyABKAkSGAoQY29uZmlkZW5jZV9zY29yZRgEIAEoARI4CgxkYW1hZ2VfbGV2ZWwYBSABKA4yIi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU2V2ZXJpdHkSEwoLZGVzY3JpcHRpb24YBiABKAkSFgoOZGFtYWdlX3BhdHRlcm4YByABKAkSFwoPY29udHJvbF9tZXRob2RzGAggAygJImwKDFBsYW50U3BlY2llcxIKCgJpZBgBIAEoCRITCgtjb21tb25fbmFtZRgCIAEoCRIXCg9zY2llbnRpZmljX25hbWUYAyABKAkSDgoGZmFtaWx5GAQgASgJEhIKCmNvbmZpZGVuY2UYBSABKAEiowIKDVRyZWF0bWVudFBsYW4SCgoCaWQYASABKAkSFAoMZGlhZ25vc2lzX2lkGAIgASgJEg0KBXRpdGxlGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEjQKCHByaW9yaXR5GAUgASgOMiIuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlNldmVyaXR5EjYKBXN0ZXBzGAYgAygLMicuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlRyZWF0bWVudFN0ZXASFgoOZXN0aW1hdGVkX2Nvc3QYByABKAkSFgoOZXN0aW1hdGVkX2RheXMYCCABKAUSLgoKY3JlYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAijgEKDVRyZWF0bWVudFN0ZXASEwoLc3RlcF9udW1iZXIYASABKAUSDgoGYWN0aW9uGAIgASgJEg8KB3Byb2R1Y3QYAyABKAkSDgoGZG9zYWdlGAQgASgJEhEKCWZyZXF1ZW5jeRgFIAEoCRINCgVub3RlcxgGIAEoCRIVCg1kdXJhdGlvbl9kYXlzGAcgASgFIr4ECg9EaWFnbm9zaXNSZXN1bHQSCgoCaWQYASABKAkSHAoUZGlhZ25vc2lzX3JlcXVlc3RfaWQYAiABKAkSQgoSaWRlbnRpZmllZF9zcGVjaWVzGAMgASgLMiYuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlBsYW50U3BlY2llcxJAChFkZXRlY3RlZF9kaXNlYXNlcxgEIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaXNlYXNlSW5mbxJLChVudXRyaWVudF9kZWZpY2llbmNpZXMYBSADKAsyLC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTnV0cmllbnREZWZpY2llbmN5EjkKC3Blc3RfZGFtYWdlGAYgAygLMiQuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlBlc3REYW1hZ2USIQoZdHJlYXRtZW50X3JlY29tbWVuZGF0aW9ucxgHIAMoCRIYChBhaV9tb2RlbF92ZXJzaW9uGAggASgJEhoKEnByb2Nlc3NpbmdfdGltZV9tcxgJIAEoAxIcChRvdmVyYWxsX2hlYWx0aF9zY29yZRgKIAEoARIPCgdzdW1tYXJ5GAsgASgJEi4KCmNyZWF0ZWRfYXQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjsKDGV4cGxhbmF0aW9ucxgNIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5FeHBsYW5hdGlvbiKyAwoQRGlhZ25vc2lzUmVxdWVzdBIKCgJpZBgBIAEoCRIRCgl0ZW5hbnRfaWQYAiABKAkSDwoHZmFybV9pZBgDIAEoCRIQCghmaWVsZF9pZBgEIAEoCRIYChBwbGFudF9zcGVjaWVzX2lkGAUgASgJEjgKBmltYWdlcxgGIAMoCzIoLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaWFnbm9zaXNJbWFnZRI5CgZzdGF0dXMYByABKA4yKS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlhZ25vc2lzU3RhdHVzEjkKBnJlc3VsdBgIIAEoCzIpLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EaWFnbm9zaXNSZXN1bHQSDQoFbm90ZXMYCSABKAkSEgoKY3JlYXRlZF9ieRgKIAEoCRIuCgpjcmVhdGVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIPCgd2ZXJzaW9uGA0gASgFIpoBChZTdWJtaXREaWFnbm9zaXNSZXF1ZXN0Eg8KB2Zhcm1faWQYASABKAkSEAoIZmllbGRfaWQYAiABKAkSGAoQcGxhbnRfc3BlY2llc19pZBgDIAEoCRI0CgZpbWFnZXMYBCADKAsyJC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuSW1hZ2VJbnB1dBINCgVub3RlcxgFIAEoCSJrCgpJbWFnZUlucHV0EhEKCWltYWdlX3VybBgBIAEoCRI3CgppbWFnZV90eXBlGAIgASgOMiMuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkltYWdlVHlwZRIRCgltaW1lX3R5cGUYAyABKAkiWAoXU3VibWl0RGlhZ25vc2lzUmVzcG9uc2USPQoJZGlhZ25vc2lzGAEgASgLMiouYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRpYWdub3Npc1JlcXVlc3QiIQoTR2V0RGlhZ25vc2lzUmVxdWVzdBIKCgJpZBgBIAEoCSJVChRHZXREaWFnbm9zaXNSZXNwb25zZRI9CglkaWFnbm9zaXMYASABKAsyKi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlhZ25vc2lzUmVxdWVzdCLAAQoUTGlzdERpYWdub3Nlc1JlcXVlc3QSDwoHZmFybV9pZBgBIAEoCRIQCghmaWVsZF9pZBgCIAEoCRI5CgZzdGF0dXMYAyABKA4yKS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGlhZ25vc2lzU3RhdHVzEhEKCXBhZ2Vfc2l6ZRgEIAEoBRITCgtwYWdlX29mZnNldBgFIAEoBRIPCgdzb3J0X2J5GAYgASgJEhEKCXNvcnRfZGVzYxgHIAEoCCJrChVMaXN0RGlhZ25vc2VzUmVzcG9uc2USPQoJZGlhZ25vc2VzGAEgAygLMiouYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRpYWdub3Npc1JlcXVlc3QSEwoLdG90YWxfY291bnQYAiABKAUiKwoVR2V0RGlzZWFzZUluZm9SZXF1ZXN0EhIKCmRpc2Vhc2VfaWQYASABKAkiUAoWR2V0RGlzZWFzZUluZm9SZXNwb25zZRI2CgdkaXNlYXNlGAEgASgLMiUuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRpc2Vhc2VJbmZvIlIKE0xpc3REaXNlYXNlc1JlcXVlc3QSEwoLc2VhcmNoX3Rlcm0YASABKAkSEQoJcGFnZV9zaXplGAIgASgFEhMKC3BhZ2Vfb2Zmc2V0GAMgASgFImQKFExpc3REaXNlYXNlc1Jlc3BvbnNlEjcKCGRpc2Vhc2VzGAEgAygLMiUuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRpc2Vhc2VJbmZvEhMKC3RvdGFsX2NvdW50GAIgASgFIi8KF0dldFRyZWF0bWVudFBsYW5SZXF1ZXN0EhQKDGRpYWdub3Npc19pZBgBIAEoCSJbChhHZXRUcmVhdG1lbnRQbGFuUmVzcG9uc2USPwoOdHJlYXRtZW50X3BsYW4YASABKAsyJy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuVHJlYXRtZW50UGxhbiJOChZJZGVudGlmeVNwZWNpZXNSZXF1ZXN0EjQKBmltYWdlcxgBIAMoCzIkLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JbWFnZUlucHV0IogBChdJZGVudGlmeVNwZWNpZXNSZXNwb25zZRI3CgdzcGVjaWVzGAEgAygLMiYuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlBsYW50U3BlY2llcxIYChBhaV9tb2RlbF92ZXJzaW9uGAIgASgJEhoKEnByb2Nlc3NpbmdfdGltZV9tcxgDIAEoAyKMAgoLRXhwbGFuYXRpb24SDAoEdGFzaxgBIAEoCRISCgpjbGFzc19uYW1lGAIgASgJEhMKC2hlYXRtYXBfcG5nGAMgASgMEhUKDWhlYXRtYXBfd2lkdGgYBCABKAUSFgoOaGVhdG1hcF9oZWlnaHQYBSABKAUSDwoHZm9jdXNfeBgGIAEoARIPCgdmb2N1c195GAcgASgBEhMKC2ZvY3VzX3dpZHRoGAggASgBEhQKDGZvY3VzX2hlaWdodBgJIAEoARIWCg5mb2N1c19jb3ZlcmFnZRgKIAEoARIPCgdzdW1tYXJ5GAsgASgJEg4KBm1ldGhvZBgMIAEoCRIRCglsb2NhbGlzZWQYDSABKAgicQofRGV0ZWN0TnV0cmllbnREZWZpY2llbmN5UmVxdWVzdBIYChBwbGFudF9zcGVjaWVzX2lkGAEgASgJEjQKBmltYWdlcxgCIAMoCzIkLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JbWFnZUlucHV0ItkBCiBEZXRlY3ROdXRyaWVudERlZmljaWVuY3lSZXNwb25zZRJCCgxkZWZpY2llbmNpZXMYASADKAsyLC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTnV0cmllbnREZWZpY2llbmN5EhgKEGFpX21vZGVsX3ZlcnNpb24YAiABKAkSGgoScHJvY2Vzc2luZ190aW1lX21zGAMgASgDEjsKDGV4cGxhbmF0aW9ucxgEIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5FeHBsYW5hdGlvbiJpChdEZXRlY3RQZXN0RGFtYWdlUmVxdWVzdBIYChBwbGFudF9zcGVjaWVzX2lkGAEgASgJEjQKBmltYWdlcxgCIAMoCzIkLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JbWFnZUlucHV0IsIBChhEZXRlY3RQZXN0RGFtYWdlUmVzcG9uc2USMwoFcGVzdHMYASADKAsyJC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuUGVzdERhbWFnZRIYChBhaV9tb2RlbF92ZXJzaW9uGAIgASgJEhoKEnByb2Nlc3NpbmdfdGltZV9tcxgDIAEoAxI7CgxleHBsYW5hdGlvbnMYBCADKAsyJS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRXhwbGFuYXRpb24iVQoNVHJhaW5pbmdMYWJlbBIMCgRuYW1lGAEgASgJEhIKCmNvbmZpZGVuY2UYAiABKAESEAoIY2F0ZWdvcnkYAyABKAkSEAoIc2V2ZXJpdHkYBCABKAkivAEKC0xhYmVsUmV2aWV3Ej8KCGRlY2lzaW9uGAEgASgOMi0uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsUmV2aWV3RGVjaXNpb24SFwoPY29ycmVjdGVkX2xhYmVsGAIgASgJEhMKC3Jldmlld2VyX2lkGAMgASgJEg0KBW5vdGVzGAQgASgJEi8KC3Jldmlld2VkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJ6Cg5MYWJlbFN1c3BpY2lvbhIRCglwcmVkaWN0ZWQYASABKAkSFgoOcHJlZGljdGVkX3Byb2IYAiABKAESEgoKbGFiZWxfcHJvYhgDIAEoARIVCg1tb2RlbF92ZXJzaW9uGAQgASgJEhIKCmZsYWdnZWRfYXQYBSABKAki/gMKEUxhYmVsUmV2aWV3U2FtcGxlEgoKAmlkGAEgASgJEgwKBHRhc2sYAiABKAkSMAoMY29sbGVjdGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpwcm92ZW5hbmNlGAQgASgJEhAKCHByb3ZpZGVyGAUgASgJEjcKBmxhYmVscxgGIAMoCzInLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5UcmFpbmluZ0xhYmVsEhYKDnRvcF9jb25maWRlbmNlGAcgASgBEg8KB2Zhcm1faWQYCCABKAkSEAoIZmllbGRfaWQYCSABKAkSDAoEY3JvcBgKIAEoCRIUCgxzdWJtaXR0ZWRfYnkYCyABKAkSNQoGcmV2aWV3GAwgASgLMiUuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsUmV2aWV3EhcKD2VmZmVjdGl2ZV9sYWJlbBgNIAEoCRI5CgdzdXNwZWN0GA4gASgLMiguYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsU3VzcGljaW9uEhwKFG5lZWRzX3NlY29uZF9vcGluaW9uGA8gASgIEjYKB3Jldmlld3MYECADKAsyJS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGFiZWxSZXZpZXcinwEKD1Jldmlld0FncmVlbWVudBIQCghjb21wYXJlZBgBIAEoBRIVCg1yYXdfYWdyZWVtZW50GAIgASgBEg0KBWthcHBhGAMgASgBEhAKCHN0cmVuZ3RoGAQgASgJEkIKDWRpc2FncmVlbWVudHMYBSADKAsyKy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGFiZWxEaXNhZ3JlZW1lbnQiQQoRTGFiZWxEaXNhZ3JlZW1lbnQSDQoFZmlyc3QYASABKAkSDgoGc2Vjb25kGAIgASgJEg0KBWNvdW50GAMgASgFIk4KG1JlcXVlc3RTZWNvbmRPcGluaW9uUmVxdWVzdBIMCgR0YXNrGAEgASgJEhEKCXNhbXBsZV9pZBgCIAEoCRIOCgZ3YW50ZWQYAyABKAgiWwocUmVxdWVzdFNlY29uZE9waW5pb25SZXNwb25zZRI7CgZzYW1wbGUYASABKAsyKy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGFiZWxSZXZpZXdTYW1wbGUiKQoZR2V0UmV2aWV3QWdyZWVtZW50UmVxdWVzdBIMCgR0YXNrGAEgASgJIloKGkdldFJldmlld0FncmVlbWVudFJlc3BvbnNlEjwKCWFncmVlbWVudBgBIAEoCzIpLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5SZXZpZXdBZ3JlZW1lbnQi4gEKG0xpc3RMYWJlbFJldmlld1F1ZXVlUmVxdWVzdBIMCgR0YXNrGAEgASgJEhgKEGluY2x1ZGVfcmV2aWV3ZWQYAiABKAgSFgoObWF4X2NvbmZpZGVuY2UYAyABKAESEgoKcHJvdmVuYW5jZRgEIAEoCRIRCglwYWdlX3NpemUYBSABKAUSEwoLcGFnZV9vZmZzZXQYBiABKAUSFAoMbmV3ZXN0X2ZpcnN0GAcgASgIEhQKDHN1c3BlY3Rfb25seRgIIAEoCBIbChNzZWNvbmRfb3Bpbmlvbl9vbmx5GAkgASgIIosBChxMaXN0TGFiZWxSZXZpZXdRdWV1ZVJlc3BvbnNlEjwKB3NhbXBsZXMYASADKAsyKy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGFiZWxSZXZpZXdTYW1wbGUSEwoLdG90YWxfY291bnQYAiABKAUSGAoQdW5yZXZpZXdlZF9jb3VudBgDIAEoBSKkAQoYU3VibWl0TGFiZWxSZXZpZXdSZXF1ZXN0EgwKBHRhc2sYASABKAkSEQoJc2FtcGxlX2lkGAIgASgJEj8KCGRlY2lzaW9uGAMgASgOMi0uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsUmV2aWV3RGVjaXNpb24SFwoPY29ycmVjdGVkX2xhYmVsGAQgASgJEg0KBW5vdGVzGAUgASgJIlgKGVN1Ym1pdExhYmVsUmV2aWV3UmVzcG9uc2USOwoGc2FtcGxlGAEgASgLMisuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsUmV2aWV3U2FtcGxlIj0KGkdldExhYmVsUmV2aWV3SW1hZ2VSZXF1ZXN0EgwKBHRhc2sYASABKAkSEQoJc2FtcGxlX2lkGAIgASgJIkUKG0dldExhYmVsUmV2aWV3SW1hZ2VSZXNwb25zZRITCgtpbWFnZV9ieXRlcxgBIAEoDBIRCgltaW1lX3R5cGUYAiABKAkqmAEKCUltYWdlVHlwZRIaChZJTUFHRV9UWVBFX1VOU1BFQ0lGSUVEEAASEwoPSU1BR0VfVFlQRV9MRUFGEAESEwoPSU1BR0VfVFlQRV9TVEVNEAISFAoQSU1BR0VfVFlQRV9GUlVJVBADEhoKFklNQUdFX1RZUEVfV0hPTEVfUExBTlQQBBITCg9JTUFHRV9UWVBFX1JPT1QQBSquAQoPRGlhZ25vc2lzU3RhdHVzEiAKHERJQUdOT1NJU19TVEFUVVNfVU5TUEVDSUZJRUQQABIcChhESUFHTk9TSVNfU1RBVFVTX1BFTkRJTkcQARIeChpESUFHTk9TSVNfU1RBVFVTX0FOQUxZWklORxACEh4KGkRJQUdOT1NJU19TVEFUVVNfQ09NUExFVEVEEAMSGwoXRElBR05PU0lTX1NUQVRVU19GQUlMRUQQBCp6CghTZXZlcml0eRIYChRTRVZFUklUWV9VTlNQRUNJRklFRBAAEhEKDVNFVkVSSVRZX01JTEQQARIVChFTRVZFUklUWV9NT0RFUkFURRACEhMKD1NFVkVSSVRZX1NFVkVSRRADEhUKEVNFVkVSSVRZX0NSSVRJQ0FMEAQqqgEKE0xhYmVsUmV2aWV3RGVjaXNpb24SJQohTEFCRUxfUkVWSUVXX0RFQ0lTSU9OX1VOU1BFQ0lGSUVEEAASIwofTEFCRUxfUkVWSUVXX0RFQ0lTSU9OX0NPTkZJUk1FRBABEiMKH0xBQkVMX1JFVklFV19ERUNJU0lPTl9DT1JSRUNURUQQAhIiCh5MQUJFTF9SRVZJRVdfREVDSVNJT05fUkVKRUNURUQQAzLqDQoVUGxhbnREaWFnbm9zaXNTZXJ2aWNlEnYKD1N1Ym1pdERpYWdub3NpcxIwLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5TdWJtaXREaWFnbm9zaXNSZXF1ZXN0GjEuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlN1Ym1pdERpYWdub3Npc1Jlc3BvbnNlEm0KDEdldERpYWdub3NpcxItLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXREaWFnbm9zaXNSZXF1ZXN0Gi4uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkdldERpYWdub3Npc1Jlc3BvbnNlEnAKDUxpc3REaWFnbm9zZXMSLi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGlzdERpYWdub3Nlc1JlcXVlc3QaLy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGlzdERpYWdub3Nlc1Jlc3BvbnNlEnMKDkdldERpc2Vhc2VJbmZvEi8uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkdldERpc2Vhc2VJbmZvUmVxdWVzdBowLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXREaXNlYXNlSW5mb1Jlc3BvbnNlEnkKEEdldFRyZWF0bWVudFBsYW4SMS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0VHJlYXRtZW50UGxhblJlcXVlc3QaMi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0VHJlYXRtZW50UGxhblJlc3BvbnNlEm0KDExpc3REaXNlYXNlcxItLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5MaXN0RGlzZWFzZXNSZXF1ZXN0Gi4uYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxpc3REaXNlYXNlc1Jlc3BvbnNlEnYKD0lkZW50aWZ5U3BlY2llcxIwLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JZGVudGlmeVNwZWNpZXNSZXF1ZXN0GjEuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLklkZW50aWZ5U3BlY2llc1Jlc3BvbnNlEpEBChhEZXRlY3ROdXRyaWVudERlZmljaWVuY3kSOS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGV0ZWN0TnV0cmllbnREZWZpY2llbmN5UmVxdWVzdBo6LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5EZXRlY3ROdXRyaWVudERlZmljaWVuY3lSZXNwb25zZRJ5ChBEZXRlY3RQZXN0RGFtYWdlEjEuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRldGVjdFBlc3REYW1hZ2VSZXF1ZXN0GjIuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkRldGVjdFBlc3REYW1hZ2VSZXNwb25zZRKFAQoUTGlzdExhYmVsUmV2aWV3UXVldWUSNS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGlzdExhYmVsUmV2aWV3UXVldWVSZXF1ZXN0GjYuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxpc3RMYWJlbFJldmlld1F1ZXVlUmVzcG9uc2USfAoRU3VibWl0TGFiZWxSZXZpZXcSMi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuU3VibWl0TGFiZWxSZXZpZXdSZXF1ZXN0GjMuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLlN1Ym1pdExhYmVsUmV2aWV3UmVzcG9uc2USggEKE0dldExhYmVsUmV2aWV3SW1hZ2USNC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0TGFiZWxSZXZpZXdJbWFnZVJlcXVlc3QaNS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0TGFiZWxSZXZpZXdJbWFnZVJlc3BvbnNlEoUBChRSZXF1ZXN0U2Vjb25kT3BpbmlvbhI1LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5SZXF1ZXN0U2Vjb25kT3BpbmlvblJlcXVlc3QaNi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuUmVxdWVzdFNlY29uZE9waW5pb25SZXNwb25zZRJ/ChJHZXRSZXZpZXdBZ3JlZW1lbnQSMy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuR2V0UmV2aWV3QWdyZWVtZW50UmVxdWVzdBo0LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXRSZXZpZXdBZ3JlZW1lbnRSZXNwb25zZUJNWktwOWUuaW4vc2FtYXZheWEvYWdyaWN1bHR1cmUvcGxhbnQtZGlhZ25vc2lzLXNlcnZpY2UvYXBpL3YxO3BsYW50ZGlhZ25vc2lzdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_google_protobuf_field_mask]);
 
 /**
  * @generated from message agriculture.diagnosis.v1.DiagnosisImage
@@ -421,6 +421,14 @@ export type DiagnosisResult = Message<"agriculture.diagnosis.v1.DiagnosisResult"
    * @generated from field: google.protobuf.Timestamp created_at = 12;
    */
   createdAt?: Timestamp | undefined;
+
+  /**
+   * Per-image model explanations, one per analysed photo. Empty when the
+   * serving model could not explain itself.
+   *
+   * @generated from field: repeated agriculture.diagnosis.v1.Explanation explanations = 13;
+   */
+  explanations: Explanation[];
 };
 
 /**
@@ -853,6 +861,100 @@ export const IdentifySpeciesResponseSchema: GenMessage<IdentifySpeciesResponse> 
   messageDesc(file_plant_diagnosis_service_proto_diagnosis, 23);
 
 /**
+ * Why a vision model answered the way it did.
+ *
+ * Produced by Grad-CAM over the serving model's feature map: a heatmap of what
+ * the model actually looked at, plus the region it keyed on and a sentence
+ * describing it. Absent when the answer came from a model that cannot explain
+ * itself — a demo detector or an external provider.
+ *
+ * @generated from message agriculture.diagnosis.v1.Explanation
+ */
+export type Explanation = Message<"agriculture.diagnosis.v1.Explanation"> & {
+  /**
+   * @generated from field: string task = 1;
+   */
+  task: string;
+
+  /**
+   * @generated from field: string class_name = 2;
+   */
+  className: string;
+
+  /**
+   * Greyscale PNG, brightest where the evidence is.
+   *
+   * @generated from field: bytes heatmap_png = 3;
+   */
+  heatmapPng: Uint8Array;
+
+  /**
+   * @generated from field: int32 heatmap_width = 4;
+   */
+  heatmapWidth: number;
+
+  /**
+   * @generated from field: int32 heatmap_height = 5;
+   */
+  heatmapHeight: number;
+
+  /**
+   * Region the model keyed on, normalised to [0,1] from the top left so it
+   * survives any resize of the image it is drawn over.
+   *
+   * @generated from field: double focus_x = 6;
+   */
+  focusX: number;
+
+  /**
+   * @generated from field: double focus_y = 7;
+   */
+  focusY: number;
+
+  /**
+   * @generated from field: double focus_width = 8;
+   */
+  focusWidth: number;
+
+  /**
+   * @generated from field: double focus_height = 9;
+   */
+  focusHeight: number;
+
+  /**
+   * Share of the image inside that region; near 1 means nothing in particular
+   * was located.
+   *
+   * @generated from field: double focus_coverage = 10;
+   */
+  focusCoverage: number;
+
+  /**
+   * @generated from field: string summary = 11;
+   */
+  summary: string;
+
+  /**
+   * @generated from field: string method = 12;
+   */
+  method: string;
+
+  /**
+   * False when the map was flat and there is nothing to point at.
+   *
+   * @generated from field: bool localised = 13;
+   */
+  localised: boolean;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.Explanation.
+ * Use `create(ExplanationSchema)` to create a new message.
+ */
+export const ExplanationSchema: GenMessage<Explanation> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 24);
+
+/**
  * @generated from message agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest
  */
 export type DetectNutrientDeficiencyRequest = Message<"agriculture.diagnosis.v1.DetectNutrientDeficiencyRequest"> & {
@@ -872,7 +974,7 @@ export type DetectNutrientDeficiencyRequest = Message<"agriculture.diagnosis.v1.
  * Use `create(DetectNutrientDeficiencyRequestSchema)` to create a new message.
  */
 export const DetectNutrientDeficiencyRequestSchema: GenMessage<DetectNutrientDeficiencyRequest> = /*@__PURE__*/
-  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 24);
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 25);
 
 /**
  * @generated from message agriculture.diagnosis.v1.DetectNutrientDeficiencyResponse
@@ -892,6 +994,13 @@ export type DetectNutrientDeficiencyResponse = Message<"agriculture.diagnosis.v1
    * @generated from field: int64 processing_time_ms = 3;
    */
   processingTimeMs: bigint;
+
+  /**
+   * One per analysed image, in request order.
+   *
+   * @generated from field: repeated agriculture.diagnosis.v1.Explanation explanations = 4;
+   */
+  explanations: Explanation[];
 };
 
 /**
@@ -899,7 +1008,7 @@ export type DetectNutrientDeficiencyResponse = Message<"agriculture.diagnosis.v1
  * Use `create(DetectNutrientDeficiencyResponseSchema)` to create a new message.
  */
 export const DetectNutrientDeficiencyResponseSchema: GenMessage<DetectNutrientDeficiencyResponse> = /*@__PURE__*/
-  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 25);
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 26);
 
 /**
  * @generated from message agriculture.diagnosis.v1.DetectPestDamageRequest
@@ -921,7 +1030,7 @@ export type DetectPestDamageRequest = Message<"agriculture.diagnosis.v1.DetectPe
  * Use `create(DetectPestDamageRequestSchema)` to create a new message.
  */
 export const DetectPestDamageRequestSchema: GenMessage<DetectPestDamageRequest> = /*@__PURE__*/
-  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 26);
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 27);
 
 /**
  * @generated from message agriculture.diagnosis.v1.DetectPestDamageResponse
@@ -941,6 +1050,11 @@ export type DetectPestDamageResponse = Message<"agriculture.diagnosis.v1.DetectP
    * @generated from field: int64 processing_time_ms = 3;
    */
   processingTimeMs: bigint;
+
+  /**
+   * @generated from field: repeated agriculture.diagnosis.v1.Explanation explanations = 4;
+   */
+  explanations: Explanation[];
 };
 
 /**
@@ -948,7 +1062,577 @@ export type DetectPestDamageResponse = Message<"agriculture.diagnosis.v1.DetectP
  * Use `create(DetectPestDamageResponseSchema)` to create a new message.
  */
 export const DetectPestDamageResponseSchema: GenMessage<DetectPestDamageResponse> = /*@__PURE__*/
-  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 27);
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 28);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.TrainingLabel
+ */
+export type TrainingLabel = Message<"agriculture.diagnosis.v1.TrainingLabel"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: double confidence = 2;
+   */
+  confidence: number;
+
+  /**
+   * @generated from field: string category = 3;
+   */
+  category: string;
+
+  /**
+   * @generated from field: string severity = 4;
+   */
+  severity: string;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.TrainingLabel.
+ * Use `create(TrainingLabelSchema)` to create a new message.
+ */
+export const TrainingLabelSchema: GenMessage<TrainingLabel> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 29);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.LabelReview
+ */
+export type LabelReview = Message<"agriculture.diagnosis.v1.LabelReview"> & {
+  /**
+   * @generated from field: agriculture.diagnosis.v1.LabelReviewDecision decision = 1;
+   */
+  decision: LabelReviewDecision;
+
+  /**
+   * @generated from field: string corrected_label = 2;
+   */
+  correctedLabel: string;
+
+  /**
+   * @generated from field: string reviewer_id = 3;
+   */
+  reviewerId: string;
+
+  /**
+   * @generated from field: string notes = 4;
+   */
+  notes: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp reviewed_at = 5;
+   */
+  reviewedAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.LabelReview.
+ * Use `create(LabelReviewSchema)` to create a new message.
+ */
+export const LabelReviewSchema: GenMessage<LabelReview> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 30);
+
+/**
+ * A trained model's confident disagreement with a stored label.
+ *
+ * Worth a reviewer's attention ahead of merely low-confidence samples: a wrong
+ * label does not just waste one example, it teaches the next model the same
+ * mistake and counts as an error against any model that gets it right.
+ *
+ * @generated from message agriculture.diagnosis.v1.LabelSuspicion
+ */
+export type LabelSuspicion = Message<"agriculture.diagnosis.v1.LabelSuspicion"> & {
+  /**
+   * @generated from field: string predicted = 1;
+   */
+  predicted: string;
+
+  /**
+   * @generated from field: double predicted_prob = 2;
+   */
+  predictedProb: number;
+
+  /**
+   * @generated from field: double label_prob = 3;
+   */
+  labelProb: number;
+
+  /**
+   * @generated from field: string model_version = 4;
+   */
+  modelVersion: string;
+
+  /**
+   * @generated from field: string flagged_at = 5;
+   */
+  flaggedAt: string;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.LabelSuspicion.
+ * Use `create(LabelSuspicionSchema)` to create a new message.
+ */
+export const LabelSuspicionSchema: GenMessage<LabelSuspicion> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 31);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.LabelReviewSample
+ */
+export type LabelReviewSample = Message<"agriculture.diagnosis.v1.LabelReviewSample"> & {
+  /**
+   * content hash of the image
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * disease, pest, nutrient_deficiency, plant_classification
+   *
+   * @generated from field: string task = 2;
+   */
+  task: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp collected_at = 3;
+   */
+  collectedAt?: Timestamp | undefined;
+
+  /**
+   * external_api, local_model, human
+   *
+   * @generated from field: string provenance = 4;
+   */
+  provenance: string;
+
+  /**
+   * API provider or local model version
+   *
+   * @generated from field: string provider = 5;
+   */
+  provider: string;
+
+  /**
+   * @generated from field: repeated agriculture.diagnosis.v1.TrainingLabel labels = 6;
+   */
+  labels: TrainingLabel[];
+
+  /**
+   * @generated from field: double top_confidence = 7;
+   */
+  topConfidence: number;
+
+  /**
+   * @generated from field: string farm_id = 8;
+   */
+  farmId: string;
+
+  /**
+   * @generated from field: string field_id = 9;
+   */
+  fieldId: string;
+
+  /**
+   * @generated from field: string crop = 10;
+   */
+  crop: string;
+
+  /**
+   * @generated from field: string submitted_by = 11;
+   */
+  submittedBy: string;
+
+  /**
+   * unset until reviewed
+   *
+   * @generated from field: agriculture.diagnosis.v1.LabelReview review = 12;
+   */
+  review?: LabelReview | undefined;
+
+  /**
+   * label after applying the review
+   *
+   * @generated from field: string effective_label = 13;
+   */
+  effectiveLabel: string;
+
+  /**
+   * unset unless a trained model contradicted it
+   *
+   * @generated from field: agriculture.diagnosis.v1.LabelSuspicion suspect = 14;
+   */
+  suspect?: LabelSuspicion | undefined;
+
+  /**
+   * True when this sample wants another pair of eyes, because a reviewer asked
+   * or because two reviewers already disagreed.
+   *
+   * @generated from field: bool needs_second_opinion = 15;
+   */
+  needsSecondOpinion: boolean;
+
+  /**
+   * Every review, oldest first. `review` above stays the most recent.
+   *
+   * @generated from field: repeated agriculture.diagnosis.v1.LabelReview reviews = 16;
+   */
+  reviews: LabelReview[];
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.LabelReviewSample.
+ * Use `create(LabelReviewSampleSchema)` to create a new message.
+ */
+export const LabelReviewSampleSchema: GenMessage<LabelReviewSample> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 32);
+
+/**
+ * How much two reviewers agree, and whether that is more than chance.
+ *
+ * Raw agreement flatters an imbalanced task: two reviewers who both answer
+ * "healthy" on a set that is ninety percent healthy agree ninety percent of the
+ * time having demonstrated nothing.
+ *
+ * @generated from message agriculture.diagnosis.v1.ReviewAgreement
+ */
+export type ReviewAgreement = Message<"agriculture.diagnosis.v1.ReviewAgreement"> & {
+  /**
+   * @generated from field: int32 compared = 1;
+   */
+  compared: number;
+
+  /**
+   * @generated from field: double raw_agreement = 2;
+   */
+  rawAgreement: number;
+
+  /**
+   * @generated from field: double kappa = 3;
+   */
+  kappa: number;
+
+  /**
+   * @generated from field: string strength = 4;
+   */
+  strength: string;
+
+  /**
+   * @generated from field: repeated agriculture.diagnosis.v1.LabelDisagreement disagreements = 5;
+   */
+  disagreements: LabelDisagreement[];
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.ReviewAgreement.
+ * Use `create(ReviewAgreementSchema)` to create a new message.
+ */
+export const ReviewAgreementSchema: GenMessage<ReviewAgreement> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 33);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.LabelDisagreement
+ */
+export type LabelDisagreement = Message<"agriculture.diagnosis.v1.LabelDisagreement"> & {
+  /**
+   * @generated from field: string first = 1;
+   */
+  first: string;
+
+  /**
+   * @generated from field: string second = 2;
+   */
+  second: string;
+
+  /**
+   * @generated from field: int32 count = 3;
+   */
+  count: number;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.LabelDisagreement.
+ * Use `create(LabelDisagreementSchema)` to create a new message.
+ */
+export const LabelDisagreementSchema: GenMessage<LabelDisagreement> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 34);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.RequestSecondOpinionRequest
+ */
+export type RequestSecondOpinionRequest = Message<"agriculture.diagnosis.v1.RequestSecondOpinionRequest"> & {
+  /**
+   * @generated from field: string task = 1;
+   */
+  task: string;
+
+  /**
+   * @generated from field: string sample_id = 2;
+   */
+  sampleId: string;
+
+  /**
+   * false clears the flag
+   *
+   * @generated from field: bool wanted = 3;
+   */
+  wanted: boolean;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.RequestSecondOpinionRequest.
+ * Use `create(RequestSecondOpinionRequestSchema)` to create a new message.
+ */
+export const RequestSecondOpinionRequestSchema: GenMessage<RequestSecondOpinionRequest> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 35);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.RequestSecondOpinionResponse
+ */
+export type RequestSecondOpinionResponse = Message<"agriculture.diagnosis.v1.RequestSecondOpinionResponse"> & {
+  /**
+   * @generated from field: agriculture.diagnosis.v1.LabelReviewSample sample = 1;
+   */
+  sample?: LabelReviewSample | undefined;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.RequestSecondOpinionResponse.
+ * Use `create(RequestSecondOpinionResponseSchema)` to create a new message.
+ */
+export const RequestSecondOpinionResponseSchema: GenMessage<RequestSecondOpinionResponse> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 36);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.GetReviewAgreementRequest
+ */
+export type GetReviewAgreementRequest = Message<"agriculture.diagnosis.v1.GetReviewAgreementRequest"> & {
+  /**
+   * @generated from field: string task = 1;
+   */
+  task: string;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.GetReviewAgreementRequest.
+ * Use `create(GetReviewAgreementRequestSchema)` to create a new message.
+ */
+export const GetReviewAgreementRequestSchema: GenMessage<GetReviewAgreementRequest> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 37);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.GetReviewAgreementResponse
+ */
+export type GetReviewAgreementResponse = Message<"agriculture.diagnosis.v1.GetReviewAgreementResponse"> & {
+  /**
+   * @generated from field: agriculture.diagnosis.v1.ReviewAgreement agreement = 1;
+   */
+  agreement?: ReviewAgreement | undefined;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.GetReviewAgreementResponse.
+ * Use `create(GetReviewAgreementResponseSchema)` to create a new message.
+ */
+export const GetReviewAgreementResponseSchema: GenMessage<GetReviewAgreementResponse> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 38);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.ListLabelReviewQueueRequest
+ */
+export type ListLabelReviewQueueRequest = Message<"agriculture.diagnosis.v1.ListLabelReviewQueueRequest"> & {
+  /**
+   * required
+   *
+   * @generated from field: string task = 1;
+   */
+  task: string;
+
+  /**
+   * default: only unreviewed samples
+   *
+   * @generated from field: bool include_reviewed = 2;
+   */
+  includeReviewed: boolean;
+
+  /**
+   * optional upper bound on top_confidence (0 = none)
+   *
+   * @generated from field: double max_confidence = 3;
+   */
+  maxConfidence: number;
+
+  /**
+   * optional filter
+   *
+   * @generated from field: string provenance = 4;
+   */
+  provenance: string;
+
+  /**
+   * @generated from field: int32 page_size = 5;
+   */
+  pageSize: number;
+
+  /**
+   * @generated from field: int32 page_offset = 6;
+   */
+  pageOffset: number;
+
+  /**
+   * default orders lowest-confidence first (active learning)
+   *
+   * @generated from field: bool newest_first = 7;
+   */
+  newestFirst: boolean;
+
+  /**
+   * Only labels a trained model contradicted, worst disagreement first. These
+   * are where the data is probably wrong rather than merely hard.
+   *
+   * @generated from field: bool suspect_only = 8;
+   */
+  suspectOnly: boolean;
+
+  /**
+   * Only samples waiting on another reviewer.
+   *
+   * @generated from field: bool second_opinion_only = 9;
+   */
+  secondOpinionOnly: boolean;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.ListLabelReviewQueueRequest.
+ * Use `create(ListLabelReviewQueueRequestSchema)` to create a new message.
+ */
+export const ListLabelReviewQueueRequestSchema: GenMessage<ListLabelReviewQueueRequest> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 39);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.ListLabelReviewQueueResponse
+ */
+export type ListLabelReviewQueueResponse = Message<"agriculture.diagnosis.v1.ListLabelReviewQueueResponse"> & {
+  /**
+   * @generated from field: repeated agriculture.diagnosis.v1.LabelReviewSample samples = 1;
+   */
+  samples: LabelReviewSample[];
+
+  /**
+   * @generated from field: int32 total_count = 2;
+   */
+  totalCount: number;
+
+  /**
+   * @generated from field: int32 unreviewed_count = 3;
+   */
+  unreviewedCount: number;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.ListLabelReviewQueueResponse.
+ * Use `create(ListLabelReviewQueueResponseSchema)` to create a new message.
+ */
+export const ListLabelReviewQueueResponseSchema: GenMessage<ListLabelReviewQueueResponse> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 40);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.SubmitLabelReviewRequest
+ */
+export type SubmitLabelReviewRequest = Message<"agriculture.diagnosis.v1.SubmitLabelReviewRequest"> & {
+  /**
+   * @generated from field: string task = 1;
+   */
+  task: string;
+
+  /**
+   * @generated from field: string sample_id = 2;
+   */
+  sampleId: string;
+
+  /**
+   * @generated from field: agriculture.diagnosis.v1.LabelReviewDecision decision = 3;
+   */
+  decision: LabelReviewDecision;
+
+  /**
+   * @generated from field: string corrected_label = 4;
+   */
+  correctedLabel: string;
+
+  /**
+   * @generated from field: string notes = 5;
+   */
+  notes: string;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.SubmitLabelReviewRequest.
+ * Use `create(SubmitLabelReviewRequestSchema)` to create a new message.
+ */
+export const SubmitLabelReviewRequestSchema: GenMessage<SubmitLabelReviewRequest> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 41);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.SubmitLabelReviewResponse
+ */
+export type SubmitLabelReviewResponse = Message<"agriculture.diagnosis.v1.SubmitLabelReviewResponse"> & {
+  /**
+   * @generated from field: agriculture.diagnosis.v1.LabelReviewSample sample = 1;
+   */
+  sample?: LabelReviewSample | undefined;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.SubmitLabelReviewResponse.
+ * Use `create(SubmitLabelReviewResponseSchema)` to create a new message.
+ */
+export const SubmitLabelReviewResponseSchema: GenMessage<SubmitLabelReviewResponse> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 42);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.GetLabelReviewImageRequest
+ */
+export type GetLabelReviewImageRequest = Message<"agriculture.diagnosis.v1.GetLabelReviewImageRequest"> & {
+  /**
+   * @generated from field: string task = 1;
+   */
+  task: string;
+
+  /**
+   * @generated from field: string sample_id = 2;
+   */
+  sampleId: string;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.GetLabelReviewImageRequest.
+ * Use `create(GetLabelReviewImageRequestSchema)` to create a new message.
+ */
+export const GetLabelReviewImageRequestSchema: GenMessage<GetLabelReviewImageRequest> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 43);
+
+/**
+ * @generated from message agriculture.diagnosis.v1.GetLabelReviewImageResponse
+ */
+export type GetLabelReviewImageResponse = Message<"agriculture.diagnosis.v1.GetLabelReviewImageResponse"> & {
+  /**
+   * @generated from field: bytes image_bytes = 1;
+   */
+  imageBytes: Uint8Array;
+
+  /**
+   * @generated from field: string mime_type = 2;
+   */
+  mimeType: string;
+};
+
+/**
+ * Describes the message agriculture.diagnosis.v1.GetLabelReviewImageResponse.
+ * Use `create(GetLabelReviewImageResponseSchema)` to create a new message.
+ */
+export const GetLabelReviewImageResponseSchema: GenMessage<GetLabelReviewImageResponse> = /*@__PURE__*/
+  messageDesc(file_plant_diagnosis_service_proto_diagnosis, 44);
 
 /**
  * @generated from enum agriculture.diagnosis.v1.ImageType
@@ -1064,6 +1748,43 @@ export const SeveritySchema: GenEnum<Severity> = /*@__PURE__*/
   enumDesc(file_plant_diagnosis_service_proto_diagnosis, 2);
 
 /**
+ * @generated from enum agriculture.diagnosis.v1.LabelReviewDecision
+ */
+export enum LabelReviewDecision {
+  /**
+   * @generated from enum value: LABEL_REVIEW_DECISION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * auto-label is right
+   *
+   * @generated from enum value: LABEL_REVIEW_DECISION_CONFIRMED = 1;
+   */
+  CONFIRMED = 1,
+
+  /**
+   * replace with corrected_label
+   *
+   * @generated from enum value: LABEL_REVIEW_DECISION_CORRECTED = 2;
+   */
+  CORRECTED = 2,
+
+  /**
+   * exclude the sample from training
+   *
+   * @generated from enum value: LABEL_REVIEW_DECISION_REJECTED = 3;
+   */
+  REJECTED = 3,
+}
+
+/**
+ * Describes the enum agriculture.diagnosis.v1.LabelReviewDecision.
+ */
+export const LabelReviewDecisionSchema: GenEnum<LabelReviewDecision> = /*@__PURE__*/
+  enumDesc(file_plant_diagnosis_service_proto_diagnosis, 3);
+
+/**
  * @generated from service agriculture.diagnosis.v1.PlantDiagnosisService
  */
 export const PlantDiagnosisService: GenService<{
@@ -1156,6 +1877,52 @@ export const PlantDiagnosisService: GenService<{
     methodKind: "unary";
     input: typeof DetectPestDamageRequestSchema;
     output: typeof DetectPestDamageResponseSchema;
+  },
+  /**
+   * List auto-labelled training samples awaiting human review (tenant-scoped)
+   *
+   * @generated from rpc agriculture.diagnosis.v1.PlantDiagnosisService.ListLabelReviewQueue
+   */
+  listLabelReviewQueue: {
+    methodKind: "unary";
+    input: typeof ListLabelReviewQueueRequestSchema;
+    output: typeof ListLabelReviewQueueResponseSchema;
+  },
+  /**
+   * Confirm, correct, or reject an auto-label
+   *
+   * @generated from rpc agriculture.diagnosis.v1.PlantDiagnosisService.SubmitLabelReview
+   */
+  submitLabelReview: {
+    methodKind: "unary";
+    input: typeof SubmitLabelReviewRequestSchema;
+    output: typeof SubmitLabelReviewResponseSchema;
+  },
+  /**
+   * Fetch the image behind a review-queue sample
+   *
+   * @generated from rpc agriculture.diagnosis.v1.PlantDiagnosisService.GetLabelReviewImage
+   */
+  getLabelReviewImage: {
+    methodKind: "unary";
+    input: typeof GetLabelReviewImageRequestSchema;
+    output: typeof GetLabelReviewImageResponseSchema;
+  },
+  /**
+   * @generated from rpc agriculture.diagnosis.v1.PlantDiagnosisService.RequestSecondOpinion
+   */
+  requestSecondOpinion: {
+    methodKind: "unary";
+    input: typeof RequestSecondOpinionRequestSchema;
+    output: typeof RequestSecondOpinionResponseSchema;
+  },
+  /**
+   * @generated from rpc agriculture.diagnosis.v1.PlantDiagnosisService.GetReviewAgreement
+   */
+  getReviewAgreement: {
+    methodKind: "unary";
+    input: typeof GetReviewAgreementRequestSchema;
+    output: typeof GetReviewAgreementResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_plant_diagnosis_service_proto_diagnosis, 0);

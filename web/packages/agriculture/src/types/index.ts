@@ -98,6 +98,10 @@ export {
   SensorStatus,
   SensorProtocol,
   ReadingQuality,
+  // Both, explicitly. This sat among the sensor enums and took whichever
+  // AlertSeverity the duplicate export in @samavāya/proto happened to resolve
+  // to, which is not something a caller could have known from reading it.
+  SensorAlertSeverity,
   AlertSeverity,
   ScheduleType,
   ControllerType,
@@ -105,6 +109,23 @@ export {
   IrrigationStatus,
   RiskLevel,
   TreatmentType,
+  LabelReviewDecision,
+} from '@samavāya/proto';
+
+// Plant diagnosis label review (human-in-the-loop labeling)
+export type {
+  LabelReviewSample,
+  LabelReview,
+  TrainingLabel,
+} from '@samavāya/proto';
+
+// Model explainability: where in an image an answer came from.
+export type {
+  Explanation,
+  NutrientDeficiency,
+  PestDamage,
+  ReviewAgreement,
+  LabelDisagreement,
 } from '@samavāya/proto';
 
 // ─── Common Types ────────────────────────────────────────────────────────────

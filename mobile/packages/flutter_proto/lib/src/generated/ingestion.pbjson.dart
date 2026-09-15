@@ -26,6 +26,7 @@ const SatelliteProvider$json = {
     {'1': 'SATELLITE_PROVIDER_SENTINEL2', '2': 1},
     {'1': 'SATELLITE_PROVIDER_LANDSAT', '2': 2},
     {'1': 'SATELLITE_PROVIDER_PLANETSCOPE', '2': 3},
+    {'1': 'SATELLITE_PROVIDER_UAV', '2': 4},
   ],
 };
 
@@ -33,7 +34,8 @@ const SatelliteProvider$json = {
 final $typed_data.Uint8List satelliteProviderDescriptor = $convert.base64Decode(
     'ChFTYXRlbGxpdGVQcm92aWRlchIiCh5TQVRFTExJVEVfUFJPVklERVJfVU5TUEVDSUZJRUQQAB'
     'IgChxTQVRFTExJVEVfUFJPVklERVJfU0VOVElORUwyEAESHgoaU0FURUxMSVRFX1BST1ZJREVS'
-    'X0xBTkRTQVQQAhIiCh5TQVRFTExJVEVfUFJPVklERVJfUExBTkVUU0NPUEUQAw==');
+    'X0xBTkRTQVQQAhIiCh5TQVRFTExJVEVfUFJPVklERVJfUExBTkVUU0NPUEUQAxIaChZTQVRFTE'
+    'xJVEVfUFJPVklERVJfVUFWEAQ=');
 
 @$core.Deprecated('Use ingestionStatusDescriptor instead')
 const IngestionStatus$json = {
@@ -69,6 +71,8 @@ const SpectralBand$json = {
     {'1': 'SPECTRAL_BAND_RED_EDGE1', '2': 7},
     {'1': 'SPECTRAL_BAND_RED_EDGE2', '2': 8},
     {'1': 'SPECTRAL_BAND_RED_EDGE3', '2': 9},
+    {'1': 'SPECTRAL_BAND_SCL', '2': 10},
+    {'1': 'SPECTRAL_BAND_QA_PIXEL', '2': 11},
   ],
 };
 
@@ -78,8 +82,8 @@ final $typed_data.Uint8List spectralBandDescriptor = $convert.base64Decode(
     'FMX0JBTkRfQkxVRRABEhcKE1NQRUNUUkFMX0JBTkRfR1JFRU4QAhIVChFTUEVDVFJBTF9CQU5E'
     'X1JFRBADEhUKEVNQRUNUUkFMX0JBTkRfTklSEAQSFwoTU1BFQ1RSQUxfQkFORF9TV0lSMRAFEh'
     'cKE1NQRUNUUkFMX0JBTkRfU1dJUjIQBhIbChdTUEVDVFJBTF9CQU5EX1JFRF9FREdFMRAHEhsK'
-    'F1NQRUNUUkFMX0JBTkRfUkVEX0VER0UyEAgSGwoXU1BFQ1RSQUxfQkFORF9SRURfRURHRTMQCQ'
-    '==');
+    'F1NQRUNUUkFMX0JBTkRfUkVEX0VER0UyEAgSGwoXU1BFQ1RSQUxfQkFORF9SRURfRURHRTMQCR'
+    'IVChFTUEVDVFJBTF9CQU5EX1NDTBAKEhoKFlNQRUNUUkFMX0JBTkRfUUFfUElYRUwQCw==');
 
 @$core.Deprecated('Use ingestionTaskDescriptor instead')
 const IngestionTask$json = {
@@ -166,6 +170,7 @@ const IngestionTask$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'completedAt'
     },
+    {'1': 'processing_level', '3': 21, '4': 1, '5': 9, '10': 'processingLevel'},
   ],
 };
 
@@ -187,7 +192,8 @@ final $typed_data.Uint8List ingestionTaskDescriptor = $convert.base64Decode(
     'ltZXN0YW1wUg9hY3F1aXNpdGlvbkRhdGUSOQoKY3JlYXRlZF9hdBgSIAEoCzIaLmdvb2dsZS5w'
     'cm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI5Cgp1cGRhdGVkX2F0GBMgASgLMhouZ29vZ2'
     'xlLnByb3RvYnVmLlRpbWVzdGFtcFIJdXBkYXRlZEF0Ej0KDGNvbXBsZXRlZF9hdBgUIAEoCzIa'
-    'Lmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSC2NvbXBsZXRlZEF0');
+    'Lmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSC2NvbXBsZXRlZEF0EikKEHByb2Nlc3NpbmdfbG'
+    'V2ZWwYFSABKAlSD3Byb2Nlc3NpbmdMZXZlbA==');
 
 @$core.Deprecated('Use requestIngestionRequestDescriptor instead')
 const RequestIngestionRequest$json = {
@@ -227,6 +233,7 @@ const RequestIngestionRequest$json = {
       '6': '.agriculture.satellite.ingestion.v1.SpectralBand',
       '10': 'bands'
     },
+    {'1': 'processing_level', '3': 7, '4': 1, '5': 9, '10': 'processingLevel'},
   ],
 };
 
@@ -238,7 +245,8 @@ final $typed_data.Uint8List requestIngestionRequestDescriptor = $convert.base64D
     '9idWYuVGltZXN0YW1wUghkYXRlRnJvbRIzCgdkYXRlX3RvGAQgASgLMhouZ29vZ2xlLnByb3Rv'
     'YnVmLlRpbWVzdGFtcFIGZGF0ZVRvEiYKD21heF9jbG91ZF9jb3ZlchgFIAEoAVINbWF4Q2xvdW'
     'RDb3ZlchJGCgViYW5kcxgGIAMoDjIwLmFncmljdWx0dXJlLnNhdGVsbGl0ZS5pbmdlc3Rpb24u'
-    'djEuU3BlY3RyYWxCYW5kUgViYW5kcw==');
+    'djEuU3BlY3RyYWxCYW5kUgViYW5kcxIpChBwcm9jZXNzaW5nX2xldmVsGAcgASgJUg9wcm9jZX'
+    'NzaW5nTGV2ZWw=');
 
 @$core.Deprecated('Use requestIngestionResponseDescriptor instead')
 const RequestIngestionResponse$json = {

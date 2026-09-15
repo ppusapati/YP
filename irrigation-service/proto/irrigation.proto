@@ -159,6 +159,10 @@ message DecisionOutput {
   google.protobuf.Timestamp optimal_time = 4;
   string reasoning = 5;
   double confidence_score = 6;
+  string method = 7;                // "water_balance" or "heuristic"
+  double recommended_depth_mm = 8;  // irrigation depth (mm)
+  double crop_coefficient = 9;      // Kc used by the water balance
+  double et0_mm_day = 10;           // reference ET used by the water balance
 }
 
 message IrrigationDecision {

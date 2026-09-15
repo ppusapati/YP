@@ -15,6 +15,8 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+import 'package:protobuf/well_known_types/google/protobuf/struct.pbjson.dart'
+    as $1;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pbjson.dart'
     as $0;
 
@@ -67,6 +69,7 @@ const AnalysisType$json = {
     {'1': 'ANALYSIS_TYPE_TEMPORAL_TREND', '2': 3},
     {'1': 'ANALYSIS_TYPE_ANOMALY_DETECTION', '2': 4},
     {'1': 'ANALYSIS_TYPE_CROP_CLASSIFICATION', '2': 5},
+    {'1': 'ANALYSIS_TYPE_PHENOLOGY', '2': 6},
   ],
 };
 
@@ -76,7 +79,7 @@ final $typed_data.Uint8List analysisTypeDescriptor = $convert.base64Decode(
     'lTX1RZUEVfU1RSRVNTX0RFVEVDVElPThABEiIKHkFOQUxZU0lTX1RZUEVfQ0hBTkdFX0RFVEVD'
     'VElPThACEiAKHEFOQUxZU0lTX1RZUEVfVEVNUE9SQUxfVFJFTkQQAxIjCh9BTkFMWVNJU19UWV'
     'BFX0FOT01BTFlfREVURUNUSU9OEAQSJQohQU5BTFlTSVNfVFlQRV9DUk9QX0NMQVNTSUZJQ0FU'
-    'SU9OEAU=');
+    'SU9OEAUSGwoXQU5BTFlTSVNfVFlQRV9QSEVOT0xPR1kQBg==');
 
 @$core.Deprecated('Use stressAlertDescriptor instead')
 const StressAlert$json = {
@@ -208,6 +211,14 @@ const TemporalAnalysis$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'createdAt'
     },
+    {
+      '1': 'details',
+      '3': 15,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Struct',
+      '10': 'details'
+    },
   ],
 };
 
@@ -223,8 +234,8 @@ final $typed_data.Uint8List temporalAnalysisDescriptor = $convert.base64Decode(
     'RldmlhdGlvbl9wZXJjZW50GAsgASgBUhBkZXZpYXRpb25QZXJjZW50Ej0KDHBlcmlvZF9zdGFy'
     'dBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSC3BlcmlvZFN0YXJ0EjkKCnBlcm'
     'lvZF9lbmQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUglwZXJpb2RFbmQSOQoK'
-    'Y3JlYXRlZF9hdBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdA'
-    '==');
+    'Y3JlYXRlZF9hdBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdB'
+    'IxCgdkZXRhaWxzGA8gASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdFIHZGV0YWlscw==');
 
 @$core.Deprecated('Use detectStressRequestDescriptor instead')
 const DetectStressRequest$json = {
@@ -526,6 +537,10 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.agriculture.satellite.analytics.v1.RunTemporalAnalysisResponse':
       RunTemporalAnalysisResponse$json,
   '.agriculture.satellite.analytics.v1.TemporalAnalysis': TemporalAnalysis$json,
+  '.google.protobuf.Struct': $1.Struct$json,
+  '.google.protobuf.Struct.FieldsEntry': $1.Struct_FieldsEntry$json,
+  '.google.protobuf.Value': $1.Value$json,
+  '.google.protobuf.ListValue': $1.ListValue$json,
   '.agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryRequest':
       GetFieldAnalyticsSummaryRequest$json,
   '.agriculture.satellite.analytics.v1.GetFieldAnalyticsSummaryResponse':

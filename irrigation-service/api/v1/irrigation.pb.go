@@ -1143,6 +1143,10 @@ type DecisionOutput struct {
 	OptimalTime         *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=optimal_time,json=optimalTime,proto3" json:"optimal_time,omitempty"`
 	Reasoning           string                 `protobuf:"bytes,5,opt,name=reasoning,proto3" json:"reasoning,omitempty"`
 	ConfidenceScore     float64                `protobuf:"fixed64,6,opt,name=confidence_score,json=confidenceScore,proto3" json:"confidence_score,omitempty"`
+	Method              string                 `protobuf:"bytes,7,opt,name=method,proto3" json:"method,omitempty"`                                                       // "water_balance" or "heuristic"
+	RecommendedDepthMm  float64                `protobuf:"fixed64,8,opt,name=recommended_depth_mm,json=recommendedDepthMm,proto3" json:"recommended_depth_mm,omitempty"` // irrigation depth (mm)
+	CropCoefficient     float64                `protobuf:"fixed64,9,opt,name=crop_coefficient,json=cropCoefficient,proto3" json:"crop_coefficient,omitempty"`            // Kc used by the water balance
+	Et0MmDay            float64                `protobuf:"fixed64,10,opt,name=et0_mm_day,json=et0MmDay,proto3" json:"et0_mm_day,omitempty"`                              // reference ET used by the water balance
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1215,6 +1219,34 @@ func (x *DecisionOutput) GetReasoning() string {
 func (x *DecisionOutput) GetConfidenceScore() float64 {
 	if x != nil {
 		return x.ConfidenceScore
+	}
+	return 0
+}
+
+func (x *DecisionOutput) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *DecisionOutput) GetRecommendedDepthMm() float64 {
+	if x != nil {
+		return x.RecommendedDepthMm
+	}
+	return 0
+}
+
+func (x *DecisionOutput) GetCropCoefficient() float64 {
+	if x != nil {
+		return x.CropCoefficient
+	}
+	return 0
+}
+
+func (x *DecisionOutput) GetEt0MmDay() float64 {
+	if x != nil {
+		return x.Et0MmDay
 	}
 	return 0
 }
@@ -3032,14 +3064,20 @@ const file_irrigation_proto_rawDesc = "" +
 	"wind_speed\x18\x05 \x01(\x01R\twindSpeed\x12\x1b\n" +
 	"\tcrop_type\x18\x06 \x01(\tR\bcropType\x12!\n" +
 	"\fgrowth_stage\x18\a \x01(\tR\vgrowthStage\x123\n" +
-	"\x15evapotranspiration_mm\x18\b \x01(\x01R\x14evapotranspirationMm\"\xa0\x02\n" +
+	"\x15evapotranspiration_mm\x18\b \x01(\x01R\x14evapotranspirationMm\"\xb3\x03\n" +
 	"\x0eDecisionOutput\x12'\n" +
 	"\x0fshould_irrigate\x18\x01 \x01(\bR\x0eshouldIrrigate\x122\n" +
 	"\x15water_quantity_liters\x18\x02 \x01(\x01R\x13waterQuantityLiters\x12)\n" +
 	"\x10duration_minutes\x18\x03 \x01(\x05R\x0fdurationMinutes\x12=\n" +
 	"\foptimal_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\voptimalTime\x12\x1c\n" +
 	"\treasoning\x18\x05 \x01(\tR\treasoning\x12)\n" +
-	"\x10confidence_score\x18\x06 \x01(\x01R\x0fconfidenceScore\"\xac\x03\n" +
+	"\x10confidence_score\x18\x06 \x01(\x01R\x0fconfidenceScore\x12\x16\n" +
+	"\x06method\x18\a \x01(\tR\x06method\x120\n" +
+	"\x14recommended_depth_mm\x18\b \x01(\x01R\x12recommendedDepthMm\x12)\n" +
+	"\x10crop_coefficient\x18\t \x01(\x01R\x0fcropCoefficient\x12\x1c\n" +
+	"\n" +
+	"et0_mm_day\x18\n" +
+	" \x01(\x01R\bet0MmDay\"\xac\x03\n" +
 	"\x12IrrigationDecision\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x17\n" +

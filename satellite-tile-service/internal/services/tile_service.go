@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"strings"
 
 	"p9e.in/samavaya/packages/convert/ptr"
 	"p9e.in/samavaya/packages/deps"
@@ -18,11 +20,11 @@ import (
 )
 
 const (
-	serviceName       = "satellite-tile-service"
-	maxPageSize int32 = 100
-	defaultPageSize   = 20
-	defaultMinZoom    = 10
-	defaultMaxZoom    = 18
+	serviceName           = "satellite-tile-service"
+	maxPageSize     int32 = 100
+	defaultPageSize       = 20
+	defaultMinZoom        = 10
+	defaultMaxZoom        = 18
 )
 
 // Tile event types
@@ -42,18 +44,37 @@ type TileService interface {
 }
 
 // tileService is the concrete implementation of TileService.
+// TileStore fetches rendered tiles from object storage.
+//
+// An interface rather than a concrete S3 client so that the service can be
+// built and tested without one, and so a deployment with no store configured
+// is a visible nil rather than a client that silently returns nothing.
+type TileStore interface {
+	// Download returns the object at a key. It must report a distinguishable
+	// error when the key does not exist, so a tile that was never rendered can
+	// be reported as absent rather than as a server fault.
+	Download(ctx context.Context, key string) (io.ReadCloser, error)
+}
+
 type tileService struct {
-	d    deps.ServiceDeps
-	repo repositories.TileRepository
-	log  *p9log.Helper
+	d     deps.ServiceDeps
+	repo  repositories.TileRepository
+	store TileStore
+	log   *p9log.Helper
 }
 
 // NewTileService creates a new TileService.
-func NewTileService(d deps.ServiceDeps, repo repositories.TileRepository) TileService {
+//
+// store may be nil, in which case tile reads fail with a clear error rather
+// than returning an empty body. That distinction matters: an empty PNG is a
+// transparent tile, so a map client cannot tell a missing tile from a field
+// with nothing on it.
+func NewTileService(d deps.ServiceDeps, repo repositories.TileRepository, store TileStore) TileService {
 	return &tileService{
-		d:    d,
-		repo: repo,
-		log:  p9log.NewHelper(p9log.With(d.Log, "component", "TileService")),
+		d:     d,
+		repo:  repo,
+		store: store,
+		log:   p9log.NewHelper(p9log.With(d.Log, "component", "TileService")),
 	}
 }
 
@@ -219,22 +240,91 @@ func (s *tileService) GetTile(ctx context.Context, tilesetID string, z, x, y int
 		return nil, "", errors.BadRequest("ZOOM_OUT_OF_RANGE", fmt.Sprintf("zoom %d is outside tileset range [%d, %d]", z, tileset.MinZoom, tileset.MaxZoom))
 	}
 
-	// In production, this would fetch the tile from S3/object storage.
-	// The tile path would be: {s3_prefix}/{z}/{x}/{y}.{format_extension}
-	// For now, we return a placeholder response.
 	contentType := tileset.Format.ContentType()
 
-	// Placeholder: return an empty tile with the correct content type
-	// In production, this fetches from: s3://{bucket}/{s3_prefix}/{z}/{x}/{y}.png
-	tileData := []byte{}
+	// This used to return `[]byte{}` with a 200 and the correct content type,
+	// after fully validating the zoom, the coordinates, the tileset and its
+	// status. A map client received what looks like a valid, entirely
+	// transparent tile — indistinguishable from a field with nothing on it —
+	// so a tileset that had never been rendered looked like one that had.
+	if s.store == nil {
+		return nil, "", errors.InternalServer("TILE_STORE_UNAVAILABLE",
+			"tile storage is not configured")
+	}
+	if tileset.S3Prefix == nil || *tileset.S3Prefix == "" {
+		// Completed but with nowhere to read from: the tileset record and the
+		// rendering job have gone out of step, which is worth an error rather
+		// than a blank tile.
+		return nil, "", errors.InternalServer("TILE_PREFIX_MISSING",
+			"tileset has no storage prefix")
+	}
 
-	s.log.Debugw("msg", "tile requested",
-		"tileset_id", tilesetID,
-		"z", z, "x", x, "y", y,
-		"content_type", contentType,
+	key := tileKey(*tileset.S3Prefix, z, x, y, tileset.Format)
+	body, err := s.store.Download(ctx, key)
+	if err != nil {
+		// Not found is the ordinary case, not a fault: tile pyramids are
+		// sparse, and a tile outside the tileset's own coverage was simply
+		// never rendered. Reported as such so a client can treat it as empty
+		// deliberately rather than guessing.
+		s.log.Debugw("msg", "tile not available", "key", key, "error", err)
+		return nil, "", errors.NotFound("TILE_NOT_FOUND",
+			fmt.Sprintf("no tile at z=%d x=%d y=%d", z, x, y))
+	}
+	defer body.Close()
+
+	// Bounded, because the key is derived from client-supplied coordinates and
+	// an unbounded read of whatever is at that key would let one request pull
+	// an arbitrarily large object into memory.
+	tileData, err := io.ReadAll(io.LimitReader(body, maxTileBytes+1))
+	if err != nil {
+		s.log.Errorw("msg", "failed to read tile", "key", key, "error", err)
+		return nil, "", errors.InternalServer("TILE_READ_FAILED", "an internal error occurred")
+	}
+	if int64(len(tileData)) > maxTileBytes {
+		s.log.Errorw("msg", "tile exceeds the size limit", "key", key, "bytes", len(tileData))
+		return nil, "", errors.InternalServer("TILE_TOO_LARGE", "an internal error occurred")
+	}
+	if len(tileData) == 0 {
+		// A zero-byte object is the failure this whole change is about, so it
+		// is refused here too rather than passed on as a transparent tile.
+		return nil, "", errors.NotFound("TILE_NOT_FOUND",
+			fmt.Sprintf("no tile at z=%d x=%d y=%d", z, x, y))
+	}
+
+	s.log.Debugw("msg", "tile served",
+		"tileset_id", tilesetID, "z", z, "x", x, "y", y,
+		"content_type", contentType, "bytes", len(tileData),
 	)
 
 	return tileData, contentType, nil
+}
+
+// maxTileBytes bounds a single tile read. Web map tiles are a few tens of
+// kilobytes; four megabytes is far above anything legitimate and far below
+// what would trouble the process.
+const maxTileBytes int64 = 4 << 20
+
+// tileKey builds the object key for a tile.
+//
+// {prefix}/{z}/{x}/{y}.{ext} is the XYZ convention every renderer and every
+// map client already agrees on, so it is not ours to choose.
+func tileKey(prefix string, z, x, y int32, format tilemodels.TileFormat) string {
+	prefix = strings.TrimSuffix(prefix, "/")
+	return fmt.Sprintf("%s/%d/%d/%d.%s", prefix, z, x, y, tileExtension(format))
+}
+
+// tileExtension maps a tile format to its file extension.
+func tileExtension(format tilemodels.TileFormat) string {
+	switch format {
+	case tilemodels.TileFormatJPEG:
+		return "jpg"
+	case tilemodels.TileFormatWEBP:
+		return "webp"
+	case tilemodels.TileFormatMVT:
+		return "pbf"
+	default:
+		return "png"
+	}
 }
 
 // DeleteTileset soft-deletes a tileset.

@@ -5,7 +5,8 @@
 # Run:    docker run -p 50051:50051 ai-gateway
 
 # ── Stage 1: build ──────────────────────────────────────────────────────────
-FROM rust:1.82-bookworm AS builder
+# Locked dependencies (image, time, icu via reqwest) require rustc >= 1.88.
+FROM rust:1.91-bookworm AS builder
 
 # protobuf-compiler is required by tonic-build (build.rs compiles .proto files).
 RUN apt-get update && apt-get install -y --no-install-recommends \

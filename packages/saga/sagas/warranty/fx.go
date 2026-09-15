@@ -22,7 +22,7 @@ var WarrantySagasModule = fx.Module("warranty-sagas",
 		),
 		// SAGA-W03: Spare Parts Management & Fulfillment (Phase 6D)
 		fx.Annotate(
-			NewSparepartsSaga,
+			NewSparePartsSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-W04: SLA Management & Compliance Tracking (Phase 6D)
@@ -61,7 +61,7 @@ func ProvideWarrantySagaHandlers() []saga.SagaHandler {
 	return []saga.SagaHandler{
 		NewWarrantyClaimSaga(),
 		NewFieldServiceSaga(),
-		NewSparepartsSaga(),
+		NewSparePartsSaga(),
 		NewSLAManagementSaga(),
 		NewCustomerSatisfactionSaga(),
 		NewExtendedWarrantySaga(),

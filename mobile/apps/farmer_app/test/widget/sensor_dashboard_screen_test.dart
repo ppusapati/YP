@@ -74,6 +74,19 @@ void main() {
 
       expect(find.text('Temp Sensor A'), findsOneWidget);
       expect(find.text('Humidity Sensor B'), findsOneWidget);
+      // Two columns in an 800x600 test window puts the third card below the
+      // fold, and GridView.builder does not build what is not visible.
+      // Scrolling to it is also the thing a user does.
+      await tester.scrollUntilVisible(
+        find.text('Moisture Sensor C'),
+        200,
+        // Scoped to the grid: the screen has more than one Scrollable and the
+        // default finder cannot choose between them.
+        scrollable: find.descendant(
+          of: find.byType(GridView),
+          matching: find.byType(Scrollable),
+        ),
+      );
       expect(find.text('Moisture Sensor C'), findsOneWidget);
     });
 
@@ -85,6 +98,14 @@ void main() {
 
       expect(find.text('28.5'), findsOneWidget);
       expect(find.text('65.0'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('30.0'),
+        200,
+        scrollable: find.descendant(
+          of: find.byType(GridView),
+          matching: find.byType(Scrollable),
+        ),
+      );
       expect(find.text('30.0'), findsOneWidget);
     });
 
@@ -134,6 +155,10 @@ void main() {
           .thenReturn(const SensorError(message: 'Error'));
 
       await tester.pumpWidget(buildSubject());
+      // The screen dispatches LoadSensors when it mounts. Without clearing,
+      // this counts that as well and the assertion is about two events, only
+      // one of which the retry button is responsible for.
+      clearInteractions(mockSensorBloc);
 
       await tester.tap(find.text('Retry'));
       await tester.pump();
@@ -156,10 +181,19 @@ void main() {
 
       await tester.pumpWidget(buildSubject());
 
-      expect(find.text('All'), findsOneWidget);
-      expect(find.text('Temp'), findsOneWidget);
-      expect(find.text('Humidity'), findsOneWidget);
-      expect(find.text('Moisture'), findsOneWidget);
+      // Scoped to the chips: 'Humidity' and 'Moisture' also appear as the type
+      // label on a sensor card, so an unscoped finder matches two widgets and
+      // says the chips are wrong when they are not.
+      for (final label in ['All', 'Temp', 'Humidity', 'Moisture']) {
+        expect(
+          find.descendant(
+            of: find.byType(FilterChip),
+            matching: find.text(label),
+          ),
+          findsOneWidget,
+          reason: 'filter chip "$label"',
+        );
+      }
     });
 
     testWidgets('displays GridView for sensor cards', (tester) async {

@@ -10,6 +10,18 @@
 		level INFO
 	}
 
+	# ── Response compression ───────────────────────────────────────────
+	#
+	# Most of what this gateway returns is JSON or Connect envelopes, which
+	# compress to a fraction of their size — and the farmers using it are often
+	# on a rural mobile connection where bytes cost time, not just bandwidth.
+	#
+	# zstd is offered first for clients that take it and gzip for everything
+	# else. Caddy skips already-compressed types (images, video) on its own, so
+	# there is nothing to exclude here: re-compressing a JPEG spends CPU to make
+	# the file slightly larger.
+	encode zstd gzip
+
 	# ── Security headers ───────────────────────────────────────────────
 	header {
 		X-Content-Type-Options "nosniff"
@@ -21,7 +33,7 @@
 
 	# ── CORS ───────────────────────────────────────────────────────────
 	header {
-		Access-Control-Allow-Origin  {$CORS_ORIGIN:*}
+		Access-Control-Allow-Origin  {$CORS_ORIGIN:http://localhost:5173}
 		Access-Control-Allow-Methods "GET, POST, OPTIONS"
 		Access-Control-Allow-Headers "Authorization, Content-Type, Connect-Protocol-Version, Connect-Timeout-Ms, Grpc-Timeout, X-Grpc-Web, X-User-Agent, X-Tenant-ID"
 		Access-Control-Expose-Headers "Grpc-Status, Grpc-Message, Grpc-Status-Details-Bin"
@@ -60,6 +72,34 @@
 			transport http {
 				dial_timeout 5s
 				response_header_timeout 10s
+			}
+		}
+	}
+
+	# ── Real-time transport ────────────────────────────────────────────
+	#
+	# The WebSocket hub and SSE broker had no gateway route at all, so a
+	# browser that connected got the catch-all 404 below however correct the
+	# server was.
+	#
+	# Both are long-lived and must not be cut off by the timeouts that suit a
+	# unary RPC: a WebSocket stays open for the length of a field visit and an
+	# SSE stream until the tab closes. `flush_interval -1` disables response
+	# buffering, without which SSE events sit in Caddy's buffer until enough
+	# accumulate — which for an alert stream is indefinitely.
+	handle /ws {
+		reverse_proxy monolith:8080 {
+			transport http {
+				dial_timeout 5s
+			}
+		}
+	}
+
+	handle /events {
+		reverse_proxy monolith:8080 {
+			flush_interval -1
+			transport http {
+				dial_timeout 5s
 			}
 		}
 	}
@@ -203,6 +243,162 @@
 			transport http {
 				dial_timeout 5s
 				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.alert.v1.AlertService/* {
+		reverse_proxy alert-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.analytics.v1.AnalyticsService/* {
+		reverse_proxy analytics-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.prescription.v1.PrescriptionService/* {
+		reverse_proxy prescription-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.satellite.ingestion.v1.SatelliteIngestionService/* {
+		reverse_proxy satellite-ingestion-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.satellite.processing.v1.SatelliteProcessingService/* {
+		reverse_proxy satellite-processing-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.satellite.analytics.v1.SatelliteAnalyticsService/* {
+		reverse_proxy satellite-analytics-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.satellite.tile.v1.SatelliteTileService/* {
+		reverse_proxy satellite-tile-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.vegetation.v1.VegetationIndexService/* {
+		reverse_proxy vegetation-index-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.task.v1.TaskService/* {
+		reverse_proxy task-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.agronomy.v1.AdvisoryService/* {
+		reverse_proxy agronomy-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.agronomy.v1.InspectionService/* {
+		reverse_proxy agronomy-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.weather.v1.WeatherService/* {
+		reverse_proxy weather-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	handle /agriculture.ai.v1.AIGatewayService/* {
+		reverse_proxy ai-gateway:50051 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
 			}
 			health_uri /health
 			health_interval 30s

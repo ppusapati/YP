@@ -11,15 +11,51 @@ type SatelliteProvider string
 
 const (
 	SatelliteProviderUnspecified SatelliteProvider = ""
-	SatelliteProviderSentinel2  SatelliteProvider = "SENTINEL2"
-	SatelliteProviderLandsat    SatelliteProvider = "LANDSAT"
+	SatelliteProviderSentinel2   SatelliteProvider = "SENTINEL2"
+	SatelliteProviderLandsat     SatelliteProvider = "LANDSAT"
 	SatelliteProviderPlanetScope SatelliteProvider = "PLANETSCOPE"
+	// SatelliteProviderUAV covers drone orthomosaics ingested through the same pipeline.
+	SatelliteProviderUAV SatelliteProvider = "UAV"
 )
 
 // IsValid checks if the satellite provider is a valid value.
 func (sp SatelliteProvider) IsValid() bool {
 	switch sp {
-	case SatelliteProviderSentinel2, SatelliteProviderLandsat, SatelliteProviderPlanetScope:
+	case SatelliteProviderSentinel2, SatelliteProviderLandsat, SatelliteProviderPlanetScope, SatelliteProviderUAV:
+		return true
+	default:
+		return false
+	}
+}
+
+// ProcessingLevel is the radiometric processing level of an ingested product.
+type ProcessingLevel string
+
+const (
+	ProcessingLevelUnknown ProcessingLevel = "UNKNOWN"
+	ProcessingLevelL1C     ProcessingLevel = "L1C"  // Sentinel-2 top-of-atmosphere
+	ProcessingLevelL2A     ProcessingLevel = "L2A"  // Sentinel-2 surface reflectance
+	ProcessingLevelL1TP    ProcessingLevel = "L1TP" // Landsat Level-1
+	ProcessingLevelL2SP    ProcessingLevel = "L2SP" // Landsat Collection 2 Level-2 surface reflectance
+	ProcessingLevelSR      ProcessingLevel = "SR"   // generic surface reflectance
+	ProcessingLevelTOA     ProcessingLevel = "TOA"  // generic top-of-atmosphere
+)
+
+// IsValid checks if the processing level is a recognized value.
+func (pl ProcessingLevel) IsValid() bool {
+	switch pl {
+	case ProcessingLevelUnknown, ProcessingLevelL1C, ProcessingLevelL2A, ProcessingLevelL1TP,
+		ProcessingLevelL2SP, ProcessingLevelSR, ProcessingLevelTOA:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsSurfaceReflectance reports whether the product is atmospherically corrected.
+func (pl ProcessingLevel) IsSurfaceReflectance() bool {
+	switch pl {
+	case ProcessingLevelL2A, ProcessingLevelL2SP, ProcessingLevelSR:
 		return true
 	default:
 		return false
@@ -54,23 +90,51 @@ type SpectralBand string
 
 const (
 	SpectralBandUnspecified SpectralBand = ""
-	SpectralBandBlue       SpectralBand = "BLUE"
-	SpectralBandGreen      SpectralBand = "GREEN"
-	SpectralBandRed        SpectralBand = "RED"
-	SpectralBandNIR        SpectralBand = "NIR"
-	SpectralBandSWIR1      SpectralBand = "SWIR1"
-	SpectralBandSWIR2      SpectralBand = "SWIR2"
-	SpectralBandRedEdge1   SpectralBand = "RED_EDGE1"
-	SpectralBandRedEdge2   SpectralBand = "RED_EDGE2"
-	SpectralBandRedEdge3   SpectralBand = "RED_EDGE3"
+	SpectralBandBlue        SpectralBand = "BLUE"
+	SpectralBandGreen       SpectralBand = "GREEN"
+	SpectralBandRed         SpectralBand = "RED"
+	SpectralBandNIR         SpectralBand = "NIR"
+	SpectralBandSWIR1       SpectralBand = "SWIR1"
+	SpectralBandSWIR2       SpectralBand = "SWIR2"
+	SpectralBandRedEdge1    SpectralBand = "RED_EDGE1"
+	SpectralBandRedEdge2    SpectralBand = "RED_EDGE2"
+	SpectralBandRedEdge3    SpectralBand = "RED_EDGE3"
+	// Per-pixel quality layers. These are not reflectance bands but the masks
+	// that say which pixels are cloud, shadow or snow — without one, an index
+	// is computed over whatever the weather left behind and reported as if it
+	// were the crop.
+	SpectralBandSCL     SpectralBand = "SCL"      // Sentinel-2 L2A scene classification
+	SpectralBandQAPixel SpectralBand = "QA_PIXEL" // Landsat Collection 2 QA bitmask
 )
+
+// QualityBandFor returns the per-pixel quality layer a provider publishes at
+// the given processing level, or empty when it publishes none.
+//
+// Sentinel-2 only carries SCL in its L2A (surface reflectance) product; the
+// L1C top-of-atmosphere product has no scene classification, so asking for one
+// would fail the download rather than improve the mask.
+func QualityBandFor(provider SatelliteProvider, level ProcessingLevel) SpectralBand {
+	switch provider {
+	case SatelliteProviderSentinel2:
+		if level == ProcessingLevelL2A {
+			return SpectralBandSCL
+		}
+	case SatelliteProviderLandsat:
+		// QA_PIXEL ships with both Collection 2 levels.
+		if level == ProcessingLevelL1TP || level == ProcessingLevelL2SP || level == ProcessingLevelSR {
+			return SpectralBandQAPixel
+		}
+	}
+	return SpectralBandUnspecified
+}
 
 // IsValid checks if the spectral band is a valid value.
 func (sb SpectralBand) IsValid() bool {
 	switch sb {
 	case SpectralBandBlue, SpectralBandGreen, SpectralBandRed, SpectralBandNIR,
 		SpectralBandSWIR1, SpectralBandSWIR2,
-		SpectralBandRedEdge1, SpectralBandRedEdge2, SpectralBandRedEdge3:
+		SpectralBandRedEdge1, SpectralBandRedEdge2, SpectralBandRedEdge3,
+		SpectralBandSCL, SpectralBandQAPixel:
 		return true
 	default:
 		return false
@@ -89,6 +153,7 @@ type IngestionTask struct {
 	S3Bucket          *string           `json:"s3_bucket,omitempty" db:"s3_bucket"`
 	S3Key             *string           `json:"s3_key,omitempty" db:"s3_key"`
 	CloudCoverPercent float64           `json:"cloud_cover_percent" db:"cloud_cover_percent"`
+	ProcessingLevel   ProcessingLevel   `json:"processing_level" db:"processing_level"`
 	ResolutionMeters  float64           `json:"resolution_meters" db:"resolution_meters"`
 	Bands             []SpectralBand    `json:"bands" db:"bands"`
 	BboxGeoJSON       *string           `json:"bbox_geojson,omitempty" db:"bbox_geojson"`

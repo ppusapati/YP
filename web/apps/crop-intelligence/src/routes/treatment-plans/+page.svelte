@@ -17,14 +17,43 @@
     { key: 'application_date', label: 'Application Date' },
   ];
 
+  let pageTokens: string[] = [''];
+
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+    const __i = Math.floor(pageOffset / Math.max(pageSize, 1));
     loading = true;
     error = null;
     try {
-      const res = await pestClient.listTreatmentPlans({ pageSize, pageOffset });
-      rows = res.plans;
-      totalCount = res.totalCount;
-      return res.totalCount;
+      // pest-prediction has no ListTreatmentPlans: a plan hangs off a
+      // prediction and GetTreatmentPlan takes a prediction_id. So the plans on
+      // offer are the plans for this page of predictions, fetched one apiece.
+      // N+1 over a page of twenty-five, which is the cost of the service not
+      // having a listing — visible here rather than hidden behind a method
+      // that does not exist.
+      const page = await pestClient.listPredictions({
+        pageSize,
+        pageToken: pageTokens[__i] ?? '',
+      });
+      if (page.nextPageToken) pageTokens[__i + 1] = page.nextPageToken;
+
+      const plans = await Promise.all(
+        page.predictions.map((p) =>
+          pestClient
+            .getTreatmentPlan({ predictionId: p.id })
+            .then((r) => ({
+              id: p.id,
+              fieldId: p.fieldId,
+              pestSpeciesId: p.pestSpeciesId,
+              riskLevel: p.riskLevel,
+              treatments: r.treatments.length,
+            }))
+            // One prediction without a plan must not empty the whole page.
+            .catch(() => null),
+        ),
+      );
+      rows = plans.filter((p): p is NonNullable<typeof p> => p !== null);
+      totalCount = page.totalCount;
+      return page.totalCount;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load treatment plans';
       rows = [];

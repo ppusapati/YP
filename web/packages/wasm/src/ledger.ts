@@ -7,11 +7,8 @@ import { loadWasmModule } from './loader';
 import type {
   JournalLine,
   JournalValidationResult,
-  AccountBalance,
   RunningBalanceEntry,
-  AgingBucket,
   AgingResult,
-  ReconciliationMatch,
   ReconciliationResult,
   TrialBalanceEntry,
   TrialBalanceResult,

@@ -1,8 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_analytics/flutter_analytics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../../../core/di/providers.dart';
 
 import '../bloc/diagnosis_bloc.dart';
 import '../bloc/diagnosis_event.dart';
@@ -27,6 +31,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   String? _selectedImagePath;
   bool _isSubmitting = false;
 
+  Analytics get _analytics =>
+      ProviderScope.containerOf(context, listen: false).read(analyticsProvider);
+
   Future<void> _captureFromCamera() async {
     final image = await _imagePicker.pickImage(
       source: ImageSource.camera,
@@ -36,6 +43,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     );
     if (image != null) {
       setState(() => _selectedImagePath = image.path);
+      // Which source a photo came from decides how useful the model's answer
+      // is: a gallery pick is often an old screenshot of somebody else's leaf.
+      _analytics.track('diagnosis_photo_captured', properties: {'source': 'camera'});
     }
   }
 
@@ -48,12 +58,16 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     );
     if (image != null) {
       setState(() => _selectedImagePath = image.path);
+      _analytics.track('diagnosis_photo_captured', properties: {'source': 'gallery'});
     }
   }
 
   void _submitDiagnosis() {
     if (_selectedImagePath == null) return;
     setState(() => _isSubmitting = true);
+    _analytics.track('diagnosis_submitted', properties: {
+      'has_field': widget.fieldId != null,
+    });
     context.read<DiagnosisBloc>().add(SubmitDiagnosis(
           fieldId: widget.fieldId ?? '',
           imagePath: _selectedImagePath!,
@@ -75,6 +89,12 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       listener: (context, state) {
         if (state is DiagnosisComplete) {
           setState(() => _isSubmitting = false);
+          // Recorded separately from the submission, because the gap between
+          // the two counts is the failure rate — and a submission that never
+          // completes is the exact bug this app shipped with.
+          _analytics.track('diagnosis_completed', properties: {
+            'explained': state.diagnosis.explanations.isNotEmpty,
+          });
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => BlocProvider.value(
@@ -85,6 +105,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           );
         } else if (state is DiagnosisError) {
           setState(() => _isSubmitting = false);
+          _analytics.track('diagnosis_failed');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),

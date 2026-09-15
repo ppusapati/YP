@@ -9,6 +9,7 @@ enum SatelliteProvider {
   SATELLITE_PROVIDER_SENTINEL2 = 1;
   SATELLITE_PROVIDER_LANDSAT = 2;
   SATELLITE_PROVIDER_PLANETSCOPE = 3;
+  SATELLITE_PROVIDER_UAV = 4; // drone orthomosaics
 }
 
 enum IngestionStatus {
@@ -31,6 +32,12 @@ enum SpectralBand {
   SPECTRAL_BAND_RED_EDGE1 = 7;
   SPECTRAL_BAND_RED_EDGE2 = 8;
   SPECTRAL_BAND_RED_EDGE3 = 9;
+  // Per-pixel quality layers, attached automatically by the ingestion service
+  // for providers that publish them. Not reflectance bands: these say which
+  // pixels are cloud, shadow or snow, without which an index is computed over
+  // whatever the weather left behind.
+  SPECTRAL_BAND_SCL = 10;      // Sentinel-2 L2A scene classification
+  SPECTRAL_BAND_QA_PIXEL = 11; // Landsat Collection 2 QA bitmask
 }
 
 message IngestionTask {
@@ -54,6 +61,7 @@ message IngestionTask {
   google.protobuf.Timestamp created_at = 18;
   google.protobuf.Timestamp updated_at = 19;
   google.protobuf.Timestamp completed_at = 20;
+  string processing_level = 21; // L1C, L2A, L1TP, L2SP, SR, TOA, UNKNOWN
 }
 
 message RequestIngestionRequest {
@@ -63,6 +71,7 @@ message RequestIngestionRequest {
   google.protobuf.Timestamp date_to = 4;
   double max_cloud_cover = 5;
   repeated SpectralBand bands = 6;
+  string processing_level = 7; // requested product level; defaults to UNKNOWN
 }
 message RequestIngestionResponse {
   IngestionTask task = 1;

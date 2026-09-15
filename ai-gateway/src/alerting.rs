@@ -80,3 +80,80 @@ impl AlertingEngine {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn alerting_engine_constructs() {
+        let _engine = AlertingEngine::new();
+    }
+
+    #[test]
+    fn evaluate_with_empty_request_returns_response() {
+        let engine = AlertingEngine::new();
+        let req = proto::EvaluateFieldRiskRequest {
+            request_id: "req-001".to_string(),
+            field_id: "field-a".to_string(),
+            farm_id: "farm-1".to_string(),
+            crop_type: "corn".to_string(),
+            weather: None,
+            soil_state: None,
+            detections: None,
+            growth: None,
+        };
+        let resp = engine.evaluate_field_risk(&req);
+        assert_eq!(resp.request_id, "req-001");
+        assert_eq!(resp.field_id, "field-a");
+        assert!(resp.processing_time_ms >= 0);
+        // Risk values should be finite numbers (not NaN or infinite)
+        assert!(resp.overall_risk.is_finite());
+        assert!(resp.temperature_risk.is_finite());
+        assert!(resp.water_risk.is_finite());
+    }
+
+    #[test]
+    fn evaluate_with_weather_data() {
+        let engine = AlertingEngine::new();
+        let req = proto::EvaluateFieldRiskRequest {
+            request_id: "req-002".to_string(),
+            field_id: "field-b".to_string(),
+            farm_id: "farm-1".to_string(),
+            crop_type: "wheat".to_string(),
+            weather: Some(proto::FieldWeather {
+                temperature_current: 35.0,
+                temperature_min_forecast: 28.0,
+                temperature_max_forecast: 40.0,
+                precipitation_mm: 0.0,
+                precipitation_forecast_mm: 0.0,
+                et_reference_mm: 7.0,
+                co2_ppm: 420.0,
+            }),
+            soil_state: None,
+            detections: None,
+            growth: None,
+        };
+        let resp = engine.evaluate_field_risk(&req);
+        assert_eq!(resp.field_id, "field-b");
+        // With high temps and no rain, we expect some risk
+        assert!(resp.overall_risk.is_finite());
+    }
+
+    #[test]
+    fn evaluate_preserves_request_id() {
+        let engine = AlertingEngine::new();
+        let req = proto::EvaluateFieldRiskRequest {
+            request_id: "unique-id-12345".to_string(),
+            field_id: "f1".to_string(),
+            farm_id: "farm".to_string(),
+            crop_type: "soy".to_string(),
+            weather: None,
+            soil_state: None,
+            detections: None,
+            growth: None,
+        };
+        let resp = engine.evaluate_field_risk(&req);
+        assert_eq!(resp.request_id, "unique-id-12345");
+    }
+}

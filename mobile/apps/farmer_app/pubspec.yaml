@@ -6,7 +6,7 @@ publish_to: none
 resolution: workspace
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
   flutter: ">=3.22.0"
 
 dependencies:
@@ -16,6 +16,8 @@ dependencies:
     sdk: flutter
 
   # ── Workspace packages ──────────────────────────────────────────────
+  flutter_analytics:
+    path: ../../packages/flutter_analytics
   flutter_auth:
     path: ../../packages/flutter_auth
   flutter_map_core:
@@ -36,7 +38,7 @@ dependencies:
   bloc: ^8.1.4
 
   # ── Networking & data ───────────────────────────────────────────────
-  protobuf: ^21.1.2
+  protobuf: ^6.0.0
   http: ^1.2.2
 
   # ── Local storage ──────────────────────────────────────────────────
@@ -56,6 +58,7 @@ dependencies:
   image: ^4.3.0
   image_picker: ^1.1.2
   photo_view: ^0.15.0
+  mobile_scanner: ^6.0.2
 
   # ── Charts ─────────────────────────────────────────────────────────
   fl_chart: ^0.70.2
@@ -71,7 +74,11 @@ dependencies:
   flutter_svg: ^2.0.16
   cached_network_image: ^3.4.1
   google_fonts: ^6.2.1
-  intl: ^0.19.0
+  # Widened rather than pinned: flutter_localizations pins intl to whatever the
+  # installed Flutter ships, which is 0.20.x on recent stable and 0.19.x on
+  # older ones. A caret on 0.19 makes the app unresolvable on any Flutter newer
+  # than the one it was written against.
+  intl: ">=0.19.0 <0.21.0"
   gap: ^3.0.1
   shimmer: ^3.0.0
 
@@ -109,7 +116,13 @@ flutter:
     - assets/icons/
     - assets/map_styles/
 
-  fonts:
-    - family: YPIcons
-      fonts:
-        - asset: assets/fonts/YPIcons.ttf
+  # The YPIcons font family was declared here and assets/fonts/ contains only a
+  # .gitkeep, so `flutter build` and `flutter test` both failed outright with
+  # "unable to locate asset entry" — the app could not be built or tested at
+  # all. Nothing references the family in Dart; it would have rendered as tofu
+  # if it had. Restore this block together with the .ttf.
+  #
+  # fonts:
+  #   - family: YPIcons
+  #     fonts:
+  #       - asset: assets/fonts/YPIcons.ttf

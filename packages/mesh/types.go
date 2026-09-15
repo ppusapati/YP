@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"p9e.in/samavaya/packages/loadbalancer"
-	"p9e.in/samavaya/packages/registry"
 )
 
 // RoutingPolicy defines how to route requests to a service

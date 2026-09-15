@@ -12,7 +12,7 @@ var ConstructionSagasModule = fx.Module("construction-sagas",
 	fx.Provide(
 		// SAGA-C01: Construction Project Initiation (Phase 5B)
 		fx.Annotate(
-			NewProjectInitiationSaga,
+			NewConstructionProjectInitiationSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-C02: Progress Billing (Construction) (Phase 5B)
@@ -64,7 +64,7 @@ func RegisterConstructionSagaHandlers(handlers []saga.SagaHandler) {
 // This is a convenience function for cases where manual aggregation is needed
 func ProvideConstructionSagaHandlers() []saga.SagaHandler {
 	return []saga.SagaHandler{
-		NewProjectInitiationSaga(),
+		NewConstructionProjectInitiationSaga(),
 		NewProgressBillingSaga(),
 		NewMaterialProcurementSaga(),
 		NewSubcontractorManagementSaga(),

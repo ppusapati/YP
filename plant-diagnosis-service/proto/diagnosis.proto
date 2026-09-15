@@ -126,6 +126,9 @@ message DiagnosisResult {
   double                    overall_health_score    = 10;
   string                    summary                 = 11;
   google.protobuf.Timestamp created_at              = 12;
+  // Per-image model explanations, one per analysed photo. Empty when the
+  // serving model could not explain itself.
+  repeated Explanation      explanations            = 13;
 }
 
 message DiagnosisRequest {
@@ -157,9 +160,21 @@ message SubmitDiagnosisRequest {
 }
 
 message ImageInput {
+  // Where the image lives, for callers that have already stored it. The
+  // service fetches the bytes behind it; only https and s3 are accepted.
   string    image_url  = 1;
   ImageType image_type = 2;
   string    mime_type  = 3;
+  // The image itself, for callers that have not stored it anywhere — which is
+  // every phone. A capture lives at a path on the device that no server can
+  // resolve, so before this field existed the mobile apps sent
+  // `/data/user/0/.../img.jpg` as the URL, it failed scheme validation, and
+  // the photo was never analysed.
+  //
+  // Set one or the other. When bytes are present the URL is not fetched, and
+  // the bytes are never persisted with the request record: they go to the
+  // gateway and are dropped.
+  bytes     image_bytes = 4;
 }
 
 message SubmitDiagnosisResponse {
@@ -226,6 +241,34 @@ message IdentifySpeciesResponse {
   int64                 processing_time_ms = 3;
 }
 
+// Why a vision model answered the way it did.
+//
+// Produced by Grad-CAM over the serving model's feature map: a heatmap of what
+// the model actually looked at, plus the region it keyed on and a sentence
+// describing it. Absent when the answer came from a model that cannot explain
+// itself — a demo detector or an external provider.
+message Explanation {
+  string task              = 1;
+  string class_name        = 2;
+  // Greyscale PNG, brightest where the evidence is.
+  bytes  heatmap_png       = 3;
+  int32  heatmap_width     = 4;
+  int32  heatmap_height    = 5;
+  // Region the model keyed on, normalised to [0,1] from the top left so it
+  // survives any resize of the image it is drawn over.
+  double focus_x           = 6;
+  double focus_y           = 7;
+  double focus_width       = 8;
+  double focus_height      = 9;
+  // Share of the image inside that region; near 1 means nothing in particular
+  // was located.
+  double focus_coverage    = 10;
+  string summary           = 11;
+  string method            = 12;
+  // False when the map was flat and there is nothing to point at.
+  bool   localised         = 13;
+}
+
 message DetectNutrientDeficiencyRequest {
   string              plant_species_id = 1;
   repeated ImageInput images           = 2;
@@ -235,6 +278,8 @@ message DetectNutrientDeficiencyResponse {
   repeated NutrientDeficiency deficiencies      = 1;
   string                      ai_model_version  = 2;
   int64                       processing_time_ms = 3;
+  // One per analysed image, in request order.
+  repeated Explanation        explanations      = 4;
 }
 
 message DetectPestDamageRequest {
@@ -246,6 +291,152 @@ message DetectPestDamageResponse {
   repeated PestDamage pests              = 1;
   string              ai_model_version   = 2;
   int64               processing_time_ms = 3;
+  repeated Explanation explanations      = 4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Training-label review (human-in-the-loop labeling)
+//
+// Images the AI gateway auto-labelled are queued for agronomists to confirm,
+// correct, or reject. The service proxies the gateway's sample store and scopes
+// everything to the caller's tenant.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LabelReviewDecision {
+  LABEL_REVIEW_DECISION_UNSPECIFIED = 0;
+  LABEL_REVIEW_DECISION_CONFIRMED   = 1; // auto-label is right
+  LABEL_REVIEW_DECISION_CORRECTED   = 2; // replace with corrected_label
+  LABEL_REVIEW_DECISION_REJECTED    = 3; // exclude the sample from training
+}
+
+message TrainingLabel {
+  string name       = 1;
+  double confidence = 2;
+  string category   = 3;
+  string severity   = 4;
+}
+
+message LabelReview {
+  LabelReviewDecision decision        = 1;
+  string              corrected_label = 2;
+  string              reviewer_id     = 3;
+  string              notes           = 4;
+  google.protobuf.Timestamp reviewed_at = 5;
+}
+
+// A trained model's confident disagreement with a stored label.
+//
+// Worth a reviewer's attention ahead of merely low-confidence samples: a wrong
+// label does not just waste one example, it teaches the next model the same
+// mistake and counts as an error against any model that gets it right.
+message LabelSuspicion {
+  string predicted       = 1;
+  double predicted_prob  = 2;
+  double label_prob      = 3;
+  string model_version   = 4;
+  string flagged_at      = 5;
+}
+
+message LabelReviewSample {
+  string id              = 1;  // content hash of the image
+  string task            = 2;  // disease, pest, nutrient_deficiency, plant_classification
+  google.protobuf.Timestamp collected_at = 3;
+  string provenance      = 4;  // external_api, local_model, human
+  string provider        = 5;  // API provider or local model version
+  repeated TrainingLabel labels = 6;
+  double top_confidence  = 7;
+  string farm_id         = 8;
+  string field_id        = 9;
+  string crop            = 10;
+  string submitted_by    = 11;
+  LabelReview review     = 12; // unset until reviewed
+  string effective_label = 13; // label after applying the review
+  LabelSuspicion suspect = 14; // unset unless a trained model contradicted it
+  // True when this sample wants another pair of eyes, because a reviewer asked
+  // or because two reviewers already disagreed.
+  bool needs_second_opinion = 15;
+  // Every review, oldest first. `review` above stays the most recent.
+  repeated LabelReview reviews = 16;
+}
+
+// How much two reviewers agree, and whether that is more than chance.
+//
+// Raw agreement flatters an imbalanced task: two reviewers who both answer
+// "healthy" on a set that is ninety percent healthy agree ninety percent of the
+// time having demonstrated nothing.
+message ReviewAgreement {
+  int32 compared = 1;
+  double raw_agreement = 2;
+  double kappa = 3;
+  string strength = 4;
+  repeated LabelDisagreement disagreements = 5;
+}
+
+message LabelDisagreement {
+  string first = 1;
+  string second = 2;
+  int32 count = 3;
+}
+
+message RequestSecondOpinionRequest {
+  string task = 1;
+  string sample_id = 2;
+  bool wanted = 3; // false clears the flag
+}
+
+message RequestSecondOpinionResponse {
+  LabelReviewSample sample = 1;
+}
+
+message GetReviewAgreementRequest {
+  string task = 1;
+}
+
+message GetReviewAgreementResponse {
+  ReviewAgreement agreement = 1;
+}
+
+message ListLabelReviewQueueRequest {
+  string task           = 1;  // required
+  bool   include_reviewed = 2; // default: only unreviewed samples
+  double max_confidence = 3;  // optional upper bound on top_confidence (0 = none)
+  string provenance     = 4;  // optional filter
+  int32  page_size      = 5;
+  int32  page_offset    = 6;
+  bool   newest_first   = 7;  // default orders lowest-confidence first (active learning)
+  // Only labels a trained model contradicted, worst disagreement first. These
+  // are where the data is probably wrong rather than merely hard.
+  bool   suspect_only   = 8;
+  // Only samples waiting on another reviewer.
+  bool   second_opinion_only = 9;
+}
+
+message ListLabelReviewQueueResponse {
+  repeated LabelReviewSample samples = 1;
+  int32 total_count      = 2;
+  int32 unreviewed_count = 3;
+}
+
+message SubmitLabelReviewRequest {
+  string              task            = 1;
+  string              sample_id       = 2;
+  LabelReviewDecision decision        = 3;
+  string              corrected_label = 4;
+  string              notes           = 5;
+}
+
+message SubmitLabelReviewResponse {
+  LabelReviewSample sample = 1;
+}
+
+message GetLabelReviewImageRequest {
+  string task      = 1;
+  string sample_id = 2;
+}
+
+message GetLabelReviewImageResponse {
+  bytes  image_bytes = 1;
+  string mime_type   = 2;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -279,4 +470,15 @@ service PlantDiagnosisService {
 
   // Detect pest damage from images
   rpc DetectPestDamage(DetectPestDamageRequest) returns (DetectPestDamageResponse);
+
+  // List auto-labelled training samples awaiting human review (tenant-scoped)
+  rpc ListLabelReviewQueue(ListLabelReviewQueueRequest) returns (ListLabelReviewQueueResponse);
+
+  // Confirm, correct, or reject an auto-label
+  rpc SubmitLabelReview(SubmitLabelReviewRequest) returns (SubmitLabelReviewResponse);
+
+  // Fetch the image behind a review-queue sample
+  rpc GetLabelReviewImage(GetLabelReviewImageRequest) returns (GetLabelReviewImageResponse);
+  rpc RequestSecondOpinion  (RequestSecondOpinionRequest)  returns (RequestSecondOpinionResponse);
+  rpc GetReviewAgreement    (GetReviewAgreementRequest)    returns (GetReviewAgreementResponse);
 }

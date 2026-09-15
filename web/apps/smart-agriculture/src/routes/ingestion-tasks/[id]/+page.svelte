@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
   import { requestIngestionFormSchema } from '@samavāya/agriculture/schemas';
@@ -25,27 +24,16 @@
     }
   });
 
-  async function handleSubmit(formValues: Record<string, unknown>) {
-    isSubmitting = true;
-    error = null;
-    try {
-      await ingestionClient.updateIngestionTask({ id, ...formValues } as any);
-      goto('/ingestion-tasks');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update ingestion task';
-    } finally {
-      isSubmitting = false;
-    }
+  // This page offered Save and Delete for a record that cannot be either.
+  //
+  // A ingestion task is the result of an observation or a computation, and its
+  // service declares no Update or Delete — deliberately. Correcting one means
+  // submitting another; removing one erases evidence that a later report is
+  // built on, and the report still renders, which is what makes it dangerous.
+  async function handleSubmit(_formValues: Record<string, unknown>) {
+    error = 'A ingestion task cannot be edited. Submit a new one instead.';
   }
 
-  async function handleDelete() {
-    try {
-      await ingestionClient.cancelIngestion({ id });
-      goto('/ingestion-tasks');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to cancel ingestion task';
-    }
-  }
 </script>
 
 <CrudFormPage
@@ -59,7 +47,6 @@
   {isSubmitting}
   {error}
   cancelHref="/ingestion-tasks"
-  showDelete={true}
+  showDelete={false}
   onSubmit={handleSubmit}
-  onDelete={handleDelete}
 />

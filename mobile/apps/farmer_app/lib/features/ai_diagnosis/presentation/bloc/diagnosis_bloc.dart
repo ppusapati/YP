@@ -10,7 +10,6 @@ class DiagnosisBloc extends Bloc<DiagnosisEvent, DiagnosisState> {
       : _repository = repository,
         super(const DiagnosisInitial()) {
     on<CaptureImage>(_onCaptureImage);
-    on<UploadImage>(_onUploadImage);
     on<SubmitDiagnosis>(_onSubmitDiagnosis);
     on<LoadDiagnosisHistory>(_onLoadHistory);
   }
@@ -21,26 +20,10 @@ class DiagnosisBloc extends Bloc<DiagnosisEvent, DiagnosisState> {
     CaptureImage event,
     Emitter<DiagnosisState> emit,
   ) async {
-    // The BLoC signals the UI that the camera is ready.
-    // Actual image capture is handled in the UI layer using camera/image_picker.
-    // The captured image path is then submitted via SubmitDiagnosis or UploadImage.
+    // The BLoC signals the UI that the camera is ready; the capture itself is
+    // the UI layer's, through image_picker. The resulting path comes back as
+    // SubmitDiagnosis, which reads the file and sends the bytes.
     emit(const CameraReady());
-  }
-
-  Future<void> _onUploadImage(
-    UploadImage event,
-    Emitter<DiagnosisState> emit,
-  ) async {
-    emit(const ImageUploading());
-    try {
-      final imageUrl = await _repository.uploadImage(
-        event.imageBytes,
-        event.fileName,
-      );
-      emit(ImageUploaded(imageUrl: imageUrl));
-    } catch (e) {
-      emit(DiagnosisError(message: e.toString()));
-    }
   }
 
   Future<void> _onSubmitDiagnosis(

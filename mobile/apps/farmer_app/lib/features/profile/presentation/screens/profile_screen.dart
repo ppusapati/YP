@@ -149,7 +149,7 @@ class ProfileScreen extends ConsumerWidget {
           // Logout button
           OutlinedButton.icon(
             onPressed: () {
-              showDialog(
+              showDialog<void>(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Sign Out'),

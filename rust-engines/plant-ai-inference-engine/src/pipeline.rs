@@ -181,6 +181,12 @@ pub struct InferencePipeline {
     pub device: DeviceType,
     /// Whether the model is loaded and ready.
     pub is_loaded: bool,
+    /// Whether the loaded weights are demo weights rather than a trained model.
+    ///
+    /// Carried so a caller can refuse to present demo output as a prediction.
+    /// Without it, a demo-backed pipeline is indistinguishable from a real one
+    /// at every call site.
+    pub is_demo: bool,
     /// Model weights (simplified representation for CPU inference).
     /// In production, this would hold an ONNX runtime session or similar.
     weights: Option<ModelWeights>,
@@ -259,6 +265,7 @@ impl InferencePipeline {
             config,
             device: DeviceType::CPU,
             is_loaded: false,
+            is_demo: false,
             weights: None,
             warmup_count: 0,
         }
@@ -270,6 +277,7 @@ impl InferencePipeline {
             config,
             device,
             is_loaded: false,
+            is_demo: false,
             weights: None,
             warmup_count: 0,
         }
@@ -277,22 +285,37 @@ impl InferencePipeline {
 
     /// Load a model from a file path.
     ///
-    /// In production, this would load an ONNX model using ort or similar.
-    /// This implementation creates a deterministic demo model.
-    pub fn load_model(&mut self, _model_path: &str, _format: ModelFormat) -> Result<(), PipelineError> {
-        let weights = ModelWeights::random_init(
-            self.config.num_classes,
-            self.config.input_size,
-        );
-        self.weights = Some(weights);
-        self.is_loaded = true;
-        self.warmup_count = 0;
-        Ok(())
+    /// Always fails: this crate has no model reader. It used to discard the
+    /// path, install `ModelWeights::random_init`, set `is_loaded` and return
+    /// `Ok(())` — so a caller that asked for a trained classifier received a
+    /// deterministic formula over the class index and believed it had loaded a
+    /// model from disk. There was no error, no warning, and no flag.
+    ///
+    /// Failing here means the caller finds out at startup rather than through
+    /// predictions that look plausible and mean nothing. For real inference,
+    /// use the ONNX path in `plant_ai_inference_engine::onnx`; for exercising
+    /// the plumbing, call [`load_demo_model`], which says what it is.
+    pub fn load_model(&mut self, model_path: &str, _format: ModelFormat) -> Result<(), PipelineError> {
+        Err(PipelineError::ModelLoadError(format!(
+            "cannot load '{model_path}': this pipeline has no model reader. \
+             Use the ONNX classifier for trained models, or load_demo_model() \
+             for deterministic demo weights."
+        )))
     }
 
-    /// Initialize the pipeline with pre-built weights (for testing).
+    /// Initialise the pipeline with deterministic demo weights.
+    ///
+    /// Output from these is arithmetic, not inference: a class score is a
+    /// formula over the class index and a few image statistics, and carries no
+    /// information about the image. Useful for tests and for exercising the
+    /// plumbing; [`is_demo`] is how a caller tells it apart from a real model.
     pub fn load_demo_model(&mut self) -> Result<(), PipelineError> {
-        self.load_model("demo", ModelFormat::CustomWeights)
+        let weights = ModelWeights::random_init(self.config.num_classes, self.config.input_size);
+        self.weights = Some(weights);
+        self.is_loaded = true;
+        self.is_demo = true;
+        self.warmup_count = 0;
+        Ok(())
     }
 
     /// Warm up the model by running dummy inference.

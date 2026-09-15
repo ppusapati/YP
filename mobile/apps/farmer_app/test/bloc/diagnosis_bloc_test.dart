@@ -97,11 +97,15 @@ void main() {
     );
 
     blocTest<DiagnosisBloc, DiagnosisState>(
-      'emits ImageCaptured on CaptureImage',
+      // CaptureImage signals that the camera can be opened; the capture itself
+      // happens in the UI layer, which then sends UploadImage or
+      // SubmitDiagnosis with the path. The bloc says so in a comment on
+      // _onCaptureImage, and this test expected the later state.
+      'emits CameraReady on CaptureImage',
       build: () => DiagnosisBloc(repository: mockRepository),
       act: (bloc) => bloc.add(const CaptureImage()),
       expect: () => [
-        isA<ImageCaptured>(),
+        isA<CameraReady>(),
       ],
     );
 

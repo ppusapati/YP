@@ -1,9 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { traceabilityRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { traceabilityRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -25,26 +24,18 @@
     }
   });
 
-  async function handleSubmit(formValues: Record<string, unknown>) {
-    isSubmitting = true;
-    error = null;
-    try {
-      await traceabilityClient.updateRecord({ id, ...formValues } as any);
-      goto('/supply-chain/traceability');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to update traceability record';
-    } finally {
-      isSubmitting = false;
-    }
-  }
-
-  async function handleDelete() {
-    try {
-      await traceabilityClient.deleteRecord({ id } as any);
-      goto('/supply-chain/traceability');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete traceability record';
-    }
+  // UpdateRecord is declared in traceability.proto and missing from the
+  // generated TypeScript client, which is stale — the proto has twenty-one
+  // RPCs and the client fourteen. DeleteRecord does not exist at all, and
+  // should not: a traceability record is the chain of custody for a batch and
+  // removing one erases provenance rather than correcting it.
+  //
+  // So this page loads and shows the record, and saving says why it cannot.
+  // See docs/proto-generation.md.
+  async function handleSubmit(_formValues: Record<string, unknown>) {
+    error =
+      'Saving is unavailable: this app\'s generated client is missing ' +
+      'UpdateRecord. Regenerate it to enable editing.';
   }
 </script>
 
@@ -52,14 +43,13 @@
   title="Edit Traceability Record"
   subtitle="Update traceability details"
   mode="edit"
-  schema={traceabilityRecordFormSchema}
+  schema={traceabilityRecordSchema}
   {values}
   {errors}
   {isLoading}
   {isSubmitting}
   {error}
-  cancelHref="/supply-chain/traceability"
-  showDelete={true}
+  cancelHref="/traceability"
+  showDelete={false}
   onSubmit={handleSubmit}
-  onDelete={handleDelete}
 />

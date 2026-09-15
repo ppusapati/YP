@@ -11,10 +11,10 @@ type TileFormat string
 
 const (
 	TileFormatUnspecified TileFormat = ""
-	TileFormatPNG        TileFormat = "PNG"
-	TileFormatJPEG       TileFormat = "JPEG"
-	TileFormatWEBP       TileFormat = "WEBP"
-	TileFormatMVT        TileFormat = "MVT"
+	TileFormatPNG         TileFormat = "PNG"
+	TileFormatJPEG        TileFormat = "JPEG"
+	TileFormatWEBP        TileFormat = "WEBP"
+	TileFormatMVT         TileFormat = "MVT"
 )
 
 // IsValid checks if the tile format is a valid value.
@@ -69,13 +69,13 @@ type TileLayer string
 
 const (
 	TileLayerUnspecified TileLayer = ""
-	TileLayerRGB        TileLayer = "RGB"
-	TileLayerNDVI       TileLayer = "NDVI"
-	TileLayerNDWI       TileLayer = "NDWI"
-	TileLayerEVI        TileLayer = "EVI"
-	TileLayerStress     TileLayer = "STRESS"
-	TileLayerFalseColor TileLayer = "FALSE_COLOR"
-	TileLayerThermal    TileLayer = "THERMAL"
+	TileLayerRGB         TileLayer = "RGB"
+	TileLayerNDVI        TileLayer = "NDVI"
+	TileLayerNDWI        TileLayer = "NDWI"
+	TileLayerEVI         TileLayer = "EVI"
+	TileLayerStress      TileLayer = "STRESS"
+	TileLayerFalseColor  TileLayer = "FALSE_COLOR"
+	TileLayerThermal     TileLayer = "THERMAL"
 )
 
 // IsValid checks if the tile layer is a valid value.
@@ -92,20 +92,20 @@ func (tl TileLayer) IsValid() bool {
 // Tileset represents a generated set of map tiles in the domain.
 type Tileset struct {
 	models.BaseModel
-	TenantID         string        `json:"tenant_id" db:"tenant_id"`
-	FarmID           string        `json:"farm_id" db:"farm_id"`
-	ProcessingJobID  string        `json:"processing_job_id" db:"processing_job_id"`
-	Layer            TileLayer     `json:"layer" db:"layer"`
-	Format           TileFormat    `json:"format" db:"format"`
-	Status           TilesetStatus `json:"status" db:"status"`
-	MinZoom          int32         `json:"min_zoom" db:"min_zoom"`
-	MaxZoom          int32         `json:"max_zoom" db:"max_zoom"`
-	S3Prefix         *string       `json:"s3_prefix,omitempty" db:"s3_prefix"`
-	TotalTiles       int64         `json:"total_tiles" db:"total_tiles"`
-	BboxGeoJSON      *string       `json:"bbox_geojson,omitempty" db:"bbox_geojson"`
-	ErrorMessage     *string       `json:"error_message,omitempty" db:"error_message"`
-	AcquisitionDate  *time.Time    `json:"acquisition_date,omitempty" db:"acquisition_date"`
-	CompletedAt      *time.Time    `json:"completed_at,omitempty" db:"completed_at"`
+	TenantID        string        `json:"tenant_id" db:"tenant_id"`
+	FarmID          string        `json:"farm_id" db:"farm_id"`
+	ProcessingJobID string        `json:"processing_job_id" db:"processing_job_id"`
+	Layer           TileLayer     `json:"layer" db:"layer"`
+	Format          TileFormat    `json:"format" db:"format"`
+	Status          TilesetStatus `json:"status" db:"status"`
+	MinZoom         int32         `json:"min_zoom" db:"min_zoom"`
+	MaxZoom         int32         `json:"max_zoom" db:"max_zoom"`
+	S3Prefix        *string       `json:"s3_prefix,omitempty" db:"s3_prefix"`
+	TotalTiles      int64         `json:"total_tiles" db:"total_tiles"`
+	BboxGeoJSON     *string       `json:"bbox_geojson,omitempty" db:"bbox_geojson"`
+	ErrorMessage    *string       `json:"error_message,omitempty" db:"error_message"`
+	AcquisitionDate *time.Time    `json:"acquisition_date,omitempty" db:"acquisition_date"`
+	CompletedAt     *time.Time    `json:"completed_at,omitempty" db:"completed_at"`
 }
 
 // GetID returns the primary key of the tileset.

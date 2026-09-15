@@ -5,6 +5,7 @@ import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as timestamp_pb;
 
 import '../models/soil_analysis_model.dart';
+import '../../domain/entities/soil_analysis_entity.dart';
 
 abstract class SoilRemoteDataSource {
   Future<SoilAnalysisModel> getSoilAnalysis(String fieldId);
@@ -60,22 +61,41 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
     return _analysisFromPb(pbResponse.analyses.first);
   }
 
+  /// Soil analyses for a field, within a date range.
+  ///
+  /// The `from` and `to` arguments used to be accepted and then ignored, so a
+  /// caller asking for this season's samples got every sample ever taken and a
+  /// trend chart drawn over the wrong window. The proto's ListSoilAnalyses has
+  /// no date filter, so the range is applied here instead — which is honest
+  /// about the cost: the server still sends the whole history and this drops
+  /// what falls outside. For soil samples, which are taken a handful of times a
+  /// season, that is a page of rows rather than a problem; if this ever covers
+  /// a high-frequency series, the filter belongs in the proto.
   @override
   Future<List<SoilAnalysisModel>> getSoilHistory(
     String fieldId, {
     DateTime? from,
     DateTime? to,
   }) async {
-    // TODO: GetSoilHistory RPC does not exist in the soil proto.
-    // Using ListSoilAnalyses filtered by fieldId. Date range filtering
-    // is not supported by the proto; results are returned unfiltered.
     final request = soil_pb.ListSoilAnalysesRequest()..fieldId = fieldId;
 
     final response = await _call('ListSoilAnalyses', request);
 
     final pbResponse =
         soil_pb.ListSoilAnalysesResponse.fromBuffer(response.body);
-    return pbResponse.analyses.map(_analysisFromPb).toList();
+    final analyses = pbResponse.analyses.map(_analysisFromPb);
+
+    if (from == null && to == null) {
+      return analyses.toList();
+    }
+    // Inclusive at both ends: a caller asking for a season names its first and
+    // last day, and a sample taken on either of them belongs to it.
+    return analyses.where((a) {
+      final at = a.analysisDate;
+      if (from != null && at.isBefore(from)) return false;
+      if (to != null && at.isAfter(to)) return false;
+      return true;
+    }).toList();
   }
 
   @override
@@ -99,12 +119,12 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
     return SoilAnalysisModel(
       id: pb.id,
       fieldId: pb.fieldId,
-      pH: pb.soilHealthScore, // proto has soilHealthScore, not direct pH
-      organicCarbon: 0, // not available in SoilAnalysis pb
-      nitrogen: 0, // not available in SoilAnalysis pb
-      phosphorus: 0, // not available in SoilAnalysis pb
-      potassium: 0, // not available in SoilAnalysis pb
-      texture: _mapSoilTexture(pb.healthCategory),
+      pH: pb.pH,
+      organicCarbon: pb.organicMatterPct,
+      nitrogen: pb.nitrogenPpm,
+      phosphorus: pb.phosphorusPpm,
+      potassium: pb.potassiumPpm,
+      texture: _mapSoilTexture(pb.texture),
       analysisDate: pb.hasAnalyzedAt()
           ? _timestampToDateTime(pb.analyzedAt)
           : DateTime.now(),
@@ -115,9 +135,16 @@ class SoilRemoteDataSourceImpl implements SoilRemoteDataSource {
   // Enum mapping helpers
   // ---------------------------------------------------------------------------
 
-  static SoilTexture _mapSoilTexture(soil_pb.HealthCategory pbCategory) {
-    // SoilAnalysis pb does not carry texture directly; best-effort default.
-    return SoilTexture.loamy;
+  static SoilTexture _mapSoilTexture(soil_pb.SoilTexture pbTexture) {
+    return switch (pbTexture) {
+      soil_pb.SoilTexture.SOIL_TEXTURE_SANDY => SoilTexture.sandy,
+      soil_pb.SoilTexture.SOIL_TEXTURE_LOAMY => SoilTexture.loamy,
+      soil_pb.SoilTexture.SOIL_TEXTURE_CLAY => SoilTexture.clay,
+      soil_pb.SoilTexture.SOIL_TEXTURE_SILT => SoilTexture.silt,
+      soil_pb.SoilTexture.SOIL_TEXTURE_PEAT => SoilTexture.peat,
+      soil_pb.SoilTexture.SOIL_TEXTURE_CHALK => SoilTexture.chalk,
+      _ => SoilTexture.loamy,
+    };
   }
 
   // ---------------------------------------------------------------------------

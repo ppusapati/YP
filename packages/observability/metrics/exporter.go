@@ -59,7 +59,7 @@ func (je *JSONExporter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	snapshot, err := je.collector.GetSnapshot(r.Context())
 	if err != nil {
-		je.logger.Error("failed to get metrics snapshot", "error", err)
+		je.logger.Log(p9log.LevelError, "msg", "failed to get metrics snapshot", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return

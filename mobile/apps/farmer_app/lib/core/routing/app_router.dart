@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -53,14 +52,22 @@ import '../../features/tasks/domain/entities/task_entity.dart';
 import '../../features/tasks/presentation/screens/task_detail_screen.dart';
 import '../../features/tasks/presentation/screens/task_editor_screen.dart';
 import '../../features/tasks/presentation/screens/task_list_screen.dart';
+import '../../features/commerce/domain/entities/listing_entity.dart';
+import '../../features/commerce/presentation/screens/create_listing_screen.dart';
+import '../../features/commerce/presentation/screens/listing_detail_screen.dart';
+import '../../features/commerce/presentation/screens/marketplace_screen.dart';
+import '../../features/commerce/presentation/screens/my_orders_screen.dart';
 import '../../features/traceability/domain/entities/produce_record_entity.dart';
 import '../../features/traceability/presentation/screens/produce_detail_screen.dart';
 import '../../features/traceability/presentation/screens/traceability_screen.dart';
 import '../../features/yield_prediction/domain/entities/yield_prediction_entity.dart';
 import '../../features/yield_prediction/presentation/screens/yield_dashboard_screen.dart';
 import '../../features/yield_prediction/presentation/screens/yield_detail_screen.dart';
+import 'package:flutter_analytics/flutter_analytics.dart';
+
 import '../auth/role_provider.dart';
 import '../auth/user_role.dart';
+import '../di/providers.dart';
 
 /// GoRouter configuration provider.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -70,6 +77,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: initialLocation,
+    // One observer rather than a tracking call in sixty screens' initState.
+    // The screens that would forget are invisible in the numbers, which reads
+    // as a feature nobody uses.
+    observers: [ScreenViewObserver(ref.watch(analyticsProvider))],
     routes: [
       // ─── Shell route with bottom navigation ──────────────────────
       ShellRoute(
@@ -390,6 +401,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+
+      // Marketplace
+      GoRoute(
+        path: '/marketplace',
+        builder: (context, state) => const MarketplaceScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            builder: (context, state) => const CreateListingScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              final listing = state.extra as Listing?;
+              return ListingDetailScreen(
+                listingId: state.pathParameters['id']!,
+                listing: listing,
+              );
+            },
+          ),
+        ],
+      ),
+
+      // Orders
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) => const MyOrdersScreen(),
       ),
 
       // Alerts

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"p9e.in/samavaya/packages/grpcdial"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/structpb"
+	"p9e.in/samavaya/packages/grpcdial"
 
 	"p9e.in/samavaya/packages/p9log"
 )
@@ -62,6 +62,11 @@ type YieldPredictionResult struct {
 	StressFactors              []StressFactor
 	ModelVersion               string
 	ProcessingTimeMs           int64
+	// Provenance from the gateway: "parametric", "tabular", or "blended".
+	ModelSource      string
+	TabularWeight    float64
+	CropSupported    bool
+	IntervalCoverage float64
 }
 
 // StressFactor represents a factor that impacts yield negatively.
@@ -101,27 +106,54 @@ type YieldFactorsInput struct {
 	ManagementScore   float64
 }
 
-// PredictYield calls the AI Gateway to get an ML-powered yield prediction.
-// This augments the service's rule-based prediction with the Rust yield-prediction-engine.
+// EnvironmentInput carries observed season weather for a field. When nil the
+// gateway request falls back to score-derived placeholders.
+type EnvironmentInput struct {
+	AvgTemperatureC   float64
+	HumidityPct       float64
+	RainfallMM        float64
+	SolarRadiationMJ  float64
+	GrowingDegreeDays float64
+	FrostDays         int
+	HeatStressDays    int
+}
+
+// PredictYield calls the AI Gateway with score-derived environment placeholders.
 func (c *AIClient) PredictYield(ctx context.Context, requestID, cropType string, factors YieldFactorsInput, fieldAreaHectares float64) (*YieldPredictionResult, error) {
-	envStruct, _ := structpb.NewStruct(map[string]interface{}{
-		"temperature_celsius":  20.0, // default; in production, fetched from weather service
-		"humidity_pct":         factors.WeatherScore * 100.0,
+	return c.PredictYieldWithEnvironment(ctx, requestID, cropType, factors, nil, fieldAreaHectares)
+}
+
+// PredictYieldWithEnvironment calls the AI Gateway using observed season
+// weather when available.
+func (c *AIClient) PredictYieldWithEnvironment(ctx context.Context, requestID, cropType string, factors YieldFactorsInput, env *EnvironmentInput, fieldAreaHectares float64) (*YieldPredictionResult, error) {
+	envFields := map[string]interface{}{
+		"temperature_celsius": 20.0,
+		"humidity_pct":        factors.WeatherScore * 100.0,
 		"rainfall_mm":         factors.IrrigationScore * 600.0,
 		"solar_radiation":     20.0,
 		"wind_speed_kmh":      10.0,
 		"growing_degree_days": 2000.0,
-	})
+	}
+	if env != nil {
+		envFields["temperature_celsius"] = env.AvgTemperatureC
+		envFields["humidity_pct"] = env.HumidityPct
+		envFields["rainfall_mm"] = env.RainfallMM
+		envFields["solar_radiation"] = env.SolarRadiationMJ
+		envFields["growing_degree_days"] = env.GrowingDegreeDays
+		envFields["frost_days"] = float64(env.FrostDays)
+		envFields["heat_stress_days"] = float64(env.HeatStressDays)
+	}
+	envStruct, _ := structpb.NewStruct(envFields)
 
 	soilStruct, _ := structpb.NewStruct(map[string]interface{}{
-		"ph":                factors.SoilQualityScore * 7.0,
+		"ph":                 factors.SoilQualityScore * 7.0,
 		"organic_matter_pct": factors.SoilQualityScore * 5.0,
-		"nitrogen_ppm":      factors.NutrientScore * 80.0,
-		"phosphorus_ppm":    factors.NutrientScore * 40.0,
-		"potassium_ppm":     factors.NutrientScore * 60.0,
-		"moisture_pct":      factors.IrrigationScore * 100.0,
-		"texture":           "loam",
-		"compaction_index":  0.1,
+		"nitrogen_ppm":       factors.NutrientScore * 80.0,
+		"phosphorus_ppm":     factors.NutrientScore * 40.0,
+		"potassium_ppm":      factors.NutrientScore * 60.0,
+		"moisture_pct":       factors.IrrigationScore * 100.0,
+		"texture":            "loam",
+		"compaction_index":   0.1,
 	})
 
 	mgmtStruct, _ := structpb.NewStruct(map[string]interface{}{
@@ -199,6 +231,12 @@ func parseYieldResult(resp *structpb.Struct) *YieldPredictionResult {
 	result.YieldUpperBound = getNumberField(resp, "yield_upper_bound")
 	result.ModelVersion = getStringField(resp, "model_version")
 	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
+	result.ModelSource = getStringField(resp, "model_source")
+	result.TabularWeight = getNumberField(resp, "tabular_weight")
+	result.IntervalCoverage = getNumberField(resp, "interval_coverage")
+	if v, ok := resp.Fields["crop_supported"]; ok {
+		result.CropSupported = v.GetBoolValue()
+	}
 
 	if sfList, ok := resp.Fields["stress_factors"]; ok {
 		if lv := sfList.GetListValue(); lv != nil {

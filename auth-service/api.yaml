@@ -1,0 +1,173 @@
+openapi: "3.1.0"
+info:
+  title: YieldPoint Auth Service
+  version: "1.0.0"
+  description: |
+    Authentication service for YieldPoint. Provides JWT-based authentication
+    with access/refresh token rotation. Uses packages/authz for shared JWT
+    signing and verification.
+
+servers:
+  - url: http://localhost:8093
+    description: Local development
+  - url: http://auth-service:8080
+    description: Docker Compose internal
+
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user
+      description: Validates email/password and returns JWT access + refresh tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                      refresh_token:
+                        type: string
+                      expires_at:
+                        type: integer
+                        description: Unix timestamp
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      tenant_id:
+                        type: string
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      role:
+                        type: string
+        "401":
+          description: Invalid credentials
+        "429":
+          description: Rate limited
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: |
+        Rotates the refresh token (old one is revoked) and issues a new
+        access token. Implements refresh-token rotation for security.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                      refresh_token:
+                        type: string
+                      expires_at:
+                        type: integer
+        "401":
+          description: Invalid or expired refresh token
+
+  /auth/me:
+    get:
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  tenant_id:
+                    type: string
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      summary: Logout and revoke session
+      description: |
+        Revokes the session associated with the access token's session_id claim.
+        If no session_id is present, revokes all active sessions for the user.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out
+        "401":
+          description: Unauthorized
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Service is healthy
+
+  /ready:
+    get:
+      summary: Readiness check
+      description: Returns 200 if the database connection is alive.
+      responses:
+        "200":
+          description: Service is ready
+        "503":
+          description: Database unavailable
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT signed with HS256 using the shared JWT_SECRET.
+        Claims include sub (user_id), tenant_id, role, session_id.
+        Access tokens expire after 15 minutes.

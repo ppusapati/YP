@@ -7,6 +7,11 @@
 # Unlicensed modules are simply not deployed — no code ships to customer.
 
 {$DOMAIN:localhost} {
+    # Static assets and JSON both compress well, and the app is often loaded
+    # over a rural mobile connection where bytes cost time. Caddy skips
+    # already-compressed types, so re-compressing images is not a concern.
+    encode zstd gzip
+
     # ──────────────────────────────────────────────────
     # Identity & Access Management
     # ──────────────────────────────────────────────────

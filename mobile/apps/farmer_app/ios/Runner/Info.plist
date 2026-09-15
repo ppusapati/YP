@@ -69,6 +69,23 @@
 		<string>remote-notification</string>
 	</array>
 
+	<!-- App Transport Security: enforce TLS, pin API domain -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>api.yieldpoint.io</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+
 	<!-- Firebase Cloud Messaging -->
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>

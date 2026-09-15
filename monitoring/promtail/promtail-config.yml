@@ -1,0 +1,103 @@
+# Promtail: ships container logs to Loki.
+#
+# Discovery is through the Docker socket rather than by tailing
+# /var/lib/docker/containers/*.log directly. Both work; service discovery means
+# a container that starts later is picked up without a restart, and the
+# container's compose service name arrives as a label instead of having to be
+# parsed out of a path.
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  # Persisted to a volume. Without it, a Promtail restart re-reads every log
+  # file from the beginning and every line is ingested twice.
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    # A brief Loki restart should not lose logs. Backoff rather than a fixed
+    # retry so a longer outage does not turn into a tight loop.
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 10s
+
+    relabel_configs:
+      # The compose service name is the label anyone actually searches by:
+      # {service="field-service"}.
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+
+      # Only this project's containers. Without the filter, anything else
+      # running on the same daemon ends up in the platform's logs.
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        regex: '.+'
+        action: 'keep'
+
+    pipeline_stages:
+      # The Go services log JSON through zap. Parsing it here means `level` can
+      # become a label and the message can be searched as text, instead of every
+      # query having to match inside a JSON blob.
+      - json:
+          expressions:
+            level: level
+            msg: msg
+            caller: caller
+            tenant_id: tenant_id
+            request_id: request_id
+            component: component
+
+      # Level is a label: it has five values, and "show me the errors" is the
+      # single most common query.
+      - labels:
+          level:
+
+      # tenant_id and request_id are deliberately NOT labels.
+      #
+      # Loki indexes by label, so each distinct combination of values is a
+      # separate stream. A tenant id on a platform with a thousand tenants means
+      # a thousand streams per service; a request id means one per request, and
+      # the index stops fitting in memory long before that becomes obvious. They
+      # stay as fields inside the line, where they are still searchable with
+      # `| json | tenant_id="…"` — slower to query, but the query works and the
+      # cluster survives.
+      #
+      # This is the mistake Loki is best known for, and a multi-tenant platform
+      # is exactly where the temptation is strongest.
+
+      # Use the service's own timestamp rather than the moment Promtail read the
+      # line, so a shipping delay does not reorder the logs.
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+          # zap's production encoder writes an epoch float by default; both are
+          # accepted so a service configured either way lands correctly.
+          fallback_formats:
+            - Unix
+            - UnixMs
+          action_on_failure: fudge
+
+      # Errors deserve a metric as well as a line: a rate of them is what an
+      # alert fires on, and counting in Promtail avoids a log query doing it.
+      - match:
+          selector: '{level="error"}'
+          stages:
+            - metrics:
+                log_errors_total:
+                  type: Counter
+                  description: 'Error-level log lines by service.'
+                  config:
+                    action: inc

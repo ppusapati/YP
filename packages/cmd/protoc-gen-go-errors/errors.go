@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 
-	"p9e.in/samavaya/packages/api/v1/errors"
+	"p9e.in/samavaya/packages/api/v1/response"
 )
 
 const (
@@ -60,7 +60,7 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 }
 
 func genErrorsReason(_ *protogen.Plugin, _ *protogen.File, g *protogen.GeneratedFile, enum *protogen.Enum) bool {
-	defaultCode := proto.GetExtension(enum.Desc.Options(), errors.E_DefaultCode)
+	defaultCode := proto.GetExtension(enum.Desc.Options(), response.E_DefaultCode)
 	code := 0
 	if ok := defaultCode.(int32); ok != 0 {
 		code = int(ok)
@@ -71,7 +71,7 @@ func genErrorsReason(_ *protogen.Plugin, _ *protogen.File, g *protogen.Generated
 	var ew errorWrapper
 	for _, v := range enum.Values {
 		enumCode := code
-		eCode := proto.GetExtension(v.Desc.Options(), errors.E_Code)
+		eCode := proto.GetExtension(v.Desc.Options(), response.E_Code)
 		if ok := eCode.(int32); ok != 0 {
 			enumCode = int(ok)
 		}

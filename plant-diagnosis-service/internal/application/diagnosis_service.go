@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -37,6 +38,7 @@ type diagnosisService struct {
 	pool        *pgxpool.Pool
 	log         *p9log.Helper
 	aiClient    *ai.AIClient
+	fetcher     *ai.ImageFetcher
 }
 
 // NewDiagnosisService creates a new application-layer DiagnosisService.
@@ -57,6 +59,7 @@ func NewDiagnosisService(
 		pool:        pool,
 		log:         p9log.NewHelper(p9log.With(log, "component", "DiagnosisService")),
 		aiClient:    aiClient,
+		fetcher:     ai.NewImageFetcher(),
 	}
 }
 
@@ -91,8 +94,214 @@ func (s *diagnosisService) SubmitDiagnosis(ctx context.Context, req *domain.Diag
 	s.emitEvent(ctx, "agriculture.plant-diagnosis.created", created.ID, map[string]interface{}{
 		"plant_diagnosis_id": created.ID, "tenant_id": tenantID,
 	})
-	s.log.Infow("msg", "diagnosis submitted", "id", created.ID)
+
+	// Analyse before returning, so the response carries the answer the caller
+	// asked for. The alternative — leaving the request PENDING for a worker —
+	// needs a worker, and until now there was none: every diagnosis ever
+	// submitted stayed pending forever.
+	if result := s.analyse(ctx, created); result != nil {
+		created.Result = result
+		created.Status = domain.DiagnosisStatusCompleted
+	}
+
+	s.log.Infow("msg", "diagnosis submitted", "id", created.ID, "status", string(created.Status))
 	return created, nil
+}
+
+// selectImages decides which of a request's images can be analysed, and says
+// why it dropped the rest.
+//
+// Two ways an image arrives, and they have different requirements:
+//
+//   - with bytes: a phone capture. The photo lives at a path on the device
+//     that no server can resolve, so the app sends the file itself. Requiring
+//     a valid URL here would reject the single most common kind of submission
+//     — which is exactly what happened before `image_bytes` existed, and why
+//     a photo taken in the app was never diagnosed.
+//   - with a URL: already stored somewhere. The URL must pass SSRF validation
+//     and the bytes are fetched afterwards by the fetcher.
+//
+// Either way a single image is capped at the same ceiling, so a hostile
+// request cannot exhaust memory by a route a hostile URL could not.
+func selectImages(images []domain.DiagnosisImage) ([]ai.ImageInput, []string) {
+	out := make([]ai.ImageInput, 0, len(images))
+	var skipped []string
+
+	for i, img := range images {
+		switch {
+		case len(img.Bytes) > ai.MaxImageBytes:
+			skipped = append(skipped, fmt.Sprintf(
+				"images[%d]: %d bytes exceeds the %d byte limit", i, len(img.Bytes), ai.MaxImageBytes))
+			continue
+		case len(img.Bytes) > 0:
+			// Nothing to validate: the bytes are the image.
+		default:
+			if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+				skipped = append(skipped, fmt.Sprintf("images[%d]: %v", i, err))
+				continue
+			}
+		}
+
+		out = append(out, ai.ImageInput{
+			ImageURL:  img.ImageURL,
+			ImageType: img.ImageType,
+			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
+		})
+	}
+
+	return out, skipped
+}
+
+// analyse runs the vision models over a request's images and stores what they
+// found. Returns nil when no result could be produced, leaving the request
+// pending rather than recording an empty diagnosis as if it were an answer.
+func (s *diagnosisService) analyse(ctx context.Context, req *domain.DiagnosisRequest) *domain.DiagnosisResult {
+	if s.aiClient == nil || len(req.Images) == 0 {
+		return nil
+	}
+
+	if err := s.repo.UpdateDiagnosisRequestStatus(ctx, req.ID, req.TenantID, domain.DiagnosisStatusAnalyzing); err != nil {
+		s.log.Warnw("msg", "could not mark diagnosis analysing", "id", req.ID, "error", err)
+	}
+
+	images, skipped := selectImages(req.Images)
+	for _, reason := range skipped {
+		s.log.Warnw("msg", "skipping a diagnosis image", "reason", reason)
+	}
+
+	// The gateway classifies bytes, not URLs: handing it a URL alone makes
+	// every local model skip the image and fall through to demo weights.
+	images, fetchErrs := s.fetcher.FetchAll(ctx, images)
+	for _, err := range fetchErrs {
+		s.log.Warnw("msg", "could not fetch a diagnosis image", "error", err)
+	}
+	if len(images) == 0 {
+		s.log.Warnw("msg", "no usable images; leaving diagnosis pending", "id", req.ID)
+		s.markFailed(ctx, req)
+		return nil
+	}
+
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+	speciesID := ""
+	if req.PlantSpeciesID != nil {
+		speciesID = *req.PlantSpeciesID
+	}
+	sctx := s.sampleContext(ctx, speciesID)
+	result := &domain.DiagnosisResult{
+		TenantID:           req.TenantID,
+		DiagnosisRequestID: req.ID,
+	}
+
+	// Each model answers a different question, and one failing says nothing
+	// about the others: a disease reading is still worth storing when the pest
+	// model is down.
+	var versions []string
+	var explanations []ai.Explanation
+	answered := false
+
+	if diag, err := s.aiClient.DiagnoseImage(ctx, requestID, images, speciesID, sctx); err != nil {
+		s.log.Warnw("msg", "AI DiagnoseImage failed", "error", err)
+	} else {
+		answered = true
+		result.DetectedDiseases = marshalOrNil(diag.Diseases)
+		health := diag.OverallHealthScore
+		result.OverallHealthScore = &health
+		summary := diag.Summary
+		result.Summary = &summary
+		result.ProcessingTimeMs = diag.ProcessingTimeMs
+		versions = append(versions, diag.ModelVersion)
+		explanations = append(explanations, diag.Explanations...)
+	}
+
+	if pest, err := s.aiClient.DetectPests(ctx, requestID, images, speciesID, sctx); err != nil {
+		s.log.Warnw("msg", "AI DetectPests failed", "error", err)
+	} else {
+		answered = true
+		result.PestDamage = marshalOrNil(pest.Pests)
+		versions = append(versions, pest.ModelVersion)
+		explanations = append(explanations, pest.Explanations...)
+	}
+
+	if nutrient, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, images, speciesID, sctx); err != nil {
+		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed", "error", err)
+	} else {
+		answered = true
+		result.NutrientDeficiencies = marshalOrNil(nutrient.Deficiencies)
+		versions = append(versions, nutrient.ModelVersion)
+		explanations = append(explanations, nutrient.Explanations...)
+	}
+
+	if species, err := s.aiClient.ClassifyPlant(ctx, requestID, images, sctx); err != nil {
+		s.log.Warnw("msg", "AI ClassifyPlant failed", "error", err)
+	} else {
+		answered = true
+		result.IdentifiedSpecies = marshalOrNil(domain.PlantSpecies{
+			ID:             species.SpeciesID,
+			CommonName:     species.CommonName,
+			ScientificName: species.ScientificName,
+			Family:         species.Family,
+			Confidence:     species.Confidence,
+		})
+		versions = append(versions, species.ModelVersion)
+	}
+
+	if !answered {
+		s.markFailed(ctx, req)
+		return nil
+	}
+
+	result.AIModelVersion = strings.Join(compact(versions), "+")
+	result.Explanations = marshalOrNil(toDomainExplanations(explanations))
+
+	stored, err := s.repo.CreateDiagnosisResult(ctx, result)
+	if err != nil {
+		s.log.Errorw("msg", "could not store diagnosis result", "id", req.ID, "error", err)
+		s.markFailed(ctx, req)
+		return nil
+	}
+	if err := s.repo.UpdateDiagnosisRequestStatus(ctx, req.ID, req.TenantID, domain.DiagnosisStatusCompleted); err != nil {
+		s.log.Warnw("msg", "result stored but status not updated", "id", req.ID, "error", err)
+	}
+
+	s.emitEvent(ctx, "agriculture.plant-diagnosis.analysed", req.ID, map[string]interface{}{
+		"plant_diagnosis_id": req.ID,
+		"tenant_id":          req.TenantID,
+		"model_version":      result.AIModelVersion,
+	})
+	return stored
+}
+
+func (s *diagnosisService) markFailed(ctx context.Context, req *domain.DiagnosisRequest) {
+	if err := s.repo.UpdateDiagnosisRequestStatus(ctx, req.ID, req.TenantID, domain.DiagnosisStatusFailed); err != nil {
+		s.log.Warnw("msg", "could not mark diagnosis failed", "id", req.ID, "error", err)
+	}
+	req.Status = domain.DiagnosisStatusFailed
+}
+
+// marshalOrNil serialises a value for a JSONB column, dropping it rather than
+// storing a broken document if it cannot be encoded.
+func marshalOrNil(v any) json.RawMessage {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	return raw
+}
+
+// compact drops empty strings, so a missing model version does not leave a
+// stray separator in the combined one.
+func compact(in []string) []string {
+	out := make([]string, 0, len(in))
+	for _, v := range in {
+		if v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -245,36 +454,19 @@ func (s *diagnosisService) GetTreatmentPlan(ctx context.Context, diagnosisID str
 		}
 	}
 
-	// Fall back to synthetic placeholder plan.
-	syntheticPlan := s.generateSyntheticTreatmentPlan(tenantID, diagnosisID)
-	created, err := s.repo.CreateTreatmentPlan(ctx, syntheticPlan)
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
-}
-
-func (s *diagnosisService) generateSyntheticTreatmentPlan(tenantID, diagnosisID string) *domain.TreatmentPlan {
-	steps := []domain.TreatmentStep{
-		{StepNumber: 1, Action: "Inspect affected plants closely", Notes: "Document visual symptoms", DurationDays: 1},
-		{StepNumber: 2, Action: "Apply recommended treatment", Product: "Pending analysis", Frequency: "As directed", DurationDays: 7},
-		{StepNumber: 3, Action: "Monitor progress and re-evaluate", Notes: "Reassess after treatment period", DurationDays: 14},
-	}
-	stepsJSON, _ := json.Marshal(steps)
-	desc := "Auto-generated treatment plan pending full AI analysis"
-	cost := "TBD"
-	days := int32(22)
-
-	return &domain.TreatmentPlan{
-		TenantID:      tenantID,
-		DiagnosisID:   diagnosisID,
-		Title:         "Preliminary Treatment Plan",
-		Description:   &desc,
-		Priority:      string(domain.SeverityUnspecified),
-		Steps:         stepsJSON,
-		EstimatedCost: &cost,
-		EstimatedDays: &days,
-	}
+	// No fallback plan.
+	//
+	// This used to build a canned three-step plan — "Apply recommended
+	// treatment", product "Pending analysis", cost "TBD" — persist it, and
+	// return it as a created treatment plan. A farmer opening it saw a plan
+	// with their diagnosis attached and no indication that nothing had been
+	// derived from it, and it sat in the database looking like every real one.
+	//
+	// A treatment plan is advice about what to put on a crop. Inventing one is
+	// worse than having none, so when the advisory engine cannot produce a
+	// plan this says so.
+	return nil, errors.ServiceUnavailable("TREATMENT_PLAN_UNAVAILABLE",
+		"a treatment plan could not be generated for this diagnosis")
 }
 
 // mapPrescriptionToTreatmentPlan converts an AI GeneratePrescription result
@@ -353,10 +545,11 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 			ImageURL:  img.ImageURL,
 			ImageType: img.ImageType,
 			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
 		}
 	}
 
-	result, err := s.aiClient.ClassifyPlant(ctx, requestID, aiImages)
+	result, err := s.aiClient.ClassifyPlant(ctx, requestID, aiImages, s.sampleContext(ctx, ""))
 	if err != nil {
 		s.log.Warnw("msg", "AI ClassifyPlant failed, returning synthetic fallback", "error", err)
 		return syntheticResult, nil
@@ -377,24 +570,25 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 // DetectNutrientDeficiency (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, error) {
-	syntheticResult := []domain.NutrientDeficiency{
-		{
-			Nutrient:        "Nitrogen",
-			ConfidenceScore: 0.5,
-			Severity:        domain.SeverityModerate,
-			Description:     "Possible nitrogen deficiency detected",
-		},
-	}
-
+// DetectNutrientDeficiency identifies nutrient deficiencies from leaf images.
+//
+// It returns an error rather than a guess when the model is unavailable. The
+// code this replaced returned a fabricated "Nitrogen, 0.5 confidence, moderate
+// severity, possible nitrogen deficiency detected" with a nil error whenever
+// the AI client was missing or the call failed — and a named nutrient at a
+// stated confidence reads as a finding. A farmer acting on it would apply
+// nitrogen to a field that might be short of something else entirely, or of
+// nothing at all.
+func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.NutrientDeficiency, []domain.Explanation, error) {
 	for _, img := range images {
 		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
-			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+			return nil, nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
 		}
 	}
 
 	if s.aiClient == nil {
-		return syntheticResult, nil
+		return nil, nil, errors.ServiceUnavailable("NUTRIENT_ANALYSIS_UNAVAILABLE",
+			"nutrient deficiency analysis is not available")
 	}
 
 	requestID := p9context.RequestID(ctx)
@@ -408,13 +602,15 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 			ImageURL:  img.ImageURL,
 			ImageType: img.ImageType,
 			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
 		}
 	}
 
-	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID)
+	result, err := s.aiClient.DetectNutrientDeficiency(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
-		s.log.Warnw("msg", "AI DetectNutrientDeficiency failed, returning synthetic fallback", "error", err)
-		return syntheticResult, nil
+		s.log.Errorw("msg", "nutrient deficiency analysis failed", "error", err)
+		return nil, nil, errors.ServiceUnavailable("NUTRIENT_ANALYSIS_UNAVAILABLE",
+			"nutrient deficiency analysis is not available")
 	}
 
 	deficiencies := make([]domain.NutrientDeficiency, len(result.Deficiencies))
@@ -430,14 +626,14 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 		}
 	}
 
-	return deficiencies, nil
+	return deficiencies, toDomainExplanations(result.Explanations), nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DetectPestDamage (synthetic placeholder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, error) {
+func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID string, images []domain.DiagnosisImage) ([]domain.PestDamage, []domain.Explanation, error) {
 	syntheticResult := []domain.PestDamage{
 		{
 			PestID:          ulid.NewString(),
@@ -449,12 +645,12 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 
 	for _, img := range images {
 		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
-			return nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
+			return nil, nil, errors.BadRequest("INVALID_IMAGE_URL", fmt.Sprintf("image URL rejected: %v", err))
 		}
 	}
 
 	if s.aiClient == nil {
-		return syntheticResult, nil
+		return syntheticResult, nil, nil
 	}
 
 	requestID := p9context.RequestID(ctx)
@@ -468,13 +664,14 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 			ImageURL:  img.ImageURL,
 			ImageType: img.ImageType,
 			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
 		}
 	}
 
-	result, err := s.aiClient.DetectPests(ctx, requestID, aiImages, speciesID)
+	result, err := s.aiClient.DetectPests(ctx, requestID, aiImages, speciesID, s.sampleContext(ctx, speciesID))
 	if err != nil {
 		s.log.Warnw("msg", "AI DetectPests failed, returning synthetic fallback", "error", err)
-		return syntheticResult, nil
+		return syntheticResult, nil, nil
 	}
 
 	pests := make([]domain.PestDamage, len(result.Pests))
@@ -491,7 +688,33 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 		}
 	}
 
-	return pests, nil
+	return pests, toDomainExplanations(result.Explanations), nil
+}
+
+// toDomainExplanations converts the AI client's explanations for the caller.
+func toDomainExplanations(in []ai.Explanation) []domain.Explanation {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]domain.Explanation, len(in))
+	for i, e := range in {
+		out[i] = domain.Explanation{
+			Task:          e.Task,
+			ClassName:     e.ClassName,
+			HeatmapPNG:    e.HeatmapPNG,
+			HeatmapWidth:  e.HeatmapWidth,
+			HeatmapHeight: e.HeatmapHeight,
+			FocusX:        e.FocusX,
+			FocusY:        e.FocusY,
+			FocusWidth:    e.FocusWidth,
+			FocusHeight:   e.FocusHeight,
+			FocusCoverage: e.FocusCoverage,
+			Summary:       e.Summary,
+			Method:        e.Method,
+			Localised:     e.Localised,
+		}
+	}
+	return out
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

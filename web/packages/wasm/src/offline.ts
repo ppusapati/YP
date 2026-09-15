@@ -12,7 +12,6 @@ import type {
   VersionVector,
   MergeResult,
   OperationType,
-  SyncStatus,
   ConflictResolutionStrategy,
 } from './types';
 

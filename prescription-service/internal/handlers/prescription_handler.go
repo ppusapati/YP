@@ -3,7 +3,10 @@ package handlers
 import (
 	"context"
 
+	"connectrpc.com/connect"
+
 	pb "p9e.in/samavaya/agriculture/prescription-service/api/v1"
+	"p9e.in/samavaya/agriculture/prescription-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/prescription-service/internal/models"
 	"p9e.in/samavaya/agriculture/prescription-service/internal/services"
 	"p9e.in/samavaya/packages/deps"
@@ -11,9 +14,9 @@ import (
 	"p9e.in/samavaya/packages/p9log"
 )
 
-// PrescriptionHandler implements the gRPC PrescriptionServiceServer interface.
+// PrescriptionHandler implements the ConnectRPC PrescriptionServiceHandler interface.
 type PrescriptionHandler struct {
-	pb.UnimplementedPrescriptionServiceServer
+	v1connect.UnimplementedPrescriptionServiceHandler
 
 	service services.PrescriptionService
 	deps    deps.ServiceDeps
@@ -30,17 +33,13 @@ func NewPrescriptionHandler(d deps.ServiceDeps, svc services.PrescriptionService
 }
 
 // ListPrescriptions handles the ListPrescriptions RPC.
-func (h *PrescriptionHandler) ListPrescriptions(ctx context.Context, req *pb.ListPrescriptionsRequest) (*pb.ListPrescriptionsResponse, error) {
-	if req == nil {
-		return nil, errors.BadRequest("INVALID_REQUEST", "request must not be nil")
-	}
-
+func (h *PrescriptionHandler) ListPrescriptions(ctx context.Context, req *connect.Request[pb.ListPrescriptionsRequest]) (*connect.Response[pb.ListPrescriptionsResponse], error) {
 	typeFilter := ""
-	if req.GetPrescriptionType() != pb.PrescriptionType_PRESCRIPTION_TYPE_UNSPECIFIED {
-		typeFilter = req.GetPrescriptionType().String()
+	if req.Msg.GetPrescriptionType() != pb.PrescriptionType_PRESCRIPTION_TYPE_UNSPECIFIED {
+		typeFilter = req.Msg.GetPrescriptionType().String()
 	}
 
-	bundles, nextToken, err := h.service.ListPrescriptions(ctx, typeFilter, req.GetPageSize(), req.GetPageToken())
+	bundles, nextToken, err := h.service.ListPrescriptions(ctx, typeFilter, req.Msg.GetPageSize(), req.Msg.GetPageToken())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
@@ -50,52 +49,46 @@ func (h *PrescriptionHandler) ListPrescriptions(ctx context.Context, req *pb.Lis
 		out[i] = bundleToProto(&b)
 	}
 
-	return &pb.ListPrescriptionsResponse{
+	return connect.NewResponse(&pb.ListPrescriptionsResponse{
 		Prescriptions: out,
 		NextPageToken: nextToken,
-	}, nil
+	}), nil
 }
 
 // GetPrescription handles the GetPrescription RPC.
-func (h *PrescriptionHandler) GetPrescription(ctx context.Context, req *pb.GetPrescriptionRequest) (*pb.GetPrescriptionResponse, error) {
-	if req == nil {
-		return nil, errors.BadRequest("INVALID_REQUEST", "request must not be nil")
-	}
-	if req.GetId() == "" {
+func (h *PrescriptionHandler) GetPrescription(ctx context.Context, req *connect.Request[pb.GetPrescriptionRequest]) (*connect.Response[pb.GetPrescriptionResponse], error) {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("MISSING_ID", "id is required")
 	}
 
-	bundle, err := h.service.GetPrescription(ctx, req.GetId())
+	bundle, err := h.service.GetPrescription(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GetPrescriptionResponse{
+	return connect.NewResponse(&pb.GetPrescriptionResponse{
 		Prescription: bundleToProto(bundle),
-	}, nil
+	}), nil
 }
 
 // GeneratePrescription handles the GeneratePrescription RPC.
-func (h *PrescriptionHandler) GeneratePrescription(ctx context.Context, req *pb.GeneratePrescriptionRequest) (*pb.GeneratePrescriptionResponse, error) {
-	if req == nil {
-		return nil, errors.BadRequest("INVALID_REQUEST", "request must not be nil")
-	}
-	if req.GetFieldId() == "" {
+func (h *PrescriptionHandler) GeneratePrescription(ctx context.Context, req *connect.Request[pb.GeneratePrescriptionRequest]) (*connect.Response[pb.GeneratePrescriptionResponse], error) {
+	if req.Msg.GetFieldId() == "" {
 		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
 	}
-	if req.GetCropType() == "" {
+	if req.Msg.GetCropType() == "" {
 		return nil, errors.BadRequest("MISSING_CROP_TYPE", "crop_type is required")
 	}
 
-	soilData := make([]models.SoilDataRow, len(req.GetSoilData()))
-	for i, row := range req.GetSoilData() {
+	soilData := make([]models.SoilDataRow, len(req.Msg.GetSoilData()))
+	for i, row := range req.Msg.GetSoilData() {
 		soilData[i] = models.SoilDataRow{Values: row.GetValues()}
 	}
 
 	input := models.GeneratePrescriptionInput{
-		FieldID:     req.GetFieldId(),
-		CropType:    req.GetCropType(),
-		TargetYield: req.GetTargetYield(),
+		FieldID:     req.Msg.GetFieldId(),
+		CropType:    req.Msg.GetCropType(),
+		TargetYield: req.Msg.GetTargetYield(),
 		SoilData:    soilData,
 	}
 
@@ -104,32 +97,29 @@ func (h *PrescriptionHandler) GeneratePrescription(ctx context.Context, req *pb.
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.GeneratePrescriptionResponse{
+	return connect.NewResponse(&pb.GeneratePrescriptionResponse{
 		Prescription: bundleToProto(bundle),
-	}, nil
+	}), nil
 }
 
 // ExportPrescription handles the ExportPrescription RPC.
-func (h *PrescriptionHandler) ExportPrescription(ctx context.Context, req *pb.ExportPrescriptionRequest) (*pb.ExportPrescriptionResponse, error) {
-	if req == nil {
-		return nil, errors.BadRequest("INVALID_REQUEST", "request must not be nil")
-	}
-	if req.GetId() == "" {
+func (h *PrescriptionHandler) ExportPrescription(ctx context.Context, req *connect.Request[pb.ExportPrescriptionRequest]) (*connect.Response[pb.ExportPrescriptionResponse], error) {
+	if req.Msg.GetId() == "" {
 		return nil, errors.BadRequest("MISSING_ID", "id is required")
 	}
-	if req.GetFormat() == "" {
+	if req.Msg.GetFormat() == "" {
 		return nil, errors.BadRequest("MISSING_FORMAT", "format is required")
 	}
 
-	downloadURL, fileName, err := h.service.ExportPrescription(ctx, req.GetId(), req.GetFormat())
+	downloadURL, fileName, err := h.service.ExportPrescription(ctx, req.Msg.GetId(), req.Msg.GetFormat())
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}
 
-	return &pb.ExportPrescriptionResponse{
+	return connect.NewResponse(&pb.ExportPrescriptionResponse{
 		DownloadUrl: downloadURL,
 		FileName:    fileName,
-	}, nil
+	}), nil
 }
 
 // ---------------------------------------------------------------------------
@@ -170,16 +160,16 @@ func bundleToProto(b *models.PrescriptionBundle) *pb.PrescriptionBundle {
 	}
 
 	return &pb.PrescriptionBundle{
-		Id:                    b.ID,
-		FieldId:               b.FieldID,
-		FieldName:             b.FieldName,
-		CropType:              b.CropType,
-		TargetYield:           b.TargetYield,
-		CreatedAt:             b.CreatedAt,
-		EstimatedCostSavings:  b.EstimatedCostSavings,
-		EstimatedYieldGain:    b.EstimatedYieldGain,
-		Prescriptions:         prescriptions,
-		ZoneSummaries:         zones,
+		Id:                   b.ID,
+		FieldId:              b.FieldID,
+		FieldName:            b.FieldName,
+		CropType:             b.CropType,
+		TargetYield:          b.TargetYield,
+		CreatedAt:            b.CreatedAt,
+		EstimatedCostSavings: b.EstimatedCostSavings,
+		EstimatedYieldGain:   b.EstimatedYieldGain,
+		Prescriptions:        prescriptions,
+		ZoneSummaries:        zones,
 	}
 }
 

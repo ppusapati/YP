@@ -1,0 +1,115 @@
+# Alerts on log content, evaluated by Loki's ruler.
+#
+# The directory is `fake/` because Loki's ruler stores rules per tenant and
+# `fake` is the tenant id it uses when auth_enabled is false. Renaming it means
+# the rules are silently never loaded.
+#
+# These complement the Prometheus rules rather than duplicating them. A metric
+# says a request failed; a log says a panic was recovered, a migration did not
+# apply, or a consumer is dropping messages — conditions that have no metric
+# and would otherwise only be found by someone reading.
+
+groups:
+  - name: yieldpoint-log-alerts
+    interval: 1m
+    rules:
+      # ── PanicRecovered ───────────────────────────────────────────────────────
+      #
+      # The recovery interceptor turns a panic into a 500 and the request looks
+      # like any other server error in the metrics. The stack trace only exists
+      # in the log, so this is the only signal that distinguishes a bug from a
+      # dependency being slow.
+      - alert: PanicRecovered
+        expr: |
+          sum by (service) (
+            count_over_time({container=~".+"} |= "panic recovered" [5m])
+          ) > 0
+        for: 0m   # a single panic is worth knowing about; there is no threshold
+                  # below which one is acceptable
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Panic recovered in {{ $labels.service }}"
+          description: >-
+            {{ $labels.service }} recovered from a panic. The request returned
+            500 and looks ordinary in the metrics; the stack trace is in the log.
+
+      # ── HighLogErrorRate ─────────────────────────────────────────────────────
+      #
+      # Catches errors that never become a failed request: a background job, a
+      # Kafka consumer, a scheduled refresh. Those are invisible to the HTTP
+      # error-rate alert because no client was waiting.
+      - alert: HighLogErrorRate
+        expr: |
+          sum by (service) (rate({container=~".+", level="error"} [5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "{{ $labels.service }} is logging errors steadily"
+          description: >-
+            More than one error per second for ten minutes. If the HTTP error
+            rate is normal, this is background work failing — a consumer, a
+            scheduled job, or a retry loop.
+
+      # ── DatabaseMigrationFailed ──────────────────────────────────────────────
+      #
+      # A service that cannot migrate exits, so it shows up as a restart loop
+      # rather than as an error rate. The log line says which migration.
+      - alert: DatabaseMigrationFailed
+        expr: |
+          sum by (service) (
+            count_over_time({container=~".+"} |~ "migrations? failed|migration error" [10m])
+          ) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Migrations failed for {{ $labels.service }}"
+          description: >-
+            {{ $labels.service }} could not apply its migrations and will not
+            start. Check the log for which migration and why.
+
+      # ── EventsBeingDropped ───────────────────────────────────────────────────
+      #
+      # The consumers drop an event they cannot attribute — one with no tenant,
+      # say — rather than retrying it forever and blocking the partition. That
+      # is the right behaviour, and it is also silent. A steady rate of it means
+      # a producer is emitting events that are missing a field.
+      - alert: EventsBeingDropped
+        expr: |
+          sum by (service) (
+            count_over_time({container=~".+"} |~ "dropping|cannot cascade|no traceability record" [15m])
+          ) > 5
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "{{ $labels.service }} is dropping events"
+          description: >-
+            Events are being acknowledged and discarded because they lack a
+            tenant or a field id. This is deliberate — retrying them forever
+            would block the partition — but a steady rate means an upstream
+            producer is emitting incomplete events.
+
+      # ── NoLogsFromService ────────────────────────────────────────────────────
+      #
+      # Silence is ambiguous: a healthy idle service and a wedged one look the
+      # same. Paired with the `up` metric it is not — a service that is up and
+      # has said nothing for fifteen minutes is stuck, not quiet.
+      - alert: NoLogsFromService
+        expr: |
+          sum by (service) (count_over_time({container=~".+"} [15m])) == 0
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "No logs from {{ $labels.service }} for 15 minutes"
+          description: >-
+            Check this against the `up` metric before acting: a scaled-down
+            service is expected to be silent, a running one is not.

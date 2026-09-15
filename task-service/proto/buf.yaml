@@ -1,0 +1,10 @@
+version: v2
+lint:
+  use:
+    - DEFAULT
+  except:
+    - FIELD_NOT_REQUIRED
+    - PACKAGE_NO_IMPORT_CYCLE
+breaking:
+  use:
+    - FILE

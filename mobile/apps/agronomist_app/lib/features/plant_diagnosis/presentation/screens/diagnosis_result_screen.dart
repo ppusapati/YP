@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ExplanationSection;
 
 import '../bloc/diagnosis_bloc.dart';
 import '../bloc/diagnosis_event.dart';
@@ -85,6 +86,14 @@ class _DiagnosisResultScreenState extends State<DiagnosisResultScreen> {
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  // What the model looked at. An agronomist is the one person
+                  // who can tell a real lesion from a shadow the model keyed
+                  // on, which is the whole point of showing the heatmap.
+                  ExplanationSection(
+                    explanations: d.explanations,
+                    imagePath: d.imageUrl ?? '',
                   ),
                   const SizedBox(height: 24),
                   Text('Treatment',

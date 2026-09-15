@@ -155,6 +155,21 @@ class CachedFarmEntry extends DataClass {
     required this.dataJson,
     required this.cachedAt,
   });
+
+  /// drift's DataClass declares toJson abstract, so a hand-written row
+  /// class has to provide it. Dates go out as ISO 8601 rather than as a
+  /// DateTime, because the only thing that reads this is json.encode and it
+  /// cannot serialise one.
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'ownerId': ownerId,
+      'dataJson': dataJson,
+      'cachedAt': cachedAt.toIso8601String(),
+    };
+  }
 }
 
 class CachedFarmsCompanion extends UpdateCompanion<CachedFarmEntry> {
@@ -260,6 +275,20 @@ class CachedFieldEntry extends DataClass {
     required this.dataJson,
     required this.cachedAt,
   });
+
+  /// drift's DataClass declares toJson abstract, so a hand-written row
+  /// class has to provide it. Dates go out as ISO 8601 rather than as a
+  /// DateTime, because the only thing that reads this is json.encode and it
+  /// cannot serialise one.
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    return <String, dynamic>{
+      'id': id,
+      'farmId': farmId,
+      'dataJson': dataJson,
+      'cachedAt': cachedAt.toIso8601String(),
+    };
+  }
 }
 
 class CachedFieldsCompanion extends UpdateCompanion<CachedFieldEntry> {

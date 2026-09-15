@@ -11,14 +11,14 @@ type VegetationIndexType string
 
 const (
 	VegetationIndexTypeUnspecified VegetationIndexType = ""
-	VegetationIndexTypeNDVI       VegetationIndexType = "NDVI"
-	VegetationIndexTypeNDWI       VegetationIndexType = "NDWI"
-	VegetationIndexTypeEVI        VegetationIndexType = "EVI"
-	VegetationIndexTypeSAVI       VegetationIndexType = "SAVI"
-	VegetationIndexTypeMSAVI      VegetationIndexType = "MSAVI"
-	VegetationIndexTypeNDRE       VegetationIndexType = "NDRE"
-	VegetationIndexTypeGNDVI      VegetationIndexType = "GNDVI"
-	VegetationIndexTypeLAI        VegetationIndexType = "LAI"
+	VegetationIndexTypeNDVI        VegetationIndexType = "NDVI"
+	VegetationIndexTypeNDWI        VegetationIndexType = "NDWI"
+	VegetationIndexTypeEVI         VegetationIndexType = "EVI"
+	VegetationIndexTypeSAVI        VegetationIndexType = "SAVI"
+	VegetationIndexTypeMSAVI       VegetationIndexType = "MSAVI"
+	VegetationIndexTypeNDRE        VegetationIndexType = "NDRE"
+	VegetationIndexTypeGNDVI       VegetationIndexType = "GNDVI"
+	VegetationIndexTypeLAI         VegetationIndexType = "LAI"
 )
 
 // IsValid checks if the vegetation index type is a valid value.
@@ -64,15 +64,15 @@ func (cs ComputeStatus) IsTerminal() bool {
 // ComputeTask represents an index computation task.
 type ComputeTask struct {
 	models.BaseModel
-	TenantID            string                `json:"tenant_id" db:"tenant_id"`
-	ProcessingJobUUID   string                `json:"processing_job_uuid" db:"processing_job_uuid"`
-	FarmUUID            string                `json:"farm_uuid" db:"farm_uuid"`
-	IndexTypes          []VegetationIndexType `json:"index_types" db:"index_types"`
-	Status              ComputeStatus         `json:"status" db:"status"`
-	ErrorMessage        *string               `json:"error_message,omitempty" db:"error_message"`
-	ComputeTimeSeconds  float64               `json:"compute_time_seconds" db:"compute_time_seconds"`
-	Version             int64                 `json:"version" db:"version"`
-	CompletedAt         *time.Time            `json:"completed_at,omitempty" db:"completed_at"`
+	TenantID           string                `json:"tenant_id" db:"tenant_id"`
+	ProcessingJobUUID  string                `json:"processing_job_uuid" db:"processing_job_uuid"`
+	FarmUUID           string                `json:"farm_uuid" db:"farm_uuid"`
+	IndexTypes         []VegetationIndexType `json:"index_types" db:"index_types"`
+	Status             ComputeStatus         `json:"status" db:"status"`
+	ErrorMessage       *string               `json:"error_message,omitempty" db:"error_message"`
+	ComputeTimeSeconds float64               `json:"compute_time_seconds" db:"compute_time_seconds"`
+	Version            int64                 `json:"version" db:"version"`
+	CompletedAt        *time.Time            `json:"completed_at,omitempty" db:"completed_at"`
 }
 
 // GetID returns the primary key of the compute task.
@@ -87,35 +87,39 @@ func (ct *ComputeTask) GetUUID() string {
 
 // VegetationIndex represents a computed vegetation index for a field/farm.
 type VegetationIndex struct {
-	ID                string      `json:"id" db:"id"`
-	TenantID          string      `json:"tenant_id" db:"tenant_id"`
-	FarmUUID          string      `json:"farm_uuid" db:"farm_uuid"`
-	FieldUUID         *string     `json:"field_uuid,omitempty" db:"field_uuid"`
-	ProcessingJobUUID string      `json:"processing_job_uuid" db:"processing_job_uuid"`
-	ComputeTaskUUID   string      `json:"compute_task_uuid" db:"compute_task_uuid"`
+	ID                string              `json:"id" db:"id"`
+	TenantID          string              `json:"tenant_id" db:"tenant_id"`
+	FarmUUID          string              `json:"farm_uuid" db:"farm_uuid"`
+	FieldUUID         *string             `json:"field_uuid,omitempty" db:"field_uuid"`
+	ProcessingJobUUID string              `json:"processing_job_uuid" db:"processing_job_uuid"`
+	ComputeTaskUUID   string              `json:"compute_task_uuid" db:"compute_task_uuid"`
 	IndexType         VegetationIndexType `json:"index_type" db:"index_type"`
-	MeanValue         float64     `json:"mean_value" db:"mean_value"`
-	MinValue          float64     `json:"min_value" db:"min_value"`
-	MaxValue          float64     `json:"max_value" db:"max_value"`
-	StdDeviation      float64     `json:"std_deviation" db:"std_deviation"`
-	MedianValue       float64     `json:"median_value" db:"median_value"`
-	PixelCount        int64       `json:"pixel_count" db:"pixel_count"`
-	CoveragePercent   float64     `json:"coverage_percent" db:"coverage_percent"`
-	RasterS3Key       *string     `json:"raster_s3_key,omitempty" db:"raster_s3_key"`
-	AcquisitionDate   time.Time   `json:"acquisition_date" db:"acquisition_date"`
-	ComputedAt        time.Time   `json:"computed_at" db:"computed_at"`
-	IsActive          bool        `json:"is_active" db:"is_active"`
-	CreatedBy         string      `json:"created_by" db:"created_by"`
-	CreatedAt         time.Time   `json:"created_at" db:"created_at"`
-	DeletedAt         *time.Time  `json:"deleted_at,omitempty" db:"deleted_at"`
-	DeletedBy         *string     `json:"deleted_by,omitempty" db:"deleted_by"`
+	MeanValue         float64             `json:"mean_value" db:"mean_value"`
+	MinValue          float64             `json:"min_value" db:"min_value"`
+	MaxValue          float64             `json:"max_value" db:"max_value"`
+	StdDeviation      float64             `json:"std_deviation" db:"std_deviation"`
+	MedianValue       float64             `json:"median_value" db:"median_value"`
+	PixelCount        int64               `json:"pixel_count" db:"pixel_count"`
+	CoveragePercent   float64             `json:"coverage_percent" db:"coverage_percent"`
+	// How much of the scene was cloud, and how much survived masking. An index
+	// computed over cloud is not wrong so much as meaningless, and without
+	// these a reader cannot tell that case from a clear day.
+	CloudFraction      float64    `json:"cloud_fraction" db:"cloud_fraction"`
+	ValidPixelFraction float64    `json:"valid_pixel_fraction" db:"valid_pixel_fraction"`
+	RasterS3Key        *string    `json:"raster_s3_key,omitempty" db:"raster_s3_key"`
+	AcquisitionDate    time.Time  `json:"acquisition_date" db:"acquisition_date"`
+	ComputedAt         time.Time  `json:"computed_at" db:"computed_at"`
+	IsActive           bool       `json:"is_active" db:"is_active"`
+	CreatedBy          string     `json:"created_by" db:"created_by"`
+	CreatedAt          time.Time  `json:"created_at" db:"created_at"`
+	DeletedAt          *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	DeletedBy          *string    `json:"deleted_by,omitempty" db:"deleted_by"`
 }
 
 // GetID returns the primary key of the vegetation index.
 func (vi *VegetationIndex) GetID() string {
 	return vi.ID
 }
-
 
 // TimeSeriesPoint represents a single point in a vegetation index time series.
 type TimeSeriesPoint struct {
@@ -126,11 +130,11 @@ type TimeSeriesPoint struct {
 
 // FieldHealthSummary represents the health summary for a field.
 type FieldHealthSummary struct {
-	CurrentNDVI    float64    `json:"current_ndvi" db:"current_ndvi"`
-	NDVITrend      float64    `json:"ndvi_trend" db:"ndvi_trend"`
-	HealthScore    float64    `json:"health_score"`
-	HealthCategory string     `json:"health_category"`
-	LastComputed   time.Time  `json:"last_computed" db:"last_computed"`
+	CurrentNDVI    float64   `json:"current_ndvi" db:"current_ndvi"`
+	NDVITrend      float64   `json:"ndvi_trend" db:"ndvi_trend"`
+	HealthScore    float64   `json:"health_score"`
+	HealthCategory string    `json:"health_category"`
+	LastComputed   time.Time `json:"last_computed" db:"last_computed"`
 }
 
 // ListVegetationIndicesParams holds the filter and pagination parameters for listing indices.

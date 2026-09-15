@@ -1,10 +1,7 @@
+import '../generated/task.pb.dart' as task_pb;
 import 'base_service.dart';
 
 /// ConnectRPC service client for farm task management.
-///
-/// NOTE: No generated protobuf file exists for the task service
-/// (no task.proto definition). This service client is a placeholder
-/// until the task proto is defined and code-generated.
 class TaskServiceClient extends BaseService {
   TaskServiceClient({
     required super.baseUrl,
@@ -15,38 +12,53 @@ class TaskServiceClient extends BaseService {
   @override
   String get serviceName => 'agriculture.task.v1.TaskService';
 
-  /// Not implemented - no task.pb.dart generated file exists.
-  Future<void> getTask(String taskId) async {
-    throw UnimplementedError(
-      'TaskService is not yet available: no task.proto has been defined.',
-    );
+  /// Retrieves a single task by ID.
+  Future<task_pb.GetTaskResponse> getTask(String taskId) async {
+    final request = task_pb.GetTaskRequest(id: taskId);
+    final bytes = await callUnary('GetTask', request);
+    return task_pb.GetTaskResponse.fromBuffer(bytes);
   }
 
-  /// Not implemented - no task.pb.dart generated file exists.
-  Future<void> listTasks({required String farmId}) async {
-    throw UnimplementedError(
-      'TaskService is not yet available: no task.proto has been defined.',
-    );
+  /// Lists tasks, optionally filtered by farm ID.
+  Future<task_pb.ListTasksResponse> listTasks({
+    String? farmId,
+    String? fieldId,
+    String? assignedTo,
+    task_pb.TaskStatus? status,
+    task_pb.TaskPriority? priority,
+    int? pageSize,
+    String? pageToken,
+  }) async {
+    final request = task_pb.ListTasksRequest();
+    if (farmId != null) request.farmId = farmId;
+    if (fieldId != null) request.fieldId = fieldId;
+    if (assignedTo != null) request.assignedTo = assignedTo;
+    if (status != null) request.status = status;
+    if (priority != null) request.priority = priority;
+    if (pageSize != null) request.pageSize = pageSize;
+    if (pageToken != null) request.pageToken = pageToken;
+    final bytes = await callUnary('ListTasks', request);
+    return task_pb.ListTasksResponse.fromBuffer(bytes);
   }
 
-  /// Not implemented - no task.pb.dart generated file exists.
-  Future<void> createTask() async {
-    throw UnimplementedError(
-      'TaskService is not yet available: no task.proto has been defined.',
-    );
+  /// Creates a new task.
+  Future<task_pb.CreateTaskResponse> createTask(
+      task_pb.CreateTaskRequest request) async {
+    final bytes = await callUnary('CreateTask', request);
+    return task_pb.CreateTaskResponse.fromBuffer(bytes);
   }
 
-  /// Not implemented - no task.pb.dart generated file exists.
-  Future<void> updateTask() async {
-    throw UnimplementedError(
-      'TaskService is not yet available: no task.proto has been defined.',
-    );
+  /// Updates an existing task.
+  Future<task_pb.UpdateTaskResponse> updateTask(
+      task_pb.UpdateTaskRequest request) async {
+    final bytes = await callUnary('UpdateTask', request);
+    return task_pb.UpdateTaskResponse.fromBuffer(bytes);
   }
 
-  /// Not implemented - no task.pb.dart generated file exists.
-  Future<void> deleteTask(String taskId) async {
-    throw UnimplementedError(
-      'TaskService is not yet available: no task.proto has been defined.',
-    );
+  /// Deletes a task by ID.
+  Future<task_pb.DeleteTaskResponse> deleteTask(String taskId) async {
+    final request = task_pb.DeleteTaskRequest(id: taskId);
+    final bytes = await callUnary('DeleteTask', request);
+    return task_pb.DeleteTaskResponse.fromBuffer(bytes);
   }
 }

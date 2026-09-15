@@ -1,6 +1,6 @@
 <script lang="ts">
   import { DynamicReportRenderer } from '@samavāya/ui';
-  import { sensorAnalyticsReportSchema } from '@samavāya/agriculture/schemas/reports';
+  import { sensorReportSchema } from '@samavāya/agriculture/schemas/reports';
 </script>
 
 <div class="report-page">
@@ -9,7 +9,7 @@
     <p class="subtitle">Analyze sensor data trends and patterns</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={sensorAnalyticsReportSchema} data={{}} />
+    <DynamicReportRenderer visualization={sensorReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

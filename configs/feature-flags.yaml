@@ -1,0 +1,74 @@
+# Feature flags.
+#
+# Each flag is keyed by name. `type` is inferred from the flag's shape — a flag
+# with variants is multivariate, one with `kill_switch: true` is a kill switch,
+# one with a rollout percentage is a percentage rollout, anything else is
+# boolean — so it only needs stating to override that.
+#
+# `targeting` rules can only turn a flag ON for whoever matches. To pin a flag
+# for one tenant in either direction, use `tenants:` — see enhanced_irrigation
+# below. Overrides are checked before targeting and before the rollout
+# percentage, and before `enabled`, so a tenant can be given early access to a
+# flag that is globally off.
+#
+# Every override should carry a reason and, where the need is temporary, an
+# `expires_at`. An override with neither becomes permanent by default, and a
+# tenant pinned off a feature nobody remembers pinning ends up a year behind.
+
+flags:
+  ml_model_v2:
+    description: "Roll out new ML model v2 for plant diagnosis"
+    enabled: true
+    rollout_percentage: 0
+    variants:
+      - name: "v1"
+        weight: 100
+      - name: "v2"
+        weight: 0
+
+  new_satellite_pipeline:
+    description: "Enable new satellite imagery processing pipeline"
+    enabled: false
+
+  plantnet_api:
+    description: "Kill switch for PlantNet external API"
+    enabled: true
+    kill_switch: true
+
+  google_vision_api:
+    description: "Kill switch for Google Vision external API"
+    enabled: true
+    kill_switch: true
+
+  enhanced_irrigation:
+    description: "Roll out enhanced irrigation scheduling algorithm"
+    enabled: true
+    rollout_percentage: 0
+    targeting:
+      - attribute: "region"
+        operator: "in"
+        values: ["maharashtra", "karnataka"]
+    # Worked example of a per-tenant pin in both directions. Both tenants are
+    # in a targeted region, and the override is what decides each of them.
+    tenants:
+      demo-tenant:
+        enabled: true
+        reason: "Design partner; agreed early access ahead of the regional rollout."
+        set_by: "ops@example.com"
+      legacy-tenant:
+        enabled: false
+        reason: "Their controllers predate the new schedule format; pending firmware."
+        set_by: "ops@example.com"
+
+  new_dashboard_ui:
+    description: "Enable redesigned dashboard UI"
+    enabled: false
+
+  advanced_soil_analysis:
+    description: "Enable advanced soil nutrient analysis"
+    enabled: true
+    rollout_percentage: 0
+
+  crop_rotation_advisor:
+    description: "Enable AI-powered crop rotation recommendations"
+    enabled: false

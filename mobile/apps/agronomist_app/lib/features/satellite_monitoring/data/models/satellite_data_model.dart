@@ -1,4 +1,5 @@
 import '../../domain/entities/satellite_data_entity.dart';
+import '../../domain/entities/stress_alert_entity.dart';
 
 class SatelliteDataModel {
   final String id;

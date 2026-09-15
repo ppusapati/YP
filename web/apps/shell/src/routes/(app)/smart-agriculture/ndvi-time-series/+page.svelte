@@ -16,7 +16,7 @@
     hasResults = false;
     try {
       const res = await vegetationIndexClient.getNDVITimeSeries(formValues as any);
-      timeSeriesData = res.dataPoints || [];
+      timeSeriesData = res.timeSeries?.points ?? [];
       hasResults = true;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to fetch NDVI time series';

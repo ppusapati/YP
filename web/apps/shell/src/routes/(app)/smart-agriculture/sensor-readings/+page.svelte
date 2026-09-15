@@ -20,7 +20,7 @@
     loading = true;
     error = null;
     try {
-      const res = await sensorClient.getSensorReadings({ pageSize, pageOffset });
+      const res = await sensorClient.getReadingHistory({ pageSize, pageOffset });
       rows = res.readings;
       totalCount = res.totalCount;
       return res.totalCount;

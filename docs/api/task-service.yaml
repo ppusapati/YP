@@ -1,0 +1,269 @@
+openapi: 3.0.3
+info:
+  title: Task Service API
+  description: |
+    Task management for the YieldPoint agriculture platform.
+    Manages farm and field tasks with assignment, priority, and status tracking.
+    Uses ConnectRPC protocol — all RPCs are invoked via HTTP POST with JSON bodies.
+  version: 1.0.0
+  contact:
+    name: YieldPoint Engineering
+servers:
+  - url: http://localhost:8106
+    description: Local development
+tags:
+  - name: Tasks
+    description: Task CRUD operations
+
+paths:
+  /agriculture.task.v1.TaskService/GetTask:
+    post:
+      tags: [Tasks]
+      summary: Get a task by ID
+      operationId: GetTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTaskRequest'
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTaskResponse'
+
+  /agriculture.task.v1.TaskService/ListTasks:
+    post:
+      tags: [Tasks]
+      summary: List tasks with filtering and pagination
+      operationId: ListTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListTasksRequest'
+      responses:
+        '200':
+          description: Tasks listed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTasksResponse'
+
+  /agriculture.task.v1.TaskService/CreateTask:
+    post:
+      tags: [Tasks]
+      summary: Create a new task
+      operationId: CreateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '200':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTaskResponse'
+
+  /agriculture.task.v1.TaskService/UpdateTask:
+    post:
+      tags: [Tasks]
+      summary: Update an existing task
+      operationId: UpdateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTaskResponse'
+
+  /agriculture.task.v1.TaskService/DeleteTask:
+    post:
+      tags: [Tasks]
+      summary: Delete a task
+      operationId: DeleteTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteTaskRequest'
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTaskResponse'
+
+components:
+  schemas:
+    TaskStatus:
+      type: string
+      enum:
+        - TASK_STATUS_UNSPECIFIED
+        - TASK_STATUS_PENDING
+        - TASK_STATUS_IN_PROGRESS
+        - TASK_STATUS_COMPLETED
+        - TASK_STATUS_CANCELLED
+
+    TaskPriority:
+      type: string
+      enum:
+        - TASK_PRIORITY_UNSPECIFIED
+        - TASK_PRIORITY_LOW
+        - TASK_PRIORITY_MEDIUM
+        - TASK_PRIORITY_HIGH
+        - TASK_PRIORITY_URGENT
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        assignedTo:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GetTaskRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    GetTaskResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/Task'
+
+    ListTasksRequest:
+      type: object
+      properties:
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        assignedTo:
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        pageSize:
+          type: integer
+          format: int32
+        pageToken:
+          type: string
+
+    ListTasksResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        nextPageToken:
+          type: string
+        totalCount:
+          type: integer
+          format: int32
+
+    CreateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        assignedTo:
+          type: string
+        farmId:
+          type: string
+        fieldId:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+
+    CreateTaskResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/Task'
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        assignedTo:
+          type: string
+        fieldId:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        updateMask:
+          type: string
+          description: FieldMask specifying which fields to update
+
+    UpdateTaskResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/Task'
+
+    DeleteTaskRequest:
+      type: object
+      properties:
+        id:
+          type: string
+
+    DeleteTaskResponse:
+      type: object

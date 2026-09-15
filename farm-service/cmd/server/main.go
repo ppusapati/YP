@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,9 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	kafkaconfig "p9e.in/samavaya/packages/events/config"
+	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
+	"p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
@@ -34,11 +38,15 @@ import (
 	farmv1connect "p9e.in/samavaya/agriculture/farm-service/api/v1/farmv1connect"
 
 	// Inbound adapters
+	eventsadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/inbound/events"
 	grpcadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/inbound/grpc"
 
 	// Outbound adapters
 	kafkaadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/farm-service/internal/adapters/outbound/postgres"
+
+	// AI client
+	"p9e.in/samavaya/agriculture/farm-service/internal/ai"
 
 	// Application core
 	"p9e.in/samavaya/agriculture/farm-service/internal/application"
@@ -62,6 +70,7 @@ func main() {
 	// ── Config from environment ──────────────────────────────────────────────
 	dsn := mustEnv("DATABASE_URL", "postgres://localhost:5432/farm_service?sslmode=disable")
 	kafkaBroker := os.Getenv("KAFKA_BROKER") // optional; events are best-effort
+	aiGatewayURL := os.Getenv("AI_GATEWAY_URL")
 	port := envOr("PORT", "8080")
 
 	// ── Database pool ────────────────────────────────────────────────────────
@@ -98,13 +107,24 @@ func main() {
 		}
 	}
 
+	// AI Gateway client (optional)
+	var aiClient *ai.AIClient
+	if aiGatewayURL != "" {
+		aiClient, err = ai.NewAIClient(aiGatewayURL, p9log.NewHelper(logger))
+		if err != nil {
+			log.Printf("WARNING: failed to connect to AI Gateway at %s: %v — AI features disabled", aiGatewayURL, err)
+		} else {
+			defer aiClient.Close()
+		}
+	}
+
 	// ── Outbound adapters ────────────────────────────────────────────────────
 	repo := postgresadapter.NewFarmRepository(pool, logger)
 	outboxPub := outbox.NewPublisher(pool, zapLogger)
 	kafkaPub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
 
 	// ── Application service (core) ───────────────────────────────────────────
-	svc := application.NewFarmService(repo, outboxPub, pool, logger)
+	svc := application.NewFarmService(repo, outboxPub, pool, logger, aiClient)
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────
 	handler := grpcadapter.NewFarmHandler(svc, logger)
@@ -176,6 +196,30 @@ func main() {
 	defer relayCancel()
 	relay := outbox.NewRelay(pool, kafkaPub, zapLogger)
 	go relay.Run(relayCtx)
+
+	// ── Kafka event consumer (background) ────────────────────────────────
+	if kafkaBroker != "" {
+		eventConsumer := eventsadapter.NewFarmConsumer(svc, logger)
+		kc := kafkaconsumer.NewKafkaConsumer(&kafkaconfig.KafkaConfig{
+			Broker:       kafkaBroker,
+			Group:        "farm-service",
+			KafkaVersion: "3.5.0",
+			Assignor:     "sticky",
+		}, logger)
+		consumerCtx, consumerCancel := context.WithCancel(context.Background())
+		defer consumerCancel()
+		for _, topic := range eventConsumer.Topics() {
+			if err := kc.Subscribe(consumerCtx, topic, func(ctx context.Context, data []byte) error {
+				var event domain.DomainEvent
+				if err := json.Unmarshal(data, &event); err != nil {
+					return fmt.Errorf("unmarshal domain event: %w", err)
+				}
+				return eventConsumer.HandleEvent(ctx, &event)
+			}); err != nil {
+				log.Printf("WARNING: failed to subscribe to %s: %v", topic, err)
+			}
+		}
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

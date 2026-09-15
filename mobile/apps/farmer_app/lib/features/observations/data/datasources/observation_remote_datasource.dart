@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_network/flutter_network.dart';
-import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 import '../models/observation_model.dart';
@@ -33,7 +32,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
       if (fieldId != null) params['field_id'] = fieldId;
 
       final body = params.isNotEmpty
-          ? utf8.encode(jsonEncode(params)) as dynamic
+          ? utf8.encode(jsonEncode(params))
           : null;
 
       final response =
@@ -65,7 +64,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
           utf8.encode(jsonEncode({'observation_id': observationId}));
       final response = await _client.unary(
         '$_basePath/GetObservation',
-        body: body as dynamic,
+        body: body,
       );
       final data =
           jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
@@ -84,7 +83,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
       final body = utf8.encode(jsonEncode(observation.toJson()));
       final response = await _client.unary(
         '$_basePath/CreateObservation',
-        body: body as dynamic,
+        body: body,
       );
       final data =
           jsonDecode(utf8.decode(response.body)) as Map<String, dynamic>;
@@ -102,7 +101,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
           utf8.encode(jsonEncode({'observation_id': observationId}));
       await _client.unary(
         '$_basePath/DeleteObservation',
-        body: body as dynamic,
+        body: body,
       );
     } on ConnectException catch (e) {
       _log.severe('Failed to delete observation: $e');
@@ -124,7 +123,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
 
       final response = await _client.unary(
         '$_basePath/UploadPhoto',
-        body: body as dynamic,
+        body: body,
       );
 
       final data =

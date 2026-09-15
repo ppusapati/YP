@@ -1,0 +1,4 @@
+
+# Node's on-disk compile cache, written when running scripts from this
+# directory. Not a build artefact of ours.
+node-compile-cache/

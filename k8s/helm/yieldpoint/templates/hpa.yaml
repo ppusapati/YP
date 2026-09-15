@@ -1,0 +1,86 @@
+{{/*
+  HorizontalPodAutoscaler for every application service with an hpa block.
+*/}}
+{{- range $key, $svc := .Values.services }}
+{{- if $svc.hpa }}
+{{- $svcName := printf "%s-service" $key }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $svcName }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" $svcName "context" $) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $svcName }}
+  minReplicas: {{ $svc.hpa.minReplicas | default 2 }}
+  maxReplicas: {{ $svc.hpa.maxReplicas | default 6 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svc.hpa.cpuTarget | default 70 }}
+{{- end }}
+{{- end }}
+
+{{/*
+  HPA for the AI Gateway.
+*/}}
+{{- if .Values.aiGateway.hpa }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "ai-gateway" "context" $) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-gateway
+  minReplicas: {{ .Values.aiGateway.hpa.minReplicas | default 2 }}
+  maxReplicas: {{ .Values.aiGateway.hpa.maxReplicas | default 10 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.aiGateway.hpa.cpuTarget | default 60 }}
+{{- end }}
+
+{{/*
+  HPA for the API Gateway.
+*/}}
+{{- if .Values.apiGateway.hpa }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "yieldpoint.serviceLabels" (dict "name" "api-gateway" "context" $) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: {{ .Values.apiGateway.hpa.minReplicas | default 2 }}
+  maxReplicas: {{ .Values.apiGateway.hpa.maxReplicas | default 10 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.apiGateway.hpa.cpuTarget | default 60 }}
+{{- end }}

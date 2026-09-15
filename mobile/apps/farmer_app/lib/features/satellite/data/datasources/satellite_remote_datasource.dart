@@ -27,6 +27,7 @@ abstract class SatelliteRemoteDataSource {
   Future<Map<String, dynamic>> getCropHealth({required String fieldId});
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
+    required List<String> fieldIds,
   });
 }
 
@@ -46,6 +47,12 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
       body: request.writeToBuffer(),
     );
     if (!response.isSuccess) {
+      // Logged as well as thrown: the exception reaches the repository, which
+      // falls back to the cache, so without this line a satellite service that
+      // is down looks from the app exactly like one with no new imagery.
+      _log.warning(
+        '$_basePath/$method failed with HTTP ${response.statusCode}',
+      );
       throw ConnectException(
         code: 'internal',
         message: '$_basePath/$method failed',
@@ -133,22 +140,43 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
     };
   }
 
+  /// Crop stress alerts for a farm.
+  ///
+  /// satellite-service's ListAlerts filters by field, not farm — there is no
+  /// farm-level listing — so this fans out over the farm's fields. The caller
+  /// asked about a farm and gets an answer about a farm; doing it here rather
+  /// than making every caller loop is what keeps that true.
   @override
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
+    required List<String> fieldIds,
   }) async {
-    // TODO: No matching RPC in proto for per-farm crop health aggregation.
-    // The proto only has per-field DetectCropStress and ListAlerts.
-    // Implement when a farm-level RPC is added to the proto.
-    throw UnimplementedError(
-      'getCropHealthByFarm is not supported by the satellite proto. '
-      'No farm-level crop health RPC exists.',
-    );
+    final alerts = <Map<String, dynamic>>[];
+    for (final fieldId in fieldIds) {
+      final request = ListAlertsRequest(fieldId: fieldId);
+      final response = await _call('ListAlerts', request);
+      final result = ListAlertsResponse.fromBuffer(response.body);
+      alerts.addAll(result.alerts.map(_alertToMap));
+    }
+    return alerts;
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  static Map<String, dynamic> _alertToMap(CropStressAlert alert) {
+    return {
+      'id': alert.id,
+      'field_id': alert.fieldId,
+      'alert_type': alert.stressType.name,
+      'severity': alert.stressSeverity,
+      'description': alert.description,
+      'detected_at': alert.hasDetectedAt()
+          ? alert.detectedAt.toDateTime().toIso8601String()
+          : '',
+    };
+  }
 
   static timestamp_pb.Timestamp _toTimestamp(DateTime dt) {
     return timestamp_pb.Timestamp.fromDateTime(dt);

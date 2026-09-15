@@ -1,6 +1,6 @@
 <script lang="ts">
   import { DynamicReportRenderer } from '@samavāya/ui';
-  import { ndviTrendsReportSchema } from '@samavāya/agriculture/schemas/reports';
+  import { satelliteImageReportSchema } from '@samavāya/agriculture/schemas/reports';
 </script>
 
 <div class="report-page">
@@ -9,7 +9,7 @@
     <p class="subtitle">Normalized Difference Vegetation Index trends</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={ndviTrendsReportSchema} data={{}} />
+    <DynamicReportRenderer visualization={satelliteImageReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

@@ -17,7 +17,7 @@ var BankingSagasModule = fx.Module("banking-sagas",
 		),
 		// SAGA-B02: Bank Reconciliation - Multi-Bank (Phase 5A)
 		fx.Annotate(
-			NewBankReconciliationSaga,
+			NewBankReconciliationMultiSaga,
 			fx.ResultTags(`group:"saga_handlers"`),
 		),
 		// SAGA-B03: Cash Positioning & Forecasting (Phase 5A)
@@ -60,7 +60,7 @@ func RegisterBankingSagaHandlers(handlers []saga.SagaHandler) {
 func ProvideBankingSagaHandlers() []saga.SagaHandler {
 	return []saga.SagaHandler{
 		NewWireTransferSaga(),
-		NewBankReconciliationSaga(),
+		NewBankReconciliationMultiSaga(),
 		NewCashPositioningSaga(),
 		NewChequeManagementSaga(),
 		NewPaymentGatewaySaga(),

@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:farmer_app/features/alerts/domain/entities/alert_entity.dart';
+import 'package:farmer_app/features/alerts/domain/usecases/acknowledge_alert_usecase.dart';
 import 'package:farmer_app/features/alerts/domain/usecases/get_alerts_usecase.dart';
 import 'package:farmer_app/features/alerts/domain/usecases/get_unread_count_usecase.dart';
 import 'package:farmer_app/features/alerts/domain/usecases/mark_alert_read_usecase.dart';
@@ -15,10 +16,14 @@ class MockMarkAlertReadUseCase extends Mock implements MarkAlertReadUseCase {}
 
 class MockGetUnreadCountUseCase extends Mock implements GetUnreadCountUseCase {}
 
+class MockAcknowledgeAlertUseCase extends Mock
+    implements AcknowledgeAlertUseCase {}
+
 void main() {
   late MockGetAlertsUseCase mockGetAlerts;
   late MockMarkAlertReadUseCase mockMarkAlertRead;
   late MockGetUnreadCountUseCase mockGetUnreadCount;
+  late MockAcknowledgeAlertUseCase mockAcknowledgeAlert;
 
   final testAlert1 = Alert(
     id: 'alert-1',
@@ -59,12 +64,14 @@ void main() {
     mockGetAlerts = MockGetAlertsUseCase();
     mockMarkAlertRead = MockMarkAlertReadUseCase();
     mockGetUnreadCount = MockGetUnreadCountUseCase();
+    mockAcknowledgeAlert = MockAcknowledgeAlertUseCase();
   });
 
   AlertBloc buildBloc() => AlertBloc(
         getAlerts: mockGetAlerts,
         markAlertRead: mockMarkAlertRead,
         getUnreadCount: mockGetUnreadCount,
+        acknowledgeAlert: mockAcknowledgeAlert,
       );
 
   group('AlertBloc', () {

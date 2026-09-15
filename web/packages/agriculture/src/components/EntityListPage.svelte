@@ -3,8 +3,17 @@
 
   /** Page title */
   export let title: string;
-  /** Create new item URL */
-  export let createHref: string;
+  /**
+   * Where the "+ New" button goes, if there is one.
+   *
+   * Optional, because a third of the lists in this platform have nothing to
+   * create: the disease library, pest alerts, satellite images, yield
+   * predictions. Those pages left it out — which is right — and were required
+   * to pass it, which is why thirty-one of them did not typecheck. Without a
+   * href the button is not rendered at all, rather than rendered pointing at a
+   * route that does not exist.
+   */
+  export let createHref: string | null = null;
   /** Column definitions for the table */
   export let columns: Array<{ key: string; label: string; format?: (v: unknown) => string }>;
   /** Row data */
@@ -60,13 +69,15 @@
 <div class="p-6">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold text-gray-900">{title}</h1>
-    <a
-      href={createHref}
-      class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium
-             bg-green-600 text-white hover:bg-green-700 transition-colors"
-    >
-      + New
-    </a>
+    {#if createHref}
+      <a
+        href={createHref}
+        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium
+               bg-green-600 text-white hover:bg-green-700 transition-colors"
+      >
+        + New
+      </a>
+    {/if}
   </div>
 
   {#if error}

@@ -1,0 +1,52 @@
+[package]
+name = "yp-ml-training"
+version = "0.1.0"
+edition = "2021"
+description = "ML training pipeline for YieldPoint vision models — trains custom ONNX models from data collected by the AI gateway"
+
+[dependencies]
+# ML framework
+burn = { version = "0.16", features = ["dataset"] }
+burn-ndarray = "0.16"
+burn-autodiff = "0.16"
+
+# Image processing
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+
+# ONNX protobuf export
+prost = "0.13"
+
+# Pretrained-backbone feature extraction (pure Rust, CPU); MSRV 1.75.
+tract-onnx = "0.21"
+
+# Tabular yield model (shared with the AI gateway so the same artifact is served)
+yield-prediction-engine = { path = "../rust-engines/yield-prediction-engine" }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Serialization / config
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Utilities
+rand = "0.8"
+sha2 = "0.10"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tempfile = "3"
+# Round-trip test: exported ONNX must reproduce burn's forward pass under tract.
+plant-ai-inference-engine = { path = "../rust-engines/plant-ai-inference-engine" }
+
+[features]
+default = []
+# GPU backends for training; `cuda` takes precedence when both are enabled.
+wgpu = ["burn/wgpu"]
+cuda = ["burn/cuda-jit"]

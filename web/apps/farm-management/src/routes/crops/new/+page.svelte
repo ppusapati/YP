@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { cropFormSchema } from '@samavāya/agriculture/schemas';
+  import { createCropSchema } from '@samavāya/agriculture/schemas';
   import { cropClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active' };
@@ -27,7 +27,7 @@
   title="New Crop"
   subtitle="Add a new crop to the catalog"
   mode="create"
-  schema={cropFormSchema}
+  schema={createCropSchema}
   {values}
   {errors}
   {isSubmitting}

@@ -1,6 +1,7 @@
 package mappers
 
 import (
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "p9e.in/samavaya/agriculture/satellite-analytics-service/api/v1"
@@ -95,6 +96,8 @@ func ProtoAnalysisTypeToDomain(at pb.AnalysisType) analyticsmodels.AnalysisType 
 		return analyticsmodels.AnalysisTypeAnomalyDetection
 	case pb.AnalysisType_ANALYSIS_TYPE_CROP_CLASSIFICATION:
 		return analyticsmodels.AnalysisTypeCropClassification
+	case pb.AnalysisType_ANALYSIS_TYPE_PHENOLOGY:
+		return analyticsmodels.AnalysisTypePhenology
 	default:
 		return analyticsmodels.AnalysisTypeUnspecified
 	}
@@ -113,6 +116,8 @@ func DomainAnalysisTypeToProto(at analyticsmodels.AnalysisType) pb.AnalysisType 
 		return pb.AnalysisType_ANALYSIS_TYPE_ANOMALY_DETECTION
 	case analyticsmodels.AnalysisTypeCropClassification:
 		return pb.AnalysisType_ANALYSIS_TYPE_CROP_CLASSIFICATION
+	case analyticsmodels.AnalysisTypePhenology:
+		return pb.AnalysisType_ANALYSIS_TYPE_PHENOLOGY
 	default:
 		return pb.AnalysisType_ANALYSIS_TYPE_UNSPECIFIED
 	}
@@ -180,7 +185,19 @@ func TemporalAnalysisToProto(t *analyticsmodels.TemporalAnalysis) *pb.TemporalAn
 		PeriodStart:      timestamppb.New(t.PeriodStart),
 		PeriodEnd:        timestamppb.New(t.PeriodEnd),
 		CreatedAt:        timestamppb.New(t.CreatedAt),
+		Details:          detailsToStruct(t.Details),
 	}
+}
+
+func detailsToStruct(d map[string]interface{}) *structpb.Struct {
+	if len(d) == 0 {
+		return nil
+	}
+	s, err := structpb.NewStruct(d)
+	if err != nil {
+		return nil
+	}
+	return s
 }
 
 // FieldAnalyticsSummaryToProto converts a domain FieldAnalyticsSummary to its proto representation.

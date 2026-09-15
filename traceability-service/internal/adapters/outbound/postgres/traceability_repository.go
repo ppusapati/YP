@@ -97,6 +97,62 @@ func (r *traceabilityRepository) GetRecord(ctx context.Context, id, tenantID str
 	return &result, nil
 }
 
+// recordColumns is the column list every single-record read shares.
+const recordColumns = `id, tenant_id, farm_id, field_id, crop_id, batch_number,
+	product_type, origin_country, origin_region, seed_source,
+	planting_date, harvest_date, processing_date, packaging_date,
+	qr_code_data, blockchain_hash, chain_of_custody, compliance_status,
+	metadata, version, created_by, updated_by, created_at, updated_at`
+
+func (r *traceabilityRepository) FindOpenRecordForField(ctx context.Context, fieldID, tenantID string) (*domain.TraceabilityRecord, error) {
+	// Most recently planted first. A field can carry more than one open record
+	// if a season was never closed out, and the newest is the one an activity
+	// happening now belongs to.
+	query := `SELECT ` + recordColumns + `
+	FROM traceability_records
+	WHERE field_id = $1 AND tenant_id = $2 AND harvest_date IS NULL
+	ORDER BY planting_date DESC NULLS LAST, created_at DESC
+	LIMIT 1`
+
+	return r.scanOneRecord(ctx, "find open record for field", query, fieldID, tenantID)
+}
+
+func (r *traceabilityRepository) FindRecordByBatchNumber(ctx context.Context, batchNumber, tenantID string) (*domain.TraceabilityRecord, error) {
+	query := `SELECT ` + recordColumns + `
+	FROM traceability_records
+	WHERE batch_number = $1 AND tenant_id = $2
+	ORDER BY created_at DESC
+	LIMIT 1`
+
+	return r.scanOneRecord(ctx, "find record by batch number", query, batchNumber, tenantID)
+}
+
+// scanOneRecord reads at most one record, treating absence as (nil, nil).
+//
+// Deliberately different from GetRecord, which returns NotFound: these two are
+// lookups whose negative answer is expected and meaningful — a field between
+// seasons, a batch seen for the first time — and turning that into an error
+// would force every caller to distinguish "no record" from "lookup failed" by
+// inspecting an error code.
+func (r *traceabilityRepository) scanOneRecord(ctx context.Context, what, query string, args ...interface{}) (*domain.TraceabilityRecord, error) {
+	var result domain.TraceabilityRecord
+	err := r.pool.QueryRow(ctx, query, args...).Scan(
+		&result.ID, &result.TenantID, &result.FarmID, &result.FieldID, &result.CropID, &result.BatchNumber,
+		&result.ProductType, &result.OriginCountry, &result.OriginRegion, &result.SeedSource,
+		&result.PlantingDate, &result.HarvestDate, &result.ProcessingDate, &result.PackagingDate,
+		&result.QRCodeData, &result.BlockchainHash, &result.ChainOfCustody, &result.ComplianceStatus,
+		&result.Metadata, &result.Version, &result.CreatedBy, &result.UpdatedBy, &result.CreatedAt, &result.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		r.log.Errorw("msg", "failed to "+what, "error", err)
+		return nil, errors.Internal("failed to %s: %v", what, err)
+	}
+	return &result, nil
+}
+
 func (r *traceabilityRepository) ListRecords(ctx context.Context, tenantID string, filter domain.ListRecordsFilter) ([]domain.TraceabilityRecord, int64, error) {
 	baseWhere := `WHERE tenant_id = $1`
 	args := []interface{}{tenantID}

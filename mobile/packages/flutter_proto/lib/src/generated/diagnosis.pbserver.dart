@@ -39,6 +39,16 @@ abstract class PlantDiagnosisServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.DetectNutrientDeficiencyRequest request);
   $async.Future<$1.DetectPestDamageResponse> detectPestDamage(
       $pb.ServerContext ctx, $1.DetectPestDamageRequest request);
+  $async.Future<$1.ListLabelReviewQueueResponse> listLabelReviewQueue(
+      $pb.ServerContext ctx, $1.ListLabelReviewQueueRequest request);
+  $async.Future<$1.SubmitLabelReviewResponse> submitLabelReview(
+      $pb.ServerContext ctx, $1.SubmitLabelReviewRequest request);
+  $async.Future<$1.GetLabelReviewImageResponse> getLabelReviewImage(
+      $pb.ServerContext ctx, $1.GetLabelReviewImageRequest request);
+  $async.Future<$1.RequestSecondOpinionResponse> requestSecondOpinion(
+      $pb.ServerContext ctx, $1.RequestSecondOpinionRequest request);
+  $async.Future<$1.GetReviewAgreementResponse> getReviewAgreement(
+      $pb.ServerContext ctx, $1.GetReviewAgreementRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -60,6 +70,16 @@ abstract class PlantDiagnosisServiceBase extends $pb.GeneratedService {
         return $1.DetectNutrientDeficiencyRequest();
       case 'DetectPestDamage':
         return $1.DetectPestDamageRequest();
+      case 'ListLabelReviewQueue':
+        return $1.ListLabelReviewQueueRequest();
+      case 'SubmitLabelReview':
+        return $1.SubmitLabelReviewRequest();
+      case 'GetLabelReviewImage':
+        return $1.GetLabelReviewImageRequest();
+      case 'RequestSecondOpinion':
+        return $1.RequestSecondOpinionRequest();
+      case 'GetReviewAgreement':
+        return $1.GetReviewAgreementRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -87,6 +107,19 @@ abstract class PlantDiagnosisServiceBase extends $pb.GeneratedService {
             ctx, request as $1.DetectNutrientDeficiencyRequest);
       case 'DetectPestDamage':
         return detectPestDamage(ctx, request as $1.DetectPestDamageRequest);
+      case 'ListLabelReviewQueue':
+        return listLabelReviewQueue(
+            ctx, request as $1.ListLabelReviewQueueRequest);
+      case 'SubmitLabelReview':
+        return submitLabelReview(ctx, request as $1.SubmitLabelReviewRequest);
+      case 'GetLabelReviewImage':
+        return getLabelReviewImage(
+            ctx, request as $1.GetLabelReviewImageRequest);
+      case 'RequestSecondOpinion':
+        return requestSecondOpinion(
+            ctx, request as $1.RequestSecondOpinionRequest);
+      case 'GetReviewAgreement':
+        return getReviewAgreement(ctx, request as $1.GetReviewAgreementRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

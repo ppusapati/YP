@@ -60,7 +60,7 @@ func (c *Collector) Counter(name, help string, labels []string) prometheus.Count
 	// Store for later retrieval
 	c.counters[key] = counter.WithLabelValues()
 
-	c.logger.Debug("created counter metric", "name", name)
+	c.logger.Log(p9log.LevelDebug, "msg", "created counter metric", "name", name)
 	return *counter
 }
 
@@ -84,7 +84,7 @@ func (c *Collector) Gauge(name, help string, labels []string) prometheus.GaugeVe
 
 	c.gauges[key] = gauge.WithLabelValues()
 
-	c.logger.Debug("created gauge metric", "name", name)
+	c.logger.Log(p9log.LevelDebug, "msg", "created gauge metric", "name", name)
 	return *gauge
 }
 
@@ -107,9 +107,9 @@ func (c *Collector) Histogram(name, help string, labels []string) prometheus.His
 
 	histogram := promauto.With(c.registry).NewHistogramVec(opts, labels)
 
-	c.histograms[key] = histogram.WithLabelValues()
+	c.histograms[key] = nil // histogram.WithLabelValues() returns Observer, not Histogram; stored separately via HistogramVec
 
-	c.logger.Debug("created histogram metric", "name", name)
+	c.logger.Log(p9log.LevelDebug, "msg", "created histogram metric", "name", name)
 	return *histogram
 }
 
@@ -131,9 +131,9 @@ func (c *Collector) Summary(name, help string, labels []string) prometheus.Summa
 
 	summary := promauto.With(c.registry).NewSummaryVec(opts, labels)
 
-	c.summaries[key] = summary.WithLabelValues()
+	c.summaries[key] = nil // summary.WithLabelValues() returns Observer, not Summary; stored separately via SummaryVec
 
-	c.logger.Debug("created summary metric", "name", name)
+	c.logger.Log(p9log.LevelDebug, "msg", "created summary metric", "name", name)
 	return *summary
 }
 
@@ -172,12 +172,17 @@ func (c *Collector) GetSnapshot(ctx context.Context) (*observability.MetricSnaps
 				value = float64(metric.Summary.GetSampleCount())
 			}
 
+			var ts time.Time
+			if metric.TimestampMs != nil {
+				ts = time.Unix(0, *metric.TimestampMs*1e6)
+			}
+
 			snapshot.Metrics = append(snapshot.Metrics, observability.Metric{
 				Name:      family.GetName(),
 				Type:      observability.MetricType(family.GetType().String()),
 				Value:     value,
 				Labels:    labels,
-				Timestamp: time.Unix(0, int64(metric.TimestampMs)*1e6),
+				Timestamp: ts,
 				Help:      family.GetHelp(),
 			})
 		}

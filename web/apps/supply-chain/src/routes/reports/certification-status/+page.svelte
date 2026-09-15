@@ -8,7 +8,7 @@
     <p class="subtitle">Overview of active certifications and compliance</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={{visualizations:[]}} data={{}} />
+    <DynamicReportRenderer visualization={{ layout_mode: 'grid', widgets: [] }} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

@@ -6,7 +6,6 @@ import 'package:logging/logging.dart';
 
 import '../models/auth_state.dart';
 import '../models/auth_token.dart';
-import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
 
 // ---------------------------------------------------------------------------

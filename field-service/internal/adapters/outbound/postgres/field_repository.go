@@ -90,7 +90,8 @@ func (r *fieldRepository) GetFieldByUUID(ctx context.Context, uuid, tenantID str
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", uuid))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return f, nil
 }
@@ -115,7 +116,8 @@ func (r *fieldRepository) ListFields(ctx context.Context, params domain.ListFiel
 		params.TenantID, params.FarmID, params.Status, params.FieldType, params.Search,
 	).Scan(&totalCount)
 	if err != nil {
-		return nil, 0, errors.InternalServer("FIELD_LIST_COUNT_FAILED", fmt.Sprintf("failed to count fields: %v", err))
+		r.log.Errorw("msg", "failed to count fields", "error", err)
+		return nil, 0, errors.InternalServer("FIELD_LIST_COUNT_FAILED", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx,
@@ -132,7 +134,8 @@ func (r *fieldRepository) ListFields(ctx context.Context, params domain.ListFiel
 		pageSize, params.Offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("FIELD_LIST_FAILED", fmt.Sprintf("failed to list fields: %v", err))
+		r.log.Errorw("msg", "failed to list fields", "error", err)
+		return nil, 0, errors.InternalServer("FIELD_LIST_FAILED", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -140,7 +143,8 @@ func (r *fieldRepository) ListFields(ctx context.Context, params domain.ListFiel
 	for rows.Next() {
 		f, err := scanField(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("FIELD_SCAN_FAILED", err.Error())
+			r.log.Errorw("msg", "field scan failed", "error", err)
+			return nil, 0, errors.InternalServer("FIELD_SCAN_FAILED", "an internal error occurred")
 		}
 		fields = append(fields, *f)
 	}
@@ -170,7 +174,8 @@ func (r *fieldRepository) UpdateField(ctx context.Context, field *domain.Field) 
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", field.ID))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return f, nil
 }
@@ -238,7 +243,8 @@ RETURNING id, tenant_id, field_id, polygon::text, area_hectares, perimeter_meter
 	err := row.Scan(&out.ID, &out.TenantID, &out.FieldID, &out.Polygon,
 		&out.AreaHectares, &out.PerimeterMeters, &out.Source, &out.RecordedAt, &out.CreatedAt)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to upsert boundary: %v", err))
+		r.log.Errorw("msg", "failed to upsert boundary", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return out, nil
 }
@@ -277,7 +283,8 @@ func (r *fieldRepository) GetCropHistory(ctx context.Context, fieldID, tenantID 
 		fieldID, tenantID,
 	).Scan(&total)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count crop history: %v", err))
+		r.log.Errorw("msg", "failed to count crop history", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx,
@@ -291,7 +298,8 @@ LIMIT $3 OFFSET $4`,
 		fieldID, tenantID, pageSize, offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list crop history: %v", err))
+		r.log.Errorw("msg", "failed to list crop history", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -299,7 +307,8 @@ LIMIT $3 OFFSET $4`,
 	for rows.Next() {
 		a, err := scanCropAssignment(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		out = append(out, *a)
 	}
@@ -339,7 +348,8 @@ COALESCE(current_crop_id,''), notes, segment_index, created_at, updated_at`,
 			&seg.CurrentCropID, &seg.Notes, &seg.SegmentIndex,
 			&seg.CreatedAt, &seg.UpdatedAt)
 		if err != nil {
-			return nil, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to insert segment: %v", err))
+			r.log.Errorw("msg", "failed to insert segment", "error", err)
+			return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		out = append(out, seg)
 	}
@@ -356,7 +366,8 @@ ORDER BY segment_index`,
 		fieldID, tenantID,
 	)
 	if err != nil {
-		return nil, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to get segments: %v", err))
+		r.log.Errorw("msg", "failed to get segments", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -368,7 +379,8 @@ ORDER BY segment_index`,
 			&seg.CurrentCropID, &seg.Notes, &seg.SegmentIndex,
 			&seg.CreatedAt, &seg.UpdatedAt)
 		if err != nil {
-			return nil, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		out = append(out, seg)
 	}
@@ -428,7 +440,8 @@ func (r *fieldRepository) GetCropCycleByID(ctx context.Context, id, tenantID str
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("CYCLE_NOT_FOUND", fmt.Sprintf("crop cycle not found: %s", id))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return cc, nil
 }
@@ -445,7 +458,8 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 		nilIfEmptyStr(params.ManagementUnitID),
 	).Scan(&total)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count crop cycles: %v", err))
+		r.log.Errorw("msg", "failed to count crop cycles", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx,
@@ -461,7 +475,8 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 		params.PageSize, params.Offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list crop cycles: %v", err))
+		r.log.Errorw("msg", "failed to list crop cycles", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -469,7 +484,8 @@ func (r *fieldRepository) ListCropCycles(ctx context.Context, params domain.List
 	for rows.Next() {
 		cc, err := scanCropCycle(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		out = append(out, *cc)
 	}
@@ -502,7 +518,8 @@ func (r *fieldRepository) UpdateCropCycle(ctx context.Context, c *domain.CropCyc
 		if err == pgx.ErrNoRows {
 			return nil, errors.NotFound("CYCLE_NOT_FOUND", fmt.Sprintf("crop cycle not found: %s", c.ID))
 		}
-		return nil, errors.InternalServer("DB_ERROR", err.Error())
+		r.log.Errorw("msg", "db error", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	return cc, nil
 }
@@ -584,7 +601,8 @@ func (r *fieldRepository) ListActivityEvents(ctx context.Context, params domain.
 		nilIfEmptyStr(params.CropCycleID), nilIfEmptyCategory(params.Category),
 	).Scan(&total)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count activity events: %v", err))
+		r.log.Errorw("msg", "failed to count activity events", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx,
@@ -599,7 +617,8 @@ func (r *fieldRepository) ListActivityEvents(ctx context.Context, params domain.
 		params.PageSize, params.Offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list activity events: %v", err))
+		r.log.Errorw("msg", "failed to list activity events", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -607,7 +626,8 @@ func (r *fieldRepository) ListActivityEvents(ctx context.Context, params domain.
 	for rows.Next() {
 		e, err := scanActivityEvent(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		out = append(out, *e)
 	}
@@ -681,7 +701,8 @@ func (r *fieldRepository) ListActivityEvidence(ctx context.Context, params domai
 		params.TenantID, params.ActivityEventID,
 	).Scan(&total)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to count activity evidence: %v", err))
+		r.log.Errorw("msg", "failed to count activity evidence", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 
 	rows, err := r.query(ctx,
@@ -693,7 +714,8 @@ func (r *fieldRepository) ListActivityEvidence(ctx context.Context, params domai
 		params.PageSize, params.Offset,
 	)
 	if err != nil {
-		return nil, 0, errors.InternalServer("DB_ERROR", fmt.Sprintf("failed to list activity evidence: %v", err))
+		r.log.Errorw("msg", "failed to list activity evidence", "error", err)
+		return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 	}
 	defer rows.Close()
 
@@ -701,7 +723,8 @@ func (r *fieldRepository) ListActivityEvidence(ctx context.Context, params domai
 	for rows.Next() {
 		e, err := scanActivityEvidence(rows)
 		if err != nil {
-			return nil, 0, errors.InternalServer("DB_ERROR", err.Error())
+			r.log.Errorw("msg", "db error", "error", err)
+			return nil, 0, errors.InternalServer("DB_ERROR", "an internal error occurred")
 		}
 		out = append(out, *e)
 	}

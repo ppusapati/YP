@@ -1,0 +1,39 @@
+# CUDA build of the trainer.
+#
+#   docker build -f Dockerfile.cuda -t yp-ml-training:cuda .
+#   docker run --gpus all yp-ml-training:cuda train --task disease
+#
+# burn's cuda-jit backend compiles kernels at run time, so the runtime image
+# keeps the CUDA toolkit rather than only the runtime libraries.
+ARG CUDA_VERSION=12.4.1
+ARG UBUNTU_VERSION=22.04
+
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS builder
+
+ARG RUST_VERSION=1.91.0
+ENV PATH=/root/.cargo/bin:$PATH
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential ca-certificates curl pkg-config libssl-dev && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --default-toolchain ${RUST_VERSION} --profile minimal && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY Cargo.toml Cargo.lock* ./
+COPY src/ src/
+COPY examples/ examples/
+
+RUN cargo build --release --features cuda
+
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/target/release/yp-ml-training /usr/local/bin/
+COPY configs/ /app/configs/
+
+WORKDIR /app
+ENTRYPOINT ["yp-ml-training"]
+CMD ["pipeline", "--tasks", "all", "--config", "configs/training_config.toml"]

@@ -97,12 +97,6 @@ func (o *SagaOrchestratorImpl) ExecuteSaga(
 		return nil, fmt.Errorf("failed to create saga execution: %w", err)
 	}
 
-	// Publish saga started event
-	if err := o.eventPublisher.PublishSagaStarted(ctx, execution); err != nil {
-		// Log warning but don't fail - saga is already created
-		fmt.Printf("failed to publish saga started event: %v\n", err)
-	}
-
 	// Execute steps sequentially
 	if err := o.executeSteps(ctx, execution, stepDefs, handler); err != nil {
 		// Update execution status to FAILED
@@ -254,13 +248,12 @@ func (o *SagaOrchestratorImpl) executeSteps(
 
 		// Check if saga has expired
 		if execution.ExpiresAt != nil && time.Now().After(*execution.ExpiresAt) {
-			return saga.NewSagaError(
+			return saga.NewSagaStepError(
 				execution.ID,
-				stepNum,
+				int(stepNum),
 				"TIMEOUT",
 				"saga execution timeout",
 				nil,
-				true,
 			)
 		}
 
@@ -300,13 +293,14 @@ func (o *SagaOrchestratorImpl) executeSteps(
 
 		if stepErr != nil {
 			// Log step error
+			stepErrTime := time.Now()
 			if err := o.execLogRepository.CreateExecutionLog(ctx, &models.StepExecution{
-				SagaID:        execution.ID,
-				StepNumber:    stepNum,
-				Status:        models.StepStatusFailed,
-				ErrorMessage:  stepErr.Error(),
-				ExecutedAt:    time.Now(),
-				ExecutionTime: 0,
+				SagaID:          execution.ID,
+				StepNumber:      stepNum,
+				Status:          models.StepStatusFailed,
+				Error:           stepErr.Error(),
+				CreatedAt:       &stepErrTime,
+				ExecutionTimeMs: 0,
 			}); err != nil {
 				fmt.Printf("failed to log step execution: %v\n", err)
 			}
@@ -326,14 +320,16 @@ func (o *SagaOrchestratorImpl) executeSteps(
 		}
 
 		// Log successful step execution
+		stepSuccessTime := time.Now()
+		resultBytes, _ := json.Marshal(stepResult.Result)
 		if err := o.execLogRepository.CreateExecutionLog(ctx, &models.StepExecution{
-			SagaID:        execution.ID,
-			StepNumber:    stepNum,
-			Status:        models.StepStatusSucceeded,
-			Result:        stepResult.Result,
-			ExecutedAt:    time.Now(),
-			ExecutionTime: stepResult.ExecutionTimeMs,
-			RetryCount:    stepResult.RetryCount,
+			SagaID:          execution.ID,
+			StepNumber:      stepNum,
+			Status:          models.StepStatusSucceeded,
+			Result:          resultBytes,
+			CreatedAt:       &stepSuccessTime,
+			ExecutionTimeMs: stepResult.ExecutionTimeMs,
+			RetryCount:      stepResult.RetryCount,
 		}); err != nil {
 			fmt.Printf("failed to log step execution: %v\n", err)
 		}
