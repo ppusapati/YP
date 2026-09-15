@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../farm/presentation/bloc/farm_bloc.dart';
+import '../../../farm/presentation/bloc/farm_event.dart';
+import '../../../farm/presentation/bloc/farm_state.dart';
 import '../bloc/commerce_bloc.dart';
 import '../bloc/commerce_event.dart';
 import '../bloc/commerce_state.dart';
@@ -27,6 +30,14 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   String _unit = 'kg';
   String _currency = 'INR';
 
+  /// Which farm the produce came from.
+  ///
+  /// This used to be submitted as an empty string with a TODO next to it, so
+  /// every listing a farmer created was attached to no farm — which is the one
+  /// field a buyer uses to trace where the produce came from, and the link the
+  /// traceability chain needs on the selling end.
+  String? _farmId;
+
   static const _productTypes = [
     'Grain',
     'Vegetable',
@@ -38,6 +49,15 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   ];
 
   static const _units = ['kg', 'quintal', 'ton', 'piece', 'bunch', 'litre'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Same call the dashboard and farm list make: the tenant comes from the
+    // token, so the empty user id is the established convention here rather
+    // than a missing argument.
+    context.read<FarmBloc>().add(const LoadFarms(userId: ''));
+  }
 
   @override
   void dispose() {
@@ -82,6 +102,60 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Farm
+                BlocBuilder<FarmBloc, FarmState>(
+                  builder: (context, state) {
+                    if (state is FarmsLoaded) {
+                      // One farm is the common case; choosing it for the farmer
+                      // saves a tap and cannot be wrong.
+                      if (state.farms.length == 1 && _farmId == null) {
+                        _farmId = state.farms.first.id;
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: _farmId,
+                        decoration: const InputDecoration(
+                          labelText: 'Farm *',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: state.farms
+                            .map(
+                              (f) => DropdownMenuItem(
+                                value: f.id,
+                                child: Text(f.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _farmId = value),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? 'Select the farm this produce came from'
+                            : null,
+                      );
+                    }
+                    if (state is FarmError) {
+                      // Surfaced, not hidden behind a spinner. Without a farm
+                      // the listing cannot be created, and the farmer should
+                      // find that out here rather than on submit.
+                      return InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Farm *',
+                          border: OutlineInputBorder(),
+                          errorText: 'Could not load your farms',
+                        ),
+                        child: Text(state.message),
+                      );
+                    }
+                    return const InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Farm *',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text('Loading farms...'),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
                 // Product name
                 TextFormField(
                   controller: _nameController,
@@ -283,12 +357,25 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    final farmId = _farmId;
+    if (farmId == null || farmId.isEmpty) {
+      // Belt and braces with the dropdown's validator: a listing attached to no
+      // farm is untraceable, and silently creating one is worse than refusing.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select the farm this produce came from'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final priceRupees = double.parse(_priceController.text.trim());
     final pricePerUnitPaise = (priceRupees * 100).round();
 
     context.read<CommerceBloc>().add(
           CreateListing(
-            farmId: '', // TODO: wire from user's selected farm
+            farmId: farmId,
             productName: _nameController.text.trim(),
             productType: _productType,
             description: _descriptionController.text.trim(),

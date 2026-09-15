@@ -60,9 +60,13 @@ plausible-looking synthetic values."*
 | `alert-service/internal/scheduler` | Threshold alerts are scanned periodically | The package is imported by nothing and its `FieldProvider` has no implementation. Alerts now arrive via the event consumer, so the scanner is redundant rather than broken — **delete it or wire it**, but do not leave it looking live |
 | `web/apps/shell/.../dashboard/+page.svelte` | These are their tenant's numbers | Hardcoded $125,430 revenue and 1,234 orders under a live user greeting |
 | `web/apps/shell/src/routes/+page.svelte` | — | `// Temporarily bypass auth`; `/` goes straight to the dashboard |
-| `mobile/.../irrigation_remote_datasource.dart:117` | The field has no irrigation alerts | `getAlerts()` returns an empty list with no network call |
-| `mobile/.../soil_remote_datasource.dart:69` | Results are date-filtered | `from`/`to` are accepted and ignored |
-| `mobile/.../create_listing_screen.dart:291` | Their listing is attached to a farm | Submits `farmId: ''` |
+| `mobile/.../irrigation_remote_datasource.dart` | The field has no irrigation alerts | **Fixed** — returned an empty list with no network call; now asks alert-service, which owns alerts, and throws rather than swallowing a failure into an empty list |
+| `mobile/.../soil_remote_datasource.dart` | Results are date-filtered | **Fixed** — `from`/`to` were accepted and ignored; now applied client-side, with a note on when the filter should move into the proto |
+| `mobile/.../create_listing_screen.dart` | Their listing is attached to a farm | **Fixed** — submitted `farmId: ''`; the form now requires the seller to pick one |
+
+The three mobile fixes are **not compile-checked**: there is no Flutter or Dart
+toolchain in the environment they were written in. They follow the patterns of
+neighbouring code in the same files and need `flutter analyze` before release.
 
 ### 3. Events consumed, acked, and dropped
 
