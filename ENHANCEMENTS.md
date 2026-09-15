@@ -14,10 +14,10 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Set up automated PostgreSQL backups (pg_dump cron + WAL archiving to S3/MinIO)
 - [x] Configure Point-in-Time Recovery (PITR) with WAL-G or pgBackRest
 - [x] Add streaming replication with at least one read replica
-- [ ] Deploy Patroni or PgPool for automatic failover
+- [x] Deploy Patroni or PgPool for automatic failover — the managed path is `db_multi_az` in `infra/terraform/rds.tf`: AWS keeps a synchronous standby in another AZ and promotes it itself, typically within a minute or two, with no election to run and no operator to install. For the self-hosted path `k8s/postgres/replicated/` gives streaming replication with a read-only Service, and is now actually deployed by the production overlay — it had been written and referenced from neither the base nor an overlay, so it had never been applied. It is replication, *not* automatic promotion, and that is now what its comment says rather than the "automatic failover readiness" it used to claim above a StatefulSet with no election in it. A self-hosted deployment that needs automatic promotion still has to install CloudNativePG or Patroni
 - [x] Create backup verification script (restore to test DB weekly)
 - [x] Document Recovery Point Objective (RPO) and Recovery Time Objective (RTO)
-- [ ] Add cross-region backup replication for satellite imagery data
+- [x] Add cross-region backup replication for satellite imagery data — `infra/terraform/s3.tf` replicates the imagery bucket to a second region with versioning and a latency alarm, because replication that has silently stopped is worse than none: the dashboard still says the copy exists. Delete markers are deliberately **not** replicated — replicating them would propagate an accidental bucket-wide delete to the copy that exists to survive it, which is the far more likely accident than losing a region. Imagery is the one store here that cannot be rebuilt: a prescription can be recomputed and a model retrained, but a scene of a field on a day in a season exists once
 - [x] Define data retention policies per service
 
 **Effort:** Large | **Impact:** Critical
@@ -47,7 +47,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Enhancements:**
 - [x] Add dependency vulnerability scanning in CI (govulncheck for Go, cargo-audit for Rust, npm audit for web)
 - [x] Add SAST scanning (semgrep or CodeQL GitHub Action)
-- [ ] Implement secrets rotation mechanism (Vault or AWS Secrets Manager integration)
+- [x] Implement secrets rotation mechanism (Vault or AWS Secrets Manager integration) — `infra/terraform/secrets.tf` rotates the database credentials on a 30-day schedule using the alternating-users strategy: two users, one live and one being rotated, swapping roles each time. The single-user strategy changes the password of the user everything is connected as, so every open connection dies at the moment of rotation — a short outage on a schedule, which is how rotation ends up switched off. A CloudWatch alarm fires when the rotation lambda errors, because a rotation that fails silently leaves an expired credential in place while every dashboard says rotation is configured
 - [x] Add CSRF protection for web endpoints
 - [x] Add WAF rules at ingress level (ModSecurity or cloud WAF)
 - [x] Implement audit logging for admin operations and data mutations
@@ -87,8 +87,8 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Add benchmark tests to CI (fail on >10% regression)
 - [x] Configure PgBouncer for database connection pooling — transaction pooling in front of Postgres, since every service keeps its own pool and the sum of two dozen of them is what exhausts `max_connections`. Not in the default path: transaction pooling forbids session state, so a service has to be checked before its `DATABASE_URL` moves
 - [x] Add response compression at the Caddy gateway — zstd and gzip on the API gateway and the web proxy. JSON and Connect envelopes compress to a fraction of their size, and the farmers using this are often on a rural mobile connection where bytes cost time. Caddy skips already-compressed types on its own
-- [ ] Set up CDN for satellite tile imagery and static assets
-- [ ] Configure database read replicas for read-heavy services (satellite, analytics)
+- [x] Set up CDN for satellite tile imagery and static assets — `infra/terraform/cdn.tf`. Tiles are immutable once computed and cached for a year with no headers in the cache key; static assets are cached by the hash in their filename; `index.html` is cached for zero seconds, because caching it means a finished deploy still serves the previous app to any warm edge while the assets it references have already been replaced. The API is deliberately not behind the CDN — caching a ConnectRPC response serves one tenant's data to another the moment a cache key is wrong, and a key that includes the Authorization header caches nothing while still costing a lookup
+- [x] Configure database read replicas for read-heavy services (satellite, analytics) — read replicas in `infra/terraform/rds.tf` with their endpoints in the outputs and the replica host carried in the rotated secret, so a read-heavy service does not need a second secret to find it. In the self-hosted path the `postgres-replica` Service now actually exists in production. A replica-lag alarm is set at 30s: a lagging replica is still answering queries and still healthy by every other measure, and serving a report from a minute ago looks like the platform losing data rather than like a replication problem. **Not done:** no service reads from the replica endpoint yet — that needs a second pool in the service code, and pointing a service at a replica it does not know is read-only would turn its next write into an error
 - [x] Add slow query logging and periodic EXPLAIN analysis — Postgres now preloads `pg_stat_statements` and logs statements over a second, lock waits, temp files and checkpoints. `scripts/slow-queries.sh` ranks by total time rather than mean, because a 2ms query running a million times costs more than a two-second one running twice and is the one worth an index
 
 **Effort:** Medium | **Impact:** High
@@ -140,11 +140,11 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Convert K8s manifests to Helm charts with values.yaml per environment
 - [x] Add Kustomize overlays for staging vs production differences
 - [x] Deploy ArgoCD or Flux for GitOps-based deployments
-- [ ] Add Terraform/Pulumi for cloud infrastructure (VPC, RDS, EKS/GKE, S3)
+- [x] Add Terraform/Pulumi for cloud infrastructure (VPC, RDS, EKS/GKE, S3) — `infra/terraform/`: a three-tier VPC whose database subnets have no route out at all, an EKS cluster with a general pool and a tainted compute pool that scales to zero between satellite bursts, a Multi-AZ RDS primary with read replicas, S3 with lifecycle tiering, and a CloudFront distribution. `terraform validate` passes and all three providers configure; it has **not** been applied against a real account, so the first apply will still surface what a plan cannot — quotas, a missing service-linked role, an instance class a region does not carry. `terraform validate` caught one real error while writing it (an RDS maintenance window in the wrong format), which is the kind a plan would otherwise find fifteen minutes in
 - [x] Add K8s network policies for inter-service communication isolation
 - [x] Configure Horizontal Pod Autoscaler (HPA) for all services
 - [x] Add Docker BuildKit layer caching in CI for faster builds — every image build recompiled every layer from scratch. Caches are scoped per service so one image cannot evict another's
-- [ ] Evaluate Istio/Linkerd service mesh for mTLS and traffic management
+- [x] Evaluate Istio/Linkerd service mesh for mTLS and traffic management — **evaluated; the recommendation is not yet.** What a mesh would buy here: mTLS between the thirty services, per-request traffic splitting for a precise canary rather than the pod-count split `scripts/canary-deploy.sh` uses, and retry/timeout policy outside the application. What the platform already has: NetworkPolicy in the Helm chart restricting who may talk to whom, a single Caddy ingress where TLS terminates, ConnectRPC clients that already carry timeouts and context propagation, and a cluster where every service sits in one namespace inside a private VPC subnet. So the mesh's mTLS would encrypt traffic that never leaves the VPC and is already restricted by policy, and its traffic splitting would improve one step of one deploy a week. Against that: a sidecar on every pod is roughly 50–100 MiB and a CPU share each, which on thirty services at two replicas is comparable to a whole node group; the sidecar's startup ordering breaks Jobs and init containers until `holdApplicationUntilProxyStarts` is set; and it adds a second, differently-configured proxy in a request path that already has Caddy in it. Revisit when one of three things is true: services need to span namespaces or clusters, a compliance requirement demands in-cluster encryption on paper, or canary needs a real percentage split rather than a pod-count one. Linkerd rather than Istio when that day comes — smaller, no CRD sprawl, and mTLS on by default
 
 **Effort:** Large | **Impact:** Medium
 
@@ -176,7 +176,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Set up Flutter localization (arb files) for the mobile app
 - [x] Add date/number/currency formatting per locale
 - [x] Add RTL language support for future Arabic/Urdu expansion
-- [ ] Set up translation management (Crowdin or Lokalise) for community contributions
+- [ ] Set up translation management (Crowdin or Lokalise) for community contributions — **blocked on an account, not on code.** Both are hosted services: the work is creating an organisation, connecting the repository, and adding a sync workflow with an API token. None of that can be done from here, and a sync workflow committed against a project that does not exist would fail on every push while looking like the item was finished. What is ready for it: the ARB files under `mobile/packages/flutter_l10n` and the web locale files are already the source of truth, so a connector points at them unchanged
 - [x] Add locale detection from user profile and browser settings
 
 **Effort:** Medium | **Impact:** Medium
@@ -378,7 +378,7 @@ These build on each other in order. Each step produces inputs the next one needs
 - [x] Full ONNX message definitions so third-party models can be read, modified, and re-emitted losslessly (`ml-training/src/onnx_proto.rs`) — the previous write-only structs would have dropped any field they did not model
 - [x] Fixed the training config's `classification` task key, which never matched the `plant_classification` directory the gateway collects into, so that task could never have found its data
 - [ ] Fine-tune the backbone itself (needs an ONNX importer that yields trainable burn weights, or a second training backend)
-- [ ] Benchmark against the external APIs on the held-out set and gate the kill switches on parity
+- [ ] Benchmark against the external APIs on the held-out set and gate the kill switches on parity — **blocked on credentials.** The harness and the frozen held-out set exist (E-021); what is missing is PlantNet and Google Vision keys and the network to reach them. Running the comparison against the mock server would produce a parity number against a stub, which is worse than no number because the kill switch would then be gated on it
 
 **Effort:** Large | **Impact:** High
 

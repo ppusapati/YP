@@ -5,6 +5,15 @@ namespace: yieldpoint
 
 resources:
   - ../../base
+  # Primary plus a streaming replica, with a read-only `postgres-replica`
+  # Service for the read-heavy services and a `postgres` Service that still
+  # points at the primary so nothing has to change to keep writing.
+  #
+  # This is replication, not automatic failover: promoting the replica when the
+  # primary dies still needs an operator, and infra/terraform/rds.tf is the
+  # managed answer for a cloud deployment. Saying so beats a comment claiming
+  # "failover readiness" over a manifest that has no election in it.
+  - ../../postgres/replicated
 
 # Three replicas for the things whose failure is felt immediately: the gateway
 # every request enters through, the service that issues the tokens, and the one

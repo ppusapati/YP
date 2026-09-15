@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Primary plus a streaming replica, with a read-only `postgres-replica` Service
+# for the read-heavy services and a `postgres` Service that still points at the
+# primary, so nothing has to change to keep writing.
+#
+# This is replication, not automatic failover. Promoting the replica when the
+# primary dies still needs an operator watching for it — infra/terraform/rds.tf
+# is the managed answer for a cloud deployment, and CloudNativePG or Patroni is
+# the answer for a self-hosted one. Saying that plainly beats the comment this
+# manifest used to carry, which claimed "automatic failover readiness" above a
+# StatefulSet with no election in it.
+resources:
+  - postgres.yaml

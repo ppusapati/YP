@@ -5,6 +5,10 @@ namespace: yieldpoint-staging
 
 resources:
   - ../../base
+  # A single Postgres. Staging is for finding out whether the code works;
+  # replication is for finding out whether the cluster survives a node, and
+  # that is what production is for.
+  - ../../postgres/single
 
 # One replica of everything. Staging exists to find out whether the code works,
 # not whether it survives a node failure, and thirty services at two replicas is

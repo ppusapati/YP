@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# A single Postgres instance: one StatefulSet, one Service, no replication.
+#
+# For development and staging, where the question being answered is whether the
+# code works rather than whether the cluster survives a node.
+resources:
+  - postgres.yaml

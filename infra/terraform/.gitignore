@@ -1,0 +1,15 @@
+# State holds every generated password in plaintext. It belongs in the S3
+# backend, not in the repository.
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+*.tfplan
+
+# .terraform.lock.hcl is NOT ignored. It pins the provider versions and their
+# checksums, so two people running `terraform init` a month apart get the same
+# AWS provider rather than whatever was released in between.
+
+# Anything ending .auto.tfvars is loaded without being named on the command
+# line, which is exactly how a real credential ends up committed.
+*.auto.tfvars

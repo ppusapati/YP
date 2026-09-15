@@ -3,15 +3,23 @@ kind: Kustomization
 
 namespace: yieldpoint
 
+# postgres.yaml and postgres-replication.yaml are deliberately NOT here.
+#
+# They are two topologies for the same thing and including either in the base
+# makes it the default everywhere. The replication manifest — primary, streaming
+# replica, and a read-only Service for the read-heavy services — had been
+# written and was in neither the base nor an overlay, so it was never deployed
+# at all. Each overlay now names the one it wants.
 resources:
   - namespace.yaml
   - configmap.yaml
   - secrets.yaml
-  - postgres.yaml
   - kafka.yaml
   - services.yaml
   - ingress.yaml
   - monitoring.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: yieldpoint
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: yieldpoint
+    includeSelectors: true
