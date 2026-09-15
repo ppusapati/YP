@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
   import { alertRuleSchema } from '@samavāya/agriculture/schemas';
-  import { sensorClient } from '@samavāya/agriculture/services';
+  import { alertClient, sensorClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = {};
   let errors: Record<string, string> = {};
@@ -13,7 +13,7 @@
     isSubmitting = true;
     error = null;
     try {
-      await sensorClient.createAlertRule(formValues as any);
+      await alertClient.createAlertRule(formValues as any);
       goto('/alert-rules');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create alert rule';

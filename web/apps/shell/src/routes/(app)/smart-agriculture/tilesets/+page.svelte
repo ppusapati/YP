@@ -18,12 +18,17 @@
     { key: 'createdAt', label: 'Created' },
   ];
 
+  // Token-paginated.
+  let pageTokens: string[] = [''];
+
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+    const __i = Math.floor(pageOffset / Math.max(pageSize, 1));
     loading = true;
     error = null;
     try {
-      const res = await tileClient.listTilesets({ pageSize, pageOffset });
+      const res = await tileClient.listTilesets({ pageSize, pageToken: pageTokens[__i] ?? '' });
       rows = res.tilesets;
+      if (res.nextPageToken) pageTokens[__i + 1] = res.nextPageToken;
       totalCount = res.totalCount;
       return res.totalCount;
     } catch (e) {

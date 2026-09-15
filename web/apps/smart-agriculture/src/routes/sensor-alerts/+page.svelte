@@ -21,7 +21,7 @@
     loading = true;
     error = null;
     try {
-      const res = await sensorClient.getAlerts({ pageSize, pageOffset });
+      const res = await sensorClient.listAlerts({ pageSize, pageOffset });
       rows = res.alerts;
       totalCount = res.totalCount;
       return res.totalCount;

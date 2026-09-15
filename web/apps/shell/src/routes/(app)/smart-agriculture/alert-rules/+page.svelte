@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
-  import { sensorClient } from '@samavāya/agriculture/services';
+  import { alertClient, sensorClient } from '@samavāya/agriculture/services';
 
   let rows: any[] = [];
-  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
@@ -16,22 +17,30 @@
     { key: 'severity', label: 'Severity' },
   ];
 
-  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+  async function load() {
+    // ListAlertRules takes a field id and returns that field's rules. There is
+    // no page size and no total count — a field has as many rules as it has.
+    const fieldId = $page.url.searchParams.get('fieldId') ?? '';
+    if (!fieldId) {
+      error = 'Choose a field to see its alert rules.';
+      loading = false;
+      return;
+    }
+
     loading = true;
     error = null;
     try {
-      const res = await sensorClient.listAlertRules({ pageSize, pageOffset });
+      const res = await alertClient.listAlertRules({ fieldId });
       rows = res.rules;
-      totalCount = res.totalCount;
-      return res.totalCount;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load alert rules';
       rows = [];
-      return 0;
     } finally {
       loading = false;
     }
   }
+
+  onMount(load);
 </script>
 
 <EntityListPage
@@ -41,7 +50,5 @@
   rows={rows as any}
   {loading}
   {error}
-  {totalCount}
   onRowClick={(id) => goto(`/smart-agriculture/alert-rules/${id}`)}
-  {fetchData}
 />

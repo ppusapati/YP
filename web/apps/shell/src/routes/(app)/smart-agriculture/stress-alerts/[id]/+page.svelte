@@ -8,7 +8,7 @@
   let error: string | null = null;
   let isSubmitting = false;
 
-  $: id = $page.params.id;
+  $: id = $page.params.id ?? '';
 
   $: if (id) loadData(id);
 
@@ -16,8 +16,18 @@
     loading = true;
     error = null;
     try {
-      const res = await analyticsClient.getStressAlert({ id: alertId });
-      alert = res.alert as any || {};
+      // satellite-analytics has no GetStressAlert: alerts are only listed. The
+      // page walks the listing for the one it was asked for rather than
+      // calling a method that does not exist. A missing alert is said so,
+      // instead of rendering an empty detail view that looks like a loaded one.
+      const res = await analyticsClient.listStressAlerts({ pageSize: 200 });
+      const found = res.alerts.find((a) => a.id === alertId);
+      if (!found) {
+        error = 'That stress alert could not be found.';
+        alert = {};
+        return;
+      }
+      alert = found as unknown as Record<string, unknown>;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load stress alert';
     } finally {

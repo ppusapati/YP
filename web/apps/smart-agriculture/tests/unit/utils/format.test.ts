@@ -11,7 +11,7 @@ import {
   isValidDate,
   formatRelative,
   addDays,
-} from '@samavāya/utility/date';
+} from '@p9e.in/utils/date';
 
 import {
   formatNumber,
@@ -20,13 +20,13 @@ import {
   round,
   toRadians,
   toDegrees,
-} from '@samavāya/utility/number';
+} from '@p9e.in/utils/number';
 
 import {
   formatPercent,
   formatDuration,
   formatTime,
-} from '@samavāya/utility/formatting';
+} from '@p9e.in/utils/formatting';
 
 // ===========================================================================
 // Date formatting

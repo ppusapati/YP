@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 import {
   authStore,
@@ -6,7 +6,7 @@ import {
   type AuthTokens,
   type Role,
   type Permission,
-} from '@samavāya/stores/global/auth.store';
+} from '@samavāya/stores/global';
 
 // ---------------------------------------------------------------------------
 // Helpers
