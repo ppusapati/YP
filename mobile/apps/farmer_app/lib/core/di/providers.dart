@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter_analytics/flutter_analytics.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_auth/flutter_auth.dart';
 import 'package:flutter_network/flutter_network.dart';
@@ -949,4 +952,23 @@ final generatePrescriptionUseCaseProvider =
     Provider<GeneratePrescriptionUseCase>((ref) {
   return GeneratePrescriptionUseCase(
       ref.watch(prescriptionRepositoryProvider));
+});
+
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+/// Product analytics, provider-agnostic and consent-gated.
+///
+/// The provider is a no-op until one is configured. That is deliberate: the
+/// app exercises the whole path — consent, buffering, flushing — whether or
+/// not a vendor is wired up, so the build that ships does not take a different
+/// branch from the one under test.
+///
+/// Swapping in Firebase or PostHog is an override here and a
+/// `flutter_analytics` provider implementation; nothing else moves.
+final analyticsProvider = Provider<Analytics>((ref) {
+  final analytics = Analytics(
+    preferences: ref.watch(sharedPreferencesProvider),
+  );
+  unawaited(analytics.initialize());
+  return analytics;
 });

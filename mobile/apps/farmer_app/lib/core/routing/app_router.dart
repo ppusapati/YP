@@ -63,8 +63,11 @@ import '../../features/traceability/presentation/screens/traceability_screen.dar
 import '../../features/yield_prediction/domain/entities/yield_prediction_entity.dart';
 import '../../features/yield_prediction/presentation/screens/yield_dashboard_screen.dart';
 import '../../features/yield_prediction/presentation/screens/yield_detail_screen.dart';
+import 'package:flutter_analytics/flutter_analytics.dart';
+
 import '../auth/role_provider.dart';
 import '../auth/user_role.dart';
+import '../di/providers.dart';
 
 /// GoRouter configuration provider.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -74,6 +77,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: initialLocation,
+    // One observer rather than a tracking call in sixty screens' initState.
+    // The screens that would forget are invisible in the numbers, which reads
+    // as a feature nobody uses.
+    observers: [ScreenViewObserver(ref.watch(analyticsProvider))],
     routes: [
       // ─── Shell route with bottom navigation ──────────────────────
       ShellRoute(

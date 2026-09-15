@@ -12,6 +12,7 @@ environment:
 workspace:
   - apps/farmer_app
   - apps/agronomist_app
+  - packages/flutter_analytics
   - packages/flutter_auth
   - packages/flutter_map_core
   - packages/flutter_network

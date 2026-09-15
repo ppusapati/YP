@@ -278,6 +278,7 @@ jobs:
           for target in \
             apps/farmer_app \
             apps/agronomist_app \
+            packages/flutter_analytics \
             packages/flutter_map_core \
             packages/flutter_proto \
             packages/flutter_ui_core; do

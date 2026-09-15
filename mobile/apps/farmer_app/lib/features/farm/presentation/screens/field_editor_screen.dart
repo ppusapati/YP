@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_analytics/flutter_analytics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map_core/flutter_map_core.dart'
     show BoundaryRejection, BoundaryWalkTool, GpsPosition;
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/di/providers.dart';
 import '../../domain/entities/field_entity.dart';
 import '../bloc/field_bloc.dart';
 import '../bloc/field_event.dart';
@@ -135,9 +138,22 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
     });
   }
 
+  Analytics get _analytics =>
+      ProviderScope.containerOf(context, listen: false).read(analyticsProvider);
+
   void _stopWalking() {
     _fixSubscription?.cancel();
     _fixSubscription = null;
+    if (_walk.hasUsablePolygon) {
+      // The worst accuracy is what decides whether the boundary is worth
+      // anything, so it is recorded with the walk rather than left to be
+      // guessed at from a map screenshot later.
+      _analytics.track('boundary_walked', properties: {
+        'points': _walk.points.length,
+        'hectares': double.parse(_walk.areaHectares.toStringAsFixed(2)),
+        'worst_accuracy_m': _walk.worstAccuracyMeters.round(),
+      });
+    }
     setState(() {
       _isWalking = false;
       _lastFix = null;

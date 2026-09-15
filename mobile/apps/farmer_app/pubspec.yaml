@@ -16,6 +16,8 @@ dependencies:
     sdk: flutter
 
   # ── Workspace packages ──────────────────────────────────────────────
+  flutter_analytics:
+    path: ../../packages/flutter_analytics
   flutter_auth:
     path: ../../packages/flutter_auth
   flutter_map_core:
