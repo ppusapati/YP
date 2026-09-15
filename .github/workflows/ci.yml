@@ -41,6 +41,7 @@ jobs:
           - device-service
           - farm-service
           - field-service
+          - finance-service
           - irrigation-service
           - market-service
           - pest-prediction-service
@@ -459,6 +460,7 @@ jobs:
           - device-service
           - farm-service
           - field-service
+          - finance-service
           - irrigation-service
           - market-service
           - pest-prediction-service

@@ -679,6 +679,26 @@ services:
       <<: *go-env
       DATABASE_URL: ${SUSTAINABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/sustainability_service?sslmode=disable}
 
+  finance-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: finance-service
+    ports:
+      - "8114:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${FINANCE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/finance_service?sslmode=disable}
+      # Everything here rests on the harvest record: without yield-service a
+      # quote is priced from a crop benchmark and a credit assessment is
+      # refused outright.
+      YIELD_SERVICE_URL: http://yield-service:8080
+      # Both claim-evidence sources are optional. A missing one produces an
+      # inconclusive entry in the pack rather than a silently shorter pack.
+      SATELLITE_SERVICE_URL: http://satellite-service:8080
+      WEATHER_SERVICE_URL: http://weather-service:8080
+
   # ── Offline development ────────────────────────────────────────────────────
   # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
   # Vision), so the platform runs with no network access, no API keys, and

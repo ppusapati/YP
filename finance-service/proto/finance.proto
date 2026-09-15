@@ -1,0 +1,354 @@
+syntax = "proto3";
+package agriculture.finance.v1;
+option go_package = "p9e.in/samavaya/agriculture/finance-service/api/v1;financev1";
+
+import "google/protobuf/timestamp.proto";
+
+// Season is the Indian cropping calendar, which is what the insurance
+// schemes are written against.
+enum Season {
+  SEASON_UNSPECIFIED = 0;
+  SEASON_KHARIF      = 1;
+  SEASON_RABI        = 2;
+  SEASON_ZAID        = 3;
+}
+
+// CropCategory decides the farmer's premium share under PMFBY.
+//
+// The scheme caps what a farmer pays at 2% of the sum insured for kharif food
+// crops, 1.5% for rabi, and 5% for commercial and horticultural crops. The
+// government pays the rest of the actuarial premium, so the category is not a
+// label — it is most of the price the farmer sees.
+enum CropCategory {
+  CROP_CATEGORY_UNSPECIFIED  = 0;
+  CROP_CATEGORY_FOOD_GRAIN   = 1;
+  CROP_CATEGORY_OILSEED      = 2;
+  CROP_CATEGORY_COMMERCIAL   = 3;
+  CROP_CATEGORY_HORTICULTURE = 4;
+}
+
+// QuoteConfidence is how much the yield history behind a quote supports it.
+enum QuoteConfidence {
+  QUOTE_CONFIDENCE_UNSPECIFIED = 0;
+  // Enough seasons of this field's own yields to estimate the risk from them.
+  QUOTE_CONFIDENCE_FIELD_HISTORY = 1;
+  // Some history, but short enough that the estimate carries a large
+  // uncertainty loading, which the quote shows.
+  QUOTE_CONFIDENCE_SHORT_HISTORY = 2;
+  // No usable history. The rate is a crop benchmark, not this field's risk,
+  // and the quote says so rather than presenting a benchmark as a measurement.
+  QUOTE_CONFIDENCE_BENCHMARK_ONLY = 3;
+}
+
+// PremiumLine is one component of the actuarial premium.
+message PremiumLine {
+  string label  = 1;
+  // As a fraction of the sum insured.
+  double rate   = 2;
+  double amount = 3;
+  string basis  = 4;
+}
+
+// InsuranceQuote prices one season's cover for one field.
+message InsuranceQuote {
+  string id       = 1;
+  string field_id = 2;
+  string farm_id  = 3;
+  string crop     = 4;
+  CropCategory category = 5;
+  Season season   = 6;
+  int32  year     = 7;
+
+  double area_hectares = 8;
+  // Sum insured per hectare, and the total it comes to.
+  double sum_insured_per_hectare = 9;
+  double total_sum_insured       = 10;
+
+  // The indemnity level the cover is written at: 70, 80 or 90 percent of the
+  // threshold yield.
+  double indemnity_level = 11;
+  // Threshold yield in kg/ha — the average of the best five of the last seven
+  // seasons, scaled by the indemnity level. Below this a claim pays out.
+  double threshold_yield_kg_ha = 12;
+
+  repeated PremiumLine lines = 13;
+  // The full risk-bearing premium, before any subsidy.
+  double actuarial_premium = 14;
+  double actuarial_rate    = 15;
+  // What the farmer actually pays after the scheme's cap.
+  double farmer_premium    = 16;
+  // What the government pays to make up the difference.
+  double subsidy           = 17;
+
+  QuoteConfidence confidence = 18;
+  int32  history_seasons     = 19;
+  // Said in plain words: what the quote rests on and where it is weak.
+  string basis = 20;
+
+  google.protobuf.Timestamp quoted_at  = 21;
+  google.protobuf.Timestamp expires_at = 22;
+}
+
+// CreditBand is the coarse reading of a credit score.
+enum CreditBand {
+  CREDIT_BAND_UNSPECIFIED = 0;
+  CREDIT_BAND_POOR        = 1;
+  CREDIT_BAND_FAIR        = 2;
+  CREDIT_BAND_GOOD        = 3;
+  CREDIT_BAND_EXCELLENT   = 4;
+}
+
+// ScoreStatus says whether a score could be produced at all.
+enum ScoreStatus {
+  SCORE_STATUS_UNSPECIFIED = 0;
+  SCORE_STATUS_SCORED      = 1;
+  // Too few seasons to say anything. Deliberately not a low score: a thin
+  // file is not a bad file, and a farmer with one harvest on record must not
+  // be handed a number that reads like a default history.
+  SCORE_STATUS_INSUFFICIENT_HISTORY = 2;
+}
+
+// ScoreFactor is one thing that moved the score, and by how much.
+message ScoreFactor {
+  string code  = 1;
+  string label = 2;
+  // Points added or subtracted, so the arithmetic can be followed.
+  double points = 3;
+  // The measured value the points came from.
+  double value  = 4;
+  string explanation = 5;
+}
+
+// CreditAssessment is a repayment-capacity reading built from farm records.
+message CreditAssessment {
+  string id      = 1;
+  string farm_id = 2;
+
+  ScoreStatus status = 3;
+  // 300 to 900, the range Indian lenders read. Zero when not scored.
+  int32      score   = 4;
+  CreditBand band    = 5;
+
+  repeated ScoreFactor factors = 6;
+
+  int32  seasons_considered = 7;
+  double mean_yield_kg_ha   = 8;
+  // Coefficient of variation of the yield history: the volatility a lender
+  // actually cares about.
+  double yield_variability  = 9;
+  double mean_profit_per_hectare = 10;
+
+  // An indicative borrowing capacity from the records, not an offer.
+  double indicative_limit = 11;
+
+  // Says out loud that this is a reading of farm records, not a lending
+  // decision, and what it does not include.
+  string caveat = 12;
+
+  google.protobuf.Timestamp assessed_at = 13;
+}
+
+// LossCause is what the claimant says damaged the crop.
+enum LossCause {
+  LOSS_CAUSE_UNSPECIFIED     = 0;
+  LOSS_CAUSE_DROUGHT         = 1;
+  LOSS_CAUSE_FLOOD           = 2;
+  LOSS_CAUSE_UNSEASONAL_RAIN = 3;
+  LOSS_CAUSE_HAIL            = 4;
+  LOSS_CAUSE_CYCLONE         = 5;
+  LOSS_CAUSE_PEST            = 6;
+  LOSS_CAUSE_DISEASE         = 7;
+  LOSS_CAUSE_FIRE            = 8;
+}
+
+// ClaimStatus is where a claim has got to.
+enum ClaimStatus {
+  CLAIM_STATUS_UNSPECIFIED = 0;
+  CLAIM_STATUS_DRAFT       = 1;
+  CLAIM_STATUS_SUBMITTED   = 2;
+  // Evidence has been gathered and the pack is ready for the insurer.
+  CLAIM_STATUS_EVIDENCE_READY = 3;
+  // The insurer has decided. This service never sets these itself.
+  CLAIM_STATUS_SETTLED     = 4;
+  CLAIM_STATUS_REJECTED    = 5;
+  CLAIM_STATUS_WITHDRAWN   = 6;
+}
+
+// EvidenceSource is where a piece of evidence came from.
+enum EvidenceSource {
+  EVIDENCE_SOURCE_UNSPECIFIED = 0;
+  EVIDENCE_SOURCE_SATELLITE_NDVI = 1;
+  EVIDENCE_SOURCE_WEATHER        = 2;
+  EVIDENCE_SOURCE_FIELD_INSPECTION = 3;
+  EVIDENCE_SOURCE_YIELD_RECORD   = 4;
+  EVIDENCE_SOURCE_PHOTO          = 5;
+}
+
+// EvidenceVerdict is what one piece of evidence says about the claim.
+//
+// Three values, not two. "Cannot be determined" is a real answer and the most
+// common one — a cloudy fortnight over a monsoon flood leaves no usable
+// satellite image, and treating that silence as "inconsistent" would deny a
+// claim on the strength of the weather over the satellite.
+enum EvidenceVerdict {
+  EVIDENCE_VERDICT_UNSPECIFIED  = 0;
+  EVIDENCE_VERDICT_SUPPORTS     = 1;
+  EVIDENCE_VERDICT_CONTRADICTS  = 2;
+  EVIDENCE_VERDICT_INCONCLUSIVE = 3;
+}
+
+// Evidence is one item in a claim's pack.
+message Evidence {
+  string id = 1;
+  EvidenceSource source   = 2;
+  EvidenceVerdict verdict = 3;
+  string summary = 4;
+  // The measured figure behind the verdict, and what it is compared against.
+  double observed = 5;
+  double baseline = 6;
+  string unit     = 7;
+  google.protobuf.Timestamp observed_at = 8;
+  // A link to the image, reading or report this came from.
+  string reference = 9;
+}
+
+// Claim is a loss claim against a quote.
+message Claim {
+  string id       = 1;
+  string quote_id = 2;
+  string field_id = 3;
+  string farm_id  = 4;
+  string crop     = 5;
+  Season season   = 6;
+  int32  year     = 7;
+
+  LossCause cause = 8;
+  google.protobuf.Timestamp loss_started_on = 9;
+  google.protobuf.Timestamp loss_ended_on   = 10;
+  string description = 11;
+
+  ClaimStatus status = 12;
+
+  double claimed_area_hectares = 13;
+  // The yield the claimant reports, against the threshold the quote insured.
+  double reported_yield_kg_ha  = 14;
+  double threshold_yield_kg_ha = 15;
+  // What the policy formula produces from those two figures. An arithmetic
+  // result, not an approval.
+  double indicated_payout = 16;
+
+  repeated Evidence evidence = 17;
+  // What the pack as a whole says, in plain words, without deciding the claim.
+  string evidence_summary = 18;
+
+  string submitted_by = 19;
+  google.protobuf.Timestamp submitted_at = 20;
+  google.protobuf.Timestamp created_at   = 21;
+  google.protobuf.Timestamp updated_at   = 22;
+  int64 version = 23;
+}
+
+// ── Requests / Responses ─────────────────────────────────────────────────────
+
+message QuoteInsuranceRequest {
+  string field_id = 1;
+  string farm_id  = 2;
+  string crop     = 3;
+  CropCategory category = 4;
+  Season season   = 5;
+  int32  year     = 6;
+  double area_hectares = 7;
+  // Optional. Defaults to the scale-of-finance figure for the crop.
+  double sum_insured_per_hectare = 8;
+  // 70, 80 or 90. Defaults to 80.
+  double indemnity_level = 9;
+}
+
+message QuoteInsuranceResponse { InsuranceQuote quote = 1; }
+
+message GetQuoteRequest { string id = 1; }
+message GetQuoteResponse { InsuranceQuote quote = 1; }
+
+message ListQuotesRequest {
+  string field_id = 1;
+  string farm_id  = 2;
+  int32  year     = 3;
+  int32  page_size  = 4;
+  string page_token = 5;
+}
+
+message ListQuotesResponse {
+  repeated InsuranceQuote quotes = 1;
+  string next_page_token = 2;
+  int32  total_count = 3;
+}
+
+message AssessCreditRequest {
+  string farm_id = 1;
+  // How far back to look. Defaults to the last ten seasons.
+  int32  from_year = 2;
+  int32  to_year   = 3;
+}
+
+message AssessCreditResponse { CreditAssessment assessment = 1; }
+
+message GetCreditAssessmentRequest { string id = 1; }
+message GetCreditAssessmentResponse { CreditAssessment assessment = 1; }
+
+message FileClaimRequest {
+  string quote_id = 1;
+  string field_id = 2;
+  LossCause cause = 3;
+  google.protobuf.Timestamp loss_started_on = 4;
+  google.protobuf.Timestamp loss_ended_on   = 5;
+  string description = 6;
+  double claimed_area_hectares = 7;
+  double reported_yield_kg_ha  = 8;
+}
+
+message FileClaimResponse { Claim claim = 1; }
+
+message GatherEvidenceRequest { string claim_id = 1; }
+message GatherEvidenceResponse { Claim claim = 1; }
+
+message GetClaimRequest { string id = 1; }
+message GetClaimResponse { Claim claim = 1; }
+
+message ListClaimsRequest {
+  string field_id = 1;
+  string farm_id  = 2;
+  ClaimStatus status = 3;
+  int32  page_size  = 4;
+  string page_token = 5;
+}
+
+message ListClaimsResponse {
+  repeated Claim claims = 1;
+  string next_page_token = 2;
+  int32  total_count = 3;
+}
+
+message UpdateClaimStatusRequest {
+  string id = 1;
+  ClaimStatus status = 2;
+  string note = 3;
+}
+
+message UpdateClaimStatusResponse { Claim claim = 1; }
+
+// FinanceService prices crop cover, reads farm records for credit, and
+// assembles the evidence behind a loss claim.
+service FinanceService {
+  rpc QuoteInsurance(QuoteInsuranceRequest) returns (QuoteInsuranceResponse);
+  rpc GetQuote(GetQuoteRequest) returns (GetQuoteResponse);
+  rpc ListQuotes(ListQuotesRequest) returns (ListQuotesResponse);
+
+  rpc AssessCredit(AssessCreditRequest) returns (AssessCreditResponse);
+  rpc GetCreditAssessment(GetCreditAssessmentRequest) returns (GetCreditAssessmentResponse);
+
+  rpc FileClaim(FileClaimRequest) returns (FileClaimResponse);
+  rpc GatherEvidence(GatherEvidenceRequest) returns (GatherEvidenceResponse);
+  rpc GetClaim(GetClaimRequest) returns (GetClaimResponse);
+  rpc ListClaims(ListClaimsRequest) returns (ListClaimsResponse);
+  rpc UpdateClaimStatus(UpdateClaimStatusRequest) returns (UpdateClaimStatusResponse);
+}

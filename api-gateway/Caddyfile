@@ -475,6 +475,21 @@
 		}
 	}
 
+	handle /agriculture.finance.v1.FinanceService/* {
+		reverse_proxy finance-service:8080 {
+			# Gathering a claim's evidence fans out to satellite-service and
+			# weather-service and walks several years of imagery and rainfall.
+			# It is the slowest call on the platform that a person waits for.
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 90s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
 	# ── Catch-all ──────────────────────────────────────────────────────
 	handle {
 		respond `{"error":"not_found","message":"no route matched"}` 404

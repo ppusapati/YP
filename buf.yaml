@@ -11,6 +11,7 @@ modules:
   - path: crop-service/proto
   - path: soil-lab-service/proto
   - path: sustainability-service/proto
+  - path: finance-service/proto
   - path: soil-service/proto
   - path: sensor-service/proto
   - path: irrigation-service/proto
