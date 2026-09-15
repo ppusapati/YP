@@ -2,48 +2,78 @@
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
   import { alertClient } from '@samavāya/agriculture/services';
+  import { AlertSeverity, AlertStatus } from '@samavāya/proto';
+  import type { Timestamp } from '@bufbuild/protobuf/wkt';
 
-  let rows: any[] = [];
+  /**
+   * Severity and status are protobuf enums on the wire, not strings.
+   *
+   * This page filtered with `'critical'` and `'active'` and rendered the
+   * `severity` column straight out of the message, which meant the request
+   * carried a string where a number belongs and the table showed `3` where the
+   * user expected "Critical". Both halves go through these tables now.
+   *
+   * The type and sort filters are gone: `ListAlertsRequest` has neither a
+   * `type` nor a `sort_by` field, so those eight chips sent nothing and the
+   * list never changed when they were clicked. A filter that looks like it
+   * works is worse than one that is not offered.
+   */
+
+  const SEVERITIES = [
+    { value: AlertSeverity.INFO, label: 'Info', color: '#0284c7' },
+    { value: AlertSeverity.WARNING, label: 'Warning', color: '#ca8a04' },
+    { value: AlertSeverity.CRITICAL, label: 'Critical', color: '#ea580c' },
+    { value: AlertSeverity.EMERGENCY, label: 'Emergency', color: '#dc2626' },
+  ];
+
+  // No 'expired': alert.proto declares active, acknowledged and resolved only.
+  const STATUSES = [
+    { value: AlertStatus.ACTIVE, label: 'Active' },
+    { value: AlertStatus.ACKNOWLEDGED, label: 'Acknowledged' },
+    { value: AlertStatus.RESOLVED, label: 'Resolved' },
+  ];
+
+  let rows: Record<string, unknown>[] = [];
   let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
-  let severityFilter: string | null = null;
-  let typeFilter: string | null = null;
-  let statusFilter: string | null = null;
-  let sortBy: 'recency' | 'severity' = 'recency';
+  let severityFilter: AlertSeverity | null = null;
+  let statusFilter: AlertStatus | null = null;
 
-  const severities = ['info', 'warning', 'critical', 'emergency'];
-  const types = [
-    'cropStress',
-    'waterShortage',
-    'diseaseOutbreak',
-    'pestOutbreak',
-    'irrigationNeeded',
-    'frostWarning',
-    'soilHealth',
-    'weatherEvent',
-  ];
-  const statuses = ['active', 'acknowledged', 'resolved', 'expired'];
+  /**
+   * Page tokens seen so far, indexed by page. `listAlerts` is token-paginated
+   * and `EntityListPage` counts in offsets, so the offset is divided back into
+   * a page number and used to look up the token that opens it.
+   */
+  let pageTokens: string[] = [''];
 
   const columns = [
-    { key: 'severity', label: 'Severity' },
+    { key: 'severity', label: 'Severity', format: (v: unknown) => severityLabel(v as AlertSeverity) },
     { key: 'title', label: 'Title' },
     { key: 'type', label: 'Type', format: (v: unknown) => formatType(v as string) },
     { key: 'fieldName', label: 'Field' },
-    { key: 'status', label: 'Status' },
-    { key: 'timestamp', label: 'Time', format: (v: unknown) => formatTimeAgo(v as string) },
+    { key: 'status', label: 'Status', format: (v: unknown) => statusLabel(v as AlertStatus) },
+    { key: 'timestamp', label: 'Time', format: (v: unknown) => formatTimeAgo(v as Timestamp | undefined) },
   ];
 
+  function severityLabel(s: AlertSeverity): string {
+    return SEVERITIES.find((x) => x.value === s)?.label ?? 'Unspecified';
+  }
+
+  function statusLabel(s: AlertStatus): string {
+    return STATUSES.find((x) => x.value === s)?.label ?? 'Unspecified';
+  }
+
   function formatType(type: string): string {
+    if (!type) return '—';
     return type.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   }
 
-  function formatTimeAgo(ts: string): string {
-    const d = new Date(ts);
-    const now = Date.now();
-    const diffMs = now - d.getTime();
-    const mins = Math.floor(diffMs / 60000);
+  function formatTimeAgo(ts: Timestamp | undefined): string {
+    if (!ts?.seconds) return '—';
+    const d = new Date(Number(ts.seconds) * 1000);
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
     if (mins < 60) return `${mins}m ago`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours}h ago`;
@@ -52,29 +82,19 @@
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  function severityColor(s: string): string {
-    switch (s) {
-      case 'emergency': return '#dc2626';
-      case 'critical': return '#ea580c';
-      case 'warning': return '#ca8a04';
-      case 'info': return '#0284c7';
-      default: return '#6b7280';
-    }
-  }
-
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
     loading = true;
     error = null;
     try {
+      const pageIndex = Math.floor(pageOffset / Math.max(pageSize, 1));
       const res = await alertClient.listAlerts({
         pageSize,
-        pageOffset,
-        severity: severityFilter ?? undefined,
-        type: typeFilter ?? undefined,
-        status: statusFilter ?? undefined,
-        sortBy,
+        pageToken: pageTokens[pageIndex] ?? '',
+        severity: severityFilter ?? AlertSeverity.UNSPECIFIED,
+        status: statusFilter ?? AlertStatus.UNSPECIFIED,
       });
-      rows = res.alerts;
+      if (res.nextPageToken) pageTokens[pageIndex + 1] = res.nextPageToken;
+      rows = res.alerts as unknown as Record<string, unknown>[];
       totalCount = res.totalCount;
       return res.totalCount;
     } catch (e) {
@@ -86,23 +106,15 @@
     }
   }
 
-  function toggleSeverity(s: string) {
+  function toggleSeverity(s: AlertSeverity) {
     severityFilter = severityFilter === s ? null : s;
+    pageTokens = [''];
     fetchData();
   }
 
-  function toggleType(t: string) {
-    typeFilter = typeFilter === t ? null : t;
-    fetchData();
-  }
-
-  function toggleStatus(s: string) {
+  function toggleStatus(s: AlertStatus) {
     statusFilter = statusFilter === s ? null : s;
-    fetchData();
-  }
-
-  function toggleSort() {
-    sortBy = sortBy === 'recency' ? 'severity' : 'recency';
+    pageTokens = [''];
     fetchData();
   }
 </script>
@@ -125,47 +137,31 @@
   <div class="filters">
     <div class="filter-group">
       <span class="filter-label">Severity:</span>
-      {#each severities as s}
+      {#each SEVERITIES as s}
         <button
           class="chip"
-          class:active={severityFilter === s}
-          style:--chip-color={severityColor(s)}
-          on:click={() => toggleSeverity(s)}
-        >{s}</button>
-      {/each}
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Type:</span>
-      {#each types as t}
-        <button
-          class="chip"
-          class:active={typeFilter === t}
-          on:click={() => toggleType(t)}
-        >{formatType(t)}</button>
+          class:active={severityFilter === s.value}
+          style:--chip-color={s.color}
+          on:click={() => toggleSeverity(s.value)}
+        >{s.label}</button>
       {/each}
     </div>
     <div class="filter-group">
       <span class="filter-label">Status:</span>
-      {#each statuses as s}
+      {#each STATUSES as s}
         <button
           class="chip"
-          class:active={statusFilter === s}
-          on:click={() => toggleStatus(s)}
-        >{s}</button>
+          class:active={statusFilter === s.value}
+          on:click={() => toggleStatus(s.value)}
+        >{s.label}</button>
       {/each}
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Sort:</span>
-      <button class="chip active" on:click={toggleSort}>
-        {sortBy === 'recency' ? 'Most Recent' : 'Highest Severity'}
-      </button>
     </div>
   </div>
 
   <EntityListPage
     title=""
     {columns}
-    rows={rows as any}
+    {rows}
     {loading}
     {error}
     {totalCount}

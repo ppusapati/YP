@@ -17,8 +17,7 @@
     "@samavāya/core": "workspace:*",
     "@samavāya/proto": "workspace:*",
     "@samavāya/stores": "workspace:*",
-    "@samavāya/ui": "workspace:*",
-    "proto@workspace:*": "link:@samavāya/proto@workspace:*"
+    "@samavāya/ui": "workspace:*"
   },
   "devDependencies": {
     "@p9e.in/configs": "workspace:*",

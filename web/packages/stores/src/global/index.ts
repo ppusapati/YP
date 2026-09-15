@@ -3,11 +3,8 @@
  * @packageDocumentation
  */
 
-// API Provider Bridge (wires stores → api providers, breaking cyclic dep)
-// export { initApiProviders } from './apiProviderBridge.js';
-
 // Auth Store
-export { authStore } from './auth.store.js';
+export { authStore, configureAuth } from './auth.store.js';
 export type {
   User,
   AuthTokens,

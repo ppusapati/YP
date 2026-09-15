@@ -1,37 +1,65 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { alertClient, fieldClient } from '@samavāya/agriculture/services';
+  import { AlertSeverity } from '@samavāya/proto';
+
+  /**
+   * A new alert rule, in the terms alert-service stores one.
+   *
+   * The form used to collect an alert type from a list of eight, a minimum
+   * severity, and three notification checkboxes — none of which exist on
+   * `AlertRule`. Submitting it sent a rule whose every meaningful field was
+   * dropped on the wire, so the rule was created and then never fired.
+   *
+   * A rule is a threshold: when `metric` crosses `threshold` in the direction
+   * `condition`, raise an alert at `severity` and notify `notify_channels`.
+   */
 
   let fieldId = '';
-  let fieldName = '';
-  let alertType = 'cropStress';
+  let metric = 'soil_moisture';
+  let condition = '<';
+  let threshold = 0;
+  let severity: AlertSeverity = AlertSeverity.WARNING;
+  let notifyChannels: string[] = ['push'];
   let enabled = true;
-  let threshold: number | null = null;
-  let minimumSeverity = 'warning';
-  let pushEnabled = true;
-  let emailEnabled = false;
-  let smsEnabled = false;
 
   let fields: { id: string; name: string }[] = [];
   let isSubmitting = false;
   let error: string | null = null;
 
-  const alertTypes = [
-    { value: 'cropStress', label: 'Crop Stress' },
-    { value: 'waterShortage', label: 'Water Shortage' },
-    { value: 'diseaseOutbreak', label: 'Disease Outbreak' },
-    { value: 'pestOutbreak', label: 'Pest Outbreak' },
-    { value: 'irrigationNeeded', label: 'Irrigation Needed' },
-    { value: 'frostWarning', label: 'Frost Warning' },
-    { value: 'soilHealth', label: 'Soil Health' },
-    { value: 'weatherEvent', label: 'Weather Event' },
+  /**
+   * The metrics sensor-service and the satellite pipeline publish. Free text
+   * would let someone create a rule on a metric nothing ever reports, which
+   * looks identical to a rule whose condition is never met.
+   */
+  const metrics = [
+    { value: 'soil_moisture', label: 'Soil moisture (%)' },
+    { value: 'soil_temperature', label: 'Soil temperature (°C)' },
+    { value: 'air_temperature', label: 'Air temperature (°C)' },
+    { value: 'humidity', label: 'Humidity (%)' },
+    { value: 'rainfall', label: 'Rainfall (mm)' },
+    { value: 'ndvi', label: 'NDVI' },
+    { value: 'wind_speed', label: 'Wind speed (m/s)' },
+  ];
+
+  const conditions = [
+    { value: '<', label: 'falls below' },
+    { value: '<=', label: 'is at or below' },
+    { value: '>', label: 'rises above' },
+    { value: '>=', label: 'is at or above' },
   ];
 
   const severities = [
-    { value: 'info', label: 'Info' },
-    { value: 'warning', label: 'Warning' },
-    { value: 'critical', label: 'Critical' },
-    { value: 'emergency', label: 'Emergency' },
+    { value: AlertSeverity.INFO, label: 'Info' },
+    { value: AlertSeverity.WARNING, label: 'Warning' },
+    { value: AlertSeverity.CRITICAL, label: 'Critical' },
+    { value: AlertSeverity.EMERGENCY, label: 'Emergency' },
+  ];
+
+  const channels = [
+    { value: 'push', label: 'Push notification' },
+    { value: 'email', label: 'Email' },
+    { value: 'sms', label: 'SMS' },
   ];
 
   loadFields();
@@ -39,17 +67,18 @@
   async function loadFields() {
     try {
       const res = await fieldClient.listFields({});
-      fields = (res.fields ?? []).map((f: any) => ({ id: f.id, name: f.name || f.id }));
-    } catch {
-      // Fields will show as empty; user can still type an ID.
+      fields = (res.fields ?? []).map((f) => ({ id: f.id, name: f.name || f.id }));
+    } catch (e) {
+      // Said out loud: a silently empty dropdown reads as "this farm has no
+      // fields", which is a very different problem from "the call failed".
+      error = e instanceof Error ? `Could not load fields: ${e.message}` : 'Could not load fields';
     }
   }
 
-  function handleFieldSelect(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    fieldId = target.value;
-    const found = fields.find((f) => f.id === fieldId);
-    fieldName = found?.name ?? fieldId;
+  function toggleChannel(value: string) {
+    notifyChannels = notifyChannels.includes(value)
+      ? notifyChannels.filter((c) => c !== value)
+      : [...notifyChannels, value];
   }
 
   async function handleSubmit() {
@@ -57,22 +86,16 @@
       error = 'Please select a field';
       return;
     }
+    if (notifyChannels.length === 0) {
+      error = 'Choose at least one channel, or the rule will fire with nobody told.';
+      return;
+    }
 
     isSubmitting = true;
     error = null;
     try {
       await alertClient.createAlertRule({
-        rule: {
-          fieldId,
-          fieldName,
-          alertType,
-          enabled,
-          threshold,
-          minimumSeverity,
-          pushEnabled,
-          emailEnabled,
-          smsEnabled,
-        },
+        rule: { fieldId, metric, condition, threshold, severity, enabled, notifyChannels },
       });
       goto('/alerts/rules');
     } catch (e) {
@@ -97,50 +120,53 @@
 
   <form class="form" on:submit|preventDefault={handleSubmit}>
     <div class="form-section">
-      <h3>Field & Alert Type</h3>
+      <h3>Field</h3>
 
       <div class="form-group">
         <label for="field">Field</label>
-        <select id="field" on:change={handleFieldSelect} value={fieldId}>
+        <select id="field" bind:value={fieldId}>
           <option value="">Select a field...</option>
           {#each fields as field}
             <option value={field.id}>{field.name}</option>
           {/each}
         </select>
       </div>
-
-      <div class="form-group">
-        <label for="alertType">Alert Type</label>
-        <select id="alertType" bind:value={alertType}>
-          {#each alertTypes as t}
-            <option value={t.value}>{t.label}</option>
-          {/each}
-        </select>
-      </div>
     </div>
 
     <div class="form-section">
-      <h3>Thresholds</h3>
+      <h3>Condition</h3>
 
       <div class="form-group">
-        <label for="minSeverity">Minimum Severity</label>
-        <select id="minSeverity" bind:value={minimumSeverity}>
+        <label for="metric">Metric</label>
+        <select id="metric" bind:value={metric}>
+          {#each metrics as m}
+            <option value={m.value}>{m.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="condition">When it</label>
+        <select id="condition" bind:value={condition}>
+          {#each conditions as c}
+            <option value={c.value}>{c.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="threshold">Threshold</label>
+        <input id="threshold" type="number" step="any" bind:value={threshold} />
+        <span class="help-text">The value the metric is compared against</span>
+      </div>
+
+      <div class="form-group">
+        <label for="severity">Raise an alert at</label>
+        <select id="severity" bind:value={severity}>
           {#each severities as s}
             <option value={s.value}>{s.label}</option>
           {/each}
         </select>
-      </div>
-
-      <div class="form-group">
-        <label for="threshold">Threshold Value (optional)</label>
-        <input
-          id="threshold"
-          type="number"
-          step="any"
-          placeholder="e.g. 75"
-          bind:value={threshold}
-        />
-        <span class="help-text">The numeric threshold that triggers this alert</span>
       </div>
     </div>
 
@@ -148,18 +174,16 @@
       <h3>Notification Channels</h3>
 
       <div class="checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" bind:checked={pushEnabled} />
-          Push Notifications
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" bind:checked={emailEnabled} />
-          Email
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" bind:checked={smsEnabled} />
-          SMS
-        </label>
+        {#each channels as c}
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              checked={notifyChannels.includes(c.value)}
+              on:change={() => toggleChannel(c.value)}
+            />
+            {c.label}
+          </label>
+        {/each}
       </div>
     </div>
 

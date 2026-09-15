@@ -1,19 +1,18 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { alertClient } from '@samavāya/agriculture/services';
+  import { AlertSeverity, type AlertRule } from '@samavāya/proto';
 
-  interface AlertRule {
-    id: string;
-    fieldId: string;
-    fieldName: string;
-    alertType: string;
-    enabled: boolean;
-    threshold: number | null;
-    minimumSeverity: string;
-    pushEnabled: boolean;
-    emailEnabled: boolean;
-    smsEnabled: boolean;
-  }
+  /**
+   * Alert rules, as alert-service actually models them.
+   *
+   * This page declared its own `AlertRule` with `fieldName`, `alertType`,
+   * `minimumSeverity` and a `pushEnabled`/`emailEnabled`/`smsEnabled` triple.
+   * The real message has none of those. A rule here is a threshold — when
+   * `metric` `condition` `threshold`, raise an alert at `severity` and notify
+   * `notify_channels` — so the card showed an empty type, an empty field name,
+   * an empty severity and "None" for channels on every rule that existed.
+   */
 
   let rules: AlertRule[] = [];
   let loading = true;
@@ -39,22 +38,20 @@
       await alertClient.updateAlertRule({
         rule: { ...rule, enabled: !rule.enabled },
       });
-      rules = rules.map((r) => r.id === rule.id ? { ...r, enabled: !r.enabled } : r);
+      rules = rules.map((r) => (r.id === rule.id ? { ...r, enabled: !r.enabled } : r));
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update rule';
     }
   }
 
-  function formatType(type: string): string {
-    return type.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  /** "soil_moisture < 20" — the rule in the terms it is stored in. */
+  function ruleSummary(rule: AlertRule): string {
+    const metric = rule.metric ? rule.metric.replace(/_/g, ' ') : 'metric';
+    return `${metric} ${rule.condition || '?'} ${rule.threshold}`;
   }
 
-  function channelIcons(rule: AlertRule): string[] {
-    const ch: string[] = [];
-    if (rule.pushEnabled) ch.push('Push');
-    if (rule.emailEnabled) ch.push('Email');
-    if (rule.smsEnabled) ch.push('SMS');
-    return ch;
+  function severityLabel(s: AlertSeverity): string {
+    return AlertSeverity[s] ?? 'UNSPECIFIED';
   }
 </script>
 
@@ -86,8 +83,8 @@
         <div class="rule-card" class:disabled={!rule.enabled}>
           <div class="rule-header">
             <div class="rule-info">
-              <span class="rule-type">{formatType(rule.alertType)}</span>
-              <span class="rule-field">{rule.fieldName}</span>
+              <span class="rule-type">{ruleSummary(rule)}</span>
+              <span class="rule-field">{rule.fieldId || 'All fields'}</span>
             </div>
             <label class="toggle">
               <input type="checkbox" checked={rule.enabled} on:change={() => toggleRule(rule)} />
@@ -97,22 +94,16 @@
           {#if rule.enabled}
             <div class="rule-details">
               <div class="rule-detail">
-                <span class="label">Min. Severity</span>
-                <span class="value">{rule.minimumSeverity}</span>
+                <span class="label">Raises</span>
+                <span class="value">{severityLabel(rule.severity)}</span>
               </div>
-              {#if rule.threshold != null}
-                <div class="rule-detail">
-                  <span class="label">Threshold</span>
-                  <span class="value">{rule.threshold}</span>
-                </div>
-              {/if}
               <div class="rule-detail">
                 <span class="label">Channels</span>
                 <span class="value channels">
-                  {#each channelIcons(rule) as ch}
+                  {#each rule.notifyChannels as ch}
                     <span class="channel-badge">{ch}</span>
                   {/each}
-                  {#if channelIcons(rule).length === 0}
+                  {#if rule.notifyChannels.length === 0}
                     <span class="none">None</span>
                   {/if}
                 </span>

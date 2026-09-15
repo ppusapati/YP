@@ -1,6 +1,8 @@
 <script lang="ts">
   import { authStore } from '@samavāya/stores';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { get } from 'svelte/store';
 
   let email = $state('');
   let password = $state('');
@@ -15,7 +17,27 @@
 
     try {
       await authStore.login({ email, password, rememberMe });
-      goto('/dashboard');
+
+      // Hand the access token to the server so it can set the HttpOnly
+      // `session` cookie. Without this the store is signed in but the server
+      // is not, and the `(app)` guard sends us straight back here.
+      const token = get(authStore).tokens?.accessToken;
+      const res = await fetch('/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: token }),
+      });
+
+      if (!res.ok) {
+        // Reported rather than navigated past: going on to /dashboard would
+        // bounce back to this page with no explanation.
+        throw new Error('Signed in, but the session could not be established.');
+      }
+
+      // `redirectTo` is set by the `(app)` guard when it turns someone away,
+      // so an expired session resumes where it left off.
+      const target = $page.url.searchParams.get('redirectTo');
+      await goto(target && target.startsWith('/') ? target : '/dashboard');
     } catch (err) {
       error = err instanceof Error ? err.message : 'Login failed. Please try again.';
     } finally {

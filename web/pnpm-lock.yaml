@@ -145,6 +145,9 @@ importers:
 
   apps/shell:
     dependencies:
+      '@bufbuild/protobuf':
+        specifier: ^2.0.0
+        version: 2.11.0
       '@p9e.in/samavaya':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -166,9 +169,6 @@ importers:
       '@samavāya/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      proto@workspace:*:
-        specifier: link:@samavāya/proto@workspace:*
-        version: link:@samavāya/proto@workspace:*
     devDependencies:
       '@sveltejs/adapter-auto':
         specifier: ^3.3.0
@@ -233,9 +233,6 @@ importers:
       '@samavāya/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      proto@workspace:*:
-        specifier: link:@samavāya/proto@workspace:*
-        version: link:@samavāya/proto@workspace:*
     devDependencies:
       '@p9e.in/configs':
         specifier: workspace:*

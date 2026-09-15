@@ -2,15 +2,37 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { fieldAnalyticsClient } from '@samavāya/agriculture/services';
+  import type {
+    FieldAnalyticsSummary,
+    RotationAnalysis,
+    SeasonComparison,
+    YieldTrendPoint,
+  } from '@samavāya/proto';
 
-  let analytics: Record<string, unknown> = {};
-  let yieldTrends: any[] = [];
-  let seasonComparisons: any[] = [];
-  let ndviTrends: any[] = [];
+  /**
+   * One field's analytics, from the three RPCs that actually serve it.
+   *
+   * This page read everything off a single `getFieldAnalytics` response cast
+   * to `any`: `analytics.peakYield`, `analytics.rotationScore`,
+   * `res.seasonComparisons`, `res.ndviTrends`. The response carries a
+   * `summary` and `yield_trends` and nothing else, so the yield bars were all
+   * divided by 1 and drawn at full height, and the rotation panel and season
+   * table were permanently empty.
+   *
+   * Season comparisons come from `GetSeasonComparisons` and rotation from
+   * `GetRotationAnalysis` — both are fetched here. NDVI over time has no RPC
+   * on this service at all; `SeasonComparison.ndvi_peak` is what there is, so
+   * the NDVI chart is drawn from that rather than from an invented series.
+   */
+
+  let summary: FieldAnalyticsSummary | undefined;
+  let yieldTrends: YieldTrendPoint[] = [];
+  let seasonComparisons: SeasonComparison[] = [];
+  let rotation: RotationAnalysis | undefined;
   let loading = true;
   let error: string | null = null;
 
-  $: id = $page.params.id;
+  $: id = $page.params.id ?? '';
 
   $: if (id) loadData(id);
 
@@ -18,16 +40,29 @@
     loading = true;
     error = null;
     try {
-      const res = await fieldAnalyticsClient.getFieldAnalytics({ fieldId });
-      analytics = res as any || {};
-      yieldTrends = (res as any).yieldTrends || [];
-      seasonComparisons = (res as any).seasonComparisons || [];
-      ndviTrends = (res as any).ndviTrends || [];
+      // In parallel: three independent reads, and a failure in any of them is
+      // a failure of the page rather than a quietly missing panel.
+      const [analytics, seasons, rot] = await Promise.all([
+        fieldAnalyticsClient.getFieldAnalytics({ fieldId }),
+        fieldAnalyticsClient.getSeasonComparisons({ fieldId }),
+        fieldAnalyticsClient.getRotationAnalysis({ fieldId }),
+      ]);
+      summary = analytics.summary;
+      yieldTrends = analytics.yieldTrends ?? [];
+      seasonComparisons = seasons.comparisons ?? [];
+      rotation = rot.analysis;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load field analytics';
     } finally {
       loading = false;
     }
+  }
+
+  /** Bar height as a percentage of the field's peak yield. */
+  function yieldBarHeight(value: number): number {
+    const peak = summary?.peakYield || 0;
+    if (peak <= 0) return 0;
+    return Math.min((value / peak) * 100, 100);
   }
 </script>
 
@@ -72,9 +107,9 @@
           <div class="bar-chart">
             {#each yieldTrends as point}
               <div class="bar-col">
-                <div class="bar" style="height: {Math.min((point.yield / (analytics.peakYield || 1)) * 100, 100)}%"></div>
-                <span class="bar-label">{point.season ?? point.year}</span>
-                <span class="bar-value">{point.yield}</span>
+                <div class="bar" style="height: {yieldBarHeight(point.yieldValue)}%"></div>
+                <span class="bar-label">{point.season}</span>
+                <span class="bar-value">{point.yieldValue}</span>
               </div>
             {/each}
           </div>
@@ -104,9 +139,9 @@
               <tr>
                 <td>{season.season ?? '—'}</td>
                 <td>{season.crop ?? '—'}</td>
-                <td>{season.yield ?? '—'}</td>
-                <td class={season.yieldVsMean >= 0 ? 'positive' : 'negative'}>
-                  {season.yieldVsMean != null ? `${season.yieldVsMean > 0 ? '+' : ''}${season.yieldVsMean}%` : '—'}
+                <td>{season.yieldValue}</td>
+                <td class={season.yieldVsMeanPct >= 0 ? 'positive' : 'negative'}>
+                  {season.yieldVsMeanPct != null ? `${season.yieldVsMeanPct > 0 ? '+' : ''}${season.yieldVsMeanPct}%` : '—'}
                 </td>
                 <td>{season.stressDays ?? '—'}</td>
                 <td>{season.ndviPeak ?? '—'}</td>
@@ -125,15 +160,15 @@
       <div class="detail-grid">
         <div class="detail-field">
           <span class="detail-label">Rotation Score</span>
-          <span class="detail-value score">{analytics.rotationScore ?? '—'}<small>/100</small></span>
+          <span class="detail-value score">{rotation?.effectivenessScore ?? '—'}<small>/100</small></span>
         </div>
         <div class="detail-field">
           <span class="detail-label">Current Rotation</span>
-          <span class="detail-value">{analytics.currentRotation ?? '—'}</span>
+          <span class="detail-value">{rotation?.rotationPattern.join(' → ') || '—'}</span>
         </div>
         <div class="detail-field">
           <span class="detail-label">Rotation Length</span>
-          <span class="detail-value">{analytics.rotationLength ?? '—'} <small>years</small></span>
+          <span class="detail-value">{rotation?.rotationLength ?? '—'} <small>years</small></span>
         </div>
       </div>
     </div>
@@ -141,14 +176,14 @@
     <!-- NDVI Trend Section -->
     <div class="page-content mt-4">
       <h2 class="section-title">NDVI Trend</h2>
-      {#if ndviTrends.length > 0}
+      {#if seasonComparisons.length > 0}
         <div class="chart-area">
           <div class="bar-chart ndvi-chart">
-            {#each ndviTrends as point}
+            {#each seasonComparisons as point}
               <div class="bar-col">
-                <div class="bar ndvi-bar" style="height: {(point.ndvi || 0) * 100}%"></div>
-                <span class="bar-label">{point.date ?? point.season}</span>
-                <span class="bar-value">{point.ndvi?.toFixed(2) ?? '—'}</span>
+                <div class="bar ndvi-bar" style="height: {(point.ndviPeak || 0) * 100}%"></div>
+                <span class="bar-label">{point.season}</span>
+                <span class="bar-value">{point.ndviPeak.toFixed(2)}</span>
               </div>
             {/each}
           </div>

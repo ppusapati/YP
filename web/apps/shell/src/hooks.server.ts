@@ -3,6 +3,9 @@ import { env } from '$env/dynamic/private';
 
 const AUTH_SERVICE_URL = env.AUTH_SERVICE_URL || 'http://localhost:8090';
 
+import type { User } from '@samavāya/stores';
+
+/** The shape `/auth/me` returns: one `name` column, snake-cased tenant id. */
 interface ValidatedUser {
   id: string;
   tenant_id: string;
@@ -11,15 +14,37 @@ interface ValidatedUser {
   role: string;
 }
 
-async function validateSession(accessToken: string): Promise<{ user: ValidatedUser; tenant: { id: string } } | null> {
+/**
+ * Maps auth-service's user onto the one `App.Locals` declares.
+ *
+ * This used to be `session.user as App.Locals['user']`, which TypeScript
+ * rejected because the two types share almost nothing: `ValidatedUser` has no
+ * `firstName`, `lastName` or `displayName`, and `User` has no `name`. The cast
+ * made `locals.user.displayName` a compile-time success and a runtime
+ * `undefined` — the user's name rendered as blank in the shell chrome.
+ */
+function toUser(v: ValidatedUser): User {
+  const parts = v.name.trim().split(/\s+/);
+  return {
+    id: v.id,
+    email: v.email,
+    firstName: parts[0] ?? '',
+    lastName: parts.slice(1).join(' '),
+    displayName: v.name || v.email,
+    role: v.role,
+    tenantId: v.tenant_id,
+  };
+}
+
+async function validateSession(accessToken: string): Promise<{ user: User; tenant: { id: string } } | null> {
   const res = await fetch(`${AUTH_SERVICE_URL}/auth/me`, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
   });
   if (!res.ok) return null;
-  const user = await res.json() as ValidatedUser;
+  const validated = await res.json() as ValidatedUser;
   return {
-    user,
-    tenant: { id: user.tenant_id },
+    user: toUser(validated),
+    tenant: { id: validated.tenant_id },
   };
 }
 
@@ -59,7 +84,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     try {
       const session = await validateSession(accessToken);
       if (session) {
-        event.locals.user = session.user as App.Locals['user'];
+        event.locals.user = session.user;
         event.locals.tenant = session.tenant as App.Locals['tenant'];
 
         // Re-set the cookie with secure flags so that even if the client

@@ -1,18 +1,20 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { alertClient } from '@samavāya/agriculture/services';
+  import { AlertSeverity, AlertStatus, type Alert } from '@samavāya/proto';
+  import type { Timestamp } from '@bufbuild/protobuf/wkt';
 
-  interface HistoryAlert {
-    id: string;
-    type: string;
-    title: string;
-    severity: string;
-    status: string;
-    timestamp: string;
-    fieldName?: string;
-  }
+  /**
+   * The history timeline, over the message the service returns.
+   *
+   * It declared a local `HistoryAlert` whose `severity`, `status` and
+   * `timestamp` were all strings. On the wire the first two are enums and the
+   * third is a protobuf Timestamp, so the marker colour fell through to grey
+   * for every entry, the severity label printed a bare number, and the date
+   * read "Invalid Date".
+   */
 
-  let alerts: HistoryAlert[] = [];
+  let alerts: Alert[] = [];
   let loading = true;
   let error: string | null = null;
 
@@ -51,12 +53,18 @@
     return type.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
   }
 
-  function severityColor(s: string): string {
+  /** Renders a protobuf timestamp, or an em dash rather than "Invalid Date". */
+  function formatTimestamp(ts: Timestamp | undefined): string {
+    if (!ts?.seconds) return '—';
+    return new Date(Number(ts.seconds) * 1000).toLocaleString();
+  }
+
+  function severityColor(s: AlertSeverity): string {
     switch (s) {
-      case 'emergency': return '#dc2626';
-      case 'critical': return '#ea580c';
-      case 'warning': return '#ca8a04';
-      case 'info': return '#0284c7';
+      case AlertSeverity.EMERGENCY: return '#dc2626';
+      case AlertSeverity.CRITICAL: return '#ea580c';
+      case AlertSeverity.WARNING: return '#ca8a04';
+      case AlertSeverity.INFO: return '#0284c7';
       default: return '#6b7280';
     }
   }
@@ -141,10 +149,10 @@
             <div class="timeline-content">
               <div class="timeline-header">
                 <span class="timeline-severity" style:color={severityColor(alert.severity)}>
-                  {alert.severity}
+                  {AlertSeverity[alert.severity] ?? 'UNSPECIFIED'}
                 </span>
                 <span class="timeline-time">
-                  {new Date(alert.timestamp).toLocaleString()}
+                  {formatTimestamp(alert.timestamp)}
                 </span>
               </div>
               <div class="timeline-title">{alert.title}</div>
@@ -153,7 +161,7 @@
                 {#if alert.fieldName}
                   <span>{alert.fieldName}</span>
                 {/if}
-                <span class="status-chip">{alert.status}</span>
+                <span class="status-chip">{AlertStatus[alert.status] ?? 'UNSPECIFIED'}</span>
               </div>
             </div>
           </div>

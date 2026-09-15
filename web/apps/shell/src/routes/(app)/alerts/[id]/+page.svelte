@@ -2,13 +2,24 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { alertClient } from '@samavāya/agriculture/services';
+  import { AlertSeverity, AlertStatus } from '@samavāya/proto';
+  import type { Timestamp } from '@bufbuild/protobuf/wkt';
+
+  /**
+   * Severity and status arrive as protobuf enum numbers. Comparing them
+   * against `'critical'` and `'active'`, as this page did, never matched: the
+   * banner was always grey, the acknowledged badge never appeared, and the
+   * severity headline read "UNKNOWN" for every alert.
+   */
 
   let alert: Record<string, unknown> = {};
   let loading = true;
   let error: string | null = null;
   let isSubmitting = false;
 
-  $: id = $page.params.id;
+  // `$page.params.id` is optional in the generated route types even on a
+  // route that cannot match without it.
+  $: id = $page.params.id ?? '';
 
   $: if (id) loadData(id);
 
@@ -52,27 +63,42 @@
   }
 
   function severityColor(s: unknown): string {
-    switch (s) {
-      case 'emergency': return '#dc2626';
-      case 'critical': return '#ea580c';
-      case 'warning': return '#ca8a04';
-      case 'info': return '#0284c7';
+    switch (s as AlertSeverity) {
+      case AlertSeverity.EMERGENCY: return '#dc2626';
+      case AlertSeverity.CRITICAL: return '#ea580c';
+      case AlertSeverity.WARNING: return '#ca8a04';
+      case AlertSeverity.INFO: return '#0284c7';
       default: return '#6b7280';
     }
   }
 
   function severityBg(s: unknown): string {
-    switch (s) {
-      case 'emergency': return '#fef2f2';
-      case 'critical': return '#fff7ed';
-      case 'warning': return '#fefce8';
-      case 'info': return '#eff6ff';
+    switch (s as AlertSeverity) {
+      case AlertSeverity.EMERGENCY: return '#fef2f2';
+      case AlertSeverity.CRITICAL: return '#fff7ed';
+      case AlertSeverity.WARNING: return '#fefce8';
+      case AlertSeverity.INFO: return '#eff6ff';
       default: return '#f9fafb';
     }
   }
 
+  function severityLabel(s: unknown): string {
+    return AlertSeverity[s as AlertSeverity] ?? 'UNSPECIFIED';
+  }
+
+  function statusLabel(s: unknown): string {
+    return AlertStatus[s as AlertStatus] ?? 'UNSPECIFIED';
+  }
+
   function formatType(type: string): string {
     return type.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim();
+  }
+
+  /** Renders a protobuf timestamp, or an em dash rather than "Invalid Date". */
+  function formatTimestamp(ts: unknown): string {
+    const seconds = (ts as Timestamp | undefined)?.seconds;
+    if (!seconds) return '—';
+    return new Date(Number(seconds) * 1000).toLocaleString();
   }
 </script>
 
@@ -94,10 +120,10 @@
     <!-- Severity banner -->
     <div class="severity-banner" style:background={severityBg(alert.severity)} style:border-color={severityColor(alert.severity)}>
       <span class="severity-badge" style:background={severityColor(alert.severity)}>
-        {(alert.severity as string ?? 'unknown').toUpperCase()}
+        {severityLabel(alert.severity)}
       </span>
-      {#if alert.status && alert.status !== 'active'}
-        <span class="status-badge">{alert.status}</span>
+      {#if alert.status && alert.status !== AlertStatus.ACTIVE}
+        <span class="status-badge">{statusLabel(alert.status)}</span>
       {/if}
     </div>
 
@@ -125,17 +151,17 @@
         </div>
         <div class="detail-field">
           <span class="detail-label">Timestamp</span>
-          <span class="detail-value">{alert.timestamp ? new Date(alert.timestamp as string).toLocaleString() : '—'}</span>
+          <span class="detail-value">{formatTimestamp(alert.timestamp)}</span>
         </div>
         <div class="detail-field">
           <span class="detail-label">Status</span>
-          <span class="detail-value">{alert.status ?? '—'}</span>
+          <span class="detail-value">{statusLabel(alert.status)}</span>
         </div>
         {#if alert.acknowledgedAt}
           <div class="detail-field">
             <span class="detail-label">Acknowledged</span>
             <span class="detail-value">
-              {new Date(alert.acknowledgedAt as string).toLocaleString()}
+              {formatTimestamp(alert.acknowledgedAt)}
               {#if alert.acknowledgedBy}
                 by {alert.acknowledgedBy}
               {/if}
@@ -179,14 +205,14 @@
     </div>
 
     <div class="actions">
-      {#if alert.status === 'active'}
+      {#if alert.status === AlertStatus.ACTIVE}
         <button
           class="btn btn-primary"
           on:click={handleAcknowledge}
           disabled={isSubmitting}
         >Acknowledge Alert</button>
       {/if}
-      {#if alert.status === 'acknowledged'}
+      {#if alert.status === AlertStatus.ACKNOWLEDGED}
         <button
           class="btn btn-success"
           on:click={handleResolve}
