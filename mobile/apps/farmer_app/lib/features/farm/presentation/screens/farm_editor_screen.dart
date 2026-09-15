@@ -73,7 +73,7 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
     return math.cos(degrees * math.pi / 180.0);
   }
 
-  void _onMapTap(ml.Point point, ml.LatLng coordinates) {
+  void _onMapTap(math.Point<double> point, ml.LatLng coordinates) {
     if (!_isDrawing) return;
     setState(() {
       _boundaryPoints.add(LatLng(coordinates.latitude, coordinates.longitude));

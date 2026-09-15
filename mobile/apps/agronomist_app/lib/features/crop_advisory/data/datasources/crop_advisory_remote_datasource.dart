@@ -1,5 +1,6 @@
 import 'package:flutter_network/flutter_network.dart';
 import 'package:flutter_proto/src/generated/advisory.pb.dart' as advisory_pb;
+import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/advisory_model.dart';
 
@@ -18,7 +19,7 @@ class CropAdvisoryRemoteDataSourceImpl implements CropAdvisoryRemoteDataSource {
   static const _servicePath = '/agriculture.agronomy.v1.AdvisoryService';
 
   Future<ConnectResponse> _callUnary(
-      String method, dynamic request) async {
+      String method, $pb.GeneratedMessage request) async {
     final response = await _client.unary(
       '$_servicePath/$method',
       body: request.writeToBuffer(),

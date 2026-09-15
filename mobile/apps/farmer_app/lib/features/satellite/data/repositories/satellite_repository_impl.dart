@@ -99,9 +99,12 @@ class SatelliteRepositoryImpl implements SatelliteRepository {
   @override
   Future<List<CropHealthEntity>> getCropHealthByFarm({
     required String farmId,
+    required List<String> fieldIds,
   }) async {
-    final remoteList =
-        await _remoteDataSource.getCropHealthByFarm(farmId: farmId);
+    final remoteList = await _remoteDataSource.getCropHealthByFarm(
+      farmId: farmId,
+      fieldIds: fieldIds,
+    );
     return remoteList.map(_parseCropHealth).toList();
   }
 

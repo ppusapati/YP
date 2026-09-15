@@ -161,6 +161,18 @@ class _ObservationListScreenState extends State<ObservationListScreen> {
         zoom: 12,
       ),
       onMapCreated: (controller) {
+        controller.onSymbolTapped.add((symbol) {
+          // Find the observation nearest the tapped symbol.
+          final geo = symbol.options.geometry;
+          if (geo == null) return;
+          for (final obs in observations) {
+            if ((obs.location.latitude - geo.latitude).abs() < 0.0001 &&
+                (obs.location.longitude - geo.longitude).abs() < 0.0001) {
+              _navigateToDetail(context, obs);
+              break;
+            }
+          }
+        });
         for (final obs in observations) {
           controller.addSymbol(SymbolOptions(
             geometry: LatLng(
@@ -170,18 +182,6 @@ class _ObservationListScreenState extends State<ObservationListScreen> {
             iconImage: 'marker-15',
             iconSize: 1.5,
           ));
-        }
-      },
-      onSymbolTapped: (symbol) {
-        // Find observation near tapped symbol
-        final geo = symbol.options.geometry;
-        if (geo == null) return;
-        for (final obs in observations) {
-          if ((obs.location.latitude - geo.latitude).abs() < 0.0001 &&
-              (obs.location.longitude - geo.longitude).abs() < 0.0001) {
-            _navigateToDetail(context, obs);
-            break;
-          }
         }
       },
     );

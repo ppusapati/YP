@@ -24,7 +24,12 @@ abstract class SatelliteRepository {
   });
 
   /// Retrieves crop health data for all fields in a farm.
+  ///
+  /// The field ids are passed in because satellite-service lists alerts per
+  /// field and has no farm-level query; the caller already knows the farm's
+  /// fields and passing them is cheaper than looking them up again here.
   Future<List<CropHealthEntity>> getCropHealthByFarm({
     required String farmId,
+    required List<String> fieldIds,
   });
 }

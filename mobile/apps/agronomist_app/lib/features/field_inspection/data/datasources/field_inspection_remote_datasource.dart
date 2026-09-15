@@ -2,6 +2,7 @@ import 'package:fixnum/fixnum.dart' as fixnum;
 import 'package:flutter_network/flutter_network.dart';
 import 'package:flutter_proto/src/generated/inspection.pb.dart'
     as inspection_pb;
+import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as ts;
 
@@ -24,7 +25,7 @@ class FieldInspectionRemoteDataSourceImpl
   static const _servicePath = '/agriculture.agronomy.v1.InspectionService';
 
   Future<ConnectResponse> _callUnary(
-      String method, dynamic request) async {
+      String method, $pb.GeneratedMessage request) async {
     final response = await _client.unary(
       '$_servicePath/$method',
       body: request.writeToBuffer(),

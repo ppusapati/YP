@@ -66,6 +66,17 @@ enum PaymentStatus {
         3 => refunded,
         _ => pending,
       };
+
+  /// Proto enum int value.
+  ///
+  /// OrderStatus had this and PaymentStatus did not, so serialising an order
+  /// did not compile. The numbers are commerce.proto's PAYMENT_STATUS_*, which
+  /// is what fromProtoValue above reads.
+  int get protoValue => switch (this) {
+        pending => 1,
+        paid => 2,
+        refunded => 3,
+      };
 }
 
 /// A purchase order for a marketplace listing.

@@ -154,6 +154,20 @@ class CachedSatelliteTileEntry extends DataClass {
     required this.dataJson,
     required this.cachedAt,
   });
+
+  /// drift's DataClass declares toJson abstract, so a hand-written row
+  /// class has to provide it. Dates go out as ISO 8601 rather than as a
+  /// DateTime, because the only thing that reads this is json.encode and it
+  /// cannot serialise one.
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    return <String, dynamic>{
+      'id': id,
+      'fieldId': fieldId,
+      'dataJson': dataJson,
+      'cachedAt': cachedAt.toIso8601String(),
+    };
+  }
 }
 
 class CachedSatelliteTilesCompanion
@@ -249,6 +263,19 @@ class CachedNdviHistoryEntry extends DataClass {
     required this.dataJson,
     required this.cachedAt,
   });
+
+  /// drift's DataClass declares toJson abstract, so a hand-written row
+  /// class has to provide it. Dates go out as ISO 8601 rather than as a
+  /// DateTime, because the only thing that reads this is json.encode and it
+  /// cannot serialise one.
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    return <String, dynamic>{
+      'fieldId': fieldId,
+      'dataJson': dataJson,
+      'cachedAt': cachedAt.toIso8601String(),
+    };
+  }
 }
 
 class CachedNdviHistoryCompanion
@@ -339,6 +366,19 @@ class CachedCropHealthEntry extends DataClass {
     required this.dataJson,
     required this.cachedAt,
   });
+
+  /// drift's DataClass declares toJson abstract, so a hand-written row
+  /// class has to provide it. Dates go out as ISO 8601 rather than as a
+  /// DateTime, because the only thing that reads this is json.encode and it
+  /// cannot serialise one.
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    return <String, dynamic>{
+      'fieldId': fieldId,
+      'dataJson': dataJson,
+      'cachedAt': cachedAt.toIso8601String(),
+    };
+  }
 }
 
 class CachedCropHealthCompanion extends UpdateCompanion<CachedCropHealthEntry> {

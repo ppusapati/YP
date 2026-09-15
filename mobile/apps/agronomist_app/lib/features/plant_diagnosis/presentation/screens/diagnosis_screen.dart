@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/entities/diagnosis_entity.dart';
 import '../bloc/diagnosis_bloc.dart';
 import '../bloc/diagnosis_event.dart';
 import '../bloc/diagnosis_state.dart';
@@ -110,6 +111,3 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     );
   }
 }
-
-// Re-export for convenience
-export '../../domain/entities/diagnosis_entity.dart' show DiseaseSeverity;

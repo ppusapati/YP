@@ -29,7 +29,7 @@ class SensorLocalDataSourceImpl implements SensorLocalDataSource {
   Future<List<SensorModel>> getCachedSensors() async {
     final jsonString = _prefs.getString(_sensorsKey);
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) => SensorModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -45,7 +45,7 @@ class SensorLocalDataSourceImpl implements SensorLocalDataSource {
   Future<List<SensorReadingModel>> getCachedReadings(String sensorId) async {
     final jsonString = _prefs.getString('$_readingsKeyPrefix$sensorId');
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) => SensorReadingModel.fromJson(e as Map<String, dynamic>))
         .toList();

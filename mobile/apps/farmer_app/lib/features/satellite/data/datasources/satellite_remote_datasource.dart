@@ -27,6 +27,7 @@ abstract class SatelliteRemoteDataSource {
   Future<Map<String, dynamic>> getCropHealth({required String fieldId});
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
+    required List<String> fieldIds,
   });
 }
 
@@ -133,26 +134,37 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
     };
   }
 
+  /// Crop stress alerts for a farm.
+  ///
+  /// satellite-service's ListAlerts filters by field, not farm — there is no
+  /// farm-level listing — so this fans out over the farm's fields. The caller
+  /// asked about a farm and gets an answer about a farm; doing it here rather
+  /// than making every caller loop is what keeps that true.
   @override
   Future<List<Map<String, dynamic>>> getCropHealthByFarm({
     required String farmId,
+    required List<String> fieldIds,
   }) async {
-    final request = ListAlertsRequest(farmId: farmId);
-    final response = await _call('ListAlerts', request);
-    final result = ListAlertsResponse.fromBuffer(response.body);
-    return result.alerts.map(_alertToMap).toList();
+    final alerts = <Map<String, dynamic>>[];
+    for (final fieldId in fieldIds) {
+      final request = ListAlertsRequest(fieldId: fieldId);
+      final response = await _call('ListAlerts', request);
+      final result = ListAlertsResponse.fromBuffer(response.body);
+      alerts.addAll(result.alerts.map(_alertToMap));
+    }
+    return alerts;
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
-  static Map<String, dynamic> _alertToMap(SatelliteAlert alert) {
+  static Map<String, dynamic> _alertToMap(CropStressAlert alert) {
     return {
       'id': alert.id,
       'field_id': alert.fieldId,
-      'alert_type': alert.alertType,
-      'severity': alert.severity,
+      'alert_type': alert.stressType.name,
+      'severity': alert.stressSeverity,
       'description': alert.description,
       'detected_at': alert.hasDetectedAt()
           ? alert.detectedAt.toDateTime().toIso8601String()

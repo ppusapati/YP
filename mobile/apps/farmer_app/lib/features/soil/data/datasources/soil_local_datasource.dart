@@ -42,7 +42,7 @@ class SoilLocalDataSourceImpl implements SoilLocalDataSource {
   Future<List<SoilAnalysisModel>> getCachedHistory(String fieldId) async {
     final jsonString = _prefs.getString('$_historyPrefix$fieldId');
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) => SoilAnalysisModel.fromJson(e as Map<String, dynamic>))
         .toList();

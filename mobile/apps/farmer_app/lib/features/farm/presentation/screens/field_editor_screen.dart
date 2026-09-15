@@ -75,7 +75,7 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
     return areaM2 / 10000.0;
   }
 
-  void _onMapTap(ml.Point point, ml.LatLng coordinates) {
+  void _onMapTap(math.Point<double> point, ml.LatLng coordinates) {
     if (!_isDrawing) return;
     setState(() {
       _polygonPoints.add(LatLng(coordinates.latitude, coordinates.longitude));

@@ -12,6 +12,7 @@ import '../../features/alerts/data/datasources/alert_local_datasource.dart';
 import '../../features/alerts/data/datasources/alert_remote_datasource.dart';
 import '../../features/alerts/data/repositories/alert_repository_impl.dart';
 import '../../features/alerts/domain/repositories/alert_repository.dart';
+import '../../features/alerts/domain/usecases/acknowledge_alert_usecase.dart';
 import '../../features/alerts/domain/usecases/get_alerts_usecase.dart';
 import '../../features/alerts/domain/usecases/get_unread_count_usecase.dart';
 import '../../features/alerts/domain/usecases/mark_alert_read_usecase.dart';
@@ -328,6 +329,13 @@ final getUnreadCountUseCaseProvider = Provider<GetUnreadCountUseCase>((ref) {
   return GetUnreadCountUseCase(ref.watch(alertRepositoryProvider));
 });
 
+// AlertBloc requires this and there was no provider for it, so the bloc could
+// not be constructed at all — acknowledging an alert was unreachable.
+final acknowledgeAlertUseCaseProvider =
+    Provider<AcknowledgeAlertUseCase>((ref) {
+  return AcknowledgeAlertUseCase(ref.watch(alertRepositoryProvider));
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 // GPS Tracking feature
 // ═══════════════════════════════════════════════════════════════════════
@@ -455,7 +463,7 @@ final createFieldUseCaseProvider = Provider<CreateFieldUseCase>((ref) {
 
 final diagnosisRemoteDataSourceProvider =
     Provider<DiagnosisRemoteDataSource>((ref) {
-  return DiagnosisRemoteDataSourceImpl(ref.watch(connectClientProvider));
+  return DiagnosisRemoteDataSourceImpl(client: ref.watch(connectClientProvider));
 });
 
 final diagnosisLocalDataSourceProvider =
@@ -488,7 +496,7 @@ final getDiagnosisHistoryUseCaseProvider =
 
 final satelliteRemoteDataSourceProvider =
     Provider<SatelliteRemoteDataSource>((ref) {
-  return SatelliteRemoteDataSourceImpl(ref.watch(connectClientProvider));
+  return SatelliteRemoteDataSourceImpl(client: ref.watch(connectClientProvider));
 });
 
 final satelliteLocalDataSourceProvider =

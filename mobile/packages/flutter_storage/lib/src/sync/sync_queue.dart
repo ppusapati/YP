@@ -218,14 +218,19 @@ class SyncQueue {
 
   /// Increments the retry count and records the error for a failed entry.
   Future<void> markFailed(int entryId, String error) async {
-    await (db.update(db.offlineQueue)
-          ..where((t) => t.id.equals(entryId)))
-        .write(
-      OfflineQueueCompanion(
-        retryCount: db.offlineQueue.retryCount + const Variable(1),
-        lastError: Value(error),
-        status: const Value('failed'),
-      ),
+    // customUpdate rather than a companion, because the retry count is
+    // incremented from its own current value and a companion takes a Value, not
+    // an Expression. Reading the row first and writing back a literal would be
+    // the same statement with a lost-update window in the middle.
+    await db.customUpdate(
+      'UPDATE offline_queue SET retry_count = retry_count + 1, '
+      'last_error = ?, status = ? WHERE id = ?',
+      variables: [
+        Variable<String>(error),
+        const Variable<String>('failed'),
+        Variable<int>(entryId),
+      ],
+      updates: {db.offlineQueue},
     );
     _log.warning('Entry $entryId failed: $error');
   }

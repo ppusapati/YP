@@ -26,7 +26,7 @@ class YieldLocalDataSourceImpl implements YieldLocalDataSource {
   Future<List<YieldPredictionModel>> getCachedPredictions() async {
     final jsonString = _prefs.getString(_predictionsKey);
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) =>
             YieldPredictionModel.fromJson(e as Map<String, dynamic>))
@@ -44,7 +44,7 @@ class YieldLocalDataSourceImpl implements YieldLocalDataSource {
   Future<List<YieldPredictionModel>> getCachedHistory(String fieldId) async {
     final jsonString = _prefs.getString('$_historyPrefix$fieldId');
     if (jsonString == null) return [];
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) =>
             YieldPredictionModel.fromJson(e as Map<String, dynamic>))

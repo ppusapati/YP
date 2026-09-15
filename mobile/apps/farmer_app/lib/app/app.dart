@@ -49,6 +49,7 @@ class FarmerApp extends ConsumerWidget {
             getAlerts: ref.read(getAlertsUseCaseProvider),
             markAlertRead: ref.read(markAlertReadUseCaseProvider),
             getUnreadCount: ref.read(getUnreadCountUseCaseProvider),
+            acknowledgeAlert: ref.read(acknowledgeAlertUseCaseProvider),
           ),
         ),
         BlocProvider(

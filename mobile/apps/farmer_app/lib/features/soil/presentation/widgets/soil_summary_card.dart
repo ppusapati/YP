@@ -160,6 +160,10 @@ class SoilSummaryCard extends StatelessWidget {
       SoilTexture.loamy => 'Loamy',
       SoilTexture.clay => 'Clay',
       SoilTexture.silt => 'Silt',
+      // peat and chalk were missing, which makes the switch non-exhaustive —
+      // and a label that falls through has nothing to render.
+      SoilTexture.peat => 'Peat',
+      SoilTexture.chalk => 'Chalk',
       SoilTexture.sandyLoam => 'Sandy Loam',
       SoilTexture.clayLoam => 'Clay Loam',
       SoilTexture.siltLoam => 'Silt Loam',
