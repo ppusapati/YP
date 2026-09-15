@@ -18,3 +18,6 @@ target/
 # Stray build artifacts
 /server
 
+
+# Compiled service binaries, which land here when a build is run without -o.
+/monolith
