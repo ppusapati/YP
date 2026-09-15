@@ -42,7 +42,7 @@ import (
 	yieldv1connect "p9e.in/samavaya/agriculture/yield-service/api/v1/yieldv1connect"
 
 	// ── Generated ConnectRPC packages (aliased — all named v1connect) ───────
-	agronomyv1connect "p9e.in/samavaya/agriculture/agronomy-service/api/v1/v1connect"
+	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/agronomyv1connect"
 	alertv1connect "p9e.in/samavaya/agriculture/alert-service/api/v1/v1connect"
 	analyticsv1connect "p9e.in/samavaya/agriculture/analytics-service/api/v1/v1connect"
 	prescriptionv1connect "p9e.in/samavaya/agriculture/prescription-service/api/v1/v1connect"

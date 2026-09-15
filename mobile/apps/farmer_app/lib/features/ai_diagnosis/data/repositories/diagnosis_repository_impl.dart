@@ -43,11 +43,6 @@ class DiagnosisRepositoryImpl implements DiagnosisRepository {
   }
 
   @override
-  Future<String> uploadImage(Uint8List imageBytes, String fileName) async {
-    return _remoteDataSource.uploadImage(imageBytes, fileName);
-  }
-
-  @override
   Future<List<Diagnosis>> getDiagnosisHistory({String? fieldId}) async {
     if (await _isOnline) {
       try {

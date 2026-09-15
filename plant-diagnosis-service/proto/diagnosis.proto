@@ -160,9 +160,21 @@ message SubmitDiagnosisRequest {
 }
 
 message ImageInput {
+  // Where the image lives, for callers that have already stored it. The
+  // service fetches the bytes behind it; only https and s3 are accepted.
   string    image_url  = 1;
   ImageType image_type = 2;
   string    mime_type  = 3;
+  // The image itself, for callers that have not stored it anywhere — which is
+  // every phone. A capture lives at a path on the device that no server can
+  // resolve, so before this field existed the mobile apps sent
+  // `/data/user/0/.../img.jpg` as the URL, it failed scheme validation, and
+  // the photo was never analysed.
+  //
+  // Set one or the other. When bytes are present the URL is not fetched, and
+  // the bytes are never persisted with the request record: they go to the
+  // gateway and are dropped.
+  bytes     image_bytes = 4;
 }
 
 message SubmitDiagnosisResponse {

@@ -30,19 +30,6 @@ final class ImageCaptured extends DiagnosisState {
   List<Object?> get props => [imagePath];
 }
 
-final class ImageUploading extends DiagnosisState {
-  const ImageUploading();
-}
-
-final class ImageUploaded extends DiagnosisState {
-  const ImageUploaded({required this.imageUrl});
-
-  final String imageUrl;
-
-  @override
-  List<Object?> get props => [imageUrl];
-}
-
 final class Diagnosing extends DiagnosisState {
   const Diagnosing();
 }

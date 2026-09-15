@@ -207,7 +207,7 @@ decision about which way to move it rather than a mechanical fix.
 **Enhancements:**
 - [x] Implement offline-first with SQLite sync queue (critical for rural areas with poor connectivity)
 - [x] Add push notifications via Firebase Cloud Messaging (pest alerts, irrigation reminders, weather warnings)
-- [ ] Add camera integration for in-field plant diagnosis (capture → AI gateway)
+- [x] Add camera integration for in-field plant diagnosis (capture → AI gateway) — the picker was already wired; the capture was not. `submitDiagnosis` passed the picker's path straight through as `image_url`, so the server received `/data/user/0/…/CAP1234.jpg`, an address only that phone can resolve. plant-diagnosis-service accepts https and s3 only, rejected every one, the gateway got no bytes, and it skips an image it cannot see rather than guessing — so a photo taken in the app was accepted and never analysed. `ImageInput` now carries `image_bytes`, the app reads the file and sends it, and the bytes are dropped after the gateway call rather than persisted into the request row. The phantom `uploadImage` step, which encoded a data URI no server would accept and which nothing ever called, is gone
 - [ ] Add GPS-based field boundary drawing
 - [ ] Add integration tests with Flutter integration_test package
 - [ ] Add app-level analytics (Firebase Analytics or PostHog)

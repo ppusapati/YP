@@ -24,7 +24,7 @@ import (
 	"p9e.in/samavaya/packages/outbox"
 	"p9e.in/samavaya/packages/p9log"
 
-	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/v1connect"
+	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/agronomyv1connect"
 	"p9e.in/samavaya/agriculture/agronomy-service/internal/handlers"
 	"p9e.in/samavaya/agriculture/agronomy-service/internal/repositories"
 	"p9e.in/samavaya/agriculture/agronomy-service/internal/services"
@@ -121,7 +121,7 @@ func main() {
 	const serviceName = "agronomy-service"
 
 	// Register AdvisoryService handler
-	advisoryPath, advisorySvcHandler := v1connect.NewAdvisoryServiceHandler(advisoryHandler,
+	advisoryPath, advisorySvcHandler := agronomyv1connect.NewAdvisoryServiceHandler(advisoryHandler,
 		connect.WithInterceptors(
 			middleware.MetricsInterceptor(serviceName),
 			middleware.TracingInterceptor(serviceName),
@@ -131,7 +131,7 @@ func main() {
 	mux.Handle(advisoryPath, advisorySvcHandler)
 
 	// Register InspectionService handler
-	inspectionPath, inspectionSvcHandler := v1connect.NewInspectionServiceHandler(inspectionHandler,
+	inspectionPath, inspectionSvcHandler := agronomyv1connect.NewInspectionServiceHandler(inspectionHandler,
 		connect.WithInterceptors(
 			middleware.MetricsInterceptor(serviceName),
 			middleware.TracingInterceptor(serviceName),

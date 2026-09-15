@@ -108,6 +108,51 @@ func (s *diagnosisService) SubmitDiagnosis(ctx context.Context, req *domain.Diag
 	return created, nil
 }
 
+// selectImages decides which of a request's images can be analysed, and says
+// why it dropped the rest.
+//
+// Two ways an image arrives, and they have different requirements:
+//
+//   - with bytes: a phone capture. The photo lives at a path on the device
+//     that no server can resolve, so the app sends the file itself. Requiring
+//     a valid URL here would reject the single most common kind of submission
+//     — which is exactly what happened before `image_bytes` existed, and why
+//     a photo taken in the app was never diagnosed.
+//   - with a URL: already stored somewhere. The URL must pass SSRF validation
+//     and the bytes are fetched afterwards by the fetcher.
+//
+// Either way a single image is capped at the same ceiling, so a hostile
+// request cannot exhaust memory by a route a hostile URL could not.
+func selectImages(images []domain.DiagnosisImage) ([]ai.ImageInput, []string) {
+	out := make([]ai.ImageInput, 0, len(images))
+	var skipped []string
+
+	for i, img := range images {
+		switch {
+		case len(img.Bytes) > ai.MaxImageBytes:
+			skipped = append(skipped, fmt.Sprintf(
+				"images[%d]: %d bytes exceeds the %d byte limit", i, len(img.Bytes), ai.MaxImageBytes))
+			continue
+		case len(img.Bytes) > 0:
+			// Nothing to validate: the bytes are the image.
+		default:
+			if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
+				skipped = append(skipped, fmt.Sprintf("images[%d]: %v", i, err))
+				continue
+			}
+		}
+
+		out = append(out, ai.ImageInput{
+			ImageURL:  img.ImageURL,
+			ImageType: img.ImageType,
+			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
+		})
+	}
+
+	return out, skipped
+}
+
 // analyse runs the vision models over a request's images and stores what they
 // found. Returns nil when no result could be produced, leaving the request
 // pending rather than recording an empty diagnosis as if it were an answer.
@@ -120,17 +165,9 @@ func (s *diagnosisService) analyse(ctx context.Context, req *domain.DiagnosisReq
 		s.log.Warnw("msg", "could not mark diagnosis analysing", "id", req.ID, "error", err)
 	}
 
-	images := make([]ai.ImageInput, 0, len(req.Images))
-	for _, img := range req.Images {
-		if err := urlsafe.ValidateImageURL(img.ImageURL); err != nil {
-			s.log.Warnw("msg", "skipping image with a rejected URL", "error", err)
-			continue
-		}
-		images = append(images, ai.ImageInput{
-			ImageURL:  img.ImageURL,
-			ImageType: img.ImageType,
-			MimeType:  img.MimeType,
-		})
+	images, skipped := selectImages(req.Images)
+	for _, reason := range skipped {
+		s.log.Warnw("msg", "skipping a diagnosis image", "reason", reason)
 	}
 
 	// The gateway classifies bytes, not URLs: handing it a URL alone makes
@@ -508,6 +545,7 @@ func (s *diagnosisService) IdentifySpecies(ctx context.Context, images []domain.
 			ImageURL:  img.ImageURL,
 			ImageType: img.ImageType,
 			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
 		}
 	}
 
@@ -564,6 +602,7 @@ func (s *diagnosisService) DetectNutrientDeficiency(ctx context.Context, species
 			ImageURL:  img.ImageURL,
 			ImageType: img.ImageType,
 			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
 		}
 	}
 
@@ -625,6 +664,7 @@ func (s *diagnosisService) DetectPestDamage(ctx context.Context, speciesID strin
 			ImageURL:  img.ImageURL,
 			ImageType: img.ImageType,
 			MimeType:  img.MimeType,
+			Bytes:     img.Bytes,
 		}
 	}
 

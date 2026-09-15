@@ -1432,11 +1432,13 @@ class ImageInput extends $pb.GeneratedMessage {
     $core.String? imageUrl,
     ImageType? imageType,
     $core.String? mimeType,
+    $core.List<$core.int>? imageBytes,
   }) {
     final result = create();
     if (imageUrl != null) result.imageUrl = imageUrl;
     if (imageType != null) result.imageType = imageType;
     if (mimeType != null) result.mimeType = mimeType;
+    if (imageBytes != null) result.imageBytes = imageBytes;
     return result;
   }
 
@@ -1458,6 +1460,8 @@ class ImageInput extends $pb.GeneratedMessage {
     ..aE<ImageType>(2, _omitFieldNames ? '' : 'imageType',
         enumValues: ImageType.values)
     ..aOS(3, _omitFieldNames ? '' : 'mimeType')
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'imageBytes', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1478,6 +1482,8 @@ class ImageInput extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<ImageInput>(create);
   static ImageInput? _defaultInstance;
 
+  /// Where the image lives, for callers that have already stored it. The
+  /// service fetches the bytes behind it; only https and s3 are accepted.
   @$pb.TagNumber(1)
   $core.String get imageUrl => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -1504,6 +1510,24 @@ class ImageInput extends $pb.GeneratedMessage {
   $core.bool hasMimeType() => $_has(2);
   @$pb.TagNumber(3)
   void clearMimeType() => $_clearField(3);
+
+  /// The image itself, for callers that have not stored it anywhere — which is
+  /// every phone. A capture lives at a path on the device that no server can
+  /// resolve, so before this field existed the mobile apps sent
+  /// `/data/user/0/.../img.jpg` as the URL, it failed scheme validation, and
+  /// the photo was never analysed.
+  ///
+  /// Set one or the other. When bytes are present the URL is not fetched, and
+  /// the bytes are never persisted with the request record: they go to the
+  /// gateway and are dropped.
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get imageBytes => $_getN(3);
+  @$pb.TagNumber(4)
+  set imageBytes($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasImageBytes() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearImageBytes() => $_clearField(4);
 }
 
 class SubmitDiagnosisResponse extends $pb.GeneratedMessage {

@@ -70,6 +70,14 @@ type DiagnosisImage struct {
 	ImageURL  string `json:"image_url"`
 	ImageType string `json:"image_type"`
 	MimeType  string `json:"mime_type,omitempty"`
+	// Bytes carry an image the caller has not stored anywhere — a phone
+	// capture, whose only address is a path on the device.
+	//
+	// `json:"-"` deliberately: this struct is serialised into the request
+	// row, and a few megabytes of JPEG per diagnosis in a JSONB column is a
+	// table nobody can query. The bytes exist to reach the gateway and are
+	// dropped once they have.
+	Bytes []byte `json:"-"`
 }
 
 // DiagnosisResult holds the AI inference output for a diagnosis request.

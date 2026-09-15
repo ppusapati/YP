@@ -5,7 +5,10 @@
 class ApiConfig {
   /// Creates an [ApiConfig] with the given parameters.
   ///
-  /// [baseUrl] is the root URL of the API server.
+  /// [baseUrl] is the API server's **host**, not a URL: the scheme comes
+  /// from [useTls] and the port from [port]. Passing `https://host` here
+  /// makes the client try to parse the whole string as a hostname and fail
+  /// with an unhelpful IPv6 error.
   /// [timeout] defaults to 30 seconds.
   /// [retryCount] defaults to 3.
   /// [headers] are additional headers sent with every request.

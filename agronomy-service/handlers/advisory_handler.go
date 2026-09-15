@@ -6,7 +6,7 @@ import (
 	"connectrpc.com/connect"
 
 	pb "p9e.in/samavaya/agriculture/agronomy-service/api/v1"
-	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/v1connect"
+	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/agronomyv1connect"
 	"p9e.in/samavaya/agriculture/agronomy-service/services"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
@@ -15,7 +15,7 @@ import (
 
 // AdvisoryHandler implements the ConnectRPC AdvisoryServiceHandler interface.
 type AdvisoryHandler struct {
-	v1connect.UnimplementedAdvisoryServiceHandler
+	agronomyv1connect.UnimplementedAdvisoryServiceHandler
 
 	svc    services.AdvisoryService
 	deps   deps.ServiceDeps

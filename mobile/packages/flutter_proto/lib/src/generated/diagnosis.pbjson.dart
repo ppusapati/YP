@@ -541,6 +541,7 @@ const ImageInput$json = {
       '10': 'imageType'
     },
     {'1': 'mime_type', '3': 3, '4': 1, '5': 9, '10': 'mimeType'},
+    {'1': 'image_bytes', '3': 4, '4': 1, '5': 12, '10': 'imageBytes'},
   ],
 };
 
@@ -548,7 +549,8 @@ const ImageInput$json = {
 final $typed_data.Uint8List imageInputDescriptor = $convert.base64Decode(
     'CgpJbWFnZUlucHV0EhsKCWltYWdlX3VybBgBIAEoCVIIaW1hZ2VVcmwSQgoKaW1hZ2VfdHlwZR'
     'gCIAEoDjIjLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5JbWFnZVR5cGVSCWltYWdlVHlwZRIb'
-    'CgltaW1lX3R5cGUYAyABKAlSCG1pbWVUeXBl');
+    'CgltaW1lX3R5cGUYAyABKAlSCG1pbWVUeXBlEh8KC2ltYWdlX2J5dGVzGAQgASgMUgppbWFnZU'
+    'J5dGVz');
 
 @$core.Deprecated('Use submitDiagnosisResponseDescriptor instead')
 const SubmitDiagnosisResponse$json = {

@@ -22,10 +22,13 @@ import (
 // model is skipped: the vision pipeline silently falls through to the demo
 // detectors no matter how good the trained models are.
 
+// MaxImageBytes is the ceiling for a single image, whether it was fetched
+// from a URL or sent inline. Generous for a phone photo, small enough that
+// neither a hostile URL nor a hostile request can exhaust memory.
+const MaxImageBytes = 16 << 20
+
 const (
-	// Generous for a phone photo, small enough that a hostile URL cannot
-	// exhaust memory.
-	maxImageBytes = 16 << 20
+	maxImageBytes = MaxImageBytes
 
 	fetchTimeout = 15 * time.Second
 

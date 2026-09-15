@@ -2,7 +2,7 @@
 //
 // Source: advisory.proto
 
-package v1connect
+package agronomyv1connect
 
 import (
 	connect "connectrpc.com/connect"

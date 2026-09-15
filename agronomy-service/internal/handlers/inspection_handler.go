@@ -6,7 +6,7 @@ import (
 	"connectrpc.com/connect"
 
 	pb "p9e.in/samavaya/agriculture/agronomy-service/api/v1"
-	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/v1connect"
+	"p9e.in/samavaya/agriculture/agronomy-service/api/v1/agronomyv1connect"
 	"p9e.in/samavaya/agriculture/agronomy-service/internal/services"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/errors"
@@ -16,7 +16,7 @@ import (
 
 // InspectionHandler implements the ConnectRPC InspectionServiceHandler interface.
 type InspectionHandler struct {
-	v1connect.UnimplementedInspectionServiceHandler
+	agronomyv1connect.UnimplementedInspectionServiceHandler
 
 	svc    services.InspectionService
 	deps   deps.ServiceDeps

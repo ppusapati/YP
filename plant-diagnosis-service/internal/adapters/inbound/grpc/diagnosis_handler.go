@@ -294,6 +294,7 @@ func protoImageInputsToDomain(inputs []*pb.ImageInput) []domain.DiagnosisImage {
 			ImageURL:  in.GetImageUrl(),
 			ImageType: protoImageTypeToString(in.GetImageType()),
 			MimeType:  in.GetMimeType(),
+			Bytes:     in.GetImageBytes(),
 		})
 	}
 	return out

@@ -1270,10 +1270,22 @@ func (x *SubmitDiagnosisRequest) GetNotes() string {
 }
 
 type ImageInput struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ImageUrl      string                 `protobuf:"bytes,1,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
-	ImageType     ImageType              `protobuf:"varint,2,opt,name=image_type,json=imageType,proto3,enum=agriculture.diagnosis.v1.ImageType" json:"image_type,omitempty"`
-	MimeType      string                 `protobuf:"bytes,3,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Where the image lives, for callers that have already stored it. The
+	// service fetches the bytes behind it; only https and s3 are accepted.
+	ImageUrl  string    `protobuf:"bytes,1,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	ImageType ImageType `protobuf:"varint,2,opt,name=image_type,json=imageType,proto3,enum=agriculture.diagnosis.v1.ImageType" json:"image_type,omitempty"`
+	MimeType  string    `protobuf:"bytes,3,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	// The image itself, for callers that have not stored it anywhere — which is
+	// every phone. A capture lives at a path on the device that no server can
+	// resolve, so before this field existed the mobile apps sent
+	// `/data/user/0/.../img.jpg` as the URL, it failed scheme validation, and
+	// the photo was never analysed.
+	//
+	// Set one or the other. When bytes are present the URL is not fetched, and
+	// the bytes are never persisted with the request record: they go to the
+	// gateway and are dropped.
+	ImageBytes    []byte `protobuf:"bytes,4,opt,name=image_bytes,json=imageBytes,proto3" json:"image_bytes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1327,6 +1339,13 @@ func (x *ImageInput) GetMimeType() string {
 		return x.MimeType
 	}
 	return ""
+}
+
+func (x *ImageInput) GetImageBytes() []byte {
+	if x != nil {
+		return x.ImageBytes
+	}
+	return nil
 }
 
 type SubmitDiagnosisResponse struct {
@@ -3626,13 +3645,15 @@ const file_diagnosis_proto_rawDesc = "" +
 	"\bfield_id\x18\x02 \x01(\tR\afieldId\x12(\n" +
 	"\x10plant_species_id\x18\x03 \x01(\tR\x0eplantSpeciesId\x12<\n" +
 	"\x06images\x18\x04 \x03(\v2$.agriculture.diagnosis.v1.ImageInputR\x06images\x12\x14\n" +
-	"\x05notes\x18\x05 \x01(\tR\x05notes\"\x8a\x01\n" +
+	"\x05notes\x18\x05 \x01(\tR\x05notes\"\xab\x01\n" +
 	"\n" +
 	"ImageInput\x12\x1b\n" +
 	"\timage_url\x18\x01 \x01(\tR\bimageUrl\x12B\n" +
 	"\n" +
 	"image_type\x18\x02 \x01(\x0e2#.agriculture.diagnosis.v1.ImageTypeR\timageType\x12\x1b\n" +
-	"\tmime_type\x18\x03 \x01(\tR\bmimeType\"c\n" +
+	"\tmime_type\x18\x03 \x01(\tR\bmimeType\x12\x1f\n" +
+	"\vimage_bytes\x18\x04 \x01(\fR\n" +
+	"imageBytes\"c\n" +
 	"\x17SubmitDiagnosisResponse\x12H\n" +
 	"\tdiagnosis\x18\x01 \x01(\v2*.agriculture.diagnosis.v1.DiagnosisRequestR\tdiagnosis\"%\n" +
 	"\x13GetDiagnosisRequest\x12\x0e\n" +
