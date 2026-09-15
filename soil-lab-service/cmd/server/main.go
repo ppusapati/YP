@@ -1,0 +1,173 @@
+// Package main wires soil-lab-service's layers together and starts the server.
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"connectrpc.com/connect"
+	"github.com/IBM/sarama"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+
+	"p9e.in/samavaya/packages/authz"
+	connectclient "p9e.in/samavaya/packages/connect/client"
+	"p9e.in/samavaya/packages/connect/interceptors"
+	connectserver "p9e.in/samavaya/packages/connect/server"
+	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/middleware"
+	"p9e.in/samavaya/packages/p9log"
+
+	"p9e.in/samavaya/agriculture/soil-lab-service/api/v1/soillabv1connect"
+	grpcadapter "p9e.in/samavaya/agriculture/soil-lab-service/internal/adapters/inbound/grpc"
+	clientsadapter "p9e.in/samavaya/agriculture/soil-lab-service/internal/adapters/outbound/clients"
+	kafkaadapter "p9e.in/samavaya/agriculture/soil-lab-service/internal/adapters/outbound/kafka"
+	postgresadapter "p9e.in/samavaya/agriculture/soil-lab-service/internal/adapters/outbound/postgres"
+	"p9e.in/samavaya/agriculture/soil-lab-service/internal/application"
+)
+
+const serviceName = "soil-lab-service"
+
+func main() {
+	zapLogger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("failed to create logger: %v", err)
+	}
+	defer zapLogger.Sync() //nolint:errcheck
+	logger := p9log.NewLogger(zapLogger)
+	helper := p9log.NewHelper(logger)
+
+	if err := authz.InitJWTFromEnv(); err != nil {
+		log.Fatalf("JWT not configured: %v — refusing to start without authentication", err)
+	}
+	jwtValidator := interceptors.NewAuthzJWTValidator()
+
+	dsn := envOr("DATABASE_URL", "postgres://localhost:5432/soil_lab_service?sslmode=disable")
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	port := envOr("PORT", "8080")
+	soilServiceURL := envOr("SOIL_SERVICE_URL", "http://localhost:8080")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatalf("database ping failed: %v", err)
+	}
+
+	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer migrateCancel()
+	if err := migrate.Up(migrateCtx, pool, os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
+
+	var kafkaProducer sarama.SyncProducer
+	if kafkaBroker != "" {
+		cfg := sarama.NewConfig()
+		cfg.Producer.Return.Successes = true
+		kafkaProducer, err = sarama.NewSyncProducer([]string{kafkaBroker}, cfg)
+		if err != nil {
+			// A warning rather than a fatal: price ingest is the service's job
+			// and it works without Kafka. Alert notifications do not go out,
+			// which the log says.
+			log.Printf("WARNING: failed to create Kafka producer: %v", err)
+		} else {
+			defer kafkaProducer.Close() //nolint:errcheck
+		}
+	}
+
+	repo := postgresadapter.NewLabRepository(pool, logger)
+	pub := kafkaadapter.NewEventPublisher(kafkaProducer, logger)
+
+	// The soil client is what turns a parsed report into soil samples. Without
+	// it a report cannot be applied, and ApplyReport refuses rather than
+	// marking one applied with nothing behind it — a report recorded as applied
+	// and empty is worse than one that failed loudly, because nobody goes
+	// looking for results they have been told are there.
+	soilClient := clientsadapter.NewSoilClient(soilServiceURL,
+		connectclient.NewHTTPClient(connectclient.DefaultConfig(soilServiceURL)),
+		connect.WithInterceptors(connectclient.ContextPropagator()))
+
+	// No blob store is configured here. The original file is not kept, which
+	// matters most for PDFs — they are stored precisely so a person can read
+	// them. Wiring one is a deployment decision; the service says so rather
+	// than pretending the file is somewhere.
+	svc := application.NewSoilLabService(repo, soilClient, nil, pub, logger)
+	handler := grpcadapter.NewSoilLabHandler(svc, logger)
+
+	mwCfg := connectserver.MiddlewareConfig{
+		EnableRecovery:  true,
+		EnableRequestID: true,
+		EnableLogging:   true,
+		EnableDB:        true,
+		DBPool:          pool,
+		EnableAuth:      true,
+		JWTValidator:    jwtValidator,
+		EnableAuthz:     true,
+		EnableRLS:       true,
+		RLSLevel:        interceptors.ScopeLevelTenant,
+	}
+	connectOpt := connectserver.NewConnectOption(mwCfg)
+
+	mux := http.NewServeMux()
+	path, soilLabHandler := soillabv1connect.NewSoilLabServiceHandler(handler,
+		connect.WithInterceptors(
+			middleware.MetricsInterceptor(serviceName),
+			middleware.TracingInterceptor(serviceName),
+		),
+		connectOpt,
+	)
+	mux.Handle(path, soilLabHandler)
+
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+		if err := pool.Ping(context.Background()); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ready"}`))
+	})
+
+	serverCfg := connectserver.DefaultServerConfig(port)
+	wrapped := connectserver.WrapAll(mux, serverCfg)
+	srv := connectserver.NewHTTPServer(serverCfg, wrapped)
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		helper.Infow("msg", serviceName+" starting", "port", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	<-quit
+	helper.Infow("msg", "shutting down "+serviceName)
+
+	shutCtx, shutCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutCancel()
+	if err := srv.Shutdown(shutCtx); err != nil {
+		log.Printf("graceful shutdown failed: %v", err)
+	}
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}

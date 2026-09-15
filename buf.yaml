@@ -9,6 +9,7 @@ modules:
   - path: farm-service/proto
   - path: field-service/proto
   - path: crop-service/proto
+  - path: soil-lab-service/proto
   - path: soil-service/proto
   - path: sensor-service/proto
   - path: irrigation-service/proto

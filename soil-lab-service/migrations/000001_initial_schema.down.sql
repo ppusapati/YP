@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS lab_reports;
+DROP TABLE IF EXISTS labs;

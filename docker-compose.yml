@@ -638,6 +638,19 @@ services:
       <<: *go-env
       DATABASE_URL: ${DEVICE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/device_service?sslmode=disable}
 
+  soil-lab-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: soil-lab-service
+    ports:
+      - "8111:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${SOIL_LAB_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_lab_service?sslmode=disable}
+      SOIL_SERVICE_URL: http://soil-service:8080
+
   # ── Offline development ────────────────────────────────────────────────────
   # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
   # Vision), so the platform runs with no network access, no API keys, and

@@ -430,6 +430,20 @@
 		}
 	}
 
+	handle /agriculture.soillab.v1.SoilLabService/* {
+		reverse_proxy soil-lab-service:8080 {
+			# A report upload carries the whole file inline, so the body limit and
+			# the header timeout both have to allow for a scanned multi-page PDF.
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
 	# ── Catch-all ──────────────────────────────────────────────────────
 	handle {
 		respond `{"error":"not_found","message":"no route matched"}` 404

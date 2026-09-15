@@ -52,6 +52,7 @@ jobs:
           - satellite-service
           - satellite-tile-service
           - sensor-service
+          - soil-lab-service
           - soil-service
           - task-service
           - traceability-service
@@ -467,6 +468,7 @@ jobs:
           - satellite-service
           - satellite-tile-service
           - sensor-service
+          - soil-lab-service
           - soil-service
           - task-service
           - traceability-service
