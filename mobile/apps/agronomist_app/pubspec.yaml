@@ -113,7 +113,13 @@ flutter:
     - assets/icons/
     - assets/map_styles/
 
-  fonts:
-    - family: YPIcons
-      fonts:
-        - asset: assets/fonts/YPIcons.ttf
+  # The YPIcons font family was declared here and assets/fonts/ contains only a
+  # .gitkeep, so `flutter build` and `flutter test` both failed outright with
+  # "unable to locate asset entry" — the app could not be built or tested at
+  # all. Nothing references the family in Dart; it would have rendered as tofu
+  # if it had. Restore this block together with the .ttf.
+  #
+  # fonts:
+  #   - family: YPIcons
+  #     fonts:
+  #       - asset: assets/fonts/YPIcons.ttf

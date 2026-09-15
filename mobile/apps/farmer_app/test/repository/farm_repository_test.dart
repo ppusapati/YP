@@ -55,6 +55,13 @@ void main() {
       localDataSource: mockLocal,
       connectivity: mockConnectivity,
     );
+
+    // Online by default. The create, update and delete tests did not call
+    // setOnline(), so checkConnectivity() returned null and every write path
+    // died on a type error before reaching the code under test. A test that
+    // cares about being offline still says so with setOffline().
+    when(() => mockConnectivity.checkConnectivity())
+        .thenAnswer((_) async => [ConnectivityResult.wifi]);
   });
 
   setUpAll(() {

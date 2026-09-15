@@ -115,9 +115,11 @@ void main() {
 
       await tester.pumpWidget(buildSubject(farmId: 'farm-1'));
 
-      // Summary bar shows counts: "1 Pending", "1 In Progress", "0 Overdue"
-      expect(find.textContaining('Pending'), findsOneWidget);
-      expect(find.textContaining('In Progress'), findsOneWidget);
+      // The exact summary text, not a substring: 'Pending' and 'In Progress'
+      // also appear as the status label on each task card, so textContaining
+      // matches the card as well and reports the summary bar as wrong.
+      expect(find.text('1 Pending'), findsOneWidget);
+      expect(find.text('1 In Progress'), findsOneWidget);
     });
 
     testWidgets('displays filter and refresh buttons in app bar',

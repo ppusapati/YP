@@ -99,7 +99,7 @@ void main() {
               farmId: any(named: 'farmId'),
               status: any(named: 'status'),
               taskType: any(named: 'taskType'),
-            )).thenThrow(const ConnectException(message: 'Offline'));
+            )).thenThrow(const ConnectException(code: 'unavailable', message: 'Offline'));
         when(() => mockLocal.getCachedTasks())
             .thenAnswer((_) async => [testTaskModel1]);
 
@@ -147,7 +147,7 @@ void main() {
 
       test('throws when remote create fails', () async {
         when(() => mockRemote.createTask(any()))
-            .thenThrow(const ConnectException(message: 'Server error'));
+            .thenThrow(const ConnectException(code: 'internal', message: 'Server error'));
 
         expect(
           () => repository.createTask(testTaskModel1),
