@@ -5,6 +5,7 @@ modules:
   - path: alert-service/proto
   - path: analytics-service/proto
   - path: prescription-service/proto
+  - path: device-service/proto
   - path: farm-service/proto
   - path: field-service/proto
   - path: crop-service/proto

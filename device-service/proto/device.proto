@@ -1,0 +1,258 @@
+syntax = "proto3";
+package agriculture.device.v1;
+option go_package = "p9e.in/samavaya/agriculture/device-service/api/v1;devicev1";
+
+import "google/protobuf/timestamp.proto";
+
+// DeviceStatus is what the fleet view shows for one device.
+enum DeviceStatus {
+  DEVICE_STATUS_UNSPECIFIED = 0;
+  // Provisioned but never heard from. Distinct from OFFLINE, which means it
+  // worked and stopped: one is an installation that was never finished, the
+  // other is a device that needs a visit.
+  DEVICE_STATUS_PROVISIONED = 1;
+  DEVICE_STATUS_ONLINE      = 2;
+  DEVICE_STATUS_OFFLINE     = 3;
+  // Reporting, but with a fault the device itself declared.
+  DEVICE_STATUS_DEGRADED    = 4;
+  DEVICE_STATUS_RETIRED     = 5;
+}
+
+// DeviceKind is what the hardware does.
+enum DeviceKind {
+  DEVICE_KIND_UNSPECIFIED       = 0;
+  DEVICE_KIND_SOIL_PROBE        = 1;
+  DEVICE_KIND_WEATHER_STATION   = 2;
+  DEVICE_KIND_IRRIGATION_VALVE  = 3;
+  DEVICE_KIND_FLOW_METER        = 4;
+  DEVICE_KIND_GATEWAY           = 5;
+  DEVICE_KIND_TRACTOR_TELEMATICS = 6;
+}
+
+// RolloutState is where a firmware rollout has got to.
+enum RolloutState {
+  ROLLOUT_STATE_UNSPECIFIED = 0;
+  ROLLOUT_STATE_PENDING     = 1;
+  ROLLOUT_STATE_IN_PROGRESS = 2;
+  ROLLOUT_STATE_PAUSED      = 3;
+  ROLLOUT_STATE_COMPLETED   = 4;
+  // Stopped because too many devices failed to take the update.
+  ROLLOUT_STATE_HALTED      = 5;
+}
+
+// UpdateState is one device's progress through a rollout.
+enum UpdateState {
+  UPDATE_STATE_UNSPECIFIED = 0;
+  UPDATE_STATE_OFFERED     = 1;
+  UPDATE_STATE_DOWNLOADING = 2;
+  UPDATE_STATE_INSTALLING  = 3;
+  UPDATE_STATE_SUCCEEDED   = 4;
+  UPDATE_STATE_FAILED      = 5;
+  // The device came back on its previous firmware after a failed install.
+  UPDATE_STATE_ROLLED_BACK = 6;
+}
+
+// Device is one piece of field hardware.
+message Device {
+  string     id           = 1;
+  string     serial       = 2;
+  string     name         = 3;
+  DeviceKind kind         = 4;
+  DeviceStatus status     = 5;
+
+  string farm_id  = 6;
+  string field_id = 7;
+  string fleet    = 8;
+
+  string firmware_version = 9;
+  string hardware_revision = 10;
+
+  double latitude  = 11;
+  double longitude = 12;
+
+  google.protobuf.Timestamp provisioned_at  = 13;
+  google.protobuf.Timestamp last_seen_at    = 14;
+  double                    battery_percent = 15;
+  int32                     signal_dbm      = 16;
+
+  // Why the device is DEGRADED, as the device reported it.
+  string fault = 17;
+}
+
+// Heartbeat is one health report from a device.
+message Heartbeat {
+  string device_id       = 1;
+  string firmware_version = 2;
+  double battery_percent = 3;
+  int32  signal_dbm      = 4;
+  string fault           = 5;
+  // When the device took the reading, not when it arrived — a gateway buffers
+  // for hours when the uplink is down.
+  google.protobuf.Timestamp recorded_at = 6;
+}
+
+// FleetHealth summarises a fleet.
+message FleetHealth {
+  string fleet = 1;
+
+  int32 total       = 2;
+  int32 online      = 3;
+  int32 offline     = 4;
+  int32 degraded    = 5;
+  int32 provisioned = 6;
+
+  // Devices below the low-battery threshold, which is what decides whether a
+  // visit is needed before the next season rather than after it.
+  int32 low_battery = 7;
+
+  google.protobuf.Timestamp computed_at = 8;
+}
+
+// FirmwareRollout is a staged update across a fleet.
+message FirmwareRollout {
+  string id      = 1;
+  string fleet   = 2;
+  DeviceKind kind = 3;
+
+  string version      = 4;
+  string artifact_url = 5;
+  string artifact_sha256 = 6;
+
+  RolloutState state = 7;
+
+  // Percentage of the fleet the rollout is allowed to reach so far. Staged
+  // rather than all-at-once: bad firmware on every device in a region at the
+  // same time is a season lost, and every one of them needs a physical visit.
+  int32 stage_percent = 8;
+
+  // The rollout halts when this share of attempts fail.
+  double failure_threshold = 9;
+
+  int32 offered   = 10;
+  int32 succeeded = 11;
+  int32 failed    = 12;
+
+  google.protobuf.Timestamp created_at = 13;
+  string halted_reason = 14;
+}
+
+// DeviceUpdate is one device's progress through a rollout.
+message DeviceUpdate {
+  string      device_id  = 1;
+  string      rollout_id = 2;
+  UpdateState state      = 3;
+  string      detail     = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// ── Requests / Responses ─────────────────────────────────────────────────────
+
+message ProvisionDeviceRequest {
+  string     serial = 1;
+  string     name   = 2;
+  DeviceKind kind   = 3;
+  string     farm_id  = 4;
+  string     field_id = 5;
+  string     fleet    = 6;
+  string     hardware_revision = 7;
+  double     latitude  = 8;
+  double     longitude = 9;
+}
+
+message ProvisionDeviceResponse {
+  Device device = 1;
+  // The credential the device authenticates with. Returned once, at
+  // provisioning, and never readable again.
+  string enrolment_token = 2;
+}
+
+message GetDeviceRequest { string id = 1; }
+message GetDeviceResponse { Device device = 1; }
+
+message ListDevicesRequest {
+  string       fleet    = 1;
+  string       farm_id  = 2;
+  string       field_id = 3;
+  DeviceKind   kind     = 4;
+  DeviceStatus status   = 5;
+  int32  page_size  = 6;
+  string page_token = 7;
+}
+
+message ListDevicesResponse {
+  repeated Device devices         = 1;
+  string          next_page_token = 2;
+  int32           total_count     = 3;
+}
+
+message RecordHeartbeatsRequest {
+  repeated Heartbeat heartbeats = 1;
+}
+
+message RecordHeartbeatsResponse {
+  int32 recorded = 1;
+  repeated string rejected = 2;
+}
+
+message RetireDeviceRequest { string id = 1; string reason = 2; }
+message RetireDeviceResponse { Device device = 1; }
+
+message GetFleetHealthRequest { string fleet = 1; }
+message GetFleetHealthResponse { FleetHealth health = 1; }
+
+message CreateRolloutRequest {
+  string     fleet   = 1;
+  DeviceKind kind    = 2;
+  string     version = 3;
+  string     artifact_url = 4;
+  string     artifact_sha256 = 5;
+  int32      stage_percent = 6;
+  double     failure_threshold = 7;
+}
+
+message CreateRolloutResponse { FirmwareRollout rollout = 1; }
+
+message AdvanceRolloutRequest {
+  string id = 1;
+  int32  stage_percent = 2;
+}
+
+message AdvanceRolloutResponse { FirmwareRollout rollout = 1; }
+
+message ReportUpdateRequest {
+  string      device_id  = 1;
+  string      rollout_id = 2;
+  UpdateState state      = 3;
+  string      detail     = 4;
+}
+
+message ReportUpdateResponse {
+  DeviceUpdate update = 1;
+  FirmwareRollout rollout = 2;
+}
+
+message ListRolloutsRequest {
+  string fleet = 1;
+  int32  page_size  = 2;
+  string page_token = 3;
+}
+
+message ListRolloutsResponse {
+  repeated FirmwareRollout rollouts = 1;
+  string next_page_token = 2;
+  int32  total_count = 3;
+}
+
+// DeviceService manages IoT hardware: provisioning, health and firmware.
+service DeviceService {
+  rpc ProvisionDevice(ProvisionDeviceRequest) returns (ProvisionDeviceResponse);
+  rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc RecordHeartbeats(RecordHeartbeatsRequest) returns (RecordHeartbeatsResponse);
+  rpc RetireDevice(RetireDeviceRequest) returns (RetireDeviceResponse);
+  rpc GetFleetHealth(GetFleetHealthRequest) returns (GetFleetHealthResponse);
+  rpc CreateRollout(CreateRolloutRequest) returns (CreateRolloutResponse);
+  rpc AdvanceRollout(AdvanceRolloutRequest) returns (AdvanceRolloutResponse);
+  rpc ReportUpdate(ReportUpdateRequest) returns (ReportUpdateResponse);
+  rpc ListRollouts(ListRolloutsRequest) returns (ListRolloutsResponse);
+}

@@ -38,6 +38,7 @@ jobs:
           - auth-service
           - commerce-service
           - crop-service
+          - device-service
           - farm-service
           - field-service
           - irrigation-service
@@ -452,6 +453,7 @@ jobs:
           - auth-service
           - commerce-service
           - crop-service
+          - device-service
           - farm-service
           - field-service
           - irrigation-service
