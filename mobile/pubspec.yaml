@@ -3,7 +3,11 @@ description: YieldPoint mobile monorepo workspace root.
 publish_to: none
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  # 3.5 is the floor for `workspace` and `resolution: workspace`, which this
+  # monorepo uses. It said >=3.4.0, so `flutter pub get` failed at the root with
+  # "`workspace` and `resolution` requires at least language version 3.5" and
+  # no package in the repo could be fetched, analysed or built.
+  sdk: ">=3.5.0 <4.0.0"
 
 workspace:
   - apps/farmer_app

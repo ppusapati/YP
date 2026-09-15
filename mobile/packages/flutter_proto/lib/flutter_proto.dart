@@ -1,30 +1,57 @@
 /// Protobuf generated models and ConnectRPC service stubs for the
 /// YieldPoint platform.
+///
+/// This barrel re-exports every generated message into one flat namespace,
+/// which guarantees collisions: services are free to define a message of the
+/// same name and 21 names already do. The `hide` clauses below keep the library
+/// importable, and the hidden type is still reachable by importing its own
+/// generated file directly.
+///
+/// Until those clauses existed this file did not compile at all, and it
+/// accounted for 321 of the mobile monorepo's analyzer errors — everything
+/// importing `package:flutter_proto/flutter_proto.dart` inherited them. The
+/// datasources work because they import the specific generated file instead.
+///
+/// The rule applied: the service whose name matches the concept keeps the flat
+/// export — alerts to alert-service, treatment plans to plant-diagnosis,
+/// VegetationIndex to vegetation-index. Where neither owns it, the first in
+/// this list keeps it, which is arbitrary and stated rather than silent.
+///
+/// The clauses are derived from the generated sources rather than written by
+/// hand; regenerate them when a proto adds a name that collides.
 library flutter_proto;
 
 // Generated protobuf messages
 export 'src/generated/advisory.pb.dart';
 export 'src/generated/alert.pb.dart';
-export 'src/generated/analytics.pb.dart';
-export 'src/generated/crop.pb.dart';
+export 'src/generated/analytics.pb.dart'
+    hide AcknowledgeAlertRequest, AcknowledgeAlertResponse, TemporalAnalysis;
+export 'src/generated/crop.pb.dart'
+    hide GrowthStage;
 export 'src/generated/diagnosis.pb.dart';
-export 'src/generated/farm.pb.dart';
+export 'src/generated/farm.pb.dart'
+    hide SoilType;
 export 'src/generated/field.pb.dart';
 export 'src/generated/field_analytics.pb.dart';
 export 'src/generated/ingestion.pb.dart';
 export 'src/generated/inspection.pb.dart';
 export 'src/generated/irrigation.pb.dart';
-export 'src/generated/pest.pb.dart';
+export 'src/generated/pest.pb.dart'
+    hide AcknowledgeAlertRequest, AcknowledgeAlertResponse, AlertStatus, GetTreatmentPlanRequest, GetTreatmentPlanResponse, GrowthStage, ListAlertsRequest, ListAlertsResponse;
 export 'src/generated/prescription.pb.dart';
 export 'src/generated/processing.pb.dart';
-export 'src/generated/satellite.pb.dart';
-export 'src/generated/sensor.pb.dart';
-export 'src/generated/soil.pb.dart';
+export 'src/generated/satellite.pb.dart'
+    hide ListAlertsRequest, ListAlertsResponse, ProcessingStatus, SatelliteProvider, SpectralBand, StressType, VegetationIndex;
+export 'src/generated/sensor.pb.dart'
+    hide AcknowledgeAlertRequest, AcknowledgeAlertResponse, AlertSeverity, ListAlertsRequest, ListAlertsResponse;
+export 'src/generated/soil.pb.dart'
+    hide NutrientDeficiency;
 export 'src/generated/task.pb.dart';
 export 'src/generated/tile.pb.dart';
 export 'src/generated/traceability.pb.dart';
 export 'src/generated/vegetation_index.pb.dart';
-export 'src/generated/yield.pb.dart';
+export 'src/generated/yield.pb.dart'
+    hide GetPredictionRequest, GetPredictionResponse, ListPredictionsRequest, ListPredictionsResponse;
 
 // Service clients
 export 'src/services/base_service.dart';

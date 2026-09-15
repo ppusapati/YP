@@ -185,6 +185,18 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 
 ### E-011: Mobile App Enhancements
 
+**Blocking everything below, now fixed:** the mobile monorepo could not be
+fetched at all. `flutter pub get` failed at the workspace root — `workspace` and
+`resolution: workspace` need a language version of at least 3.5 and every
+pubspec declared `>=3.4.0` — and behind that, four packages depended on
+`protobuf: ^21.1.2`, a protoc_plugin version number that the protobuf runtime
+has never had. With those fixed the workspace resolves and `flutter analyze`
+runs for the first time: **413 errors**, of which 316 are in
+`packages/flutter_proto/test/services/` (written against an older generated
+API) and 97 in application source. `flutter_proto`'s barrel also re-exported 21
+colliding names into one namespace and so did not compile; that is fixed with
+derived `hide` clauses.
+
 **Current state:** Flutter app with clean architecture, field inspection, irrigation, diagnosis, satellite, sensors. No offline mode, no push notifications.
 
 **Enhancements:**
