@@ -409,6 +409,55 @@ func (r *sensorRepository) GetReadingHistory(ctx context.Context, sensorID, tena
 	return readings, totalCount, rows.Err()
 }
 
+// GetHourlyReadings returns a sensor's readings rolled up to the hour.
+//
+// Reads sensor_readings_hourly, a TimescaleDB continuous aggregate, rather
+// than averaging raw rows per request. The difference is not marginal: a
+// season of five-minute readings is around a hundred thousand rows per sensor,
+// and the aggregate has already reduced that to a few thousand buckets.
+//
+// The view is declared materialized_only = false, so the most recent hour —
+// which the refresh policy deliberately leaves unmaterialised while it is
+// still filling — is computed live and included. A caller asking for "up to
+// now" gets up to now.
+func (r *sensorRepository) GetHourlyReadings(ctx context.Context, sensorID, tenantID string, start, end time.Time, limit int32) ([]domain.ReadingBucket, error) {
+	if limit <= 0 {
+		limit = 500
+	}
+	// Bounded because a chart cannot draw more than a few thousand points and
+	// an unbounded range over a year is 8,760 buckets per sensor.
+	if limit > 5000 {
+		limit = 5000
+	}
+
+	const q = `
+		SELECT bucket, sensor_id, unit, avg_value, min_value, max_value,
+		       sample_count, avg_battery_pct
+		FROM sensor_readings_hourly
+		WHERE sensor_id = $1 AND tenant_id = $2
+		  AND bucket >= $3 AND bucket <= $4
+		ORDER BY bucket DESC
+		LIMIT $5`
+
+	rows, err := r.query(ctx, q, sensorID, tenantID, start, end, limit)
+	if err != nil {
+		return nil, errors.Internal("failed to read hourly rollup: %v", err)
+	}
+	defer rows.Close()
+
+	buckets := make([]domain.ReadingBucket, 0, limit)
+	for rows.Next() {
+		var b domain.ReadingBucket
+		if err := rows.Scan(&b.Bucket, &b.SensorID, &b.Unit,
+			&b.AvgValue, &b.MinValue, &b.MaxValue,
+			&b.SampleCount, &b.AvgBatteryPct); err != nil {
+			return nil, errors.Internal("failed to scan rollup row: %v", err)
+		}
+		buckets = append(buckets, b)
+	}
+	return buckets, rows.Err()
+}
+
 // =============================================================================
 // Sensor Alerts
 // =============================================================================

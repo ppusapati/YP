@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -1145,4 +1146,47 @@ func TestCalibrateSensor_NotFound(t *testing.T) {
 	_, err := svc.CalibrateSensor(ctx, "nonexistent", 0, 1.0, "", nil)
 	require.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
+}
+
+// GetHourlyReadings serves the rollup from the same in-memory readings,
+// bucketed by hour, so a test can exercise the aggregate path without a
+// TimescaleDB instance.
+func (m *mockSensorRepo) GetHourlyReadings(_ context.Context, sensorID, tenantID string, start, end time.Time, limit int32) ([]domain.ReadingBucket, error) {
+	byBucket := map[time.Time][]domain.SensorReading{}
+	for _, r := range m.readings {
+		if r == nil || r.SensorID != sensorID || r.TenantID != tenantID {
+			continue
+		}
+		if r.RecordedAt.Before(start) || r.RecordedAt.After(end) {
+			continue
+		}
+		b := r.RecordedAt.Truncate(time.Hour)
+		byBucket[b] = append(byBucket[b], *r)
+	}
+
+	out := make([]domain.ReadingBucket, 0, len(byBucket))
+	for b, rs := range byBucket {
+		bucket := domain.ReadingBucket{
+			Bucket: b, SensorID: sensorID, Unit: rs[0].Unit,
+			MinValue: rs[0].Value, MaxValue: rs[0].Value,
+			SampleCount: int64(len(rs)),
+		}
+		var sum float64
+		for _, r := range rs {
+			sum += r.Value
+			if r.Value < bucket.MinValue {
+				bucket.MinValue = r.Value
+			}
+			if r.Value > bucket.MaxValue {
+				bucket.MaxValue = r.Value
+			}
+		}
+		bucket.AvgValue = sum / float64(len(rs))
+		out = append(out, bucket)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Bucket.After(out[j].Bucket) })
+	if limit > 0 && int32(len(out)) > limit {
+		out = out[:limit]
+	}
+	return out, nil
 }

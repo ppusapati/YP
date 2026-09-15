@@ -127,6 +127,29 @@ type SensorReading struct {
 	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
 }
 
+// ReadingBucket is one hour of a sensor's readings, rolled up.
+//
+// Read from the sensor_readings_hourly continuous aggregate rather than
+// computed per request: a season of five-minute readings is a hundred thousand
+// points per sensor, and averaging them on every dashboard load is work the
+// database has already done.
+type ReadingBucket struct {
+	Bucket   time.Time `json:"bucket" db:"bucket"`
+	SensorID string    `json:"sensor_id" db:"sensor_id"`
+	Unit     string    `json:"unit" db:"unit"`
+	AvgValue float64   `json:"avg_value" db:"avg_value"`
+	MinValue float64   `json:"min_value" db:"min_value"`
+	MaxValue float64   `json:"max_value" db:"max_value"`
+	// SampleCount is how many readings the bucket averages.
+	//
+	// Carried because an hour with two readings and an hour with twelve both
+	// produce an average, and only the count says which to trust — a gap in
+	// reporting is otherwise invisible in a rolled-up series.
+	SampleCount int64 `json:"sample_count" db:"sample_count"`
+	// AvgBatteryPct is nil when no reading in the bucket reported one.
+	AvgBatteryPct *float64 `json:"avg_battery_pct,omitempty" db:"avg_battery_pct"`
+}
+
 // SensorAlert represents a threshold-based alert triggered by a sensor reading.
 type SensorAlert struct {
 	models.BaseModel

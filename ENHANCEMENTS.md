@@ -116,12 +116,12 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** Real-time event streaming via Kafka only. No batch processing, no data warehouse, no historical analytics.
 
 **Enhancements:**
-- [ ] Add TimescaleDB or InfluxDB for time-series sensor data (temperature, moisture, rainfall)
+- [x] Add TimescaleDB or InfluxDB for time-series sensor data (temperature, moisture, rainfall) — see `docs/data-retention.md`
 - [x] Set up a data warehouse (ClickHouse or PostgreSQL with Citus) for historical analytics
 - [x] Create ETL jobs for nightly aggregation (daily yield summaries, weekly soil trends, seasonal crop performance)
 - [x] Add data quality monitoring (Great Expectations or custom validators on Kafka consumers)
 - [x] Build reporting/BI API for frontend dashboards (seasonal yield trends, farm-level KPIs)
-- [ ] Archive satellite imagery to cold storage (S3 Glacier or MinIO tiering)
+- [x] Archive satellite imagery to cold storage (S3 Glacier or MinIO tiering) — `make storage-lifecycle`; the COLD transition needs a remote tier configured or MinIO accepts the rule and moves nothing
 - [x] Add data export API for regulatory compliance and farmer data portability
 
 **Effort:** Large | **Impact:** High

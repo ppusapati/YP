@@ -25,6 +25,12 @@ type SensorRepository interface {
 	CreateReading(ctx context.Context, reading *domain.SensorReading) (*domain.SensorReading, error)
 	GetLatestReading(ctx context.Context, sensorID, tenantID string) (*domain.SensorReading, error)
 	GetReadingHistory(ctx context.Context, sensorID, tenantID string, start, end time.Time, minQuality string, pageSize, pageOffset int32) ([]domain.SensorReading, int32, error)
+	// GetHourlyReadings returns a sensor's readings rolled up to the hour.
+	//
+	// Backed by a TimescaleDB continuous aggregate, so a year-long range costs
+	// about as much as a day-long one. Use it for charts and trends; use
+	// GetReadingHistory when the individual readings matter.
+	GetHourlyReadings(ctx context.Context, sensorID, tenantID string, start, end time.Time, limit int32) ([]domain.ReadingBucket, error)
 
 	// Sensor alerts
 	CreateAlert(ctx context.Context, alert *domain.SensorAlert) (*domain.SensorAlert, error)

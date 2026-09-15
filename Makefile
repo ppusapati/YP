@@ -84,3 +84,10 @@ docker-%: ## Build Docker image for a service (e.g., make docker-farm-service)
 
 mockserver: ## Run the offline stand-in for external APIs (Open-Meteo, OpenWeather, PlantNet, Vision)
 	go run ./cmd/mockserver -v
+
+storage-lifecycle: ## Apply object-storage tiering and expiry rules (use DRY_RUN=1 to preview)
+	@if [ -n "$(DRY_RUN)" ]; then \
+		./scripts/storage-lifecycle.sh --dry-run; \
+	else \
+		./scripts/storage-lifecycle.sh; \
+	fi
