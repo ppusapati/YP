@@ -34,7 +34,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Deploy AlertManager with routing to Slack/PagerDuty/email
 - [x] Add Postgres exporter and Kafka exporter — both are deployed and the scrape jobs point at them. They previously targeted `postgres:5432` and `kafka:9092` directly, which serve the Postgres and Kafka wire protocols rather than metrics, so those two jobs had never produced a single sample
 - [x] Define SLOs/SLIs for critical paths (auth, farm CRUD, satellite processing)
-- [ ] Add log aggregation (Grafana Loki or ELK stack)
+- [x] Add log aggregation (Grafana Loki or ELK stack)
 
 **Effort:** Medium | **Impact:** Critical
 
