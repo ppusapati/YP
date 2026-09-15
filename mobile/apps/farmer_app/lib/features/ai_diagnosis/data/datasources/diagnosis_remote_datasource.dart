@@ -7,6 +7,9 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../../domain/entities/diagnosis_entity.dart' show DiagnosisSeverity;
 import '../models/diagnosis_model.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ModelExplanation;
+
+import '../models/explanation_mapper.dart';
 
 /// Remote data source for AI diagnosis using ConnectRPC.
 abstract class DiagnosisRemoteDataSource {
@@ -132,6 +135,11 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
     String description = '';
     List<String> recommendations = [];
     String plantSpecies = '';
+    // Why the model answered the way it did, one per analysed photo. The
+    // service returns these on the result and this mapper used to drop them,
+    // so the app had no way to show what the model looked at even though the
+    // bytes arrived over the wire.
+    List<ModelExplanation> explanations = const [];
 
     if (diagnosis.hasResult()) {
       final diagResult = diagnosis.result;
@@ -150,6 +158,8 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
       if (description.isEmpty) {
         description = diagResult.summary;
       }
+      explanations =
+          diagResult.explanations.map(modelExplanationFromProto).toList();
     }
 
     return DiagnosisModel(
@@ -164,6 +174,7 @@ class DiagnosisRemoteDataSourceImpl implements DiagnosisRemoteDataSource {
       severity: severity,
       description: description.isNotEmpty ? description : diagnosis.notes,
       recommendations: recommendations,
+      explanations: explanations,
       createdAt: diagnosis.hasCreatedAt()
           ? diagnosis.createdAt.toDateTime()
           : DateTime.now(),

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ModelExplanation;
 
 /// Severity level of a plant disease.
 enum DiseaseSeverity {
@@ -24,6 +25,14 @@ class DiagnosisEntity extends Equatable {
   final DiseaseSeverity severity;
   final String treatment;
   final String? imageUrl;
+
+  /// What the model looked at, one per analysed photo.
+  ///
+  /// Empty when the serving model cannot explain itself — which is the case
+  /// an agronomist reviewing a diagnosis most needs to be able to tell apart
+  /// from a model that looked and found nothing.
+  final List<ModelExplanation> explanations;
+
   final DateTime diagnosedAt;
 
   const DiagnosisEntity({
@@ -34,6 +43,7 @@ class DiagnosisEntity extends Equatable {
     required this.severity,
     required this.treatment,
     this.imageUrl,
+    this.explanations = const [],
     required this.diagnosedAt,
   });
 
@@ -47,6 +57,7 @@ class DiagnosisEntity extends Equatable {
     DiseaseSeverity? severity,
     String? treatment,
     String? imageUrl,
+    List<ModelExplanation>? explanations,
     DateTime? diagnosedAt,
   }) {
     return DiagnosisEntity(
@@ -57,11 +68,21 @@ class DiagnosisEntity extends Equatable {
       severity: severity ?? this.severity,
       treatment: treatment ?? this.treatment,
       imageUrl: imageUrl ?? this.imageUrl,
+      explanations: explanations ?? this.explanations,
       diagnosedAt: diagnosedAt ?? this.diagnosedAt,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [id, fieldId, diseaseName, confidence, severity, treatment, imageUrl, diagnosedAt];
+  List<Object?> get props => [
+        id,
+        fieldId,
+        diseaseName,
+        confidence,
+        severity,
+        treatment,
+        imageUrl,
+        explanations,
+        diagnosedAt,
+      ];
 }

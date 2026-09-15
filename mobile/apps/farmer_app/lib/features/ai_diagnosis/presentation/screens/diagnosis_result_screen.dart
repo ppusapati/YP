@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_ui_core/flutter_ui_core.dart'
+    show AnalysedImage, ExplanationSection;
 
 import '../../domain/entities/diagnosis_entity.dart';
 import '../widgets/confidence_badge.dart';
@@ -32,15 +32,7 @@ class DiagnosisResultScreen extends StatelessWidget {
             if (diagnosis.imagePath.isNotEmpty)
               SizedBox(
                 height: 240,
-                child: Image.file(
-                  File(diagnosis.imagePath),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: colorScheme.surfaceContainerLow,
-                    child: Icon(Icons.image_not_supported,
-                        size: 48, color: colorScheme.onSurfaceVariant),
-                  ),
-                ),
+                child: AnalysedImage(imagePath: diagnosis.imagePath),
               ),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -137,6 +129,12 @@ class DiagnosisResultScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                  // Why the model answered this way.
+                  const SizedBox(height: 24),
+                  ExplanationSection(
+                    explanations: diagnosis.explanations,
+                    imagePath: diagnosis.imagePath,
+                  ),
                   // Treatment recommendations.
                   if (diagnosis.treatments.isNotEmpty) ...[
                     const SizedBox(height: 24),

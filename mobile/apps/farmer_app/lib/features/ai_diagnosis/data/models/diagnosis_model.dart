@@ -1,3 +1,5 @@
+import 'package:flutter_ui_core/flutter_ui_core.dart' show ModelExplanation;
+
 import '../../domain/entities/diagnosis_entity.dart';
 import '../../domain/entities/treatment_entity.dart';
 
@@ -15,6 +17,11 @@ class DiagnosisModel {
   final String description;
   final List<String> recommendations;
   final List<TreatmentModel> treatments;
+
+  /// What the model looked at, one per analysed photo. Empty when the serving
+  /// model cannot explain itself.
+  final List<ModelExplanation> explanations;
+
   final DateTime createdAt;
 
   const DiagnosisModel({
@@ -30,6 +37,7 @@ class DiagnosisModel {
     required this.description,
     required this.recommendations,
     this.treatments = const [],
+    this.explanations = const [],
     required this.createdAt,
   });
 
@@ -56,6 +64,10 @@ class DiagnosisModel {
               ?.map((t) => TreatmentModel.fromJson(t as Map<String, dynamic>))
               .toList() ??
           [],
+      explanations: (json['explanations'] as List<dynamic>?)
+              ?.map((e) => ModelExplanation.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -74,6 +86,7 @@ class DiagnosisModel {
       'description': description,
       'recommendations': recommendations,
       'treatments': treatments.map((t) => t.toJson()).toList(),
+      'explanations': explanations.map((e) => e.toJson()).toList(),
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -122,6 +135,7 @@ class DiagnosisModel {
       description: description,
       recommendations: recommendations,
       treatments: treatments.map((t) => t.toEntity()).toList(),
+      explanations: explanations,
       createdAt: createdAt,
     );
   }
@@ -141,6 +155,7 @@ class DiagnosisModel {
       recommendations: entity.recommendations,
       treatments:
           entity.treatments.map((t) => TreatmentModel.fromEntity(t)).toList(),
+      explanations: entity.explanations,
       createdAt: entity.createdAt,
     );
   }
