@@ -82,3 +82,12 @@ export type { IconName } from './icons/icons';
 // ============================================================================
 
 export * from './erp';
+
+// ============================================================================
+// REPORTS
+// ============================================================================
+//
+// src/reports had its own barrel and was never re-exported from here, so every
+// app importing DynamicReportRenderer from '@samavāya/ui' failed to typecheck.
+// The component and its siblings have existed all along.
+export * from './reports';

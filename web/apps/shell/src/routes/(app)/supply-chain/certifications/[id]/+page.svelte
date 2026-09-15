@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { certificationFormSchema } from '@samavāya/agriculture/schemas';
+  import { certificationSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Certification"
   subtitle="Update certification details"
   mode="edit"
-  schema={certificationFormSchema}
+  schema={certificationSchema}
   {values}
   {errors}
   {isLoading}

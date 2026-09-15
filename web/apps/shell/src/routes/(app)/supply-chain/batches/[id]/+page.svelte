@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { batchRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { batchRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Batch Record"
   subtitle="Update batch record"
   mode="edit"
-  schema={batchRecordFormSchema}
+  schema={batchRecordSchema}
   {values}
   {errors}
   {isLoading}

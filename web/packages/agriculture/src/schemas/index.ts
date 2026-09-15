@@ -39,7 +39,12 @@ export { diagnosisRequestFormSchema } from './diagnosis.schema';
 export { yieldRecordSchema, yieldForecastRequestSchema } from './yield.schema';
 
 // Traceability Service
-export { traceabilityRecordSchema, certificationSchema, supplyEventSchema } from './traceability.schema';
+export {
+  traceabilityRecordSchema,
+  certificationSchema,
+  supplyEventSchema,
+  batchRecordSchema,
+} from './traceability.schema';
 
 // Ingestion Service
 export { requestIngestionFormSchema } from './ingestion.schema';

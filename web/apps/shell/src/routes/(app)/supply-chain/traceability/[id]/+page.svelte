@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { traceabilityRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { traceabilityRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Traceability Record"
   subtitle="Update traceability details"
   mode="edit"
-  schema={traceabilityRecordFormSchema}
+  schema={traceabilityRecordSchema}
   {values}
   {errors}
   {isLoading}

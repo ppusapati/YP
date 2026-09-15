@@ -8,7 +8,7 @@
     <p class="subtitle">Trace batch origins and processing history</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={{visualizations:[]}} data={{}} />
+    <DynamicReportRenderer visualization={{ layout_mode: 'grid', widgets: [] }} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

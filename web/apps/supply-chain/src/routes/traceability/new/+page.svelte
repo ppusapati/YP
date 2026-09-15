@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { traceabilityRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { traceabilityRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'created', unit: 'kg' };
@@ -27,7 +27,7 @@
   title="New Traceability Record"
   subtitle="Create a new product traceability record"
   mode="create"
-  schema={traceabilityRecordFormSchema}
+  schema={traceabilityRecordSchema}
   {values}
   {errors}
   {isSubmitting}

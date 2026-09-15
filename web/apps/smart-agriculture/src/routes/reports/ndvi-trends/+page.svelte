@@ -9,7 +9,7 @@
     <p class="subtitle">Normalized Difference Vegetation Index trends</p>
   </header>
   <div class="report-content">
-    <DynamicReportRenderer schema={ndviTrendsReportSchema} data={{}} />
+    <DynamicReportRenderer schema={ndviTrendsReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
   </div>
 </div>
 

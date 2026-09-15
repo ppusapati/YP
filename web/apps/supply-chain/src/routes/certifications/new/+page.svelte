@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { certificationFormSchema } from '@samavāya/agriculture/schemas';
+  import { certificationSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active' };
@@ -27,7 +27,7 @@
   title="New Certification"
   subtitle="Register a new certification"
   mode="create"
-  schema={certificationFormSchema}
+  schema={certificationSchema}
   {values}
   {errors}
   {isSubmitting}

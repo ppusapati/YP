@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { batchRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { batchRecordSchema } from '@samavāya/agriculture/schemas';
   import { traceabilityClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'active', unit: 'kg', quality_check_status: 'pending' };
@@ -27,7 +27,7 @@
   title="New Batch Record"
   subtitle="Register a new production batch"
   mode="create"
-  schema={batchRecordFormSchema}
+  schema={batchRecordSchema}
   {values}
   {errors}
   {isSubmitting}
