@@ -11,6 +11,7 @@ modules:
   - path: soil-service/proto
   - path: sensor-service/proto
   - path: irrigation-service/proto
+  - path: market-service/proto
   - path: satellite-service/proto
   - path: pest-prediction-service/proto
   - path: plant-diagnosis-service/proto

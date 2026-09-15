@@ -120,6 +120,13 @@ func main() {
 	registerAnalyticsModule(mux, infra)
 	registerPrescriptionModule(mux, infra)
 
+	// The E-023 services — market, device, soil-lab, planning, sustainability,
+	// finance — are not registered here. Like weather-service, they are
+	// hexagonal with their own `internal/` packages, which Go will not let a
+	// package outside their directory import. They run as their own containers
+	// and the gateway routes to them; the monolith is a convenience for the
+	// services that predate that layout, not the only way to run the platform.
+
 	// Auth service (plain HTTP handlers, no ConnectRPC)
 	registerAuthModule(mux, infra)
 

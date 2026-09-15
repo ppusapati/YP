@@ -614,6 +614,18 @@ services:
       OPEN_METEO_ARCHIVE_URL: ${OPEN_METEO_ARCHIVE_URL:-}
       OPENWEATHER_BASE_URL: ${OPENWEATHER_BASE_URL:-}
 
+  market-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: market-service
+    ports:
+      - "8109:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${MARKET_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/market_service?sslmode=disable}
+
   # ── Offline development ────────────────────────────────────────────────────
   # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
   # Vision), so the platform runs with no network access, no API keys, and

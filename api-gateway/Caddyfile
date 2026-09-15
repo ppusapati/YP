@@ -406,6 +406,18 @@
 		}
 	}
 
+	handle /agriculture.market.v1.MarketService/* {
+		reverse_proxy market-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
 	# ── Catch-all ──────────────────────────────────────────────────────
 	handle {
 		respond `{"error":"not_found","message":"no route matched"}` 404

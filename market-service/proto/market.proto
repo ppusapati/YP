@@ -1,0 +1,265 @@
+syntax = "proto3";
+package agriculture.market.v1;
+option go_package = "p9e.in/samavaya/agriculture/market-service/api/v1;marketv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+// PriceUnit is the quantity a price is quoted against.
+//
+// India's mandi prices are per quintal (100 kg), exchanges quote per tonne, and
+// farm-gate deals are often per kilogram. Storing the unit alongside the number
+// is what stops a ₹5,000/quintal price being compared against a ₹50/kg one and
+// looking like a hundredfold difference.
+enum PriceUnit {
+  PRICE_UNIT_UNSPECIFIED = 0;
+  PRICE_UNIT_PER_KG      = 1;
+  PRICE_UNIT_PER_QUINTAL = 2;
+  PRICE_UNIT_PER_TONNE   = 3;
+}
+
+// MarketKind is where a price came from.
+enum MarketKind {
+  MARKET_KIND_UNSPECIFIED = 0;
+  // A regulated APMC/mandi yard, reported daily.
+  MARKET_KIND_MANDI       = 1;
+  // A commodity exchange contract.
+  MARKET_KIND_EXCHANGE    = 2;
+  // A price offered directly by a buyer.
+  MARKET_KIND_FARM_GATE   = 3;
+}
+
+// PriceTrend summarises where a commodity's price has been going.
+enum PriceTrend {
+  PRICE_TREND_UNSPECIFIED = 0;
+  PRICE_TREND_RISING      = 1;
+  PRICE_TREND_FALLING     = 2;
+  PRICE_TREND_FLAT        = 3;
+}
+
+// SellRecommendation is what the timing signal suggests.
+enum SellRecommendation {
+  SELL_RECOMMENDATION_UNSPECIFIED = 0;
+  SELL_RECOMMENDATION_SELL_NOW    = 1;
+  SELL_RECOMMENDATION_HOLD        = 2;
+  // Not enough price history to say anything. Distinct from HOLD, which is
+  // advice; this is the absence of advice.
+  SELL_RECOMMENDATION_INSUFFICIENT_DATA = 3;
+}
+
+// AlertDirection is which way a price must move to fire an alert.
+enum AlertDirection {
+  ALERT_DIRECTION_UNSPECIFIED = 0;
+  ALERT_DIRECTION_ABOVE       = 1;
+  ALERT_DIRECTION_BELOW       = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Market is a place prices are quoted.
+message Market {
+  string     id           = 1;
+  string     name         = 2;
+  MarketKind kind         = 3;
+  string     state        = 4;
+  string     district     = 5;
+  double     latitude     = 6;
+  double     longitude    = 7;
+  string     external_ref = 8;
+}
+
+// PriceQuote is one commodity's price at one market on one day.
+message PriceQuote {
+  string id           = 1;
+  string commodity    = 2;
+  string variety      = 3;
+  string market_id    = 4;
+  string market_name  = 5;
+
+  // Quoted as reported, in its own unit.
+  double    min_price  = 6;
+  double    max_price  = 7;
+  double    modal_price = 8;
+  PriceUnit unit       = 9;
+  string    currency   = 10;
+
+  // Normalised to rupees per quintal, so quotes from different sources are
+  // comparable without every caller repeating the conversion.
+  double price_per_quintal = 11;
+
+  // Arrivals in tonnes, where the source reports them. Volume is what makes a
+  // modal price meaningful: one lot changing hands is not a market price.
+  double arrivals_tonnes = 12;
+
+  google.protobuf.Timestamp quoted_on = 13;
+  string                    source    = 14;
+}
+
+// PriceStatistics summarises a commodity's recent prices at a market.
+message PriceStatistics {
+  string commodity = 1;
+  string market_id = 2;
+
+  double mean_per_quintal   = 3;
+  double median_per_quintal = 4;
+  double min_per_quintal    = 5;
+  double max_per_quintal    = 6;
+  double latest_per_quintal = 7;
+
+  // How far the latest price sits from the mean, in standard deviations.
+  // Reported rather than a bare percentage because it is what decides whether
+  // a move is unusual or ordinary noise for this commodity.
+  double latest_z_score = 8;
+
+  PriceTrend trend            = 9;
+  // Least-squares slope in rupees per quintal per day.
+  double     trend_per_day    = 10;
+  int32      observation_days = 11;
+}
+
+// SellSignal is the timing advice for one commodity at one market.
+message SellSignal {
+  string commodity = 1;
+  string market_id = 2;
+
+  SellRecommendation recommendation = 3;
+
+  // 0–1. Low when the history is short or the price is not far from its mean:
+  // a recommendation given with false certainty is worse than none.
+  double confidence = 4;
+
+  // Written for the person reading it, naming the numbers behind the advice.
+  string rationale = 5;
+
+  PriceStatistics statistics = 6;
+
+  google.protobuf.Timestamp generated_at = 7;
+}
+
+// PriceAlert fires when a commodity crosses a threshold at a market.
+message PriceAlert {
+  string id        = 1;
+  string commodity = 2;
+  string market_id = 3;
+
+  AlertDirection direction            = 4;
+  double         threshold_per_quintal = 5;
+
+  bool enabled = 6;
+
+  google.protobuf.Timestamp created_at    = 7;
+  google.protobuf.Timestamp last_fired_at = 8;
+  double                    last_fired_price = 9;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Requests / Responses
+// ─────────────────────────────────────────────────────────────────────────────
+
+message ListMarketsRequest {
+  string     state    = 1;
+  string     district = 2;
+  MarketKind kind     = 3;
+  int32      page_size  = 4;
+  string     page_token = 5;
+}
+
+message ListMarketsResponse {
+  repeated Market markets         = 1;
+  string          next_page_token = 2;
+  int32           total_count     = 3;
+}
+
+message RecordQuotesRequest {
+  repeated PriceQuote quotes = 1;
+}
+
+message RecordQuotesResponse {
+  int32 recorded = 1;
+  // Quotes the service refused, with the reason. Returned rather than counted,
+  // so an ingester that is silently dropping half its feed can tell.
+  repeated string rejected = 2;
+}
+
+message ListQuotesRequest {
+  string commodity = 1;
+  string market_id = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to   = 4;
+  int32  page_size  = 5;
+  string page_token = 6;
+}
+
+message ListQuotesResponse {
+  repeated PriceQuote quotes          = 1;
+  string              next_page_token = 2;
+  int32               total_count     = 3;
+}
+
+message GetPriceStatisticsRequest {
+  string commodity = 1;
+  string market_id = 2;
+  int32  days      = 3;
+}
+
+message GetPriceStatisticsResponse {
+  PriceStatistics statistics = 1;
+}
+
+message GetSellSignalRequest {
+  string commodity = 1;
+  string market_id = 2;
+  int32  days      = 3;
+}
+
+message GetSellSignalResponse {
+  SellSignal signal = 1;
+}
+
+message CreatePriceAlertRequest {
+  string         commodity             = 1;
+  string         market_id             = 2;
+  AlertDirection direction             = 3;
+  double         threshold_per_quintal = 4;
+}
+
+message CreatePriceAlertResponse {
+  PriceAlert alert = 1;
+}
+
+message ListPriceAlertsRequest {
+  string commodity  = 1;
+  int32  page_size  = 2;
+  string page_token = 3;
+}
+
+message ListPriceAlertsResponse {
+  repeated PriceAlert alerts          = 1;
+  string              next_page_token = 2;
+  int32               total_count     = 3;
+}
+
+message DeletePriceAlertRequest {
+  string id = 1;
+}
+
+message DeletePriceAlertResponse {
+  bool deleted = 1;
+}
+
+// MarketService provides commodity price data, statistics and sell timing.
+service MarketService {
+  rpc ListMarkets(ListMarketsRequest) returns (ListMarketsResponse);
+  rpc RecordQuotes(RecordQuotesRequest) returns (RecordQuotesResponse);
+  rpc ListQuotes(ListQuotesRequest) returns (ListQuotesResponse);
+  rpc GetPriceStatistics(GetPriceStatisticsRequest) returns (GetPriceStatisticsResponse);
+  rpc GetSellSignal(GetSellSignalRequest) returns (GetSellSignalResponse);
+  rpc CreatePriceAlert(CreatePriceAlertRequest) returns (CreatePriceAlertResponse);
+  rpc ListPriceAlerts(ListPriceAlertsRequest) returns (ListPriceAlertsResponse);
+  rpc DeletePriceAlert(DeletePriceAlertRequest) returns (DeletePriceAlertResponse);
+}

@@ -41,6 +41,7 @@ jobs:
           - farm-service
           - field-service
           - irrigation-service
+          - market-service
           - pest-prediction-service
           - plant-diagnosis-service
           - prescription-service
@@ -454,6 +455,7 @@ jobs:
           - farm-service
           - field-service
           - irrigation-service
+          - market-service
           - pest-prediction-service
           - plant-diagnosis-service
           - prescription-service

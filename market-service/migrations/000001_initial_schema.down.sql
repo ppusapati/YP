@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS price_alerts;
+DROP TABLE IF EXISTS price_quotes;
+DROP TABLE IF EXISTS markets;
