@@ -17,12 +17,18 @@
     { key: 'assessment_date', label: 'Assessment Date' },
   ];
 
+  // A risk assessment is what PredictPestRisk produces — a prediction — and ListPredictions is how they are listed.
+  // Token-paginated, like the RPC it now calls.
+  let pageTokens: string[] = [''];
+
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+    const __i = Math.floor(pageOffset / Math.max(pageSize, 1));
     loading = true;
     error = null;
     try {
-      const res = await pestClient.listRiskAssessments({ pageSize, pageOffset });
-      rows = res.assessments;
+      const res = await pestClient.listPredictions({ pageSize, pageToken: pageTokens[__i] ?? '' });
+      rows = res.predictions;
+      if (res.nextPageToken) pageTokens[__i + 1] = res.nextPageToken;
       totalCount = res.totalCount;
       return res.totalCount;
     } catch (e) {

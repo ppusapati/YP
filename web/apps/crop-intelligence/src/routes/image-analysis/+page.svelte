@@ -59,7 +59,7 @@
     releaseOverlay();
     if (!explanation.heatmapPng || explanation.heatmapPng.length === 0) return;
 
-    const blob = new Blob([explanation.heatmapPng], { type: 'image/png' });
+    const blob = new Blob([new Uint8Array(explanation.heatmapPng).slice().buffer], { type: 'image/png' });
     const bitmap = await createImageBitmap(blob);
     const canvas = document.createElement('canvas');
     canvas.width = bitmap.width;

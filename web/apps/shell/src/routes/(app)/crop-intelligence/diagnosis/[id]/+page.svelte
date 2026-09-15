@@ -16,7 +16,7 @@
   onMount(async () => {
     try {
       const res = await diagnosisClient.getDiagnosis({ id });
-      values = { ...res.request };
+      values = { ...res.diagnosis };
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load diagnosis request';
     } finally {

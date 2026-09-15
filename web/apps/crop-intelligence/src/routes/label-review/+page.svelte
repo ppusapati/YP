@@ -151,7 +151,7 @@
     imageLoading = true;
     try {
       const res = await diagnosisClient.getLabelReviewImage({ task: sample.task, sampleId: sample.id });
-      const blob = new Blob([res.imageBytes], { type: res.mimeType || 'image/jpeg' });
+      const blob = new Blob([new Uint8Array(res.imageBytes).slice().buffer], { type: res.mimeType || 'image/jpeg' });
       imageUrl = URL.createObjectURL(blob);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load the sample image';
