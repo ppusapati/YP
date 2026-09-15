@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { cropFormSchema } from '@samavāya/agriculture/schemas';
+  import { createCropSchema } from '@samavāya/agriculture/schemas';
   import { cropClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Crop"
   subtitle="Update crop details"
   mode="edit"
-  schema={cropFormSchema}
+  schema={createCropSchema}
   {values}
   {errors}
   {isLoading}

@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { yieldRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { yieldRecordSchema } from '@samavāya/agriculture/schemas';
   import { yieldClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Yield Record"
   subtitle="Update yield record"
   mode="edit"
-  schema={yieldRecordFormSchema}
+  schema={yieldRecordSchema}
   {values}
   {errors}
   {isLoading}

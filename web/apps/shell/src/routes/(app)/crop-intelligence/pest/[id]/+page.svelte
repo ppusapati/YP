@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { pestPredictionFormSchema } from '@samavāya/agriculture/schemas';
+  import { pestPredictionRequestSchema } from '@samavāya/agriculture/schemas';
   import { pestClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Pest Prediction"
   subtitle="Update pest prediction"
   mode="edit"
-  schema={pestPredictionFormSchema}
+  schema={pestPredictionRequestSchema}
   {values}
   {errors}
   {isLoading}

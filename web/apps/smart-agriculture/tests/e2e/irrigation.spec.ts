@@ -23,7 +23,7 @@ test.describe('Irrigation', () => {
       page.getByRole('heading', { name: /new irrigation schedule/i }),
     ).toBeVisible();
 
-    // Fill in form fields defined by irrigationScheduleFormSchema.
+    // Fill in form fields defined by irrigationScheduleSchema.
     await page.getByLabel(/name|schedule/i).first().fill('Morning Drip Cycle');
 
     // Schedule type dropdown/select.

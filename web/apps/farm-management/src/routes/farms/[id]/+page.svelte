@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { farmFormSchema } from '@samavāya/agriculture/schemas';
+  import { createFarmSchema } from '@samavāya/agriculture/schemas';
   import { farmClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -53,7 +53,7 @@
   title="Edit Farm"
   subtitle="Update farm details"
   {mode}
-  schema={farmFormSchema}
+  schema={createFarmSchema}
   {values}
   {errors}
   {isLoading}

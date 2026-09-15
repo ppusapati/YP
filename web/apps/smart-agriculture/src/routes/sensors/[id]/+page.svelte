@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { sensorFormSchema } from '@samavāya/agriculture/schemas';
+  import { registerSensorSchema } from '@samavāya/agriculture/schemas';
   import { sensorClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Sensor"
   subtitle="Update sensor configuration"
   mode="edit"
-  schema={sensorFormSchema}
+  schema={registerSensorSchema}
   {values}
   {errors}
   {isLoading}

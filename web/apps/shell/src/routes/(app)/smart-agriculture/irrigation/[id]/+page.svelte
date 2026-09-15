@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { irrigationScheduleFormSchema } from '@samavāya/agriculture/schemas';
+  import { irrigationScheduleSchema } from '@samavāya/agriculture/schemas';
   import { irrigationClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Irrigation Schedule"
   subtitle="Update irrigation schedule"
   mode="edit"
-  schema={irrigationScheduleFormSchema}
+  schema={irrigationScheduleSchema}
   {values}
   {errors}
   {isLoading}

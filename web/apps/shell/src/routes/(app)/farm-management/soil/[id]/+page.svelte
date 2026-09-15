@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { CrudFormPage } from '@samavāya/ui';
-  import { soilSampleFormSchema } from '@samavāya/agriculture/schemas';
+  import { createSoilSampleSchema } from '@samavāya/agriculture/schemas';
   import { soilClient } from '@samavāya/agriculture/services';
 
   $: id = $page.params.id;
@@ -52,7 +52,7 @@
   title="Edit Soil Sample"
   subtitle="Update soil sample data"
   mode="edit"
-  schema={soilSampleFormSchema}
+  schema={createSoilSampleSchema}
   {values}
   {errors}
   {isLoading}

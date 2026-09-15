@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { CrudFormPage } from '@samavāya/ui';
-  import { yieldRecordFormSchema } from '@samavāya/agriculture/schemas';
+  import { yieldRecordSchema } from '@samavāya/agriculture/schemas';
   import { yieldClient } from '@samavāya/agriculture/services';
 
   let values: Record<string, unknown> = { status: 'draft', yield_unit: 'tonnes', area_unit: 'hectares' };
@@ -27,7 +27,7 @@
   title="New Yield Record"
   subtitle="Record a new harvest yield"
   mode="create"
-  schema={yieldRecordFormSchema}
+  schema={yieldRecordSchema}
   {values}
   {errors}
   {isSubmitting}
