@@ -32,6 +32,7 @@ type InspectionService interface {
 	ListInspections(ctx context.Context, input ListInspectionsInput) ([]*pb.Inspection, string, int32, error)
 	CreateInspection(ctx context.Context, req *pb.CreateInspectionRequest, inspectorID string) (*pb.Inspection, error)
 	SubmitInspection(ctx context.Context, id string) (*pb.Inspection, error)
+	UpdateInspection(ctx context.Context, req *pb.UpdateInspectionRequest) (*pb.Inspection, int64, error)
 }
 
 // inspectionService is the concrete implementation of InspectionService.
@@ -168,4 +169,46 @@ func (s *inspectionService) SubmitInspection(ctx context.Context, id string) (*p
 	s.logger.Infof("Inspection submitted: id=%s", inspection.Id)
 
 	return inspection, nil
+}
+
+// UpdateInspection edits a draft.
+//
+// Only a draft: once an inspection is submitted it is a record of what an
+// agronomist found on a date, and editing it afterwards would rewrite the
+// history a prescription or a claim was built on. A submitted inspection that
+// was wrong is corrected by filing another, the same way the traceability
+// records are.
+func (s *inspectionService) UpdateInspection(ctx context.Context, req *pb.UpdateInspectionRequest) (*pb.Inspection, int64, error) {
+	if strings.TrimSpace(req.GetId()) == "" {
+		return nil, 0, errors.BadRequest("INVALID_ID", "id is required")
+	}
+
+	existing, err := s.repo.GetByID(ctx, req.GetId())
+	if err != nil {
+		return nil, 0, err
+	}
+	if existing.Status != pb.InspectionStatus_INSPECTION_STATUS_DRAFT {
+		return nil, 0, errors.BadRequest(
+			"INVALID_STATUS",
+			"only a draft inspection can be edited; file another to correct a submitted one",
+		)
+	}
+
+	edited := &pb.Inspection{
+		Id:              req.GetId(),
+		Findings:        req.GetFindings(),
+		Photos:          req.GetPhotos(),
+		Recommendations: req.GetRecommendations(),
+		Issues:          req.GetIssues(),
+		HealthScore:     req.GetHealthScore(),
+		Notes:           req.GetNotes(),
+	}
+
+	updated, version, err := s.repo.Update(ctx, edited, req.GetBaseVersion())
+	if err != nil {
+		return nil, 0, err
+	}
+
+	s.logger.Infof("Inspection updated: id=%s version=%d", updated.Id, version)
+	return updated, version, nil
 }

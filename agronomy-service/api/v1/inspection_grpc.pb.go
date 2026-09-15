@@ -22,6 +22,7 @@ const (
 	InspectionService_GetInspection_FullMethodName    = "/agriculture.agronomy.v1.InspectionService/GetInspection"
 	InspectionService_ListInspections_FullMethodName  = "/agriculture.agronomy.v1.InspectionService/ListInspections"
 	InspectionService_CreateInspection_FullMethodName = "/agriculture.agronomy.v1.InspectionService/CreateInspection"
+	InspectionService_UpdateInspection_FullMethodName = "/agriculture.agronomy.v1.InspectionService/UpdateInspection"
 	InspectionService_SubmitInspection_FullMethodName = "/agriculture.agronomy.v1.InspectionService/SubmitInspection"
 )
 
@@ -34,6 +35,7 @@ type InspectionServiceClient interface {
 	GetInspection(ctx context.Context, in *GetInspectionRequest, opts ...grpc.CallOption) (*GetInspectionResponse, error)
 	ListInspections(ctx context.Context, in *ListInspectionsRequest, opts ...grpc.CallOption) (*ListInspectionsResponse, error)
 	CreateInspection(ctx context.Context, in *CreateInspectionRequest, opts ...grpc.CallOption) (*CreateInspectionResponse, error)
+	UpdateInspection(ctx context.Context, in *UpdateInspectionRequest, opts ...grpc.CallOption) (*UpdateInspectionResponse, error)
 	SubmitInspection(ctx context.Context, in *SubmitInspectionRequest, opts ...grpc.CallOption) (*SubmitInspectionResponse, error)
 }
 
@@ -75,6 +77,16 @@ func (c *inspectionServiceClient) CreateInspection(ctx context.Context, in *Crea
 	return out, nil
 }
 
+func (c *inspectionServiceClient) UpdateInspection(ctx context.Context, in *UpdateInspectionRequest, opts ...grpc.CallOption) (*UpdateInspectionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateInspectionResponse)
+	err := c.cc.Invoke(ctx, InspectionService_UpdateInspection_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *inspectionServiceClient) SubmitInspection(ctx context.Context, in *SubmitInspectionRequest, opts ...grpc.CallOption) (*SubmitInspectionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SubmitInspectionResponse)
@@ -94,6 +106,7 @@ type InspectionServiceServer interface {
 	GetInspection(context.Context, *GetInspectionRequest) (*GetInspectionResponse, error)
 	ListInspections(context.Context, *ListInspectionsRequest) (*ListInspectionsResponse, error)
 	CreateInspection(context.Context, *CreateInspectionRequest) (*CreateInspectionResponse, error)
+	UpdateInspection(context.Context, *UpdateInspectionRequest) (*UpdateInspectionResponse, error)
 	SubmitInspection(context.Context, *SubmitInspectionRequest) (*SubmitInspectionResponse, error)
 	mustEmbedUnimplementedInspectionServiceServer()
 }
@@ -113,6 +126,9 @@ func (UnimplementedInspectionServiceServer) ListInspections(context.Context, *Li
 }
 func (UnimplementedInspectionServiceServer) CreateInspection(context.Context, *CreateInspectionRequest) (*CreateInspectionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateInspection not implemented")
+}
+func (UnimplementedInspectionServiceServer) UpdateInspection(context.Context, *UpdateInspectionRequest) (*UpdateInspectionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateInspection not implemented")
 }
 func (UnimplementedInspectionServiceServer) SubmitInspection(context.Context, *SubmitInspectionRequest) (*SubmitInspectionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitInspection not implemented")
@@ -192,6 +208,24 @@ func _InspectionService_CreateInspection_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InspectionService_UpdateInspection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateInspectionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InspectionServiceServer).UpdateInspection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InspectionService_UpdateInspection_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InspectionServiceServer).UpdateInspection(ctx, req.(*UpdateInspectionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _InspectionService_SubmitInspection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitInspectionRequest)
 	if err := dec(in); err != nil {
@@ -228,6 +262,10 @@ var InspectionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateInspection",
 			Handler:    _InspectionService_CreateInspection_Handler,
+		},
+		{
+			MethodName: "UpdateInspection",
+			Handler:    _InspectionService_UpdateInspection_Handler,
 		},
 		{
 			MethodName: "SubmitInspection",

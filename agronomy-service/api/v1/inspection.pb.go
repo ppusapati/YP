@@ -725,6 +725,170 @@ func (x *CreateInspectionResponse) GetInspection() *Inspection {
 	return nil
 }
 
+// UpdateInspectionRequest edits a draft inspection.
+//
+// There was no way to edit one at all: the service had Create and Submit and
+// nothing between them, so a draft was written once and then only its status
+// could change. Collaborative editing needs somewhere for an edit to land, and
+// so does the ordinary case of an agronomist correcting a typo.
+type UpdateInspectionRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Findings        string                 `protobuf:"bytes,2,opt,name=findings,proto3" json:"findings,omitempty"`
+	Photos          []string               `protobuf:"bytes,3,rep,name=photos,proto3" json:"photos,omitempty"`
+	Recommendations []string               `protobuf:"bytes,4,rep,name=recommendations,proto3" json:"recommendations,omitempty"`
+	Issues          []*InspectionIssue     `protobuf:"bytes,5,rep,name=issues,proto3" json:"issues,omitempty"`
+	HealthScore     float64                `protobuf:"fixed64,6,opt,name=health_score,json=healthScore,proto3" json:"health_score,omitempty"`
+	Notes           string                 `protobuf:"bytes,7,opt,name=notes,proto3" json:"notes,omitempty"`
+	// The version the editor was working from, matching the per-field versions
+	// the real-time session hands out. Zero means "I did not check", which is
+	// accepted — a single editor with no collaborator should not have to
+	// participate in the versioning — but a non-zero value that has been
+	// overtaken is refused rather than silently overwriting the newer edit.
+	BaseVersion   int64 `protobuf:"varint,8,opt,name=base_version,json=baseVersion,proto3" json:"base_version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateInspectionRequest) Reset() {
+	*x = UpdateInspectionRequest{}
+	mi := &file_inspection_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateInspectionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateInspectionRequest) ProtoMessage() {}
+
+func (x *UpdateInspectionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_inspection_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateInspectionRequest.ProtoReflect.Descriptor instead.
+func (*UpdateInspectionRequest) Descriptor() ([]byte, []int) {
+	return file_inspection_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateInspectionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateInspectionRequest) GetFindings() string {
+	if x != nil {
+		return x.Findings
+	}
+	return ""
+}
+
+func (x *UpdateInspectionRequest) GetPhotos() []string {
+	if x != nil {
+		return x.Photos
+	}
+	return nil
+}
+
+func (x *UpdateInspectionRequest) GetRecommendations() []string {
+	if x != nil {
+		return x.Recommendations
+	}
+	return nil
+}
+
+func (x *UpdateInspectionRequest) GetIssues() []*InspectionIssue {
+	if x != nil {
+		return x.Issues
+	}
+	return nil
+}
+
+func (x *UpdateInspectionRequest) GetHealthScore() float64 {
+	if x != nil {
+		return x.HealthScore
+	}
+	return 0
+}
+
+func (x *UpdateInspectionRequest) GetNotes() string {
+	if x != nil {
+		return x.Notes
+	}
+	return ""
+}
+
+func (x *UpdateInspectionRequest) GetBaseVersion() int64 {
+	if x != nil {
+		return x.BaseVersion
+	}
+	return 0
+}
+
+type UpdateInspectionResponse struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Inspection *Inspection            `protobuf:"bytes,1,opt,name=inspection,proto3" json:"inspection,omitempty"`
+	// The inspection's version after this update.
+	Version       int64 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateInspectionResponse) Reset() {
+	*x = UpdateInspectionResponse{}
+	mi := &file_inspection_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateInspectionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateInspectionResponse) ProtoMessage() {}
+
+func (x *UpdateInspectionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_inspection_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateInspectionResponse.ProtoReflect.Descriptor instead.
+func (*UpdateInspectionResponse) Descriptor() ([]byte, []int) {
+	return file_inspection_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateInspectionResponse) GetInspection() *Inspection {
+	if x != nil {
+		return x.Inspection
+	}
+	return nil
+}
+
+func (x *UpdateInspectionResponse) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
 type SubmitInspectionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -734,7 +898,7 @@ type SubmitInspectionRequest struct {
 
 func (x *SubmitInspectionRequest) Reset() {
 	*x = SubmitInspectionRequest{}
-	mi := &file_inspection_proto_msgTypes[8]
+	mi := &file_inspection_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -746,7 +910,7 @@ func (x *SubmitInspectionRequest) String() string {
 func (*SubmitInspectionRequest) ProtoMessage() {}
 
 func (x *SubmitInspectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_inspection_proto_msgTypes[8]
+	mi := &file_inspection_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -759,7 +923,7 @@ func (x *SubmitInspectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitInspectionRequest.ProtoReflect.Descriptor instead.
 func (*SubmitInspectionRequest) Descriptor() ([]byte, []int) {
-	return file_inspection_proto_rawDescGZIP(), []int{8}
+	return file_inspection_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SubmitInspectionRequest) GetId() string {
@@ -778,7 +942,7 @@ type SubmitInspectionResponse struct {
 
 func (x *SubmitInspectionResponse) Reset() {
 	*x = SubmitInspectionResponse{}
-	mi := &file_inspection_proto_msgTypes[9]
+	mi := &file_inspection_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -790,7 +954,7 @@ func (x *SubmitInspectionResponse) String() string {
 func (*SubmitInspectionResponse) ProtoMessage() {}
 
 func (x *SubmitInspectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_inspection_proto_msgTypes[9]
+	mi := &file_inspection_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -803,7 +967,7 @@ func (x *SubmitInspectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitInspectionResponse.ProtoReflect.Descriptor instead.
 func (*SubmitInspectionResponse) Descriptor() ([]byte, []int) {
-	return file_inspection_proto_rawDescGZIP(), []int{9}
+	return file_inspection_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SubmitInspectionResponse) GetInspection() *Inspection {
@@ -873,7 +1037,21 @@ const file_inspection_proto_rawDesc = "" +
 	"\x18CreateInspectionResponse\x12C\n" +
 	"\n" +
 	"inspection\x18\x01 \x01(\v2#.agriculture.agronomy.v1.InspectionR\n" +
-	"inspection\")\n" +
+	"inspection\"\xa5\x02\n" +
+	"\x17UpdateInspectionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bfindings\x18\x02 \x01(\tR\bfindings\x12\x16\n" +
+	"\x06photos\x18\x03 \x03(\tR\x06photos\x12(\n" +
+	"\x0frecommendations\x18\x04 \x03(\tR\x0frecommendations\x12@\n" +
+	"\x06issues\x18\x05 \x03(\v2(.agriculture.agronomy.v1.InspectionIssueR\x06issues\x12!\n" +
+	"\fhealth_score\x18\x06 \x01(\x01R\vhealthScore\x12\x14\n" +
+	"\x05notes\x18\a \x01(\tR\x05notes\x12!\n" +
+	"\fbase_version\x18\b \x01(\x03R\vbaseVersion\"y\n" +
+	"\x18UpdateInspectionResponse\x12C\n" +
+	"\n" +
+	"inspection\x18\x01 \x01(\v2#.agriculture.agronomy.v1.InspectionR\n" +
+	"inspection\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x03R\aversion\")\n" +
 	"\x17SubmitInspectionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"_\n" +
 	"\x18SubmitInspectionResponse\x12C\n" +
@@ -890,11 +1068,12 @@ const file_inspection_proto_rawDesc = "" +
 	"\x12ISSUE_SEVERITY_LOW\x10\x01\x12\x19\n" +
 	"\x15ISSUE_SEVERITY_MEDIUM\x10\x02\x12\x17\n" +
 	"\x13ISSUE_SEVERITY_HIGH\x10\x03\x12\x1b\n" +
-	"\x17ISSUE_SEVERITY_CRITICAL\x10\x042\xeb\x03\n" +
+	"\x17ISSUE_SEVERITY_CRITICAL\x10\x042\xe4\x04\n" +
 	"\x11InspectionService\x12n\n" +
 	"\rGetInspection\x12-.agriculture.agronomy.v1.GetInspectionRequest\x1a..agriculture.agronomy.v1.GetInspectionResponse\x12t\n" +
 	"\x0fListInspections\x12/.agriculture.agronomy.v1.ListInspectionsRequest\x1a0.agriculture.agronomy.v1.ListInspectionsResponse\x12w\n" +
 	"\x10CreateInspection\x120.agriculture.agronomy.v1.CreateInspectionRequest\x1a1.agriculture.agronomy.v1.CreateInspectionResponse\x12w\n" +
+	"\x10UpdateInspection\x120.agriculture.agronomy.v1.UpdateInspectionRequest\x1a1.agriculture.agronomy.v1.UpdateInspectionResponse\x12w\n" +
 	"\x10SubmitInspection\x120.agriculture.agronomy.v1.SubmitInspectionRequest\x1a1.agriculture.agronomy.v1.SubmitInspectionResponseB@Z>p9e.in/samavaya/agriculture/agronomy-service/api/v1;agronomyv1b\x06proto3"
 
 var (
@@ -910,7 +1089,7 @@ func file_inspection_proto_rawDescGZIP() []byte {
 }
 
 var file_inspection_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_inspection_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_inspection_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_inspection_proto_goTypes = []any{
 	(InspectionStatus)(0),            // 0: agriculture.agronomy.v1.InspectionStatus
 	(IssueSeverity)(0),               // 1: agriculture.agronomy.v1.IssueSeverity
@@ -922,37 +1101,43 @@ var file_inspection_proto_goTypes = []any{
 	(*ListInspectionsResponse)(nil),  // 7: agriculture.agronomy.v1.ListInspectionsResponse
 	(*CreateInspectionRequest)(nil),  // 8: agriculture.agronomy.v1.CreateInspectionRequest
 	(*CreateInspectionResponse)(nil), // 9: agriculture.agronomy.v1.CreateInspectionResponse
-	(*SubmitInspectionRequest)(nil),  // 10: agriculture.agronomy.v1.SubmitInspectionRequest
-	(*SubmitInspectionResponse)(nil), // 11: agriculture.agronomy.v1.SubmitInspectionResponse
-	(*timestamppb.Timestamp)(nil),    // 12: google.protobuf.Timestamp
+	(*UpdateInspectionRequest)(nil),  // 10: agriculture.agronomy.v1.UpdateInspectionRequest
+	(*UpdateInspectionResponse)(nil), // 11: agriculture.agronomy.v1.UpdateInspectionResponse
+	(*SubmitInspectionRequest)(nil),  // 12: agriculture.agronomy.v1.SubmitInspectionRequest
+	(*SubmitInspectionResponse)(nil), // 13: agriculture.agronomy.v1.SubmitInspectionResponse
+	(*timestamppb.Timestamp)(nil),    // 14: google.protobuf.Timestamp
 }
 var file_inspection_proto_depIdxs = []int32{
 	1,  // 0: agriculture.agronomy.v1.InspectionIssue.severity:type_name -> agriculture.agronomy.v1.IssueSeverity
 	0,  // 1: agriculture.agronomy.v1.Inspection.status:type_name -> agriculture.agronomy.v1.InspectionStatus
 	2,  // 2: agriculture.agronomy.v1.Inspection.issues:type_name -> agriculture.agronomy.v1.InspectionIssue
-	12, // 3: agriculture.agronomy.v1.Inspection.inspection_date:type_name -> google.protobuf.Timestamp
-	12, // 4: agriculture.agronomy.v1.Inspection.created_at:type_name -> google.protobuf.Timestamp
-	12, // 5: agriculture.agronomy.v1.Inspection.updated_at:type_name -> google.protobuf.Timestamp
+	14, // 3: agriculture.agronomy.v1.Inspection.inspection_date:type_name -> google.protobuf.Timestamp
+	14, // 4: agriculture.agronomy.v1.Inspection.created_at:type_name -> google.protobuf.Timestamp
+	14, // 5: agriculture.agronomy.v1.Inspection.updated_at:type_name -> google.protobuf.Timestamp
 	3,  // 6: agriculture.agronomy.v1.GetInspectionResponse.inspection:type_name -> agriculture.agronomy.v1.Inspection
 	0,  // 7: agriculture.agronomy.v1.ListInspectionsRequest.status:type_name -> agriculture.agronomy.v1.InspectionStatus
 	3,  // 8: agriculture.agronomy.v1.ListInspectionsResponse.inspections:type_name -> agriculture.agronomy.v1.Inspection
 	2,  // 9: agriculture.agronomy.v1.CreateInspectionRequest.issues:type_name -> agriculture.agronomy.v1.InspectionIssue
-	12, // 10: agriculture.agronomy.v1.CreateInspectionRequest.inspection_date:type_name -> google.protobuf.Timestamp
+	14, // 10: agriculture.agronomy.v1.CreateInspectionRequest.inspection_date:type_name -> google.protobuf.Timestamp
 	3,  // 11: agriculture.agronomy.v1.CreateInspectionResponse.inspection:type_name -> agriculture.agronomy.v1.Inspection
-	3,  // 12: agriculture.agronomy.v1.SubmitInspectionResponse.inspection:type_name -> agriculture.agronomy.v1.Inspection
-	4,  // 13: agriculture.agronomy.v1.InspectionService.GetInspection:input_type -> agriculture.agronomy.v1.GetInspectionRequest
-	6,  // 14: agriculture.agronomy.v1.InspectionService.ListInspections:input_type -> agriculture.agronomy.v1.ListInspectionsRequest
-	8,  // 15: agriculture.agronomy.v1.InspectionService.CreateInspection:input_type -> agriculture.agronomy.v1.CreateInspectionRequest
-	10, // 16: agriculture.agronomy.v1.InspectionService.SubmitInspection:input_type -> agriculture.agronomy.v1.SubmitInspectionRequest
-	5,  // 17: agriculture.agronomy.v1.InspectionService.GetInspection:output_type -> agriculture.agronomy.v1.GetInspectionResponse
-	7,  // 18: agriculture.agronomy.v1.InspectionService.ListInspections:output_type -> agriculture.agronomy.v1.ListInspectionsResponse
-	9,  // 19: agriculture.agronomy.v1.InspectionService.CreateInspection:output_type -> agriculture.agronomy.v1.CreateInspectionResponse
-	11, // 20: agriculture.agronomy.v1.InspectionService.SubmitInspection:output_type -> agriculture.agronomy.v1.SubmitInspectionResponse
-	17, // [17:21] is the sub-list for method output_type
-	13, // [13:17] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	2,  // 12: agriculture.agronomy.v1.UpdateInspectionRequest.issues:type_name -> agriculture.agronomy.v1.InspectionIssue
+	3,  // 13: agriculture.agronomy.v1.UpdateInspectionResponse.inspection:type_name -> agriculture.agronomy.v1.Inspection
+	3,  // 14: agriculture.agronomy.v1.SubmitInspectionResponse.inspection:type_name -> agriculture.agronomy.v1.Inspection
+	4,  // 15: agriculture.agronomy.v1.InspectionService.GetInspection:input_type -> agriculture.agronomy.v1.GetInspectionRequest
+	6,  // 16: agriculture.agronomy.v1.InspectionService.ListInspections:input_type -> agriculture.agronomy.v1.ListInspectionsRequest
+	8,  // 17: agriculture.agronomy.v1.InspectionService.CreateInspection:input_type -> agriculture.agronomy.v1.CreateInspectionRequest
+	10, // 18: agriculture.agronomy.v1.InspectionService.UpdateInspection:input_type -> agriculture.agronomy.v1.UpdateInspectionRequest
+	12, // 19: agriculture.agronomy.v1.InspectionService.SubmitInspection:input_type -> agriculture.agronomy.v1.SubmitInspectionRequest
+	5,  // 20: agriculture.agronomy.v1.InspectionService.GetInspection:output_type -> agriculture.agronomy.v1.GetInspectionResponse
+	7,  // 21: agriculture.agronomy.v1.InspectionService.ListInspections:output_type -> agriculture.agronomy.v1.ListInspectionsResponse
+	9,  // 22: agriculture.agronomy.v1.InspectionService.CreateInspection:output_type -> agriculture.agronomy.v1.CreateInspectionResponse
+	11, // 23: agriculture.agronomy.v1.InspectionService.UpdateInspection:output_type -> agriculture.agronomy.v1.UpdateInspectionResponse
+	13, // 24: agriculture.agronomy.v1.InspectionService.SubmitInspection:output_type -> agriculture.agronomy.v1.SubmitInspectionResponse
+	20, // [20:25] is the sub-list for method output_type
+	15, // [15:20] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_inspection_proto_init() }
@@ -966,7 +1151,7 @@ func file_inspection_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_inspection_proto_rawDesc), len(file_inspection_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

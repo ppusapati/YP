@@ -1,7 +1,6 @@
 // Package main is the modular monolith entry point for the YieldPoint agriculture
 // platform. It wires all 23 services into a single binary sharing one database
 // pool, one logger, and one ConnectRPC interceptor chain.
-//
 package main
 
 import (
@@ -123,6 +122,17 @@ func main() {
 
 	// Auth service (plain HTTP handlers, no ConnectRPC)
 	registerAuthModule(mux, infra)
+
+	// Real-time transport: /ws and /events.
+	//
+	// The hub, the SSE broker and the routing middleware have existed for a
+	// while and nothing mounted any of them, so live sensor streaming and SSE
+	// alerts were complete as code and 404 as product. rt also carries the
+	// field-map and collaborative-inspection state.
+	rtCtx, rtCancel := context.WithCancel(context.Background())
+	defer rtCancel()
+	rt := registerRealtimeModule(rtCtx, mux, infra)
+	_ = rt
 
 	// ── Health / readiness probes ───────────────────────────────────────────
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {

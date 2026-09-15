@@ -42,6 +42,9 @@ const (
 	// InspectionServiceCreateInspectionProcedure is the fully-qualified name of the InspectionService's
 	// CreateInspection RPC.
 	InspectionServiceCreateInspectionProcedure = "/agriculture.agronomy.v1.InspectionService/CreateInspection"
+	// InspectionServiceUpdateInspectionProcedure is the fully-qualified name of the InspectionService's
+	// UpdateInspection RPC.
+	InspectionServiceUpdateInspectionProcedure = "/agriculture.agronomy.v1.InspectionService/UpdateInspection"
 	// InspectionServiceSubmitInspectionProcedure is the fully-qualified name of the InspectionService's
 	// SubmitInspection RPC.
 	InspectionServiceSubmitInspectionProcedure = "/agriculture.agronomy.v1.InspectionService/SubmitInspection"
@@ -52,6 +55,7 @@ type InspectionServiceClient interface {
 	GetInspection(context.Context, *connect.Request[v1.GetInspectionRequest]) (*connect.Response[v1.GetInspectionResponse], error)
 	ListInspections(context.Context, *connect.Request[v1.ListInspectionsRequest]) (*connect.Response[v1.ListInspectionsResponse], error)
 	CreateInspection(context.Context, *connect.Request[v1.CreateInspectionRequest]) (*connect.Response[v1.CreateInspectionResponse], error)
+	UpdateInspection(context.Context, *connect.Request[v1.UpdateInspectionRequest]) (*connect.Response[v1.UpdateInspectionResponse], error)
 	SubmitInspection(context.Context, *connect.Request[v1.SubmitInspectionRequest]) (*connect.Response[v1.SubmitInspectionResponse], error)
 }
 
@@ -84,6 +88,12 @@ func NewInspectionServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(inspectionServiceMethods.ByName("CreateInspection")),
 			connect.WithClientOptions(opts...),
 		),
+		updateInspection: connect.NewClient[v1.UpdateInspectionRequest, v1.UpdateInspectionResponse](
+			httpClient,
+			baseURL+InspectionServiceUpdateInspectionProcedure,
+			connect.WithSchema(inspectionServiceMethods.ByName("UpdateInspection")),
+			connect.WithClientOptions(opts...),
+		),
 		submitInspection: connect.NewClient[v1.SubmitInspectionRequest, v1.SubmitInspectionResponse](
 			httpClient,
 			baseURL+InspectionServiceSubmitInspectionProcedure,
@@ -98,6 +108,7 @@ type inspectionServiceClient struct {
 	getInspection    *connect.Client[v1.GetInspectionRequest, v1.GetInspectionResponse]
 	listInspections  *connect.Client[v1.ListInspectionsRequest, v1.ListInspectionsResponse]
 	createInspection *connect.Client[v1.CreateInspectionRequest, v1.CreateInspectionResponse]
+	updateInspection *connect.Client[v1.UpdateInspectionRequest, v1.UpdateInspectionResponse]
 	submitInspection *connect.Client[v1.SubmitInspectionRequest, v1.SubmitInspectionResponse]
 }
 
@@ -116,6 +127,11 @@ func (c *inspectionServiceClient) CreateInspection(ctx context.Context, req *con
 	return c.createInspection.CallUnary(ctx, req)
 }
 
+// UpdateInspection calls agriculture.agronomy.v1.InspectionService.UpdateInspection.
+func (c *inspectionServiceClient) UpdateInspection(ctx context.Context, req *connect.Request[v1.UpdateInspectionRequest]) (*connect.Response[v1.UpdateInspectionResponse], error) {
+	return c.updateInspection.CallUnary(ctx, req)
+}
+
 // SubmitInspection calls agriculture.agronomy.v1.InspectionService.SubmitInspection.
 func (c *inspectionServiceClient) SubmitInspection(ctx context.Context, req *connect.Request[v1.SubmitInspectionRequest]) (*connect.Response[v1.SubmitInspectionResponse], error) {
 	return c.submitInspection.CallUnary(ctx, req)
@@ -127,6 +143,7 @@ type InspectionServiceHandler interface {
 	GetInspection(context.Context, *connect.Request[v1.GetInspectionRequest]) (*connect.Response[v1.GetInspectionResponse], error)
 	ListInspections(context.Context, *connect.Request[v1.ListInspectionsRequest]) (*connect.Response[v1.ListInspectionsResponse], error)
 	CreateInspection(context.Context, *connect.Request[v1.CreateInspectionRequest]) (*connect.Response[v1.CreateInspectionResponse], error)
+	UpdateInspection(context.Context, *connect.Request[v1.UpdateInspectionRequest]) (*connect.Response[v1.UpdateInspectionResponse], error)
 	SubmitInspection(context.Context, *connect.Request[v1.SubmitInspectionRequest]) (*connect.Response[v1.SubmitInspectionResponse], error)
 }
 
@@ -155,6 +172,12 @@ func NewInspectionServiceHandler(svc InspectionServiceHandler, opts ...connect.H
 		connect.WithSchema(inspectionServiceMethods.ByName("CreateInspection")),
 		connect.WithHandlerOptions(opts...),
 	)
+	inspectionServiceUpdateInspectionHandler := connect.NewUnaryHandler(
+		InspectionServiceUpdateInspectionProcedure,
+		svc.UpdateInspection,
+		connect.WithSchema(inspectionServiceMethods.ByName("UpdateInspection")),
+		connect.WithHandlerOptions(opts...),
+	)
 	inspectionServiceSubmitInspectionHandler := connect.NewUnaryHandler(
 		InspectionServiceSubmitInspectionProcedure,
 		svc.SubmitInspection,
@@ -169,6 +192,8 @@ func NewInspectionServiceHandler(svc InspectionServiceHandler, opts ...connect.H
 			inspectionServiceListInspectionsHandler.ServeHTTP(w, r)
 		case InspectionServiceCreateInspectionProcedure:
 			inspectionServiceCreateInspectionHandler.ServeHTTP(w, r)
+		case InspectionServiceUpdateInspectionProcedure:
+			inspectionServiceUpdateInspectionHandler.ServeHTTP(w, r)
 		case InspectionServiceSubmitInspectionProcedure:
 			inspectionServiceSubmitInspectionHandler.ServeHTTP(w, r)
 		default:
@@ -190,6 +215,10 @@ func (UnimplementedInspectionServiceHandler) ListInspections(context.Context, *c
 
 func (UnimplementedInspectionServiceHandler) CreateInspection(context.Context, *connect.Request[v1.CreateInspectionRequest]) (*connect.Response[v1.CreateInspectionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.agronomy.v1.InspectionService.CreateInspection is not implemented"))
+}
+
+func (UnimplementedInspectionServiceHandler) UpdateInspection(context.Context, *connect.Request[v1.UpdateInspectionRequest]) (*connect.Response[v1.UpdateInspectionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("agriculture.agronomy.v1.InspectionService.UpdateInspection is not implemented"))
 }
 
 func (UnimplementedInspectionServiceHandler) SubmitInspection(context.Context, *connect.Request[v1.SubmitInspectionRequest]) (*connect.Response[v1.SubmitInspectionResponse], error) {

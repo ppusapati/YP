@@ -94,3 +94,101 @@ The authenticated request, never the client.
 
 Nothing reads a tenant from a query parameter, a header the client controls, or
 the topic string itself.
+
+## Where the transports are served
+
+`/ws` and `/events`, on the monolith, mounted by `registerRealtimeModule` in
+`cmd/monolith/realtime_module.go` and routed by the api-gateway.
+
+That wiring did not exist before. The hub, the SSE broker, the Kafka bridge and
+the routing middleware were all written, and **nothing constructed or mounted
+any of them** — no service called `NewHub`, no mux served `/ws`, and the
+Caddyfile had no route, so a client that connected reached the catch-all 404.
+Both transports were complete as code and unreachable as product.
+
+The gateway routes them without the timeouts that suit a unary RPC, and
+`/events` disables response buffering: without `flush_interval -1` an SSE event
+waits in Caddy's buffer until enough accumulate, which for an alert stream is
+indefinitely.
+
+## Topics in use
+
+| Topic | Carries | Published by |
+| --- | --- | --- |
+| `sensor.<field_id>` | Live sensor readings | Kafka bridge |
+| `alert.<farm_id>` | Alert notifications | Kafka bridge, SSE |
+| `irrigation.<field_id>` | Irrigation decisions and actuator state | irrigation-service |
+| `fieldmap.<field_id>` | Machine positions, imagery overlays, presence | Kafka bridge, `PublishPosition` |
+| `inspection.<inspection_id>` | Presence, edits, snapshots | `ApplyInspectionEdit` |
+
+All five are qualified with `TenantTopic` before they reach a transport.
+
+## Field map
+
+One topic per field carries three kinds of event, tagged in an envelope so a
+client does not have to guess from the payload's shape: `machine_moved`,
+`overlay_ready` and `presence`.
+
+A position is refused rather than broadcast when it cannot be drawn honestly:
+
+* **Null Island.** Exactly `(0, 0)` is what a telematics unit reports before it
+  has a fix. Drawing it puts every unfixed machine in the Gulf of Guinea, which
+  reads as a bug in the map rather than in the device.
+* **Older than fifteen minutes.** A live map showing where a tractor was two
+  hours ago is not a live map; it is a map that is wrong in a way nobody can
+  see. Older positions belong in the track history.
+* **No tenant.** The topic would be unqualified, which both transports refuse
+  anyway — caught at the publisher so the reason is named.
+
+The fix accuracy travels with the position rather than being dropped, because a
+40 m fix drawn as a precise dot on a field boundary is a lie the map tells
+convincingly.
+
+An overlay carries a tile URL template and bounds, not imagery: a drone
+orthomosaic is hundreds of megabytes and has no business on a WebSocket. The
+event exists so a map that is already open picks up a new layer without polling.
+
+Presence expires after 90 seconds without a heartbeat. A phone that drives out
+of signal never sends a leave, so a registry that removed members only on an
+explicit departure would show a tractor sitting in a field for the rest of the
+season.
+
+## Collaborative inspection
+
+Two agronomists open the same draft — one in the field, one at a desk with the
+satellite history — and both type. The question is what happens when they type
+into the same box:
+
+* **Last write wins, silently.** One agronomist's findings vanish while they are
+  looking at them, and they do not notice until the report is filed.
+* **Whole-document locking.** One edits, the other watches. That is a queue.
+* **A CRDT.** Correct, and the wrong tool. An inspection is a form — a health
+  score, a findings paragraph, a list of issues — not shared prose, and the cost
+  of getting a CRDT subtly wrong is silent corruption of an agronomic record.
+
+What this does: **per-field last-write-wins with an explicit version, and a
+loser who is told.** An edit names the version it was based on; if that is
+current it applies, and if not it is refused and the editor is handed the value
+that beat them. Two people editing different fields never conflict, which is the
+common case.
+
+The same rule is enforced in the database, because the in-memory session does
+not survive a restart and the row does: `UPDATE ... WHERE ($9 = 0 OR version =
+$9)`, checked inside the statement rather than as a read-then-write, which two
+simultaneous saves would both pass.
+
+`base_version` of 0 means "I did not check" and is accepted — a single
+agronomist correcting a typo should not have to participate in the versioning.
+
+### The RPC this needed
+
+There was no way to edit an inspection at all. `InspectionService` had
+`CreateInspection` and `SubmitInspection` and nothing between them, so a draft
+was written once and after that only its status could change. Brokering edits
+that could never be saved would have made the feature a demonstration.
+`UpdateInspection` and a `version` column are the other half of it.
+
+Only a draft can be edited. A submitted inspection is a record of what an
+agronomist found on a date; editing it afterwards rewrites the history a
+prescription or an insurance claim was built on, so a wrong one is corrected by
+filing another — the same rule the traceability records follow.

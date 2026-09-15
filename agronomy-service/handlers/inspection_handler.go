@@ -101,3 +101,21 @@ func (h *InspectionHandler) SubmitInspection(ctx context.Context, req *connect.R
 
 	return connect.NewResponse(&pb.SubmitInspectionResponse{Inspection: inspection}), nil
 }
+
+// UpdateInspection edits a draft inspection.
+func (h *InspectionHandler) UpdateInspection(ctx context.Context, req *connect.Request[pb.UpdateInspectionRequest]) (*connect.Response[pb.UpdateInspectionResponse], error) {
+	if req.Msg.GetId() == "" {
+		return nil, errors.BadRequest("MISSING_ID", "id is required")
+	}
+
+	inspection, version, err := h.svc.UpdateInspection(ctx, req.Msg)
+	if err != nil {
+		h.logger.Errorf("UpdateInspection failed: %v", err)
+		return nil, errors.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&pb.UpdateInspectionResponse{
+		Inspection: inspection,
+		Version:    version,
+	}), nil
+}

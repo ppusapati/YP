@@ -85,6 +85,35 @@ message CreateInspectionResponse {
   Inspection inspection = 1;
 }
 
+// UpdateInspectionRequest edits a draft inspection.
+//
+// There was no way to edit one at all: the service had Create and Submit and
+// nothing between them, so a draft was written once and then only its status
+// could change. Collaborative editing needs somewhere for an edit to land, and
+// so does the ordinary case of an agronomist correcting a typo.
+message UpdateInspectionRequest {
+  string id = 1;
+  string findings = 2;
+  repeated string photos = 3;
+  repeated string recommendations = 4;
+  repeated InspectionIssue issues = 5;
+  double health_score = 6;
+  string notes = 7;
+
+  // The version the editor was working from, matching the per-field versions
+  // the real-time session hands out. Zero means "I did not check", which is
+  // accepted — a single editor with no collaborator should not have to
+  // participate in the versioning — but a non-zero value that has been
+  // overtaken is refused rather than silently overwriting the newer edit.
+  int64 base_version = 8;
+}
+
+message UpdateInspectionResponse {
+  Inspection inspection = 1;
+  // The inspection's version after this update.
+  int64 version = 2;
+}
+
 message SubmitInspectionRequest {
   string id = 1;
 }
@@ -98,5 +127,6 @@ service InspectionService {
   rpc GetInspection(GetInspectionRequest) returns (GetInspectionResponse);
   rpc ListInspections(ListInspectionsRequest) returns (ListInspectionsResponse);
   rpc CreateInspection(CreateInspectionRequest) returns (CreateInspectionResponse);
+  rpc UpdateInspection(UpdateInspectionRequest) returns (UpdateInspectionResponse);
   rpc SubmitInspection(SubmitInspectionRequest) returns (SubmitInspectionResponse);
 }

@@ -76,6 +76,34 @@
 		}
 	}
 
+	# ── Real-time transport ────────────────────────────────────────────
+	#
+	# The WebSocket hub and SSE broker had no gateway route at all, so a
+	# browser that connected got the catch-all 404 below however correct the
+	# server was.
+	#
+	# Both are long-lived and must not be cut off by the timeouts that suit a
+	# unary RPC: a WebSocket stays open for the length of a field visit and an
+	# SSE stream until the tab closes. `flush_interval -1` disables response
+	# buffering, without which SSE events sit in Caddy's buffer until enough
+	# accumulate — which for an alert stream is indefinitely.
+	handle /ws {
+		reverse_proxy monolith:8080 {
+			transport http {
+				dial_timeout 5s
+			}
+		}
+	}
+
+	handle /events {
+		reverse_proxy monolith:8080 {
+			flush_interval -1
+			transport http {
+				dial_timeout 5s
+			}
+		}
+	}
+
 	# ── ConnectRPC service routing ─────────────────────────────────────
 
 	handle /agriculture.farm.v1.FarmService/* {

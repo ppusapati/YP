@@ -33,6 +33,7 @@ type InspectionRepository interface {
 	List(ctx context.Context, params InspectionListParams) ([]*pb.Inspection, string, int32, error)
 	Create(ctx context.Context, inspection *pb.Inspection) (*pb.Inspection, error)
 	UpdateStatus(ctx context.Context, id string, status string) (*pb.Inspection, error)
+	Update(ctx context.Context, inspection *pb.Inspection, baseVersion int64) (*pb.Inspection, int64, error)
 }
 
 // inspectionRepository is the concrete implementation of InspectionRepository.
@@ -239,6 +240,125 @@ func (r *inspectionRepository) UpdateStatus(ctx context.Context, id string, stat
 
 	r.log.Infow("msg", "inspection status updated", "id", inspection.Id, "status", status)
 	return inspection, nil
+}
+
+// ErrInspectionVersionConflict means the update lost a race with a newer one.
+//
+// Distinct from "not found": the caller's edit is fine, it is just based on a
+// version that has been superseded, and the right response is to show them
+// what replaced it rather than to report a failure.
+var ErrInspectionVersionConflict = errors.Conflict(
+	"INSPECTION_VERSION_CONFLICT",
+	"this inspection was changed by someone else while you were editing",
+)
+
+// Update writes an edited draft.
+//
+// `base_version` of 0 means the caller did not check, which is accepted: a
+// single agronomist correcting a typo should not have to participate in the
+// versioning. A non-zero base that has been overtaken is refused, so a
+// collaborative editor cannot silently replace the edit that beat it — which
+// is the same rule the in-memory session applies, held here as well because
+// the session does not survive a process restart and the database does.
+func (r *inspectionRepository) Update(ctx context.Context, in *pb.Inspection, baseVersion int64) (*pb.Inspection, int64, error) {
+	tenantID := p9context.TenantID(ctx)
+
+	issuesJSON, err := json.Marshal(in.Issues)
+	if err != nil {
+		r.log.Errorw("msg", "failed to marshal issues", "error", err)
+		return nil, 0, errors.InternalServer("ISSUES_MARSHAL_FAILED", "an internal error occurred")
+	}
+
+	// `($9 = 0 OR version = $9)` is the whole conflict check, done in the
+	// UPDATE rather than as a read-then-write: two editors saving at the same
+	// instant would both pass a separate SELECT and the second would still
+	// overwrite the first.
+	row := r.d.Pool.QueryRow(ctx, `
+		UPDATE inspections SET
+			findings        = $3,
+			photos          = $4,
+			recommendations = $5,
+			issues          = $6,
+			health_score    = $7,
+			notes           = $8,
+			version         = version + 1,
+			updated_at      = NOW()
+		WHERE id = $1 AND tenant_id = $2
+		  AND is_active = TRUE AND deleted_at IS NULL
+		  AND ($9 = 0 OR version = $9)
+		RETURNING id, tenant_id, field_id, farm_id, inspector_id, status,
+		          findings, photos, recommendations, issues, health_score,
+		          notes, inspection_date, created_at, updated_at, version`,
+		in.Id, tenantID,
+		in.Findings, in.Photos, in.Recommendations,
+		issuesJSON, in.HealthScore, in.Notes,
+		baseVersion,
+	)
+
+	updated, version, err := scanInspectionWithVersion(row)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			// Either the inspection is gone or the version moved. Told apart
+			// with a second read, because "somebody edited this" and "this no
+			// longer exists" need different things from the person editing.
+			if _, getErr := r.GetByID(ctx, in.Id); getErr == nil {
+				return nil, 0, ErrInspectionVersionConflict
+			}
+			return nil, 0, errors.NotFound("INSPECTION_NOT_FOUND", fmt.Sprintf("inspection not found: %s", in.Id))
+		}
+		r.log.Errorw("msg", "failed to update inspection", "id", in.Id, "error", err)
+		return nil, 0, errors.InternalServer("INSPECTION_UPDATE_FAILED", "an internal error occurred")
+	}
+
+	r.log.Infow("msg", "inspection updated", "id", updated.Id, "version", version)
+	return updated, version, nil
+}
+
+// scanInspectionWithVersion scans a row that carries the version column.
+func scanInspectionWithVersion(row pgx.Row) (*pb.Inspection, int64, error) {
+	var (
+		id, tenantID, fieldID, farmID, inspectorID, status string
+		findings, notes                                    string
+		photos, recommendations                            []string
+		issuesJSON                                         []byte
+		healthScore                                        float64
+		inspectionDate                                     *time.Time
+		createdAt, updatedAt                               time.Time
+		version                                            int64
+	)
+
+	if err := row.Scan(
+		&id, &tenantID, &fieldID, &farmID, &inspectorID, &status,
+		&findings, &photos, &recommendations, &issuesJSON, &healthScore,
+		&notes, &inspectionDate, &createdAt, &updatedAt, &version,
+	); err != nil {
+		return nil, 0, err
+	}
+
+	var issues []*pb.InspectionIssue
+	if len(issuesJSON) > 0 {
+		_ = json.Unmarshal(issuesJSON, &issues)
+	}
+
+	out := &pb.Inspection{
+		Id:              id,
+		FieldId:         fieldID,
+		FarmId:          farmID,
+		InspectorId:     inspectorID,
+		Status:          pb.InspectionStatus(pb.InspectionStatus_value[status]),
+		Findings:        findings,
+		Photos:          photos,
+		Recommendations: recommendations,
+		Issues:          issues,
+		HealthScore:     healthScore,
+		Notes:           notes,
+		CreatedAt:       timestamppb.New(createdAt),
+		UpdatedAt:       timestamppb.New(updatedAt),
+	}
+	if inspectionDate != nil {
+		out.InspectionDate = timestamppb.New(*inspectionDate)
+	}
+	return out, version, nil
 }
 
 // ---------- Scan helpers ----------
