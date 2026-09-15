@@ -37,6 +37,14 @@ export default defineConfig({
   /* Browser matrix. CI runs Chromium only for speed; local runs all three. */
   projects: isCI
     ? [
+        // The setup project has to be listed here too. It was only in the
+        // local branch, so on CI Playwright refused the whole config —
+        // "project 'chromium' depends on unknown project 'setup'" — before
+        // launching a browser. Nothing caught it because no CI job runs these.
+        {
+          name: 'setup',
+          testMatch: /auth\.setup\.ts/,
+        },
         {
           name: 'chromium',
           use: {
