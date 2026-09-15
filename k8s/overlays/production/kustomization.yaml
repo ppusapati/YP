@@ -6,74 +6,54 @@ namespace: yieldpoint
 resources:
   - ../../base
 
+# Three replicas for the things whose failure is felt immediately: the gateway
+# every request enters through, the service that issues the tokens, and the one
+# that answers "which farm is this". Everything else keeps the base's two and
+# scales on its HPA.
+replicas:
+  - name: api-gateway
+    count: 4
+  - name: auth-service
+    count: 3
+  - name: farm-service
+    count: 3
+  - name: field-service
+    count: 3
+  - name: ai-gateway
+    count: 3
+
 patches:
-  # --- Production replicas: scale up critical services ---
-  - target:
-      kind: Deployment
-      name: auth-service
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 3
-
-  - target:
-      kind: Deployment
-      name: farm-service
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 3
-
+  # Resource limits are NOT patched down across the board here.
+  #
+  # The previous version of this file replaced every Deployment's limits with
+  # 512Mi/500m, listed *after* the ai-gateway patch that set 2Gi/4 CPU — and
+  # kustomize applies patches in order, so the blanket one won. Production was
+  # giving the model-serving gateway 512Mi and the explicit patch above it was
+  # dead. The base now carries a per-service profile, and the only overrides
+  # left here are the ones that genuinely differ in production.
   - target:
       kind: Deployment
       name: ai-gateway
     patch: |
       - op: replace
-        path: /spec/replicas
-        value: 3
-      - op: replace
         path: /spec/template/spec/containers/0/resources/limits/memory
-        value: 2Gi
+        value: 4Gi
       - op: replace
         path: /spec/template/spec/containers/0/resources/limits/cpu
         value: "4"
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/memory
-        value: 512Mi
+        value: 1Gi
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/cpu
-        value: 500m
+        value: "1"
 
-  # --- Strict resource limits for application services ---
-  - target:
-      kind: Deployment
-    patch: |
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/memory
-        value: 512Mi
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/cpu
-        value: 500m
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/memory
-        value: 128Mi
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/cpu
-        value: 100m
-
-  # --- Production ingress host ---
-  - target:
-      kind: Ingress
-      name: yieldpoint-ingress
-    patch: |
-      - op: replace
-        path: /spec/tls/0/hosts/0
-        value: api.yieldpoint.io
-      - op: replace
-        path: /spec/rules/0/host
-        value: api.yieldpoint.io
-
-  # --- Node affinity: schedule on dedicated node pool ---
+  # Spread every service across nodes, and keep it on the production pool.
+  #
+  # Anti-affinity is preferred rather than required: required would leave a
+  # service unschedulable when the pool has fewer nodes than replicas, which is
+  # exactly what happens during a node rotation — the moment spreading matters
+  # least and availability matters most.
   - target:
       kind: Deployment
     patch: |
@@ -93,14 +73,21 @@ patches:
               - weight: 100
                 podAffinityTerm:
                   labelSelector:
-                    matchExpressions:
-                      - key: app.kubernetes.io/part-of
-                        operator: In
-                        values:
-                          - yieldpoint
+                    matchLabels:
+                      app.kubernetes.io/part-of: yieldpoint
                   topologyKey: kubernetes.io/hostname
 
-  # --- ConfigMap: production log level ---
+  - target:
+      kind: Ingress
+      name: yieldpoint-ingress
+    patch: |
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: api.yieldpoint.io
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.yieldpoint.io
+
   - target:
       kind: ConfigMap
       name: yieldpoint-config
@@ -109,7 +96,6 @@ patches:
         path: /data/LOG_LEVEL
         value: warn
 
-  # --- PostgreSQL: larger storage in production ---
   - target:
       kind: StatefulSet
       name: postgres
@@ -127,8 +113,10 @@ patches:
         path: /spec/template/spec/containers/0/resources/requests/cpu
         value: "1"
 
-commonLabels:
-  environment: production
+labels:
+  - pairs:
+      environment: production
+    includeSelectors: false
 
 commonAnnotations:
   yieldpoint.io/environment: production

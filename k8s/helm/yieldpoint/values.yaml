@@ -465,6 +465,120 @@ services:
 ## ---------------------------------------------------------------------------
 ## AI Gateway (gRPC on 50051)
 ## ---------------------------------------------------------------------------
+  market:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: MARKET_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  device:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: DEVICE_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  soil-lab:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: SOIL_LAB_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  planning:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: PLANNING_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  sustainability:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: SUSTAINABILITY_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
+  finance:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    envSecret:
+      - secretName: database-urls
+        key: FINANCE_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 6
+      cpuTarget: 70
+
 aiGateway:
   replicas: 2
   port: 50051

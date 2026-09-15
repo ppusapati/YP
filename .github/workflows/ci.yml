@@ -25,6 +25,45 @@ jobs:
           version: v1.64
           args: --timeout=5m
 
+  manifests:
+    name: Deployment manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+
+      # The check that stops a service being built, pushed and never deployed.
+      #
+      # Before this existed, k8s/base listed three of thirty services and the CD
+      # pipeline reported a successful deploy every time, because a manifest
+      # that is absent produces no error and `kubectl rollout status` on a label
+      # selector matching three deployments exits zero. The generated manifests
+      # and the build matrices are now all derived from docker-compose.yml, and
+      # this fails the build the moment any of them drift apart.
+      - name: Manifests match the service list
+        run: python3 scripts/k8s-manifests.py --check
+
+      - name: Shell scripts parse
+        run: |
+          for f in scripts/*.sh; do
+            bash -n "$f" || exit 1
+          done
+
+      - name: Kustomize overlays build
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh \
+            | bash -s -- 5.4.3 "$RUNNER_TEMP"
+          for overlay in k8s/overlays/*/; do
+            echo "--- $overlay"
+            # A patch that targets a resource which no longer exists, or a
+            # JSON-patch path into a field the base does not have, fails here
+            # rather than halfway through a production deploy.
+            "$RUNNER_TEMP/kustomize" build "$overlay" > /dev/null
+          done
+
   build:
     name: Build
     runs-on: ubuntu-latest

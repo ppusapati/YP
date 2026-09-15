@@ -69,7 +69,7 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 - [x] Integrate a feature flag service (Unleash self-hosted or LaunchDarkly)
 - [x] Add feature flag middleware to ConnectRPC interceptor chain
 - [x] Implement percentage-based rollouts for new ML models
-- [ ] Add canary deployment support in CD pipeline (deploy to subset of pods first)
+- [x] Add canary deployment support in CD pipeline (deploy to subset of pods first) — `scripts/canary-deploy.sh` runs a canary Deployment beside the stable one behind the same Service, so its share of traffic is its share of the pods. It is judged on its *own* pods: four healthy stable pods dilute one failing canary into what looks like noise, and by the time an aggregate error rate crosses a threshold the rollout has already been promoted. Production canaries the API gateway before anything else, because every request enters through it
 - [x] Create experiment tracking for A/B testing crop recommendations
 - [x] Add kill switches for external API dependencies (PlantNet, Google Vision)
 
@@ -276,7 +276,7 @@ decision about which way to move it rather than a mechanical fix.
 - [x] Add dev container configuration (.devcontainer/) for consistent development environments
 - [x] Create service scaffolding generator (`make new-service NAME=weather`)
 - [x] Add pre-commit hooks (lint, format, proto freshness check)
-- [ ] Set up PR preview environments (ephemeral namespaces per PR)
+- [x] Set up PR preview environments (ephemeral namespaces per PR) — `.github/workflows/pr-preview.yml` puts the whole platform in `yieldpoint-pr-N` at one replica with its own Postgres and generated credentials, rebuilding only the images whose source changed and taking the base branch's tag for the rest. `pull_request` rather than `pull_request_target`, so forks get no preview rather than getting the cluster credentials. Torn down on close and swept on a schedule, because a workflow that only cleans up on close leaks a namespace every time a run is cancelled
 - [x] Add architecture decision records (ADRs) for major design choices
 - [x] Build local mock server for external APIs (PlantNet, Google Vision) for offline development
 

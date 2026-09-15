@@ -3,14 +3,79 @@ kind: Kustomization
 
 namespace: yieldpoint-staging
 
-namePrefix: staging-
-
 resources:
   - ../../base
 
-# Override namespace for staging
+# One replica of everything. Staging exists to find out whether the code works,
+# not whether it survives a node failure, and thirty services at two replicas is
+# a cluster nobody wants to pay for twice.
+replicas:
+  - name: agronomy-service
+    count: 1
+  - name: alert-service
+    count: 1
+  - name: analytics-service
+    count: 1
+  - name: auth-service
+    count: 1
+  - name: commerce-service
+    count: 1
+  - name: crop-service
+    count: 1
+  - name: device-service
+    count: 1
+  - name: farm-service
+    count: 1
+  - name: field-service
+    count: 1
+  - name: finance-service
+    count: 1
+  - name: irrigation-service
+    count: 1
+  - name: market-service
+    count: 1
+  - name: pest-prediction-service
+    count: 1
+  - name: planning-service
+    count: 1
+  - name: plant-diagnosis-service
+    count: 1
+  - name: prescription-service
+    count: 1
+  - name: satellite-analytics-service
+    count: 1
+  - name: satellite-ingestion-service
+    count: 1
+  - name: satellite-processing-service
+    count: 1
+  - name: satellite-service
+    count: 1
+  - name: satellite-tile-service
+    count: 1
+  - name: sensor-service
+    count: 1
+  - name: soil-lab-service
+    count: 1
+  - name: soil-service
+    count: 1
+  - name: sustainability-service
+    count: 1
+  - name: task-service
+    count: 1
+  - name: traceability-service
+    count: 1
+  - name: vegetation-index-service
+    count: 1
+  - name: weather-service
+    count: 1
+  - name: yield-service
+    count: 1
+  - name: ai-gateway
+    count: 1
+  - name: api-gateway
+    count: 1
+
 patches:
-  # --- Namespace ---
   - target:
       kind: Namespace
       name: yieldpoint
@@ -19,41 +84,21 @@ patches:
         path: /metadata/name
         value: yieldpoint-staging
 
-  # --- Fewer replicas for cost savings ---
+  # Resource limits are NOT patched down across the board here.
+  #
+  # The previous version of this file replaced every Deployment's limits with
+  # 256Mi, applied after the per-service patches above it, so it silently
+  # overrode them — including the AI gateway's, which loads model weights and
+  # cannot start in 256Mi. The base now carries a considered profile per
+  # service; staging keeps them and saves its money on replica count instead.
+  #
+  # Requests are lowered, which is what actually decides how much cluster a
+  # namespace reserves. A pod that bursts above its request is still scheduled;
+  # one whose request is too high never schedules at all.
   - target:
       kind: Deployment
-      name: auth-service
+      annotationSelector: "!yieldpoint.io/fixed-requests"
     patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 1
-
-  - target:
-      kind: Deployment
-      name: farm-service
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 1
-
-  - target:
-      kind: Deployment
-      name: ai-gateway
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 1
-
-  # --- Relaxed resource limits across all deployments ---
-  - target:
-      kind: Deployment
-    patch: |
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/memory
-        value: 256Mi
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/cpu
-        value: 250m
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/memory
         value: 64Mi
@@ -61,7 +106,19 @@ patches:
         path: /spec/template/spec/containers/0/resources/requests/cpu
         value: 50m
 
-  # --- Staging ingress host ---
+  # A single replica cannot honour a disruption budget: with maxUnavailable 1
+  # and one pod, a node drain is allowed, which is what staging wants. With
+  # minAvailable 2 on the gateway it would block for ever, so it is relaxed.
+  - target:
+      kind: PodDisruptionBudget
+      name: api-gateway
+    patch: |
+      - op: remove
+        path: /spec/minAvailable
+      - op: add
+        path: /spec/maxUnavailable
+        value: 1
+
   - target:
       kind: Ingress
       name: yieldpoint-ingress
@@ -73,7 +130,6 @@ patches:
         path: /spec/rules/0/host
         value: staging-api.yieldpoint.io
 
-  # --- ConfigMap: staging log level ---
   - target:
       kind: ConfigMap
       name: yieldpoint-config
@@ -82,8 +138,10 @@ patches:
         path: /data/LOG_LEVEL
         value: debug
 
-commonLabels:
-  environment: staging
+labels:
+  - pairs:
+      environment: staging
+    includeSelectors: false
 
 commonAnnotations:
   yieldpoint.io/environment: staging

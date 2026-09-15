@@ -1,0 +1,334 @@
+name: PR Preview
+
+# An ephemeral namespace per pull request.
+#
+# The point is to let someone open a link and use the change, rather than read
+# a diff and imagine it. The whole platform goes up in its own namespace with
+# its own Postgres and Kafka, at one replica each, and comes down when the PR
+# closes.
+#
+# Two things are deliberate and worth stating:
+#
+#  * `pull_request`, not `pull_request_target`. The preview builds and runs
+#    code from the PR branch, so running it with the base repository's secrets
+#    would hand a fork's first-time contributor the cluster credentials. The
+#    trade is that previews do not run for forks at all, which is the correct
+#    way round: a preview that does not exist is a smaller problem than a
+#    cluster that anyone can take over by opening a pull request.
+#
+#  * The namespace is torn down on close *and* on a schedule. A workflow that
+#    only cleans up on close leaks a namespace every time a run is cancelled,
+#    and thirty services at one replica is not a rounding error.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main, develop]
+  schedule:
+    # Sweep abandoned previews every morning.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/yieldpoint
+  # A preview is not allowed to live longer than this, whatever happens to the
+  # PR that created it.
+  MAX_PREVIEW_AGE_HOURS: "72"
+
+concurrency:
+  # One preview deploy per PR at a time. Two runs racing on the same namespace
+  # leaves it with a mix of two builds and no way to tell which.
+  group: pr-preview-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Build ─────────────────────────────────────────────────────────────────
+  #
+  # Only the images whose source changed. Building thirty images for a
+  # one-line web change is forty minutes of CI for nothing, and the preview
+  # falls back to the tag already on the branch it merges into for everything
+  # untouched.
+  changed-services:
+    name: Work out what changed
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      any: ${{ steps.detect.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        run: |
+          BASE="origin/${{ github.event.pull_request.base.ref }}"
+          git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.ref }}"
+
+          changed=$(git diff --name-only "$BASE...HEAD")
+
+          # A change under packages/ or to the root go.mod affects every Go
+          # service, so everything is rebuilt. Anything narrower would ship a
+          # preview that silently did not contain the change being reviewed.
+          if echo "$changed" | grep -qE '^(packages/|go\.mod|go\.sum|Dockerfile)'; then
+            services=$(python3 -c "
+          import yaml
+          c = yaml.safe_load(open('docker-compose.yml'))
+          names = [k for k, v in c['services'].items()
+                   if isinstance(v.get('build'), dict)
+                   and 'SERVICE' in (v['build'].get('args') or {})]
+          print(' '.join(sorted(names)))
+          ")
+          else
+            services=$(echo "$changed" \
+              | grep -oP '^[a-z0-9-]+-service(?=/)' \
+              | sort -u | tr '\n' ' ')
+          fi
+
+          services=$(echo "$services" | xargs)
+          echo "services=$(echo "$services" | jq -Rc 'split(" ") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+          echo "any=$([ -n "$services" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "Rebuilding: ${services:-(nothing)}"
+
+  build-preview-images:
+    name: Build ${{ matrix.service }}
+    needs: changed-services
+    if: needs.changed-services.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changed-services.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          build-args: SERVICE=${{ matrix.service }}
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          # Previews do not write to the shared cache. A branch that is still
+          # being iterated on would otherwise keep evicting main's layers and
+          # slow every other build down.
+          cache-to: ""
+
+  # ── Deploy ────────────────────────────────────────────────────────────────
+  deploy-preview:
+    name: Deploy preview
+    needs: [changed-services, build-preview-images]
+    # `always()` so a PR that changed only web or docs still gets a preview:
+    # the build job is skipped, and skipping is not failing.
+    if: |
+      always() &&
+      github.event_name == 'pull_request' &&
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      needs.build-preview-images.result != 'failure'
+    runs-on: ubuntu-latest
+    environment:
+      name: preview-${{ github.event.pull_request.number }}
+      url: https://pr-${{ github.event.pull_request.number }}.preview.yieldpoint.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Deploy
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          CHANGED: ${{ needs.changed-services.outputs.services }}
+        run: |
+          NS="yieldpoint-pr-${PR}"
+
+          kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+
+          # Labelled so the sweeper below can find it, and stamped with the
+          # moment it was last deployed rather than created — a PR that is
+          # still being pushed to is still in use.
+          kubectl label namespace "$NS" \
+            yieldpoint.io/preview=true \
+            "yieldpoint.io/pr=${PR}" --overwrite
+          kubectl annotate namespace "$NS" \
+            "yieldpoint.io/last-deployed=$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
+
+          # Secrets. A preview's database is thrown away with the namespace, so
+          # the passwords are generated per deploy and never leave the cluster.
+          kubectl -n "$NS" create secret generic yieldpoint-secrets \
+            --from-literal=POSTGRES_PASSWORD="$(openssl rand -hex 16)" \
+            --from-literal=POSTGRES_REPLICATION_PASSWORD="$(openssl rand -hex 16)" \
+            --from-literal=JWT_SECRET="$(openssl rand -hex 32)" \
+            --from-literal=S3_ACCESS_KEY_ID=preview \
+            --from-literal=S3_SECRET_ACCESS_KEY="$(openssl rand -hex 16)" \
+            --from-literal=EXTERNAL_API_KEY="" \
+            --from-literal=GRAFANA_ADMIN_PASSWORD="$(openssl rand -hex 16)" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          PG_PASS=$(kubectl -n "$NS" get secret yieldpoint-secrets \
+            -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)
+
+          # One database per service, as in compose.
+          python3 - "$NS" "$PG_PASS" <<'PY' | kubectl -n "$NS" apply -f -
+          import base64, sys, yaml
+
+          namespace, password = sys.argv[1], sys.argv[2]
+          compose = yaml.safe_load(open("docker-compose.yml"))
+
+          data = {}
+          for name, spec in compose["services"].items():
+              build = spec.get("build")
+              if not isinstance(build, dict) or "SERVICE" not in (build.get("args") or {}):
+                  continue
+              env = spec.get("environment") or {}
+              if "DATABASE_URL" not in env:
+                  continue
+              db = name.replace("-", "_")
+              key = name.replace("-", "_").upper() + "_DATABASE_URL"
+              url = f"postgres://yieldpoint:{password}@postgres:5432/{db}?sslmode=disable"
+              data[key] = base64.b64encode(url.encode()).decode()
+
+          print(yaml.safe_dump({
+              "apiVersion": "v1",
+              "kind": "Secret",
+              "metadata": {"name": "database-urls", "namespace": namespace},
+              "type": "Opaque",
+              "data": data,
+          }))
+          PY
+
+          # The staging overlay, retargeted at the preview namespace. Image
+          # tags: pr-N for anything rebuilt, and the base branch's tag for
+          # everything else, so the preview is the PR's code on top of what it
+          # merges into.
+          BASE_TAG="${{ github.event.pull_request.base.ref }}"
+
+          kubectl kustomize k8s/overlays/staging \
+            | sed -E "s|namespace: yieldpoint-staging|namespace: ${NS}|g" \
+            | sed -E "s|(image: ghcr\.io/[^:[:space:]]+):latest|\1:${BASE_TAG}|g" \
+            > /tmp/preview.yaml
+
+          for service in $(echo "$CHANGED" | jq -r '.[]?'); do
+            sed -i -E "s|(image: ghcr\.io/[^:[:space:]]*/${service}):[^[:space:]]+|\1:pr-${PR}|g" \
+              /tmp/preview.yaml
+          done
+
+          # The ingress host is per PR; without this every preview would claim
+          # the staging hostname and the last one deployed would win.
+          sed -i -E "s|staging-api\.yieldpoint\.io|pr-${PR}.preview.yieldpoint.io|g" /tmp/preview.yaml
+
+          kubectl apply -f /tmp/preview.yaml
+
+          ./scripts/verify-rollout.sh "$NS" "" 900
+
+      - name: Comment the preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `https://pr-${context.payload.pull_request.number}.preview.yieldpoint.io`;
+            const marker = '<!-- yieldpoint-preview -->';
+            const body = `${marker}\n### Preview environment\n\n` +
+              `${url}\n\n` +
+              `Namespace \`yieldpoint-pr-${context.payload.pull_request.number}\`, one replica of ` +
+              `each service with its own Postgres and Kafka. It is torn down when this PR ` +
+              `closes, and swept after ${process.env.MAX_PREVIEW_AGE_HOURS ?? 72} hours if it is not.`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const existing = comments.find(c => c.body?.includes(marker));
+
+            // Edited rather than appended: a preview that comments on every
+            // push buries the review under its own notifications.
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number, body,
+              });
+            }
+
+  # ── Teardown ──────────────────────────────────────────────────────────────
+  teardown:
+    name: Tear down preview
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Delete the namespace
+        run: |
+          NS="yieldpoint-pr-${{ github.event.pull_request.number }}"
+          kubectl delete namespace "$NS" --ignore-not-found --wait=false
+          echo "Deleting $NS"
+
+  sweep:
+    name: Sweep abandoned previews
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      # The backstop for every preview the teardown job missed: a cancelled
+      # run, a workflow that failed before it reached teardown, a PR closed
+      # while the runner was down.
+      - name: Delete previews older than the limit
+        run: |
+          cutoff=$(( $(date -u +%s) - MAX_PREVIEW_AGE_HOURS * 3600 ))
+
+          kubectl get namespaces -l yieldpoint.io/preview=true \
+            -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.yieldpoint\.io/last-deployed}{"\n"}{end}' \
+          | while IFS=$'\t' read -r ns deployed; do
+              [ -z "$ns" ] && continue
+
+              # A namespace with no stamp predates this workflow or was created
+              # by hand. Falling back to its creation time means it is still
+              # swept rather than living for ever because of a missing label.
+              if [ -z "$deployed" ]; then
+                deployed=$(kubectl get namespace "$ns" -o jsonpath='{.metadata.creationTimestamp}')
+              fi
+
+              age=$(date -u -d "$deployed" +%s 2>/dev/null || echo 0)
+              if [ "$age" -eq 0 ] || [ "$age" -lt "$cutoff" ]; then
+                echo "sweeping $ns (last deployed ${deployed:-unknown})"
+                kubectl delete namespace "$ns" --ignore-not-found --wait=false
+              else
+                echo "keeping $ns (last deployed $deployed)"
+              fi
+            done
