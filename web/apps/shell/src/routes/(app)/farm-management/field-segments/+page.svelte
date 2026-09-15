@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
   import { fieldClient } from '@samavāya/agriculture/services';
 
   let rows: any[] = [];
-  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
@@ -15,22 +16,33 @@
     { key: 'soil_type', label: 'Soil Type' },
   ];
 
-  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+  async function load() {
+    // getFieldSegments takes a field id and returns that field's
+    // records. It is not a listing: there is no page token, no offset and no
+    // total count, which is what this page was asking it for.
+    const fieldId = $page.url.searchParams.get('fieldId') ?? '';
+    if (!fieldId) {
+      // Calling with an empty id returns nothing, and an empty table reads as
+      // "this field has none" rather than "you have not chosen one".
+      error = 'Choose a field to see its records.';
+      loading = false;
+      return;
+    }
+
     loading = true;
     error = null;
     try {
-      const res = await fieldClient.listFieldSegments({ pageSize, pageOffset });
+      const res = await fieldClient.getFieldSegments({ fieldId });
       rows = res.segments;
-      totalCount = res.totalCount;
-      return res.totalCount;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load field segments';
       rows = [];
-      return 0;
     } finally {
       loading = false;
     }
   }
+
+  onMount(load);
 </script>
 
 <EntityListPage
@@ -40,7 +52,5 @@
   rows={rows as any}
   {loading}
   {error}
-  {totalCount}
   onRowClick={(id) => goto(`/farm-management/field-segments/${id}`)}
-  {fetchData}
 />

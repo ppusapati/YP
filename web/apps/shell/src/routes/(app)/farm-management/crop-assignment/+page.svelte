@@ -17,11 +17,13 @@
     { key: 'season', label: 'Season' },
   ];
 
+  // There is no ListCropAssignments. An assignment is a
+  // FieldCropAssignment, which GetCropHistory returns for a field.
   async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
     loading = true;
     error = null;
     try {
-      const res = await fieldClient.listCropAssignments({ pageSize, pageOffset });
+      const res = await fieldClient.getCropHistory({ pageSize, pageOffset });
       rows = res.assignments;
       totalCount = res.totalCount;
       return res.totalCount;

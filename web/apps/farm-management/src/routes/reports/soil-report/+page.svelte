@@ -5,5 +5,5 @@
 
 <div>
   <h1 class="text-xl font-semibold mb-4">Soil Report</h1>
-  <DynamicReportRenderer visualization={soilSampleReportSchema} />
+  <DynamicReportRenderer visualization={soilSampleReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
 </div>

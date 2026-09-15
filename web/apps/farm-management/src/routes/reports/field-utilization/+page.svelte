@@ -5,5 +5,5 @@
 
 <div>
   <h1 class="text-xl font-semibold mb-4">Field Utilization Report</h1>
-  <DynamicReportRenderer visualization={fieldReportSchema} />
+  <DynamicReportRenderer visualization={fieldReportSchema} data={{ columns: [], rows: [], total_rows: 0 }} />
 </div>

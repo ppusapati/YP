@@ -23,7 +23,7 @@
     error = null;
     try {
       const res = await fieldClient.getCropHistory({ pageSize, pageOffset });
-      rows = res.history;
+      rows = res.assignments;
       totalCount = res.totalCount;
       return res.totalCount;
     } catch (e) {

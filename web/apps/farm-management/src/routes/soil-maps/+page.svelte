@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
   import { soilClient } from '@samavāya/agriculture/services';
 
   let rows: any[] = [];
-  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
@@ -16,22 +17,30 @@
     { key: 'status', label: 'Status' },
   ];
 
-  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+  async function load() {
+    // getSoilMap takes a field id and returns that field's record. It is
+    // not a listing, so there is nothing to page through.
+    const fieldId = $page.url.searchParams.get('fieldId') ?? '';
+    if (!fieldId) {
+      error = 'Choose a field to see its soil map.';
+      loading = false;
+      return;
+    }
+
     loading = true;
     error = null;
     try {
-      const res = await soilClient.getSoilMaps({ pageSize, pageOffset });
-      rows = res.maps;
-      totalCount = res.totalCount;
-      return res.totalCount;
+      const res = await soilClient.getSoilMap({ fieldId });
+      rows = res.soilMap ? [res.soilMap] : [];
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load soil maps';
+      error = e instanceof Error ? e.message : 'Failed to load soil map';
       rows = [];
-      return 0;
     } finally {
       loading = false;
     }
   }
+
+  onMount(load);
 </script>
 
 <EntityListPage
@@ -40,7 +49,5 @@
   rows={rows as any}
   {loading}
   {error}
-  {totalCount}
   onRowClick={(id) => goto(`/soil-maps/${id}`)}
-  {fetchData}
 />

@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { EntityListPage } from '@samavāya/agriculture/components';
   import { soilClient } from '@samavāya/agriculture/services';
 
   let rows: any[] = [];
-  let totalCount = 0;
   let loading = true;
   let error: string | null = null;
 
@@ -17,22 +18,33 @@
     { key: 'magnesium_ppm', label: 'Magnesium (ppm)', format: (v: unknown) => v != null ? `${v}` : '—' },
   ];
 
-  async function fetchData(pageOffset = 0, pageSize = 25): Promise<number> {
+  async function load() {
+    // getNutrientLevels takes a soil sample id and returns that soil sample's
+    // records. It is not a listing: there is no page token, no offset and no
+    // total count, which is what this page was asking it for.
+    const sampleId = $page.url.searchParams.get('sampleId') ?? '';
+    if (!sampleId) {
+      // Calling with an empty id returns nothing, and an empty table reads as
+      // "this soil sample has none" rather than "you have not chosen one".
+      error = 'Choose a soil sample to see its records.';
+      loading = false;
+      return;
+    }
+
     loading = true;
     error = null;
     try {
-      const res = await soilClient.getNutrientLevels({ pageSize, pageOffset });
-      rows = res.levels;
-      totalCount = res.totalCount;
-      return res.totalCount;
+      const res = await soilClient.getNutrientLevels({ sampleId });
+      rows = res.nutrients;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load nutrient levels';
       rows = [];
-      return 0;
     } finally {
       loading = false;
     }
   }
+
+  onMount(load);
 </script>
 
 <EntityListPage
@@ -41,7 +53,5 @@
   rows={rows as any}
   {loading}
   {error}
-  {totalCount}
   onRowClick={(id) => goto(`/nutrient-levels/${id}`)}
-  {fetchData}
 />
