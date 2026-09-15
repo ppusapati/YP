@@ -110,6 +110,19 @@ func (h *Hub) Run(ctx context.Context) {
 func (h *Hub) handleBroadcast(msg *Message) {
 	switch msg.Type {
 	case MessageTypeBroadcast:
+		// An unqualified topic reaches nobody.
+		//
+		// Publishers build topics with TenantTopic, so a topic with no tenant
+		// is a publisher bug. Delivering it anyway is precisely the
+		// cross-tenant leak this exists to close, and dropping it loudly is how
+		// the bug gets found.
+		owner, _, qualified := SplitTopic(msg.Topic)
+		if !qualified {
+			h.log.Errorf("refusing to broadcast on unqualified topic %q: "+
+				"publishers must use TenantTopic", msg.Topic)
+			return
+		}
+
 		h.mu.RLock()
 		subscribers, ok := h.topics[msg.Topic]
 		if !ok {
@@ -119,6 +132,14 @@ func (h *Hub) handleBroadcast(msg *Message) {
 		// Take a snapshot to avoid holding the lock during writes.
 		targets := make([]*Client, 0, len(subscribers))
 		for _, c := range subscribers {
+			// Checked again here, not only at subscribe time. The subscribe
+			// path is the control; this is the one that holds if a future
+			// caller ever puts a client into h.topics by another route.
+			if c.TenantID != owner {
+				h.log.Errorf("dropping client %s from topic %q: tenant %q does not own it",
+					c.ID, msg.Topic, c.TenantID)
+				continue
+			}
 			targets = append(targets, c)
 		}
 		h.mu.RUnlock()

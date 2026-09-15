@@ -24,6 +24,24 @@ type TopicMapping struct {
 	// message contains {"field_id": "abc"}, the WebSocket topic becomes
 	// WSTopicPrefix + "abc". If empty, the Kafka message key is used.
 	KeyField string
+	// TenantField is the JSON field carrying the tenant this message belongs
+	// to. Defaults to "tenant_id".
+	//
+	// A message without it is dropped rather than broadcast: the WebSocket
+	// topic it would land on is unqualified, which the hub refuses, and
+	// dropping it here says why. Every event on this platform is written from a
+	// tenant-scoped row, so a missing tenant_id means the producer lost it.
+	TenantField string
+}
+
+// DefaultTenantField is the payload field a message's tenant is read from.
+const DefaultTenantField = "tenant_id"
+
+func (m TopicMapping) tenantField() string {
+	if m.TenantField != "" {
+		return m.TenantField
+	}
+	return DefaultTenantField
 }
 
 // BridgeConfig configures the Kafka-to-WebSocket bridge.
@@ -78,12 +96,21 @@ func (b *KafkaBridge) Start(ctx context.Context) error {
 // handleMessage processes a single Kafka message, extracts the routing key,
 // and broadcasts to the appropriate WebSocket topic.
 func (b *KafkaBridge) handleMessage(mapping TopicMapping, data []byte) error {
-	// Parse the payload to extract the routing key.
+	// Parse the payload to extract the routing key and the tenant.
 	var payload map[string]interface{}
 	if err := json.Unmarshal(data, &payload); err != nil {
-		b.log.Warnf("failed to parse Kafka message as JSON: %v", err)
-		// Still try to broadcast to the prefix topic without suffix.
-		return b.broadcastRaw(mapping.WSTopicPrefix, data)
+		// Dropped, where this used to broadcast the unparseable bytes to the
+		// bare prefix topic. That topic has no tenant, so every subscriber of
+		// it in every tenant received the message.
+		b.log.Warnf("dropping Kafka message that is not JSON: %v", err)
+		return nil
+	}
+
+	tenantID := toString(payload[mapping.tenantField()])
+	if tenantID == "" {
+		b.log.Errorf("dropping message from %s: no %s in the payload, so it cannot be scoped to a tenant",
+			mapping.KafkaTopic, mapping.tenantField())
+		return nil
 	}
 
 	// Determine the WebSocket topic suffix.
@@ -94,8 +121,7 @@ func (b *KafkaBridge) handleMessage(mapping TopicMapping, data []byte) error {
 		}
 	}
 
-	wsTopic := mapping.WSTopicPrefix + suffix
-	return b.broadcastRaw(wsTopic, data)
+	return b.broadcastRaw(TenantTopic(tenantID, mapping.WSTopicPrefix+suffix), data)
 }
 
 // broadcastRaw creates a broadcast message with raw JSON data and sends it
@@ -134,6 +160,9 @@ func DefaultMappings() []TopicMapping {
 
 // toString converts an interface value to its string representation.
 func toString(v interface{}) string {
+	if v == nil {
+		return ""
+	}
 	switch val := v.(type) {
 	case string:
 		return val

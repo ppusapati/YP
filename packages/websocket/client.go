@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -207,28 +208,39 @@ func (c *Client) WritePump() {
 func (c *Client) handleMessage(msg *Message) {
 	switch msg.Type {
 	case MessageTypeSubscribe:
-		if msg.Topic == "" {
-			c.sendError("subscribe requires a topic")
+		// The topic the client asked for is not the topic it gets. A bare name
+		// is qualified with this connection's tenant and a name qualified with
+		// somebody else's is refused — see ScopeTopic. Before this, the hub
+		// stored whatever string arrived, so naming another tenant's field was
+		// all it took to receive that field's live data.
+		topic, err := ScopeTopic(c.TenantID, msg.Topic)
+		if err != nil {
+			c.sendError(subscribeRefusal(err))
+			c.log.Warnw("msg", "refused subscription",
+				"client", c.ID, "tenant", c.TenantID, "requested", msg.Topic, "reason", err)
 			return
 		}
-		c.Subscribe(msg.Topic)
-		c.hub.subscribe <- &Subscription{Client: c, Topic: msg.Topic}
-		ack := NewAckMessage(msg.Topic)
+		c.Subscribe(topic)
+		c.hub.subscribe <- &Subscription{Client: c, Topic: topic}
+		// Acked with the resolved topic, not the requested one, so a client
+		// that sent a bare name learns what it is actually subscribed to.
+		ack := NewAckMessage(topic)
 		data, _ := ack.Encode()
 		_ = c.Send(data)
-		c.log.Debugf("subscribed to topic %s", msg.Topic)
+		c.log.Debugf("subscribed to topic %s", topic)
 
 	case MessageTypeUnsubscribe:
-		if msg.Topic == "" {
-			c.sendError("unsubscribe requires a topic")
+		topic, err := ScopeTopic(c.TenantID, msg.Topic)
+		if err != nil {
+			c.sendError(subscribeRefusal(err))
 			return
 		}
-		c.Unsubscribe(msg.Topic)
-		c.hub.unsubscribe <- &Subscription{Client: c, Topic: msg.Topic}
-		ack := NewAckMessage(msg.Topic)
+		c.Unsubscribe(topic)
+		c.hub.unsubscribe <- &Subscription{Client: c, Topic: topic}
+		ack := NewAckMessage(topic)
 		data, _ := ack.Encode()
 		_ = c.Send(data)
-		c.log.Debugf("unsubscribed from topic %s", msg.Topic)
+		c.log.Debugf("unsubscribed from topic %s", topic)
 
 	case MessageTypePong:
 		// Client responded to our ping; nothing else to do.
@@ -248,4 +260,20 @@ func (c *Client) sendError(text string) {
 	errMsg := NewErrorMessage(text)
 	data, _ := errMsg.Encode()
 	_ = c.Send(data)
+}
+
+// subscribeRefusal turns a scoping failure into what the client is told.
+//
+// A client asking for another tenant's topic is told the topic is unavailable
+// rather than that it belongs to someone else. The distinction confirms the
+// tenant exists, which is the one thing the refusal should not reveal.
+func subscribeRefusal(err error) string {
+	switch {
+	case errors.Is(err, ErrEmptyTopic):
+		return "subscribe requires a topic"
+	case errors.Is(err, ErrNoTenant):
+		return "this connection is not scoped to a tenant"
+	default:
+		return "topic is not available on this connection"
+	}
 }

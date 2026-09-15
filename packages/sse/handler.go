@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 
 	"github.com/google/uuid"
@@ -24,6 +25,11 @@ type HandlerConfig struct {
 // optionally passing a "topics" query parameter (comma-separated list).
 // Example: GET /events?topics=sensor.field-1,alert.farm-2
 //
+// The tenant comes from the authenticated request context, never from the
+// query string, and each requested topic is scoped to it. A request that
+// arrives with no tenant is refused rather than subscribed to everything —
+// which is what an empty topic list used to mean.
+//
 // The handler sets the required SSE response headers and keeps the
 // connection open until the client disconnects or the server shuts down.
 func NewHandler(cfg HandlerConfig) http.Handler {
@@ -34,6 +40,15 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 			http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+			return
+		}
+
+		// The tenant is taken from the request context — put there by the auth
+		// middleware — and never from anything the client sends. A connection
+		// with no tenant cannot be scoped, so it is refused.
+		tenantID := p9context.UserTenantID(r.Context())
+		if tenantID == "" {
+			http.Error(w, "not authenticated", http.StatusUnauthorized)
 			return
 		}
 
@@ -57,10 +72,10 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering.
 
 		// Register with the broker.
-		events, cleanup := cfg.Broker.Subscribe(subscriberID, topics)
+		events, cleanup := cfg.Broker.Subscribe(subscriberID, tenantID, topics)
 		defer cleanup()
 
-		log.Debugf("SSE client connected: %s (topics=%v)", subscriberID, topics)
+		log.Debugf("SSE client connected: %s (tenant=%s, topics=%v)", subscriberID, tenantID, topics)
 
 		// If the client sent Last-Event-ID, we could resume from there.
 		// This is a hook for future implementation with event persistence.

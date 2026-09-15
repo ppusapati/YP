@@ -6,10 +6,15 @@ import (
 	"time"
 
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/realtime"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// tenant is the tenant every subscriber in this file belongs to unless a test
+// deliberately uses another.
+const tenant = "tenant-a"
 
 func newTestBroker(t *testing.T) (*Broker, context.CancelFunc) {
 	t.Helper()
@@ -25,13 +30,13 @@ func TestBroker_SubscribeAndReceive(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	events, cleanup := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	events, cleanup := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 	defer cleanup()
 
 	assert.Equal(t, 1, broker.SubscriberCount())
-	assert.Equal(t, 1, broker.TopicSubscriberCount("sensor.field-1"))
+	assert.Equal(t, 1, broker.TopicSubscriberCount(realtime.TenantTopic(tenant, "sensor.field-1")))
 
-	event, err := NewEvent("reading", "sensor.field-1", map[string]float64{"temp": 22.5})
+	event, err := NewEvent("reading", realtime.TenantTopic(tenant, "sensor.field-1"), map[string]float64{"temp": 22.5})
 	require.NoError(t, err)
 
 	broker.Publish(event)
@@ -39,7 +44,7 @@ func TestBroker_SubscribeAndReceive(t *testing.T) {
 	select {
 	case received := <-events:
 		assert.Equal(t, "reading", received.Type)
-		assert.Equal(t, "sensor.field-1", received.Topic)
+		assert.Equal(t, realtime.TenantTopic(tenant, "sensor.field-1"), received.Topic)
 		assert.Contains(t, received.Data, "22.5")
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for event")
@@ -50,14 +55,14 @@ func TestBroker_TopicFiltering(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	events1, cleanup1 := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	events1, cleanup1 := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 	defer cleanup1()
 
-	events2, cleanup2 := broker.Subscribe("sub-2", []string{"alert.farm-1"})
+	events2, cleanup2 := broker.Subscribe("sub-2", tenant, []string{"alert.farm-1"})
 	defer cleanup2()
 
 	// Publish to sensor topic only.
-	event, _ := NewEvent("reading", "sensor.field-1", "data")
+	event, _ := NewEvent("reading", realtime.TenantTopic(tenant, "sensor.field-1"), "data")
 	broker.Publish(event)
 
 	// Subscriber 1 should receive the event.
@@ -77,53 +82,108 @@ func TestBroker_TopicFiltering(t *testing.T) {
 	}
 }
 
-func TestBroker_BroadcastToAll(t *testing.T) {
+func TestAnEventWithNoTopicReachesNobody(t *testing.T) {
+	// This test used to assert the opposite: an event published with an empty
+	// topic went to every subscriber on the process. On a platform where every
+	// equivalent read is stopped by row-level security, forgetting the topic
+	// was a cross-tenant broadcast.
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	events1, cleanup1 := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	events1, cleanup1 := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 	defer cleanup1()
 
-	events2, cleanup2 := broker.Subscribe("sub-2", []string{"alert.farm-1"})
+	events2, cleanup2 := broker.Subscribe("sub-2", "tenant-b", []string{"alert.farm-1"})
 	defer cleanup2()
 
-	// Publish with empty topic -> broadcast to all.
 	event, _ := NewEvent("system", "", "maintenance window")
 	broker.Publish(event)
 
-	received := 0
-	timeout := time.After(time.Second)
-	for received < 2 {
-		select {
-		case <-events1:
-			received++
-		case <-events2:
-			received++
-		case <-timeout:
-			t.Fatalf("expected 2 receivers, got %d", received)
-		}
+	select {
+	case e := <-events1:
+		t.Fatalf("an untopiced event was delivered: %+v", e)
+	case e := <-events2:
+		t.Fatalf("an untopiced event was delivered to another tenant: %+v", e)
+	case <-time.After(150 * time.Millisecond):
 	}
-	assert.Equal(t, 2, received)
+}
+
+func TestOneTenantDoesNotReceiveAnothersEvents(t *testing.T) {
+	// The leak this whole change closes. Both subscribers ask for the same
+	// topic name; only the one whose tenant owns it receives anything.
+	broker, cancel := newTestBroker(t)
+	defer cancel()
+
+	mine, cleanupMine := broker.Subscribe("sub-a", tenant, []string{"sensor.field-1"})
+	defer cleanupMine()
+
+	theirs, cleanupTheirs := broker.Subscribe("sub-b", "tenant-b", []string{"sensor.field-1"})
+	defer cleanupTheirs()
+
+	event, _ := NewEvent("reading", realtime.TenantTopic(tenant, "sensor.field-1"), "data")
+	broker.Publish(event)
+
+	select {
+	case <-mine:
+	case <-time.After(time.Second):
+		t.Fatal("the owning tenant did not receive its own event")
+	}
+
+	select {
+	case e := <-theirs:
+		t.Fatalf("another tenant received the event: %+v", e)
+	case <-time.After(150 * time.Millisecond):
+	}
+}
+
+func TestAConnectionWithNoTenantIsRefused(t *testing.T) {
+	// Not subscribed to everything, which is what an unscoped connection would
+	// otherwise have amounted to.
+	broker, cancel := newTestBroker(t)
+	defer cancel()
+
+	events, cleanup := broker.Subscribe("sub-none", "", []string{"sensor.field-1"})
+	defer cleanup()
+
+	if _, open := <-events; open {
+		t.Error("a connection with no tenant received an event")
+	}
+	if got := broker.SubscriberCount(); got != 0 {
+		t.Errorf("subscriber count %d, want 0", got)
+	}
+}
+
+func TestATopicNamingAnotherTenantIsDropped(t *testing.T) {
+	broker, cancel := newTestBroker(t)
+	defer cancel()
+
+	_, cleanup := broker.Subscribe("sub-a", tenant,
+		[]string{realtime.TenantTopic("tenant-b", "sensor.field-1")})
+	defer cleanup()
+
+	if got := broker.TopicSubscriberCount(realtime.TenantTopic("tenant-b", "sensor.field-1")); got != 0 {
+		t.Errorf("subscriber count %d on another tenant's topic, want 0", got)
+	}
 }
 
 func TestBroker_Cleanup(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	_, cleanup := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	_, cleanup := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 	assert.Equal(t, 1, broker.SubscriberCount())
 
 	cleanup()
 	time.Sleep(20 * time.Millisecond)
 	assert.Equal(t, 0, broker.SubscriberCount())
-	assert.Equal(t, 0, broker.TopicSubscriberCount("sensor.field-1"))
+	assert.Equal(t, 0, broker.TopicSubscriberCount(realtime.TenantTopic(tenant, "sensor.field-1")))
 }
 
 func TestBroker_DoubleCleanup(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	_, cleanup := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	_, cleanup := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 	cleanup()
 	// Double cleanup should not panic.
 	cleanup()
@@ -133,15 +193,15 @@ func TestBroker_AddAndRemoveTopic(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	events, cleanup := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	events, cleanup := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 	defer cleanup()
 
 	// Add a new topic.
 	broker.AddTopic("sub-1", "alert.farm-1")
-	assert.Equal(t, 1, broker.TopicSubscriberCount("alert.farm-1"))
+	assert.Equal(t, 1, broker.TopicSubscriberCount(realtime.TenantTopic(tenant, "alert.farm-1")))
 
 	// Publish to the new topic.
-	event, _ := NewEvent("alert", "alert.farm-1", "fire")
+	event, _ := NewEvent("alert", realtime.TenantTopic(tenant, "alert.farm-1"), "fire")
 	broker.Publish(event)
 
 	select {
@@ -153,17 +213,17 @@ func TestBroker_AddAndRemoveTopic(t *testing.T) {
 
 	// Remove the topic.
 	broker.RemoveTopic("sub-1", "alert.farm-1")
-	assert.Equal(t, 0, broker.TopicSubscriberCount("alert.farm-1"))
+	assert.Equal(t, 0, broker.TopicSubscriberCount(realtime.TenantTopic(tenant, "alert.farm-1")))
 }
 
 func TestBroker_PublishData(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 	defer cancel()
 
-	events, cleanup := broker.Subscribe("sub-1", []string{"irrigation.field-1"})
+	events, cleanup := broker.Subscribe("sub-1", tenant, []string{"irrigation.field-1"})
 	defer cleanup()
 
-	err := broker.PublishData("irrigation_update", "irrigation.field-1", map[string]bool{"active": true})
+	err := broker.PublishData("irrigation_update", realtime.TenantTopic(tenant, "irrigation.field-1"), map[string]bool{"active": true})
 	require.NoError(t, err)
 
 	select {
@@ -178,7 +238,7 @@ func TestBroker_PublishData(t *testing.T) {
 func TestBroker_ShutdownClosesChannels(t *testing.T) {
 	broker, cancel := newTestBroker(t)
 
-	events, _ := broker.Subscribe("sub-1", []string{"sensor.field-1"})
+	events, _ := broker.Subscribe("sub-1", tenant, []string{"sensor.field-1"})
 
 	cancel() // shutdown
 	time.Sleep(50 * time.Millisecond)

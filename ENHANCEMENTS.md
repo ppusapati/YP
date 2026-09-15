@@ -241,9 +241,9 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Current state:** Kafka event bus for async communication. No WebSocket or SSE support for live updates.
 
 **Enhancements:**
-- [x] Add WebSocket gateway for real-time sensor data streaming to web/mobile
-- [x] Implement Server-Sent Events (SSE) for alert notifications
-- [ ] Add real-time field map updates (live tractor GPS, drone imagery overlay)
+- [x] Add WebSocket gateway for real-time sensor data streaming to web/mobile — it had no tenant isolation. A client subscribed by sending a topic string, the hub stored it verbatim, and a broadcast went to every subscriber of that string, so an authenticated user in one tenant who named another tenant's field received that field's live readings. Topics are now qualified by tenant and enforced at subscribe and at delivery; see `docs/realtime-topics.md`
+- [x] Implement Server-Sent Events (SSE) for alert notifications — the same hole, one step worse: topics came straight from a query parameter, and an event published with no topic at all was delivered to every subscriber on the process regardless of tenant. Same fix, and an untopiced event now reaches nobody
+- [ ] Add real-time field map updates (live tractor GPS, drone imagery overlay) — not built. Both this and collaborative inspection are topic-based broadcast features, so both would have inherited the cross-tenant hole above; that is fixed first and they now have something safe to build on
 - [x] Build real-time irrigation control (sensor reading → decision → actuator command) — the domain, interlocks and actuator are in place; the MQTT/LoRaWAN/Modbus `ControllerClient` implementations and the repository wiring are the remaining half, and a nil client refuses every command rather than pretending
 - [ ] Add collaborative field inspection (multiple users viewing/editing simultaneously)
 

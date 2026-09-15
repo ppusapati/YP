@@ -90,10 +90,12 @@ func TestHub_Broadcast(t *testing.T) {
 	hub.register <- client
 	time.Sleep(20 * time.Millisecond)
 
-	hub.subscribe <- &Subscription{Client: client, Topic: "alert.farm-1"}
+	// Tenant-qualified, because the hub no longer delivers anything else.
+	topic := TenantTopic("tenant-3", "alert.farm-1")
+	hub.subscribe <- &Subscription{Client: client, Topic: topic}
 	time.Sleep(20 * time.Millisecond)
 
-	err := hub.Broadcast("alert.farm-1", map[string]string{"severity": "high"})
+	err := hub.Broadcast(topic, map[string]string{"severity": "high"})
 	require.NoError(t, err)
 
 	select {
@@ -101,7 +103,7 @@ func TestHub_Broadcast(t *testing.T) {
 		msg, err := DecodeMessage(data)
 		require.NoError(t, err)
 		assert.Equal(t, MessageTypeBroadcast, msg.Type)
-		assert.Equal(t, "alert.farm-1", msg.Topic)
+		assert.Equal(t, topic, msg.Topic)
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for broadcast message")
 	}
