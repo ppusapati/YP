@@ -45,6 +45,7 @@ jobs:
           - market-service
           - pest-prediction-service
           - plant-diagnosis-service
+          - planning-service
           - prescription-service
           - satellite-analytics-service
           - satellite-ingestion-service
@@ -461,6 +462,7 @@ jobs:
           - market-service
           - pest-prediction-service
           - plant-diagnosis-service
+          - planning-service
           - prescription-service
           - satellite-analytics-service
           - satellite-ingestion-service

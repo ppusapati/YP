@@ -16,6 +16,7 @@ modules:
   - path: market-service/proto
   - path: satellite-service/proto
   - path: pest-prediction-service/proto
+  - path: planning-service/proto
   - path: plant-diagnosis-service/proto
   - path: yield-service/proto
   - path: traceability-service/proto

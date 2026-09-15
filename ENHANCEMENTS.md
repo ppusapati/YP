@@ -426,11 +426,11 @@ These build on each other in order. Each step produces inputs the next one needs
 **Current state:** 23 services cover farm, field, crop, soil, sensor, irrigation, satellite, pest, diagnosis, prescription, yield, commerce, traceability, and tasks. No weather (see E-016), market prices, IoT device management, carbon accounting, soil-lab integration, crop planning, or financial products.
 
 **Enhancements:**
-- [ ] `market-service`: commodity price feeds (mandi/APMC, exchanges), price alerts, sell-timing signals
-- [ ] `device-service`: IoT provisioning, firmware/OTA updates, heartbeat and health, fleet grouping
+- [x] `market-service`: commodity price feeds (mandi/APMC, exchanges), price alerts, sell-timing signals — the sell signal turns on whether the price is still making new highs, not on the slope of a fit. A commodity that sat flat, spiked and has ticked down once has a *rising* least-squares slope over any window long enough to contain the step, so a slope-driven signal says "hold, still rising" on the day after the peak
+- [x] `device-service`: IoT provisioning, firmware/OTA updates, heartbeat and health, fleet grouping — status is derived from the last heartbeat rather than stored, because a device that stops reporting cannot write "offline" to say so. A rollout halts itself once the failure rate crosses a threshold, with a minimum attempt count so the first unlucky device does not stop the fleet
 - [ ] `sustainability-service`: carbon and emissions accounting per field, input-use tracking, certification exports
-- [ ] `soil-lab` integration: import lab reports (PDF/CSV), map to soil-service records, trigger prescriptions
-- [ ] `planning-service`: season planner with crop rotation, sowing windows from weather, input budgeting
+- [x] `soil-lab` integration: import lab reports (PDF/CSV), map to soil-service records, trigger prescriptions — CSV is parsed against per-lab column aliases with plausibility ranges and day-first dates; PDFs are stored for a person to read and never parsed, because OCR guesswork on a lab's layout ends up in a fertiliser prescription. A partial apply returns the ids that landed *with* the error, so a retry does not duplicate a soil history
+- [x] `planning-service`: season planner with crop rotation, sowing windows from weather, input budgeting — rotation is checked by crop *family*, so tomato after chilli reads as the same Solanaceae rather than as a rotation. Sowing windows follow the field's own monsoon onset, detected as a sustained five-day spell rather than a single wet day, and only for kharif; the legume nitrogen credit the rotation finds is what the budget's urea line subtracts
 - [ ] `finance-service`: crop insurance quotes, credit scoring from yield history, claim support with satellite evidence
 
 **Effort:** Large | **Impact:** Medium

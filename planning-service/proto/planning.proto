@@ -1,0 +1,205 @@
+syntax = "proto3";
+package agriculture.planning.v1;
+option go_package = "p9e.in/samavaya/agriculture/planning-service/api/v1;planningv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Season is the Indian cropping calendar.
+//
+// Not "spring/summer/autumn": the crop calendar here runs on the monsoon, and
+// a planner that assumed temperate seasons would put a sowing window in the
+// wrong three months.
+enum Season {
+  SEASON_UNSPECIFIED = 0;
+  // Monsoon-sown, June–October.
+  SEASON_KHARIF      = 1;
+  // Winter, October–March, on residual moisture or irrigation.
+  SEASON_RABI        = 2;
+  // Short summer crop between rabi and kharif, needs irrigation.
+  SEASON_ZAID        = 3;
+}
+
+// PlanStatus is where a season plan has got to.
+enum PlanStatus {
+  PLAN_STATUS_UNSPECIFIED = 0;
+  PLAN_STATUS_DRAFT       = 1;
+  PLAN_STATUS_COMMITTED   = 2;
+  PLAN_STATUS_COMPLETED   = 3;
+  PLAN_STATUS_ABANDONED   = 4;
+}
+
+// RotationVerdict is what the rotation check makes of a proposed crop.
+enum RotationVerdict {
+  ROTATION_VERDICT_UNSPECIFIED = 0;
+  ROTATION_VERDICT_GOOD        = 1;
+  // Allowed, but it gives up something — usually the nitrogen a legume would
+  // have fixed.
+  ROTATION_VERDICT_ACCEPTABLE  = 2;
+  // A real agronomic problem: the same family back-to-back builds up the
+  // pathogens that live in the soil between seasons.
+  ROTATION_VERDICT_POOR        = 3;
+}
+
+// InputKind is a purchased input a plan budgets for.
+enum InputKind {
+  INPUT_KIND_UNSPECIFIED = 0;
+  INPUT_KIND_SEED        = 1;
+  INPUT_KIND_FERTILISER  = 2;
+  INPUT_KIND_PESTICIDE   = 3;
+  INPUT_KIND_LABOUR      = 4;
+  INPUT_KIND_MACHINERY   = 5;
+  INPUT_KIND_IRRIGATION  = 6;
+}
+
+// SowingWindow is when a crop can go in the ground.
+message SowingWindow {
+  string crop   = 1;
+  Season season = 2;
+
+  google.protobuf.Timestamp opens  = 3;
+  google.protobuf.Timestamp closes = 4;
+  // The middle of the window, where yield potential is usually highest.
+  google.protobuf.Timestamp optimal = 5;
+
+  // Why the window is where it is — rainfall onset, temperature, or the
+  // agronomic default when neither is known.
+  string basis = 6;
+  // False when the window came from the crop calendar alone because no
+  // weather history was available. Said out loud rather than presented with
+  // the same confidence as a window derived from ten years of rainfall.
+  bool   weather_informed = 7;
+}
+
+// InputLine is one budgeted purchase.
+message InputLine {
+  InputKind kind     = 1;
+  string    item     = 2;
+  double    quantity = 3;
+  string    unit     = 4;
+  double    unit_cost = 5;
+  double    total_cost = 6;
+  string    note      = 7;
+}
+
+// InputBudget is what a plan expects to spend.
+message InputBudget {
+  repeated InputLine lines = 1;
+  double total_cost        = 2;
+  double cost_per_hectare  = 3;
+  string currency          = 4;
+}
+
+// RotationCheck is the verdict on a crop following what came before it.
+message RotationCheck {
+  string crop            = 1;
+  string previous_crop   = 2;
+  RotationVerdict verdict = 3;
+  string rationale       = 4;
+  // Nitrogen the previous crop left behind, in kg/ha. A legume credit that is
+  // ignored means a farmer buys urea they do not need.
+  double nitrogen_credit_kg_ha = 5;
+}
+
+// SeasonPlan is one field's plan for one season.
+message SeasonPlan {
+  string id       = 1;
+  string field_id = 2;
+  string farm_id  = 3;
+
+  Season season = 4;
+  int32  year   = 5;
+
+  string crop    = 6;
+  string variety = 7;
+  double area_hectares = 8;
+
+  PlanStatus status = 9;
+
+  SowingWindow  sowing_window  = 10;
+  RotationCheck rotation_check = 11;
+  InputBudget   budget         = 12;
+
+  double target_yield_tonnes_ha = 13;
+  string notes = 14;
+
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+  int64 version = 17;
+}
+
+// ── Requests / Responses ─────────────────────────────────────────────────────
+
+message CreatePlanRequest {
+  string field_id = 1;
+  string farm_id  = 2;
+  Season season   = 3;
+  int32  year     = 4;
+  string crop     = 5;
+  string variety  = 6;
+  double area_hectares = 7;
+  double target_yield_tonnes_ha = 8;
+  string notes = 9;
+}
+
+message CreatePlanResponse { SeasonPlan plan = 1; }
+
+message GetPlanRequest { string id = 1; }
+message GetPlanResponse { SeasonPlan plan = 1; }
+
+message ListPlansRequest {
+  string     field_id = 1;
+  string     farm_id  = 2;
+  Season     season   = 3;
+  int32      year     = 4;
+  PlanStatus status   = 5;
+  int32  page_size  = 6;
+  string page_token = 7;
+}
+
+message ListPlansResponse {
+  repeated SeasonPlan plans = 1;
+  string next_page_token = 2;
+  int32  total_count = 3;
+}
+
+message UpdatePlanRequest {
+  string id      = 1;
+  string crop    = 2;
+  string variety = 3;
+  double area_hectares = 4;
+  double target_yield_tonnes_ha = 5;
+  string notes = 6;
+  int64  base_version = 7;
+}
+
+message UpdatePlanResponse { SeasonPlan plan = 1; }
+
+message CommitPlanRequest { string id = 1; }
+message CommitPlanResponse { SeasonPlan plan = 1; }
+
+message CheckRotationRequest {
+  string field_id = 1;
+  string crop     = 2;
+}
+
+message CheckRotationResponse { RotationCheck check = 1; }
+
+message GetSowingWindowRequest {
+  string field_id = 1;
+  string crop     = 2;
+  Season season   = 3;
+  int32  year     = 4;
+}
+
+message GetSowingWindowResponse { SowingWindow window = 1; }
+
+// PlanningService plans a season: crop choice, sowing window and input budget.
+service PlanningService {
+  rpc CreatePlan(CreatePlanRequest) returns (CreatePlanResponse);
+  rpc GetPlan(GetPlanRequest) returns (GetPlanResponse);
+  rpc ListPlans(ListPlansRequest) returns (ListPlansResponse);
+  rpc UpdatePlan(UpdatePlanRequest) returns (UpdatePlanResponse);
+  rpc CommitPlan(CommitPlanRequest) returns (CommitPlanResponse);
+  rpc CheckRotation(CheckRotationRequest) returns (CheckRotationResponse);
+  rpc GetSowingWindow(GetSowingWindowRequest) returns (GetSowingWindowResponse);
+}

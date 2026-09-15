@@ -651,6 +651,22 @@ services:
       DATABASE_URL: ${SOIL_LAB_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_lab_service?sslmode=disable}
       SOIL_SERVICE_URL: http://soil-service:8080
 
+  planning-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: planning-service
+    ports:
+      - "8112:8080"
+    environment:
+      <<: *go-env
+      DATABASE_URL: ${PLANNING_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/planning_service?sslmode=disable}
+      # Optional. Without it a sowing window comes from the crop calendar and
+      # says so; with it the window follows the monsoon's local onset, which is
+      # what actually decides when a kharif crop goes in.
+      WEATHER_SERVICE_URL: http://weather-service:8080
+
   # ── Offline development ────────────────────────────────────────────────────
   # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
   # Vision), so the platform runs with no network access, no API keys, and
