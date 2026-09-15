@@ -4,6 +4,41 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      Location, for recording field boundaries and observation coordinates.
+      Both are needed: Geolocator asks for FINE and Android grants COARSE
+      unless FINE is declared, and a boundary walked from coarse fixes is
+      wrong by more than the field's headland while looking just as
+      convincing.
+
+      BACKGROUND_LOCATION is deliberately not declared. Walking a boundary
+      happens with the screen on; asking for background access would trigger
+      Play Store review for a capability the app does not use.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Camera, for in-field plant diagnosis photos. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+      Reading a picked image. READ_MEDIA_IMAGES is the Android 13+ permission;
+      READ_EXTERNAL_STORAGE covers older devices, which are most of the ones
+      in the fields this app is for.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!--
+      Declared as not required so the app still installs on a device without
+      one. GPS is how a boundary gets recorded, but a phone with no camera
+      can still use every other part of the app.
+    -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
     <application
         android:label="YieldPoint Agronomist"
         android:name="${applicationName}"

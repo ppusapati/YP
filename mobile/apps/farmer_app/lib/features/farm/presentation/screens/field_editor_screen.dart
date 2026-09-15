@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map_core/flutter_map_core.dart'
+    show BoundaryRejection, BoundaryWalkTool, GpsPosition;
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:uuid/uuid.dart';
@@ -36,6 +40,20 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
   bool _isDrawing = false;
   bool _isSaving = false;
 
+  /// Walking the perimeter, as an alternative to tapping the map.
+  ///
+  /// Tapping works when you can see the field on the map. Standing in it, at a
+  /// zoom where the whole field fits, a fingertip covers several metres — and
+  /// the satellite basemap is often months old. Walking the edge and dropping
+  /// a point at each corner is how a boundary gets recorded accurately, and it
+  /// is what this screen could not do.
+  final BoundaryWalkTool _walk = BoundaryWalkTool();
+  bool _isWalking = false;
+  GpsPosition? _lastFix;
+  StreamSubscription<Position>? _fixSubscription;
+  StreamSubscription<BoundaryRejection>? _rejectionSubscription;
+  String? _gpsMessage;
+
   bool get _isEditing => widget.existingField != null;
 
   @override
@@ -55,7 +73,97 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _fixSubscription?.cancel();
+    _rejectionSubscription?.cancel();
+    _walk.dispose();
     super.dispose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Walking the boundary
+  // ---------------------------------------------------------------------------
+
+  Future<void> _startWalking() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      setState(() => _gpsMessage =
+          'Location is switched off. Turn it on to walk the boundary.');
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      // Named rather than left as a dead button: "denied forever" needs a trip
+      // to system settings, and silence looks like a broken screen.
+      setState(() => _gpsMessage = permission == LocationPermission.deniedForever
+          ? 'Location permission is blocked for this app. Enable it in Settings.'
+          : 'Location permission is needed to walk the boundary.');
+      return;
+    }
+
+    // Any point already tapped is kept: switching to walking should not throw
+    // away work.
+    _rejectionSubscription ??= _walk.rejections.listen((reason) {
+      if (!mounted) return;
+      setState(() {
+        _gpsMessage = switch (reason) {
+          BoundaryRejection.poorAccuracy =>
+            'That fix was too rough to use — wait for a better signal, '
+                'or step clear of trees and buildings.',
+          BoundaryRejection.tooClose => null,
+        };
+      });
+    });
+
+    _fixSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 1,
+      ),
+    ).listen((position) {
+      if (!mounted) return;
+      setState(() => _lastFix = GpsPosition.fromPosition(position));
+    });
+
+    setState(() {
+      _isWalking = true;
+      _isDrawing = false;
+      _gpsMessage = 'Walk to each corner and tap "Drop corner".';
+    });
+  }
+
+  void _stopWalking() {
+    _fixSubscription?.cancel();
+    _fixSubscription = null;
+    setState(() {
+      _isWalking = false;
+      _lastFix = null;
+      _gpsMessage = null;
+    });
+  }
+
+  /// Green when the fix is good enough to record, amber while it is not.
+  ///
+  /// The threshold is the walker's own, so the colour and the refusal always
+  /// agree — a green dot next to a refused corner would be worse than no dot.
+  Color _fixQualityColor(ColorScheme scheme) {
+    final fix = _lastFix;
+    if (fix == null) return scheme.onSurfaceVariant;
+    return fix.accuracyMeters <= _walk.accuracyThresholdMeters
+        ? scheme.primary
+        : scheme.error;
+  }
+
+  void _dropCorner() {
+    final point = _walk.dropCorner(_lastFix);
+    if (point == null) return;
+    setState(() {
+      _polygonPoints.add(LatLng(point.latLng.latitude, point.latLng.longitude));
+      _gpsMessage = null;
+    });
   }
 
   double _calculateArea(List<LatLng> points) {
@@ -83,9 +191,16 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
   }
 
   void _undoLastPoint() {
-    if (_polygonPoints.isNotEmpty) {
-      setState(() => _polygonPoints.removeLast());
-    }
+    if (_polygonPoints.isEmpty) return;
+    // The walk is the source of truth for anything GPS-recorded, so undoing
+    // has to happen in both or the two drift apart.
+    _walk.undo();
+    setState(() => _polygonPoints.removeLast());
+  }
+
+  void _clearPoints() {
+    _walk.clear();
+    setState(() => _polygonPoints.clear());
   }
 
   void _saveField() {
@@ -294,6 +409,58 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
                 ],
               ),
             ),
+            if (_gpsMessage != null || _isWalking)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isWalking)
+                        Row(
+                          children: [
+                            Icon(
+                              _lastFix == null
+                                  ? Icons.gps_not_fixed
+                                  : Icons.gps_fixed,
+                              size: 18,
+                              color: _fixQualityColor(colorScheme),
+                            ),
+                            const SizedBox(width: 8),
+                            // The accuracy is shown because it decides whether
+                            // the boundary is worth anything, and a farmer can
+                            // act on it: step clear of the trees and wait.
+                            Text(
+                              _lastFix == null
+                                  ? 'Waiting for a GPS fix…'
+                                  : 'Accuracy ±${_lastFix!.accuracyMeters.round()} m',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _fixQualityColor(colorScheme),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (_gpsMessage != null) ...[
+                        if (_isWalking) const SizedBox(height: 6),
+                        Text(
+                          _gpsMessage!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             Expanded(
               flex: 1,
               child: Stack(
@@ -313,13 +480,58 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
                     bottom: 16,
                     left: 16,
                     right: 16,
-                    child: Row(
+                    child: Column(
+                      children: [
+                        // Walking the perimeter, for when you are standing in
+                        // the field rather than looking at it on a map.
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed:
+                                    _isWalking ? _stopWalking : _startWalking,
+                                icon: Icon(
+                                  _isWalking
+                                      ? Icons.stop
+                                      : Icons.directions_walk,
+                                ),
+                                label: Text(
+                                  _isWalking
+                                      ? 'Stop walking'
+                                      : 'Walk the boundary',
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: _isWalking
+                                      ? colorScheme.error
+                                      : colorScheme.secondary,
+                                ),
+                              ),
+                            ),
+                            if (_isWalking) ...[
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: FilledButton.icon(
+                                  // Disabled until there is a fix: a corner
+                                  // dropped from no position is not a corner.
+                                  onPressed:
+                                      _lastFix == null ? null : _dropCorner,
+                                  icon: const Icon(Icons.add_location_alt),
+                                  label: const Text('Drop corner'),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () {
-                              setState(() => _isDrawing = !_isDrawing);
-                            },
+                            onPressed: _isWalking
+                                ? null
+                                : () {
+                                    setState(() => _isDrawing = !_isDrawing);
+                                  },
                             icon: Icon(
                               _isDrawing ? Icons.stop : Icons.draw,
                             ),
@@ -342,15 +554,16 @@ class _FieldEditorScreenState extends State<FieldEditorScreen> {
                         ),
                         const SizedBox(width: 8),
                         IconButton.filled(
-                          onPressed: _polygonPoints.isNotEmpty
-                              ? () => setState(() => _polygonPoints.clear())
-                              : null,
+                          onPressed:
+                              _polygonPoints.isNotEmpty ? _clearPoints : null,
                           icon: const Icon(Icons.clear_all),
                           tooltip: 'Clear',
                           style: IconButton.styleFrom(
                             backgroundColor: colorScheme.errorContainer,
                             foregroundColor: colorScheme.onErrorContainer,
                           ),
+                        ),
+                      ],
                         ),
                       ],
                     ),
