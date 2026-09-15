@@ -118,7 +118,11 @@
         color: 'var(--color-text-secondary)',
       },
     } : undefined,
-    tooltip: showTooltip || tooltip.show !== false ? {
+    // `&&`, not `||`. With `||` the tooltip was shown unless BOTH showTooltip
+    // was false and tooltip.show was explicitly false, so `showTooltip={false}`
+    // on its own did nothing — the documented way to turn the tooltip off had
+    // no effect on seven of these charts.
+    tooltip: showTooltip && tooltip.show !== false ? {
       trigger: tooltip.trigger ?? 'axis',
       axisPointer: {
         type: tooltip.axisPointer?.type ?? 'shadow',

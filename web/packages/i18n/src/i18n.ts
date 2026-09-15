@@ -2,7 +2,7 @@
  * Core i18n implementation using Svelte stores
  */
 import { writable, derived, get } from 'svelte/store';
-import type { Locale, TranslationMessages, I18nConfig, InterpolationVars, TranslationKey } from './types';
+import type { Locale, TranslationMessages, I18nConfig, InterpolationVars, TranslationKey } from './types.js';
 
 // ============================================================================
 // STORES
@@ -40,7 +40,14 @@ function resolve(msgs: TranslationMessages, key: TranslationKey): string | undef
   let current: TranslationMessages | string = msgs;
   for (const part of parts) {
     if (typeof current !== 'object' || current === null) return undefined;
-    current = (current as Record<string, TranslationMessages | string>)[part];
+    // A missing segment ends the walk. Continuing with `undefined` would make
+    // the next iteration's typeof check the thing that stops it, which happens
+    // to work and reads as an accident.
+    const next: TranslationMessages | string | undefined = (
+      current as Record<string, TranslationMessages | string>
+    )[part];
+    if (next === undefined) return undefined;
+    current = next;
   }
   return typeof current === 'string' ? current : undefined;
 }

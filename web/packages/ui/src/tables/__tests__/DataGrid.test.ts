@@ -68,11 +68,10 @@ describe('DataGrid', () => {
   describe('Sorting', () => {
     it('sorts by column when header is clicked', async () => {
       const handleSort = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: { columns: testColumns, data: testData },
+        events: { sort: handleSort },
       });
-
-      component.$on('sort', handleSort);
 
       // Click on Name header to sort
       const nameHeader = screen.getByText('Name').closest('button');
@@ -86,17 +85,16 @@ describe('DataGrid', () => {
             column: 'name',
             direction: 'asc',
           }),
-        })
+        }),
       );
     });
 
     it('toggles sort direction on repeated clicks', async () => {
       const handleSort = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: { columns: testColumns, data: testData },
+        events: { sort: handleSort },
       });
-
-      component.$on('sort', handleSort);
 
       const nameHeader = screen.getByText('Name').closest('button');
 
@@ -106,7 +104,7 @@ describe('DataGrid', () => {
         expect(handleSort).toHaveBeenLastCalledWith(
           expect.objectContaining({
             detail: expect.objectContaining({ direction: 'asc' }),
-          })
+          }),
         );
 
         // Second click - descending
@@ -114,7 +112,7 @@ describe('DataGrid', () => {
         expect(handleSort).toHaveBeenLastCalledWith(
           expect.objectContaining({
             detail: expect.objectContaining({ direction: 'desc' }),
-          })
+          }),
         );
 
         // Third click - no sort
@@ -122,7 +120,7 @@ describe('DataGrid', () => {
         expect(handleSort).toHaveBeenLastCalledWith(
           expect.objectContaining({
             detail: expect.objectContaining({ direction: null }),
-          })
+          }),
         );
       }
     });
@@ -141,23 +139,60 @@ describe('DataGrid', () => {
       expect(screen.getByText('+ Add filter')).toBeInTheDocument();
     });
 
-    it('emits filter event when filter is applied', async () => {
+    it('emits filter event when a filter is given a value', async () => {
       const handleFilter = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: { columns: testColumns, data: testData, filterable: true },
+        events: { filter: handleFilter },
       });
-
-      component.$on('filter', handleFilter);
 
       // Open filter panel
       const filterButton = screen.getByText('Filter');
       await fireEvent.click(filterButton);
 
-      // Add a filter
-      const addFilterButton = screen.getByText('+ Add filter');
-      await fireEvent.click(addFilterButton);
+      // Add a filter row. This alone must NOT emit: an empty row narrows
+      // nothing, and telling the caller the filters changed would have them
+      // refetch for a result identical to what they already have. The original
+      // version of this test asserted the opposite and had never run.
+      await fireEvent.click(screen.getByText('+ Add filter'));
+      expect(handleFilter).not.toHaveBeenCalled();
 
-      expect(handleFilter).toHaveBeenCalled();
+      // Typing a value is what applies it.
+      await fireEvent.input(screen.getByPlaceholderText('Value'), {
+        target: { value: 'Alice' },
+      });
+
+      expect(handleFilter).toHaveBeenCalledTimes(1);
+      // Read the detail off the event rather than matching the CustomEvent
+      // shape: the filters are what the caller acts on, and asserting them
+      // directly says so.
+      const { filters } = handleFilter.mock.calls[0][0].detail;
+      expect(filters).toHaveLength(1);
+      // The default column is the first filterable one, and `filterable` is
+      // opt-out rather than opt-in — a column without the key is filterable —
+      // so that is `id`, not the first column marked `filterable: true`.
+      expect(filters[0]).toMatchObject({ column: 'id', value: 'Alice' });
+    });
+
+    it('emits filter event when a filter is removed', async () => {
+      const handleFilter = vi.fn();
+      render(DataGrid, {
+        props: { columns: testColumns, data: testData, filterable: true },
+        events: { filter: handleFilter },
+      });
+
+      await fireEvent.click(screen.getByText('Filter'));
+      await fireEvent.click(screen.getByText('+ Add filter'));
+      await fireEvent.input(screen.getByPlaceholderText('Value'), {
+        target: { value: 'Alice' },
+      });
+      handleFilter.mockClear();
+
+      // Removing the row widens the result set, so the caller does need to know.
+      await fireEvent.click(screen.getByLabelText('Remove filter'));
+
+      expect(handleFilter).toHaveBeenCalledTimes(1);
+      expect(handleFilter.mock.calls[0][0].detail.filters).toEqual([]);
     });
   });
 
@@ -172,11 +207,10 @@ describe('DataGrid', () => {
 
     it('emits search event on input', async () => {
       const handleSearch = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: { columns: testColumns, data: testData, searchable: true },
+        events: { search: handleSearch },
       });
-
-      component.$on('search', handleSearch);
 
       const searchInput = screen.getByPlaceholderText('Search...');
       await fireEvent.input(searchInput, { target: { value: 'Alice' } });
@@ -184,7 +218,7 @@ describe('DataGrid', () => {
       expect(handleSearch).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: { query: 'Alice' },
-        })
+        }),
       );
     });
 
@@ -225,16 +259,15 @@ describe('DataGrid', () => {
 
     it('emits pageChange event when page is changed', async () => {
       const handlePageChange = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: {
           columns: testColumns,
           data: testData,
           paginated: true,
           pagination: { page: 1, pageSize: 2, total: 5 },
         },
+        events: { pageChange: handlePageChange },
       });
-
-      component.$on('pageChange', handlePageChange);
 
       // Click next page button
       const nextButton = screen.getByLabelText('Next page');
@@ -243,13 +276,13 @@ describe('DataGrid', () => {
       expect(handlePageChange).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({ page: 2 }),
-        })
+        }),
       );
     });
 
     it('emits pageChange event when page size is changed', async () => {
       const handlePageChange = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: {
           columns: testColumns,
           data: testData,
@@ -257,9 +290,8 @@ describe('DataGrid', () => {
           pagination: { page: 1, pageSize: 10, total: 5 },
           pageSizes: [10, 25, 50],
         },
+        events: { pageChange: handlePageChange },
       });
-
-      component.$on('pageChange', handlePageChange);
 
       const pageSizeSelect = screen.getByRole('combobox');
       await fireEvent.change(pageSizeSelect, { target: { value: '25' } });
@@ -267,7 +299,7 @@ describe('DataGrid', () => {
       expect(handlePageChange).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({ pageSize: 25, page: 1 }),
-        })
+        }),
       );
     });
   });
@@ -318,16 +350,15 @@ describe('DataGrid', () => {
 
     it('emits select event when row is selected', async () => {
       const handleSelect = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: {
           columns: testColumns,
           data: testData,
           selectable: true,
           selectionMode: 'multiple',
         },
+        events: { select: handleSelect },
       });
-
-      component.$on('select', handleSelect);
 
       // Click first row checkbox
       const checkboxes = screen.getAllByRole('checkbox');
@@ -338,16 +369,15 @@ describe('DataGrid', () => {
 
     it('selects all rows when header checkbox is clicked', async () => {
       const handleSelect = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: {
           columns: testColumns,
           data: testData,
           selectable: true,
           selectionMode: 'multiple',
         },
+        events: { select: handleSelect },
       });
-
-      component.$on('select', handleSelect);
 
       // Click header checkbox
       const checkboxes = screen.getAllByRole('checkbox');
@@ -358,7 +388,7 @@ describe('DataGrid', () => {
           detail: expect.objectContaining({
             keys: expect.arrayContaining([1, 2, 3, 4, 5]),
           }),
-        })
+        }),
       );
     });
   });
@@ -366,11 +396,10 @@ describe('DataGrid', () => {
   describe('Row Click', () => {
     it('emits rowClick event when row is clicked', async () => {
       const handleRowClick = vi.fn();
-      const { component } = render(DataGrid, {
+      render(DataGrid, {
         props: { columns: testColumns, data: testData },
+        events: { rowClick: handleRowClick },
       });
-
-      component.$on('rowClick', handleRowClick);
 
       // Click on a row (click on a cell text)
       const aliceCell = screen.getByText('Alice Smith');
@@ -382,7 +411,7 @@ describe('DataGrid', () => {
             row: testData[0],
             index: 0,
           }),
-        })
+        }),
       );
     });
   });

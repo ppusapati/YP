@@ -392,3 +392,31 @@ export type {
   StandardDetailAction,
   DetailActionGroup,
 } from './detail.types.js';
+
+// ─── Report Types ───────────────────────────────────────────────────────────
+//
+// report.types.ts existed and was never re-exported here, so every type the
+// UI package's reports subsystem imports from @samavāya/core resolved to
+// nothing — 16 "has no exported member" errors, and the whole subsystem failed
+// to typecheck. The types themselves were fine; only this barrel was missing.
+export type {
+  ReportChartType,
+  ReportWidgetType,
+  ReportLayoutMode,
+  ReportVisualization,
+  ReportWidget,
+  WidgetChartConfig,
+  WidgetTableConfig,
+  ReportTableColumn,
+  ReportFieldFormat,
+  WidgetKPIConfig,
+  KPIAggregate,
+  KPIThreshold,
+  ConditionalFormat,
+  ConditionalOperator,
+  ConditionalStyle,
+  DrilldownConfig,
+  DrilldownFilterMapping,
+  ReportData,
+  ReportDataColumn,
+} from './report.types.js';

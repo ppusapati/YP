@@ -47,7 +47,10 @@ export function computeAggregate(
     case 'count':
       return values.length;
     case 'last':
-      return values[values.length - 1];
+      // An empty series has no last value. Zero rather than undefined, because
+      // every other branch here returns a number and a KPI card rendering
+      // "undefined" is worse than one rendering 0 for no data.
+      return values[values.length - 1] ?? 0;
     default:
       return values.reduce((a, b) => a + b, 0);
   }
@@ -248,12 +251,13 @@ export function buildChartOption(
 
   let seriesList: Record<string, unknown>[] = [];
 
-  if (isPie && yFields.length > 0) {
+  const firstYField = yFields[0];
+  if (isPie && firstYField !== undefined) {
     // Pie / Doughnut / Funnel → name-value pairs
     const pieData = categories.map((cat) => {
       const val = rows
         .filter((r) => String(r[xField]) === cat)
-        .reduce((sum, r) => sum + Number(r[yFields[0]] ?? 0), 0);
+        .reduce((sum, r) => sum + Number(r[firstYField] ?? 0), 0);
       return { name: cat, value: val };
     });
     seriesList = [
@@ -271,7 +275,7 @@ export function buildChartOption(
       const groupKey = String(row[seriesField] ?? '');
       const cat = String(row[xField] ?? '');
       if (!groups.has(groupKey)) groups.set(groupKey, new Map());
-      const yVal = Number(row[yFields[0]] ?? 0);
+      const yVal = Number(firstYField === undefined ? 0 : (row[firstYField] ?? 0));
       const existing = groups.get(groupKey)!.get(cat) ?? 0;
       groups.get(groupKey)!.set(cat, existing + yVal);
     }

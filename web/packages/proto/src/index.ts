@@ -170,7 +170,11 @@ export {
   SensorStatus,
   SensorProtocol,
   ReadingQuality,
-  AlertSeverity,
+  // Two services define an AlertSeverity and both were re-exported here under
+  // the same name, which is a duplicate export rather than a merge: consumers
+  // got whichever the bundler resolved to, silently. alert-service owns alerts,
+  // so it keeps the plain name and the sensor one is qualified.
+  AlertSeverity as SensorAlertSeverity,
 } from './gen/sensor-service/proto/sensor_pb.js';
 
 export type {

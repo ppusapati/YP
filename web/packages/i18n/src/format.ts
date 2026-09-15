@@ -10,8 +10,8 @@
  */
 import { derived } from 'svelte/store';
 
-import { locale } from './i18n';
-import type { Locale } from './types';
+import { locale } from './i18n.js';
+import type { Locale } from './types.js';
 
 /** Locales that read right to left. */
 const RTL_LANGUAGES = new Set(['ar', 'he', 'fa', 'ur', 'ps', 'sd', 'yi', 'dv']);
@@ -47,7 +47,10 @@ export function toBcp47(value: Locale): string {
 
 /** Whether a locale reads right to left. */
 export function isRtl(value: Locale): boolean {
-  return RTL_LANGUAGES.has(String(value || 'en').split('-')[0].toLowerCase());
+  // `split` always yields at least one element, but the checker types the
+  // index as possibly undefined, so the language is taken explicitly.
+  const [language = 'en'] = String(value || 'en').split('-');
+  return RTL_LANGUAGES.has(language.toLowerCase());
 }
 
 /** The `dir` attribute value for a locale. */
@@ -57,7 +60,8 @@ export function direction(value: Locale): 'ltr' | 'rtl' {
 
 /** Currency a locale prices in. */
 export function currencyFor(value: Locale): string {
-  return LOCALE_CURRENCY[String(value || 'en').split('-')[0]] ?? DEFAULT_CURRENCY;
+  const [language = 'en'] = String(value || 'en').split('-');
+  return LOCALE_CURRENCY[language] ?? DEFAULT_CURRENCY;
 }
 
 /**
@@ -188,12 +192,16 @@ export function negotiateLocale(
   for (const raw of preferred) {
     const want = String(raw || '').toLowerCase();
     if (!want) continue;
-    const exact = available.indexOf(want);
-    if (exact >= 0) return supported[exact];
+    // The indices come from `available`, which is `supported` mapped
+    // one-for-one, so the lookups cannot miss — but the checker types an index
+    // access as possibly undefined, so the result is narrowed rather than
+    // asserted.
+    const exact = supported[available.indexOf(want)];
+    if (exact !== undefined) return exact;
 
     const base = want.split('-')[0];
-    const byLanguage = available.findIndex((l) => l.split('-')[0] === base);
-    if (byLanguage >= 0) return supported[byLanguage];
+    const byLanguage = supported[available.findIndex((l) => l.split('-')[0] === base)];
+    if (byLanguage !== undefined) return byLanguage;
   }
   return fallback;
 }

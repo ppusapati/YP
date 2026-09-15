@@ -23,6 +23,7 @@
     csv: { label: 'CSV', icon: '📄' },
     xlsx: { label: 'Excel (XLSX)', icon: '📊' },
     pdf: { label: 'PDF', icon: '📕' },
+    json: { label: 'JSON', icon: '🗂️' },
     print: { label: 'Print', icon: '🖨️' },
   };
 

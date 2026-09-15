@@ -11,8 +11,8 @@
  * @packageDocumentation
  */
 
-export { createI18n, t, setLocale, getLocale, locale, messages } from './i18n';
-export type { I18nConfig, Locale, TranslationMessages, TranslationKey } from './types';
+export { createI18n, t, setLocale, getLocale, locale, messages } from './i18n.js';
+export type { I18nConfig, Locale, TranslationMessages, TranslationKey } from './types.js';
 export {
   formatNumber,
   formatCurrency,
@@ -29,4 +29,4 @@ export {
   textDirection,
   format,
   DEFAULT_CURRENCY,
-} from './format';
+} from './format.js';

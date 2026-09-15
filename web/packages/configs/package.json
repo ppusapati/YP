@@ -6,31 +6,37 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/uno/index.js",
-      "types": "./dist/uno/index.d.ts"
+      "import": "./dist/uno/index.ts",
+      "types": "./dist/uno/index.ts",
+      "default": "./dist/uno/index.ts"
     },
     "./uno": {
-      "import": "./dist/uno/index.js",
-      "types": "./dist/uno/index.d.ts"
+      "import": "./dist/uno/index.ts",
+      "types": "./dist/uno/index.ts",
+      "default": "./dist/uno/index.ts"
     },
     "./eslint": {
       "import": "./dist/eslint/index.js",
-      "types": "./dist/eslint/index.d.ts"
+      "types": "./dist/eslint/index.js",
+      "default": "./dist/eslint/index.js"
     },
     "./typescript": {
-      "import": "./dist/typescript/index.js",
-      "types": "./dist/typescript/index.d.ts"
+      "import": "./dist/typescript/index.ts",
+      "types": "./dist/typescript/index.ts",
+      "default": "./dist/typescript/index.ts"
     },
     "./typescript/base.json": "./dist/typescript/base.json",
     "./typescript/nextjs.json": "./dist/typescript/nextjs.json",
     "./qwik": {
-      "import": "./dist/qwik/index.js",
-      "types": "./dist/qwik/index.d.ts"
+      "import": "./dist/qwik/index.ts",
+      "types": "./dist/qwik/index.ts",
+      "default": "./dist/qwik/index.ts"
     },
     "./qwik/qwikjs-library.json": "./dist/qwik/qwikjs-library.json",
     "./uno/preset-p9e": {
-      "import": "./dist/uno/preset-p9e.js",
-      "types": "./dist/uno/preset-p9e.d.ts"
+      "import": "./dist/uno/preset-p9e.ts",
+      "types": "./dist/uno/preset-p9e.ts",
+      "default": "./dist/uno/preset-p9e.ts"
     }
   },
   "files": [

@@ -117,8 +117,12 @@
    * Merges static schema options with RPC-loaded options.
    */
   function getFieldOptions(field: FormFieldConfig): Array<{ label: string; value: unknown }> {
-    if (rpcOptions[field.name] && rpcOptions[field.name].length > 0) {
-      return rpcOptions[field.name];
+    // One lookup held in a local: the second `rpcOptions[field.name]` is typed
+    // `... | undefined` however the first was guarded, so this is both what
+    // compiles and one lookup instead of three.
+    const loaded = rpcOptions[field.name];
+    if (loaded && loaded.length > 0) {
+      return loaded;
     }
     return (field as any).options ?? [];
   }

@@ -102,12 +102,14 @@ Categorized by priority and effort. Each enhancement includes what exists today 
 **Enhancements:**
 - [x] Add Playwright E2E tests for critical user journeys: login, create farm, add field, view satellite imagery, create irrigation schedule
 - [x] Add Vitest unit tests for Svelte stores and utility functions
-- [ ] Add component tests for reusable UI components (charts, maps, data grids)
+- [x] Add component tests for reusable UI components (charts, maps, data grids) — the 38 that already existed had never run: vitest had no jsdom environment, so `document` was undefined on the first render of every one of them, and the DOM matchers they are written against were never registered. They were also written against Svelte 4's `component.$on`, which Svelte 5 removed. Fixed, plus new tests for LineChart (which surfaced a `showTooltip={false}` that did nothing on seven charts) and usePagination (whose `getVisiblePages(7)` returned eleven entries)
 - [ ] Set up visual regression testing (Playwright screenshots or Chromatic)
-- [x] Add web test coverage to CI pipeline — the web suite had no CI job at all, so a broken test only surfaced when someone happened to run it locally. Lint, typecheck and test now run on every push
+- [x] Add web test coverage to CI pipeline — the web suite had no CI job at all, so a broken test only surfaced when someone happened to run it locally. Lint, typecheck and test now run on every push. The test step could not reach a single test until now: `turbo run test` depends on `^build`, and three packages failed to build — `@p9e.in/utils` on an import of `@protovalidate/core`, a package that does not exist on npm, and `@samavāya/i18n` on module resolution. `pnpm test` now runs 89 tests across four packages
 - [ ] Create Storybook for the UI component library
 
 **Effort:** Large | **Impact:** High
+
+**Outstanding:** `pnpm typecheck` fails with 336 errors across the five SvelteKit apps (shell 160, smart-agriculture 83, farm-management 43, crop-intelligence 30, supply-chain 20). These were invisible until now: every app's `uno.config.ts` imports `@p9e.in/configs/uno`, whose exports map pointed at `.js` files in a package that ships `.ts` sources verbatim, so svelte-check crashed on config load before reading a line of application code. The map now points at the files that exist, and what it was hiding is a real backlog rather than anything introduced here.
 
 ---
 

@@ -33,8 +33,7 @@ describe('Input', () => {
 
   it('emits input event on typing', async () => {
     const handleInput = vi.fn();
-    const { component } = render(Input);
-    component.$on('input', handleInput);
+    render(Input, { events: { input: handleInput } });
 
     const input = screen.getByRole('textbox');
     await fireEvent.input(input, { target: { value: 'test' } });
@@ -44,8 +43,7 @@ describe('Input', () => {
 
   it('emits change event on change', async () => {
     const handleChange = vi.fn();
-    const { component } = render(Input);
-    component.$on('change', handleChange);
+    render(Input, { events: { change: handleChange } });
 
     const input = screen.getByRole('textbox');
     await fireEvent.change(input, { target: { value: 'test' } });
@@ -56,9 +54,7 @@ describe('Input', () => {
   it('emits focus and blur events', async () => {
     const handleFocus = vi.fn();
     const handleBlur = vi.fn();
-    const { component } = render(Input);
-    component.$on('focus', handleFocus);
-    component.$on('blur', handleBlur);
+    render(Input, { events: { focus: handleFocus, blur: handleBlur } });
 
     const input = screen.getByRole('textbox');
     await fireEvent.focus(input);
@@ -107,8 +103,10 @@ describe('Input', () => {
 
   it('clears value when clear button is clicked', async () => {
     const handleClear = vi.fn();
-    const { component } = render(Input, { props: { clearable: true, value: 'some text' } });
-    component.$on('clear', handleClear);
+    render(Input, {
+      props: { clearable: true, value: 'some text' },
+      events: { clear: handleClear },
+    });
 
     const clearButton = screen.getByLabelText('Clear input');
     await fireEvent.click(clearButton);

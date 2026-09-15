@@ -98,6 +98,10 @@ export {
   SensorStatus,
   SensorProtocol,
   ReadingQuality,
+  // Both, explicitly. This sat among the sensor enums and took whichever
+  // AlertSeverity the duplicate export in @samavāya/proto happened to resolve
+  // to, which is not something a caller could have known from reading it.
+  SensorAlertSeverity,
   AlertSeverity,
   ScheduleType,
   ControllerType,

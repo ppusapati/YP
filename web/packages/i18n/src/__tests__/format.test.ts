@@ -12,7 +12,7 @@ import {
   isRtl,
   negotiateLocale,
   toBcp47,
-} from '../format';
+} from '../format.js';
 
 const SUPPORTED = ['en', 'hi', 'mr', 'gu', 'ta', 'te', 'kn', 'bn', 'pa'];
 
