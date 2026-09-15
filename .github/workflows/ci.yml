@@ -55,6 +55,7 @@ jobs:
           - sensor-service
           - soil-lab-service
           - soil-service
+          - sustainability-service
           - task-service
           - traceability-service
           - vegetation-index-service
@@ -472,6 +473,7 @@ jobs:
           - sensor-service
           - soil-lab-service
           - soil-service
+          - sustainability-service
           - task-service
           - traceability-service
           - vegetation-index-service

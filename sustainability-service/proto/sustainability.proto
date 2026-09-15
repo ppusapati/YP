@@ -1,0 +1,327 @@
+syntax = "proto3";
+package agriculture.sustainability.v1;
+option go_package = "p9e.in/samavaya/agriculture/sustainability-service/api/v1;sustainabilityv1";
+
+import "google/protobuf/timestamp.proto";
+
+// InputCategory is what was applied to the field, grouped by how it emits.
+//
+// The grouping is by emission pathway rather than by what a shop sells, because
+// that is what decides the arithmetic: urea emits CO2 as it hydrolyses *and*
+// N2O as nitrogen, while ammonium sulphate only does the second.
+enum InputCategory {
+  INPUT_CATEGORY_UNSPECIFIED = 0;
+  // Synthetic nitrogen other than urea.
+  INPUT_CATEGORY_SYNTHETIC_N = 1;
+  // Urea specifically: it releases the CO2 that was fixed into it during
+  // manufacture, on top of the N2O every nitrogen source causes.
+  INPUT_CATEGORY_UREA        = 2;
+  // Phosphate and potash, which carry manufacturing emissions but no field
+  // emissions worth counting.
+  INPUT_CATEGORY_PHOSPHATE   = 3;
+  INPUT_CATEGORY_POTASH      = 4;
+  // Manure and compost: nitrogen, and a soil carbon input.
+  INPUT_CATEGORY_ORGANIC_N   = 5;
+  // Agricultural lime, which releases CO2 as it reacts with soil acid.
+  INPUT_CATEGORY_LIME        = 6;
+  INPUT_CATEGORY_PESTICIDE   = 7;
+  INPUT_CATEGORY_SEED        = 8;
+  // Diesel burned by tractors, harvesters and pump sets.
+  INPUT_CATEGORY_DIESEL      = 9;
+  // Grid electricity, almost always for irrigation pumping.
+  INPUT_CATEGORY_ELECTRICITY = 10;
+  // Crop residue burned in the field.
+  INPUT_CATEGORY_RESIDUE_BURN = 11;
+}
+
+// WaterRegime is how a paddy was watered, which is what decides its methane.
+//
+// A continuously flooded paddy emits roughly twice the methane of one that is
+// drained mid-season, and that difference is usually the single largest number
+// in a rice field's footprint. Reporting rice without it is not an estimate,
+// it is a guess with a decimal point.
+enum WaterRegime {
+  WATER_REGIME_UNSPECIFIED       = 0;
+  WATER_REGIME_CONTINUOUS_FLOOD  = 1;
+  WATER_REGIME_SINGLE_DRAINAGE   = 2;
+  WATER_REGIME_MULTIPLE_DRAINAGE = 3;
+  // Alternate wetting and drying, the deliberate water-saving practice.
+  WATER_REGIME_AWD               = 4;
+  WATER_REGIME_RAINFED           = 5;
+  // Not a paddy at all.
+  WATER_REGIME_UPLAND            = 6;
+}
+
+// EmissionSource is one line of a footprint.
+enum EmissionSource {
+  EMISSION_SOURCE_UNSPECIFIED = 0;
+  // N2O released in the field from applied nitrogen.
+  EMISSION_SOURCE_DIRECT_N2O    = 1;
+  // N2O from that nitrogen after it volatilises or leaches away.
+  EMISSION_SOURCE_INDIRECT_N2O  = 2;
+  // CO2 from urea hydrolysis and from lime.
+  EMISSION_SOURCE_UREA_CO2      = 3;
+  EMISSION_SOURCE_LIME_CO2      = 4;
+  // CH4 from flooded rice.
+  EMISSION_SOURCE_RICE_CH4      = 5;
+  // Fuel and electricity burned on the farm.
+  EMISSION_SOURCE_ENERGY        = 6;
+  // CH4 and N2O from burning crop residue in the field.
+  EMISSION_SOURCE_RESIDUE_BURN  = 7;
+  // Manufacturing and transport of the inputs, which happen off the farm but
+  // happen because of it.
+  EMISSION_SOURCE_UPSTREAM      = 8;
+}
+
+// Completeness is how much of a category's activity data was actually recorded.
+//
+// The distinction this enum exists for: a field with no diesel record has an
+// unknown fuel footprint, not a zero one. A carbon report that silently treats
+// an absent record as nothing produces a flattering number that nobody can
+// defend to an auditor.
+enum Completeness {
+  COMPLETENESS_UNSPECIFIED = 0;
+  // Activity data was recorded for this source.
+  COMPLETENESS_RECORDED    = 1;
+  // Nothing was recorded, and the source is reported as unknown rather than
+  // as zero.
+  COMPLETENESS_MISSING     = 2;
+  // Nothing was recorded and nothing is expected — an upland field has no
+  // paddy methane.
+  COMPLETENESS_NOT_APPLICABLE = 3;
+}
+
+// InputUse is one recorded application to a field.
+message InputUse {
+  string id       = 1;
+  string field_id = 2;
+  string crop     = 3;
+  int32  year     = 4;
+
+  InputCategory category = 5;
+  // The product as the farmer knows it: "Urea 46%", "DAP", "HSD".
+  string product  = 6;
+  double quantity = 7;
+  string unit     = 8;
+
+  // Nitrogen actually delivered, in kg. Derived from the product where the
+  // service knows it, and overridable where the farmer knows better.
+  double nitrogen_kg = 9;
+
+  google.protobuf.Timestamp applied_on = 10;
+  string applied_by = 11;
+  string notes      = 12;
+
+  // Whether this input is allowed under organic certification. Recorded at the
+  // time of use, because the standards change and a certificate has to be
+  // defensible against the rules that applied on the day.
+  bool organic_permitted = 13;
+
+  google.protobuf.Timestamp created_at = 14;
+}
+
+// EmissionLine is one source's contribution to a footprint.
+message EmissionLine {
+  EmissionSource source = 1;
+  // In kg of CO2 equivalent, using AR6 100-year warming potentials.
+  double kg_co2e = 2;
+  // What the figure was worked out from, in plain words.
+  string basis = 3;
+  Completeness completeness = 4;
+}
+
+// Footprint is one field's greenhouse gas account for one crop year.
+message Footprint {
+  string id       = 1;
+  string field_id = 2;
+  string farm_id  = 3;
+  string crop     = 4;
+  int32  year     = 5;
+  double area_hectares = 6;
+
+  WaterRegime water_regime = 7;
+
+  repeated EmissionLine lines = 8;
+
+  double total_kg_co2e       = 9;
+  double kg_co2e_per_hectare = 10;
+  // Per tonne of product, where a yield is known. This is the number a buyer
+  // asks for, and it is left at zero rather than guessed when no yield is
+  // recorded.
+  double kg_co2e_per_tonne   = 11;
+  double yield_tonnes        = 12;
+
+  // Sources with no activity data behind them. A footprint with entries here
+  // is a floor, not a total, and every surface that shows the number has to
+  // show this with it.
+  repeated EmissionSource missing_sources = 13;
+  // True when nothing is missing.
+  bool complete = 14;
+
+  google.protobuf.Timestamp computed_at = 15;
+  string method = 16;
+}
+
+// CertificationStandard is the scheme a claim is made against.
+enum CertificationStandard {
+  CERTIFICATION_STANDARD_UNSPECIFIED = 0;
+  // India's National Programme for Organic Production.
+  CERTIFICATION_STANDARD_NPOP        = 1;
+  CERTIFICATION_STANDARD_GLOBALGAP   = 2;
+  CERTIFICATION_STANDARD_FAIRTRADE   = 3;
+  CERTIFICATION_STANDARD_RAINFOREST  = 4;
+}
+
+// FindingSeverity is how much a certification finding matters.
+enum FindingSeverity {
+  FINDING_SEVERITY_UNSPECIFIED = 0;
+  // Disqualifying on its own.
+  FINDING_SEVERITY_BLOCKER     = 1;
+  // Has to be resolved with the certifier, but is not automatically fatal.
+  FINDING_SEVERITY_MAJOR       = 2;
+  FINDING_SEVERITY_MINOR       = 3;
+}
+
+// Finding is one thing standing between a field and a certificate.
+message Finding {
+  FindingSeverity severity = 1;
+  string code    = 2;
+  string message = 3;
+  // The input record or date the finding is about, where there is one.
+  string evidence_id = 4;
+  google.protobuf.Timestamp occurred_on = 5;
+}
+
+// CertificationStatus is where a claim has got to.
+enum CertificationStatus {
+  CERTIFICATION_STATUS_UNSPECIFIED = 0;
+  // Inside the conversion period; not yet certifiable.
+  CERTIFICATION_STATUS_IN_CONVERSION = 1;
+  // Would pass on the records held.
+  CERTIFICATION_STATUS_ELIGIBLE      = 2;
+  // Would not pass; see the findings.
+  CERTIFICATION_STATUS_BLOCKED       = 3;
+  // Cannot be judged because the record is incomplete.
+  CERTIFICATION_STATUS_INSUFFICIENT_RECORDS = 4;
+}
+
+// CertificationCheck is an assessment against one standard.
+message CertificationCheck {
+  string field_id = 1;
+  CertificationStandard standard = 2;
+  CertificationStatus   status   = 3;
+
+  // When the field started conversion, and when it becomes eligible.
+  google.protobuf.Timestamp conversion_started_on = 4;
+  google.protobuf.Timestamp eligible_from         = 5;
+
+  repeated Finding findings = 6;
+  // Years of input records the check could see. A standard needing three and
+  // finding one is not a pass with a caveat.
+  int32 record_years = 7;
+  string summary = 8;
+}
+
+// ── Requests / Responses ─────────────────────────────────────────────────────
+
+message RecordInputUseRequest {
+  string field_id = 1;
+  string crop     = 2;
+  int32  year     = 3;
+  InputCategory category = 4;
+  string product  = 5;
+  double quantity = 6;
+  string unit     = 7;
+  // Optional. Left at zero the service works it out from the product where it
+  // can, and says so when it cannot.
+  double nitrogen_kg = 8;
+  google.protobuf.Timestamp applied_on = 9;
+  string notes = 10;
+}
+
+message RecordInputUseResponse { InputUse input = 1; }
+
+message ListInputUseRequest {
+  string field_id = 1;
+  int32  year     = 2;
+  InputCategory category = 3;
+  int32  page_size  = 4;
+  string page_token = 5;
+}
+
+message ListInputUseResponse {
+  repeated InputUse inputs = 1;
+  string next_page_token = 2;
+  int32  total_count = 3;
+}
+
+message ComputeFootprintRequest {
+  string field_id = 1;
+  int32  year     = 2;
+  string crop     = 3;
+  double area_hectares = 4;
+  WaterRegime water_regime = 5;
+  // Days the paddy was flooded. Only read for a rice crop.
+  int32  flooded_days = 6;
+  // Harvested tonnes, for the per-tonne intensity. Left at zero the intensity
+  // is not reported rather than divided by a guess.
+  double yield_tonnes = 7;
+}
+
+message ComputeFootprintResponse { Footprint footprint = 1; }
+
+message GetFootprintRequest { string id = 1; }
+message GetFootprintResponse { Footprint footprint = 1; }
+
+message ListFootprintsRequest {
+  string field_id = 1;
+  string farm_id  = 2;
+  int32  year     = 3;
+  int32  page_size  = 4;
+  string page_token = 5;
+}
+
+message ListFootprintsResponse {
+  repeated Footprint footprints = 1;
+  string next_page_token = 2;
+  int32  total_count = 3;
+}
+
+message CheckCertificationRequest {
+  string field_id = 1;
+  CertificationStandard standard = 2;
+  google.protobuf.Timestamp conversion_started_on = 3;
+}
+
+message CheckCertificationResponse { CertificationCheck check = 1; }
+
+message ExportCertificationPackRequest {
+  string field_id = 1;
+  CertificationStandard standard = 2;
+  google.protobuf.Timestamp conversion_started_on = 3;
+  // Export the pack even though the check found blockers, clearly marked as
+  // a working document. Without this an export that would not pass is refused
+  // rather than handed over looking like a certificate.
+  bool allow_incomplete = 4;
+}
+
+message ExportCertificationPackResponse {
+  string filename = 1;
+  bytes  content  = 2;
+  string content_type = 3;
+  CertificationCheck check = 4;
+}
+
+// SustainabilityService accounts for a field's emissions and its certification
+// record.
+service SustainabilityService {
+  rpc RecordInputUse(RecordInputUseRequest) returns (RecordInputUseResponse);
+  rpc ListInputUse(ListInputUseRequest) returns (ListInputUseResponse);
+
+  rpc ComputeFootprint(ComputeFootprintRequest) returns (ComputeFootprintResponse);
+  rpc GetFootprint(GetFootprintRequest) returns (GetFootprintResponse);
+  rpc ListFootprints(ListFootprintsRequest) returns (ListFootprintsResponse);
+
+  rpc CheckCertification(CheckCertificationRequest) returns (CheckCertificationResponse);
+  rpc ExportCertificationPack(ExportCertificationPackRequest) returns (ExportCertificationPackResponse);
+}
