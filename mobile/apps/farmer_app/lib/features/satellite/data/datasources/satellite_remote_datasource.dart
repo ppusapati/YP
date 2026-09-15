@@ -47,6 +47,12 @@ class SatelliteRemoteDataSourceImpl implements SatelliteRemoteDataSource {
       body: request.writeToBuffer(),
     );
     if (!response.isSuccess) {
+      // Logged as well as thrown: the exception reaches the repository, which
+      // falls back to the cache, so without this line a satellite service that
+      // is down looks from the app exactly like one with no new imagery.
+      _log.warning(
+        '$_basePath/$method failed with HTTP ${response.statusCode}',
+      );
       throw ConnectException(
         code: 'internal',
         message: '$_basePath/$method failed',

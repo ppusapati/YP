@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../domain/entities/gps_track_entity.dart';
 
 /// The type of crop issue observed during field walking.
 enum CropIssueType {

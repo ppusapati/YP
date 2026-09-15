@@ -36,7 +36,6 @@ class _PestRiskMapScreenState extends State<PestRiskMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(

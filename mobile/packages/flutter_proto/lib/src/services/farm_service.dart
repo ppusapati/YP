@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-
-import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../generated/farm.pb.dart';
 import 'base_service.dart';

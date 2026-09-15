@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/entities/irrigation_zone_entity.dart';
 import '../bloc/irrigation_bloc.dart';
 import '../bloc/irrigation_event.dart';
 import '../bloc/irrigation_state.dart';

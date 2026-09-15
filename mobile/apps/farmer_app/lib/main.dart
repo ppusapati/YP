@@ -41,7 +41,25 @@ void notificationTapBackground(NotificationResponse response) {
   Logger('Notifications').info('Background notification tapped: ${response.id}');
 }
 
-Future<void> main() async {
+Future<void> main() => bootstrap();
+
+/// Starts the app.
+///
+/// Split out of `main` so an integration test can start the real app without
+/// the parts of startup that need a shipped device: WorkManager will not
+/// register a periodic task under `flutter test`, notification permission
+/// prompts block, and the on-disk databases carry state between runs. Each is
+/// switchable, and every default is the production one — a test that turns a
+/// piece off is saying so out loud, and nothing is silently different in the
+/// build that ships.
+///
+/// [databases] defaults to opening the real SQLite files; a test passes
+/// in-memory ones so runs cannot contaminate each other.
+Future<void> bootstrap({
+  bool enableBackgroundSync = true,
+  bool enableNotifications = true,
+  Future<AppDatabases> Function() databases = openApplicationDatabases,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ─── Configure logging ───────────────────────────────────────────
@@ -73,6 +91,78 @@ Future<void> main() async {
   ]);
 
   // ─── Initialize push notifications (direct APNs) ─────────────────
+  if (enableNotifications) {
+    await _initNotifications();
+  }
+
+  // ─── Initialize SharedPreferences ────────────────────────────────
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  // ─── Initialize WorkManager ──────────────────────────────────────
+  if (enableBackgroundSync) {
+    await _initBackgroundSync();
+  }
+
+  // ─── Log environment ─────────────────────────────────────────────
+  Logger('App').info(
+    'API target: '
+    '${const bool.fromEnvironment('API_USE_TLS', defaultValue: true) ? "https" : "http"}://'
+    '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'api.yieldpoint.io')}'
+    ':${const int.fromEnvironment('API_PORT', defaultValue: 443)}',
+  );
+
+  final dbs = await databases();
+
+  // ─── Run app ─────────────────────────────────────────────────────
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        farmDatabaseProvider.overrideWithValue(dbs.farm),
+        diagnosisDatabaseProvider.overrideWithValue(dbs.diagnosis),
+        satelliteDatabaseProvider.overrideWithValue(dbs.satellite),
+      ],
+      child: const FarmerApp(),
+    ),
+  );
+}
+
+/// The three Drift databases the app runs on.
+class AppDatabases {
+  const AppDatabases({
+    required this.farm,
+    required this.diagnosis,
+    required this.satellite,
+  });
+
+  final FarmDatabase farm;
+  final DiagnosisDatabase diagnosis;
+  final SatelliteDatabase satellite;
+}
+
+/// Opens the on-disk databases in the application documents directory.
+Future<AppDatabases> openApplicationDatabases() async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  return AppDatabases(
+    farm: FarmDatabase(
+      NativeDatabase.createInBackground(
+        File(p.join(dbFolder.path, 'farm.sqlite')),
+      ),
+    ),
+    diagnosis: DiagnosisDatabase(
+      NativeDatabase.createInBackground(
+        File(p.join(dbFolder.path, 'diagnosis.sqlite')),
+      ),
+    ),
+    satellite: SatelliteDatabase(
+      NativeDatabase.createInBackground(
+        File(p.join(dbFolder.path, 'satellite.sqlite')),
+      ),
+    ),
+  );
+}
+
+Future<void> _initNotifications() async {
   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   const initializationSettingsIOS = DarwinInitializationSettings(
     requestAlertPermission: true,
@@ -95,11 +185,9 @@ Future<void> main() async {
       .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
+}
 
-  // ─── Initialize SharedPreferences ────────────────────────────────
-  final sharedPreferences = await SharedPreferences.getInstance();
-
-  // ─── Initialize WorkManager ──────────────────────────────────────
+Future<void> _initBackgroundSync() async {
   await Workmanager().initialize(
     callbackDispatcher,
     isInDebugMode: false,
@@ -112,39 +200,6 @@ Future<void> main() async {
     frequency: const Duration(minutes: 15),
     constraints: Constraints(
       networkType: NetworkType.connected,
-    ),
-  );
-
-  // ─── Log environment ─────────────────────────────────────────────
-  Logger('App').info(
-    'API target: '
-    '${const bool.fromEnvironment('API_USE_TLS', defaultValue: true) ? "https" : "http"}://'
-    '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'api.yieldpoint.io')}'
-    ':${const int.fromEnvironment('API_PORT', defaultValue: 443)}',
-  );
-
-  // ─── Open Drift databases ─────────────────────────────────────────
-  final dbFolder = await getApplicationDocumentsDirectory();
-  final farmDb = FarmDatabase(
-    NativeDatabase.createInBackground(File(p.join(dbFolder.path, 'farm.sqlite'))),
-  );
-  final diagnosisDb = DiagnosisDatabase(
-    NativeDatabase.createInBackground(File(p.join(dbFolder.path, 'diagnosis.sqlite'))),
-  );
-  final satelliteDb = SatelliteDatabase(
-    NativeDatabase.createInBackground(File(p.join(dbFolder.path, 'satellite.sqlite'))),
-  );
-
-  // ─── Run app ─────────────────────────────────────────────────────
-  runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-        farmDatabaseProvider.overrideWithValue(farmDb),
-        diagnosisDatabaseProvider.overrideWithValue(diagnosisDb),
-        satelliteDatabaseProvider.overrideWithValue(satelliteDb),
-      ],
-      child: const FarmerApp(),
     ),
   );
 }

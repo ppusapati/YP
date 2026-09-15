@@ -27,6 +27,10 @@ class _FarmEditorScreenState extends State<FarmEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   final List<LatLng> _boundaryPoints = [];
+  // Held from onMapCreated so the screen can drive the camera; nothing reads
+  // it yet. Kept rather than dropped because removing it means re-adding the
+  // callback wiring the moment anything needs to move the map.
+  // ignore: unused_field
   ml.MaplibreMapController? _mapController;
   bool _isDrawing = false;
   bool _isSaving = false;

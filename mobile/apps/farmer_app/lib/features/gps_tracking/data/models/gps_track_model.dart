@@ -1,6 +1,5 @@
 import 'package:latlong2/latlong.dart';
 
-import '../../domain/entities/crop_issue_entity.dart';
 import '../../domain/entities/gps_track_entity.dart';
 import 'crop_issue_model.dart';
 

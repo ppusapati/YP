@@ -9,7 +9,6 @@ import '../bloc/farm_event.dart';
 import '../bloc/farm_state.dart';
 import '../bloc/field_bloc.dart';
 import '../bloc/field_event.dart';
-import '../bloc/field_state.dart';
 import '../widgets/farm_stats_row.dart';
 import '../widgets/field_list_tile.dart';
 import 'farm_editor_screen.dart';
@@ -28,6 +27,10 @@ class FarmDetailScreen extends StatefulWidget {
 }
 
 class _FarmDetailScreenState extends State<FarmDetailScreen> {
+  // Held from onMapCreated so the screen can drive the camera; nothing reads
+  // it yet. Kept rather than dropped because removing it means re-adding the
+  // callback wiring the moment anything needs to move the map.
+  // ignore: unused_field
   ml.MaplibreMapController? _mapController;
 
   @override

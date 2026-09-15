@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
 
 import 'package:flutter_network/src/client/connect_client.dart';
 import 'package:flutter_network/src/services/connectivity_service.dart';

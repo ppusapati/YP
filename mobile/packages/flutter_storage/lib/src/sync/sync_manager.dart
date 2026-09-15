@@ -56,6 +56,9 @@ class SyncManager {
         _connectivityMonitor = connectivityMonitor ?? ConnectivityMonitor(),
         _db = db;
 
+  // The queue owns every read and write for now; the manager holds the
+  // database so a future batched flush does not have to thread it back in.
+  // ignore: unused_field
   final AppDatabase _db;
   final SyncQueue _syncQueue;
   final ConnectivityMonitor _connectivityMonitor;

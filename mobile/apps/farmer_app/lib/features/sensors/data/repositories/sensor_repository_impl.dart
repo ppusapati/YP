@@ -3,7 +3,6 @@ import '../../domain/entities/sensor_reading_entity.dart';
 import '../../domain/repositories/sensor_repository.dart';
 import '../datasources/sensor_local_datasource.dart';
 import '../datasources/sensor_remote_datasource.dart';
-import '../models/sensor_model.dart';
 import '../models/sensor_reading_model.dart';
 
 class SensorRepositoryImpl implements SensorRepository {

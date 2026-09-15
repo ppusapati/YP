@@ -167,7 +167,11 @@ jobs:
           setup_only: true
       - uses: dart-lang/setup-dart@v1
       - name: Install protoc-gen-dart
-        run: dart pub global activate protoc_plugin
+        # Pinned: 24.x resolves the well-known types to locally generated files
+        # instead of package:protobuf, and 25.1.0 changes how message factories
+        # construct. Either produces a diff against the committed tree that
+        # looks like drift and is not. See docs/proto-generation.md.
+        run: dart pub global activate protoc_plugin 25.0.0
       - name: Generate and check Dart proto drift
         run: |
           buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
@@ -238,6 +242,92 @@ jobs:
       - name: Test
         working-directory: web
         run: pnpm test
+
+  mobile:
+    name: Mobile analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # A pub workspace: one resolution at the root covers both apps and all
+      # seven packages, so a version conflict between them fails here rather
+      # than on whichever machine happens to build next.
+      - name: Resolve workspace
+        working-directory: mobile
+        run: flutter pub get
+
+      # The mobile suite had no CI job at all. Two apps and seven packages —
+      # every test in them only ran when someone remembered to, which is how
+      # 379 analyzer errors accumulated unnoticed.
+      #
+      # `--fatal-infos` is deliberately not set: the repository carries about a
+      # thousand lint infos (trailing commas, redundant defaults) and failing
+      # on them would mean this job is red from its first run and gets ignored.
+      # Errors and warnings fail; infos are reported.
+      - name: Analyze
+        working-directory: mobile
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        working-directory: mobile
+        run: |
+          set -e
+          for target in \
+            apps/farmer_app \
+            apps/agronomist_app \
+            packages/flutter_map_core \
+            packages/flutter_proto \
+            packages/flutter_ui_core; do
+            echo "── $target"
+            (cd "$target" && flutter test)
+          done
+
+  mobile-integration:
+    name: Mobile integration tests (emulator)
+    runs-on: ubuntu-latest
+    # Only on the shared branches and on PRs into them: booting an emulator
+    # takes several minutes, which is too slow to sit in front of every push
+    # to a topic branch.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    needs: [mobile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        working-directory: mobile
+        run: flutter pub get
+
+      # KVM has to be enabled explicitly on GitHub's Ubuntu runners or the
+      # emulator falls back to software rendering and times out.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # These tests start the whole app — twenty-five blocs out of a Riverpod
+      # graph, three Drift schemas, a router with sixty routes. A provider that
+      # throws at read time or a migration that fails on a fresh install passes
+      # every unit test in the repository and gives a white screen on a phone.
+      - name: Run integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: cd mobile/apps/farmer_app && flutter test integration_test
 
   todo-budget:
     name: TODO debt ratchet

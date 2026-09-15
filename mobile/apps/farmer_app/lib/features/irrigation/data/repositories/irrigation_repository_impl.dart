@@ -5,7 +5,6 @@ import '../../domain/repositories/irrigation_repository.dart';
 import '../datasources/irrigation_local_datasource.dart';
 import '../datasources/irrigation_remote_datasource.dart';
 import '../models/irrigation_schedule_model.dart';
-import '../models/irrigation_zone_model.dart';
 
 class IrrigationRepositoryImpl implements IrrigationRepository {
   IrrigationRepositoryImpl({

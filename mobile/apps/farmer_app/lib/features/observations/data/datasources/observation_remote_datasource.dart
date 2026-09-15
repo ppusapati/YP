@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_network/flutter_network.dart';
-import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 import '../models/observation_model.dart';

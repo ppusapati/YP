@@ -345,7 +345,7 @@ class OfflineTileManager {
     if (_activeDownloadRegionId == regionId) {
       cancelDownload();
       // Wait briefly for the download loop to notice the cancellation.
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
     }
 
     await _db!.delete(
