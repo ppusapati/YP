@@ -14,6 +14,19 @@ type TraceabilityService interface {
 	GetRecord(ctx context.Context, id string) (*domain.TraceabilityRecord, error)
 	ListRecords(ctx context.Context, filter domain.ListRecordsFilter) ([]domain.TraceabilityRecord, int64, error)
 
+	// FindOpenRecordForField returns the field's current unharvested record, or
+	// (nil, nil) if there is none.
+	//
+	// Exists for the event consumer: an irrigation or spraying event names a
+	// field, and the chain of custody it belongs to is whatever is growing
+	// there now. A field between seasons legitimately has none, so absence is
+	// nil rather than an error.
+	FindOpenRecordForField(ctx context.Context, fieldID string) (*domain.TraceabilityRecord, error)
+
+	// FindRecordByBatch returns the record with this batch number, or
+	// (nil, nil). Used to keep event handlers idempotent across Kafka replays.
+	FindRecordByBatch(ctx context.Context, batchNumber string) (*domain.TraceabilityRecord, error)
+
 	// Supply Chain Events
 	AddSupplyChainEvent(ctx context.Context, input domain.AddSupplyChainEventInput) (*domain.SupplyChainEvent, error)
 	GetSupplyChain(ctx context.Context, recordID string) ([]domain.SupplyChainEvent, error)

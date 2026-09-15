@@ -71,17 +71,19 @@ work, then `return nil`. Kafka commits the offset and the event is gone.
 
 Ordered by consequence rather than by count:
 
-| Handler | Consequence |
-|---|---|
-| `traceability_consumer.go:191` harvest recorded | **The chain of custody has a hole at the harvest** — the one link a traceability service exists to provide |
-| `field_consumer.go:107` farm deleted | Orphaned fields stay active under a deleted farm |
-| `farm_consumer.go:88,104,120` field created/updated/deleted | Farm field counts and total area diverge from reality, then `GetFarm` serves them as authoritative |
-| `irrigation_consumer.go:137` field deleted | Active irrigation schedules keep running against a deleted field |
-| `satellite_consumer.go:115,146` farm/field deleted | Pending imagery tasks are never cancelled and keep billing |
-| `sensor_consumer.go:99,114` field/farm deleted | Sensors are never decommissioned |
-| `traceability_consumer.go:99,113,129,145,175` | Provenance links never written |
-| `yield_consumer.go:119` crop assigned | No prediction generated; the UI shows "no data" rather than an error |
-| `crop_consumer.go:104`, `soil_consumer.go:129` | Assignments stay active; samples never archived |
+| Handler | Consequence | Status |
+|---|---|---|
+| traceability, harvest recorded | **The chain of custody has a hole at the harvest** — the one link a traceability service exists to provide | **Fixed** |
+| traceability, crop assigned to field | The chain did not start until harvest, so nothing that happened while the crop grew had a batch to attach to | **Fixed** — the record now opens at planting and the harvest closes it |
+| traceability, irrigation | "Recording for compliance" while recording nothing, for one of the inputs an organic or GAP audit asks about | **Fixed** — attached to the batch growing in that field |
+| traceability, farm/field/crop created | Provenance links never written | **Closed as not applicable** — see below |
+| `field_consumer.go` farm deleted | Orphaned fields stay active under a deleted farm | **Fixed** |
+| `farm_consumer.go:88,104,120` field created/updated/deleted | Farm field counts and total area diverge from reality, then `GetFarm` serves them as authoritative | Open |
+| `irrigation_consumer.go:137` field deleted | Active irrigation schedules keep running against a deleted field | Open |
+| `satellite_consumer.go:115,146` farm/field deleted | Pending imagery tasks are never cancelled and keep billing | Open |
+| `sensor_consumer.go:99,114` field/farm deleted | Sensors are never decommissioned | Open |
+| `yield_consumer.go:119` crop assigned | No prediction generated; the UI shows "no data" rather than an error | Open |
+| `crop_consumer.go:104`, `soil_consumer.go:129` | Assignments stay active; samples never archived | Open |
 
 **Triage: implement.** These are not hard — each is a call to a service method
 that already exists — but they are numerous, and the cascade deletes have
@@ -90,6 +92,36 @@ doing before the cosmetic ones.
 
 **Do not** convert these to "log and return an error" as a stopgap: that turns a
 silent drop into a poison-pill message that blocks the partition.
+
+**One of them was the wrong thing to ask for.** The TODOs on traceability's
+farm-created, farm-updated, field-created and crop-created handlers said to call
+`AddSupplyChainEvent`, which the model cannot express: a supply chain event
+hangs off a traceability record, and a record is one batch from one field's
+season. A farm being renamed or a crop *type* being registered belongs to no
+batch. Those four now do nothing on purpose, with the reasoning in the code, and
+what the farm and field actually contribute to provenance is read through the
+outbound clients when a chain is assembled — current at that moment rather than
+duplicated into an event stream that then drifts.
+
+Worth naming because implementing them as written would have produced a table
+full of supply chain events attached to nothing, which counts as clearing the
+debt and is worse than the TODO.
+
+### 4. The duplicated package trees
+
+Most services keep two copies of each package: `<svc>/internal/...` for the
+standalone binary and `<svc>/...` for `cmd/monolith`. Both compile. **They have
+already drifted**, and the drift is what produced the fabricated temporal
+analysis above.
+
+`alert-service`, `satellite-analytics-service`, `satellite-tile-service`,
+`traceability-service` and `field-service` are now collapsed onto alias shims —
+`type X = internal.X`, which is the same type, so one implementation serves
+both. The remaining services should follow.
+
+This is the highest-leverage item on the list, because until it is done every
+fix elsewhere has to be made twice and there is measured evidence that the
+second one gets missed.
 
 ### 4. The duplicated package trees
 

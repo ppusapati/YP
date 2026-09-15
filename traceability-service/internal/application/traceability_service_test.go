@@ -135,6 +135,26 @@ func (m *mockTraceabilityRepo) ListRecords(_ context.Context, tenantID string, _
 	return result, int64(len(result)), nil
 }
 
+func (m *mockTraceabilityRepo) FindOpenRecordForField(_ context.Context, fieldID, tenantID string) (*domain.TraceabilityRecord, error) {
+	for _, r := range m.records {
+		if r.TenantID == tenantID && r.FieldID == fieldID && r.HarvestDate == nil {
+			return r, nil
+		}
+	}
+	// Absence is nil, not NotFound: a field between seasons legitimately has no
+	// open batch.
+	return nil, nil
+}
+
+func (m *mockTraceabilityRepo) FindRecordByBatchNumber(_ context.Context, batchNumber, tenantID string) (*domain.TraceabilityRecord, error) {
+	for _, r := range m.records {
+		if r.TenantID == tenantID && r.BatchNumber == batchNumber {
+			return r, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *mockTraceabilityRepo) UpdateRecordCompliance(_ context.Context, id, tenantID string, status domain.ComplianceStatusType, _ string) (*domain.TraceabilityRecord, error) {
 	r, ok := m.records[id]
 	if !ok || r.TenantID != tenantID {
@@ -1407,4 +1427,104 @@ func TestListBatches_MissingTenant(t *testing.T) {
 	_, _, err := svc.ListBatches(ctx, domain.ListBatchesFilter{})
 	require.Error(t, err)
 	assert.True(t, errors.IsBadRequest(err))
+}
+
+// ---------------------------------------------------------------------------
+// Open-batch lookups
+// ---------------------------------------------------------------------------
+
+func TestFindOpenRecordForFieldReturnsTheUnharvestedBatch(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	open := seedRecord(repo, "rec-open", "tenant-1")
+	open.FieldID = "field-001"
+
+	got, err := svc.FindOpenRecordForField(ctx, "field-001")
+	if err != nil {
+		t.Fatalf("FindOpenRecordForField: %v", err)
+	}
+	if got == nil || got.ID != "rec-open" {
+		t.Fatalf("got %v, want the open record", got)
+	}
+}
+
+func TestAHarvestedBatchIsNoLongerOpen(t *testing.T) {
+	// An activity happening now must not attach to a batch already in a crate.
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	harvested := time.Now()
+	rec := seedRecord(repo, "rec-closed", "tenant-1")
+	rec.FieldID = "field-001"
+	rec.HarvestDate = &harvested
+
+	got, err := svc.FindOpenRecordForField(ctx, "field-001")
+	if err != nil {
+		t.Fatalf("FindOpenRecordForField: %v", err)
+	}
+	if got != nil {
+		t.Errorf("a harvested batch was returned as open: %+v", got)
+	}
+}
+
+func TestAFieldBetweenSeasonsIsNotAnError(t *testing.T) {
+	// Absence is a legitimate answer. Returning NotFound would force every
+	// caller to distinguish "no batch" from "lookup failed" by error code.
+	_, _, svc := newService()
+
+	got, err := svc.FindOpenRecordForField(testContext("tenant-1", "user-1"), "field-001")
+	if err != nil {
+		t.Fatalf("a field with no open batch produced an error: %v", err)
+	}
+	if got != nil {
+		t.Errorf("got %+v, want nil", got)
+	}
+}
+
+func TestAnEmptyFieldIdIsRefusedRatherThanAnswered(t *testing.T) {
+	// The dangerous case: an unfiltered lookup that comes back with some other
+	// field's record would attach an activity to the wrong batch, which is the
+	// exact failure a traceability service exists to prevent.
+	repo, _, svc := newService()
+	rec := seedRecord(repo, "rec-other", "tenant-1")
+	rec.FieldID = "field-999"
+
+	got, err := svc.FindOpenRecordForField(testContext("tenant-1", "user-1"), "")
+	if err == nil {
+		t.Fatalf("an empty field id was answered with %+v", got)
+	}
+}
+
+func TestOpenBatchLookupsAreTenantScoped(t *testing.T) {
+	repo, _, svc := newService()
+	other := seedRecord(repo, "rec-other-tenant", "tenant-2")
+	other.FieldID = "field-001"
+
+	got, err := svc.FindOpenRecordForField(testContext("tenant-1", "user-1"), "field-001")
+	if err != nil {
+		t.Fatalf("FindOpenRecordForField: %v", err)
+	}
+	if got != nil {
+		t.Errorf("another tenant's batch was returned: %+v", got)
+	}
+}
+
+func TestFindRecordByBatchFindsTheReplayTarget(t *testing.T) {
+	repo, _, svc := newService()
+	rec := seedRecord(repo, "rec-batch", "tenant-1")
+	rec.BatchNumber = "BATCH-field-001-crop-001-20251101"
+
+	got, err := svc.FindRecordByBatch(testContext("tenant-1", "user-1"), rec.BatchNumber)
+	if err != nil {
+		t.Fatalf("FindRecordByBatch: %v", err)
+	}
+	if got == nil || got.ID != "rec-batch" {
+		t.Fatalf("got %v, want the record under that batch number", got)
+	}
+
+	unseen, err := svc.FindRecordByBatch(testContext("tenant-1", "user-1"), "BATCH-never-seen")
+	if err != nil || unseen != nil {
+		t.Errorf("an unseen batch gave (%v, %v), want (nil, nil)", unseen, err)
+	}
 }

@@ -159,6 +159,35 @@ func (s *traceabilityService) GetRecord(ctx context.Context, id string) (*domain
 	return record, nil
 }
 
+// FindOpenRecordForField returns the field's current unharvested record.
+func (s *traceabilityService) FindOpenRecordForField(ctx context.Context, fieldID string) (*domain.TraceabilityRecord, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if fieldID == "" {
+		// Refused rather than answered with whatever the query returns
+		// unfiltered: a lookup for "the open record of no field" that came back
+		// with some other field's record would attach an activity to the wrong
+		// batch, which is the exact failure a traceability service exists to
+		// prevent.
+		return nil, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	return s.repo.FindOpenRecordForField(ctx, fieldID, tenantID)
+}
+
+// FindRecordByBatch returns the record with this batch number.
+func (s *traceabilityService) FindRecordByBatch(ctx context.Context, batchNumber string) (*domain.TraceabilityRecord, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if batchNumber == "" {
+		return nil, errors.BadRequest("MISSING_BATCH_NUMBER", "batch_number is required")
+	}
+	return s.repo.FindRecordByBatchNumber(ctx, batchNumber, tenantID)
+}
+
 func (s *traceabilityService) ListRecords(ctx context.Context, filter domain.ListRecordsFilter) ([]domain.TraceabilityRecord, int64, error) {
 	tenantID := p9context.TenantID(ctx)
 	if tenantID == "" {

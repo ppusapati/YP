@@ -15,15 +15,20 @@ import (
 	"p9e.in/samavaya/agriculture/traceability-service/internal/ports/inbound"
 )
 
-// recordingService captures what the consumer would create, plus the tenant
-// the call was scoped to — which is the part that silently produces nothing
-// when it is missing.
+// recordingService captures what the consumer would write, plus the tenant the
+// call was scoped to — which is the part that silently produces nothing when it
+// is missing.
 type recordingService struct {
-	inbound.TraceabilityService // nil: the consumer only calls CreateRecord
+	inbound.TraceabilityService // nil: only the methods below are reached
 
-	created []tracedomain.CreateRecordInput
-	tenants []string
-	err     error
+	created  []tracedomain.CreateRecordInput
+	updated  []tracedomain.UpdateRecordInput
+	events   []tracedomain.AddSupplyChainEventInput
+	tenants  []string
+	openFor  map[string]*tracedomain.TraceabilityRecord // field id → open record
+	byBatch  map[string]*tracedomain.TraceabilityRecord
+	err      error
+	eventErr error
 }
 
 func (s *recordingService) CreateRecord(ctx context.Context, in tracedomain.CreateRecordInput) (*tracedomain.TraceabilityRecord, error) {
@@ -34,11 +39,56 @@ func (s *recordingService) CreateRecord(ctx context.Context, in tracedomain.Crea
 	s.tenants = append(s.tenants, p9context.TenantID(ctx))
 	rec := &tracedomain.TraceabilityRecord{}
 	rec.ID = "trace-1"
+	rec.BatchNumber = in.BatchNumber
 	return rec, nil
 }
 
+func (s *recordingService) UpdateRecord(ctx context.Context, _ string, in tracedomain.UpdateRecordInput) (*tracedomain.TraceabilityRecord, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	s.updated = append(s.updated, in)
+	s.tenants = append(s.tenants, p9context.TenantID(ctx))
+	return &tracedomain.TraceabilityRecord{ID: "trace-1"}, nil
+}
+
+func (s *recordingService) AddSupplyChainEvent(ctx context.Context, in tracedomain.AddSupplyChainEventInput) (*tracedomain.SupplyChainEvent, error) {
+	if s.eventErr != nil {
+		return nil, s.eventErr
+	}
+	s.events = append(s.events, in)
+	s.tenants = append(s.tenants, p9context.TenantID(ctx))
+	return &tracedomain.SupplyChainEvent{ID: "sce-1", RecordID: in.RecordID}, nil
+}
+
+func (s *recordingService) FindOpenRecordForField(_ context.Context, fieldID string) (*tracedomain.TraceabilityRecord, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.openFor[fieldID], nil
+}
+
+func (s *recordingService) FindRecordByBatch(_ context.Context, batch string) (*tracedomain.TraceabilityRecord, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.byBatch[batch], nil
+}
+
+// kinds lists the supply chain event types recorded, in order.
+func (s *recordingService) kinds() []tracedomain.SupplyChainEventType {
+	out := make([]tracedomain.SupplyChainEventType, 0, len(s.events))
+	for _, e := range s.events {
+		out = append(out, e.EventType)
+	}
+	return out
+}
+
 func newConsumer() (*TraceabilityConsumer, *recordingService) {
-	svc := &recordingService{}
+	svc := &recordingService{
+		openFor: map[string]*tracedomain.TraceabilityRecord{},
+		byBatch: map[string]*tracedomain.TraceabilityRecord{},
+	}
 	return NewTraceabilityConsumer(svc, testutil.NopLogger{}), svc
 }
 
@@ -196,6 +246,13 @@ func TestWronglyTypedFieldsDoNotPanic(t *testing.T) {
 func TestABadHarvestDateDoesNotBlockTheRecord(t *testing.T) {
 	// The date is useful but not essential; losing the whole chain-of-custody
 	// link over an unparseable timestamp would be the wrong trade.
+	//
+	// It does not become nil either, which is what this used to do. harvest_date
+	// IS NULL is what marks a batch open, so a record closed without one stays
+	// open forever and the next irrigation on that field attaches to a batch
+	// already in a crate. The event's own timestamp stands in — a real fact,
+	// the moment the harvest was reported — and the metadata says so rather
+	// than passing it off as the farmer's figure.
 	c, svc := newConsumer()
 	data := fullHarvest()
 	data["harvest_date"] = "the fourteenth"
@@ -206,7 +263,231 @@ func TestABadHarvestDateDoesNotBlockTheRecord(t *testing.T) {
 	if len(svc.created) != 1 {
 		t.Fatal("an unparseable date prevented the record")
 	}
-	if svc.created[0].HarvestDate != nil {
-		t.Error("an unparseable date was stored as a time")
+	got := svc.created[0]
+	if got.HarvestDate == nil {
+		t.Fatal("the batch was left open with no harvest date")
+	}
+	if !got.HarvestDate.Equal(time.Date(2026, 3, 15, 6, 0, 0, 0, time.UTC)) {
+		t.Errorf("harvest date %v, want the event timestamp", got.HarvestDate)
+	}
+	if got.Metadata["harvest_date_source"] != "event-timestamp" {
+		t.Errorf("metadata %v does not disclose that the date was substituted", got.Metadata)
+	}
+}
+
+// ── The chain, from planting to harvest ─────────────────────────────────────
+
+func plantingEvent(data map[string]interface{}) *eventsdomain.DomainEvent {
+	return &eventsdomain.DomainEvent{
+		ID:          "evt-plant",
+		Type:        eventsdomain.EventTypeFieldCropAssigned,
+		AggregateID: "f-1",
+		Timestamp:   time.Date(2025, 11, 2, 7, 0, 0, 0, time.UTC),
+		Data:        data,
+	}
+}
+
+func fullPlanting() map[string]interface{} {
+	return map[string]interface{}{
+		"tenant_id":     "t-1",
+		"farm_id":       "fm-1",
+		"field_id":      "f-1",
+		"crop_id":       "c-1",
+		"planting_date": "2025-11-01T00:00:00Z",
+		"season":        "rabi",
+	}
+}
+
+func TestPlantingOpensTheChainOfCustody(t *testing.T) {
+	// This handler used to log "crop assigned to field, recording in
+	// traceability" and record nothing, so the chain did not start until
+	// harvest. A traceability service whose chain starts at harvest can say
+	// where a crate came from but not how it was grown — which is exactly the
+	// claim an organic or GAP certification rests on.
+	c, svc := newConsumer()
+	if err := c.HandleEvent(context.Background(), plantingEvent(fullPlanting())); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	if len(svc.created) != 1 {
+		t.Fatalf("created %d records, want 1", len(svc.created))
+	}
+	rec := svc.created[0]
+	if rec.FieldID != "f-1" || rec.CropID != "c-1" || rec.FarmID != "fm-1" {
+		t.Errorf("record does not identify the planting: %+v", rec)
+	}
+	if rec.PlantingDate == nil || !rec.PlantingDate.Equal(time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("planting date %v", rec.PlantingDate)
+	}
+	if rec.HarvestDate != nil {
+		t.Error("a freshly planted batch was opened already harvested")
+	}
+
+	// And the PLANTED link exists, not just the record.
+	if kinds := svc.kinds(); len(kinds) != 1 || kinds[0] != tracedomain.SupplyChainEventTypePlanted {
+		t.Errorf("supply chain events %v, want one PLANTED", kinds)
+	}
+	if svc.tenants[0] != "t-1" {
+		t.Errorf("scoped to tenant %q, want t-1", svc.tenants[0])
+	}
+}
+
+func TestAReplayedPlantingDoesNotOpenASecondBatch(t *testing.T) {
+	// Kafka delivery is at-least-once. Two records for one planting is two
+	// chains of custody for one crop, and no way to tell which is the real one.
+	c, svc := newConsumer()
+	e := plantingEvent(fullPlanting())
+
+	if err := c.HandleEvent(context.Background(), e); err != nil {
+		t.Fatalf("first delivery: %v", err)
+	}
+	// The record now exists under its derived batch number.
+	batch := svc.created[0].BatchNumber
+	if batch == "" {
+		t.Fatal("no batch number was derived")
+	}
+	svc.byBatch[batch] = &tracedomain.TraceabilityRecord{ID: "trace-1", BatchNumber: batch}
+
+	if err := c.HandleEvent(context.Background(), e); err != nil {
+		t.Fatalf("redelivery: %v", err)
+	}
+	if len(svc.created) != 1 {
+		t.Errorf("created %d records for one planting", len(svc.created))
+	}
+}
+
+func TestIrrigationAttachesToTheBatchGrowingInThatField(t *testing.T) {
+	// "Recording for compliance" while recording nothing was the worst possible
+	// version of this handler: water application is one of the inputs an
+	// organic or GAP audit asks about.
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{ID: "trace-1", BatchNumber: "BATCH-f-1"}
+
+	err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID:        "evt-irr",
+		Type:      eventsdomain.EventTypeIrrigationCreated,
+		Timestamp: time.Date(2026, 1, 8, 5, 30, 0, 0, time.UTC),
+		Data: map[string]interface{}{
+			"tenant_id": "t-1", "field_id": "f-1", "irrigation_id": "irr-9",
+			"started_at": "2026-01-08T05:00:00Z", "water_amount_liters": "12000",
+		},
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	if len(svc.events) != 1 {
+		t.Fatalf("recorded %d supply chain events, want 1", len(svc.events))
+	}
+	got := svc.events[0]
+	if got.EventType != tracedomain.SupplyChainEventTypeIrrigated {
+		t.Errorf("event type %q, want IRRIGATED", got.EventType)
+	}
+	if got.RecordID != "trace-1" {
+		t.Errorf("attached to record %q, want the open batch", got.RecordID)
+	}
+	if !strings.Contains(got.Details, "irr-9") || !strings.Contains(got.Details, "12000") {
+		t.Errorf("details %q lose the irrigation", got.Details)
+	}
+}
+
+func TestIrrigatingAFallowFieldIsNotAnError(t *testing.T) {
+	// It happens, and there is no batch it belongs to. Not a failure to retry
+	// and not something to attach to whatever record is nearest.
+	c, svc := newConsumer() // no open record for f-1
+
+	err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationCreated,
+		Timestamp: time.Now(),
+		Data:      map[string]interface{}{"tenant_id": "t-1", "field_id": "f-1", "irrigation_id": "irr-9"},
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent returned %v; this must not block the partition", err)
+	}
+	if len(svc.events) != 0 {
+		t.Errorf("an irrigation was attached to a batch that does not exist: %+v", svc.events)
+	}
+}
+
+func TestAHarvestClosesTheBatchItBelongsTo(t *testing.T) {
+	// The whole point of opening at planting. Creating a second record here
+	// would leave one covering the growing season with no harvest and another
+	// covering the harvest with no history — two halves of a chain of custody
+	// and no chain.
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{ID: "trace-1", BatchNumber: "BATCH-f-1-c-1-20251101"}
+
+	if err := c.HandleEvent(context.Background(), harvestEvent(fullHarvest())); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	if len(svc.created) != 0 {
+		t.Errorf("a second record was opened for a harvest that closes an existing batch: %+v", svc.created)
+	}
+	if len(svc.updated) != 1 {
+		t.Fatalf("updated %d records, want 1", len(svc.updated))
+	}
+	if svc.updated[0].HarvestDate == nil {
+		t.Error("the batch was not closed: no harvest date was written")
+	}
+	if kinds := svc.kinds(); len(kinds) != 1 || kinds[0] != tracedomain.SupplyChainEventTypeHarvested {
+		t.Errorf("supply chain events %v, want one HARVESTED", kinds)
+	}
+}
+
+func TestAReplayedHarvestDoesNotReopenOrDoubleStampTheBatch(t *testing.T) {
+	// A redelivery must not move the harvest date or append a second HARVESTED
+	// link to the same batch.
+	closed := time.Date(2026, 3, 14, 0, 0, 0, 0, time.UTC)
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{
+		ID: "trace-1", BatchNumber: "BATCH-f-1", HarvestDate: &closed,
+	}
+
+	if err := c.HandleEvent(context.Background(), harvestEvent(fullHarvest())); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+	if len(svc.updated) != 0 || len(svc.events) != 0 {
+		t.Errorf("an already-harvested batch was written to again: %d updates, %d events",
+			len(svc.updated), len(svc.events))
+	}
+}
+
+func TestAHarvestWithNoRecordedPlantingStillGetsARecord(t *testing.T) {
+	// Less useful than a full chain — where the crate came from, but not how it
+	// was grown — and much better than losing the harvest.
+	c, svc := newConsumer() // nothing open for f-1
+
+	if err := c.HandleEvent(context.Background(), harvestEvent(fullHarvest())); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+	if len(svc.created) != 1 {
+		t.Fatalf("created %d records, want 1", len(svc.created))
+	}
+	if kinds := svc.kinds(); len(kinds) != 1 || kinds[0] != tracedomain.SupplyChainEventTypeHarvested {
+		t.Errorf("supply chain events %v, want one HARVESTED", kinds)
+	}
+}
+
+func TestMasterDataEventsAreNotWrittenIntoAnyChain(t *testing.T) {
+	// A farm being renamed or a crop *type* being registered belongs to no
+	// batch. The TODOs that used to sit in these handlers asked for a supply
+	// chain event with nothing to hang it from.
+	c, svc := newConsumer()
+
+	for _, e := range []*eventsdomain.DomainEvent{
+		{ID: "e1", Type: eventsdomain.EventTypeFarmCreated, Data: map[string]interface{}{"farm_id": "fm-1"}},
+		{ID: "e2", Type: eventsdomain.EventTypeFarmUpdated, Data: map[string]interface{}{"farm_id": "fm-1"}},
+		{ID: "e3", Type: eventsdomain.EventTypeFieldCreated, Data: map[string]interface{}{"field_id": "f-1"}},
+		{ID: "e4", Type: eventsdomain.EventTypeCropCreated, Data: map[string]interface{}{"crop_id": "c-1"}},
+	} {
+		if err := c.HandleEvent(context.Background(), e); err != nil {
+			t.Fatalf("%s: %v", e.Type, err)
+		}
+	}
+
+	if len(svc.created) != 0 || len(svc.events) != 0 {
+		t.Errorf("master data was written into a chain: %d records, %d events",
+			len(svc.created), len(svc.events))
 	}
 }
