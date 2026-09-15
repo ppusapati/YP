@@ -191,11 +191,16 @@ fetched at all. `flutter pub get` failed at the workspace root — `workspace` a
 pubspec declared `>=3.4.0` — and behind that, four packages depended on
 `protobuf: ^21.1.2`, a protoc_plugin version number that the protobuf runtime
 has never had. With those fixed the workspace resolves and `flutter analyze`
-runs for the first time: **413 errors**, of which 316 are in
-`packages/flutter_proto/test/services/` (written against an older generated
-API) and 97 in application source. `flutter_proto`'s barrel also re-exported 21
-colliding names into one namespace and so did not compile; that is fixed with
-derived `hide` clauses.
+runs for the first time. `flutter_proto`'s barrel also re-exported 21 colliding
+names into one namespace and so did not compile, which accounted for 321 of the
+errors on its own; that is fixed with derived `hide` clauses, and six
+datasources were missing the import for the entity enums they map onto.
+
+**379 errors remain**: 319 in `packages/flutter_proto/test/services/`, written
+against an older generated API, and 60 across about 25 source files. The
+largest cluster is `flutter_map_core`, which is written against a different
+version of the maplibre package than the one that resolves — that needs a
+decision about which way to move it rather than a mechanical fix.
 
 **Current state:** Flutter app with clean architecture, field inspection, irrigation, diagnosis, satellite, sensors. No offline mode, no push notifications.
 

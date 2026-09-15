@@ -5,6 +5,7 @@ import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as timestamp_pb;
 
 import '../models/soil_analysis_model.dart';
+import '../../domain/entities/soil_analysis_entity.dart';
 
 abstract class SoilRemoteDataSource {
   Future<SoilAnalysisModel> getSoilAnalysis(String fieldId);

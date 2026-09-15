@@ -8,6 +8,8 @@ import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
 
 import '../models/irrigation_schedule_model.dart';
 import '../models/irrigation_zone_model.dart';
+import '../../domain/entities/irrigation_schedule_entity.dart';
+import '../../domain/entities/irrigation_zone_entity.dart';
 
 abstract class IrrigationRemoteDataSource {
   Future<List<IrrigationZoneModel>> getZones(String fieldId);

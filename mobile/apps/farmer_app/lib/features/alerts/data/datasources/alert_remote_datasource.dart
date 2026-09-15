@@ -3,6 +3,7 @@ import 'package:flutter_proto/src/generated/alert.pb.dart' as alert_pb;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../models/alert_model.dart';
+import '../../domain/entities/alert_entity.dart';
 
 abstract class AlertRemoteDataSource {
   Future<List<AlertModel>> getAlerts({String? farmId, String? severity});
