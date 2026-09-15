@@ -527,6 +527,12 @@ class SoilAnalysis extends $pb.GeneratedMessage {
     $0.Timestamp? createdAt,
     $0.Timestamp? updatedAt,
     $fixnum.Int64? version,
+    $core.double? pH,
+    $core.double? nitrogenPpm,
+    $core.double? phosphorusPpm,
+    $core.double? potassiumPpm,
+    $core.double? organicMatterPct,
+    SoilTexture? texture,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -545,6 +551,12 @@ class SoilAnalysis extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (version != null) result.version = version;
+    if (pH != null) result.pH = pH;
+    if (nitrogenPpm != null) result.nitrogenPpm = nitrogenPpm;
+    if (phosphorusPpm != null) result.phosphorusPpm = phosphorusPpm;
+    if (potassiumPpm != null) result.potassiumPpm = potassiumPpm;
+    if (organicMatterPct != null) result.organicMatterPct = organicMatterPct;
+    if (texture != null) result.texture = texture;
     return result;
   }
 
@@ -583,6 +595,13 @@ class SoilAnalysis extends $pb.GeneratedMessage {
     ..aOM<$0.Timestamp>(15, _omitFieldNames ? '' : 'updatedAt',
         subBuilder: $0.Timestamp.create)
     ..aInt64(16, _omitFieldNames ? '' : 'version')
+    ..aD(17, _omitFieldNames ? '' : 'pH', protoName: 'pH')
+    ..aD(18, _omitFieldNames ? '' : 'nitrogenPpm')
+    ..aD(19, _omitFieldNames ? '' : 'phosphorusPpm')
+    ..aD(20, _omitFieldNames ? '' : 'potassiumPpm')
+    ..aD(21, _omitFieldNames ? '' : 'organicMatterPct')
+    ..aE<SoilTexture>(22, _omitFieldNames ? '' : 'texture',
+        enumValues: SoilTexture.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -747,6 +766,60 @@ class SoilAnalysis extends $pb.GeneratedMessage {
   $core.bool hasVersion() => $_has(15);
   @$pb.TagNumber(16)
   void clearVersion() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.double get pH => $_getN(16);
+  @$pb.TagNumber(17)
+  set pH($core.double value) => $_setDouble(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasPH() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearPH() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.double get nitrogenPpm => $_getN(17);
+  @$pb.TagNumber(18)
+  set nitrogenPpm($core.double value) => $_setDouble(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasNitrogenPpm() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearNitrogenPpm() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.double get phosphorusPpm => $_getN(18);
+  @$pb.TagNumber(19)
+  set phosphorusPpm($core.double value) => $_setDouble(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasPhosphorusPpm() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearPhosphorusPpm() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $core.double get potassiumPpm => $_getN(19);
+  @$pb.TagNumber(20)
+  set potassiumPpm($core.double value) => $_setDouble(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasPotassiumPpm() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearPotassiumPpm() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $core.double get organicMatterPct => $_getN(20);
+  @$pb.TagNumber(21)
+  set organicMatterPct($core.double value) => $_setDouble(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasOrganicMatterPct() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearOrganicMatterPct() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  SoilTexture get texture => $_getN(21);
+  @$pb.TagNumber(22)
+  set texture(SoilTexture value) => $_setField(22, value);
+  @$pb.TagNumber(22)
+  $core.bool hasTexture() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearTexture() => $_clearField(22);
 }
 
 class SoilMap extends $pb.GeneratedMessage {

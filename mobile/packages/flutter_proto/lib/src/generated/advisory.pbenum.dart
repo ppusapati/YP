@@ -14,6 +14,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// AdvisorySeverity represents the severity level of a crop advisory.
 class AdvisorySeverity extends $pb.ProtobufEnum {
   static const AdvisorySeverity ADVISORY_SEVERITY_UNSPECIFIED =
       AdvisorySeverity._(

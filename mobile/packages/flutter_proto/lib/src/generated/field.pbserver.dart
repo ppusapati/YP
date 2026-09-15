@@ -43,6 +43,24 @@ abstract class FieldServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $2.GetFieldSegmentsRequest request);
   $async.Future<$2.GetCropHistoryResponse> getCropHistory(
       $pb.ServerContext ctx, $2.GetCropHistoryRequest request);
+  $async.Future<$2.CreateCropCycleResponse> createCropCycle(
+      $pb.ServerContext ctx, $2.CreateCropCycleRequest request);
+  $async.Future<$2.GetCropCycleResponse> getCropCycle(
+      $pb.ServerContext ctx, $2.GetCropCycleRequest request);
+  $async.Future<$2.ListCropCyclesResponse> listCropCycles(
+      $pb.ServerContext ctx, $2.ListCropCyclesRequest request);
+  $async.Future<$2.UpdateCropCycleResponse> updateCropCycle(
+      $pb.ServerContext ctx, $2.UpdateCropCycleRequest request);
+  $async.Future<$2.LogActivityEventResponse> logActivityEvent(
+      $pb.ServerContext ctx, $2.LogActivityEventRequest request);
+  $async.Future<$2.ListActivityEventsResponse> listActivityEvents(
+      $pb.ServerContext ctx, $2.ListActivityEventsRequest request);
+  $async.Future<$2.AddActivityEvidenceResponse> addActivityEvidence(
+      $pb.ServerContext ctx, $2.AddActivityEvidenceRequest request);
+  $async.Future<$2.ListActivityEvidenceResponse> listActivityEvidence(
+      $pb.ServerContext ctx, $2.ListActivityEvidenceRequest request);
+  $async.Future<$2.DeleteActivityEvidenceResponse> deleteActivityEvidence(
+      $pb.ServerContext ctx, $2.DeleteActivityEvidenceRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -68,6 +86,24 @@ abstract class FieldServiceBase extends $pb.GeneratedService {
         return $2.GetFieldSegmentsRequest();
       case 'GetCropHistory':
         return $2.GetCropHistoryRequest();
+      case 'CreateCropCycle':
+        return $2.CreateCropCycleRequest();
+      case 'GetCropCycle':
+        return $2.GetCropCycleRequest();
+      case 'ListCropCycles':
+        return $2.ListCropCyclesRequest();
+      case 'UpdateCropCycle':
+        return $2.UpdateCropCycleRequest();
+      case 'LogActivityEvent':
+        return $2.LogActivityEventRequest();
+      case 'ListActivityEvents':
+        return $2.ListActivityEventsRequest();
+      case 'AddActivityEvidence':
+        return $2.AddActivityEvidenceRequest();
+      case 'ListActivityEvidence':
+        return $2.ListActivityEvidenceRequest();
+      case 'DeleteActivityEvidence':
+        return $2.DeleteActivityEvidenceRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -98,6 +134,27 @@ abstract class FieldServiceBase extends $pb.GeneratedService {
         return getFieldSegments(ctx, request as $2.GetFieldSegmentsRequest);
       case 'GetCropHistory':
         return getCropHistory(ctx, request as $2.GetCropHistoryRequest);
+      case 'CreateCropCycle':
+        return createCropCycle(ctx, request as $2.CreateCropCycleRequest);
+      case 'GetCropCycle':
+        return getCropCycle(ctx, request as $2.GetCropCycleRequest);
+      case 'ListCropCycles':
+        return listCropCycles(ctx, request as $2.ListCropCyclesRequest);
+      case 'UpdateCropCycle':
+        return updateCropCycle(ctx, request as $2.UpdateCropCycleRequest);
+      case 'LogActivityEvent':
+        return logActivityEvent(ctx, request as $2.LogActivityEventRequest);
+      case 'ListActivityEvents':
+        return listActivityEvents(ctx, request as $2.ListActivityEventsRequest);
+      case 'AddActivityEvidence':
+        return addActivityEvidence(
+            ctx, request as $2.AddActivityEvidenceRequest);
+      case 'ListActivityEvidence':
+        return listActivityEvidence(
+            ctx, request as $2.ListActivityEvidenceRequest);
+      case 'DeleteActivityEvidence':
+        return deleteActivityEvidence(
+            ctx, request as $2.DeleteActivityEvidenceRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

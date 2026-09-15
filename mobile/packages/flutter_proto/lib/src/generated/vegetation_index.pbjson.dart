@@ -88,6 +88,14 @@ const VegetationIndex$json = {
     {'1': 'pixel_count', '3': 12, '4': 1, '5': 3, '10': 'pixelCount'},
     {'1': 'coverage_percent', '3': 13, '4': 1, '5': 1, '10': 'coveragePercent'},
     {'1': 'raster_s3_key', '3': 14, '4': 1, '5': 9, '10': 'rasterS3Key'},
+    {'1': 'cloud_fraction', '3': 18, '4': 1, '5': 1, '10': 'cloudFraction'},
+    {
+      '1': 'valid_pixel_fraction',
+      '3': 19,
+      '4': 1,
+      '5': 1,
+      '10': 'validPixelFraction'
+    },
     {
       '1': 'acquisition_date',
       '3': 15,
@@ -126,10 +134,12 @@ final $typed_data.Uint8List vegetationIndexDescriptor = $convert.base64Decode(
     'bHVlEiMKDXN0ZF9kZXZpYXRpb24YCiABKAFSDHN0ZERldmlhdGlvbhIhCgxtZWRpYW5fdmFsdW'
     'UYCyABKAFSC21lZGlhblZhbHVlEh8KC3BpeGVsX2NvdW50GAwgASgDUgpwaXhlbENvdW50EikK'
     'EGNvdmVyYWdlX3BlcmNlbnQYDSABKAFSD2NvdmVyYWdlUGVyY2VudBIiCg1yYXN0ZXJfczNfa2'
-    'V5GA4gASgJUgtyYXN0ZXJTM0tleRJFChBhY3F1aXNpdGlvbl9kYXRlGA8gASgLMhouZ29vZ2xl'
-    'LnByb3RvYnVmLlRpbWVzdGFtcFIPYWNxdWlzaXRpb25EYXRlEjsKC2NvbXB1dGVkX2F0GBAgAS'
-    'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKY29tcHV0ZWRBdBI5CgpjcmVhdGVkX2F0'
-    'GBEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0');
+    'V5GA4gASgJUgtyYXN0ZXJTM0tleRIlCg5jbG91ZF9mcmFjdGlvbhgSIAEoAVINY2xvdWRGcmFj'
+    'dGlvbhIwChR2YWxpZF9waXhlbF9mcmFjdGlvbhgTIAEoAVISdmFsaWRQaXhlbEZyYWN0aW9uEk'
+    'UKEGFjcXVpc2l0aW9uX2RhdGUYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUg9h'
+    'Y3F1aXNpdGlvbkRhdGUSOwoLY29tcHV0ZWRfYXQYECABKAsyGi5nb29nbGUucHJvdG9idWYuVG'
+    'ltZXN0YW1wUgpjb21wdXRlZEF0EjkKCmNyZWF0ZWRfYXQYESABKAsyGi5nb29nbGUucHJvdG9i'
+    'dWYuVGltZXN0YW1wUgljcmVhdGVkQXQ=');
 
 @$core.Deprecated('Use computeTaskDescriptor instead')
 const ComputeTask$json = {

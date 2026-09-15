@@ -43,6 +43,8 @@ class VegetationIndex extends $pb.GeneratedMessage {
     $0.Timestamp? acquisitionDate,
     $0.Timestamp? computedAt,
     $0.Timestamp? createdAt,
+    $core.double? cloudFraction,
+    $core.double? validPixelFraction,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -62,6 +64,9 @@ class VegetationIndex extends $pb.GeneratedMessage {
     if (acquisitionDate != null) result.acquisitionDate = acquisitionDate;
     if (computedAt != null) result.computedAt = computedAt;
     if (createdAt != null) result.createdAt = createdAt;
+    if (cloudFraction != null) result.cloudFraction = cloudFraction;
+    if (validPixelFraction != null)
+      result.validPixelFraction = validPixelFraction;
     return result;
   }
 
@@ -100,6 +105,8 @@ class VegetationIndex extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.create)
     ..aOM<$0.Timestamp>(17, _omitFieldNames ? '' : 'createdAt',
         subBuilder: $0.Timestamp.create)
+    ..aD(18, _omitFieldNames ? '' : 'cloudFraction')
+    ..aD(19, _omitFieldNames ? '' : 'validPixelFraction')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -279,6 +286,26 @@ class VegetationIndex extends $pb.GeneratedMessage {
   void clearCreatedAt() => $_clearField(17);
   @$pb.TagNumber(17)
   $0.Timestamp ensureCreatedAt() => $_ensure(16);
+
+  /// Scene quality. An index computed over cloud is not wrong so much as
+  /// meaningless, and these are what let a reader tell that from a clear day.
+  @$pb.TagNumber(18)
+  $core.double get cloudFraction => $_getN(17);
+  @$pb.TagNumber(18)
+  set cloudFraction($core.double value) => $_setDouble(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasCloudFraction() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearCloudFraction() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.double get validPixelFraction => $_getN(18);
+  @$pb.TagNumber(19)
+  set validPixelFraction($core.double value) => $_setDouble(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasValidPixelFraction() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearValidPixelFraction() => $_clearField(19);
 }
 
 class ComputeTask extends $pb.GeneratedMessage {

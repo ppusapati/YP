@@ -283,6 +283,25 @@ const SoilAnalysis$json = {
       '10': 'updatedAt'
     },
     {'1': 'version', '3': 16, '4': 1, '5': 3, '10': 'version'},
+    {'1': 'pH', '3': 17, '4': 1, '5': 1, '10': 'pH'},
+    {'1': 'nitrogen_ppm', '3': 18, '4': 1, '5': 1, '10': 'nitrogenPpm'},
+    {'1': 'phosphorus_ppm', '3': 19, '4': 1, '5': 1, '10': 'phosphorusPpm'},
+    {'1': 'potassium_ppm', '3': 20, '4': 1, '5': 1, '10': 'potassiumPpm'},
+    {
+      '1': 'organic_matter_pct',
+      '3': 21,
+      '4': 1,
+      '5': 1,
+      '10': 'organicMatterPct'
+    },
+    {
+      '1': 'texture',
+      '3': 22,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.soil.v1.SoilTexture',
+      '10': 'texture'
+    },
   ],
 };
 
@@ -299,7 +318,12 @@ final $typed_data.Uint8List soilAnalysisDescriptor = $convert.base64Decode(
     'emVkX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKYW5hbHl6ZWRBdBIYCg'
     'dzdW1tYXJ5GA0gASgJUgdzdW1tYXJ5EjkKCmNyZWF0ZWRfYXQYDiABKAsyGi5nb29nbGUucHJv'
     'dG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSOQoKdXBkYXRlZF9hdBgPIAEoCzIaLmdvb2dsZS'
-    '5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdBIYCgd2ZXJzaW9uGBAgASgDUgd2ZXJzaW9u');
+    '5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdBIYCgd2ZXJzaW9uGBAgASgDUgd2ZXJzaW9u'
+    'Eg4KAnBIGBEgASgBUgJwSBIhCgxuaXRyb2dlbl9wcG0YEiABKAFSC25pdHJvZ2VuUHBtEiUKDn'
+    'Bob3NwaG9ydXNfcHBtGBMgASgBUg1waG9zcGhvcnVzUHBtEiMKDXBvdGFzc2l1bV9wcG0YFCAB'
+    'KAFSDHBvdGFzc2l1bVBwbRIsChJvcmdhbmljX21hdHRlcl9wY3QYFSABKAFSEG9yZ2FuaWNNYX'
+    'R0ZXJQY3QSOgoHdGV4dHVyZRgWIAEoDjIgLmFncmljdWx0dXJlLnNvaWwudjEuU29pbFRleHR1'
+    'cmVSB3RleHR1cmU=');
 
 @$core.Deprecated('Use soilMapDescriptor instead')
 const SoilMap$json = {

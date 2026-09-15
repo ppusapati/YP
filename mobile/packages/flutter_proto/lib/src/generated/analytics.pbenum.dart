@@ -89,6 +89,8 @@ class AnalysisType extends $pb.ProtobufEnum {
       4, _omitEnumNames ? '' : 'ANALYSIS_TYPE_ANOMALY_DETECTION');
   static const AnalysisType ANALYSIS_TYPE_CROP_CLASSIFICATION = AnalysisType._(
       5, _omitEnumNames ? '' : 'ANALYSIS_TYPE_CROP_CLASSIFICATION');
+  static const AnalysisType ANALYSIS_TYPE_PHENOLOGY =
+      AnalysisType._(6, _omitEnumNames ? '' : 'ANALYSIS_TYPE_PHENOLOGY');
 
   static const $core.List<AnalysisType> values = <AnalysisType>[
     ANALYSIS_TYPE_UNSPECIFIED,
@@ -97,10 +99,11 @@ class AnalysisType extends $pb.ProtobufEnum {
     ANALYSIS_TYPE_TEMPORAL_TREND,
     ANALYSIS_TYPE_ANOMALY_DETECTION,
     ANALYSIS_TYPE_CROP_CLASSIFICATION,
+    ANALYSIS_TYPE_PHENOLOGY,
   ];
 
   static final $core.List<AnalysisType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 5);
+      $pb.ProtobufEnum.$_initByValueList(values, 6);
   static AnalysisType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

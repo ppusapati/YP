@@ -1211,6 +1211,10 @@ class DecisionOutput extends $pb.GeneratedMessage {
     $0.Timestamp? optimalTime,
     $core.String? reasoning,
     $core.double? confidenceScore,
+    $core.String? method,
+    $core.double? recommendedDepthMm,
+    $core.double? cropCoefficient,
+    $core.double? et0MmDay,
   }) {
     final result = create();
     if (shouldIrrigate != null) result.shouldIrrigate = shouldIrrigate;
@@ -1220,6 +1224,11 @@ class DecisionOutput extends $pb.GeneratedMessage {
     if (optimalTime != null) result.optimalTime = optimalTime;
     if (reasoning != null) result.reasoning = reasoning;
     if (confidenceScore != null) result.confidenceScore = confidenceScore;
+    if (method != null) result.method = method;
+    if (recommendedDepthMm != null)
+      result.recommendedDepthMm = recommendedDepthMm;
+    if (cropCoefficient != null) result.cropCoefficient = cropCoefficient;
+    if (et0MmDay != null) result.et0MmDay = et0MmDay;
     return result;
   }
 
@@ -1244,6 +1253,10 @@ class DecisionOutput extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.create)
     ..aOS(5, _omitFieldNames ? '' : 'reasoning')
     ..aD(6, _omitFieldNames ? '' : 'confidenceScore')
+    ..aOS(7, _omitFieldNames ? '' : 'method')
+    ..aD(8, _omitFieldNames ? '' : 'recommendedDepthMm')
+    ..aD(9, _omitFieldNames ? '' : 'cropCoefficient')
+    ..aD(10, _omitFieldNames ? '' : 'et0MmDay')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1320,6 +1333,42 @@ class DecisionOutput extends $pb.GeneratedMessage {
   $core.bool hasConfidenceScore() => $_has(5);
   @$pb.TagNumber(6)
   void clearConfidenceScore() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get method => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set method($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasMethod() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearMethod() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.double get recommendedDepthMm => $_getN(7);
+  @$pb.TagNumber(8)
+  set recommendedDepthMm($core.double value) => $_setDouble(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasRecommendedDepthMm() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearRecommendedDepthMm() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.double get cropCoefficient => $_getN(8);
+  @$pb.TagNumber(9)
+  set cropCoefficient($core.double value) => $_setDouble(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasCropCoefficient() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearCropCoefficient() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.double get et0MmDay => $_getN(9);
+  @$pb.TagNumber(10)
+  set et0MmDay($core.double value) => $_setDouble(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasEt0MmDay() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearEt0MmDay() => $_clearField(10);
 }
 
 class IrrigationDecision extends $pb.GeneratedMessage {

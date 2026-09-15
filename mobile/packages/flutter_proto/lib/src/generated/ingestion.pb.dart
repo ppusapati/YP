@@ -46,6 +46,7 @@ class IngestionTask extends $pb.GeneratedMessage {
     $0.Timestamp? createdAt,
     $0.Timestamp? updatedAt,
     $0.Timestamp? completedAt,
+    $core.String? processingLevel,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -68,6 +69,7 @@ class IngestionTask extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (completedAt != null) result.completedAt = completedAt;
+    if (processingLevel != null) result.processingLevel = processingLevel;
     return result;
   }
 
@@ -114,6 +116,7 @@ class IngestionTask extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.create)
     ..aOM<$0.Timestamp>(20, _omitFieldNames ? '' : 'completedAt',
         subBuilder: $0.Timestamp.create)
+    ..aOS(21, _omitFieldNames ? '' : 'processingLevel')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -316,6 +319,15 @@ class IngestionTask extends $pb.GeneratedMessage {
   void clearCompletedAt() => $_clearField(20);
   @$pb.TagNumber(20)
   $0.Timestamp ensureCompletedAt() => $_ensure(19);
+
+  @$pb.TagNumber(21)
+  $core.String get processingLevel => $_getSZ(20);
+  @$pb.TagNumber(21)
+  set processingLevel($core.String value) => $_setString(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasProcessingLevel() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearProcessingLevel() => $_clearField(21);
 }
 
 class RequestIngestionRequest extends $pb.GeneratedMessage {
@@ -326,6 +338,7 @@ class RequestIngestionRequest extends $pb.GeneratedMessage {
     $0.Timestamp? dateTo,
     $core.double? maxCloudCover,
     $core.Iterable<SpectralBand>? bands,
+    $core.String? processingLevel,
   }) {
     final result = create();
     if (farmId != null) result.farmId = farmId;
@@ -334,6 +347,7 @@ class RequestIngestionRequest extends $pb.GeneratedMessage {
     if (dateTo != null) result.dateTo = dateTo;
     if (maxCloudCover != null) result.maxCloudCover = maxCloudCover;
     if (bands != null) result.bands.addAll(bands);
+    if (processingLevel != null) result.processingLevel = processingLevel;
     return result;
   }
 
@@ -363,6 +377,7 @@ class RequestIngestionRequest extends $pb.GeneratedMessage {
         valueOf: SpectralBand.valueOf,
         enumValues: SpectralBand.values,
         defaultEnumValue: SpectralBand.SPECTRAL_BAND_UNSPECIFIED)
+    ..aOS(7, _omitFieldNames ? '' : 'processingLevel')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -436,6 +451,15 @@ class RequestIngestionRequest extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(6)
   $pb.PbList<SpectralBand> get bands => $_getList(5);
+
+  @$pb.TagNumber(7)
+  $core.String get processingLevel => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set processingLevel($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasProcessingLevel() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearProcessingLevel() => $_clearField(7);
 }
 
 class RequestIngestionResponse extends $pb.GeneratedMessage {

@@ -439,6 +439,9 @@ class BatchRecord extends $pb.GeneratedMessage {
     $0.Timestamp? createdAt,
     $0.Timestamp? updatedAt,
     $fixnum.Int64? version,
+    $core.String? cropCycleId,
+    $core.String? yieldRecordId,
+    $core.double? weightKg,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -455,6 +458,9 @@ class BatchRecord extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (version != null) result.version = version;
+    if (cropCycleId != null) result.cropCycleId = cropCycleId;
+    if (yieldRecordId != null) result.yieldRecordId = yieldRecordId;
+    if (weightKg != null) result.weightKg = weightKg;
     return result;
   }
 
@@ -494,6 +500,9 @@ class BatchRecord extends $pb.GeneratedMessage {
     ..aOM<$0.Timestamp>(13, _omitFieldNames ? '' : 'updatedAt',
         subBuilder: $0.Timestamp.create)
     ..aInt64(14, _omitFieldNames ? '' : 'version')
+    ..aOS(15, _omitFieldNames ? '' : 'cropCycleId')
+    ..aOS(16, _omitFieldNames ? '' : 'yieldRecordId')
+    ..aD(17, _omitFieldNames ? '' : 'weightKg')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -642,6 +651,33 @@ class BatchRecord extends $pb.GeneratedMessage {
   $core.bool hasVersion() => $_has(13);
   @$pb.TagNumber(14)
   void clearVersion() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.String get cropCycleId => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set cropCycleId($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasCropCycleId() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearCropCycleId() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.String get yieldRecordId => $_getSZ(15);
+  @$pb.TagNumber(16)
+  set yieldRecordId($core.String value) => $_setString(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasYieldRecordId() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearYieldRecordId() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.double get weightKg => $_getN(16);
+  @$pb.TagNumber(17)
+  set weightKg($core.double value) => $_setDouble(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasWeightKg() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearWeightKg() => $_clearField(17);
 }
 
 /// QRCode represents a generated QR code for traceability.
@@ -2883,6 +2919,9 @@ class CreateBatchRequest extends $pb.GeneratedMessage {
     $core.String? storageConditions,
     $core.String? qualityGrade,
     $core.Iterable<$core.MapEntry<$core.String, $core.String>>? metadata,
+    $core.String? cropCycleId,
+    $core.String? yieldRecordId,
+    $core.double? weightKg,
   }) {
     final result = create();
     if (recordId != null) result.recordId = recordId;
@@ -2894,6 +2933,9 @@ class CreateBatchRequest extends $pb.GeneratedMessage {
     if (storageConditions != null) result.storageConditions = storageConditions;
     if (qualityGrade != null) result.qualityGrade = qualityGrade;
     if (metadata != null) result.metadata.addEntries(metadata);
+    if (cropCycleId != null) result.cropCycleId = cropCycleId;
+    if (yieldRecordId != null) result.yieldRecordId = yieldRecordId;
+    if (weightKg != null) result.weightKg = weightKg;
     return result;
   }
 
@@ -2926,6 +2968,9 @@ class CreateBatchRequest extends $pb.GeneratedMessage {
         keyFieldType: $pb.PbFieldType.OS,
         valueFieldType: $pb.PbFieldType.OS,
         packageName: const $pb.PackageName('agriculture.traceability.v1'))
+    ..aOS(10, _omitFieldNames ? '' : 'cropCycleId')
+    ..aOS(11, _omitFieldNames ? '' : 'yieldRecordId')
+    ..aD(12, _omitFieldNames ? '' : 'weightKg')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3025,6 +3070,33 @@ class CreateBatchRequest extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(9)
   $pb.PbMap<$core.String, $core.String> get metadata => $_getMap(8);
+
+  @$pb.TagNumber(10)
+  $core.String get cropCycleId => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set cropCycleId($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasCropCycleId() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearCropCycleId() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get yieldRecordId => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set yieldRecordId($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasYieldRecordId() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearYieldRecordId() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.double get weightKg => $_getN(11);
+  @$pb.TagNumber(12)
+  set weightKg($core.double value) => $_setDouble(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasWeightKg() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearWeightKg() => $_clearField(12);
 }
 
 class CreateBatchResponse extends $pb.GeneratedMessage {
@@ -3775,6 +3847,1542 @@ class GenerateComplianceReportResponse extends $pb.GeneratedMessage {
   ComplianceReport ensureReport() => $_ensure(0);
 }
 
+class QualityCheckpoint extends $pb.GeneratedMessage {
+  factory QualityCheckpoint({
+    $core.String? id,
+    $core.String? tenantId,
+    $core.String? recordId,
+    $core.String? supplyChainEventId,
+    QualityCheckType? checkType,
+    QualityCheckResult? result,
+    $core.String? inspectorId,
+    $core.String? inspectorName,
+    $0.Timestamp? inspectedAt,
+    $core.String? location,
+    $core.double? measurementValue,
+    $core.String? measurementUnit,
+    $core.double? minThreshold,
+    $core.double? maxThreshold,
+    $core.String? notes,
+    $core.Iterable<$core.String>? evidenceUrls,
+    $core.Iterable<$core.MapEntry<$core.String, $core.String>>? metadata,
+    $0.Timestamp? createdAt,
+    $core.String? batchId,
+    $core.String? grade,
+    $core.String? labReportUrl,
+  }) {
+    final result$ = create();
+    if (id != null) result$.id = id;
+    if (tenantId != null) result$.tenantId = tenantId;
+    if (recordId != null) result$.recordId = recordId;
+    if (supplyChainEventId != null)
+      result$.supplyChainEventId = supplyChainEventId;
+    if (checkType != null) result$.checkType = checkType;
+    if (result != null) result$.result = result;
+    if (inspectorId != null) result$.inspectorId = inspectorId;
+    if (inspectorName != null) result$.inspectorName = inspectorName;
+    if (inspectedAt != null) result$.inspectedAt = inspectedAt;
+    if (location != null) result$.location = location;
+    if (measurementValue != null) result$.measurementValue = measurementValue;
+    if (measurementUnit != null) result$.measurementUnit = measurementUnit;
+    if (minThreshold != null) result$.minThreshold = minThreshold;
+    if (maxThreshold != null) result$.maxThreshold = maxThreshold;
+    if (notes != null) result$.notes = notes;
+    if (evidenceUrls != null) result$.evidenceUrls.addAll(evidenceUrls);
+    if (metadata != null) result$.metadata.addEntries(metadata);
+    if (createdAt != null) result$.createdAt = createdAt;
+    if (batchId != null) result$.batchId = batchId;
+    if (grade != null) result$.grade = grade;
+    if (labReportUrl != null) result$.labReportUrl = labReportUrl;
+    return result$;
+  }
+
+  QualityCheckpoint._();
+
+  factory QualityCheckpoint.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory QualityCheckpoint.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'QualityCheckpoint',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'tenantId')
+    ..aOS(3, _omitFieldNames ? '' : 'recordId')
+    ..aOS(4, _omitFieldNames ? '' : 'supplyChainEventId')
+    ..aE<QualityCheckType>(5, _omitFieldNames ? '' : 'checkType',
+        enumValues: QualityCheckType.values)
+    ..aE<QualityCheckResult>(6, _omitFieldNames ? '' : 'result',
+        enumValues: QualityCheckResult.values)
+    ..aOS(7, _omitFieldNames ? '' : 'inspectorId')
+    ..aOS(8, _omitFieldNames ? '' : 'inspectorName')
+    ..aOM<$0.Timestamp>(9, _omitFieldNames ? '' : 'inspectedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOS(10, _omitFieldNames ? '' : 'location')
+    ..aD(11, _omitFieldNames ? '' : 'measurementValue')
+    ..aOS(12, _omitFieldNames ? '' : 'measurementUnit')
+    ..aD(13, _omitFieldNames ? '' : 'minThreshold')
+    ..aD(14, _omitFieldNames ? '' : 'maxThreshold')
+    ..aOS(15, _omitFieldNames ? '' : 'notes')
+    ..pPS(16, _omitFieldNames ? '' : 'evidenceUrls')
+    ..m<$core.String, $core.String>(17, _omitFieldNames ? '' : 'metadata',
+        entryClassName: 'QualityCheckpoint.MetadataEntry',
+        keyFieldType: $pb.PbFieldType.OS,
+        valueFieldType: $pb.PbFieldType.OS,
+        packageName: const $pb.PackageName('agriculture.traceability.v1'))
+    ..aOM<$0.Timestamp>(18, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOS(19, _omitFieldNames ? '' : 'batchId')
+    ..aOS(20, _omitFieldNames ? '' : 'grade')
+    ..aOS(21, _omitFieldNames ? '' : 'labReportUrl')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  QualityCheckpoint clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  QualityCheckpoint copyWith(void Function(QualityCheckpoint) updates) =>
+      super.copyWith((message) => updates(message as QualityCheckpoint))
+          as QualityCheckpoint;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static QualityCheckpoint create() => QualityCheckpoint._();
+  @$core.override
+  QualityCheckpoint createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static QualityCheckpoint getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<QualityCheckpoint>(create);
+  static QualityCheckpoint? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get tenantId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set tenantId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTenantId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTenantId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get recordId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set recordId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasRecordId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearRecordId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get supplyChainEventId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set supplyChainEventId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSupplyChainEventId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSupplyChainEventId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  QualityCheckType get checkType => $_getN(4);
+  @$pb.TagNumber(5)
+  set checkType(QualityCheckType value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasCheckType() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearCheckType() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  QualityCheckResult get result => $_getN(5);
+  @$pb.TagNumber(6)
+  set result(QualityCheckResult value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasResult() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearResult() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get inspectorId => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set inspectorId($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasInspectorId() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearInspectorId() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get inspectorName => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set inspectorName($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasInspectorName() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearInspectorName() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $0.Timestamp get inspectedAt => $_getN(8);
+  @$pb.TagNumber(9)
+  set inspectedAt($0.Timestamp value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasInspectedAt() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearInspectedAt() => $_clearField(9);
+  @$pb.TagNumber(9)
+  $0.Timestamp ensureInspectedAt() => $_ensure(8);
+
+  @$pb.TagNumber(10)
+  $core.String get location => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set location($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasLocation() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearLocation() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.double get measurementValue => $_getN(10);
+  @$pb.TagNumber(11)
+  set measurementValue($core.double value) => $_setDouble(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasMeasurementValue() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearMeasurementValue() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get measurementUnit => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set measurementUnit($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasMeasurementUnit() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearMeasurementUnit() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.double get minThreshold => $_getN(12);
+  @$pb.TagNumber(13)
+  set minThreshold($core.double value) => $_setDouble(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasMinThreshold() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearMinThreshold() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.double get maxThreshold => $_getN(13);
+  @$pb.TagNumber(14)
+  set maxThreshold($core.double value) => $_setDouble(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasMaxThreshold() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearMaxThreshold() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.String get notes => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set notes($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasNotes() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearNotes() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $pb.PbList<$core.String> get evidenceUrls => $_getList(15);
+
+  @$pb.TagNumber(17)
+  $pb.PbMap<$core.String, $core.String> get metadata => $_getMap(16);
+
+  @$pb.TagNumber(18)
+  $0.Timestamp get createdAt => $_getN(17);
+  @$pb.TagNumber(18)
+  set createdAt($0.Timestamp value) => $_setField(18, value);
+  @$pb.TagNumber(18)
+  $core.bool hasCreatedAt() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearCreatedAt() => $_clearField(18);
+  @$pb.TagNumber(18)
+  $0.Timestamp ensureCreatedAt() => $_ensure(17);
+
+  @$pb.TagNumber(19)
+  $core.String get batchId => $_getSZ(18);
+  @$pb.TagNumber(19)
+  set batchId($core.String value) => $_setString(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasBatchId() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearBatchId() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $core.String get grade => $_getSZ(19);
+  @$pb.TagNumber(20)
+  set grade($core.String value) => $_setString(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasGrade() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearGrade() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $core.String get labReportUrl => $_getSZ(20);
+  @$pb.TagNumber(21)
+  set labReportUrl($core.String value) => $_setString(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasLabReportUrl() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearLabReportUrl() => $_clearField(21);
+}
+
+class CreateQualityCheckpointRequest extends $pb.GeneratedMessage {
+  factory CreateQualityCheckpointRequest({
+    $core.String? recordId,
+    $core.String? supplyChainEventId,
+    QualityCheckType? checkType,
+    QualityCheckResult? result,
+    $core.String? inspectorName,
+    $0.Timestamp? inspectedAt,
+    $core.String? location,
+    $core.double? measurementValue,
+    $core.String? measurementUnit,
+    $core.double? minThreshold,
+    $core.double? maxThreshold,
+    $core.String? notes,
+    $core.Iterable<$core.String>? evidenceUrls,
+    $core.Iterable<$core.MapEntry<$core.String, $core.String>>? metadata,
+    $core.String? batchId,
+    $core.String? grade,
+    $core.String? labReportUrl,
+  }) {
+    final result$ = create();
+    if (recordId != null) result$.recordId = recordId;
+    if (supplyChainEventId != null)
+      result$.supplyChainEventId = supplyChainEventId;
+    if (checkType != null) result$.checkType = checkType;
+    if (result != null) result$.result = result;
+    if (inspectorName != null) result$.inspectorName = inspectorName;
+    if (inspectedAt != null) result$.inspectedAt = inspectedAt;
+    if (location != null) result$.location = location;
+    if (measurementValue != null) result$.measurementValue = measurementValue;
+    if (measurementUnit != null) result$.measurementUnit = measurementUnit;
+    if (minThreshold != null) result$.minThreshold = minThreshold;
+    if (maxThreshold != null) result$.maxThreshold = maxThreshold;
+    if (notes != null) result$.notes = notes;
+    if (evidenceUrls != null) result$.evidenceUrls.addAll(evidenceUrls);
+    if (metadata != null) result$.metadata.addEntries(metadata);
+    if (batchId != null) result$.batchId = batchId;
+    if (grade != null) result$.grade = grade;
+    if (labReportUrl != null) result$.labReportUrl = labReportUrl;
+    return result$;
+  }
+
+  CreateQualityCheckpointRequest._();
+
+  factory CreateQualityCheckpointRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateQualityCheckpointRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateQualityCheckpointRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'recordId')
+    ..aOS(2, _omitFieldNames ? '' : 'supplyChainEventId')
+    ..aE<QualityCheckType>(3, _omitFieldNames ? '' : 'checkType',
+        enumValues: QualityCheckType.values)
+    ..aE<QualityCheckResult>(4, _omitFieldNames ? '' : 'result',
+        enumValues: QualityCheckResult.values)
+    ..aOS(5, _omitFieldNames ? '' : 'inspectorName')
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'inspectedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOS(7, _omitFieldNames ? '' : 'location')
+    ..aD(8, _omitFieldNames ? '' : 'measurementValue')
+    ..aOS(9, _omitFieldNames ? '' : 'measurementUnit')
+    ..aD(10, _omitFieldNames ? '' : 'minThreshold')
+    ..aD(11, _omitFieldNames ? '' : 'maxThreshold')
+    ..aOS(12, _omitFieldNames ? '' : 'notes')
+    ..pPS(13, _omitFieldNames ? '' : 'evidenceUrls')
+    ..m<$core.String, $core.String>(14, _omitFieldNames ? '' : 'metadata',
+        entryClassName: 'CreateQualityCheckpointRequest.MetadataEntry',
+        keyFieldType: $pb.PbFieldType.OS,
+        valueFieldType: $pb.PbFieldType.OS,
+        packageName: const $pb.PackageName('agriculture.traceability.v1'))
+    ..aOS(15, _omitFieldNames ? '' : 'batchId')
+    ..aOS(16, _omitFieldNames ? '' : 'grade')
+    ..aOS(17, _omitFieldNames ? '' : 'labReportUrl')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateQualityCheckpointRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateQualityCheckpointRequest copyWith(
+          void Function(CreateQualityCheckpointRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreateQualityCheckpointRequest))
+          as CreateQualityCheckpointRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateQualityCheckpointRequest create() =>
+      CreateQualityCheckpointRequest._();
+  @$core.override
+  CreateQualityCheckpointRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateQualityCheckpointRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateQualityCheckpointRequest>(create);
+  static CreateQualityCheckpointRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get recordId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set recordId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRecordId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRecordId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get supplyChainEventId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set supplyChainEventId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSupplyChainEventId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSupplyChainEventId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  QualityCheckType get checkType => $_getN(2);
+  @$pb.TagNumber(3)
+  set checkType(QualityCheckType value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCheckType() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCheckType() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  QualityCheckResult get result => $_getN(3);
+  @$pb.TagNumber(4)
+  set result(QualityCheckResult value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasResult() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearResult() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get inspectorName => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set inspectorName($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasInspectorName() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearInspectorName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $0.Timestamp get inspectedAt => $_getN(5);
+  @$pb.TagNumber(6)
+  set inspectedAt($0.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasInspectedAt() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearInspectedAt() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $0.Timestamp ensureInspectedAt() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  $core.String get location => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set location($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasLocation() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearLocation() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.double get measurementValue => $_getN(7);
+  @$pb.TagNumber(8)
+  set measurementValue($core.double value) => $_setDouble(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasMeasurementValue() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearMeasurementValue() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get measurementUnit => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set measurementUnit($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasMeasurementUnit() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearMeasurementUnit() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.double get minThreshold => $_getN(9);
+  @$pb.TagNumber(10)
+  set minThreshold($core.double value) => $_setDouble(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasMinThreshold() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearMinThreshold() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.double get maxThreshold => $_getN(10);
+  @$pb.TagNumber(11)
+  set maxThreshold($core.double value) => $_setDouble(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasMaxThreshold() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearMaxThreshold() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get notes => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set notes($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasNotes() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearNotes() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $pb.PbList<$core.String> get evidenceUrls => $_getList(12);
+
+  @$pb.TagNumber(14)
+  $pb.PbMap<$core.String, $core.String> get metadata => $_getMap(13);
+
+  @$pb.TagNumber(15)
+  $core.String get batchId => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set batchId($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasBatchId() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearBatchId() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.String get grade => $_getSZ(15);
+  @$pb.TagNumber(16)
+  set grade($core.String value) => $_setString(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasGrade() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearGrade() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.String get labReportUrl => $_getSZ(16);
+  @$pb.TagNumber(17)
+  set labReportUrl($core.String value) => $_setString(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasLabReportUrl() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearLabReportUrl() => $_clearField(17);
+}
+
+class CreateQualityCheckpointResponse extends $pb.GeneratedMessage {
+  factory CreateQualityCheckpointResponse({
+    QualityCheckpoint? checkpoint,
+  }) {
+    final result = create();
+    if (checkpoint != null) result.checkpoint = checkpoint;
+    return result;
+  }
+
+  CreateQualityCheckpointResponse._();
+
+  factory CreateQualityCheckpointResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateQualityCheckpointResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateQualityCheckpointResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOM<QualityCheckpoint>(1, _omitFieldNames ? '' : 'checkpoint',
+        subBuilder: QualityCheckpoint.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateQualityCheckpointResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateQualityCheckpointResponse copyWith(
+          void Function(CreateQualityCheckpointResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreateQualityCheckpointResponse))
+          as CreateQualityCheckpointResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateQualityCheckpointResponse create() =>
+      CreateQualityCheckpointResponse._();
+  @$core.override
+  CreateQualityCheckpointResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateQualityCheckpointResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateQualityCheckpointResponse>(
+          create);
+  static CreateQualityCheckpointResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  QualityCheckpoint get checkpoint => $_getN(0);
+  @$pb.TagNumber(1)
+  set checkpoint(QualityCheckpoint value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCheckpoint() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCheckpoint() => $_clearField(1);
+  @$pb.TagNumber(1)
+  QualityCheckpoint ensureCheckpoint() => $_ensure(0);
+}
+
+class GetQualityCheckpointRequest extends $pb.GeneratedMessage {
+  factory GetQualityCheckpointRequest({
+    $core.String? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  GetQualityCheckpointRequest._();
+
+  factory GetQualityCheckpointRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetQualityCheckpointRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetQualityCheckpointRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetQualityCheckpointRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetQualityCheckpointRequest copyWith(
+          void Function(GetQualityCheckpointRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetQualityCheckpointRequest))
+          as GetQualityCheckpointRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetQualityCheckpointRequest create() =>
+      GetQualityCheckpointRequest._();
+  @$core.override
+  GetQualityCheckpointRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetQualityCheckpointRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetQualityCheckpointRequest>(create);
+  static GetQualityCheckpointRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class GetQualityCheckpointResponse extends $pb.GeneratedMessage {
+  factory GetQualityCheckpointResponse({
+    QualityCheckpoint? checkpoint,
+  }) {
+    final result = create();
+    if (checkpoint != null) result.checkpoint = checkpoint;
+    return result;
+  }
+
+  GetQualityCheckpointResponse._();
+
+  factory GetQualityCheckpointResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetQualityCheckpointResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetQualityCheckpointResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOM<QualityCheckpoint>(1, _omitFieldNames ? '' : 'checkpoint',
+        subBuilder: QualityCheckpoint.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetQualityCheckpointResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetQualityCheckpointResponse copyWith(
+          void Function(GetQualityCheckpointResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetQualityCheckpointResponse))
+          as GetQualityCheckpointResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetQualityCheckpointResponse create() =>
+      GetQualityCheckpointResponse._();
+  @$core.override
+  GetQualityCheckpointResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetQualityCheckpointResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetQualityCheckpointResponse>(create);
+  static GetQualityCheckpointResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  QualityCheckpoint get checkpoint => $_getN(0);
+  @$pb.TagNumber(1)
+  set checkpoint(QualityCheckpoint value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCheckpoint() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCheckpoint() => $_clearField(1);
+  @$pb.TagNumber(1)
+  QualityCheckpoint ensureCheckpoint() => $_ensure(0);
+}
+
+class ListQualityCheckpointsRequest extends $pb.GeneratedMessage {
+  factory ListQualityCheckpointsRequest({
+    $core.String? recordId,
+    QualityCheckType? checkType,
+    QualityCheckResult? result,
+    $core.int? pageSize,
+    $core.String? pageToken,
+  }) {
+    final result$ = create();
+    if (recordId != null) result$.recordId = recordId;
+    if (checkType != null) result$.checkType = checkType;
+    if (result != null) result$.result = result;
+    if (pageSize != null) result$.pageSize = pageSize;
+    if (pageToken != null) result$.pageToken = pageToken;
+    return result$;
+  }
+
+  ListQualityCheckpointsRequest._();
+
+  factory ListQualityCheckpointsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListQualityCheckpointsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListQualityCheckpointsRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'recordId')
+    ..aE<QualityCheckType>(2, _omitFieldNames ? '' : 'checkType',
+        enumValues: QualityCheckType.values)
+    ..aE<QualityCheckResult>(3, _omitFieldNames ? '' : 'result',
+        enumValues: QualityCheckResult.values)
+    ..aI(4, _omitFieldNames ? '' : 'pageSize')
+    ..aOS(5, _omitFieldNames ? '' : 'pageToken')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListQualityCheckpointsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListQualityCheckpointsRequest copyWith(
+          void Function(ListQualityCheckpointsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListQualityCheckpointsRequest))
+          as ListQualityCheckpointsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListQualityCheckpointsRequest create() =>
+      ListQualityCheckpointsRequest._();
+  @$core.override
+  ListQualityCheckpointsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListQualityCheckpointsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListQualityCheckpointsRequest>(create);
+  static ListQualityCheckpointsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get recordId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set recordId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRecordId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRecordId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  QualityCheckType get checkType => $_getN(1);
+  @$pb.TagNumber(2)
+  set checkType(QualityCheckType value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCheckType() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCheckType() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  QualityCheckResult get result => $_getN(2);
+  @$pb.TagNumber(3)
+  set result(QualityCheckResult value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasResult() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearResult() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get pageSize => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set pageSize($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPageSize() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPageSize() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get pageToken => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set pageToken($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPageToken() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPageToken() => $_clearField(5);
+}
+
+class ListQualityCheckpointsResponse extends $pb.GeneratedMessage {
+  factory ListQualityCheckpointsResponse({
+    $core.Iterable<QualityCheckpoint>? checkpoints,
+    $core.String? nextPageToken,
+    $core.int? totalCount,
+  }) {
+    final result = create();
+    if (checkpoints != null) result.checkpoints.addAll(checkpoints);
+    if (nextPageToken != null) result.nextPageToken = nextPageToken;
+    if (totalCount != null) result.totalCount = totalCount;
+    return result;
+  }
+
+  ListQualityCheckpointsResponse._();
+
+  factory ListQualityCheckpointsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListQualityCheckpointsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListQualityCheckpointsResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..pPM<QualityCheckpoint>(1, _omitFieldNames ? '' : 'checkpoints',
+        subBuilder: QualityCheckpoint.create)
+    ..aOS(2, _omitFieldNames ? '' : 'nextPageToken')
+    ..aI(3, _omitFieldNames ? '' : 'totalCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListQualityCheckpointsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListQualityCheckpointsResponse copyWith(
+          void Function(ListQualityCheckpointsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListQualityCheckpointsResponse))
+          as ListQualityCheckpointsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListQualityCheckpointsResponse create() =>
+      ListQualityCheckpointsResponse._();
+  @$core.override
+  ListQualityCheckpointsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListQualityCheckpointsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListQualityCheckpointsResponse>(create);
+  static ListQualityCheckpointsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<QualityCheckpoint> get checkpoints => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.String get nextPageToken => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set nextPageToken($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasNextPageToken() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearNextPageToken() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get totalCount => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set totalCount($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasTotalCount() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearTotalCount() => $_clearField(3);
+}
+
+class UpdateRecordRequest extends $pb.GeneratedMessage {
+  factory UpdateRecordRequest({
+    $core.String? id,
+    $core.String? originCountry,
+    $core.String? originRegion,
+    $core.String? seedSource,
+    $0.Timestamp? plantingDate,
+    $0.Timestamp? harvestDate,
+    $0.Timestamp? processingDate,
+    $0.Timestamp? packagingDate,
+    $core.Iterable<$core.MapEntry<$core.String, $core.String>>? metadata,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (originCountry != null) result.originCountry = originCountry;
+    if (originRegion != null) result.originRegion = originRegion;
+    if (seedSource != null) result.seedSource = seedSource;
+    if (plantingDate != null) result.plantingDate = plantingDate;
+    if (harvestDate != null) result.harvestDate = harvestDate;
+    if (processingDate != null) result.processingDate = processingDate;
+    if (packagingDate != null) result.packagingDate = packagingDate;
+    if (metadata != null) result.metadata.addEntries(metadata);
+    return result;
+  }
+
+  UpdateRecordRequest._();
+
+  factory UpdateRecordRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateRecordRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateRecordRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'originCountry')
+    ..aOS(3, _omitFieldNames ? '' : 'originRegion')
+    ..aOS(4, _omitFieldNames ? '' : 'seedSource')
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'plantingDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'harvestDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(7, _omitFieldNames ? '' : 'processingDate',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(8, _omitFieldNames ? '' : 'packagingDate',
+        subBuilder: $0.Timestamp.create)
+    ..m<$core.String, $core.String>(9, _omitFieldNames ? '' : 'metadata',
+        entryClassName: 'UpdateRecordRequest.MetadataEntry',
+        keyFieldType: $pb.PbFieldType.OS,
+        valueFieldType: $pb.PbFieldType.OS,
+        packageName: const $pb.PackageName('agriculture.traceability.v1'))
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateRecordRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateRecordRequest copyWith(void Function(UpdateRecordRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateRecordRequest))
+          as UpdateRecordRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateRecordRequest create() => UpdateRecordRequest._();
+  @$core.override
+  UpdateRecordRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateRecordRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateRecordRequest>(create);
+  static UpdateRecordRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get originCountry => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set originCountry($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasOriginCountry() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOriginCountry() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get originRegion => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set originRegion($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOriginRegion() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearOriginRegion() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get seedSource => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set seedSource($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSeedSource() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSeedSource() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $0.Timestamp get plantingDate => $_getN(4);
+  @$pb.TagNumber(5)
+  set plantingDate($0.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPlantingDate() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPlantingDate() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $0.Timestamp ensurePlantingDate() => $_ensure(4);
+
+  @$pb.TagNumber(6)
+  $0.Timestamp get harvestDate => $_getN(5);
+  @$pb.TagNumber(6)
+  set harvestDate($0.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasHarvestDate() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearHarvestDate() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $0.Timestamp ensureHarvestDate() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  $0.Timestamp get processingDate => $_getN(6);
+  @$pb.TagNumber(7)
+  set processingDate($0.Timestamp value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasProcessingDate() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearProcessingDate() => $_clearField(7);
+  @$pb.TagNumber(7)
+  $0.Timestamp ensureProcessingDate() => $_ensure(6);
+
+  @$pb.TagNumber(8)
+  $0.Timestamp get packagingDate => $_getN(7);
+  @$pb.TagNumber(8)
+  set packagingDate($0.Timestamp value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasPackagingDate() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearPackagingDate() => $_clearField(8);
+  @$pb.TagNumber(8)
+  $0.Timestamp ensurePackagingDate() => $_ensure(7);
+
+  @$pb.TagNumber(9)
+  $pb.PbMap<$core.String, $core.String> get metadata => $_getMap(8);
+}
+
+class UpdateRecordResponse extends $pb.GeneratedMessage {
+  factory UpdateRecordResponse({
+    TraceabilityRecord? record,
+  }) {
+    final result = create();
+    if (record != null) result.record = record;
+    return result;
+  }
+
+  UpdateRecordResponse._();
+
+  factory UpdateRecordResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateRecordResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateRecordResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOM<TraceabilityRecord>(1, _omitFieldNames ? '' : 'record',
+        subBuilder: TraceabilityRecord.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateRecordResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateRecordResponse copyWith(void Function(UpdateRecordResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdateRecordResponse))
+          as UpdateRecordResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateRecordResponse create() => UpdateRecordResponse._();
+  @$core.override
+  UpdateRecordResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateRecordResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateRecordResponse>(create);
+  static UpdateRecordResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  TraceabilityRecord get record => $_getN(0);
+  @$pb.TagNumber(1)
+  set record(TraceabilityRecord value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRecord() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRecord() => $_clearField(1);
+  @$pb.TagNumber(1)
+  TraceabilityRecord ensureRecord() => $_ensure(0);
+}
+
+class RevokeCertificationRequest extends $pb.GeneratedMessage {
+  factory RevokeCertificationRequest({
+    $core.String? id,
+    $core.String? reason,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (reason != null) result.reason = reason;
+    return result;
+  }
+
+  RevokeCertificationRequest._();
+
+  factory RevokeCertificationRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RevokeCertificationRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RevokeCertificationRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'reason')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokeCertificationRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokeCertificationRequest copyWith(
+          void Function(RevokeCertificationRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as RevokeCertificationRequest))
+          as RevokeCertificationRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RevokeCertificationRequest create() => RevokeCertificationRequest._();
+  @$core.override
+  RevokeCertificationRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RevokeCertificationRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RevokeCertificationRequest>(create);
+  static RevokeCertificationRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get reason => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set reason($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasReason() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearReason() => $_clearField(2);
+}
+
+class RevokeCertificationResponse extends $pb.GeneratedMessage {
+  factory RevokeCertificationResponse({
+    Certification? certification,
+  }) {
+    final result = create();
+    if (certification != null) result.certification = certification;
+    return result;
+  }
+
+  RevokeCertificationResponse._();
+
+  factory RevokeCertificationResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RevokeCertificationResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RevokeCertificationResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOM<Certification>(1, _omitFieldNames ? '' : 'certification',
+        subBuilder: Certification.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokeCertificationResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RevokeCertificationResponse copyWith(
+          void Function(RevokeCertificationResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as RevokeCertificationResponse))
+          as RevokeCertificationResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RevokeCertificationResponse create() =>
+      RevokeCertificationResponse._();
+  @$core.override
+  RevokeCertificationResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RevokeCertificationResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RevokeCertificationResponse>(create);
+  static RevokeCertificationResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Certification get certification => $_getN(0);
+  @$pb.TagNumber(1)
+  set certification(Certification value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCertification() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCertification() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Certification ensureCertification() => $_ensure(0);
+}
+
+class GetComplianceReportRequest extends $pb.GeneratedMessage {
+  factory GetComplianceReportRequest({
+    $core.String? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  GetComplianceReportRequest._();
+
+  factory GetComplianceReportRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetComplianceReportRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetComplianceReportRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetComplianceReportRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetComplianceReportRequest copyWith(
+          void Function(GetComplianceReportRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetComplianceReportRequest))
+          as GetComplianceReportRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetComplianceReportRequest create() => GetComplianceReportRequest._();
+  @$core.override
+  GetComplianceReportRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetComplianceReportRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetComplianceReportRequest>(create);
+  static GetComplianceReportRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class GetComplianceReportResponse extends $pb.GeneratedMessage {
+  factory GetComplianceReportResponse({
+    ComplianceReport? report,
+  }) {
+    final result = create();
+    if (report != null) result.report = report;
+    return result;
+  }
+
+  GetComplianceReportResponse._();
+
+  factory GetComplianceReportResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetComplianceReportResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetComplianceReportResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOM<ComplianceReport>(1, _omitFieldNames ? '' : 'report',
+        subBuilder: ComplianceReport.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetComplianceReportResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetComplianceReportResponse copyWith(
+          void Function(GetComplianceReportResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetComplianceReportResponse))
+          as GetComplianceReportResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetComplianceReportResponse create() =>
+      GetComplianceReportResponse._();
+  @$core.override
+  GetComplianceReportResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetComplianceReportResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetComplianceReportResponse>(create);
+  static GetComplianceReportResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ComplianceReport get report => $_getN(0);
+  @$pb.TagNumber(1)
+  set report(ComplianceReport value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasReport() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearReport() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ComplianceReport ensureReport() => $_ensure(0);
+}
+
+class ListComplianceReportsRequest extends $pb.GeneratedMessage {
+  factory ListComplianceReportsRequest({
+    $core.String? recordId,
+    $core.int? pageSize,
+    $core.String? pageToken,
+  }) {
+    final result = create();
+    if (recordId != null) result.recordId = recordId;
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageToken != null) result.pageToken = pageToken;
+    return result;
+  }
+
+  ListComplianceReportsRequest._();
+
+  factory ListComplianceReportsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListComplianceReportsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListComplianceReportsRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'recordId')
+    ..aI(2, _omitFieldNames ? '' : 'pageSize')
+    ..aOS(3, _omitFieldNames ? '' : 'pageToken')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListComplianceReportsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListComplianceReportsRequest copyWith(
+          void Function(ListComplianceReportsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListComplianceReportsRequest))
+          as ListComplianceReportsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListComplianceReportsRequest create() =>
+      ListComplianceReportsRequest._();
+  @$core.override
+  ListComplianceReportsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListComplianceReportsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListComplianceReportsRequest>(create);
+  static ListComplianceReportsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get recordId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set recordId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRecordId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRecordId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get pageSize => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set pageSize($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPageSize() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPageSize() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get pageToken => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set pageToken($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPageToken() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPageToken() => $_clearField(3);
+}
+
+class ListComplianceReportsResponse extends $pb.GeneratedMessage {
+  factory ListComplianceReportsResponse({
+    $core.Iterable<ComplianceReport>? reports,
+    $core.String? nextPageToken,
+    $core.int? totalCount,
+  }) {
+    final result = create();
+    if (reports != null) result.reports.addAll(reports);
+    if (nextPageToken != null) result.nextPageToken = nextPageToken;
+    if (totalCount != null) result.totalCount = totalCount;
+    return result;
+  }
+
+  ListComplianceReportsResponse._();
+
+  factory ListComplianceReportsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListComplianceReportsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListComplianceReportsResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.traceability.v1'),
+      createEmptyInstance: create)
+    ..pPM<ComplianceReport>(1, _omitFieldNames ? '' : 'reports',
+        subBuilder: ComplianceReport.create)
+    ..aOS(2, _omitFieldNames ? '' : 'nextPageToken')
+    ..aI(3, _omitFieldNames ? '' : 'totalCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListComplianceReportsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListComplianceReportsResponse copyWith(
+          void Function(ListComplianceReportsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListComplianceReportsResponse))
+          as ListComplianceReportsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListComplianceReportsResponse create() =>
+      ListComplianceReportsResponse._();
+  @$core.override
+  ListComplianceReportsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListComplianceReportsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListComplianceReportsResponse>(create);
+  static ListComplianceReportsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<ComplianceReport> get reports => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.String get nextPageToken => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set nextPageToken($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasNextPageToken() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearNextPageToken() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get totalCount => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set totalCount($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasTotalCount() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearTotalCount() => $_clearField(3);
+}
+
 /// TraceabilityService provides end-to-end organic traceability from seed to shelf.
 class TraceabilityServiceApi {
   final $pb.RpcClient _client;
@@ -3874,6 +5482,46 @@ class TraceabilityServiceApi {
           'GenerateComplianceReport',
           request,
           GenerateComplianceReportResponse());
+
+  /// Quality Checkpoints
+  $async.Future<CreateQualityCheckpointResponse> createQualityCheckpoint(
+          $pb.ClientContext? ctx, CreateQualityCheckpointRequest request) =>
+      _client.invoke<CreateQualityCheckpointResponse>(
+          ctx,
+          'TraceabilityService',
+          'CreateQualityCheckpoint',
+          request,
+          CreateQualityCheckpointResponse());
+  $async.Future<GetQualityCheckpointResponse> getQualityCheckpoint(
+          $pb.ClientContext? ctx, GetQualityCheckpointRequest request) =>
+      _client.invoke<GetQualityCheckpointResponse>(ctx, 'TraceabilityService',
+          'GetQualityCheckpoint', request, GetQualityCheckpointResponse());
+  $async.Future<ListQualityCheckpointsResponse> listQualityCheckpoints(
+          $pb.ClientContext? ctx, ListQualityCheckpointsRequest request) =>
+      _client.invoke<ListQualityCheckpointsResponse>(ctx, 'TraceabilityService',
+          'ListQualityCheckpoints', request, ListQualityCheckpointsResponse());
+
+  /// Record updates
+  $async.Future<UpdateRecordResponse> updateRecord(
+          $pb.ClientContext? ctx, UpdateRecordRequest request) =>
+      _client.invoke<UpdateRecordResponse>(ctx, 'TraceabilityService',
+          'UpdateRecord', request, UpdateRecordResponse());
+
+  /// Certification lifecycle
+  $async.Future<RevokeCertificationResponse> revokeCertification(
+          $pb.ClientContext? ctx, RevokeCertificationRequest request) =>
+      _client.invoke<RevokeCertificationResponse>(ctx, 'TraceabilityService',
+          'RevokeCertification', request, RevokeCertificationResponse());
+
+  /// Compliance report retrieval
+  $async.Future<GetComplianceReportResponse> getComplianceReport(
+          $pb.ClientContext? ctx, GetComplianceReportRequest request) =>
+      _client.invoke<GetComplianceReportResponse>(ctx, 'TraceabilityService',
+          'GetComplianceReport', request, GetComplianceReportResponse());
+  $async.Future<ListComplianceReportsResponse> listComplianceReports(
+          $pb.ClientContext? ctx, ListComplianceReportsRequest request) =>
+      _client.invoke<ListComplianceReportsResponse>(ctx, 'TraceabilityService',
+          'ListComplianceReports', request, ListComplianceReportsResponse());
 }
 
 const $core.bool _omitFieldNames =

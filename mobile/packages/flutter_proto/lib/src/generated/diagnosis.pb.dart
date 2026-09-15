@@ -952,6 +952,7 @@ class DiagnosisResult extends $pb.GeneratedMessage {
     $core.double? overallHealthScore,
     $core.String? summary,
     $0.Timestamp? createdAt,
+    $core.Iterable<Explanation>? explanations,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -971,6 +972,7 @@ class DiagnosisResult extends $pb.GeneratedMessage {
       result.overallHealthScore = overallHealthScore;
     if (summary != null) result.summary = summary;
     if (createdAt != null) result.createdAt = createdAt;
+    if (explanations != null) result.explanations.addAll(explanations);
     return result;
   }
 
@@ -1005,6 +1007,8 @@ class DiagnosisResult extends $pb.GeneratedMessage {
     ..aOS(11, _omitFieldNames ? '' : 'summary')
     ..aOM<$0.Timestamp>(12, _omitFieldNames ? '' : 'createdAt',
         subBuilder: $0.Timestamp.create)
+    ..pPM<Explanation>(13, _omitFieldNames ? '' : 'explanations',
+        subBuilder: Explanation.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1113,6 +1117,11 @@ class DiagnosisResult extends $pb.GeneratedMessage {
   void clearCreatedAt() => $_clearField(12);
   @$pb.TagNumber(12)
   $0.Timestamp ensureCreatedAt() => $_ensure(11);
+
+  /// Per-image model explanations, one per analysed photo. Empty when the
+  /// serving model could not explain itself.
+  @$pb.TagNumber(13)
+  $pb.PbList<Explanation> get explanations => $_getList(12);
 }
 
 class DiagnosisRequest extends $pb.GeneratedMessage {
@@ -2357,6 +2366,218 @@ class IdentifySpeciesResponse extends $pb.GeneratedMessage {
   void clearProcessingTimeMs() => $_clearField(3);
 }
 
+/// Why a vision model answered the way it did.
+///
+/// Produced by Grad-CAM over the serving model's feature map: a heatmap of what
+/// the model actually looked at, plus the region it keyed on and a sentence
+/// describing it. Absent when the answer came from a model that cannot explain
+/// itself — a demo detector or an external provider.
+class Explanation extends $pb.GeneratedMessage {
+  factory Explanation({
+    $core.String? task,
+    $core.String? className,
+    $core.List<$core.int>? heatmapPng,
+    $core.int? heatmapWidth,
+    $core.int? heatmapHeight,
+    $core.double? focusX,
+    $core.double? focusY,
+    $core.double? focusWidth,
+    $core.double? focusHeight,
+    $core.double? focusCoverage,
+    $core.String? summary,
+    $core.String? method,
+    $core.bool? localised,
+  }) {
+    final result = create();
+    if (task != null) result.task = task;
+    if (className != null) result.className = className;
+    if (heatmapPng != null) result.heatmapPng = heatmapPng;
+    if (heatmapWidth != null) result.heatmapWidth = heatmapWidth;
+    if (heatmapHeight != null) result.heatmapHeight = heatmapHeight;
+    if (focusX != null) result.focusX = focusX;
+    if (focusY != null) result.focusY = focusY;
+    if (focusWidth != null) result.focusWidth = focusWidth;
+    if (focusHeight != null) result.focusHeight = focusHeight;
+    if (focusCoverage != null) result.focusCoverage = focusCoverage;
+    if (summary != null) result.summary = summary;
+    if (method != null) result.method = method;
+    if (localised != null) result.localised = localised;
+    return result;
+  }
+
+  Explanation._();
+
+  factory Explanation.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Explanation.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Explanation',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'task')
+    ..aOS(2, _omitFieldNames ? '' : 'className')
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'heatmapPng', $pb.PbFieldType.OY)
+    ..aI(4, _omitFieldNames ? '' : 'heatmapWidth')
+    ..aI(5, _omitFieldNames ? '' : 'heatmapHeight')
+    ..aD(6, _omitFieldNames ? '' : 'focusX')
+    ..aD(7, _omitFieldNames ? '' : 'focusY')
+    ..aD(8, _omitFieldNames ? '' : 'focusWidth')
+    ..aD(9, _omitFieldNames ? '' : 'focusHeight')
+    ..aD(10, _omitFieldNames ? '' : 'focusCoverage')
+    ..aOS(11, _omitFieldNames ? '' : 'summary')
+    ..aOS(12, _omitFieldNames ? '' : 'method')
+    ..aOB(13, _omitFieldNames ? '' : 'localised')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Explanation clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Explanation copyWith(void Function(Explanation) updates) =>
+      super.copyWith((message) => updates(message as Explanation))
+          as Explanation;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Explanation create() => Explanation._();
+  @$core.override
+  Explanation createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static Explanation getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Explanation>(create);
+  static Explanation? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get task => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set task($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTask() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTask() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get className => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set className($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClassName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClassName() => $_clearField(2);
+
+  /// Greyscale PNG, brightest where the evidence is.
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get heatmapPng => $_getN(2);
+  @$pb.TagNumber(3)
+  set heatmapPng($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasHeatmapPng() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearHeatmapPng() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get heatmapWidth => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set heatmapWidth($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasHeatmapWidth() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearHeatmapWidth() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get heatmapHeight => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set heatmapHeight($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasHeatmapHeight() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearHeatmapHeight() => $_clearField(5);
+
+  /// Region the model keyed on, normalised to [0,1] from the top left so it
+  /// survives any resize of the image it is drawn over.
+  @$pb.TagNumber(6)
+  $core.double get focusX => $_getN(5);
+  @$pb.TagNumber(6)
+  set focusX($core.double value) => $_setDouble(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasFocusX() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearFocusX() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.double get focusY => $_getN(6);
+  @$pb.TagNumber(7)
+  set focusY($core.double value) => $_setDouble(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasFocusY() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearFocusY() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.double get focusWidth => $_getN(7);
+  @$pb.TagNumber(8)
+  set focusWidth($core.double value) => $_setDouble(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasFocusWidth() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearFocusWidth() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.double get focusHeight => $_getN(8);
+  @$pb.TagNumber(9)
+  set focusHeight($core.double value) => $_setDouble(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasFocusHeight() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearFocusHeight() => $_clearField(9);
+
+  /// Share of the image inside that region; near 1 means nothing in particular
+  /// was located.
+  @$pb.TagNumber(10)
+  $core.double get focusCoverage => $_getN(9);
+  @$pb.TagNumber(10)
+  set focusCoverage($core.double value) => $_setDouble(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasFocusCoverage() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearFocusCoverage() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get summary => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set summary($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasSummary() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearSummary() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get method => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set method($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasMethod() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearMethod() => $_clearField(12);
+
+  /// False when the map was flat and there is nothing to point at.
+  @$pb.TagNumber(13)
+  $core.bool get localised => $_getBF(12);
+  @$pb.TagNumber(13)
+  set localised($core.bool value) => $_setBool(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasLocalised() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearLocalised() => $_clearField(13);
+}
+
 class DetectNutrientDeficiencyRequest extends $pb.GeneratedMessage {
   factory DetectNutrientDeficiencyRequest({
     $core.String? plantSpeciesId,
@@ -2428,11 +2649,13 @@ class DetectNutrientDeficiencyResponse extends $pb.GeneratedMessage {
     $core.Iterable<NutrientDeficiency>? deficiencies,
     $core.String? aiModelVersion,
     $fixnum.Int64? processingTimeMs,
+    $core.Iterable<Explanation>? explanations,
   }) {
     final result = create();
     if (deficiencies != null) result.deficiencies.addAll(deficiencies);
     if (aiModelVersion != null) result.aiModelVersion = aiModelVersion;
     if (processingTimeMs != null) result.processingTimeMs = processingTimeMs;
+    if (explanations != null) result.explanations.addAll(explanations);
     return result;
   }
 
@@ -2455,6 +2678,8 @@ class DetectNutrientDeficiencyResponse extends $pb.GeneratedMessage {
         subBuilder: NutrientDeficiency.create)
     ..aOS(2, _omitFieldNames ? '' : 'aiModelVersion')
     ..aInt64(3, _omitFieldNames ? '' : 'processingTimeMs')
+    ..pPM<Explanation>(4, _omitFieldNames ? '' : 'explanations',
+        subBuilder: Explanation.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2500,6 +2725,10 @@ class DetectNutrientDeficiencyResponse extends $pb.GeneratedMessage {
   $core.bool hasProcessingTimeMs() => $_has(2);
   @$pb.TagNumber(3)
   void clearProcessingTimeMs() => $_clearField(3);
+
+  /// One per analysed image, in request order.
+  @$pb.TagNumber(4)
+  $pb.PbList<Explanation> get explanations => $_getList(3);
 }
 
 class DetectPestDamageRequest extends $pb.GeneratedMessage {
@@ -2570,11 +2799,13 @@ class DetectPestDamageResponse extends $pb.GeneratedMessage {
     $core.Iterable<PestDamage>? pests,
     $core.String? aiModelVersion,
     $fixnum.Int64? processingTimeMs,
+    $core.Iterable<Explanation>? explanations,
   }) {
     final result = create();
     if (pests != null) result.pests.addAll(pests);
     if (aiModelVersion != null) result.aiModelVersion = aiModelVersion;
     if (processingTimeMs != null) result.processingTimeMs = processingTimeMs;
+    if (explanations != null) result.explanations.addAll(explanations);
     return result;
   }
 
@@ -2596,6 +2827,8 @@ class DetectPestDamageResponse extends $pb.GeneratedMessage {
         subBuilder: PestDamage.create)
     ..aOS(2, _omitFieldNames ? '' : 'aiModelVersion')
     ..aInt64(3, _omitFieldNames ? '' : 'processingTimeMs')
+    ..pPM<Explanation>(4, _omitFieldNames ? '' : 'explanations',
+        subBuilder: Explanation.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2638,6 +2871,1532 @@ class DetectPestDamageResponse extends $pb.GeneratedMessage {
   $core.bool hasProcessingTimeMs() => $_has(2);
   @$pb.TagNumber(3)
   void clearProcessingTimeMs() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<Explanation> get explanations => $_getList(3);
+}
+
+class TrainingLabel extends $pb.GeneratedMessage {
+  factory TrainingLabel({
+    $core.String? name,
+    $core.double? confidence,
+    $core.String? category,
+    $core.String? severity,
+  }) {
+    final result = create();
+    if (name != null) result.name = name;
+    if (confidence != null) result.confidence = confidence;
+    if (category != null) result.category = category;
+    if (severity != null) result.severity = severity;
+    return result;
+  }
+
+  TrainingLabel._();
+
+  factory TrainingLabel.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory TrainingLabel.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TrainingLabel',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aD(2, _omitFieldNames ? '' : 'confidence')
+    ..aOS(3, _omitFieldNames ? '' : 'category')
+    ..aOS(4, _omitFieldNames ? '' : 'severity')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TrainingLabel clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TrainingLabel copyWith(void Function(TrainingLabel) updates) =>
+      super.copyWith((message) => updates(message as TrainingLabel))
+          as TrainingLabel;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static TrainingLabel create() => TrainingLabel._();
+  @$core.override
+  TrainingLabel createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static TrainingLabel getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TrainingLabel>(create);
+  static TrainingLabel? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.double get confidence => $_getN(1);
+  @$pb.TagNumber(2)
+  set confidence($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasConfidence() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearConfidence() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get category => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set category($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCategory() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCategory() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get severity => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set severity($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSeverity() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSeverity() => $_clearField(4);
+}
+
+class LabelReview extends $pb.GeneratedMessage {
+  factory LabelReview({
+    LabelReviewDecision? decision,
+    $core.String? correctedLabel,
+    $core.String? reviewerId,
+    $core.String? notes,
+    $0.Timestamp? reviewedAt,
+  }) {
+    final result = create();
+    if (decision != null) result.decision = decision;
+    if (correctedLabel != null) result.correctedLabel = correctedLabel;
+    if (reviewerId != null) result.reviewerId = reviewerId;
+    if (notes != null) result.notes = notes;
+    if (reviewedAt != null) result.reviewedAt = reviewedAt;
+    return result;
+  }
+
+  LabelReview._();
+
+  factory LabelReview.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory LabelReview.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LabelReview',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aE<LabelReviewDecision>(1, _omitFieldNames ? '' : 'decision',
+        enumValues: LabelReviewDecision.values)
+    ..aOS(2, _omitFieldNames ? '' : 'correctedLabel')
+    ..aOS(3, _omitFieldNames ? '' : 'reviewerId')
+    ..aOS(4, _omitFieldNames ? '' : 'notes')
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'reviewedAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelReview clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelReview copyWith(void Function(LabelReview) updates) =>
+      super.copyWith((message) => updates(message as LabelReview))
+          as LabelReview;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LabelReview create() => LabelReview._();
+  @$core.override
+  LabelReview createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static LabelReview getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LabelReview>(create);
+  static LabelReview? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  LabelReviewDecision get decision => $_getN(0);
+  @$pb.TagNumber(1)
+  set decision(LabelReviewDecision value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDecision() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDecision() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get correctedLabel => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set correctedLabel($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCorrectedLabel() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCorrectedLabel() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get reviewerId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set reviewerId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasReviewerId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearReviewerId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get notes => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set notes($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasNotes() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearNotes() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $0.Timestamp get reviewedAt => $_getN(4);
+  @$pb.TagNumber(5)
+  set reviewedAt($0.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasReviewedAt() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearReviewedAt() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $0.Timestamp ensureReviewedAt() => $_ensure(4);
+}
+
+/// A trained model's confident disagreement with a stored label.
+///
+/// Worth a reviewer's attention ahead of merely low-confidence samples: a wrong
+/// label does not just waste one example, it teaches the next model the same
+/// mistake and counts as an error against any model that gets it right.
+class LabelSuspicion extends $pb.GeneratedMessage {
+  factory LabelSuspicion({
+    $core.String? predicted,
+    $core.double? predictedProb,
+    $core.double? labelProb,
+    $core.String? modelVersion,
+    $core.String? flaggedAt,
+  }) {
+    final result = create();
+    if (predicted != null) result.predicted = predicted;
+    if (predictedProb != null) result.predictedProb = predictedProb;
+    if (labelProb != null) result.labelProb = labelProb;
+    if (modelVersion != null) result.modelVersion = modelVersion;
+    if (flaggedAt != null) result.flaggedAt = flaggedAt;
+    return result;
+  }
+
+  LabelSuspicion._();
+
+  factory LabelSuspicion.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory LabelSuspicion.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LabelSuspicion',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'predicted')
+    ..aD(2, _omitFieldNames ? '' : 'predictedProb')
+    ..aD(3, _omitFieldNames ? '' : 'labelProb')
+    ..aOS(4, _omitFieldNames ? '' : 'modelVersion')
+    ..aOS(5, _omitFieldNames ? '' : 'flaggedAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelSuspicion clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelSuspicion copyWith(void Function(LabelSuspicion) updates) =>
+      super.copyWith((message) => updates(message as LabelSuspicion))
+          as LabelSuspicion;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LabelSuspicion create() => LabelSuspicion._();
+  @$core.override
+  LabelSuspicion createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static LabelSuspicion getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LabelSuspicion>(create);
+  static LabelSuspicion? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get predicted => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set predicted($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPredicted() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPredicted() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.double get predictedProb => $_getN(1);
+  @$pb.TagNumber(2)
+  set predictedProb($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPredictedProb() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPredictedProb() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get labelProb => $_getN(2);
+  @$pb.TagNumber(3)
+  set labelProb($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLabelProb() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLabelProb() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get modelVersion => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set modelVersion($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasModelVersion() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearModelVersion() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get flaggedAt => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set flaggedAt($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasFlaggedAt() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearFlaggedAt() => $_clearField(5);
+}
+
+class LabelReviewSample extends $pb.GeneratedMessage {
+  factory LabelReviewSample({
+    $core.String? id,
+    $core.String? task,
+    $0.Timestamp? collectedAt,
+    $core.String? provenance,
+    $core.String? provider,
+    $core.Iterable<TrainingLabel>? labels,
+    $core.double? topConfidence,
+    $core.String? farmId,
+    $core.String? fieldId,
+    $core.String? crop,
+    $core.String? submittedBy,
+    LabelReview? review,
+    $core.String? effectiveLabel,
+    LabelSuspicion? suspect,
+    $core.bool? needsSecondOpinion,
+    $core.Iterable<LabelReview>? reviews,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (task != null) result.task = task;
+    if (collectedAt != null) result.collectedAt = collectedAt;
+    if (provenance != null) result.provenance = provenance;
+    if (provider != null) result.provider = provider;
+    if (labels != null) result.labels.addAll(labels);
+    if (topConfidence != null) result.topConfidence = topConfidence;
+    if (farmId != null) result.farmId = farmId;
+    if (fieldId != null) result.fieldId = fieldId;
+    if (crop != null) result.crop = crop;
+    if (submittedBy != null) result.submittedBy = submittedBy;
+    if (review != null) result.review = review;
+    if (effectiveLabel != null) result.effectiveLabel = effectiveLabel;
+    if (suspect != null) result.suspect = suspect;
+    if (needsSecondOpinion != null)
+      result.needsSecondOpinion = needsSecondOpinion;
+    if (reviews != null) result.reviews.addAll(reviews);
+    return result;
+  }
+
+  LabelReviewSample._();
+
+  factory LabelReviewSample.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory LabelReviewSample.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LabelReviewSample',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'task')
+    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'collectedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOS(4, _omitFieldNames ? '' : 'provenance')
+    ..aOS(5, _omitFieldNames ? '' : 'provider')
+    ..pPM<TrainingLabel>(6, _omitFieldNames ? '' : 'labels',
+        subBuilder: TrainingLabel.create)
+    ..aD(7, _omitFieldNames ? '' : 'topConfidence')
+    ..aOS(8, _omitFieldNames ? '' : 'farmId')
+    ..aOS(9, _omitFieldNames ? '' : 'fieldId')
+    ..aOS(10, _omitFieldNames ? '' : 'crop')
+    ..aOS(11, _omitFieldNames ? '' : 'submittedBy')
+    ..aOM<LabelReview>(12, _omitFieldNames ? '' : 'review',
+        subBuilder: LabelReview.create)
+    ..aOS(13, _omitFieldNames ? '' : 'effectiveLabel')
+    ..aOM<LabelSuspicion>(14, _omitFieldNames ? '' : 'suspect',
+        subBuilder: LabelSuspicion.create)
+    ..aOB(15, _omitFieldNames ? '' : 'needsSecondOpinion')
+    ..pPM<LabelReview>(16, _omitFieldNames ? '' : 'reviews',
+        subBuilder: LabelReview.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelReviewSample clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelReviewSample copyWith(void Function(LabelReviewSample) updates) =>
+      super.copyWith((message) => updates(message as LabelReviewSample))
+          as LabelReviewSample;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LabelReviewSample create() => LabelReviewSample._();
+  @$core.override
+  LabelReviewSample createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static LabelReviewSample getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LabelReviewSample>(create);
+  static LabelReviewSample? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get task => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set task($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTask() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTask() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $0.Timestamp get collectedAt => $_getN(2);
+  @$pb.TagNumber(3)
+  set collectedAt($0.Timestamp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCollectedAt() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCollectedAt() => $_clearField(3);
+  @$pb.TagNumber(3)
+  $0.Timestamp ensureCollectedAt() => $_ensure(2);
+
+  @$pb.TagNumber(4)
+  $core.String get provenance => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set provenance($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasProvenance() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearProvenance() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get provider => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set provider($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasProvider() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearProvider() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $pb.PbList<TrainingLabel> get labels => $_getList(5);
+
+  @$pb.TagNumber(7)
+  $core.double get topConfidence => $_getN(6);
+  @$pb.TagNumber(7)
+  set topConfidence($core.double value) => $_setDouble(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasTopConfidence() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearTopConfidence() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get farmId => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set farmId($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasFarmId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearFarmId() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get fieldId => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set fieldId($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasFieldId() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearFieldId() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get crop => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set crop($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasCrop() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearCrop() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get submittedBy => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set submittedBy($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasSubmittedBy() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearSubmittedBy() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  LabelReview get review => $_getN(11);
+  @$pb.TagNumber(12)
+  set review(LabelReview value) => $_setField(12, value);
+  @$pb.TagNumber(12)
+  $core.bool hasReview() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearReview() => $_clearField(12);
+  @$pb.TagNumber(12)
+  LabelReview ensureReview() => $_ensure(11);
+
+  @$pb.TagNumber(13)
+  $core.String get effectiveLabel => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set effectiveLabel($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasEffectiveLabel() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearEffectiveLabel() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  LabelSuspicion get suspect => $_getN(13);
+  @$pb.TagNumber(14)
+  set suspect(LabelSuspicion value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasSuspect() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearSuspect() => $_clearField(14);
+  @$pb.TagNumber(14)
+  LabelSuspicion ensureSuspect() => $_ensure(13);
+
+  /// True when this sample wants another pair of eyes, because a reviewer asked
+  /// or because two reviewers already disagreed.
+  @$pb.TagNumber(15)
+  $core.bool get needsSecondOpinion => $_getBF(14);
+  @$pb.TagNumber(15)
+  set needsSecondOpinion($core.bool value) => $_setBool(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasNeedsSecondOpinion() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearNeedsSecondOpinion() => $_clearField(15);
+
+  /// Every review, oldest first. `review` above stays the most recent.
+  @$pb.TagNumber(16)
+  $pb.PbList<LabelReview> get reviews => $_getList(15);
+}
+
+/// How much two reviewers agree, and whether that is more than chance.
+///
+/// Raw agreement flatters an imbalanced task: two reviewers who both answer
+/// "healthy" on a set that is ninety percent healthy agree ninety percent of the
+/// time having demonstrated nothing.
+class ReviewAgreement extends $pb.GeneratedMessage {
+  factory ReviewAgreement({
+    $core.int? compared,
+    $core.double? rawAgreement,
+    $core.double? kappa,
+    $core.String? strength,
+    $core.Iterable<LabelDisagreement>? disagreements,
+  }) {
+    final result = create();
+    if (compared != null) result.compared = compared;
+    if (rawAgreement != null) result.rawAgreement = rawAgreement;
+    if (kappa != null) result.kappa = kappa;
+    if (strength != null) result.strength = strength;
+    if (disagreements != null) result.disagreements.addAll(disagreements);
+    return result;
+  }
+
+  ReviewAgreement._();
+
+  factory ReviewAgreement.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ReviewAgreement.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReviewAgreement',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'compared')
+    ..aD(2, _omitFieldNames ? '' : 'rawAgreement')
+    ..aD(3, _omitFieldNames ? '' : 'kappa')
+    ..aOS(4, _omitFieldNames ? '' : 'strength')
+    ..pPM<LabelDisagreement>(5, _omitFieldNames ? '' : 'disagreements',
+        subBuilder: LabelDisagreement.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReviewAgreement clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReviewAgreement copyWith(void Function(ReviewAgreement) updates) =>
+      super.copyWith((message) => updates(message as ReviewAgreement))
+          as ReviewAgreement;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ReviewAgreement create() => ReviewAgreement._();
+  @$core.override
+  ReviewAgreement createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ReviewAgreement getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReviewAgreement>(create);
+  static ReviewAgreement? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get compared => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set compared($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCompared() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCompared() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.double get rawAgreement => $_getN(1);
+  @$pb.TagNumber(2)
+  set rawAgreement($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasRawAgreement() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearRawAgreement() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get kappa => $_getN(2);
+  @$pb.TagNumber(3)
+  set kappa($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKappa() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearKappa() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get strength => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set strength($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasStrength() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearStrength() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<LabelDisagreement> get disagreements => $_getList(4);
+}
+
+class LabelDisagreement extends $pb.GeneratedMessage {
+  factory LabelDisagreement({
+    $core.String? first,
+    $core.String? second,
+    $core.int? count,
+  }) {
+    final result = create();
+    if (first != null) result.first = first;
+    if (second != null) result.second = second;
+    if (count != null) result.count = count;
+    return result;
+  }
+
+  LabelDisagreement._();
+
+  factory LabelDisagreement.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory LabelDisagreement.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LabelDisagreement',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'first')
+    ..aOS(2, _omitFieldNames ? '' : 'second')
+    ..aI(3, _omitFieldNames ? '' : 'count')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelDisagreement clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LabelDisagreement copyWith(void Function(LabelDisagreement) updates) =>
+      super.copyWith((message) => updates(message as LabelDisagreement))
+          as LabelDisagreement;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LabelDisagreement create() => LabelDisagreement._();
+  @$core.override
+  LabelDisagreement createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static LabelDisagreement getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LabelDisagreement>(create);
+  static LabelDisagreement? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get first => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set first($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFirst() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFirst() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get second => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set second($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSecond() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSecond() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get count => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set count($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCount() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCount() => $_clearField(3);
+}
+
+class RequestSecondOpinionRequest extends $pb.GeneratedMessage {
+  factory RequestSecondOpinionRequest({
+    $core.String? task,
+    $core.String? sampleId,
+    $core.bool? wanted,
+  }) {
+    final result = create();
+    if (task != null) result.task = task;
+    if (sampleId != null) result.sampleId = sampleId;
+    if (wanted != null) result.wanted = wanted;
+    return result;
+  }
+
+  RequestSecondOpinionRequest._();
+
+  factory RequestSecondOpinionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RequestSecondOpinionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RequestSecondOpinionRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'task')
+    ..aOS(2, _omitFieldNames ? '' : 'sampleId')
+    ..aOB(3, _omitFieldNames ? '' : 'wanted')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestSecondOpinionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestSecondOpinionRequest copyWith(
+          void Function(RequestSecondOpinionRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as RequestSecondOpinionRequest))
+          as RequestSecondOpinionRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RequestSecondOpinionRequest create() =>
+      RequestSecondOpinionRequest._();
+  @$core.override
+  RequestSecondOpinionRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RequestSecondOpinionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RequestSecondOpinionRequest>(create);
+  static RequestSecondOpinionRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get task => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set task($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTask() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTask() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get sampleId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set sampleId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSampleId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSampleId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get wanted => $_getBF(2);
+  @$pb.TagNumber(3)
+  set wanted($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasWanted() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearWanted() => $_clearField(3);
+}
+
+class RequestSecondOpinionResponse extends $pb.GeneratedMessage {
+  factory RequestSecondOpinionResponse({
+    LabelReviewSample? sample,
+  }) {
+    final result = create();
+    if (sample != null) result.sample = sample;
+    return result;
+  }
+
+  RequestSecondOpinionResponse._();
+
+  factory RequestSecondOpinionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RequestSecondOpinionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RequestSecondOpinionResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOM<LabelReviewSample>(1, _omitFieldNames ? '' : 'sample',
+        subBuilder: LabelReviewSample.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestSecondOpinionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestSecondOpinionResponse copyWith(
+          void Function(RequestSecondOpinionResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as RequestSecondOpinionResponse))
+          as RequestSecondOpinionResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RequestSecondOpinionResponse create() =>
+      RequestSecondOpinionResponse._();
+  @$core.override
+  RequestSecondOpinionResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RequestSecondOpinionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RequestSecondOpinionResponse>(create);
+  static RequestSecondOpinionResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  LabelReviewSample get sample => $_getN(0);
+  @$pb.TagNumber(1)
+  set sample(LabelReviewSample value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSample() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSample() => $_clearField(1);
+  @$pb.TagNumber(1)
+  LabelReviewSample ensureSample() => $_ensure(0);
+}
+
+class GetReviewAgreementRequest extends $pb.GeneratedMessage {
+  factory GetReviewAgreementRequest({
+    $core.String? task,
+  }) {
+    final result = create();
+    if (task != null) result.task = task;
+    return result;
+  }
+
+  GetReviewAgreementRequest._();
+
+  factory GetReviewAgreementRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetReviewAgreementRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetReviewAgreementRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'task')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetReviewAgreementRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetReviewAgreementRequest copyWith(
+          void Function(GetReviewAgreementRequest) updates) =>
+      super.copyWith((message) => updates(message as GetReviewAgreementRequest))
+          as GetReviewAgreementRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetReviewAgreementRequest create() => GetReviewAgreementRequest._();
+  @$core.override
+  GetReviewAgreementRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetReviewAgreementRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetReviewAgreementRequest>(create);
+  static GetReviewAgreementRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get task => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set task($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTask() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTask() => $_clearField(1);
+}
+
+class GetReviewAgreementResponse extends $pb.GeneratedMessage {
+  factory GetReviewAgreementResponse({
+    ReviewAgreement? agreement,
+  }) {
+    final result = create();
+    if (agreement != null) result.agreement = agreement;
+    return result;
+  }
+
+  GetReviewAgreementResponse._();
+
+  factory GetReviewAgreementResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetReviewAgreementResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetReviewAgreementResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOM<ReviewAgreement>(1, _omitFieldNames ? '' : 'agreement',
+        subBuilder: ReviewAgreement.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetReviewAgreementResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetReviewAgreementResponse copyWith(
+          void Function(GetReviewAgreementResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetReviewAgreementResponse))
+          as GetReviewAgreementResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetReviewAgreementResponse create() => GetReviewAgreementResponse._();
+  @$core.override
+  GetReviewAgreementResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetReviewAgreementResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetReviewAgreementResponse>(create);
+  static GetReviewAgreementResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ReviewAgreement get agreement => $_getN(0);
+  @$pb.TagNumber(1)
+  set agreement(ReviewAgreement value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasAgreement() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAgreement() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ReviewAgreement ensureAgreement() => $_ensure(0);
+}
+
+class ListLabelReviewQueueRequest extends $pb.GeneratedMessage {
+  factory ListLabelReviewQueueRequest({
+    $core.String? task,
+    $core.bool? includeReviewed,
+    $core.double? maxConfidence,
+    $core.String? provenance,
+    $core.int? pageSize,
+    $core.int? pageOffset,
+    $core.bool? newestFirst,
+    $core.bool? suspectOnly,
+    $core.bool? secondOpinionOnly,
+  }) {
+    final result = create();
+    if (task != null) result.task = task;
+    if (includeReviewed != null) result.includeReviewed = includeReviewed;
+    if (maxConfidence != null) result.maxConfidence = maxConfidence;
+    if (provenance != null) result.provenance = provenance;
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageOffset != null) result.pageOffset = pageOffset;
+    if (newestFirst != null) result.newestFirst = newestFirst;
+    if (suspectOnly != null) result.suspectOnly = suspectOnly;
+    if (secondOpinionOnly != null) result.secondOpinionOnly = secondOpinionOnly;
+    return result;
+  }
+
+  ListLabelReviewQueueRequest._();
+
+  factory ListLabelReviewQueueRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListLabelReviewQueueRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListLabelReviewQueueRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'task')
+    ..aOB(2, _omitFieldNames ? '' : 'includeReviewed')
+    ..aD(3, _omitFieldNames ? '' : 'maxConfidence')
+    ..aOS(4, _omitFieldNames ? '' : 'provenance')
+    ..aI(5, _omitFieldNames ? '' : 'pageSize')
+    ..aI(6, _omitFieldNames ? '' : 'pageOffset')
+    ..aOB(7, _omitFieldNames ? '' : 'newestFirst')
+    ..aOB(8, _omitFieldNames ? '' : 'suspectOnly')
+    ..aOB(9, _omitFieldNames ? '' : 'secondOpinionOnly')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLabelReviewQueueRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLabelReviewQueueRequest copyWith(
+          void Function(ListLabelReviewQueueRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListLabelReviewQueueRequest))
+          as ListLabelReviewQueueRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListLabelReviewQueueRequest create() =>
+      ListLabelReviewQueueRequest._();
+  @$core.override
+  ListLabelReviewQueueRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListLabelReviewQueueRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListLabelReviewQueueRequest>(create);
+  static ListLabelReviewQueueRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get task => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set task($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTask() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTask() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get includeReviewed => $_getBF(1);
+  @$pb.TagNumber(2)
+  set includeReviewed($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasIncludeReviewed() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearIncludeReviewed() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get maxConfidence => $_getN(2);
+  @$pb.TagNumber(3)
+  set maxConfidence($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMaxConfidence() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMaxConfidence() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get provenance => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set provenance($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasProvenance() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearProvenance() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get pageSize => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set pageSize($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPageSize() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPageSize() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.int get pageOffset => $_getIZ(5);
+  @$pb.TagNumber(6)
+  set pageOffset($core.int value) => $_setSignedInt32(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasPageOffset() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearPageOffset() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.bool get newestFirst => $_getBF(6);
+  @$pb.TagNumber(7)
+  set newestFirst($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasNewestFirst() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearNewestFirst() => $_clearField(7);
+
+  /// Only labels a trained model contradicted, worst disagreement first. These
+  /// are where the data is probably wrong rather than merely hard.
+  @$pb.TagNumber(8)
+  $core.bool get suspectOnly => $_getBF(7);
+  @$pb.TagNumber(8)
+  set suspectOnly($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasSuspectOnly() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearSuspectOnly() => $_clearField(8);
+
+  /// Only samples waiting on another reviewer.
+  @$pb.TagNumber(9)
+  $core.bool get secondOpinionOnly => $_getBF(8);
+  @$pb.TagNumber(9)
+  set secondOpinionOnly($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasSecondOpinionOnly() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearSecondOpinionOnly() => $_clearField(9);
+}
+
+class ListLabelReviewQueueResponse extends $pb.GeneratedMessage {
+  factory ListLabelReviewQueueResponse({
+    $core.Iterable<LabelReviewSample>? samples,
+    $core.int? totalCount,
+    $core.int? unreviewedCount,
+  }) {
+    final result = create();
+    if (samples != null) result.samples.addAll(samples);
+    if (totalCount != null) result.totalCount = totalCount;
+    if (unreviewedCount != null) result.unreviewedCount = unreviewedCount;
+    return result;
+  }
+
+  ListLabelReviewQueueResponse._();
+
+  factory ListLabelReviewQueueResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListLabelReviewQueueResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListLabelReviewQueueResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..pPM<LabelReviewSample>(1, _omitFieldNames ? '' : 'samples',
+        subBuilder: LabelReviewSample.create)
+    ..aI(2, _omitFieldNames ? '' : 'totalCount')
+    ..aI(3, _omitFieldNames ? '' : 'unreviewedCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLabelReviewQueueResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLabelReviewQueueResponse copyWith(
+          void Function(ListLabelReviewQueueResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListLabelReviewQueueResponse))
+          as ListLabelReviewQueueResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListLabelReviewQueueResponse create() =>
+      ListLabelReviewQueueResponse._();
+  @$core.override
+  ListLabelReviewQueueResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListLabelReviewQueueResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListLabelReviewQueueResponse>(create);
+  static ListLabelReviewQueueResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<LabelReviewSample> get samples => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.int get totalCount => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set totalCount($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTotalCount() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalCount() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get unreviewedCount => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set unreviewedCount($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasUnreviewedCount() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearUnreviewedCount() => $_clearField(3);
+}
+
+class SubmitLabelReviewRequest extends $pb.GeneratedMessage {
+  factory SubmitLabelReviewRequest({
+    $core.String? task,
+    $core.String? sampleId,
+    LabelReviewDecision? decision,
+    $core.String? correctedLabel,
+    $core.String? notes,
+  }) {
+    final result = create();
+    if (task != null) result.task = task;
+    if (sampleId != null) result.sampleId = sampleId;
+    if (decision != null) result.decision = decision;
+    if (correctedLabel != null) result.correctedLabel = correctedLabel;
+    if (notes != null) result.notes = notes;
+    return result;
+  }
+
+  SubmitLabelReviewRequest._();
+
+  factory SubmitLabelReviewRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory SubmitLabelReviewRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SubmitLabelReviewRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'task')
+    ..aOS(2, _omitFieldNames ? '' : 'sampleId')
+    ..aE<LabelReviewDecision>(3, _omitFieldNames ? '' : 'decision',
+        enumValues: LabelReviewDecision.values)
+    ..aOS(4, _omitFieldNames ? '' : 'correctedLabel')
+    ..aOS(5, _omitFieldNames ? '' : 'notes')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubmitLabelReviewRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubmitLabelReviewRequest copyWith(
+          void Function(SubmitLabelReviewRequest) updates) =>
+      super.copyWith((message) => updates(message as SubmitLabelReviewRequest))
+          as SubmitLabelReviewRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SubmitLabelReviewRequest create() => SubmitLabelReviewRequest._();
+  @$core.override
+  SubmitLabelReviewRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static SubmitLabelReviewRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SubmitLabelReviewRequest>(create);
+  static SubmitLabelReviewRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get task => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set task($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTask() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTask() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get sampleId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set sampleId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSampleId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSampleId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  LabelReviewDecision get decision => $_getN(2);
+  @$pb.TagNumber(3)
+  set decision(LabelReviewDecision value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDecision() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDecision() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get correctedLabel => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set correctedLabel($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCorrectedLabel() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCorrectedLabel() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get notes => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set notes($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasNotes() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearNotes() => $_clearField(5);
+}
+
+class SubmitLabelReviewResponse extends $pb.GeneratedMessage {
+  factory SubmitLabelReviewResponse({
+    LabelReviewSample? sample,
+  }) {
+    final result = create();
+    if (sample != null) result.sample = sample;
+    return result;
+  }
+
+  SubmitLabelReviewResponse._();
+
+  factory SubmitLabelReviewResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory SubmitLabelReviewResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SubmitLabelReviewResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOM<LabelReviewSample>(1, _omitFieldNames ? '' : 'sample',
+        subBuilder: LabelReviewSample.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubmitLabelReviewResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubmitLabelReviewResponse copyWith(
+          void Function(SubmitLabelReviewResponse) updates) =>
+      super.copyWith((message) => updates(message as SubmitLabelReviewResponse))
+          as SubmitLabelReviewResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SubmitLabelReviewResponse create() => SubmitLabelReviewResponse._();
+  @$core.override
+  SubmitLabelReviewResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static SubmitLabelReviewResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SubmitLabelReviewResponse>(create);
+  static SubmitLabelReviewResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  LabelReviewSample get sample => $_getN(0);
+  @$pb.TagNumber(1)
+  set sample(LabelReviewSample value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSample() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSample() => $_clearField(1);
+  @$pb.TagNumber(1)
+  LabelReviewSample ensureSample() => $_ensure(0);
+}
+
+class GetLabelReviewImageRequest extends $pb.GeneratedMessage {
+  factory GetLabelReviewImageRequest({
+    $core.String? task,
+    $core.String? sampleId,
+  }) {
+    final result = create();
+    if (task != null) result.task = task;
+    if (sampleId != null) result.sampleId = sampleId;
+    return result;
+  }
+
+  GetLabelReviewImageRequest._();
+
+  factory GetLabelReviewImageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetLabelReviewImageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetLabelReviewImageRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'task')
+    ..aOS(2, _omitFieldNames ? '' : 'sampleId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLabelReviewImageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLabelReviewImageRequest copyWith(
+          void Function(GetLabelReviewImageRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetLabelReviewImageRequest))
+          as GetLabelReviewImageRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetLabelReviewImageRequest create() => GetLabelReviewImageRequest._();
+  @$core.override
+  GetLabelReviewImageRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetLabelReviewImageRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetLabelReviewImageRequest>(create);
+  static GetLabelReviewImageRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get task => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set task($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTask() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTask() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get sampleId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set sampleId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSampleId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSampleId() => $_clearField(2);
+}
+
+class GetLabelReviewImageResponse extends $pb.GeneratedMessage {
+  factory GetLabelReviewImageResponse({
+    $core.List<$core.int>? imageBytes,
+    $core.String? mimeType,
+  }) {
+    final result = create();
+    if (imageBytes != null) result.imageBytes = imageBytes;
+    if (mimeType != null) result.mimeType = mimeType;
+    return result;
+  }
+
+  GetLabelReviewImageResponse._();
+
+  factory GetLabelReviewImageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetLabelReviewImageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetLabelReviewImageResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.diagnosis.v1'),
+      createEmptyInstance: create)
+    ..a<$core.List<$core.int>>(
+        1, _omitFieldNames ? '' : 'imageBytes', $pb.PbFieldType.OY)
+    ..aOS(2, _omitFieldNames ? '' : 'mimeType')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLabelReviewImageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLabelReviewImageResponse copyWith(
+          void Function(GetLabelReviewImageResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetLabelReviewImageResponse))
+          as GetLabelReviewImageResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetLabelReviewImageResponse create() =>
+      GetLabelReviewImageResponse._();
+  @$core.override
+  GetLabelReviewImageResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetLabelReviewImageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetLabelReviewImageResponse>(create);
+  static GetLabelReviewImageResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.int> get imageBytes => $_getN(0);
+  @$pb.TagNumber(1)
+  set imageBytes($core.List<$core.int> value) => $_setBytes(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasImageBytes() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearImageBytes() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get mimeType => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set mimeType($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMimeType() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMimeType() => $_clearField(2);
 }
 
 class PlantDiagnosisServiceApi {
@@ -2702,6 +4461,32 @@ class PlantDiagnosisServiceApi {
           $pb.ClientContext? ctx, DetectPestDamageRequest request) =>
       _client.invoke<DetectPestDamageResponse>(ctx, 'PlantDiagnosisService',
           'DetectPestDamage', request, DetectPestDamageResponse());
+
+  /// List auto-labelled training samples awaiting human review (tenant-scoped)
+  $async.Future<ListLabelReviewQueueResponse> listLabelReviewQueue(
+          $pb.ClientContext? ctx, ListLabelReviewQueueRequest request) =>
+      _client.invoke<ListLabelReviewQueueResponse>(ctx, 'PlantDiagnosisService',
+          'ListLabelReviewQueue', request, ListLabelReviewQueueResponse());
+
+  /// Confirm, correct, or reject an auto-label
+  $async.Future<SubmitLabelReviewResponse> submitLabelReview(
+          $pb.ClientContext? ctx, SubmitLabelReviewRequest request) =>
+      _client.invoke<SubmitLabelReviewResponse>(ctx, 'PlantDiagnosisService',
+          'SubmitLabelReview', request, SubmitLabelReviewResponse());
+
+  /// Fetch the image behind a review-queue sample
+  $async.Future<GetLabelReviewImageResponse> getLabelReviewImage(
+          $pb.ClientContext? ctx, GetLabelReviewImageRequest request) =>
+      _client.invoke<GetLabelReviewImageResponse>(ctx, 'PlantDiagnosisService',
+          'GetLabelReviewImage', request, GetLabelReviewImageResponse());
+  $async.Future<RequestSecondOpinionResponse> requestSecondOpinion(
+          $pb.ClientContext? ctx, RequestSecondOpinionRequest request) =>
+      _client.invoke<RequestSecondOpinionResponse>(ctx, 'PlantDiagnosisService',
+          'RequestSecondOpinion', request, RequestSecondOpinionResponse());
+  $async.Future<GetReviewAgreementResponse> getReviewAgreement(
+          $pb.ClientContext? ctx, GetReviewAgreementRequest request) =>
+      _client.invoke<GetReviewAgreementResponse>(ctx, 'PlantDiagnosisService',
+          'GetReviewAgreement', request, GetReviewAgreementResponse());
 }
 
 const $core.bool _omitFieldNames =

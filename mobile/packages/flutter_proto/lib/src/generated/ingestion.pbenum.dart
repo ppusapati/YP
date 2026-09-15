@@ -27,16 +27,19 @@ class SatelliteProvider extends $pb.ProtobufEnum {
   static const SatelliteProvider SATELLITE_PROVIDER_PLANETSCOPE =
       SatelliteProvider._(
           3, _omitEnumNames ? '' : 'SATELLITE_PROVIDER_PLANETSCOPE');
+  static const SatelliteProvider SATELLITE_PROVIDER_UAV =
+      SatelliteProvider._(4, _omitEnumNames ? '' : 'SATELLITE_PROVIDER_UAV');
 
   static const $core.List<SatelliteProvider> values = <SatelliteProvider>[
     SATELLITE_PROVIDER_UNSPECIFIED,
     SATELLITE_PROVIDER_SENTINEL2,
     SATELLITE_PROVIDER_LANDSAT,
     SATELLITE_PROVIDER_PLANETSCOPE,
+    SATELLITE_PROVIDER_UAV,
   ];
 
   static final $core.List<SatelliteProvider?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static SatelliteProvider? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -96,6 +99,15 @@ class SpectralBand extends $pb.ProtobufEnum {
   static const SpectralBand SPECTRAL_BAND_RED_EDGE3 =
       SpectralBand._(9, _omitEnumNames ? '' : 'SPECTRAL_BAND_RED_EDGE3');
 
+  /// Per-pixel quality layers, attached automatically by the ingestion service
+  /// for providers that publish them. Not reflectance bands: these say which
+  /// pixels are cloud, shadow or snow, without which an index is computed over
+  /// whatever the weather left behind.
+  static const SpectralBand SPECTRAL_BAND_SCL =
+      SpectralBand._(10, _omitEnumNames ? '' : 'SPECTRAL_BAND_SCL');
+  static const SpectralBand SPECTRAL_BAND_QA_PIXEL =
+      SpectralBand._(11, _omitEnumNames ? '' : 'SPECTRAL_BAND_QA_PIXEL');
+
   static const $core.List<SpectralBand> values = <SpectralBand>[
     SPECTRAL_BAND_UNSPECIFIED,
     SPECTRAL_BAND_BLUE,
@@ -107,10 +119,12 @@ class SpectralBand extends $pb.ProtobufEnum {
     SPECTRAL_BAND_RED_EDGE1,
     SPECTRAL_BAND_RED_EDGE2,
     SPECTRAL_BAND_RED_EDGE3,
+    SPECTRAL_BAND_SCL,
+    SPECTRAL_BAND_QA_PIXEL,
   ];
 
   static final $core.List<SpectralBand?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 11);
   static SpectralBand? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

@@ -720,12 +720,10 @@ class AdvisoryServiceApi {
           $pb.ClientContext? ctx, GetAdvisoryRequest request) =>
       _client.invoke<GetAdvisoryResponse>(ctx, 'AdvisoryService', 'GetAdvisory',
           request, GetAdvisoryResponse());
-
   $async.Future<ListAdvisoriesResponse> listAdvisories(
           $pb.ClientContext? ctx, ListAdvisoriesRequest request) =>
       _client.invoke<ListAdvisoriesResponse>(ctx, 'AdvisoryService',
           'ListAdvisories', request, ListAdvisoriesResponse());
-
   $async.Future<CreateAdvisoryResponse> createAdvisory(
           $pb.ClientContext? ctx, CreateAdvisoryRequest request) =>
       _client.invoke<CreateAdvisoryResponse>(ctx, 'AdvisoryService',

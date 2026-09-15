@@ -14,6 +14,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// InspectionStatus represents the status of a field inspection.
 class InspectionStatus extends $pb.ProtobufEnum {
   static const InspectionStatus INSPECTION_STATUS_UNSPECIFIED =
       InspectionStatus._(
@@ -24,8 +25,7 @@ class InspectionStatus extends $pb.ProtobufEnum {
       InspectionStatus._(
           2, _omitEnumNames ? '' : 'INSPECTION_STATUS_SUBMITTED');
   static const InspectionStatus INSPECTION_STATUS_REVIEWED =
-      InspectionStatus._(
-          3, _omitEnumNames ? '' : 'INSPECTION_STATUS_REVIEWED');
+      InspectionStatus._(3, _omitEnumNames ? '' : 'INSPECTION_STATUS_REVIEWED');
 
   static const $core.List<InspectionStatus> values = <InspectionStatus>[
     INSPECTION_STATUS_UNSPECIFIED,
@@ -42,6 +42,7 @@ class InspectionStatus extends $pb.ProtobufEnum {
   const InspectionStatus._(super.value, super.name);
 }
 
+/// IssueSeverity represents the severity level of an inspection issue.
 class IssueSeverity extends $pb.ProtobufEnum {
   static const IssueSeverity ISSUE_SEVERITY_UNSPECIFIED =
       IssueSeverity._(0, _omitEnumNames ? '' : 'ISSUE_SEVERITY_UNSPECIFIED');

@@ -538,6 +538,16 @@ const DecisionOutput$json = {
     },
     {'1': 'reasoning', '3': 5, '4': 1, '5': 9, '10': 'reasoning'},
     {'1': 'confidence_score', '3': 6, '4': 1, '5': 1, '10': 'confidenceScore'},
+    {'1': 'method', '3': 7, '4': 1, '5': 9, '10': 'method'},
+    {
+      '1': 'recommended_depth_mm',
+      '3': 8,
+      '4': 1,
+      '5': 1,
+      '10': 'recommendedDepthMm'
+    },
+    {'1': 'crop_coefficient', '3': 9, '4': 1, '5': 1, '10': 'cropCoefficient'},
+    {'1': 'et0_mm_day', '3': 10, '4': 1, '5': 1, '10': 'et0MmDay'},
   ],
 };
 
@@ -548,7 +558,9 @@ final $typed_data.Uint8List decisionOutputDescriptor = $convert.base64Decode(
     'ChBkdXJhdGlvbl9taW51dGVzGAMgASgFUg9kdXJhdGlvbk1pbnV0ZXMSPQoMb3B0aW1hbF90aW'
     '1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFILb3B0aW1hbFRpbWUSHAoJcmVh'
     'c29uaW5nGAUgASgJUglyZWFzb25pbmcSKQoQY29uZmlkZW5jZV9zY29yZRgGIAEoAVIPY29uZm'
-    'lkZW5jZVNjb3Jl');
+    'lkZW5jZVNjb3JlEhYKBm1ldGhvZBgHIAEoCVIGbWV0aG9kEjAKFHJlY29tbWVuZGVkX2RlcHRo'
+    'X21tGAggASgBUhJyZWNvbW1lbmRlZERlcHRoTW0SKQoQY3JvcF9jb2VmZmljaWVudBgJIAEoAV'
+    'IPY3JvcENvZWZmaWNpZW50EhwKCmV0MF9tbV9kYXkYCiABKAFSCGV0ME1tRGF5');
 
 @$core.Deprecated('Use irrigationDecisionDescriptor instead')
 const IrrigationDecision$json = {

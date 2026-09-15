@@ -2171,59 +2171,1334 @@ class TransferOwnershipResponse extends $pb.GeneratedMessage {
   Farm ensureFarm() => $_ensure(0);
 }
 
+class ManagementUnit extends $pb.GeneratedMessage {
+  factory ManagementUnit({
+    $core.String? id,
+    $core.String? tenantId,
+    $core.String? farmId,
+    $core.String? parentUnitId,
+    $core.String? name,
+    $core.String? description,
+    ManagementUnitType? unitType,
+    $core.double? areaHectares,
+    $core.String? boundaryGeojson,
+    $core.String? managerId,
+    ManagementUnitStatus? status,
+    $core.Iterable<$core.String>? fieldIds,
+    $fixnum.Int64? version,
+    $core.String? createdBy,
+    $0.Timestamp? createdAt,
+    $0.Timestamp? updatedAt,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (tenantId != null) result.tenantId = tenantId;
+    if (farmId != null) result.farmId = farmId;
+    if (parentUnitId != null) result.parentUnitId = parentUnitId;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (unitType != null) result.unitType = unitType;
+    if (areaHectares != null) result.areaHectares = areaHectares;
+    if (boundaryGeojson != null) result.boundaryGeojson = boundaryGeojson;
+    if (managerId != null) result.managerId = managerId;
+    if (status != null) result.status = status;
+    if (fieldIds != null) result.fieldIds.addAll(fieldIds);
+    if (version != null) result.version = version;
+    if (createdBy != null) result.createdBy = createdBy;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    return result;
+  }
+
+  ManagementUnit._();
+
+  factory ManagementUnit.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ManagementUnit.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ManagementUnit',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'tenantId')
+    ..aOS(3, _omitFieldNames ? '' : 'farmId')
+    ..aOS(4, _omitFieldNames ? '' : 'parentUnitId')
+    ..aOS(5, _omitFieldNames ? '' : 'name')
+    ..aOS(6, _omitFieldNames ? '' : 'description')
+    ..aE<ManagementUnitType>(7, _omitFieldNames ? '' : 'unitType',
+        enumValues: ManagementUnitType.values)
+    ..aD(8, _omitFieldNames ? '' : 'areaHectares')
+    ..aOS(9, _omitFieldNames ? '' : 'boundaryGeojson')
+    ..aOS(10, _omitFieldNames ? '' : 'managerId')
+    ..aE<ManagementUnitStatus>(11, _omitFieldNames ? '' : 'status',
+        enumValues: ManagementUnitStatus.values)
+    ..pPS(12, _omitFieldNames ? '' : 'fieldIds')
+    ..aInt64(13, _omitFieldNames ? '' : 'version')
+    ..aOS(14, _omitFieldNames ? '' : 'createdBy')
+    ..aOM<$0.Timestamp>(15, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ManagementUnit clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ManagementUnit copyWith(void Function(ManagementUnit) updates) =>
+      super.copyWith((message) => updates(message as ManagementUnit))
+          as ManagementUnit;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ManagementUnit create() => ManagementUnit._();
+  @$core.override
+  ManagementUnit createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ManagementUnit getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ManagementUnit>(create);
+  static ManagementUnit? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get tenantId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set tenantId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTenantId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTenantId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get farmId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set farmId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFarmId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFarmId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get parentUnitId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set parentUnitId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasParentUnitId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearParentUnitId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get name => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set name($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasName() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get description => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set description($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasDescription() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearDescription() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  ManagementUnitType get unitType => $_getN(6);
+  @$pb.TagNumber(7)
+  set unitType(ManagementUnitType value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUnitType() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearUnitType() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.double get areaHectares => $_getN(7);
+  @$pb.TagNumber(8)
+  set areaHectares($core.double value) => $_setDouble(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAreaHectares() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearAreaHectares() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get boundaryGeojson => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set boundaryGeojson($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasBoundaryGeojson() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearBoundaryGeojson() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get managerId => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set managerId($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasManagerId() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearManagerId() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  ManagementUnitStatus get status => $_getN(10);
+  @$pb.TagNumber(11)
+  set status(ManagementUnitStatus value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasStatus() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearStatus() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $pb.PbList<$core.String> get fieldIds => $_getList(11);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get version => $_getI64(12);
+  @$pb.TagNumber(13)
+  set version($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasVersion() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearVersion() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.String get createdBy => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set createdBy($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasCreatedBy() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearCreatedBy() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $0.Timestamp get createdAt => $_getN(14);
+  @$pb.TagNumber(15)
+  set createdAt($0.Timestamp value) => $_setField(15, value);
+  @$pb.TagNumber(15)
+  $core.bool hasCreatedAt() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearCreatedAt() => $_clearField(15);
+  @$pb.TagNumber(15)
+  $0.Timestamp ensureCreatedAt() => $_ensure(14);
+
+  @$pb.TagNumber(16)
+  $0.Timestamp get updatedAt => $_getN(15);
+  @$pb.TagNumber(16)
+  set updatedAt($0.Timestamp value) => $_setField(16, value);
+  @$pb.TagNumber(16)
+  $core.bool hasUpdatedAt() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearUpdatedAt() => $_clearField(16);
+  @$pb.TagNumber(16)
+  $0.Timestamp ensureUpdatedAt() => $_ensure(15);
+}
+
+class CreateManagementUnitRequest extends $pb.GeneratedMessage {
+  factory CreateManagementUnitRequest({
+    $core.String? farmId,
+    $core.String? parentUnitId,
+    $core.String? name,
+    $core.String? description,
+    ManagementUnitType? unitType,
+    $core.double? areaHectares,
+    $core.String? boundaryGeojson,
+    $core.String? managerId,
+    $core.Iterable<$core.String>? fieldIds,
+  }) {
+    final result = create();
+    if (farmId != null) result.farmId = farmId;
+    if (parentUnitId != null) result.parentUnitId = parentUnitId;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (unitType != null) result.unitType = unitType;
+    if (areaHectares != null) result.areaHectares = areaHectares;
+    if (boundaryGeojson != null) result.boundaryGeojson = boundaryGeojson;
+    if (managerId != null) result.managerId = managerId;
+    if (fieldIds != null) result.fieldIds.addAll(fieldIds);
+    return result;
+  }
+
+  CreateManagementUnitRequest._();
+
+  factory CreateManagementUnitRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateManagementUnitRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateManagementUnitRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'farmId')
+    ..aOS(2, _omitFieldNames ? '' : 'parentUnitId')
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'description')
+    ..aE<ManagementUnitType>(5, _omitFieldNames ? '' : 'unitType',
+        enumValues: ManagementUnitType.values)
+    ..aD(6, _omitFieldNames ? '' : 'areaHectares')
+    ..aOS(7, _omitFieldNames ? '' : 'boundaryGeojson')
+    ..aOS(8, _omitFieldNames ? '' : 'managerId')
+    ..pPS(9, _omitFieldNames ? '' : 'fieldIds')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateManagementUnitRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateManagementUnitRequest copyWith(
+          void Function(CreateManagementUnitRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreateManagementUnitRequest))
+          as CreateManagementUnitRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateManagementUnitRequest create() =>
+      CreateManagementUnitRequest._();
+  @$core.override
+  CreateManagementUnitRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateManagementUnitRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateManagementUnitRequest>(create);
+  static CreateManagementUnitRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get farmId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set farmId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFarmId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFarmId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get parentUnitId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set parentUnitId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasParentUnitId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearParentUnitId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get description => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set description($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDescription() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearDescription() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  ManagementUnitType get unitType => $_getN(4);
+  @$pb.TagNumber(5)
+  set unitType(ManagementUnitType value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUnitType() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearUnitType() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.double get areaHectares => $_getN(5);
+  @$pb.TagNumber(6)
+  set areaHectares($core.double value) => $_setDouble(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasAreaHectares() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearAreaHectares() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get boundaryGeojson => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set boundaryGeojson($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasBoundaryGeojson() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearBoundaryGeojson() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get managerId => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set managerId($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasManagerId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearManagerId() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<$core.String> get fieldIds => $_getList(8);
+}
+
+class CreateManagementUnitResponse extends $pb.GeneratedMessage {
+  factory CreateManagementUnitResponse({
+    ManagementUnit? unit,
+  }) {
+    final result = create();
+    if (unit != null) result.unit = unit;
+    return result;
+  }
+
+  CreateManagementUnitResponse._();
+
+  factory CreateManagementUnitResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateManagementUnitResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateManagementUnitResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOM<ManagementUnit>(1, _omitFieldNames ? '' : 'unit',
+        subBuilder: ManagementUnit.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateManagementUnitResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateManagementUnitResponse copyWith(
+          void Function(CreateManagementUnitResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreateManagementUnitResponse))
+          as CreateManagementUnitResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateManagementUnitResponse create() =>
+      CreateManagementUnitResponse._();
+  @$core.override
+  CreateManagementUnitResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateManagementUnitResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateManagementUnitResponse>(create);
+  static CreateManagementUnitResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ManagementUnit get unit => $_getN(0);
+  @$pb.TagNumber(1)
+  set unit(ManagementUnit value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUnit() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUnit() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ManagementUnit ensureUnit() => $_ensure(0);
+}
+
+class GetManagementUnitRequest extends $pb.GeneratedMessage {
+  factory GetManagementUnitRequest({
+    $core.String? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  GetManagementUnitRequest._();
+
+  factory GetManagementUnitRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetManagementUnitRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetManagementUnitRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetManagementUnitRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetManagementUnitRequest copyWith(
+          void Function(GetManagementUnitRequest) updates) =>
+      super.copyWith((message) => updates(message as GetManagementUnitRequest))
+          as GetManagementUnitRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetManagementUnitRequest create() => GetManagementUnitRequest._();
+  @$core.override
+  GetManagementUnitRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetManagementUnitRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetManagementUnitRequest>(create);
+  static GetManagementUnitRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class GetManagementUnitResponse extends $pb.GeneratedMessage {
+  factory GetManagementUnitResponse({
+    ManagementUnit? unit,
+  }) {
+    final result = create();
+    if (unit != null) result.unit = unit;
+    return result;
+  }
+
+  GetManagementUnitResponse._();
+
+  factory GetManagementUnitResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetManagementUnitResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetManagementUnitResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOM<ManagementUnit>(1, _omitFieldNames ? '' : 'unit',
+        subBuilder: ManagementUnit.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetManagementUnitResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetManagementUnitResponse copyWith(
+          void Function(GetManagementUnitResponse) updates) =>
+      super.copyWith((message) => updates(message as GetManagementUnitResponse))
+          as GetManagementUnitResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetManagementUnitResponse create() => GetManagementUnitResponse._();
+  @$core.override
+  GetManagementUnitResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetManagementUnitResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetManagementUnitResponse>(create);
+  static GetManagementUnitResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ManagementUnit get unit => $_getN(0);
+  @$pb.TagNumber(1)
+  set unit(ManagementUnit value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUnit() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUnit() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ManagementUnit ensureUnit() => $_ensure(0);
+}
+
+class ListManagementUnitsRequest extends $pb.GeneratedMessage {
+  factory ListManagementUnitsRequest({
+    $core.String? farmId,
+    $core.int? pageSize,
+    $core.int? pageOffset,
+  }) {
+    final result = create();
+    if (farmId != null) result.farmId = farmId;
+    if (pageSize != null) result.pageSize = pageSize;
+    if (pageOffset != null) result.pageOffset = pageOffset;
+    return result;
+  }
+
+  ListManagementUnitsRequest._();
+
+  factory ListManagementUnitsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListManagementUnitsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListManagementUnitsRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'farmId')
+    ..aI(2, _omitFieldNames ? '' : 'pageSize')
+    ..aI(3, _omitFieldNames ? '' : 'pageOffset')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListManagementUnitsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListManagementUnitsRequest copyWith(
+          void Function(ListManagementUnitsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListManagementUnitsRequest))
+          as ListManagementUnitsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListManagementUnitsRequest create() => ListManagementUnitsRequest._();
+  @$core.override
+  ListManagementUnitsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListManagementUnitsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListManagementUnitsRequest>(create);
+  static ListManagementUnitsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get farmId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set farmId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFarmId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFarmId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get pageSize => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set pageSize($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPageSize() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPageSize() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get pageOffset => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set pageOffset($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPageOffset() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPageOffset() => $_clearField(3);
+}
+
+class ListManagementUnitsResponse extends $pb.GeneratedMessage {
+  factory ListManagementUnitsResponse({
+    $core.Iterable<ManagementUnit>? units,
+    $core.int? totalCount,
+  }) {
+    final result = create();
+    if (units != null) result.units.addAll(units);
+    if (totalCount != null) result.totalCount = totalCount;
+    return result;
+  }
+
+  ListManagementUnitsResponse._();
+
+  factory ListManagementUnitsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListManagementUnitsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListManagementUnitsResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..pPM<ManagementUnit>(1, _omitFieldNames ? '' : 'units',
+        subBuilder: ManagementUnit.create)
+    ..aI(2, _omitFieldNames ? '' : 'totalCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListManagementUnitsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListManagementUnitsResponse copyWith(
+          void Function(ListManagementUnitsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListManagementUnitsResponse))
+          as ListManagementUnitsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListManagementUnitsResponse create() =>
+      ListManagementUnitsResponse._();
+  @$core.override
+  ListManagementUnitsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListManagementUnitsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListManagementUnitsResponse>(create);
+  static ListManagementUnitsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<ManagementUnit> get units => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.int get totalCount => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set totalCount($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTotalCount() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalCount() => $_clearField(2);
+}
+
+class UpdateManagementUnitRequest extends $pb.GeneratedMessage {
+  factory UpdateManagementUnitRequest({
+    $core.String? id,
+    $core.String? name,
+    $core.String? description,
+    ManagementUnitStatus? status,
+    $core.String? managerId,
+    $core.double? areaHectares,
+    $core.String? boundaryGeojson,
+    $1.FieldMask? updateMask,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (status != null) result.status = status;
+    if (managerId != null) result.managerId = managerId;
+    if (areaHectares != null) result.areaHectares = areaHectares;
+    if (boundaryGeojson != null) result.boundaryGeojson = boundaryGeojson;
+    if (updateMask != null) result.updateMask = updateMask;
+    return result;
+  }
+
+  UpdateManagementUnitRequest._();
+
+  factory UpdateManagementUnitRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateManagementUnitRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateManagementUnitRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..aOS(3, _omitFieldNames ? '' : 'description')
+    ..aE<ManagementUnitStatus>(4, _omitFieldNames ? '' : 'status',
+        enumValues: ManagementUnitStatus.values)
+    ..aOS(5, _omitFieldNames ? '' : 'managerId')
+    ..aD(6, _omitFieldNames ? '' : 'areaHectares')
+    ..aOS(7, _omitFieldNames ? '' : 'boundaryGeojson')
+    ..aOM<$1.FieldMask>(8, _omitFieldNames ? '' : 'updateMask',
+        subBuilder: $1.FieldMask.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateManagementUnitRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateManagementUnitRequest copyWith(
+          void Function(UpdateManagementUnitRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdateManagementUnitRequest))
+          as UpdateManagementUnitRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateManagementUnitRequest create() =>
+      UpdateManagementUnitRequest._();
+  @$core.override
+  UpdateManagementUnitRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateManagementUnitRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateManagementUnitRequest>(create);
+  static UpdateManagementUnitRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearName() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get description => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set description($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDescription() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDescription() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  ManagementUnitStatus get status => $_getN(3);
+  @$pb.TagNumber(4)
+  set status(ManagementUnitStatus value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasStatus() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearStatus() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get managerId => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set managerId($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasManagerId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearManagerId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.double get areaHectares => $_getN(5);
+  @$pb.TagNumber(6)
+  set areaHectares($core.double value) => $_setDouble(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasAreaHectares() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearAreaHectares() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get boundaryGeojson => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set boundaryGeojson($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasBoundaryGeojson() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearBoundaryGeojson() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $1.FieldMask get updateMask => $_getN(7);
+  @$pb.TagNumber(8)
+  set updateMask($1.FieldMask value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasUpdateMask() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearUpdateMask() => $_clearField(8);
+  @$pb.TagNumber(8)
+  $1.FieldMask ensureUpdateMask() => $_ensure(7);
+}
+
+class UpdateManagementUnitResponse extends $pb.GeneratedMessage {
+  factory UpdateManagementUnitResponse({
+    ManagementUnit? unit,
+  }) {
+    final result = create();
+    if (unit != null) result.unit = unit;
+    return result;
+  }
+
+  UpdateManagementUnitResponse._();
+
+  factory UpdateManagementUnitResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateManagementUnitResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateManagementUnitResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOM<ManagementUnit>(1, _omitFieldNames ? '' : 'unit',
+        subBuilder: ManagementUnit.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateManagementUnitResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateManagementUnitResponse copyWith(
+          void Function(UpdateManagementUnitResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdateManagementUnitResponse))
+          as UpdateManagementUnitResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateManagementUnitResponse create() =>
+      UpdateManagementUnitResponse._();
+  @$core.override
+  UpdateManagementUnitResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateManagementUnitResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateManagementUnitResponse>(create);
+  static UpdateManagementUnitResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ManagementUnit get unit => $_getN(0);
+  @$pb.TagNumber(1)
+  set unit(ManagementUnit value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUnit() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUnit() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ManagementUnit ensureUnit() => $_ensure(0);
+}
+
+class DeleteManagementUnitRequest extends $pb.GeneratedMessage {
+  factory DeleteManagementUnitRequest({
+    $core.String? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteManagementUnitRequest._();
+
+  factory DeleteManagementUnitRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteManagementUnitRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteManagementUnitRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteManagementUnitRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteManagementUnitRequest copyWith(
+          void Function(DeleteManagementUnitRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as DeleteManagementUnitRequest))
+          as DeleteManagementUnitRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteManagementUnitRequest create() =>
+      DeleteManagementUnitRequest._();
+  @$core.override
+  DeleteManagementUnitRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteManagementUnitRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteManagementUnitRequest>(create);
+  static DeleteManagementUnitRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class DeleteManagementUnitResponse extends $pb.GeneratedMessage {
+  factory DeleteManagementUnitResponse() => create();
+
+  DeleteManagementUnitResponse._();
+
+  factory DeleteManagementUnitResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteManagementUnitResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteManagementUnitResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteManagementUnitResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteManagementUnitResponse copyWith(
+          void Function(DeleteManagementUnitResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as DeleteManagementUnitResponse))
+          as DeleteManagementUnitResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteManagementUnitResponse create() =>
+      DeleteManagementUnitResponse._();
+  @$core.override
+  DeleteManagementUnitResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteManagementUnitResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteManagementUnitResponse>(create);
+  static DeleteManagementUnitResponse? _defaultInstance;
+}
+
+class AssignFieldsToUnitRequest extends $pb.GeneratedMessage {
+  factory AssignFieldsToUnitRequest({
+    $core.String? managementUnitId,
+    $core.Iterable<$core.String>? fieldIds,
+  }) {
+    final result = create();
+    if (managementUnitId != null) result.managementUnitId = managementUnitId;
+    if (fieldIds != null) result.fieldIds.addAll(fieldIds);
+    return result;
+  }
+
+  AssignFieldsToUnitRequest._();
+
+  factory AssignFieldsToUnitRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AssignFieldsToUnitRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AssignFieldsToUnitRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'managementUnitId')
+    ..pPS(2, _omitFieldNames ? '' : 'fieldIds')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignFieldsToUnitRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignFieldsToUnitRequest copyWith(
+          void Function(AssignFieldsToUnitRequest) updates) =>
+      super.copyWith((message) => updates(message as AssignFieldsToUnitRequest))
+          as AssignFieldsToUnitRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AssignFieldsToUnitRequest create() => AssignFieldsToUnitRequest._();
+  @$core.override
+  AssignFieldsToUnitRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static AssignFieldsToUnitRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AssignFieldsToUnitRequest>(create);
+  static AssignFieldsToUnitRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get managementUnitId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set managementUnitId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasManagementUnitId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearManagementUnitId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.String> get fieldIds => $_getList(1);
+}
+
+class AssignFieldsToUnitResponse extends $pb.GeneratedMessage {
+  factory AssignFieldsToUnitResponse({
+    ManagementUnit? unit,
+  }) {
+    final result = create();
+    if (unit != null) result.unit = unit;
+    return result;
+  }
+
+  AssignFieldsToUnitResponse._();
+
+  factory AssignFieldsToUnitResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AssignFieldsToUnitResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AssignFieldsToUnitResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOM<ManagementUnit>(1, _omitFieldNames ? '' : 'unit',
+        subBuilder: ManagementUnit.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignFieldsToUnitResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignFieldsToUnitResponse copyWith(
+          void Function(AssignFieldsToUnitResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as AssignFieldsToUnitResponse))
+          as AssignFieldsToUnitResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AssignFieldsToUnitResponse create() => AssignFieldsToUnitResponse._();
+  @$core.override
+  AssignFieldsToUnitResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static AssignFieldsToUnitResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AssignFieldsToUnitResponse>(create);
+  static AssignFieldsToUnitResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ManagementUnit get unit => $_getN(0);
+  @$pb.TagNumber(1)
+  set unit(ManagementUnit value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUnit() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUnit() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ManagementUnit ensureUnit() => $_ensure(0);
+}
+
+class RemoveFieldsFromUnitRequest extends $pb.GeneratedMessage {
+  factory RemoveFieldsFromUnitRequest({
+    $core.String? managementUnitId,
+    $core.Iterable<$core.String>? fieldIds,
+  }) {
+    final result = create();
+    if (managementUnitId != null) result.managementUnitId = managementUnitId;
+    if (fieldIds != null) result.fieldIds.addAll(fieldIds);
+    return result;
+  }
+
+  RemoveFieldsFromUnitRequest._();
+
+  factory RemoveFieldsFromUnitRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RemoveFieldsFromUnitRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveFieldsFromUnitRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'managementUnitId')
+    ..pPS(2, _omitFieldNames ? '' : 'fieldIds')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveFieldsFromUnitRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveFieldsFromUnitRequest copyWith(
+          void Function(RemoveFieldsFromUnitRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as RemoveFieldsFromUnitRequest))
+          as RemoveFieldsFromUnitRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RemoveFieldsFromUnitRequest create() =>
+      RemoveFieldsFromUnitRequest._();
+  @$core.override
+  RemoveFieldsFromUnitRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RemoveFieldsFromUnitRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveFieldsFromUnitRequest>(create);
+  static RemoveFieldsFromUnitRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get managementUnitId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set managementUnitId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasManagementUnitId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearManagementUnitId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.String> get fieldIds => $_getList(1);
+}
+
+class RemoveFieldsFromUnitResponse extends $pb.GeneratedMessage {
+  factory RemoveFieldsFromUnitResponse({
+    ManagementUnit? unit,
+  }) {
+    final result = create();
+    if (unit != null) result.unit = unit;
+    return result;
+  }
+
+  RemoveFieldsFromUnitResponse._();
+
+  factory RemoveFieldsFromUnitResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RemoveFieldsFromUnitResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveFieldsFromUnitResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'agriculture.farm.v1'),
+      createEmptyInstance: create)
+    ..aOM<ManagementUnit>(1, _omitFieldNames ? '' : 'unit',
+        subBuilder: ManagementUnit.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveFieldsFromUnitResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveFieldsFromUnitResponse copyWith(
+          void Function(RemoveFieldsFromUnitResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as RemoveFieldsFromUnitResponse))
+          as RemoveFieldsFromUnitResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RemoveFieldsFromUnitResponse create() =>
+      RemoveFieldsFromUnitResponse._();
+  @$core.override
+  RemoveFieldsFromUnitResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RemoveFieldsFromUnitResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveFieldsFromUnitResponse>(create);
+  static RemoveFieldsFromUnitResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  ManagementUnit get unit => $_getN(0);
+  @$pb.TagNumber(1)
+  set unit(ManagementUnit value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUnit() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUnit() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ManagementUnit ensureUnit() => $_ensure(0);
+}
+
 /// FarmService provides farm management operations.
 class FarmServiceApi {
   final $pb.RpcClient _client;
 
   FarmServiceApi(this._client);
 
-  /// CreateFarm registers a new farm.
   $async.Future<CreateFarmResponse> createFarm(
           $pb.ClientContext? ctx, CreateFarmRequest request) =>
       _client.invoke<CreateFarmResponse>(
           ctx, 'FarmService', 'CreateFarm', request, CreateFarmResponse());
-
-  /// GetFarm retrieves a farm by ID.
   $async.Future<GetFarmResponse> getFarm(
           $pb.ClientContext? ctx, GetFarmRequest request) =>
       _client.invoke<GetFarmResponse>(
           ctx, 'FarmService', 'GetFarm', request, GetFarmResponse());
-
-  /// ListFarms lists farms with filtering and pagination.
   $async.Future<ListFarmsResponse> listFarms(
           $pb.ClientContext? ctx, ListFarmsRequest request) =>
       _client.invoke<ListFarmsResponse>(
           ctx, 'FarmService', 'ListFarms', request, ListFarmsResponse());
-
-  /// UpdateFarm updates an existing farm.
   $async.Future<UpdateFarmResponse> updateFarm(
           $pb.ClientContext? ctx, UpdateFarmRequest request) =>
       _client.invoke<UpdateFarmResponse>(
           ctx, 'FarmService', 'UpdateFarm', request, UpdateFarmResponse());
-
-  /// DeleteFarm soft-deletes a farm.
   $async.Future<DeleteFarmResponse> deleteFarm(
           $pb.ClientContext? ctx, DeleteFarmRequest request) =>
       _client.invoke<DeleteFarmResponse>(
           ctx, 'FarmService', 'DeleteFarm', request, DeleteFarmResponse());
-
-  /// SetFarmBoundary sets or updates the geographic boundary of a farm.
   $async.Future<SetFarmBoundaryResponse> setFarmBoundary(
           $pb.ClientContext? ctx, SetFarmBoundaryRequest request) =>
       _client.invoke<SetFarmBoundaryResponse>(ctx, 'FarmService',
           'SetFarmBoundary', request, SetFarmBoundaryResponse());
-
-  /// GetFarmBoundary retrieves the geographic boundary of a farm.
   $async.Future<GetFarmBoundaryResponse> getFarmBoundary(
           $pb.ClientContext? ctx, GetFarmBoundaryRequest request) =>
       _client.invoke<GetFarmBoundaryResponse>(ctx, 'FarmService',
           'GetFarmBoundary', request, GetFarmBoundaryResponse());
-
-  /// TransferOwnership transfers ownership of a farm between users.
   $async.Future<TransferOwnershipResponse> transferOwnership(
           $pb.ClientContext? ctx, TransferOwnershipRequest request) =>
       _client.invoke<TransferOwnershipResponse>(ctx, 'FarmService',
           'TransferOwnership', request, TransferOwnershipResponse());
+  $async.Future<CreateManagementUnitResponse> createManagementUnit(
+          $pb.ClientContext? ctx, CreateManagementUnitRequest request) =>
+      _client.invoke<CreateManagementUnitResponse>(ctx, 'FarmService',
+          'CreateManagementUnit', request, CreateManagementUnitResponse());
+  $async.Future<GetManagementUnitResponse> getManagementUnit(
+          $pb.ClientContext? ctx, GetManagementUnitRequest request) =>
+      _client.invoke<GetManagementUnitResponse>(ctx, 'FarmService',
+          'GetManagementUnit', request, GetManagementUnitResponse());
+  $async.Future<ListManagementUnitsResponse> listManagementUnits(
+          $pb.ClientContext? ctx, ListManagementUnitsRequest request) =>
+      _client.invoke<ListManagementUnitsResponse>(ctx, 'FarmService',
+          'ListManagementUnits', request, ListManagementUnitsResponse());
+  $async.Future<UpdateManagementUnitResponse> updateManagementUnit(
+          $pb.ClientContext? ctx, UpdateManagementUnitRequest request) =>
+      _client.invoke<UpdateManagementUnitResponse>(ctx, 'FarmService',
+          'UpdateManagementUnit', request, UpdateManagementUnitResponse());
+  $async.Future<DeleteManagementUnitResponse> deleteManagementUnit(
+          $pb.ClientContext? ctx, DeleteManagementUnitRequest request) =>
+      _client.invoke<DeleteManagementUnitResponse>(ctx, 'FarmService',
+          'DeleteManagementUnit', request, DeleteManagementUnitResponse());
+  $async.Future<AssignFieldsToUnitResponse> assignFieldsToUnit(
+          $pb.ClientContext? ctx, AssignFieldsToUnitRequest request) =>
+      _client.invoke<AssignFieldsToUnitResponse>(ctx, 'FarmService',
+          'AssignFieldsToUnit', request, AssignFieldsToUnitResponse());
+  $async.Future<RemoveFieldsFromUnitResponse> removeFieldsFromUnit(
+          $pb.ClientContext? ctx, RemoveFieldsFromUnitRequest request) =>
+      _client.invoke<RemoveFieldsFromUnitResponse>(ctx, 'FarmService',
+          'RemoveFieldsFromUnit', request, RemoveFieldsFromUnitResponse());
 }
 
 const $core.bool _omitFieldNames =

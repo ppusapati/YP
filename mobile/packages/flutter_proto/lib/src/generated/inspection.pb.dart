@@ -936,17 +936,14 @@ class InspectionServiceApi {
           $pb.ClientContext? ctx, GetInspectionRequest request) =>
       _client.invoke<GetInspectionResponse>(ctx, 'InspectionService',
           'GetInspection', request, GetInspectionResponse());
-
   $async.Future<ListInspectionsResponse> listInspections(
           $pb.ClientContext? ctx, ListInspectionsRequest request) =>
       _client.invoke<ListInspectionsResponse>(ctx, 'InspectionService',
           'ListInspections', request, ListInspectionsResponse());
-
   $async.Future<CreateInspectionResponse> createInspection(
           $pb.ClientContext? ctx, CreateInspectionRequest request) =>
       _client.invoke<CreateInspectionResponse>(ctx, 'InspectionService',
           'CreateInspection', request, CreateInspectionResponse());
-
   $async.Future<SubmitInspectionResponse> submitInspection(
           $pb.ClientContext? ctx, SubmitInspectionRequest request) =>
       _client.invoke<SubmitInspectionResponse>(ctx, 'InspectionService',

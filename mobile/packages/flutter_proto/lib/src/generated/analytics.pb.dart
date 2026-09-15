@@ -14,6 +14,7 @@ import 'dart:async' as $async;
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/struct.pb.dart' as $1;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $0;
 
@@ -272,6 +273,7 @@ class TemporalAnalysis extends $pb.GeneratedMessage {
     $0.Timestamp? periodStart,
     $0.Timestamp? periodEnd,
     $0.Timestamp? createdAt,
+    $1.Struct? details,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -288,6 +290,7 @@ class TemporalAnalysis extends $pb.GeneratedMessage {
     if (periodStart != null) result.periodStart = periodStart;
     if (periodEnd != null) result.periodEnd = periodEnd;
     if (createdAt != null) result.createdAt = createdAt;
+    if (details != null) result.details = details;
     return result;
   }
 
@@ -323,6 +326,8 @@ class TemporalAnalysis extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.create)
     ..aOM<$0.Timestamp>(14, _omitFieldNames ? '' : 'createdAt',
         subBuilder: $0.Timestamp.create)
+    ..aOM<$1.Struct>(15, _omitFieldNames ? '' : 'details',
+        subBuilder: $1.Struct.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -475,6 +480,18 @@ class TemporalAnalysis extends $pb.GeneratedMessage {
   void clearCreatedAt() => $_clearField(14);
   @$pb.TagNumber(14)
   $0.Timestamp ensureCreatedAt() => $_ensure(13);
+
+  /// Analysis-specific outputs: z-scores, anomaly dates, phenology dates, sample counts.
+  @$pb.TagNumber(15)
+  $1.Struct get details => $_getN(14);
+  @$pb.TagNumber(15)
+  set details($1.Struct value) => $_setField(15, value);
+  @$pb.TagNumber(15)
+  $core.bool hasDetails() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearDetails() => $_clearField(15);
+  @$pb.TagNumber(15)
+  $1.Struct ensureDetails() => $_ensure(14);
 }
 
 class DetectStressRequest extends $pb.GeneratedMessage {

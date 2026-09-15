@@ -37,6 +37,20 @@ abstract class FarmServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $2.GetFarmBoundaryRequest request);
   $async.Future<$2.TransferOwnershipResponse> transferOwnership(
       $pb.ServerContext ctx, $2.TransferOwnershipRequest request);
+  $async.Future<$2.CreateManagementUnitResponse> createManagementUnit(
+      $pb.ServerContext ctx, $2.CreateManagementUnitRequest request);
+  $async.Future<$2.GetManagementUnitResponse> getManagementUnit(
+      $pb.ServerContext ctx, $2.GetManagementUnitRequest request);
+  $async.Future<$2.ListManagementUnitsResponse> listManagementUnits(
+      $pb.ServerContext ctx, $2.ListManagementUnitsRequest request);
+  $async.Future<$2.UpdateManagementUnitResponse> updateManagementUnit(
+      $pb.ServerContext ctx, $2.UpdateManagementUnitRequest request);
+  $async.Future<$2.DeleteManagementUnitResponse> deleteManagementUnit(
+      $pb.ServerContext ctx, $2.DeleteManagementUnitRequest request);
+  $async.Future<$2.AssignFieldsToUnitResponse> assignFieldsToUnit(
+      $pb.ServerContext ctx, $2.AssignFieldsToUnitRequest request);
+  $async.Future<$2.RemoveFieldsFromUnitResponse> removeFieldsFromUnit(
+      $pb.ServerContext ctx, $2.RemoveFieldsFromUnitRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -56,6 +70,20 @@ abstract class FarmServiceBase extends $pb.GeneratedService {
         return $2.GetFarmBoundaryRequest();
       case 'TransferOwnership':
         return $2.TransferOwnershipRequest();
+      case 'CreateManagementUnit':
+        return $2.CreateManagementUnitRequest();
+      case 'GetManagementUnit':
+        return $2.GetManagementUnitRequest();
+      case 'ListManagementUnits':
+        return $2.ListManagementUnitsRequest();
+      case 'UpdateManagementUnit':
+        return $2.UpdateManagementUnitRequest();
+      case 'DeleteManagementUnit':
+        return $2.DeleteManagementUnitRequest();
+      case 'AssignFieldsToUnit':
+        return $2.AssignFieldsToUnitRequest();
+      case 'RemoveFieldsFromUnit':
+        return $2.RemoveFieldsFromUnitRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -80,6 +108,25 @@ abstract class FarmServiceBase extends $pb.GeneratedService {
         return getFarmBoundary(ctx, request as $2.GetFarmBoundaryRequest);
       case 'TransferOwnership':
         return transferOwnership(ctx, request as $2.TransferOwnershipRequest);
+      case 'CreateManagementUnit':
+        return createManagementUnit(
+            ctx, request as $2.CreateManagementUnitRequest);
+      case 'GetManagementUnit':
+        return getManagementUnit(ctx, request as $2.GetManagementUnitRequest);
+      case 'ListManagementUnits':
+        return listManagementUnits(
+            ctx, request as $2.ListManagementUnitsRequest);
+      case 'UpdateManagementUnit':
+        return updateManagementUnit(
+            ctx, request as $2.UpdateManagementUnitRequest);
+      case 'DeleteManagementUnit':
+        return deleteManagementUnit(
+            ctx, request as $2.DeleteManagementUnitRequest);
+      case 'AssignFieldsToUnit':
+        return assignFieldsToUnit(ctx, request as $2.AssignFieldsToUnitRequest);
+      case 'RemoveFieldsFromUnit':
+        return removeFieldsFromUnit(
+            ctx, request as $2.RemoveFieldsFromUnitRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

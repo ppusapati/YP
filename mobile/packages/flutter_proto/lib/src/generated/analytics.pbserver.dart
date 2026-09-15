@@ -15,35 +15,35 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'analytics.pb.dart' as $1;
+import 'analytics.pb.dart' as $2;
 import 'analytics.pbjson.dart';
 
 export 'analytics.pb.dart';
 
 abstract class SatelliteAnalyticsServiceBase extends $pb.GeneratedService {
-  $async.Future<$1.DetectStressResponse> detectStress(
-      $pb.ServerContext ctx, $1.DetectStressRequest request);
-  $async.Future<$1.ListStressAlertsResponse> listStressAlerts(
-      $pb.ServerContext ctx, $1.ListStressAlertsRequest request);
-  $async.Future<$1.AcknowledgeAlertResponse> acknowledgeAlert(
-      $pb.ServerContext ctx, $1.AcknowledgeAlertRequest request);
-  $async.Future<$1.RunTemporalAnalysisResponse> runTemporalAnalysis(
-      $pb.ServerContext ctx, $1.RunTemporalAnalysisRequest request);
-  $async.Future<$1.GetFieldAnalyticsSummaryResponse> getFieldAnalyticsSummary(
-      $pb.ServerContext ctx, $1.GetFieldAnalyticsSummaryRequest request);
+  $async.Future<$2.DetectStressResponse> detectStress(
+      $pb.ServerContext ctx, $2.DetectStressRequest request);
+  $async.Future<$2.ListStressAlertsResponse> listStressAlerts(
+      $pb.ServerContext ctx, $2.ListStressAlertsRequest request);
+  $async.Future<$2.AcknowledgeAlertResponse> acknowledgeAlert(
+      $pb.ServerContext ctx, $2.AcknowledgeAlertRequest request);
+  $async.Future<$2.RunTemporalAnalysisResponse> runTemporalAnalysis(
+      $pb.ServerContext ctx, $2.RunTemporalAnalysisRequest request);
+  $async.Future<$2.GetFieldAnalyticsSummaryResponse> getFieldAnalyticsSummary(
+      $pb.ServerContext ctx, $2.GetFieldAnalyticsSummaryRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
       case 'DetectStress':
-        return $1.DetectStressRequest();
+        return $2.DetectStressRequest();
       case 'ListStressAlerts':
-        return $1.ListStressAlertsRequest();
+        return $2.ListStressAlertsRequest();
       case 'AcknowledgeAlert':
-        return $1.AcknowledgeAlertRequest();
+        return $2.AcknowledgeAlertRequest();
       case 'RunTemporalAnalysis':
-        return $1.RunTemporalAnalysisRequest();
+        return $2.RunTemporalAnalysisRequest();
       case 'GetFieldAnalyticsSummary':
-        return $1.GetFieldAnalyticsSummaryRequest();
+        return $2.GetFieldAnalyticsSummaryRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -53,17 +53,17 @@ abstract class SatelliteAnalyticsServiceBase extends $pb.GeneratedService {
       $core.String methodName, $pb.GeneratedMessage request) {
     switch (methodName) {
       case 'DetectStress':
-        return detectStress(ctx, request as $1.DetectStressRequest);
+        return detectStress(ctx, request as $2.DetectStressRequest);
       case 'ListStressAlerts':
-        return listStressAlerts(ctx, request as $1.ListStressAlertsRequest);
+        return listStressAlerts(ctx, request as $2.ListStressAlertsRequest);
       case 'AcknowledgeAlert':
-        return acknowledgeAlert(ctx, request as $1.AcknowledgeAlertRequest);
+        return acknowledgeAlert(ctx, request as $2.AcknowledgeAlertRequest);
       case 'RunTemporalAnalysis':
         return runTemporalAnalysis(
-            ctx, request as $1.RunTemporalAnalysisRequest);
+            ctx, request as $2.RunTemporalAnalysisRequest);
       case 'GetFieldAnalyticsSummary':
         return getFieldAnalyticsSummary(
-            ctx, request as $1.GetFieldAnalyticsSummaryRequest);
+            ctx, request as $2.GetFieldAnalyticsSummaryRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

@@ -74,6 +74,24 @@ final $typed_data.Uint8List severityDescriptor = $convert.base64Decode(
     'IVChFTRVZFUklUWV9NT0RFUkFURRACEhMKD1NFVkVSSVRZX1NFVkVSRRADEhUKEVNFVkVSSVRZ'
     'X0NSSVRJQ0FMEAQ=');
 
+@$core.Deprecated('Use labelReviewDecisionDescriptor instead')
+const LabelReviewDecision$json = {
+  '1': 'LabelReviewDecision',
+  '2': [
+    {'1': 'LABEL_REVIEW_DECISION_UNSPECIFIED', '2': 0},
+    {'1': 'LABEL_REVIEW_DECISION_CONFIRMED', '2': 1},
+    {'1': 'LABEL_REVIEW_DECISION_CORRECTED', '2': 2},
+    {'1': 'LABEL_REVIEW_DECISION_REJECTED', '2': 3},
+  ],
+};
+
+/// Descriptor for `LabelReviewDecision`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List labelReviewDecisionDescriptor = $convert.base64Decode(
+    'ChNMYWJlbFJldmlld0RlY2lzaW9uEiUKIUxBQkVMX1JFVklFV19ERUNJU0lPTl9VTlNQRUNJRk'
+    'lFRBAAEiMKH0xBQkVMX1JFVklFV19ERUNJU0lPTl9DT05GSVJNRUQQARIjCh9MQUJFTF9SRVZJ'
+    'RVdfREVDSVNJT05fQ09SUkVDVEVEEAISIgoeTEFCRUxfUkVWSUVXX0RFQ0lTSU9OX1JFSkVDVE'
+    'VEEAM=');
+
 @$core.Deprecated('Use diagnosisImageDescriptor instead')
 const DiagnosisImage$json = {
   '1': 'DiagnosisImage',
@@ -386,6 +404,14 @@ const DiagnosisResult$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'createdAt'
     },
+    {
+      '1': 'explanations',
+      '3': 13,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.Explanation',
+      '10': 'explanations'
+    },
   ],
 };
 
@@ -403,7 +429,9 @@ final $typed_data.Uint8List diagnosisResultDescriptor = $convert.base64Decode(
     'Vyc2lvbhgIIAEoCVIOYWlNb2RlbFZlcnNpb24SLAoScHJvY2Vzc2luZ190aW1lX21zGAkgASgD'
     'UhBwcm9jZXNzaW5nVGltZU1zEjAKFG92ZXJhbGxfaGVhbHRoX3Njb3JlGAogASgBUhJvdmVyYW'
     'xsSGVhbHRoU2NvcmUSGAoHc3VtbWFyeRgLIAEoCVIHc3VtbWFyeRI5CgpjcmVhdGVkX2F0GAwg'
-    'ASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0');
+    'ASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0EkkKDGV4cGxhbmF0aW'
+    '9ucxgNIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5FeHBsYW5hdGlvblIMZXhwbGFu'
+    'YXRpb25z');
 
 @$core.Deprecated('Use diagnosisRequestDescriptor instead')
 const DiagnosisRequest$json = {
@@ -783,6 +811,37 @@ final $typed_data.Uint8List identifySpeciesResponseDescriptor = $convert.base64D
     'GAIgASgJUg5haU1vZGVsVmVyc2lvbhIsChJwcm9jZXNzaW5nX3RpbWVfbXMYAyABKANSEHByb2'
     'Nlc3NpbmdUaW1lTXM=');
 
+@$core.Deprecated('Use explanationDescriptor instead')
+const Explanation$json = {
+  '1': 'Explanation',
+  '2': [
+    {'1': 'task', '3': 1, '4': 1, '5': 9, '10': 'task'},
+    {'1': 'class_name', '3': 2, '4': 1, '5': 9, '10': 'className'},
+    {'1': 'heatmap_png', '3': 3, '4': 1, '5': 12, '10': 'heatmapPng'},
+    {'1': 'heatmap_width', '3': 4, '4': 1, '5': 5, '10': 'heatmapWidth'},
+    {'1': 'heatmap_height', '3': 5, '4': 1, '5': 5, '10': 'heatmapHeight'},
+    {'1': 'focus_x', '3': 6, '4': 1, '5': 1, '10': 'focusX'},
+    {'1': 'focus_y', '3': 7, '4': 1, '5': 1, '10': 'focusY'},
+    {'1': 'focus_width', '3': 8, '4': 1, '5': 1, '10': 'focusWidth'},
+    {'1': 'focus_height', '3': 9, '4': 1, '5': 1, '10': 'focusHeight'},
+    {'1': 'focus_coverage', '3': 10, '4': 1, '5': 1, '10': 'focusCoverage'},
+    {'1': 'summary', '3': 11, '4': 1, '5': 9, '10': 'summary'},
+    {'1': 'method', '3': 12, '4': 1, '5': 9, '10': 'method'},
+    {'1': 'localised', '3': 13, '4': 1, '5': 8, '10': 'localised'},
+  ],
+};
+
+/// Descriptor for `Explanation`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List explanationDescriptor = $convert.base64Decode(
+    'CgtFeHBsYW5hdGlvbhISCgR0YXNrGAEgASgJUgR0YXNrEh0KCmNsYXNzX25hbWUYAiABKAlSCW'
+    'NsYXNzTmFtZRIfCgtoZWF0bWFwX3BuZxgDIAEoDFIKaGVhdG1hcFBuZxIjCg1oZWF0bWFwX3dp'
+    'ZHRoGAQgASgFUgxoZWF0bWFwV2lkdGgSJQoOaGVhdG1hcF9oZWlnaHQYBSABKAVSDWhlYXRtYX'
+    'BIZWlnaHQSFwoHZm9jdXNfeBgGIAEoAVIGZm9jdXNYEhcKB2ZvY3VzX3kYByABKAFSBmZvY3Vz'
+    'WRIfCgtmb2N1c193aWR0aBgIIAEoAVIKZm9jdXNXaWR0aBIhCgxmb2N1c19oZWlnaHQYCSABKA'
+    'FSC2ZvY3VzSGVpZ2h0EiUKDmZvY3VzX2NvdmVyYWdlGAogASgBUg1mb2N1c0NvdmVyYWdlEhgK'
+    'B3N1bW1hcnkYCyABKAlSB3N1bW1hcnkSFgoGbWV0aG9kGAwgASgJUgZtZXRob2QSHAoJbG9jYW'
+    'xpc2VkGA0gASgIUglsb2NhbGlzZWQ=');
+
 @$core.Deprecated('Use detectNutrientDeficiencyRequestDescriptor instead')
 const DetectNutrientDeficiencyRequest$json = {
   '1': 'DetectNutrientDeficiencyRequest',
@@ -826,16 +885,25 @@ const DetectNutrientDeficiencyResponse$json = {
       '5': 3,
       '10': 'processingTimeMs'
     },
+    {
+      '1': 'explanations',
+      '3': 4,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.Explanation',
+      '10': 'explanations'
+    },
   ],
 };
 
 /// Descriptor for `DetectNutrientDeficiencyResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List detectNutrientDeficiencyResponseDescriptor =
-    $convert.base64Decode(
-        'CiBEZXRlY3ROdXRyaWVudERlZmljaWVuY3lSZXNwb25zZRJQCgxkZWZpY2llbmNpZXMYASADKA'
-        'syLC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTnV0cmllbnREZWZpY2llbmN5UgxkZWZpY2ll'
-        'bmNpZXMSKAoQYWlfbW9kZWxfdmVyc2lvbhgCIAEoCVIOYWlNb2RlbFZlcnNpb24SLAoScHJvY2'
-        'Vzc2luZ190aW1lX21zGAMgASgDUhBwcm9jZXNzaW5nVGltZU1z');
+final $typed_data.Uint8List detectNutrientDeficiencyResponseDescriptor = $convert.base64Decode(
+    'CiBEZXRlY3ROdXRyaWVudERlZmljaWVuY3lSZXNwb25zZRJQCgxkZWZpY2llbmNpZXMYASADKA'
+    'syLC5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTnV0cmllbnREZWZpY2llbmN5UgxkZWZpY2ll'
+    'bmNpZXMSKAoQYWlfbW9kZWxfdmVyc2lvbhgCIAEoCVIOYWlNb2RlbFZlcnNpb24SLAoScHJvY2'
+    'Vzc2luZ190aW1lX21zGAMgASgDUhBwcm9jZXNzaW5nVGltZU1zEkkKDGV4cGxhbmF0aW9ucxgE'
+    'IAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5FeHBsYW5hdGlvblIMZXhwbGFuYXRpb2'
+    '5z');
 
 @$core.Deprecated('Use detectPestDamageRequestDescriptor instead')
 const DetectPestDamageRequest$json = {
@@ -879,6 +947,14 @@ const DetectPestDamageResponse$json = {
       '5': 3,
       '10': 'processingTimeMs'
     },
+    {
+      '1': 'explanations',
+      '3': 4,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.Explanation',
+      '10': 'explanations'
+    },
   ],
 };
 
@@ -887,7 +963,403 @@ final $typed_data.Uint8List detectPestDamageResponseDescriptor = $convert.base64
     'ChhEZXRlY3RQZXN0RGFtYWdlUmVzcG9uc2USOgoFcGVzdHMYASADKAsyJC5hZ3JpY3VsdHVyZS'
     '5kaWFnbm9zaXMudjEuUGVzdERhbWFnZVIFcGVzdHMSKAoQYWlfbW9kZWxfdmVyc2lvbhgCIAEo'
     'CVIOYWlNb2RlbFZlcnNpb24SLAoScHJvY2Vzc2luZ190aW1lX21zGAMgASgDUhBwcm9jZXNzaW'
-    '5nVGltZU1z');
+    '5nVGltZU1zEkkKDGV4cGxhbmF0aW9ucxgEIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52'
+    'MS5FeHBsYW5hdGlvblIMZXhwbGFuYXRpb25z');
+
+@$core.Deprecated('Use trainingLabelDescriptor instead')
+const TrainingLabel$json = {
+  '1': 'TrainingLabel',
+  '2': [
+    {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'confidence', '3': 2, '4': 1, '5': 1, '10': 'confidence'},
+    {'1': 'category', '3': 3, '4': 1, '5': 9, '10': 'category'},
+    {'1': 'severity', '3': 4, '4': 1, '5': 9, '10': 'severity'},
+  ],
+};
+
+/// Descriptor for `TrainingLabel`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List trainingLabelDescriptor = $convert.base64Decode(
+    'Cg1UcmFpbmluZ0xhYmVsEhIKBG5hbWUYASABKAlSBG5hbWUSHgoKY29uZmlkZW5jZRgCIAEoAV'
+    'IKY29uZmlkZW5jZRIaCghjYXRlZ29yeRgDIAEoCVIIY2F0ZWdvcnkSGgoIc2V2ZXJpdHkYBCAB'
+    'KAlSCHNldmVyaXR5');
+
+@$core.Deprecated('Use labelReviewDescriptor instead')
+const LabelReview$json = {
+  '1': 'LabelReview',
+  '2': [
+    {
+      '1': 'decision',
+      '3': 1,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.diagnosis.v1.LabelReviewDecision',
+      '10': 'decision'
+    },
+    {'1': 'corrected_label', '3': 2, '4': 1, '5': 9, '10': 'correctedLabel'},
+    {'1': 'reviewer_id', '3': 3, '4': 1, '5': 9, '10': 'reviewerId'},
+    {'1': 'notes', '3': 4, '4': 1, '5': 9, '10': 'notes'},
+    {
+      '1': 'reviewed_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'reviewedAt'
+    },
+  ],
+};
+
+/// Descriptor for `LabelReview`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List labelReviewDescriptor = $convert.base64Decode(
+    'CgtMYWJlbFJldmlldxJJCghkZWNpc2lvbhgBIAEoDjItLmFncmljdWx0dXJlLmRpYWdub3Npcy'
+    '52MS5MYWJlbFJldmlld0RlY2lzaW9uUghkZWNpc2lvbhInCg9jb3JyZWN0ZWRfbGFiZWwYAiAB'
+    'KAlSDmNvcnJlY3RlZExhYmVsEh8KC3Jldmlld2VyX2lkGAMgASgJUgpyZXZpZXdlcklkEhQKBW'
+    '5vdGVzGAQgASgJUgVub3RlcxI7CgtyZXZpZXdlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1'
+    'Zi5UaW1lc3RhbXBSCnJldmlld2VkQXQ=');
+
+@$core.Deprecated('Use labelSuspicionDescriptor instead')
+const LabelSuspicion$json = {
+  '1': 'LabelSuspicion',
+  '2': [
+    {'1': 'predicted', '3': 1, '4': 1, '5': 9, '10': 'predicted'},
+    {'1': 'predicted_prob', '3': 2, '4': 1, '5': 1, '10': 'predictedProb'},
+    {'1': 'label_prob', '3': 3, '4': 1, '5': 1, '10': 'labelProb'},
+    {'1': 'model_version', '3': 4, '4': 1, '5': 9, '10': 'modelVersion'},
+    {'1': 'flagged_at', '3': 5, '4': 1, '5': 9, '10': 'flaggedAt'},
+  ],
+};
+
+/// Descriptor for `LabelSuspicion`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List labelSuspicionDescriptor = $convert.base64Decode(
+    'Cg5MYWJlbFN1c3BpY2lvbhIcCglwcmVkaWN0ZWQYASABKAlSCXByZWRpY3RlZBIlCg5wcmVkaW'
+    'N0ZWRfcHJvYhgCIAEoAVINcHJlZGljdGVkUHJvYhIdCgpsYWJlbF9wcm9iGAMgASgBUglsYWJl'
+    'bFByb2ISIwoNbW9kZWxfdmVyc2lvbhgEIAEoCVIMbW9kZWxWZXJzaW9uEh0KCmZsYWdnZWRfYX'
+    'QYBSABKAlSCWZsYWdnZWRBdA==');
+
+@$core.Deprecated('Use labelReviewSampleDescriptor instead')
+const LabelReviewSample$json = {
+  '1': 'LabelReviewSample',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'task', '3': 2, '4': 1, '5': 9, '10': 'task'},
+    {
+      '1': 'collected_at',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'collectedAt'
+    },
+    {'1': 'provenance', '3': 4, '4': 1, '5': 9, '10': 'provenance'},
+    {'1': 'provider', '3': 5, '4': 1, '5': 9, '10': 'provider'},
+    {
+      '1': 'labels',
+      '3': 6,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.TrainingLabel',
+      '10': 'labels'
+    },
+    {'1': 'top_confidence', '3': 7, '4': 1, '5': 1, '10': 'topConfidence'},
+    {'1': 'farm_id', '3': 8, '4': 1, '5': 9, '10': 'farmId'},
+    {'1': 'field_id', '3': 9, '4': 1, '5': 9, '10': 'fieldId'},
+    {'1': 'crop', '3': 10, '4': 1, '5': 9, '10': 'crop'},
+    {'1': 'submitted_by', '3': 11, '4': 1, '5': 9, '10': 'submittedBy'},
+    {
+      '1': 'review',
+      '3': 12,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelReview',
+      '10': 'review'
+    },
+    {'1': 'effective_label', '3': 13, '4': 1, '5': 9, '10': 'effectiveLabel'},
+    {
+      '1': 'suspect',
+      '3': 14,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelSuspicion',
+      '10': 'suspect'
+    },
+    {
+      '1': 'needs_second_opinion',
+      '3': 15,
+      '4': 1,
+      '5': 8,
+      '10': 'needsSecondOpinion'
+    },
+    {
+      '1': 'reviews',
+      '3': 16,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelReview',
+      '10': 'reviews'
+    },
+  ],
+};
+
+/// Descriptor for `LabelReviewSample`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List labelReviewSampleDescriptor = $convert.base64Decode(
+    'ChFMYWJlbFJldmlld1NhbXBsZRIOCgJpZBgBIAEoCVICaWQSEgoEdGFzaxgCIAEoCVIEdGFzax'
+    'I9Cgxjb2xsZWN0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgtjb2xs'
+    'ZWN0ZWRBdBIeCgpwcm92ZW5hbmNlGAQgASgJUgpwcm92ZW5hbmNlEhoKCHByb3ZpZGVyGAUgAS'
+    'gJUghwcm92aWRlchI/CgZsYWJlbHMYBiADKAsyJy5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEu'
+    'VHJhaW5pbmdMYWJlbFIGbGFiZWxzEiUKDnRvcF9jb25maWRlbmNlGAcgASgBUg10b3BDb25maW'
+    'RlbmNlEhcKB2Zhcm1faWQYCCABKAlSBmZhcm1JZBIZCghmaWVsZF9pZBgJIAEoCVIHZmllbGRJ'
+    'ZBISCgRjcm9wGAogASgJUgRjcm9wEiEKDHN1Ym1pdHRlZF9ieRgLIAEoCVILc3VibWl0dGVkQn'
+    'kSPQoGcmV2aWV3GAwgASgLMiUuYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsUmV2aWV3'
+    'UgZyZXZpZXcSJwoPZWZmZWN0aXZlX2xhYmVsGA0gASgJUg5lZmZlY3RpdmVMYWJlbBJCCgdzdX'
+    'NwZWN0GA4gASgLMiguYWdyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkxhYmVsU3VzcGljaW9uUgdz'
+    'dXNwZWN0EjAKFG5lZWRzX3NlY29uZF9vcGluaW9uGA8gASgIUhJuZWVkc1NlY29uZE9waW5pb2'
+    '4SPwoHcmV2aWV3cxgQIAMoCzIlLmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5MYWJlbFJldmll'
+    'd1IHcmV2aWV3cw==');
+
+@$core.Deprecated('Use reviewAgreementDescriptor instead')
+const ReviewAgreement$json = {
+  '1': 'ReviewAgreement',
+  '2': [
+    {'1': 'compared', '3': 1, '4': 1, '5': 5, '10': 'compared'},
+    {'1': 'raw_agreement', '3': 2, '4': 1, '5': 1, '10': 'rawAgreement'},
+    {'1': 'kappa', '3': 3, '4': 1, '5': 1, '10': 'kappa'},
+    {'1': 'strength', '3': 4, '4': 1, '5': 9, '10': 'strength'},
+    {
+      '1': 'disagreements',
+      '3': 5,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelDisagreement',
+      '10': 'disagreements'
+    },
+  ],
+};
+
+/// Descriptor for `ReviewAgreement`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List reviewAgreementDescriptor = $convert.base64Decode(
+    'Cg9SZXZpZXdBZ3JlZW1lbnQSGgoIY29tcGFyZWQYASABKAVSCGNvbXBhcmVkEiMKDXJhd19hZ3'
+    'JlZW1lbnQYAiABKAFSDHJhd0FncmVlbWVudBIUCgVrYXBwYRgDIAEoAVIFa2FwcGESGgoIc3Ry'
+    'ZW5ndGgYBCABKAlSCHN0cmVuZ3RoElEKDWRpc2FncmVlbWVudHMYBSADKAsyKy5hZ3JpY3VsdH'
+    'VyZS5kaWFnbm9zaXMudjEuTGFiZWxEaXNhZ3JlZW1lbnRSDWRpc2FncmVlbWVudHM=');
+
+@$core.Deprecated('Use labelDisagreementDescriptor instead')
+const LabelDisagreement$json = {
+  '1': 'LabelDisagreement',
+  '2': [
+    {'1': 'first', '3': 1, '4': 1, '5': 9, '10': 'first'},
+    {'1': 'second', '3': 2, '4': 1, '5': 9, '10': 'second'},
+    {'1': 'count', '3': 3, '4': 1, '5': 5, '10': 'count'},
+  ],
+};
+
+/// Descriptor for `LabelDisagreement`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List labelDisagreementDescriptor = $convert.base64Decode(
+    'ChFMYWJlbERpc2FncmVlbWVudBIUCgVmaXJzdBgBIAEoCVIFZmlyc3QSFgoGc2Vjb25kGAIgAS'
+    'gJUgZzZWNvbmQSFAoFY291bnQYAyABKAVSBWNvdW50');
+
+@$core.Deprecated('Use requestSecondOpinionRequestDescriptor instead')
+const RequestSecondOpinionRequest$json = {
+  '1': 'RequestSecondOpinionRequest',
+  '2': [
+    {'1': 'task', '3': 1, '4': 1, '5': 9, '10': 'task'},
+    {'1': 'sample_id', '3': 2, '4': 1, '5': 9, '10': 'sampleId'},
+    {'1': 'wanted', '3': 3, '4': 1, '5': 8, '10': 'wanted'},
+  ],
+};
+
+/// Descriptor for `RequestSecondOpinionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List requestSecondOpinionRequestDescriptor =
+    $convert.base64Decode(
+        'ChtSZXF1ZXN0U2Vjb25kT3BpbmlvblJlcXVlc3QSEgoEdGFzaxgBIAEoCVIEdGFzaxIbCglzYW'
+        '1wbGVfaWQYAiABKAlSCHNhbXBsZUlkEhYKBndhbnRlZBgDIAEoCFIGd2FudGVk');
+
+@$core.Deprecated('Use requestSecondOpinionResponseDescriptor instead')
+const RequestSecondOpinionResponse$json = {
+  '1': 'RequestSecondOpinionResponse',
+  '2': [
+    {
+      '1': 'sample',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelReviewSample',
+      '10': 'sample'
+    },
+  ],
+};
+
+/// Descriptor for `RequestSecondOpinionResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List requestSecondOpinionResponseDescriptor =
+    $convert.base64Decode(
+        'ChxSZXF1ZXN0U2Vjb25kT3BpbmlvblJlc3BvbnNlEkMKBnNhbXBsZRgBIAEoCzIrLmFncmljdW'
+        'x0dXJlLmRpYWdub3Npcy52MS5MYWJlbFJldmlld1NhbXBsZVIGc2FtcGxl');
+
+@$core.Deprecated('Use getReviewAgreementRequestDescriptor instead')
+const GetReviewAgreementRequest$json = {
+  '1': 'GetReviewAgreementRequest',
+  '2': [
+    {'1': 'task', '3': 1, '4': 1, '5': 9, '10': 'task'},
+  ],
+};
+
+/// Descriptor for `GetReviewAgreementRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getReviewAgreementRequestDescriptor =
+    $convert.base64Decode(
+        'ChlHZXRSZXZpZXdBZ3JlZW1lbnRSZXF1ZXN0EhIKBHRhc2sYASABKAlSBHRhc2s=');
+
+@$core.Deprecated('Use getReviewAgreementResponseDescriptor instead')
+const GetReviewAgreementResponse$json = {
+  '1': 'GetReviewAgreementResponse',
+  '2': [
+    {
+      '1': 'agreement',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.ReviewAgreement',
+      '10': 'agreement'
+    },
+  ],
+};
+
+/// Descriptor for `GetReviewAgreementResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getReviewAgreementResponseDescriptor =
+    $convert.base64Decode(
+        'ChpHZXRSZXZpZXdBZ3JlZW1lbnRSZXNwb25zZRJHCglhZ3JlZW1lbnQYASABKAsyKS5hZ3JpY3'
+        'VsdHVyZS5kaWFnbm9zaXMudjEuUmV2aWV3QWdyZWVtZW50UglhZ3JlZW1lbnQ=');
+
+@$core.Deprecated('Use listLabelReviewQueueRequestDescriptor instead')
+const ListLabelReviewQueueRequest$json = {
+  '1': 'ListLabelReviewQueueRequest',
+  '2': [
+    {'1': 'task', '3': 1, '4': 1, '5': 9, '10': 'task'},
+    {'1': 'include_reviewed', '3': 2, '4': 1, '5': 8, '10': 'includeReviewed'},
+    {'1': 'max_confidence', '3': 3, '4': 1, '5': 1, '10': 'maxConfidence'},
+    {'1': 'provenance', '3': 4, '4': 1, '5': 9, '10': 'provenance'},
+    {'1': 'page_size', '3': 5, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_offset', '3': 6, '4': 1, '5': 5, '10': 'pageOffset'},
+    {'1': 'newest_first', '3': 7, '4': 1, '5': 8, '10': 'newestFirst'},
+    {'1': 'suspect_only', '3': 8, '4': 1, '5': 8, '10': 'suspectOnly'},
+    {
+      '1': 'second_opinion_only',
+      '3': 9,
+      '4': 1,
+      '5': 8,
+      '10': 'secondOpinionOnly'
+    },
+  ],
+};
+
+/// Descriptor for `ListLabelReviewQueueRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listLabelReviewQueueRequestDescriptor = $convert.base64Decode(
+    'ChtMaXN0TGFiZWxSZXZpZXdRdWV1ZVJlcXVlc3QSEgoEdGFzaxgBIAEoCVIEdGFzaxIpChBpbm'
+    'NsdWRlX3Jldmlld2VkGAIgASgIUg9pbmNsdWRlUmV2aWV3ZWQSJQoObWF4X2NvbmZpZGVuY2UY'
+    'AyABKAFSDW1heENvbmZpZGVuY2USHgoKcHJvdmVuYW5jZRgEIAEoCVIKcHJvdmVuYW5jZRIbCg'
+    'lwYWdlX3NpemUYBSABKAVSCHBhZ2VTaXplEh8KC3BhZ2Vfb2Zmc2V0GAYgASgFUgpwYWdlT2Zm'
+    'c2V0EiEKDG5ld2VzdF9maXJzdBgHIAEoCFILbmV3ZXN0Rmlyc3QSIQoMc3VzcGVjdF9vbmx5GA'
+    'ggASgIUgtzdXNwZWN0T25seRIuChNzZWNvbmRfb3Bpbmlvbl9vbmx5GAkgASgIUhFzZWNvbmRP'
+    'cGluaW9uT25seQ==');
+
+@$core.Deprecated('Use listLabelReviewQueueResponseDescriptor instead')
+const ListLabelReviewQueueResponse$json = {
+  '1': 'ListLabelReviewQueueResponse',
+  '2': [
+    {
+      '1': 'samples',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelReviewSample',
+      '10': 'samples'
+    },
+    {'1': 'total_count', '3': 2, '4': 1, '5': 5, '10': 'totalCount'},
+    {'1': 'unreviewed_count', '3': 3, '4': 1, '5': 5, '10': 'unreviewedCount'},
+  ],
+};
+
+/// Descriptor for `ListLabelReviewQueueResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listLabelReviewQueueResponseDescriptor = $convert.base64Decode(
+    'ChxMaXN0TGFiZWxSZXZpZXdRdWV1ZVJlc3BvbnNlEkUKB3NhbXBsZXMYASADKAsyKy5hZ3JpY3'
+    'VsdHVyZS5kaWFnbm9zaXMudjEuTGFiZWxSZXZpZXdTYW1wbGVSB3NhbXBsZXMSHwoLdG90YWxf'
+    'Y291bnQYAiABKAVSCnRvdGFsQ291bnQSKQoQdW5yZXZpZXdlZF9jb3VudBgDIAEoBVIPdW5yZX'
+    'ZpZXdlZENvdW50');
+
+@$core.Deprecated('Use submitLabelReviewRequestDescriptor instead')
+const SubmitLabelReviewRequest$json = {
+  '1': 'SubmitLabelReviewRequest',
+  '2': [
+    {'1': 'task', '3': 1, '4': 1, '5': 9, '10': 'task'},
+    {'1': 'sample_id', '3': 2, '4': 1, '5': 9, '10': 'sampleId'},
+    {
+      '1': 'decision',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.diagnosis.v1.LabelReviewDecision',
+      '10': 'decision'
+    },
+    {'1': 'corrected_label', '3': 4, '4': 1, '5': 9, '10': 'correctedLabel'},
+    {'1': 'notes', '3': 5, '4': 1, '5': 9, '10': 'notes'},
+  ],
+};
+
+/// Descriptor for `SubmitLabelReviewRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List submitLabelReviewRequestDescriptor = $convert.base64Decode(
+    'ChhTdWJtaXRMYWJlbFJldmlld1JlcXVlc3QSEgoEdGFzaxgBIAEoCVIEdGFzaxIbCglzYW1wbG'
+    'VfaWQYAiABKAlSCHNhbXBsZUlkEkkKCGRlY2lzaW9uGAMgASgOMi0uYWdyaWN1bHR1cmUuZGlh'
+    'Z25vc2lzLnYxLkxhYmVsUmV2aWV3RGVjaXNpb25SCGRlY2lzaW9uEicKD2NvcnJlY3RlZF9sYW'
+    'JlbBgEIAEoCVIOY29ycmVjdGVkTGFiZWwSFAoFbm90ZXMYBSABKAlSBW5vdGVz');
+
+@$core.Deprecated('Use submitLabelReviewResponseDescriptor instead')
+const SubmitLabelReviewResponse$json = {
+  '1': 'SubmitLabelReviewResponse',
+  '2': [
+    {
+      '1': 'sample',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.diagnosis.v1.LabelReviewSample',
+      '10': 'sample'
+    },
+  ],
+};
+
+/// Descriptor for `SubmitLabelReviewResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List submitLabelReviewResponseDescriptor =
+    $convert.base64Decode(
+        'ChlTdWJtaXRMYWJlbFJldmlld1Jlc3BvbnNlEkMKBnNhbXBsZRgBIAEoCzIrLmFncmljdWx0dX'
+        'JlLmRpYWdub3Npcy52MS5MYWJlbFJldmlld1NhbXBsZVIGc2FtcGxl');
+
+@$core.Deprecated('Use getLabelReviewImageRequestDescriptor instead')
+const GetLabelReviewImageRequest$json = {
+  '1': 'GetLabelReviewImageRequest',
+  '2': [
+    {'1': 'task', '3': 1, '4': 1, '5': 9, '10': 'task'},
+    {'1': 'sample_id', '3': 2, '4': 1, '5': 9, '10': 'sampleId'},
+  ],
+};
+
+/// Descriptor for `GetLabelReviewImageRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getLabelReviewImageRequestDescriptor =
+    $convert.base64Decode(
+        'ChpHZXRMYWJlbFJldmlld0ltYWdlUmVxdWVzdBISCgR0YXNrGAEgASgJUgR0YXNrEhsKCXNhbX'
+        'BsZV9pZBgCIAEoCVIIc2FtcGxlSWQ=');
+
+@$core.Deprecated('Use getLabelReviewImageResponseDescriptor instead')
+const GetLabelReviewImageResponse$json = {
+  '1': 'GetLabelReviewImageResponse',
+  '2': [
+    {'1': 'image_bytes', '3': 1, '4': 1, '5': 12, '10': 'imageBytes'},
+    {'1': 'mime_type', '3': 2, '4': 1, '5': 9, '10': 'mimeType'},
+  ],
+};
+
+/// Descriptor for `GetLabelReviewImageResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getLabelReviewImageResponseDescriptor =
+    $convert.base64Decode(
+        'ChtHZXRMYWJlbFJldmlld0ltYWdlUmVzcG9uc2USHwoLaW1hZ2VfYnl0ZXMYASABKAxSCmltYW'
+        'dlQnl0ZXMSGwoJbWltZV90eXBlGAIgASgJUghtaW1lVHlwZQ==');
 
 const $core.Map<$core.String, $core.dynamic> PlantDiagnosisServiceBase$json = {
   '1': 'PlantDiagnosisService',
@@ -937,6 +1409,31 @@ const $core.Map<$core.String, $core.dynamic> PlantDiagnosisServiceBase$json = {
       '2': '.agriculture.diagnosis.v1.DetectPestDamageRequest',
       '3': '.agriculture.diagnosis.v1.DetectPestDamageResponse'
     },
+    {
+      '1': 'ListLabelReviewQueue',
+      '2': '.agriculture.diagnosis.v1.ListLabelReviewQueueRequest',
+      '3': '.agriculture.diagnosis.v1.ListLabelReviewQueueResponse'
+    },
+    {
+      '1': 'SubmitLabelReview',
+      '2': '.agriculture.diagnosis.v1.SubmitLabelReviewRequest',
+      '3': '.agriculture.diagnosis.v1.SubmitLabelReviewResponse'
+    },
+    {
+      '1': 'GetLabelReviewImage',
+      '2': '.agriculture.diagnosis.v1.GetLabelReviewImageRequest',
+      '3': '.agriculture.diagnosis.v1.GetLabelReviewImageResponse'
+    },
+    {
+      '1': 'RequestSecondOpinion',
+      '2': '.agriculture.diagnosis.v1.RequestSecondOpinionRequest',
+      '3': '.agriculture.diagnosis.v1.RequestSecondOpinionResponse'
+    },
+    {
+      '1': 'GetReviewAgreement',
+      '2': '.agriculture.diagnosis.v1.GetReviewAgreementRequest',
+      '3': '.agriculture.diagnosis.v1.GetReviewAgreementResponse'
+    },
   ],
 };
 
@@ -956,6 +1453,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.agriculture.diagnosis.v1.DiseaseInfo': DiseaseInfo$json,
   '.agriculture.diagnosis.v1.NutrientDeficiency': NutrientDeficiency$json,
   '.agriculture.diagnosis.v1.PestDamage': PestDamage$json,
+  '.agriculture.diagnosis.v1.Explanation': Explanation$json,
   '.agriculture.diagnosis.v1.GetDiagnosisRequest': GetDiagnosisRequest$json,
   '.agriculture.diagnosis.v1.GetDiagnosisResponse': GetDiagnosisResponse$json,
   '.agriculture.diagnosis.v1.ListDiagnosesRequest': ListDiagnosesRequest$json,
@@ -983,6 +1481,32 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
       DetectPestDamageRequest$json,
   '.agriculture.diagnosis.v1.DetectPestDamageResponse':
       DetectPestDamageResponse$json,
+  '.agriculture.diagnosis.v1.ListLabelReviewQueueRequest':
+      ListLabelReviewQueueRequest$json,
+  '.agriculture.diagnosis.v1.ListLabelReviewQueueResponse':
+      ListLabelReviewQueueResponse$json,
+  '.agriculture.diagnosis.v1.LabelReviewSample': LabelReviewSample$json,
+  '.agriculture.diagnosis.v1.TrainingLabel': TrainingLabel$json,
+  '.agriculture.diagnosis.v1.LabelReview': LabelReview$json,
+  '.agriculture.diagnosis.v1.LabelSuspicion': LabelSuspicion$json,
+  '.agriculture.diagnosis.v1.SubmitLabelReviewRequest':
+      SubmitLabelReviewRequest$json,
+  '.agriculture.diagnosis.v1.SubmitLabelReviewResponse':
+      SubmitLabelReviewResponse$json,
+  '.agriculture.diagnosis.v1.GetLabelReviewImageRequest':
+      GetLabelReviewImageRequest$json,
+  '.agriculture.diagnosis.v1.GetLabelReviewImageResponse':
+      GetLabelReviewImageResponse$json,
+  '.agriculture.diagnosis.v1.RequestSecondOpinionRequest':
+      RequestSecondOpinionRequest$json,
+  '.agriculture.diagnosis.v1.RequestSecondOpinionResponse':
+      RequestSecondOpinionResponse$json,
+  '.agriculture.diagnosis.v1.GetReviewAgreementRequest':
+      GetReviewAgreementRequest$json,
+  '.agriculture.diagnosis.v1.GetReviewAgreementResponse':
+      GetReviewAgreementResponse$json,
+  '.agriculture.diagnosis.v1.ReviewAgreement': ReviewAgreement$json,
+  '.agriculture.diagnosis.v1.LabelDisagreement': LabelDisagreement$json,
 };
 
 /// Descriptor for `PlantDiagnosisService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -1006,4 +1530,16 @@ final $typed_data.Uint8List plantDiagnosisServiceDescriptor = $convert.base64Dec
     'b3Npcy52MS5EZXRlY3ROdXRyaWVudERlZmljaWVuY3lSZXF1ZXN0GjouYWdyaWN1bHR1cmUuZG'
     'lhZ25vc2lzLnYxLkRldGVjdE51dHJpZW50RGVmaWNpZW5jeVJlc3BvbnNlEnkKEERldGVjdFBl'
     'c3REYW1hZ2USMS5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGV0ZWN0UGVzdERhbWFnZVJlcX'
-    'Vlc3QaMi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGV0ZWN0UGVzdERhbWFnZVJlc3BvbnNl');
+    'Vlc3QaMi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuRGV0ZWN0UGVzdERhbWFnZVJlc3BvbnNl'
+    'EoUBChRMaXN0TGFiZWxSZXZpZXdRdWV1ZRI1LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5MaX'
+    'N0TGFiZWxSZXZpZXdRdWV1ZVJlcXVlc3QaNi5hZ3JpY3VsdHVyZS5kaWFnbm9zaXMudjEuTGlz'
+    'dExhYmVsUmV2aWV3UXVldWVSZXNwb25zZRJ8ChFTdWJtaXRMYWJlbFJldmlldxIyLmFncmljdW'
+    'x0dXJlLmRpYWdub3Npcy52MS5TdWJtaXRMYWJlbFJldmlld1JlcXVlc3QaMy5hZ3JpY3VsdHVy'
+    'ZS5kaWFnbm9zaXMudjEuU3VibWl0TGFiZWxSZXZpZXdSZXNwb25zZRKCAQoTR2V0TGFiZWxSZX'
+    'ZpZXdJbWFnZRI0LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXRMYWJlbFJldmlld0ltYWdl'
+    'UmVxdWVzdBo1LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXRMYWJlbFJldmlld0ltYWdlUm'
+    'VzcG9uc2UShQEKFFJlcXVlc3RTZWNvbmRPcGluaW9uEjUuYWdyaWN1bHR1cmUuZGlhZ25vc2lz'
+    'LnYxLlJlcXVlc3RTZWNvbmRPcGluaW9uUmVxdWVzdBo2LmFncmljdWx0dXJlLmRpYWdub3Npcy'
+    '52MS5SZXF1ZXN0U2Vjb25kT3BpbmlvblJlc3BvbnNlEn8KEkdldFJldmlld0FncmVlbWVudBIz'
+    'LmFncmljdWx0dXJlLmRpYWdub3Npcy52MS5HZXRSZXZpZXdBZ3JlZW1lbnRSZXF1ZXN0GjQuYW'
+    'dyaWN1bHR1cmUuZGlhZ25vc2lzLnYxLkdldFJldmlld0FncmVlbWVudFJlc3BvbnNl');

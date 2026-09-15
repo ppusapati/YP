@@ -105,6 +105,45 @@ final $typed_data.Uint8List complianceStatusDescriptor = $convert.base64Decode(
     'obQ09NUExJQU5DRV9TVEFUVVNfQ09NUExJQU5UEAESIwofQ09NUExJQU5DRV9TVEFUVVNfTk9O'
     'X0NPTVBMSUFOVBACEiQKIENPTVBMSUFOQ0VfU1RBVFVTX1BFTkRJTkdfUkVWSUVXEAM=');
 
+@$core.Deprecated('Use qualityCheckTypeDescriptor instead')
+const QualityCheckType$json = {
+  '1': 'QualityCheckType',
+  '2': [
+    {'1': 'QUALITY_CHECK_TYPE_UNSPECIFIED', '2': 0},
+    {'1': 'QUALITY_CHECK_TYPE_VISUAL', '2': 1},
+    {'1': 'QUALITY_CHECK_TYPE_LAB', '2': 2},
+    {'1': 'QUALITY_CHECK_TYPE_TEMPERATURE', '2': 3},
+    {'1': 'QUALITY_CHECK_TYPE_MOISTURE', '2': 4},
+    {'1': 'QUALITY_CHECK_TYPE_WEIGHT', '2': 5},
+    {'1': 'QUALITY_CHECK_TYPE_SENSORY', '2': 6},
+    {'1': 'QUALITY_CHECK_TYPE_OTHER', '2': 7},
+  ],
+};
+
+/// Descriptor for `QualityCheckType`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List qualityCheckTypeDescriptor = $convert.base64Decode(
+    'ChBRdWFsaXR5Q2hlY2tUeXBlEiIKHlFVQUxJVFlfQ0hFQ0tfVFlQRV9VTlNQRUNJRklFRBAAEh'
+    '0KGVFVQUxJVFlfQ0hFQ0tfVFlQRV9WSVNVQUwQARIaChZRVUFMSVRZX0NIRUNLX1RZUEVfTEFC'
+    'EAISIgoeUVVBTElUWV9DSEVDS19UWVBFX1RFTVBFUkFUVVJFEAMSHwobUVVBTElUWV9DSEVDS1'
+    '9UWVBFX01PSVNUVVJFEAQSHQoZUVVBTElUWV9DSEVDS19UWVBFX1dFSUdIVBAFEh4KGlFVQUxJ'
+    'VFlfQ0hFQ0tfVFlQRV9TRU5TT1JZEAYSHAoYUVVBTElUWV9DSEVDS19UWVBFX09USEVSEAc=');
+
+@$core.Deprecated('Use qualityCheckResultDescriptor instead')
+const QualityCheckResult$json = {
+  '1': 'QualityCheckResult',
+  '2': [
+    {'1': 'QUALITY_CHECK_RESULT_UNSPECIFIED', '2': 0},
+    {'1': 'QUALITY_CHECK_RESULT_PASS', '2': 1},
+    {'1': 'QUALITY_CHECK_RESULT_FAIL', '2': 2},
+  ],
+};
+
+/// Descriptor for `QualityCheckResult`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List qualityCheckResultDescriptor = $convert.base64Decode(
+    'ChJRdWFsaXR5Q2hlY2tSZXN1bHQSJAogUVVBTElUWV9DSEVDS19SRVNVTFRfVU5TUEVDSUZJRU'
+    'QQABIdChlRVUFMSVRZX0NIRUNLX1JFU1VMVF9QQVNTEAESHQoZUVVBTElUWV9DSEVDS19SRVNV'
+    'TFRfRkFJTBAC');
+
 @$core.Deprecated('Use supplyChainEventDescriptor instead')
 const SupplyChainEvent$json = {
   '1': 'SupplyChainEvent',
@@ -324,6 +363,9 @@ const BatchRecord$json = {
       '10': 'updatedAt'
     },
     {'1': 'version', '3': 14, '4': 1, '5': 3, '10': 'version'},
+    {'1': 'crop_cycle_id', '3': 15, '4': 1, '5': 9, '10': 'cropCycleId'},
+    {'1': 'yield_record_id', '3': 16, '4': 1, '5': 9, '10': 'yieldRecordId'},
+    {'1': 'weight_kg', '3': 17, '4': 1, '5': 1, '10': 'weightKg'},
   ],
   '3': [BatchRecord_MetadataEntry$json],
 };
@@ -351,8 +393,10 @@ final $typed_data.Uint8List batchRecordDescriptor = $convert.base64Decode(
     'Lk1ldGFkYXRhRW50cnlSCG1ldGFkYXRhEjkKCmNyZWF0ZWRfYXQYDCABKAsyGi5nb29nbGUucH'
     'JvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSOQoKdXBkYXRlZF9hdBgNIAEoCzIaLmdvb2ds'
     'ZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdBIYCgd2ZXJzaW9uGA4gASgDUgd2ZXJzaW'
-    '9uGjsKDU1ldGFkYXRhRW50cnkSEAoDa2V5GAEgASgJUgNrZXkSFAoFdmFsdWUYAiABKAlSBXZh'
-    'bHVlOgI4AQ==');
+    '9uEiIKDWNyb3BfY3ljbGVfaWQYDyABKAlSC2Nyb3BDeWNsZUlkEiYKD3lpZWxkX3JlY29yZF9p'
+    'ZBgQIAEoCVINeWllbGRSZWNvcmRJZBIbCgl3ZWlnaHRfa2cYESABKAFSCHdlaWdodEtnGjsKDU'
+    '1ldGFkYXRhRW50cnkSEAoDa2V5GAEgASgJUgNrZXkSFAoFdmFsdWUYAiABKAlSBXZhbHVlOgI4'
+    'AQ==');
 
 @$core.Deprecated('Use qRCodeDescriptor instead')
 const QRCode$json = {
@@ -1150,6 +1194,9 @@ const CreateBatchRequest$json = {
       '6': '.agriculture.traceability.v1.CreateBatchRequest.MetadataEntry',
       '10': 'metadata'
     },
+    {'1': 'crop_cycle_id', '3': 10, '4': 1, '5': 9, '10': 'cropCycleId'},
+    {'1': 'yield_record_id', '3': 11, '4': 1, '5': 9, '10': 'yieldRecordId'},
+    {'1': 'weight_kg', '3': 12, '4': 1, '5': 1, '10': 'weightKg'},
   ],
   '3': [CreateBatchRequest_MetadataEntry$json],
 };
@@ -1173,8 +1220,10 @@ final $typed_data.Uint8List createBatchRequestDescriptor = $convert.base64Decode
     'MhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKZXhwaXJ5RGF0ZRItChJzdG9yYWdlX2Nvbm'
     'RpdGlvbnMYByABKAlSEXN0b3JhZ2VDb25kaXRpb25zEiMKDXF1YWxpdHlfZ3JhZGUYCCABKAlS'
     'DHF1YWxpdHlHcmFkZRJZCghtZXRhZGF0YRgJIAMoCzI9LmFncmljdWx0dXJlLnRyYWNlYWJpbG'
-    'l0eS52MS5DcmVhdGVCYXRjaFJlcXVlc3QuTWV0YWRhdGFFbnRyeVIIbWV0YWRhdGEaOwoNTWV0'
-    'YWRhdGFFbnRyeRIQCgNrZXkYASABKAlSA2tleRIUCgV2YWx1ZRgCIAEoCVIFdmFsdWU6AjgB');
+    'l0eS52MS5DcmVhdGVCYXRjaFJlcXVlc3QuTWV0YWRhdGFFbnRyeVIIbWV0YWRhdGESIgoNY3Jv'
+    'cF9jeWNsZV9pZBgKIAEoCVILY3JvcEN5Y2xlSWQSJgoPeWllbGRfcmVjb3JkX2lkGAsgASgJUg'
+    '15aWVsZFJlY29yZElkEhsKCXdlaWdodF9rZxgMIAEoAVIId2VpZ2h0S2caOwoNTWV0YWRhdGFF'
+    'bnRyeRIQCgNrZXkYASABKAlSA2tleRIUCgV2YWx1ZRgCIAEoCVIFdmFsdWU6AjgB');
 
 @$core.Deprecated('Use createBatchResponseDescriptor instead')
 const CreateBatchResponse$json = {
@@ -1384,6 +1433,530 @@ final $typed_data.Uint8List generateComplianceReportResponseDescriptor =
         'CiBHZW5lcmF0ZUNvbXBsaWFuY2VSZXBvcnRSZXNwb25zZRJFCgZyZXBvcnQYASABKAsyLS5hZ3'
         'JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuQ29tcGxpYW5jZVJlcG9ydFIGcmVwb3J0');
 
+@$core.Deprecated('Use qualityCheckpointDescriptor instead')
+const QualityCheckpoint$json = {
+  '1': 'QualityCheckpoint',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'tenant_id', '3': 2, '4': 1, '5': 9, '10': 'tenantId'},
+    {'1': 'record_id', '3': 3, '4': 1, '5': 9, '10': 'recordId'},
+    {
+      '1': 'supply_chain_event_id',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '10': 'supplyChainEventId'
+    },
+    {
+      '1': 'check_type',
+      '3': 5,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.traceability.v1.QualityCheckType',
+      '10': 'checkType'
+    },
+    {
+      '1': 'result',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.traceability.v1.QualityCheckResult',
+      '10': 'result'
+    },
+    {'1': 'inspector_id', '3': 7, '4': 1, '5': 9, '10': 'inspectorId'},
+    {'1': 'inspector_name', '3': 8, '4': 1, '5': 9, '10': 'inspectorName'},
+    {
+      '1': 'inspected_at',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'inspectedAt'
+    },
+    {'1': 'location', '3': 10, '4': 1, '5': 9, '10': 'location'},
+    {
+      '1': 'measurement_value',
+      '3': 11,
+      '4': 1,
+      '5': 1,
+      '10': 'measurementValue'
+    },
+    {'1': 'measurement_unit', '3': 12, '4': 1, '5': 9, '10': 'measurementUnit'},
+    {'1': 'min_threshold', '3': 13, '4': 1, '5': 1, '10': 'minThreshold'},
+    {'1': 'max_threshold', '3': 14, '4': 1, '5': 1, '10': 'maxThreshold'},
+    {'1': 'notes', '3': 15, '4': 1, '5': 9, '10': 'notes'},
+    {'1': 'evidence_urls', '3': 16, '4': 3, '5': 9, '10': 'evidenceUrls'},
+    {
+      '1': 'metadata',
+      '3': 17,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.QualityCheckpoint.MetadataEntry',
+      '10': 'metadata'
+    },
+    {
+      '1': 'created_at',
+      '3': 18,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {'1': 'batch_id', '3': 19, '4': 1, '5': 9, '10': 'batchId'},
+    {'1': 'grade', '3': 20, '4': 1, '5': 9, '10': 'grade'},
+    {'1': 'lab_report_url', '3': 21, '4': 1, '5': 9, '10': 'labReportUrl'},
+  ],
+  '3': [QualityCheckpoint_MetadataEntry$json],
+};
+
+@$core.Deprecated('Use qualityCheckpointDescriptor instead')
+const QualityCheckpoint_MetadataEntry$json = {
+  '1': 'MetadataEntry',
+  '2': [
+    {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
+    {'1': 'value', '3': 2, '4': 1, '5': 9, '10': 'value'},
+  ],
+  '7': {'7': true},
+};
+
+/// Descriptor for `QualityCheckpoint`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List qualityCheckpointDescriptor = $convert.base64Decode(
+    'ChFRdWFsaXR5Q2hlY2twb2ludBIOCgJpZBgBIAEoCVICaWQSGwoJdGVuYW50X2lkGAIgASgJUg'
+    'h0ZW5hbnRJZBIbCglyZWNvcmRfaWQYAyABKAlSCHJlY29yZElkEjEKFXN1cHBseV9jaGFpbl9l'
+    'dmVudF9pZBgEIAEoCVISc3VwcGx5Q2hhaW5FdmVudElkEkwKCmNoZWNrX3R5cGUYBSABKA4yLS'
+    '5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuUXVhbGl0eUNoZWNrVHlwZVIJY2hlY2tUeXBl'
+    'EkcKBnJlc3VsdBgGIAEoDjIvLmFncmljdWx0dXJlLnRyYWNlYWJpbGl0eS52MS5RdWFsaXR5Q2'
+    'hlY2tSZXN1bHRSBnJlc3VsdBIhCgxpbnNwZWN0b3JfaWQYByABKAlSC2luc3BlY3RvcklkEiUK'
+    'Dmluc3BlY3Rvcl9uYW1lGAggASgJUg1pbnNwZWN0b3JOYW1lEj0KDGluc3BlY3RlZF9hdBgJIA'
+    'EoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSC2luc3BlY3RlZEF0EhoKCGxvY2F0aW9u'
+    'GAogASgJUghsb2NhdGlvbhIrChFtZWFzdXJlbWVudF92YWx1ZRgLIAEoAVIQbWVhc3VyZW1lbn'
+    'RWYWx1ZRIpChBtZWFzdXJlbWVudF91bml0GAwgASgJUg9tZWFzdXJlbWVudFVuaXQSIwoNbWlu'
+    'X3RocmVzaG9sZBgNIAEoAVIMbWluVGhyZXNob2xkEiMKDW1heF90aHJlc2hvbGQYDiABKAFSDG'
+    '1heFRocmVzaG9sZBIUCgVub3RlcxgPIAEoCVIFbm90ZXMSIwoNZXZpZGVuY2VfdXJscxgQIAMo'
+    'CVIMZXZpZGVuY2VVcmxzElgKCG1ldGFkYXRhGBEgAygLMjwuYWdyaWN1bHR1cmUudHJhY2VhYm'
+    'lsaXR5LnYxLlF1YWxpdHlDaGVja3BvaW50Lk1ldGFkYXRhRW50cnlSCG1ldGFkYXRhEjkKCmNy'
+    'ZWF0ZWRfYXQYEiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSGQ'
+    'oIYmF0Y2hfaWQYEyABKAlSB2JhdGNoSWQSFAoFZ3JhZGUYFCABKAlSBWdyYWRlEiQKDmxhYl9y'
+    'ZXBvcnRfdXJsGBUgASgJUgxsYWJSZXBvcnRVcmwaOwoNTWV0YWRhdGFFbnRyeRIQCgNrZXkYAS'
+    'ABKAlSA2tleRIUCgV2YWx1ZRgCIAEoCVIFdmFsdWU6AjgB');
+
+@$core.Deprecated('Use createQualityCheckpointRequestDescriptor instead')
+const CreateQualityCheckpointRequest$json = {
+  '1': 'CreateQualityCheckpointRequest',
+  '2': [
+    {'1': 'record_id', '3': 1, '4': 1, '5': 9, '10': 'recordId'},
+    {
+      '1': 'supply_chain_event_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '10': 'supplyChainEventId'
+    },
+    {'1': 'batch_id', '3': 15, '4': 1, '5': 9, '10': 'batchId'},
+    {
+      '1': 'check_type',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.traceability.v1.QualityCheckType',
+      '10': 'checkType'
+    },
+    {
+      '1': 'result',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.traceability.v1.QualityCheckResult',
+      '10': 'result'
+    },
+    {'1': 'inspector_name', '3': 5, '4': 1, '5': 9, '10': 'inspectorName'},
+    {
+      '1': 'inspected_at',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'inspectedAt'
+    },
+    {'1': 'location', '3': 7, '4': 1, '5': 9, '10': 'location'},
+    {
+      '1': 'measurement_value',
+      '3': 8,
+      '4': 1,
+      '5': 1,
+      '10': 'measurementValue'
+    },
+    {'1': 'measurement_unit', '3': 9, '4': 1, '5': 9, '10': 'measurementUnit'},
+    {'1': 'min_threshold', '3': 10, '4': 1, '5': 1, '10': 'minThreshold'},
+    {'1': 'max_threshold', '3': 11, '4': 1, '5': 1, '10': 'maxThreshold'},
+    {'1': 'notes', '3': 12, '4': 1, '5': 9, '10': 'notes'},
+    {'1': 'evidence_urls', '3': 13, '4': 3, '5': 9, '10': 'evidenceUrls'},
+    {
+      '1': 'metadata',
+      '3': 14,
+      '4': 3,
+      '5': 11,
+      '6':
+          '.agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntry',
+      '10': 'metadata'
+    },
+    {'1': 'grade', '3': 16, '4': 1, '5': 9, '10': 'grade'},
+    {'1': 'lab_report_url', '3': 17, '4': 1, '5': 9, '10': 'labReportUrl'},
+  ],
+  '3': [CreateQualityCheckpointRequest_MetadataEntry$json],
+};
+
+@$core.Deprecated('Use createQualityCheckpointRequestDescriptor instead')
+const CreateQualityCheckpointRequest_MetadataEntry$json = {
+  '1': 'MetadataEntry',
+  '2': [
+    {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
+    {'1': 'value', '3': 2, '4': 1, '5': 9, '10': 'value'},
+  ],
+  '7': {'7': true},
+};
+
+/// Descriptor for `CreateQualityCheckpointRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createQualityCheckpointRequestDescriptor = $convert.base64Decode(
+    'Ch5DcmVhdGVRdWFsaXR5Q2hlY2twb2ludFJlcXVlc3QSGwoJcmVjb3JkX2lkGAEgASgJUghyZW'
+    'NvcmRJZBIxChVzdXBwbHlfY2hhaW5fZXZlbnRfaWQYAiABKAlSEnN1cHBseUNoYWluRXZlbnRJ'
+    'ZBIZCghiYXRjaF9pZBgPIAEoCVIHYmF0Y2hJZBJMCgpjaGVja190eXBlGAMgASgOMi0uYWdyaW'
+    'N1bHR1cmUudHJhY2VhYmlsaXR5LnYxLlF1YWxpdHlDaGVja1R5cGVSCWNoZWNrVHlwZRJHCgZy'
+    'ZXN1bHQYBCABKA4yLy5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuUXVhbGl0eUNoZWNrUm'
+    'VzdWx0UgZyZXN1bHQSJQoOaW5zcGVjdG9yX25hbWUYBSABKAlSDWluc3BlY3Rvck5hbWUSPQoM'
+    'aW5zcGVjdGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFILaW5zcGVjdG'
+    'VkQXQSGgoIbG9jYXRpb24YByABKAlSCGxvY2F0aW9uEisKEW1lYXN1cmVtZW50X3ZhbHVlGAgg'
+    'ASgBUhBtZWFzdXJlbWVudFZhbHVlEikKEG1lYXN1cmVtZW50X3VuaXQYCSABKAlSD21lYXN1cm'
+    'VtZW50VW5pdBIjCg1taW5fdGhyZXNob2xkGAogASgBUgxtaW5UaHJlc2hvbGQSIwoNbWF4X3Ro'
+    'cmVzaG9sZBgLIAEoAVIMbWF4VGhyZXNob2xkEhQKBW5vdGVzGAwgASgJUgVub3RlcxIjCg1ldm'
+    'lkZW5jZV91cmxzGA0gAygJUgxldmlkZW5jZVVybHMSZQoIbWV0YWRhdGEYDiADKAsySS5hZ3Jp'
+    'Y3VsdHVyZS50cmFjZWFiaWxpdHkudjEuQ3JlYXRlUXVhbGl0eUNoZWNrcG9pbnRSZXF1ZXN0Lk'
+    '1ldGFkYXRhRW50cnlSCG1ldGFkYXRhEhQKBWdyYWRlGBAgASgJUgVncmFkZRIkCg5sYWJfcmVw'
+    'b3J0X3VybBgRIAEoCVIMbGFiUmVwb3J0VXJsGjsKDU1ldGFkYXRhRW50cnkSEAoDa2V5GAEgAS'
+    'gJUgNrZXkSFAoFdmFsdWUYAiABKAlSBXZhbHVlOgI4AQ==');
+
+@$core.Deprecated('Use createQualityCheckpointResponseDescriptor instead')
+const CreateQualityCheckpointResponse$json = {
+  '1': 'CreateQualityCheckpointResponse',
+  '2': [
+    {
+      '1': 'checkpoint',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.QualityCheckpoint',
+      '10': 'checkpoint'
+    },
+  ],
+};
+
+/// Descriptor for `CreateQualityCheckpointResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createQualityCheckpointResponseDescriptor =
+    $convert.base64Decode(
+        'Ch9DcmVhdGVRdWFsaXR5Q2hlY2twb2ludFJlc3BvbnNlEk4KCmNoZWNrcG9pbnQYASABKAsyLi'
+        '5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuUXVhbGl0eUNoZWNrcG9pbnRSCmNoZWNrcG9p'
+        'bnQ=');
+
+@$core.Deprecated('Use getQualityCheckpointRequestDescriptor instead')
+const GetQualityCheckpointRequest$json = {
+  '1': 'GetQualityCheckpointRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `GetQualityCheckpointRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getQualityCheckpointRequestDescriptor =
+    $convert.base64Decode(
+        'ChtHZXRRdWFsaXR5Q2hlY2twb2ludFJlcXVlc3QSDgoCaWQYASABKAlSAmlk');
+
+@$core.Deprecated('Use getQualityCheckpointResponseDescriptor instead')
+const GetQualityCheckpointResponse$json = {
+  '1': 'GetQualityCheckpointResponse',
+  '2': [
+    {
+      '1': 'checkpoint',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.QualityCheckpoint',
+      '10': 'checkpoint'
+    },
+  ],
+};
+
+/// Descriptor for `GetQualityCheckpointResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getQualityCheckpointResponseDescriptor =
+    $convert.base64Decode(
+        'ChxHZXRRdWFsaXR5Q2hlY2twb2ludFJlc3BvbnNlEk4KCmNoZWNrcG9pbnQYASABKAsyLi5hZ3'
+        'JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuUXVhbGl0eUNoZWNrcG9pbnRSCmNoZWNrcG9pbnQ=');
+
+@$core.Deprecated('Use listQualityCheckpointsRequestDescriptor instead')
+const ListQualityCheckpointsRequest$json = {
+  '1': 'ListQualityCheckpointsRequest',
+  '2': [
+    {'1': 'record_id', '3': 1, '4': 1, '5': 9, '10': 'recordId'},
+    {
+      '1': 'check_type',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.traceability.v1.QualityCheckType',
+      '10': 'checkType'
+    },
+    {
+      '1': 'result',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.agriculture.traceability.v1.QualityCheckResult',
+      '10': 'result'
+    },
+    {'1': 'page_size', '3': 4, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_token', '3': 5, '4': 1, '5': 9, '10': 'pageToken'},
+  ],
+};
+
+/// Descriptor for `ListQualityCheckpointsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listQualityCheckpointsRequestDescriptor = $convert.base64Decode(
+    'Ch1MaXN0UXVhbGl0eUNoZWNrcG9pbnRzUmVxdWVzdBIbCglyZWNvcmRfaWQYASABKAlSCHJlY2'
+    '9yZElkEkwKCmNoZWNrX3R5cGUYAiABKA4yLS5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEu'
+    'UXVhbGl0eUNoZWNrVHlwZVIJY2hlY2tUeXBlEkcKBnJlc3VsdBgDIAEoDjIvLmFncmljdWx0dX'
+    'JlLnRyYWNlYWJpbGl0eS52MS5RdWFsaXR5Q2hlY2tSZXN1bHRSBnJlc3VsdBIbCglwYWdlX3Np'
+    'emUYBCABKAVSCHBhZ2VTaXplEh0KCnBhZ2VfdG9rZW4YBSABKAlSCXBhZ2VUb2tlbg==');
+
+@$core.Deprecated('Use listQualityCheckpointsResponseDescriptor instead')
+const ListQualityCheckpointsResponse$json = {
+  '1': 'ListQualityCheckpointsResponse',
+  '2': [
+    {
+      '1': 'checkpoints',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.QualityCheckpoint',
+      '10': 'checkpoints'
+    },
+    {'1': 'next_page_token', '3': 2, '4': 1, '5': 9, '10': 'nextPageToken'},
+    {'1': 'total_count', '3': 3, '4': 1, '5': 5, '10': 'totalCount'},
+  ],
+};
+
+/// Descriptor for `ListQualityCheckpointsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listQualityCheckpointsResponseDescriptor =
+    $convert.base64Decode(
+        'Ch5MaXN0UXVhbGl0eUNoZWNrcG9pbnRzUmVzcG9uc2USUAoLY2hlY2twb2ludHMYASADKAsyLi'
+        '5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuUXVhbGl0eUNoZWNrcG9pbnRSC2NoZWNrcG9p'
+        'bnRzEiYKD25leHRfcGFnZV90b2tlbhgCIAEoCVINbmV4dFBhZ2VUb2tlbhIfCgt0b3RhbF9jb3'
+        'VudBgDIAEoBVIKdG90YWxDb3VudA==');
+
+@$core.Deprecated('Use updateRecordRequestDescriptor instead')
+const UpdateRecordRequest$json = {
+  '1': 'UpdateRecordRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'origin_country', '3': 2, '4': 1, '5': 9, '10': 'originCountry'},
+    {'1': 'origin_region', '3': 3, '4': 1, '5': 9, '10': 'originRegion'},
+    {'1': 'seed_source', '3': 4, '4': 1, '5': 9, '10': 'seedSource'},
+    {
+      '1': 'planting_date',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'plantingDate'
+    },
+    {
+      '1': 'harvest_date',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'harvestDate'
+    },
+    {
+      '1': 'processing_date',
+      '3': 7,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'processingDate'
+    },
+    {
+      '1': 'packaging_date',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'packagingDate'
+    },
+    {
+      '1': 'metadata',
+      '3': 9,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.UpdateRecordRequest.MetadataEntry',
+      '10': 'metadata'
+    },
+  ],
+  '3': [UpdateRecordRequest_MetadataEntry$json],
+};
+
+@$core.Deprecated('Use updateRecordRequestDescriptor instead')
+const UpdateRecordRequest_MetadataEntry$json = {
+  '1': 'MetadataEntry',
+  '2': [
+    {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
+    {'1': 'value', '3': 2, '4': 1, '5': 9, '10': 'value'},
+  ],
+  '7': {'7': true},
+};
+
+/// Descriptor for `UpdateRecordRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateRecordRequestDescriptor = $convert.base64Decode(
+    'ChNVcGRhdGVSZWNvcmRSZXF1ZXN0Eg4KAmlkGAEgASgJUgJpZBIlCg5vcmlnaW5fY291bnRyeR'
+    'gCIAEoCVINb3JpZ2luQ291bnRyeRIjCg1vcmlnaW5fcmVnaW9uGAMgASgJUgxvcmlnaW5SZWdp'
+    'b24SHwoLc2VlZF9zb3VyY2UYBCABKAlSCnNlZWRTb3VyY2USPwoNcGxhbnRpbmdfZGF0ZRgFIA'
+    'EoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSDHBsYW50aW5nRGF0ZRI9CgxoYXJ2ZXN0'
+    'X2RhdGUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgtoYXJ2ZXN0RGF0ZRJDCg'
+    '9wcm9jZXNzaW5nX2RhdGUYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUg5wcm9j'
+    'ZXNzaW5nRGF0ZRJBCg5wYWNrYWdpbmdfZGF0ZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW'
+    '1lc3RhbXBSDXBhY2thZ2luZ0RhdGUSWgoIbWV0YWRhdGEYCSADKAsyPi5hZ3JpY3VsdHVyZS50'
+    'cmFjZWFiaWxpdHkudjEuVXBkYXRlUmVjb3JkUmVxdWVzdC5NZXRhZGF0YUVudHJ5UghtZXRhZG'
+    'F0YRo7Cg1NZXRhZGF0YUVudHJ5EhAKA2tleRgBIAEoCVIDa2V5EhQKBXZhbHVlGAIgASgJUgV2'
+    'YWx1ZToCOAE=');
+
+@$core.Deprecated('Use updateRecordResponseDescriptor instead')
+const UpdateRecordResponse$json = {
+  '1': 'UpdateRecordResponse',
+  '2': [
+    {
+      '1': 'record',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.TraceabilityRecord',
+      '10': 'record'
+    },
+  ],
+};
+
+/// Descriptor for `UpdateRecordResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateRecordResponseDescriptor = $convert.base64Decode(
+    'ChRVcGRhdGVSZWNvcmRSZXNwb25zZRJHCgZyZWNvcmQYASABKAsyLy5hZ3JpY3VsdHVyZS50cm'
+    'FjZWFiaWxpdHkudjEuVHJhY2VhYmlsaXR5UmVjb3JkUgZyZWNvcmQ=');
+
+@$core.Deprecated('Use revokeCertificationRequestDescriptor instead')
+const RevokeCertificationRequest$json = {
+  '1': 'RevokeCertificationRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'reason', '3': 2, '4': 1, '5': 9, '10': 'reason'},
+  ],
+};
+
+/// Descriptor for `RevokeCertificationRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List revokeCertificationRequestDescriptor =
+    $convert.base64Decode(
+        'ChpSZXZva2VDZXJ0aWZpY2F0aW9uUmVxdWVzdBIOCgJpZBgBIAEoCVICaWQSFgoGcmVhc29uGA'
+        'IgASgJUgZyZWFzb24=');
+
+@$core.Deprecated('Use revokeCertificationResponseDescriptor instead')
+const RevokeCertificationResponse$json = {
+  '1': 'RevokeCertificationResponse',
+  '2': [
+    {
+      '1': 'certification',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.Certification',
+      '10': 'certification'
+    },
+  ],
+};
+
+/// Descriptor for `RevokeCertificationResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List revokeCertificationResponseDescriptor =
+    $convert.base64Decode(
+        'ChtSZXZva2VDZXJ0aWZpY2F0aW9uUmVzcG9uc2USUAoNY2VydGlmaWNhdGlvbhgBIAEoCzIqLm'
+        'FncmljdWx0dXJlLnRyYWNlYWJpbGl0eS52MS5DZXJ0aWZpY2F0aW9uUg1jZXJ0aWZpY2F0aW9u');
+
+@$core.Deprecated('Use getComplianceReportRequestDescriptor instead')
+const GetComplianceReportRequest$json = {
+  '1': 'GetComplianceReportRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `GetComplianceReportRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getComplianceReportRequestDescriptor =
+    $convert.base64Decode(
+        'ChpHZXRDb21wbGlhbmNlUmVwb3J0UmVxdWVzdBIOCgJpZBgBIAEoCVICaWQ=');
+
+@$core.Deprecated('Use getComplianceReportResponseDescriptor instead')
+const GetComplianceReportResponse$json = {
+  '1': 'GetComplianceReportResponse',
+  '2': [
+    {
+      '1': 'report',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.ComplianceReport',
+      '10': 'report'
+    },
+  ],
+};
+
+/// Descriptor for `GetComplianceReportResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getComplianceReportResponseDescriptor =
+    $convert.base64Decode(
+        'ChtHZXRDb21wbGlhbmNlUmVwb3J0UmVzcG9uc2USRQoGcmVwb3J0GAEgASgLMi0uYWdyaWN1bH'
+        'R1cmUudHJhY2VhYmlsaXR5LnYxLkNvbXBsaWFuY2VSZXBvcnRSBnJlcG9ydA==');
+
+@$core.Deprecated('Use listComplianceReportsRequestDescriptor instead')
+const ListComplianceReportsRequest$json = {
+  '1': 'ListComplianceReportsRequest',
+  '2': [
+    {'1': 'record_id', '3': 1, '4': 1, '5': 9, '10': 'recordId'},
+    {'1': 'page_size', '3': 2, '4': 1, '5': 5, '10': 'pageSize'},
+    {'1': 'page_token', '3': 3, '4': 1, '5': 9, '10': 'pageToken'},
+  ],
+};
+
+/// Descriptor for `ListComplianceReportsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listComplianceReportsRequestDescriptor =
+    $convert.base64Decode(
+        'ChxMaXN0Q29tcGxpYW5jZVJlcG9ydHNSZXF1ZXN0EhsKCXJlY29yZF9pZBgBIAEoCVIIcmVjb3'
+        'JkSWQSGwoJcGFnZV9zaXplGAIgASgFUghwYWdlU2l6ZRIdCgpwYWdlX3Rva2VuGAMgASgJUglw'
+        'YWdlVG9rZW4=');
+
+@$core.Deprecated('Use listComplianceReportsResponseDescriptor instead')
+const ListComplianceReportsResponse$json = {
+  '1': 'ListComplianceReportsResponse',
+  '2': [
+    {
+      '1': 'reports',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.traceability.v1.ComplianceReport',
+      '10': 'reports'
+    },
+    {'1': 'next_page_token', '3': 2, '4': 1, '5': 9, '10': 'nextPageToken'},
+    {'1': 'total_count', '3': 3, '4': 1, '5': 5, '10': 'totalCount'},
+  ],
+};
+
+/// Descriptor for `ListComplianceReportsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listComplianceReportsResponseDescriptor = $convert.base64Decode(
+    'Ch1MaXN0Q29tcGxpYW5jZVJlcG9ydHNSZXNwb25zZRJHCgdyZXBvcnRzGAEgAygLMi0uYWdyaW'
+    'N1bHR1cmUudHJhY2VhYmlsaXR5LnYxLkNvbXBsaWFuY2VSZXBvcnRSB3JlcG9ydHMSJgoPbmV4'
+    'dF9wYWdlX3Rva2VuGAIgASgJUg1uZXh0UGFnZVRva2VuEh8KC3RvdGFsX2NvdW50GAMgASgFUg'
+    'p0b3RhbENvdW50');
+
 const $core.Map<$core.String, $core.dynamic> TraceabilityServiceBase$json = {
   '1': 'TraceabilityService',
   '2': [
@@ -1462,6 +2035,41 @@ const $core.Map<$core.String, $core.dynamic> TraceabilityServiceBase$json = {
       '2': '.agriculture.traceability.v1.GenerateComplianceReportRequest',
       '3': '.agriculture.traceability.v1.GenerateComplianceReportResponse'
     },
+    {
+      '1': 'CreateQualityCheckpoint',
+      '2': '.agriculture.traceability.v1.CreateQualityCheckpointRequest',
+      '3': '.agriculture.traceability.v1.CreateQualityCheckpointResponse'
+    },
+    {
+      '1': 'GetQualityCheckpoint',
+      '2': '.agriculture.traceability.v1.GetQualityCheckpointRequest',
+      '3': '.agriculture.traceability.v1.GetQualityCheckpointResponse'
+    },
+    {
+      '1': 'ListQualityCheckpoints',
+      '2': '.agriculture.traceability.v1.ListQualityCheckpointsRequest',
+      '3': '.agriculture.traceability.v1.ListQualityCheckpointsResponse'
+    },
+    {
+      '1': 'UpdateRecord',
+      '2': '.agriculture.traceability.v1.UpdateRecordRequest',
+      '3': '.agriculture.traceability.v1.UpdateRecordResponse'
+    },
+    {
+      '1': 'RevokeCertification',
+      '2': '.agriculture.traceability.v1.RevokeCertificationRequest',
+      '3': '.agriculture.traceability.v1.RevokeCertificationResponse'
+    },
+    {
+      '1': 'GetComplianceReport',
+      '2': '.agriculture.traceability.v1.GetComplianceReportRequest',
+      '3': '.agriculture.traceability.v1.GetComplianceReportResponse'
+    },
+    {
+      '1': 'ListComplianceReports',
+      '2': '.agriculture.traceability.v1.ListComplianceReportsRequest',
+      '3': '.agriculture.traceability.v1.ListComplianceReportsResponse'
+    },
   ],
 };
 
@@ -1537,6 +2145,40 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.agriculture.traceability.v1.ComplianceReport': ComplianceReport$json,
   '.agriculture.traceability.v1.ComplianceReport.MetadataEntry':
       ComplianceReport_MetadataEntry$json,
+  '.agriculture.traceability.v1.CreateQualityCheckpointRequest':
+      CreateQualityCheckpointRequest$json,
+  '.agriculture.traceability.v1.CreateQualityCheckpointRequest.MetadataEntry':
+      CreateQualityCheckpointRequest_MetadataEntry$json,
+  '.agriculture.traceability.v1.CreateQualityCheckpointResponse':
+      CreateQualityCheckpointResponse$json,
+  '.agriculture.traceability.v1.QualityCheckpoint': QualityCheckpoint$json,
+  '.agriculture.traceability.v1.QualityCheckpoint.MetadataEntry':
+      QualityCheckpoint_MetadataEntry$json,
+  '.agriculture.traceability.v1.GetQualityCheckpointRequest':
+      GetQualityCheckpointRequest$json,
+  '.agriculture.traceability.v1.GetQualityCheckpointResponse':
+      GetQualityCheckpointResponse$json,
+  '.agriculture.traceability.v1.ListQualityCheckpointsRequest':
+      ListQualityCheckpointsRequest$json,
+  '.agriculture.traceability.v1.ListQualityCheckpointsResponse':
+      ListQualityCheckpointsResponse$json,
+  '.agriculture.traceability.v1.UpdateRecordRequest': UpdateRecordRequest$json,
+  '.agriculture.traceability.v1.UpdateRecordRequest.MetadataEntry':
+      UpdateRecordRequest_MetadataEntry$json,
+  '.agriculture.traceability.v1.UpdateRecordResponse':
+      UpdateRecordResponse$json,
+  '.agriculture.traceability.v1.RevokeCertificationRequest':
+      RevokeCertificationRequest$json,
+  '.agriculture.traceability.v1.RevokeCertificationResponse':
+      RevokeCertificationResponse$json,
+  '.agriculture.traceability.v1.GetComplianceReportRequest':
+      GetComplianceReportRequest$json,
+  '.agriculture.traceability.v1.GetComplianceReportResponse':
+      GetComplianceReportResponse$json,
+  '.agriculture.traceability.v1.ListComplianceReportsRequest':
+      ListComplianceReportsRequest$json,
+  '.agriculture.traceability.v1.ListComplianceReportsResponse':
+      ListComplianceReportsResponse$json,
 };
 
 /// Descriptor for `TraceabilityService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -1575,4 +2217,21 @@ final $typed_data.Uint8List traceabilityServiceDescriptor = $convert.base64Decod
     'JpZnlRUkNvZGVSZXNwb25zZRKXAQoYR2VuZXJhdGVDb21wbGlhbmNlUmVwb3J0EjwuYWdyaWN1'
     'bHR1cmUudHJhY2VhYmlsaXR5LnYxLkdlbmVyYXRlQ29tcGxpYW5jZVJlcG9ydFJlcXVlc3QaPS'
     '5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuR2VuZXJhdGVDb21wbGlhbmNlUmVwb3J0UmVz'
-    'cG9uc2U=');
+    'cG9uc2USlAEKF0NyZWF0ZVF1YWxpdHlDaGVja3BvaW50EjsuYWdyaWN1bHR1cmUudHJhY2VhYm'
+    'lsaXR5LnYxLkNyZWF0ZVF1YWxpdHlDaGVja3BvaW50UmVxdWVzdBo8LmFncmljdWx0dXJlLnRy'
+    'YWNlYWJpbGl0eS52MS5DcmVhdGVRdWFsaXR5Q2hlY2twb2ludFJlc3BvbnNlEosBChRHZXRRdW'
+    'FsaXR5Q2hlY2twb2ludBI4LmFncmljdWx0dXJlLnRyYWNlYWJpbGl0eS52MS5HZXRRdWFsaXR5'
+    'Q2hlY2twb2ludFJlcXVlc3QaOS5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuR2V0UXVhbG'
+    'l0eUNoZWNrcG9pbnRSZXNwb25zZRKRAQoWTGlzdFF1YWxpdHlDaGVja3BvaW50cxI6LmFncmlj'
+    'dWx0dXJlLnRyYWNlYWJpbGl0eS52MS5MaXN0UXVhbGl0eUNoZWNrcG9pbnRzUmVxdWVzdBo7Lm'
+    'FncmljdWx0dXJlLnRyYWNlYWJpbGl0eS52MS5MaXN0UXVhbGl0eUNoZWNrcG9pbnRzUmVzcG9u'
+    'c2UScwoMVXBkYXRlUmVjb3JkEjAuYWdyaWN1bHR1cmUudHJhY2VhYmlsaXR5LnYxLlVwZGF0ZV'
+    'JlY29yZFJlcXVlc3QaMS5hZ3JpY3VsdHVyZS50cmFjZWFiaWxpdHkudjEuVXBkYXRlUmVjb3Jk'
+    'UmVzcG9uc2USiAEKE1Jldm9rZUNlcnRpZmljYXRpb24SNy5hZ3JpY3VsdHVyZS50cmFjZWFiaW'
+    'xpdHkudjEuUmV2b2tlQ2VydGlmaWNhdGlvblJlcXVlc3QaOC5hZ3JpY3VsdHVyZS50cmFjZWFi'
+    'aWxpdHkudjEuUmV2b2tlQ2VydGlmaWNhdGlvblJlc3BvbnNlEogBChNHZXRDb21wbGlhbmNlUm'
+    'Vwb3J0EjcuYWdyaWN1bHR1cmUudHJhY2VhYmlsaXR5LnYxLkdldENvbXBsaWFuY2VSZXBvcnRS'
+    'ZXF1ZXN0GjguYWdyaWN1bHR1cmUudHJhY2VhYmlsaXR5LnYxLkdldENvbXBsaWFuY2VSZXBvcn'
+    'RSZXNwb25zZRKOAQoVTGlzdENvbXBsaWFuY2VSZXBvcnRzEjkuYWdyaWN1bHR1cmUudHJhY2Vh'
+    'YmlsaXR5LnYxLkxpc3RDb21wbGlhbmNlUmVwb3J0c1JlcXVlc3QaOi5hZ3JpY3VsdHVyZS50cm'
+    'FjZWFiaWxpdHkudjEuTGlzdENvbXBsaWFuY2VSZXBvcnRzUmVzcG9uc2U=');

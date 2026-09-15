@@ -14,6 +14,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// TaskStatus represents the status of a task.
 class TaskStatus extends $pb.ProtobufEnum {
   static const TaskStatus TASK_STATUS_UNSPECIFIED =
       TaskStatus._(0, _omitEnumNames ? '' : 'TASK_STATUS_UNSPECIFIED');
@@ -42,6 +43,7 @@ class TaskStatus extends $pb.ProtobufEnum {
   const TaskStatus._(super.value, super.name);
 }
 
+/// TaskPriority represents the priority level of a task.
 class TaskPriority extends $pb.ProtobufEnum {
   static const TaskPriority TASK_PRIORITY_UNSPECIFIED =
       TaskPriority._(0, _omitEnumNames ? '' : 'TASK_PRIORITY_UNSPECIFIED');

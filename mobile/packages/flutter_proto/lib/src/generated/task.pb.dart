@@ -25,7 +25,7 @@ export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'task.pbenum.dart';
 
-/// Task represents a farm task assignment.
+/// Task is the core task message.
 class Task extends $pb.GeneratedMessage {
   factory Task({
     $core.String? id,
@@ -1023,7 +1023,7 @@ class DeleteTaskResponse extends $pb.GeneratedMessage {
   static DeleteTaskResponse? _defaultInstance;
 }
 
-/// TaskService provides farm task management operations.
+/// TaskService provides task management operations.
 class TaskServiceApi {
   final $pb.RpcClient _client;
 
@@ -1033,22 +1033,18 @@ class TaskServiceApi {
           $pb.ClientContext? ctx, GetTaskRequest request) =>
       _client.invoke<GetTaskResponse>(
           ctx, 'TaskService', 'GetTask', request, GetTaskResponse());
-
   $async.Future<ListTasksResponse> listTasks(
           $pb.ClientContext? ctx, ListTasksRequest request) =>
       _client.invoke<ListTasksResponse>(
           ctx, 'TaskService', 'ListTasks', request, ListTasksResponse());
-
   $async.Future<CreateTaskResponse> createTask(
           $pb.ClientContext? ctx, CreateTaskRequest request) =>
       _client.invoke<CreateTaskResponse>(
           ctx, 'TaskService', 'CreateTask', request, CreateTaskResponse());
-
   $async.Future<UpdateTaskResponse> updateTask(
           $pb.ClientContext? ctx, UpdateTaskRequest request) =>
       _client.invoke<UpdateTaskResponse>(
           ctx, 'TaskService', 'UpdateTask', request, UpdateTaskResponse());
-
   $async.Future<DeleteTaskResponse> deleteTask(
           $pb.ClientContext? ctx, DeleteTaskRequest request) =>
       _client.invoke<DeleteTaskResponse>(
