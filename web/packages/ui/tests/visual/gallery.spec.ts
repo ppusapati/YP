@@ -100,16 +100,52 @@ test.describe('component gallery', () => {
         'are not imported or UnoCSS generated no utilities for the components',
     ).toBeGreaterThan(8);
 
-    // Background colour is deliberately NOT asserted here.
+    // The brand colour, which is a guard against a bug this suite found.
     //
-    // It is currently the browser default, because the components ask for
-    // `bg-brand-primary-500` and the UnoCSS theme generates
-    // `bg-color-brand-primary-500` and `bg-primary-500` — so the brand colours
-    // do not resolve. That is a real bug and it is not this gallery's: the
-    // same class is absent from apps/shell's built CSS. Asserting a brand
-    // background here would fail on a fault this suite exists to *reveal*
-    // rather than to gate, and the baselines record what the components
-    // genuinely look like today.
+    // The components ask for `bg-brand-primary-500`, and for a long time no
+    // such utility existed anywhere — not here and not in the apps. Four
+    // separate faults had to be cleared before it did: the theme emitted
+    // colours only under their full `color-` token path; it emitted them as
+    // flat keys, which `bg-` tolerates and `border-` does not; `.ts` was
+    // missing from UnoCSS's pipeline, and this library keeps its variant
+    // classes in `*.types.ts`; and UnoCSS merged `.bg-white` into a selector
+    // group containing a Firefox-only `::-moz-range-thumb`, which makes
+    // Chromium discard the whole rule.
+    //
+    // Any one of them coming back leaves the button at the browser's default
+    // grey with every class still on the element, so this asserts the computed
+    // colour rather than trusting the class list.
+    const background = await button.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+
+    expect(
+      background,
+      'the primary button has no brand background — a brand colour utility is ' +
+        'not being generated again',
+    ).not.toMatch(/rgba\(0,\s*0,\s*0,\s*0\)|transparent/);
+
+    // Chromium's default button background. Matching it means the class
+    // produced no rule at all, which is exactly how this failed before.
+    expect(
+      background,
+      'the primary button is the browser default grey — the brand colour ' +
+        'utility resolved to nothing',
+    ).not.toBe('rgb(239, 239, 239)');
+
+    const borderColour = await button.evaluate(
+      (element) => getComputedStyle(element).borderTopColor,
+    );
+
+    // `border-` is checked separately from `bg-`. They resolve through
+    // different code paths in UnoCSS — a nested colour tree works for both, a
+    // flat key only for `bg-` — so a half-fix shows up as a blue button with a
+    // black border, and only this assertion sees it.
+    expect(
+      borderColour,
+      'the primary button has a black border — `border-brand-primary-500` is ' +
+        'resolving to nothing while the background still works',
+    ).not.toBe('rgb(0, 0, 0)');
   });
 
   test('no story logged a console error', async ({ page }) => {
