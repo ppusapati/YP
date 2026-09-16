@@ -1,4 +1,16 @@
-
 # Node's on-disk compile cache, written when running scripts from this
 # directory. Not a build artefact of ours.
 node-compile-cache/
+
+# Component gallery build output and visual-regression run artifacts.
+#
+# The __screenshots__ baselines under packages/ui/tests/visual ARE committed —
+# they are the expected output, and a visual suite with no baselines in the
+# repository compares every run against nothing and passes.
+gallery-dist/
+playwright-report-visual/
+test-results/
+
+# SvelteKit adapter output. `.svelte-kit/` is ignored at the repository root
+# but the adapter writes its final bundle to build/.
+apps/*/build/

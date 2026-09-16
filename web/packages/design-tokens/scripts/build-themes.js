@@ -635,18 +635,19 @@ export default themeConfig
     console.log('🏭 Compiling P9E Enterprise Preset...')
     await compilePresetP9E()
 
-    // Create JavaScript versions of uno files for proper imports
-    const unoIndexJs = `import { designTokensTheme, componentShortcuts, animations } from './theme.js'
-
-export { designTokensTheme, componentShortcuts, animations }
-
-// The theme already uses CSS variables, so we can export it directly
-export const themeConfig = designTokensTheme
-
-export default themeConfig
-`
-    fs.writeFileSync(join(rootDir, 'dist/uno/index.js'), unoIndexJs)
-    console.log('✅ Created dist/uno/index.js')
+    // No dist/uno/index.js is written.
+    //
+    // There used to be one, and it imported './theme.js' — a file this build
+    // has never produced, because the Style Dictionary platform above emits
+    // theme.ts and nothing else. So the package's `./uno` export pointed at a
+    // module that threw ERR_MODULE_NOT_FOUND the moment anything loaded it as
+    // plain ESM. Nothing caught it because every consumer reaches it through a
+    // bundler or through jiti, and both read the .ts happily.
+    //
+    // The honest fix is to stop claiming a JavaScript entry point that does not
+    // exist rather than to generate a second copy of the theme to satisfy it:
+    // package.json's exports map now points at the .ts files, which is what is
+    // actually built and what every consumer was already resolving.
 
     // Generate TypeScript types
     console.log('📝 Generating TypeScript types...')

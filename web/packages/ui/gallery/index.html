@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>samavāya UI gallery</title>
+    <!--
+      An inline favicon, so the browser does not request /favicon.ico and log a
+      404. The visual suite asserts the gallery renders with no console errors —
+      that assertion is there to catch a component throwing, and a missing
+      favicon would make it fail for a reason that has nothing to do with the
+      components.
+    -->
+    <link rel="icon" href="data:," />
+    <style>
+      /*
+        Inline, not a stylesheet: the gallery's own chrome must not depend on
+        anything that could fail to load, or a missing file would render as a
+        component regression in every screenshot at once.
+      */
+      :root { color-scheme: light; }
+      html, body { margin: 0; padding: 0; background: #fff; }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: #111827;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

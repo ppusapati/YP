@@ -28,12 +28,12 @@
       "types": "./dist/types/tokens.d.ts"
     },
     "./uno": {
-      "import": "./dist/uno/index.js",
-      "types": "./dist/uno/index.d.ts"
+      "types": "./dist/uno/index.ts",
+      "import": "./dist/uno/index.ts"
     },
     "./uno/theme": {
-      "import": "./dist/uno/theme.js",
-      "types": "./dist/uno/theme.d.ts"
+      "types": "./dist/uno/theme.ts",
+      "import": "./dist/uno/theme.ts"
     },
     "./types": "./dist/types/tokens.d.ts",
     "./css": "./dist/css/tokens.css",

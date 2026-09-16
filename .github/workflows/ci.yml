@@ -288,6 +288,63 @@ jobs:
         working-directory: web
         run: pnpm test
 
+  visual-regression:
+    name: Web visual regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      # The gallery's UnoCSS config imports the generated design-tokens theme,
+      # and dist/ is gitignored — so on a fresh checkout it does not exist and
+      # the gallery build fails on an unresolved import. Everything else in
+      # this workspace gets it via turbo's ^build; this job builds the gallery
+      # directly, so it has to ask.
+      - name: Build design tokens
+        working-directory: web
+        run: pnpm --filter @p9e.in/samavaya build
+
+      # Chromium only. A screenshot baseline is tied to the engine that
+      # rendered it — font hinting, sub-pixel antialiasing and scrollbar width
+      # all differ between browsers — so a second browser is not extra
+      # coverage, it is a second set of baselines failing for reasons that have
+      # nothing to do with the components.
+      - name: Install Chromium
+        working-directory: web/packages/ui
+        run: pnpm exec playwright install --with-deps chromium
+
+      # This is the component gallery, not the app: every component rendered
+      # with fixed props and no backend, so a diff means a component changed
+      # rather than that a page's data did. It replaces the Storybook that
+      # cannot run against this repo's Svelte 5 — see E-006 in ENHANCEMENTS.md.
+      - name: Visual regression
+        working-directory: web/packages/ui
+        run: pnpm test:visual
+
+      # The report carries the expected, actual and diff image for every
+      # failure. Without it a red build says "screenshot did not match" and
+      # nobody can tell whether the change was intended without reproducing it
+      # locally, which is the point at which a visual suite gets switched off.
+      - name: Upload the diff report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: |
+            web/packages/ui/playwright-report-visual/
+            web/packages/ui/test-results/
+          retention-days: 14
+
   mobile:
     name: Mobile analyze & test
     runs-on: ubuntu-latest

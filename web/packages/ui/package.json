@@ -83,7 +83,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "gallery": "vite --config vite.gallery.config.ts",
+    "gallery:build": "vite build --config vite.gallery.config.ts",
+    "gallery:preview": "vite preview --config vite.gallery.config.ts",
+    "test:visual": "playwright test --config playwright.visual.config.ts",
+    "test:visual:update": "playwright test --config playwright.visual.config.ts --update-snapshots"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
@@ -112,7 +117,8 @@
     "unocss": "^66.3.3",
     "vite": "^7.0.6",
     "vitest": "^3.2.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@playwright/test": "^1.63.0"
   },
   "keywords": [
     "svelte",

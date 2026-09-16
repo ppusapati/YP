@@ -574,6 +574,9 @@ importers:
       '@p9e.in/configs':
         specifier: workspace:*
         version: link:../configs
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
       '@sveltejs/package':
         specifier: ^2.5.7
         version: 2.5.7(svelte@5.46.1)(typescript@5.9.3)
