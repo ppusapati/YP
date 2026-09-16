@@ -1,6 +1,16 @@
 import { defineConfig, presetUno } from 'unocss';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { designTokensTheme, componentShortcuts, animations } from '@p9e.in/samavaya/uno';
+
+// This file's own directory.
+//
+// `__dirname` is not defined when this config is loaded as an ES module, and
+// the failure is quiet: the glob below resolves against an undefined base,
+// matches nothing, and UnoCSS generates no utilities for anything it should
+// have found there. Derived from import.meta.url instead, which is defined
+// under every loader that reads this file.
+const here = dirname(fileURLToPath(import.meta.url));
 
 /**
  * UnoCSS for the component gallery.
@@ -15,6 +25,20 @@ import { designTokensTheme, componentShortcuts, animations } from '@p9e.in/samav
  * which does not.
  */
 export default defineConfig({
+  // Do not merge selectors that share a declaration.
+  //
+  // UnoCSS groups rules with identical output, and the library has a range
+  // input using the arbitrary variant `[&::-moz-range-thumb]:bg-white`. That
+  // selector is Firefox-only, so when it is merged into the same group as
+  // `.bg-white` and `.bg-neutral-white`, Chromium fails to parse one selector
+  // in the list and throws away *the entire rule* — silently dropping the
+  // background colour of every element using either class.
+  //
+  // Merging saves a few hundred bytes. Losing `bg-white` in Chromium is not a
+  // trade worth making, and the failure is invisible: the class is on the
+  // element, the rule is in the file, and only getComputedStyle disagrees.
+  mergeSelectors: false,
+
   presets: [presetUno()],
   theme: {
     ...designTokensTheme,
@@ -22,22 +46,28 @@ export default defineConfig({
   },
   shortcuts: componentShortcuts,
   content: {
-    // Absolute paths, resolved from this file.
-    //
-    // A relative glob here is resolved against Vite's `root`, which the
-    // gallery sets to gallery/ — so 'src/**' meant 'gallery/src/**', matched
-    // nothing, and UnoCSS generated no utilities for any component. Every
-    // component then rendered unstyled, which is stable, so 57 screenshot
-    // baselines were captured of unstyled components and compared clean for
-    // ever. The suite passed a deliberately broken Button; that is how this
-    // was found.
-    //
-    // src/**/*.ts matters as much as the .svelte files: the class strings live
-    // in *.types.ts constants that the components compose with cn(), and
-    // UnoCSS only ever sees a class it has read as text somewhere.
+    pipeline: {
+      // Add .ts to the files UnoCSS reads as it transforms modules.
+      //
+      // This is the whole reason the component library's colours never
+      // appeared. The library keeps its variant classes in `*.types.ts` —
+      // buttonVariantClasses, alertVariantClasses and the rest — and the
+      // components compose them with cn(). UnoCSS only generates a utility it
+      // has read as *text*, and its default pipeline covers .svelte/.html/.jsx
+      // but not .ts, so every class living only in those maps produced no rule.
+      //
+      // The symptom was partial, which is what made it hard to see: classes
+      // written inline in a component's markup generated fine, so most of the
+      // library looked right while exactly the ones defined in the types files
+      // — `border-brand-primary-500` and its neighbours — silently did nothing.
+      include: [/\.(svelte|html|[jt]sx?|vue|mdx?|astro)($|\?)/],
+    },
     filesystem: [
-      resolve(__dirname, 'gallery/**/*.{svelte,ts,html}'),
-      resolve(__dirname, 'src/**/*.{svelte,ts}'),
+      // Absolute, resolved from this file. A relative glob is resolved against
+      // Vite's `root`, which the gallery sets to gallery/, so 'src/**' would
+      // mean 'gallery/src/**' and match nothing.
+      resolve(here, 'gallery/**/*.{svelte,ts,html}'),
+      resolve(here, 'src/**/*.{svelte,ts}'),
     ],
   },
 });

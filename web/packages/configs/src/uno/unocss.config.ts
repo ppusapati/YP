@@ -23,11 +23,35 @@ export const createUnoConfig = (customShortcuts = {}) => defineConfig({
   // Note: Design tokens CSS should be imported directly in your app entry point
   // instead of being handled in UnoCSS preflights to avoid path resolution issues
   
+  // Do not merge selectors that share a declaration.
+  //
+  // UnoCSS groups rules with identical output, and the UI library's Slider uses
+  // the arbitrary variant `[&::-moz-range-thumb]:bg-white`. That selector is
+  // Firefox-only, so once it is grouped with `.bg-white` and
+  // `.bg-neutral-white`, Chromium fails to parse one selector in the list and
+  // discards *the whole rule* — every element using either class loses its
+  // background. The class is on the element and the rule is in the file; only
+  // getComputedStyle disagrees.
+  mergeSelectors: false,
+
   // Content sources for all MFEs
   content: {
+    pipeline: {
+      // .ts is not in UnoCSS's default pipeline, and the component library
+      // keeps its variant classes in `*.types.ts` — buttonVariantClasses,
+      // alertVariantClasses and the rest — which the components compose with
+      // cn(). UnoCSS only generates a utility it has read as text, so every
+      // class living only in those maps produced no rule at all.
+      //
+      // The symptom was partial and therefore easy to miss: classes written
+      // inline in a component's markup generated fine, so most of the library
+      // looked right while exactly the ones defined in the types files
+      // silently did nothing.
+      include: [/\.(svelte|html|[jt]sx?|vue|mdx?|astro)($|\?)/],
+    },
     filesystem: [
-      'packages/*/src/**/*.{vue,js,ts,jsx,tsx}',
-      'apps/*/src/**/*.{vue,js,ts,jsx,tsx}'
+      'packages/*/src/**/*.{vue,js,ts,jsx,tsx,svelte}',
+      'apps/*/src/**/*.{vue,js,ts,jsx,tsx,svelte}'
     ]
   },
   

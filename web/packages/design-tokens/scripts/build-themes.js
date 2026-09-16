@@ -67,16 +67,100 @@ StyleDictionary.registerFormat({
 StyleDictionary.registerFormat({
   name: 'custom/uno-theme',
   format: function({ dictionary }) {
+    // The CSS custom property a token path corresponds to.
+    //
+    // This has to agree exactly with what the `css/variables-custom` format
+    // writes into tokens.css, and that format kebab-cases each path segment:
+    // ['borderRadius','md'] becomes --border-radius-md, and
+    // ['typography','fontSize','sm'] becomes --typography-font-size-sm.
+    //
+    // The blocks below used to build the name three different ways —
+    // path.join('-') for spacing and typography, and Style Dictionary's
+    // camelCase `token.name` for radius and shadow — so only the paths that
+    // happen to be all-lowercase lined up. `spacing` and the colours worked;
+    // fontSize, fontFamily, borderRadius and shadow all pointed at variables
+    // that were never defined. UnoCSS still generated the rules, so
+    // `.rounded-md` existed and read `var(--BorderRadiusMd)`, which resolves to
+    // nothing: every component came out with square corners, no shadow and the
+    // browser's default font size, with no error anywhere to say so.
+    const cssVar = path =>
+      path
+        .join('-')
+        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+        .replace(/\./g, '-')
+        .toLowerCase()
+
     // Generate CSS variable references instead of static values
     const verboseColorTokens = dictionary.allTokens
       .filter(token => token.type === 'color')
       .map(token => {
         const path = token.path.join('-')
-        // Use kebab-case variable name that matches CSS output
-        const cssVarName = token.path.join('-')
-        return `    '${path}': 'var(--${cssVarName})'`
+        return `    '${path}': 'var(--${cssVar(token.path)})'`
       })
       .join(',\n')
+
+    // The same colours again without the leading `color-`.
+    //
+    // Every colour token is emitted above as `color-brand-primary-500`, so the
+    // only utility that resolved was `bg-color-brand-primary-500`. The
+    // component library has always written `bg-brand-primary-500` — 77 times
+    // for that one class, plus brand-secondary, semantic-error/success/warning/
+    // info and the whole neutral scale including `neutral-white`. None of them
+    // matched anything, so UnoCSS generated no rule and those components
+    // rendered with no background, no border colour and no ring: buttons came
+    // out as the browser's default grey, in the apps as well as in the gallery.
+    //
+    // Nothing caught it because a missing utility is not an error anywhere —
+    // the class sits on the element, the stylesheet loads, and there is simply
+    // no rule. It was found by screenshotting the components.
+    //
+    // Derived from the token list rather than hand-listed, so a colour family
+    // added to the tokens tomorrow works without anyone remembering to come
+    // back here.
+    //
+    // Emitted as a *nested* tree — brand: { primary: { 500: … } } — rather than
+    // as flat 'brand-primary-500' keys, because UnoCSS resolves the two
+    // differently. `bg-` accepts either, but `border-` walks the colour object
+    // segment by segment: with flat keys `border-neutral-200` worked (the
+    // `neutral` alias below is nested) while `border-brand-primary-500` matched
+    // nothing at all, so buttons kept a brand background and a black border.
+    //
+    // No family is excluded. An earlier version skipped families sharing a name
+    // with an alias below, which silently dropped `neutral-white` — the second
+    // most-used colour class in the library, 88 times.
+    const colorTree = {}
+    dictionary.allTokens
+      .filter(token => token.type === 'color' && token.path[0] === 'color' && token.path.length > 1)
+      .forEach(token => {
+        const segments = token.path.slice(1)
+        let node = colorTree
+        segments.slice(0, -1).forEach(segment => {
+          // A leaf already sitting where a branch needs to go means two tokens
+          // disagree about the shape of the tree — `color.surface.primary` and
+          // `color.surface.primary.hover`, say. The shallower one is kept as
+          // DEFAULT so `bg-surface-primary` still resolves.
+          if (typeof node[segment] === 'string') node[segment] = { DEFAULT: node[segment] }
+          node[segment] = node[segment] || {}
+          node = node[segment]
+        })
+        const leaf = segments[segments.length - 1]
+        if (node[leaf] && typeof node[leaf] === 'object') {
+          node[leaf].DEFAULT = `var(--${cssVar(token.path)})`
+        } else {
+          node[leaf] = `var(--${cssVar(token.path)})`
+        }
+      })
+
+    const renderColorTree = (node, indent) =>
+      Object.entries(node)
+        .map(([key, value]) =>
+          typeof value === 'string'
+            ? `${indent}'${key}': '${value}'`
+            : `${indent}'${key}': {\n${renderColorTree(value, indent + '  ')}\n${indent}}`,
+        )
+        .join(',\n')
+
+    const unprefixedColorTokens = renderColorTree(colorTree, '    ')
 
     // Generate UnoCSS-compatible color aliases for standard usage
     const unoColorAliases = []
@@ -167,48 +251,52 @@ StyleDictionary.registerFormat({
     if (blackToken) unoColorAliases.push(`    'black': 'var(--color-neutral-black)'`)
 
     // Combine verbose tokens with UnoCSS aliases
-    const colorTokens = [verboseColorTokens, ...unoColorAliases].filter(Boolean).join(',\n')
+    // The token tree goes last so it wins on a key clash.
+    //
+    // Only `neutral` actually clashes, and the tree's version is a superset:
+    // the alias above is built from the numeric shades alone, while the tree
+    // also carries `white` and `black`. Emitting the alias last would drop
+    // `neutral-white` — the class this whole fix started from.
+    const colorTokens = [verboseColorTokens, ...unoColorAliases, unprefixedColorTokens].filter(Boolean).join(',\n')
     
+
     const spacingTokens = dictionary.allTokens
       .filter(token => token.path[0] === 'spacing')
       .map(token => {
         const key = token.path.slice(1).join('-').replace(/\./g, '-')
-        const cssVarName = token.path.join('-').replace(/\./g, '-')
-        return `    '${key}': 'var(--${cssVarName})'`
+        return `    '${key}': 'var(--${cssVar(token.path)})'`
       })
       .join(',\n')
-    
+
     const fontSizeTokens = dictionary.allTokens
       .filter(token => token.path[0] === 'typography' && token.path[1] === 'fontSize')
       .map(token => {
         const key = token.path[2]
-        const cssVarName = token.path.join('-')
-        return `    '${key}': 'var(--${cssVarName})'`
+        return `    '${key}': 'var(--${cssVar(token.path)})'`
       })
       .join(',\n')
-    
+
     const fontFamilyTokens = dictionary.allTokens
       .filter(token => token.path[0] === 'typography' && token.path[1] === 'fontFamily')
       .map(token => {
         const key = token.path[2]
-        const cssVarName = token.path.join('-')
-        return `    '${key}': 'var(--${cssVarName})'`
+        return `    '${key}': 'var(--${cssVar(token.path)})'`
       })
       .join(',\n')
-    
+
     const borderRadiusTokens = dictionary.allTokens
       .filter(token => token.path[0] === 'borderRadius')
       .map(token => {
         const key = token.path[1]
-        return `    '${key}': 'var(--${token.name})'`
+        return `    '${key}': 'var(--${cssVar(token.path)})'`
       })
       .join(',\n')
-    
+
     const shadowTokens = dictionary.allTokens
       .filter(token => token.path[0] === 'shadow')
       .map(token => {
         const key = token.path[1]
-        return `    '${key}': 'var(--${token.name})'`
+        return `    '${key}': 'var(--${cssVar(token.path)})'`
       })
       .join(',\n')
 

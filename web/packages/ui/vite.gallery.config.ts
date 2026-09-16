@@ -24,7 +24,22 @@ export default defineConfig({
     // it here would make Vite load the design-tokens theme as native ESM, and
     // native ESM will not resolve that package's extensionless TypeScript
     // imports.
-    UnoCSS(),
+    //
+    // `include` adds .ts to the plugin's default list, which is the whole
+    // reason the component library's colours never appeared. This library keeps
+    // its variant classes in `*.types.ts` — buttonVariantClasses,
+    // alertVariantClasses and so on — and the components compose them with
+    // cn(). UnoCSS only generates a utility it has read as *text* somewhere,
+    // and its default include covers .svelte/.html/.jsx but not .ts, so every
+    // class that lives only in those maps was invisible to it.
+    //
+    // The symptom was subtle because it was partial: classes written inline in
+    // a component's markup generated fine, so most things looked right and
+    // exactly the ones defined in the types files — `border-brand-primary-500`
+    // and its neighbours — silently produced no rule at all.
+    UnoCSS({
+      include: [/\.(vue|svelte|[jt]sx|mdx?|astro|elm|php|phtml|html|ts)($|\?)/],
+    }),
     svelte(),
   ],
 
