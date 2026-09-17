@@ -38,6 +38,15 @@ UPDATE=0
 #             match counted each one as a marker. That accounted for the other
 #             three.
 #
+# A third was added later, for the same reason:
+#
+#   /.svelte-kit/ — SvelteKit's build output, which carries 65 markers of its
+#             own per app. It does not exist on a fresh checkout, so CI never
+#             saw it; it appears the moment anyone runs `pnpm build`, and the
+#             ratchet then reports `web: 261 markers, budget 1` locally. A
+#             check that fails on your machine and passes in CI is one people
+#             learn to run with `|| true`.
+#
 # `web` therefore had one real marker and a budget of thirteen: twelve free
 # TODOs before the ratchet would notice anything. A budget that permits more
 # debt than exists is worse than none, because it reads as enforcement.
@@ -50,6 +59,7 @@ count_markers() {
     | grep -v '/target/' \
     | grep -v '/build/' \
     | grep -v '/dist/' \
+    | grep -v '/\.svelte-kit/' \
     | grep -v '\.pb\.go:' \
     | grep -v '_grpc\.pb\.go:' \
     | grep -v '\.pb.*\.dart:' \
@@ -105,6 +115,18 @@ AREAS=(
   vegetation-index-service
   weather-service
   yield-service
+  # Added with the services themselves. The comment above describes fifty-two
+  # markers left outside the ratchet because this list was written once and not
+  # revisited; these seven are every service added since, so the same gap does
+  # not reopen. All are at zero today, which is the easiest time to start
+  # counting.
+  advisory-service
+  market-service
+  device-service
+  soil-lab-service
+  planning-service
+  sustainability-service
+  finance-service
 )
 
 if [ "$UPDATE" = "1" ]; then
