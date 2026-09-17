@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# advisory-service's own PostgreSQL, because it needs the pgvector extension
+# and the shared instance does not have it. Referenced by every overlay that
+# deploys advisory-service — unlike postgres/single and postgres/replicated,
+# which are alternatives, this is required wherever the service runs.
+resources:
+  - postgres-pgvector.yaml

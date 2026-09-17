@@ -14,6 +14,9 @@ resources:
   # managed answer for a cloud deployment. Saying so beats a comment claiming
   # "failover readiness" over a manifest that has no election in it.
   - ../../postgres/replicated
+  # advisory-service needs pgvector and the shared instance does not have it,
+  # so it gets its own database. Not an alternative to the above — both.
+  - ../../postgres/pgvector
 
 # Three replicas for the things whose failure is felt immediately: the gateway
 # every request enters through, the service that issues the tokens, and the one

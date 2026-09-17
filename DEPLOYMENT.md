@@ -69,6 +69,26 @@ kubectl -n yieldpoint create secret generic database-urls \
   --from-literal=AGRONOMY_SERVICE_DATABASE_URL="postgres://yieldpoint:${POSTGRES_PASSWORD}@<host>:5432/agronomy_service?sslmode=require"
 ```
 
+**advisory-service does not use `<host>`.** It needs a PostgreSQL with the
+pgvector extension, and its first migration runs `CREATE EXTENSION vector` and
+fails without it. That failure is deliberate: a service that started against a
+database with no vector support would accept documents, answer questions and
+retrieve nothing relevant — healthy from the outside and useless from the
+inside.
+
+The overlays deploy `postgres-pgvector` for exactly this, so point it there:
+
+```bash
+kubectl -n yieldpoint create secret generic database-urls --dry-run=client -o yaml \
+  --from-literal=ADVISORY_SERVICE_DATABASE_URL="postgres://yieldpoint:${POSTGRES_PASSWORD}@postgres-pgvector:5432/advisory_service?sslmode=disable" \
+  | kubectl -n yieldpoint patch secret database-urls --patch-file /dev/stdin
+```
+
+`sslmode=disable` because that Service is in-cluster and headless; use
+`require` if you point it at a managed database instead — RDS and Cloud SQL
+both offer pgvector, and either is a better answer than a StatefulSet for
+anything carrying a corpus you would mind losing.
+
 ### 1.4 Configure GitHub Environments
 
 In your GitHub repository settings, create two environments:

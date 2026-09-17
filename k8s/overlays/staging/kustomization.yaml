@@ -9,6 +9,9 @@ resources:
   # replication is for finding out whether the cluster survives a node, and
   # that is what production is for.
   - ../../postgres/single
+  # advisory-service needs pgvector and the shared instance does not have it,
+  # so it gets its own database. Not an alternative to the above — both.
+  - ../../postgres/pgvector
 
 # One replica of everything. Staging exists to find out whether the code works,
 # not whether it survives a node failure, and thirty services at two replicas is

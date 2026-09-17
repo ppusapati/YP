@@ -1,0 +1,107 @@
+# A second PostgreSQL, with pgvector, for advisory-service alone.
+#
+# advisory-service's first migration runs `CREATE EXTENSION vector` and fails
+# without it, which is deliberate: a service that started against a database
+# with no vector support would accept documents, answer questions and retrieve
+# nothing relevant — healthy from the outside and useless from the inside.
+#
+# The shared instance is `postgres:16-alpine` in staging and a streaming pair in
+# production, and neither has the extension. Three ways out of that were
+# possible: change the shared image and disturb twenty-three working services,
+# degrade the migration to a text column, or give the one service with a hard
+# requirement its own database. This is the third, and it mirrors what
+# docker-compose already does locally.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-pgvector
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres-pgvector
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  serviceName: postgres-pgvector
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-pgvector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-pgvector
+    spec:
+      containers:
+        - name: postgres
+          # Same PostgreSQL major as the shared instance, with pgvector built
+          # in. Pinned rather than :latest — a vector index is bound to the
+          # extension version that built it, and an unattended major upgrade
+          # would rebuild or invalidate the corpus.
+          image: pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: yieldpoint
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: advisory_service
+            # The data directory has to be a subdirectory of the mount, not the
+            # mount itself: a PersistentVolume often arrives with a lost+found,
+            # and initdb refuses to run in a directory that is not empty.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              # Lower than the shared instance: this database holds one
+              # service's conversations and its reference corpus, not
+              # twenty-three services' tables.
+              memory: "1Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: pgvector-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "yieldpoint", "-d", "advisory_service"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "yieldpoint", "-d", "advisory_service"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: pgvector-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            # Smaller than the shared 20Gi. What grows here is the chunk table
+            # and its embeddings — a few kilobytes per passage — plus the
+            # exchange log, which is text.
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-pgvector
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: postgres-pgvector
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  selector:
+    app.kubernetes.io/name: postgres-pgvector
+  ports:
+    - port: 5432
+      targetPort: postgres
+  clusterIP: None

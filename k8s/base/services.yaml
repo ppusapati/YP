@@ -8,6 +8,208 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: advisory-service
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: advisory-service
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: advisory-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # One new pod at a time and never fewer than the current count: a
+      # rolling deploy that is allowed to take a pod down first drops requests
+      # on a two-replica service.
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: advisory-service
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: advisory-service
+          image: ghcr.io/ppusapati/yieldpoint/advisory-service:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: yieldpoint-config
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: JWT_SECRET
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: S3_ACCESS_KEY_ID
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: S3_SECRET_ACCESS_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: database-urls
+                  key: ADVISORY_SERVICE_DATABASE_URL
+            - name: KAFKA_BROKER
+              value: "kafka.yieldpoint.svc.cluster.local:9092"
+            - name: GRPC_PLAINTEXT
+              value: "1"
+            - name: PORT
+              value: "8080"
+            - name: S3_ENDPOINT
+              value: "http://minio.yieldpoint.svc.cluster.local:9000"
+            - name: S3_BUCKET
+              value: "yieldpoint"
+            - name: S3_FORCE_PATH_STYLE
+              value: "true"
+            - name: S3_REGION
+              value: "us-east-1"
+            - name: ADVISORY_LLM_API_KEY
+              value: ""
+            - name: ADVISORY_LLM_MODEL
+              value: ""
+            - name: ADVISORY_LLM_INPUT_MICROS_PER_MTOK
+              value: ""
+            - name: ADVISORY_LLM_OUTPUT_MICROS_PER_MTOK
+              value: ""
+            - name: EMBEDDING_URL
+              value: ""
+            - name: EMBEDDING_API_KEY
+              value: ""
+            - name: EMBEDDING_MODEL
+              value: ""
+            - name: FIELD_SERVICE_URL
+              value: "http://field-service:8080"
+            - name: YIELD_SERVICE_URL
+              value: "http://yield-service:8080"
+            - name: IRRIGATION_SERVICE_URL
+              value: "http://irrigation-service:8080"
+            - name: PEST_PREDICTION_SERVICE_URL
+              value: "http://pest-prediction-service:8080"
+            - name: WEATHER_SERVICE_URL
+              value: "http://weather-service:8080"
+            - name: ALERT_SERVICE_URL
+              value: "http://alert-service:8080"
+            - name: PRESCRIPTION_SERVICE_URL
+              value: "http://prescription-service:8080"
+            - name: PLANT_DIAGNOSIS_SERVICE_URL
+              value: "http://plant-diagnosis-service:8080"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          # Readiness gates traffic; liveness restarts a wedged process. They
+          # point at different endpoints on purpose — /ready checks the
+          # database, and a database blip must take the pod out of the load
+          # balancer without restarting it into a crash loop.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            # Migrations run at startup, so first boot after a schema change
+            # can take a while. Without this the liveness probe kills the pod
+            # mid-migration and the next one starts the same migration again.
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: advisory-service
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: advisory-service
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  selector:
+    app.kubernetes.io/name: advisory-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: advisory-service
+  namespace: yieldpoint
+spec:
+  # One pod may go at a time during a node drain. Without a budget the cluster
+  # autoscaler is free to evict both replicas of a two-replica service at once.
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: advisory-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: advisory-service
+  namespace: yieldpoint
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: advisory-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      # Five minutes before scaling down. A shorter window makes the autoscaler
+      # chase a spiky load up and down, which costs more than the replicas it
+      # removes.
+      stabilizationWindowSeconds: 300
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: agronomy-service
   namespace: yieldpoint
   labels:
@@ -5471,204 +5673,3 @@ spec:
         target:
           type: Utilization
           averageUtilization: 60
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: advisory-service
-  namespace: yieldpoint
-  labels:
-    app.kubernetes.io/name: advisory-service
-    app.kubernetes.io/part-of: yieldpoint
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: advisory-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: advisory-service
-        app.kubernetes.io/part-of: yieldpoint
-    spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65532
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-        - name: advisory-service
-          image: ghcr.io/ppusapati/yieldpoint/advisory-service:latest
-          ports:
-            - containerPort: 8080
-              name: http
-          envFrom:
-            - configMapRef:
-                name: yieldpoint-config
-          env:
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: yieldpoint-secrets
-                  key: JWT_SECRET
-            - name: S3_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: yieldpoint-secrets
-                  key: S3_ACCESS_KEY_ID
-            - name: S3_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: yieldpoint-secrets
-                  key: S3_SECRET_ACCESS_KEY
-            # This service needs a PostgreSQL with pgvector; its first
-            # migration creates the extension and fails without it. The shared
-            # TimescaleDB instance the other services use does not ship it, so
-            # this URL points at a database that does.
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: database-urls
-                  key: ADVISORY_SERVICE_DATABASE_URL
-            # The model key is optional and the service starts without it: with
-            # no key it retrieves, scopes to the tenant, evaluates and logs as
-            # usual, and quotes the retrieved passages instead of writing an
-            # answer — saying so in the answer itself.
-            - name: ADVISORY_LLM_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: yieldpoint-secrets
-                  key: ADVISORY_LLM_API_KEY
-                  optional: true
-            - name: EMBEDDING_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: yieldpoint-secrets
-                  key: EMBEDDING_API_KEY
-                  optional: true
-            - name: KAFKA_BROKER
-              value: "kafka.yieldpoint.svc.cluster.local:9092"
-            - name: GRPC_PLAINTEXT
-              value: "1"
-            - name: PORT
-              value: "8080"
-            - name: S3_ENDPOINT
-              value: "http://minio.yieldpoint.svc.cluster.local:9000"
-            - name: S3_BUCKET
-              value: "yieldpoint"
-            - name: S3_FORCE_PATH_STYLE
-              value: "true"
-            - name: S3_REGION
-              value: "us-east-1"
-            # The services the assistant calls rather than guessing. Each is
-            # optional; the tool list the model is offered contains only what
-            # is reachable, so an absent service removes a tool instead of
-            # producing an error a farmer has to read.
-            - name: FIELD_SERVICE_URL
-              value: "http://field-service:8080"
-            - name: YIELD_SERVICE_URL
-              value: "http://yield-service:8080"
-            - name: IRRIGATION_SERVICE_URL
-              value: "http://irrigation-service:8080"
-            - name: PEST_PREDICTION_SERVICE_URL
-              value: "http://pest-prediction-service:8080"
-            - name: WEATHER_SERVICE_URL
-              value: "http://weather-service:8080"
-            - name: ALERT_SERVICE_URL
-              value: "http://alert-service:8080"
-            - name: PRESCRIPTION_SERVICE_URL
-              value: "http://prescription-service:8080"
-            - name: PLANT_DIAGNOSIS_SERVICE_URL
-              value: "http://plant-diagnosis-service:8080"
-          resources:
-            requests:
-              memory: "192Mi"
-              cpu: "100m"
-            limits:
-              # Higher than its neighbours: a question holds the retrieved
-              # context, the conversation history and the tool results in
-              # memory for the length of a model call, which is seconds rather
-              # than milliseconds.
-              memory: "768Mi"
-              cpu: "1000m"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
-          readinessProbe:
-            httpGet:
-              path: /ready
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            failureThreshold: 3
-          startupProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 60
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: advisory-service
-  namespace: yieldpoint
-  labels:
-    app.kubernetes.io/name: advisory-service
-    app.kubernetes.io/part-of: yieldpoint
-spec:
-  selector:
-    app.kubernetes.io/name: advisory-service
-  ports:
-    - name: http
-      port: 8080
-      targetPort: http
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: advisory-service
-  namespace: yieldpoint
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: advisory-service
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: advisory-service
-  namespace: yieldpoint
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: advisory-service
-  minReplicas: 2
-  maxReplicas: 8
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 60
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
