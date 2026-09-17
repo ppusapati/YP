@@ -5,6 +5,7 @@ import 'package:flutter_ui_core/flutter_ui_core.dart' show ExplanationSection;
 import '../bloc/diagnosis_bloc.dart';
 import '../bloc/diagnosis_event.dart';
 import '../bloc/diagnosis_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen showing the result of a plant diagnosis.
 class DiagnosisResultScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _DiagnosisResultScreenState extends State<DiagnosisResultScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Diagnosis Result')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).diagnosisResult)),
       body: BlocBuilder<DiagnosisBloc, DiagnosisState>(
         builder: (context, state) {
           if (state is DiagnosisLoading) {

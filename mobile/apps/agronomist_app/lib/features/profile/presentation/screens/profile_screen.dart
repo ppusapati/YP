@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme_provider.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Profile screen with user info, theme settings, and logout.
 class ProfileScreen extends ConsumerWidget {
@@ -14,7 +15,7 @@ class ProfileScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).navProfile)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -71,8 +72,8 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               children: [
                 RadioListTile<ThemeMode>(
-                  title: const Text('System'),
-                  subtitle: const Text('Follow device settings'),
+                  title: Text(AppLocalizations.of(context).themeSystem),
+                  subtitle: Text(AppLocalizations.of(context).themeSystemHint),
                   value: ThemeMode.system,
                   groupValue: themeMode,
                   onChanged: (value) {
@@ -82,7 +83,7 @@ class ProfileScreen extends ConsumerWidget {
                   },
                 ),
                 RadioListTile<ThemeMode>(
-                  title: const Text('Light'),
+                  title: Text(AppLocalizations.of(context).themeLight),
                   value: ThemeMode.light,
                   groupValue: themeMode,
                   onChanged: (value) {
@@ -92,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
                   },
                 ),
                 RadioListTile<ThemeMode>(
-                  title: const Text('Dark'),
+                  title: Text(AppLocalizations.of(context).themeDark),
                   value: ThemeMode.dark,
                   groupValue: themeMode,
                   onChanged: (value) {
@@ -121,7 +122,7 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.info_outline),
-                  title: const Text('App Version'),
+                  title: Text(AppLocalizations.of(context).settingsAppVersion),
                   trailing: Text('1.0.0',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
@@ -129,13 +130,13 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 ListTile(
                   leading: const Icon(Icons.description_outlined),
-                  title: const Text('Terms of Service'),
+                  title: Text(AppLocalizations.of(context).settingsTermsOfService),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {},
                 ),
                 ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('Privacy Policy'),
+                  title: Text(AppLocalizations.of(context).settingsPrivacyPolicy),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {},
                 ),
@@ -150,26 +151,26 @@ class ProfileScreen extends ConsumerWidget {
               showDialog<void>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Sign Out'),
+                  title: Text(AppLocalizations.of(context).authSignOut),
                   content:
-                      const Text('Are you sure you want to sign out?'),
+                      Text(AppLocalizations.of(context).authSignOutConfirm),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context).commonCancel),
                     ),
                     FilledButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: const Text('Sign Out'),
+                      child: Text(AppLocalizations.of(context).authSignOut),
                     ),
                   ],
                 ),
               );
             },
             icon: const Icon(Icons.logout),
-            label: const Text('Sign Out'),
+            label: Text(AppLocalizations.of(context).authSignOut),
             style: OutlinedButton.styleFrom(
               foregroundColor: colorScheme.error,
               side: BorderSide(color: colorScheme.error),

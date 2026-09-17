@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_auth/flutter_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,11 +103,20 @@ class AgronomistApp extends ConsumerWidget {
         ),
       ],
       child: MaterialApp.router(
-        title: 'YieldPoint Agronomist',
+        onGenerateTitle: (context) => AppLocalizations.of(context).appTitleAgronomist,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
+
+        // This app had no localisation at all: no delegates, no supported
+        // locales, no AppLocalizations anywhere, and every string on every
+        // screen hard-coded in English. The translations it needs live in
+        // flutter_l10n alongside the farmer app's, because "Cancel" in eight
+        // languages should exist once.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         routerConfig: router,
       ),
     );

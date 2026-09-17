@@ -6,6 +6,7 @@ import '../bloc/farm_bloc.dart';
 import '../bloc/farm_event.dart';
 import '../bloc/farm_state.dart';
 import '../widgets/farm_card.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen displaying details for a single farm.
 class FarmDetailScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Farm Details'),
+        title: Text(AppLocalizations.of(context).farmDetails),
       ),
       body: BlocBuilder<FarmBloc, FarmState>(
         builder: (context, state) {
@@ -109,31 +110,31 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
                     children: [
                       ActionChip(
                         avatar: const Icon(Icons.satellite_alt, size: 18),
-                        label: const Text('Satellite'),
+                        label: Text(AppLocalizations.of(context).navSatellite),
                         onPressed: () => context.push(
                             '/satellite/${farm.id}'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.water_drop, size: 18),
-                        label: const Text('Irrigation'),
+                        label: Text(AppLocalizations.of(context).agricultureIrrigation),
                         onPressed: () =>
                             context.push('/irrigation/${farm.id}'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.science, size: 18),
-                        label: const Text('Soil Analysis'),
+                        label: Text(AppLocalizations.of(context).soilAnalysis),
                         onPressed: () =>
                             context.push('/soil-analysis/${farm.id}'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.bug_report, size: 18),
-                        label: const Text('Pest Risk'),
+                        label: Text(AppLocalizations.of(context).pestRisk),
                         onPressed: () =>
                             context.push('/pest-risk/${farm.id}'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.trending_up, size: 18),
-                        label: const Text('Yield Forecast'),
+                        label: Text(AppLocalizations.of(context).yieldForecast),
                         onPressed: () =>
                             context.push('/yield-forecast/${farm.id}'),
                       ),

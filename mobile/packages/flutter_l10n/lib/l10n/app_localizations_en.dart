@@ -461,4 +461,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get advisoryNewConversation => 'New question';
+
+  @override
+  String get appTitleAgronomist => 'YieldPoint Agronomist';
+
+  @override
+  String get navAnalytics => 'Analytics';
+
+  @override
+  String get navNotifications => 'Notifications';
+
+  @override
+  String get navSatellite => 'Satellite';
+
+  @override
+  String get navSensors => 'Sensors';
+
+  @override
+  String get navTraceability => 'Traceability';
+
+  @override
+  String get actionRetry => 'Retry';
+
+  @override
+  String get authSignOutConfirm => 'Are you sure you want to sign out?';
+
+  @override
+  String get settingsAppVersion => 'App Version';
+
+  @override
+  String get settingsPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get settingsTermsOfService => 'Terms of Service';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeSystemHint => 'Follow device settings';
+
+  @override
+  String get farmManaged => 'Managed Farms';
+
+  @override
+  String get farmDetails => 'Farm Details';
+
+  @override
+  String get inspectionList => 'Field Inspections';
+
+  @override
+  String get inspectionNew => 'New Inspection';
+
+  @override
+  String get inspectionCreate => 'Create Inspection';
+
+  @override
+  String get inspectionCreated => 'Inspection created';
+
+  @override
+  String get advisoryDetail => 'Advisory Detail';
+
+  @override
+  String get diagnosisPlant => 'Plant Diagnosis';
+
+  @override
+  String get diagnosisNew => 'New Diagnosis';
+
+  @override
+  String get diagnosisHistory => 'Diagnosis History';
+
+  @override
+  String get diagnosisResult => 'Diagnosis Result';
+
+  @override
+  String get diagnosisHistoryEmpty => 'No diagnosis history.';
+
+  @override
+  String get soilAnalysis => 'Soil Analysis';
+
+  @override
+  String get soilSampleNew => 'New Soil Sample';
+
+  @override
+  String get soilSampleRecord => 'Record Sample';
+
+  @override
+  String get soilSampleRecorded => 'Soil sample recorded';
+
+  @override
+  String get pestRisk => 'Pest Risk';
+
+  @override
+  String get pestAlerts => 'Pest Alerts';
+
+  @override
+  String get stressAlerts => 'Stress Alerts';
+
+  @override
+  String get satelliteMonitoring => 'Satellite Monitoring';
+
+  @override
+  String get yieldForecast => 'Yield Forecast';
+
+  @override
+  String get cropPerformance => 'Crop Performance';
+
+  @override
+  String get traceRecord => 'Trace Record';
 }

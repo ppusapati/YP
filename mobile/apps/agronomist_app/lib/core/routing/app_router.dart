@@ -28,6 +28,7 @@ import '../../features/yield_analysis/presentation/screens/crop_performance_scre
 import '../../features/traceability/presentation/screens/traceability_screen.dart';
 import '../../features/traceability/presentation/screens/record_detail_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// GoRouter configuration provider.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -236,7 +237,7 @@ class _NotificationsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).navNotifications)),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

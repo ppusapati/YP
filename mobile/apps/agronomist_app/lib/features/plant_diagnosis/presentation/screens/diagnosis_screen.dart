@@ -6,6 +6,7 @@ import '../../domain/entities/diagnosis_entity.dart';
 import '../bloc/diagnosis_bloc.dart';
 import '../bloc/diagnosis_event.dart';
 import '../bloc/diagnosis_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen displaying diagnosis history.
 class DiagnosisScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Plant Diagnosis')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).diagnosisPlant)),
       body: BlocBuilder<DiagnosisBloc, DiagnosisState>(
         builder: (context, state) {
           if (state is DiagnosisLoading) {
@@ -106,7 +107,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/diagnosis/new'),
         icon: const Icon(Icons.camera_alt),
-        label: const Text('New Diagnosis'),
+        label: Text(AppLocalizations.of(context).diagnosisNew),
       ),
     );
   }

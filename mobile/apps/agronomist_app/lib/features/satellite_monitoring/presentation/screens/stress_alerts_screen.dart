@@ -5,6 +5,7 @@ import '../bloc/satellite_bloc.dart';
 import '../bloc/satellite_event.dart';
 import '../bloc/satellite_state.dart';
 import '../widgets/stress_alert_card.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen listing stress alerts from satellite monitoring.
 class StressAlertsScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _StressAlertsScreenState extends State<StressAlertsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Stress Alerts')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).stressAlerts)),
       body: BlocBuilder<SatelliteBloc, SatelliteState>(
         builder: (context, state) {
           if (state is SatelliteLoading) {

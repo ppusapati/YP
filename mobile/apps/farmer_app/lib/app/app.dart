@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_ui_core/flutter_ui_core.dart';
 
 import '../core/auth/role_provider.dart';
-import '../l10n/app_localizations.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 import '../core/di/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/app_theme_provider.dart';

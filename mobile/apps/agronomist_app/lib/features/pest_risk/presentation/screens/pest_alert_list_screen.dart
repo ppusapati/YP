@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/pest_risk_bloc.dart';
 import '../bloc/pest_risk_event.dart';
 import '../bloc/pest_risk_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen listing pest alerts across all fields.
 class PestAlertListScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _PestAlertListScreenState extends State<PestAlertListScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pest Alerts')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).pestAlerts)),
       body: BlocBuilder<PestRiskBloc, PestRiskState>(
         builder: (context, state) {
           if (state is PestRiskLoading) return const Center(child: CircularProgressIndicator());

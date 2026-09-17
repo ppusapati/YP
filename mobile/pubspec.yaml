@@ -14,6 +14,7 @@ workspace:
   - apps/agronomist_app
   - packages/flutter_analytics
   - packages/flutter_auth
+  - packages/flutter_l10n
   - packages/flutter_map_core
   - packages/flutter_network
   - packages/flutter_proto

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../farm/presentation/bloc/farm_bloc.dart';
 import '../../../farm/presentation/bloc/farm_event.dart';
 import '../../../farm/presentation/bloc/farm_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Main dashboard screen showing overview stats across all managed farms.
 class DashboardScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(AppLocalizations.of(context).navDashboard),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),

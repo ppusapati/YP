@@ -7,6 +7,7 @@ import '../bloc/farm_bloc.dart';
 import '../bloc/farm_event.dart';
 import '../bloc/farm_state.dart';
 import '../widgets/farm_card.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen displaying all farms managed by the agronomist.
 class FarmListScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _FarmListScreenState extends State<FarmListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Managed Farms'),
+        title: Text(AppLocalizations.of(context).farmManaged),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -111,7 +112,7 @@ class _FarmListScreenState extends State<FarmListScreen> {
                             context.read<FarmBloc>().add(const LoadFarms());
                           },
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
+                          label: Text(AppLocalizations.of(context).actionRetry),
                         ),
                       ],
                     ),

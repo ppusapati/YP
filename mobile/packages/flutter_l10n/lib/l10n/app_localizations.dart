@@ -5,8 +5,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_bn.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_hi.dart';
+import 'app_localizations_kn.dart';
+import 'app_localizations_mr.dart';
+import 'app_localizations_pa.dart';
+import 'app_localizations_ta.dart';
+import 'app_localizations_te.dart';
 
 // ignore_for_file: type=lint
 
@@ -94,8 +100,14 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('bn'),
     Locale('en'),
-    Locale('hi')
+    Locale('hi'),
+    Locale('kn'),
+    Locale('mr'),
+    Locale('pa'),
+    Locale('ta'),
+    Locale('te')
   ];
 
   /// No description provided for @commonSave.
@@ -973,6 +985,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New question'**
   String get advisoryNewConversation;
+
+  /// Agronomist app: YieldPoint Agronomist
+  ///
+  /// In en, this message translates to:
+  /// **'YieldPoint Agronomist'**
+  String get appTitleAgronomist;
+
+  /// Agronomist app: Analytics
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get navAnalytics;
+
+  /// Agronomist app: Notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get navNotifications;
+
+  /// Agronomist app: Satellite
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite'**
+  String get navSatellite;
+
+  /// Agronomist app: Sensors
+  ///
+  /// In en, this message translates to:
+  /// **'Sensors'**
+  String get navSensors;
+
+  /// Agronomist app: Traceability
+  ///
+  /// In en, this message translates to:
+  /// **'Traceability'**
+  String get navTraceability;
+
+  /// Agronomist app: Retry
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get actionRetry;
+
+  /// Agronomist app: Are you sure you want to sign out?
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get authSignOutConfirm;
+
+  /// Agronomist app: App Version
+  ///
+  /// In en, this message translates to:
+  /// **'App Version'**
+  String get settingsAppVersion;
+
+  /// Agronomist app: Privacy Policy
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get settingsPrivacyPolicy;
+
+  /// Agronomist app: Terms of Service
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get settingsTermsOfService;
+
+  /// Agronomist app: Light
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// Agronomist app: Dark
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// Agronomist app: System
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// Agronomist app: Follow device settings
+  ///
+  /// In en, this message translates to:
+  /// **'Follow device settings'**
+  String get themeSystemHint;
+
+  /// Agronomist app: Managed Farms
+  ///
+  /// In en, this message translates to:
+  /// **'Managed Farms'**
+  String get farmManaged;
+
+  /// Agronomist app: Farm Details
+  ///
+  /// In en, this message translates to:
+  /// **'Farm Details'**
+  String get farmDetails;
+
+  /// Agronomist app: Field Inspections
+  ///
+  /// In en, this message translates to:
+  /// **'Field Inspections'**
+  String get inspectionList;
+
+  /// Agronomist app: New Inspection
+  ///
+  /// In en, this message translates to:
+  /// **'New Inspection'**
+  String get inspectionNew;
+
+  /// Agronomist app: Create Inspection
+  ///
+  /// In en, this message translates to:
+  /// **'Create Inspection'**
+  String get inspectionCreate;
+
+  /// Agronomist app: Inspection created
+  ///
+  /// In en, this message translates to:
+  /// **'Inspection created'**
+  String get inspectionCreated;
+
+  /// Agronomist app: Advisory Detail
+  ///
+  /// In en, this message translates to:
+  /// **'Advisory Detail'**
+  String get advisoryDetail;
+
+  /// Agronomist app: Plant Diagnosis
+  ///
+  /// In en, this message translates to:
+  /// **'Plant Diagnosis'**
+  String get diagnosisPlant;
+
+  /// Agronomist app: New Diagnosis
+  ///
+  /// In en, this message translates to:
+  /// **'New Diagnosis'**
+  String get diagnosisNew;
+
+  /// Agronomist app: Diagnosis History
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis History'**
+  String get diagnosisHistory;
+
+  /// Agronomist app: Diagnosis Result
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis Result'**
+  String get diagnosisResult;
+
+  /// Agronomist app: No diagnosis history.
+  ///
+  /// In en, this message translates to:
+  /// **'No diagnosis history.'**
+  String get diagnosisHistoryEmpty;
+
+  /// Agronomist app: Soil Analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Soil Analysis'**
+  String get soilAnalysis;
+
+  /// Agronomist app: New Soil Sample
+  ///
+  /// In en, this message translates to:
+  /// **'New Soil Sample'**
+  String get soilSampleNew;
+
+  /// Agronomist app: Record Sample
+  ///
+  /// In en, this message translates to:
+  /// **'Record Sample'**
+  String get soilSampleRecord;
+
+  /// Agronomist app: Soil sample recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Soil sample recorded'**
+  String get soilSampleRecorded;
+
+  /// Agronomist app: Pest Risk
+  ///
+  /// In en, this message translates to:
+  /// **'Pest Risk'**
+  String get pestRisk;
+
+  /// Agronomist app: Pest Alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Pest Alerts'**
+  String get pestAlerts;
+
+  /// Agronomist app: Stress Alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Stress Alerts'**
+  String get stressAlerts;
+
+  /// Agronomist app: Satellite Monitoring
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite Monitoring'**
+  String get satelliteMonitoring;
+
+  /// Agronomist app: Yield Forecast
+  ///
+  /// In en, this message translates to:
+  /// **'Yield Forecast'**
+  String get yieldForecast;
+
+  /// Agronomist app: Crop Performance
+  ///
+  /// In en, this message translates to:
+  /// **'Crop Performance'**
+  String get cropPerformance;
+
+  /// Agronomist app: Trace Record
+  ///
+  /// In en, this message translates to:
+  /// **'Trace Record'**
+  String get traceRecord;
 }
 
 class _AppLocalizationsDelegate
@@ -985,8 +1225,16 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'hi'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+        'bn',
+        'en',
+        'hi',
+        'kn',
+        'mr',
+        'pa',
+        'ta',
+        'te'
+      ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -995,10 +1243,22 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'bn':
+      return AppLocalizationsBn();
     case 'en':
       return AppLocalizationsEn();
     case 'hi':
       return AppLocalizationsHi();
+    case 'kn':
+      return AppLocalizationsKn();
+    case 'mr':
+      return AppLocalizationsMr();
+    case 'pa':
+      return AppLocalizationsPa();
+    case 'ta':
+      return AppLocalizationsTa();
+    case 'te':
+      return AppLocalizationsTe();
   }
 
   throw FlutterError(

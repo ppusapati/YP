@@ -235,5 +235,157 @@
   "advisoryNewConversation": "New question",
   "@advisoryNewConversation": {
     "description": "Starts a fresh conversation"
+  },
+  "appTitleAgronomist": "YieldPoint Agronomist",
+  "@appTitleAgronomist": {
+    "description": "Agronomist app: YieldPoint Agronomist"
+  },
+  "navAnalytics": "Analytics",
+  "@navAnalytics": {
+    "description": "Agronomist app: Analytics"
+  },
+  "navNotifications": "Notifications",
+  "@navNotifications": {
+    "description": "Agronomist app: Notifications"
+  },
+  "navSatellite": "Satellite",
+  "@navSatellite": {
+    "description": "Agronomist app: Satellite"
+  },
+  "navSensors": "Sensors",
+  "@navSensors": {
+    "description": "Agronomist app: Sensors"
+  },
+  "navTraceability": "Traceability",
+  "@navTraceability": {
+    "description": "Agronomist app: Traceability"
+  },
+  "actionRetry": "Retry",
+  "@actionRetry": {
+    "description": "Agronomist app: Retry"
+  },
+  "authSignOutConfirm": "Are you sure you want to sign out?",
+  "@authSignOutConfirm": {
+    "description": "Agronomist app: Are you sure you want to sign out?"
+  },
+  "settingsAppVersion": "App Version",
+  "@settingsAppVersion": {
+    "description": "Agronomist app: App Version"
+  },
+  "settingsPrivacyPolicy": "Privacy Policy",
+  "@settingsPrivacyPolicy": {
+    "description": "Agronomist app: Privacy Policy"
+  },
+  "settingsTermsOfService": "Terms of Service",
+  "@settingsTermsOfService": {
+    "description": "Agronomist app: Terms of Service"
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Agronomist app: Light"
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Agronomist app: Dark"
+  },
+  "themeSystem": "System",
+  "@themeSystem": {
+    "description": "Agronomist app: System"
+  },
+  "themeSystemHint": "Follow device settings",
+  "@themeSystemHint": {
+    "description": "Agronomist app: Follow device settings"
+  },
+  "farmManaged": "Managed Farms",
+  "@farmManaged": {
+    "description": "Agronomist app: Managed Farms"
+  },
+  "farmDetails": "Farm Details",
+  "@farmDetails": {
+    "description": "Agronomist app: Farm Details"
+  },
+  "inspectionList": "Field Inspections",
+  "@inspectionList": {
+    "description": "Agronomist app: Field Inspections"
+  },
+  "inspectionNew": "New Inspection",
+  "@inspectionNew": {
+    "description": "Agronomist app: New Inspection"
+  },
+  "inspectionCreate": "Create Inspection",
+  "@inspectionCreate": {
+    "description": "Agronomist app: Create Inspection"
+  },
+  "inspectionCreated": "Inspection created",
+  "@inspectionCreated": {
+    "description": "Agronomist app: Inspection created"
+  },
+  "advisoryDetail": "Advisory Detail",
+  "@advisoryDetail": {
+    "description": "Agronomist app: Advisory Detail"
+  },
+  "diagnosisPlant": "Plant Diagnosis",
+  "@diagnosisPlant": {
+    "description": "Agronomist app: Plant Diagnosis"
+  },
+  "diagnosisNew": "New Diagnosis",
+  "@diagnosisNew": {
+    "description": "Agronomist app: New Diagnosis"
+  },
+  "diagnosisHistory": "Diagnosis History",
+  "@diagnosisHistory": {
+    "description": "Agronomist app: Diagnosis History"
+  },
+  "diagnosisResult": "Diagnosis Result",
+  "@diagnosisResult": {
+    "description": "Agronomist app: Diagnosis Result"
+  },
+  "diagnosisHistoryEmpty": "No diagnosis history.",
+  "@diagnosisHistoryEmpty": {
+    "description": "Agronomist app: No diagnosis history."
+  },
+  "soilAnalysis": "Soil Analysis",
+  "@soilAnalysis": {
+    "description": "Agronomist app: Soil Analysis"
+  },
+  "soilSampleNew": "New Soil Sample",
+  "@soilSampleNew": {
+    "description": "Agronomist app: New Soil Sample"
+  },
+  "soilSampleRecord": "Record Sample",
+  "@soilSampleRecord": {
+    "description": "Agronomist app: Record Sample"
+  },
+  "soilSampleRecorded": "Soil sample recorded",
+  "@soilSampleRecorded": {
+    "description": "Agronomist app: Soil sample recorded"
+  },
+  "pestRisk": "Pest Risk",
+  "@pestRisk": {
+    "description": "Agronomist app: Pest Risk"
+  },
+  "pestAlerts": "Pest Alerts",
+  "@pestAlerts": {
+    "description": "Agronomist app: Pest Alerts"
+  },
+  "stressAlerts": "Stress Alerts",
+  "@stressAlerts": {
+    "description": "Agronomist app: Stress Alerts"
+  },
+  "satelliteMonitoring": "Satellite Monitoring",
+  "@satelliteMonitoring": {
+    "description": "Agronomist app: Satellite Monitoring"
+  },
+  "yieldForecast": "Yield Forecast",
+  "@yieldForecast": {
+    "description": "Agronomist app: Yield Forecast"
+  },
+  "cropPerformance": "Crop Performance",
+  "@cropPerformance": {
+    "description": "Agronomist app: Crop Performance"
+  },
+  "traceRecord": "Trace Record",
+  "@traceRecord": {
+    "description": "Agronomist app: Trace Record"
   }
 }

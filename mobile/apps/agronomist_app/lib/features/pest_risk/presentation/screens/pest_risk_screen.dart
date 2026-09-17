@@ -5,6 +5,7 @@ import '../../domain/entities/pest_risk_entity.dart';
 import '../bloc/pest_risk_bloc.dart';
 import '../bloc/pest_risk_event.dart';
 import '../bloc/pest_risk_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen showing pest risk predictions for a field.
 class PestRiskScreen extends StatefulWidget {
@@ -35,7 +36,7 @@ class _PestRiskScreenState extends State<PestRiskScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pest Risk')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).pestRisk)),
       body: BlocBuilder<PestRiskBloc, PestRiskState>(
         builder: (context, state) {
           if (state is PestRiskLoading) return const Center(child: CircularProgressIndicator());

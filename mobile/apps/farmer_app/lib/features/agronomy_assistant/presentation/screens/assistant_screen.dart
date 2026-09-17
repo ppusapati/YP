@@ -3,7 +3,7 @@ import 'package:flutter_proto/src/generated/assistant.pb.dart' as assistant_pb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/providers.dart';
-import '../../../../l10n/app_localizations.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// The agronomy assistant.
 ///

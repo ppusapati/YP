@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen for crop performance metrics and historical yields.
 class CropPerformanceScreen extends StatelessWidget {
@@ -9,7 +10,7 @@ class CropPerformanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Crop Performance')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).cropPerformance)),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

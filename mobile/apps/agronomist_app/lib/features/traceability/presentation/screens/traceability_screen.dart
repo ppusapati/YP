@@ -7,6 +7,7 @@ import '../../domain/entities/trace_record_entity.dart';
 import '../bloc/traceability_bloc.dart';
 import '../bloc/traceability_event.dart';
 import '../bloc/traceability_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 class TraceabilityScreen extends StatefulWidget {
   const TraceabilityScreen({super.key});
@@ -54,7 +55,7 @@ class _TraceabilityScreenState extends State<TraceabilityScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Traceability'),
+        title: Text(AppLocalizations.of(context).navTraceability),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -90,7 +91,7 @@ class _TraceabilityScreenState extends State<TraceabilityScreen> {
                           .add(const LoadTraceRecords());
                     },
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: Text(AppLocalizations.of(context).actionRetry),
                   ),
                 ],
               ),

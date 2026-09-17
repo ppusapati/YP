@@ -1,0 +1,23 @@
+# One set of ARB files for both apps.
+#
+# They used to live in apps/farmer_app, which meant agronomist_app either
+# duplicated them or — as it did — had no translations at all. Two copies of
+# "Cancel" in eight languages drift the first time one of them is edited, so
+# there is one copy here and both apps depend on it.
+#
+# Generated next to the ARB files rather than into the deprecated flutter_gen
+# synthetic package, so a generated string is one a person can open and read
+# when it looks wrong.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+output-dir: lib/l10n
+nullable-getter: false
+
+# Note on provenance: en and hi were written by hand; mr, te, ta, kn, pa and bn
+# were drafted by machine and have not had a native-speaker review. They are
+# shipped rather than withheld because a farmer reading a drafted Marathi
+# string is better served than one reading English, and because a translator
+# reviewing wording is a much smaller job than one starting from an empty file.
+# See the translation-management item in ENHANCEMENTS.md.

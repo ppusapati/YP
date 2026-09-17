@@ -462,4 +462,118 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get advisoryNewConversation => 'नया प्रश्न';
+
+  @override
+  String get appTitleAgronomist => 'यील्डपॉइंट कृषि विशेषज्ञ';
+
+  @override
+  String get navAnalytics => 'विश्लेषण';
+
+  @override
+  String get navNotifications => 'सूचनाएं';
+
+  @override
+  String get navSatellite => 'उपग्रह';
+
+  @override
+  String get navSensors => 'सेंसर';
+
+  @override
+  String get navTraceability => 'अनुरेखणीयता';
+
+  @override
+  String get actionRetry => 'पुनः प्रयास';
+
+  @override
+  String get authSignOutConfirm => 'क्या आप वाकई साइन आउट करना चाहते हैं?';
+
+  @override
+  String get settingsAppVersion => 'ऐप संस्करण';
+
+  @override
+  String get settingsPrivacyPolicy => 'गोपनीयता नीति';
+
+  @override
+  String get settingsTermsOfService => 'सेवा की शर्तें';
+
+  @override
+  String get themeLight => 'हल्का';
+
+  @override
+  String get themeDark => 'गहरा';
+
+  @override
+  String get themeSystem => 'सिस्टम';
+
+  @override
+  String get themeSystemHint => 'डिवाइस सेटिंग्स का पालन करें';
+
+  @override
+  String get farmManaged => 'प्रबंधित खेत';
+
+  @override
+  String get farmDetails => 'खेत का विवरण';
+
+  @override
+  String get inspectionList => 'खेत निरीक्षण';
+
+  @override
+  String get inspectionNew => 'नया निरीक्षण';
+
+  @override
+  String get inspectionCreate => 'निरीक्षण बनाएं';
+
+  @override
+  String get inspectionCreated => 'निरीक्षण बनाया गया';
+
+  @override
+  String get advisoryDetail => 'सलाह विवरण';
+
+  @override
+  String get diagnosisPlant => 'पौध निदान';
+
+  @override
+  String get diagnosisNew => 'नया निदान';
+
+  @override
+  String get diagnosisHistory => 'निदान इतिहास';
+
+  @override
+  String get diagnosisResult => 'निदान परिणाम';
+
+  @override
+  String get diagnosisHistoryEmpty => 'कोई निदान इतिहास नहीं।';
+
+  @override
+  String get soilAnalysis => 'मृदा विश्लेषण';
+
+  @override
+  String get soilSampleNew => 'नया मृदा नमूना';
+
+  @override
+  String get soilSampleRecord => 'नमूना दर्ज करें';
+
+  @override
+  String get soilSampleRecorded => 'मृदा नमूना दर्ज किया गया';
+
+  @override
+  String get pestRisk => 'कीट जोखिम';
+
+  @override
+  String get pestAlerts => 'कीट चेतावनी';
+
+  @override
+  String get stressAlerts => 'तनाव चेतावनी';
+
+  @override
+  String get satelliteMonitoring => 'उपग्रह निगरानी';
+
+  @override
+  String get yieldForecast => 'उपज पूर्वानुमान';
+
+  @override
+  String get cropPerformance => 'फसल प्रदर्शन';
+
+  @override
+  String get traceRecord => 'अनुरेखण रिकॉर्ड';
 }

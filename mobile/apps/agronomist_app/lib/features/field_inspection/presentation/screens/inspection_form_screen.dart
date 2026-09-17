@@ -7,6 +7,7 @@ import '../../domain/entities/inspection_entity.dart';
 import '../bloc/field_inspection_bloc.dart';
 import '../bloc/field_inspection_event.dart';
 import '../bloc/field_inspection_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen for creating a new field inspection.
 class InspectionFormScreen extends StatefulWidget {
@@ -54,13 +55,13 @@ class _InspectionFormScreenState extends State<InspectionFormScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New Inspection')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).inspectionNew)),
       body: BlocListener<FieldInspectionBloc, FieldInspectionState>(
         listener: (context, state) {
           if (state is InspectionCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Inspection created'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).inspectionCreated),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -124,7 +125,7 @@ class _InspectionFormScreenState extends State<InspectionFormScreen> {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _submit,
-                  child: const Text('Create Inspection'),
+                  child: Text(AppLocalizations.of(context).inspectionCreate),
                 ),
               ],
             ),

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/satellite_bloc.dart';
 import '../bloc/satellite_event.dart';
 import '../bloc/satellite_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen for viewing satellite monitoring data for a field.
 class SatelliteMonitoringScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _SatelliteMonitoringScreenState extends State<SatelliteMonitoringScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Satellite Monitoring')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).satelliteMonitoring)),
       body: BlocBuilder<SatelliteBloc, SatelliteState>(
         builder: (context, state) {
           if (state is SatelliteLoading) {
@@ -50,7 +51,7 @@ class _SatelliteMonitoringScreenState extends State<SatelliteMonitoringScreen> {
                     onPressed: () => context.read<SatelliteBloc>().add(
                         LoadSatelliteTiles(fieldId: widget.fieldId)),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: Text(AppLocalizations.of(context).actionRetry),
                   ),
                 ],
               ),

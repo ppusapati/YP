@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/advisory_entity.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen showing full details of a crop advisory.
 class AdvisoryDetailScreen extends StatelessWidget {
@@ -15,7 +16,7 @@ class AdvisoryDetailScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Advisory Detail')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).advisoryDetail)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

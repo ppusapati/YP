@@ -5,6 +5,7 @@ import '../../domain/entities/irrigation_zone_entity.dart';
 import '../bloc/irrigation_bloc.dart';
 import '../bloc/irrigation_event.dart';
 import '../bloc/irrigation_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen showing irrigation zones for a field.
 class IrrigationScreen extends StatefulWidget {
@@ -35,7 +36,7 @@ class _IrrigationScreenState extends State<IrrigationScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Irrigation')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).agricultureIrrigation)),
       body: BlocBuilder<IrrigationBloc, IrrigationState>(
         builder: (context, state) {
           if (state is IrrigationLoading) return const Center(child: CircularProgressIndicator());

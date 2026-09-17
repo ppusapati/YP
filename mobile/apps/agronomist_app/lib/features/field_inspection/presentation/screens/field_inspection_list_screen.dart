@@ -6,6 +6,7 @@ import '../bloc/field_inspection_bloc.dart';
 import '../bloc/field_inspection_event.dart';
 import '../bloc/field_inspection_state.dart';
 import '../widgets/inspection_card.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen listing all field inspections.
 class FieldInspectionListScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _FieldInspectionListScreenState extends State<FieldInspectionListScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Field Inspections')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).inspectionList)),
       body: BlocBuilder<FieldInspectionBloc, FieldInspectionState>(
         builder: (context, state) {
           if (state is FieldInspectionLoading) {
@@ -49,7 +50,7 @@ class _FieldInspectionListScreenState extends State<FieldInspectionListScreen> {
                         .read<FieldInspectionBloc>()
                         .add(const LoadInspections()),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: Text(AppLocalizations.of(context).actionRetry),
                   ),
                 ],
               ),
@@ -110,7 +111,7 @@ class _FieldInspectionListScreenState extends State<FieldInspectionListScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/inspections/create'),
         icon: const Icon(Icons.add),
-        label: const Text('New Inspection'),
+        label: Text(AppLocalizations.of(context).inspectionNew),
       ),
     );
   }

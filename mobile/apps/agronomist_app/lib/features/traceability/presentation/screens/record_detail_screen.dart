@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../bloc/traceability_bloc.dart';
 import '../bloc/traceability_event.dart';
 import '../bloc/traceability_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 class RecordDetailScreen extends StatefulWidget {
   const RecordDetailScreen({super.key, required this.recordId});
@@ -29,7 +30,7 @@ class _RecordDetailScreenState extends State<RecordDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Trace Record')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).traceRecord)),
       body: BlocBuilder<TraceabilityBloc, TraceabilityState>(
         builder: (context, state) {
           if (state is TraceabilityLoading) {

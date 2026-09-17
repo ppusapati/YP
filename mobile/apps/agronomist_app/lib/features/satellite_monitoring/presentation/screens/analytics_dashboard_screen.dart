@@ -5,6 +5,7 @@ import '../bloc/satellite_bloc.dart';
 import '../bloc/satellite_event.dart';
 import '../bloc/satellite_state.dart';
 import '../widgets/analytics_summary_card.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen showing analytics dashboard for a field.
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -35,7 +36,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Analytics')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).navAnalytics)),
       body: BlocBuilder<SatelliteBloc, SatelliteState>(
         builder: (context, state) {
           if (state is SatelliteLoading) {

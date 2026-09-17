@@ -7,6 +7,7 @@ import '../../domain/entities/soil_analysis_entity.dart';
 import '../bloc/soil_analysis_bloc.dart';
 import '../bloc/soil_analysis_event.dart';
 import '../bloc/soil_analysis_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen for recording a new soil sample.
 class SoilSampleFormScreen extends StatefulWidget {
@@ -69,13 +70,13 @@ class _SoilSampleFormScreenState extends State<SoilSampleFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Soil Sample')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).soilSampleNew)),
       body: BlocListener<SoilAnalysisBloc, SoilAnalysisState>(
         listener: (context, state) {
           if (state is SoilSampleCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Soil sample recorded'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).soilSampleRecorded),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -134,7 +135,7 @@ class _SoilSampleFormScreenState extends State<SoilSampleFormScreen> {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _submit,
-                  child: const Text('Record Sample'),
+                  child: Text(AppLocalizations.of(context).soilSampleRecord),
                 ),
               ],
             ),

@@ -6,6 +6,7 @@ import '../../domain/entities/advisory_entity.dart';
 import '../bloc/crop_advisory_bloc.dart';
 import '../bloc/crop_advisory_event.dart';
 import '../bloc/crop_advisory_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen listing crop advisories.
 class CropAdvisoryScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _CropAdvisoryScreenState extends State<CropAdvisoryScreen> {
                       .read<CropAdvisoryBloc>()
                       .add(const LoadAdvisories()),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+                  label: Text(AppLocalizations.of(context).actionRetry),
                 ),
               ],
             ),

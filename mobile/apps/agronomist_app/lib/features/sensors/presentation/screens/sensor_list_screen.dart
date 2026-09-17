@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/sensor_bloc.dart';
 import '../bloc/sensor_event.dart';
 import '../bloc/sensor_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 class SensorListScreen extends StatefulWidget {
   const SensorListScreen({super.key, required this.fieldId});
@@ -24,7 +25,7 @@ class _SensorListScreenState extends State<SensorListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sensors')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).navSensors)),
       body: BlocBuilder<SensorBloc, SensorState>(
         builder: (context, state) {
           if (state is SensorLoading) return const Center(child: CircularProgressIndicator());

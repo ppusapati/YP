@@ -14,6 +14,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  flutter_l10n:
+    path: ../../packages/flutter_l10n
 
   # ── Workspace packages ──────────────────────────────────────────────
   flutter_auth:

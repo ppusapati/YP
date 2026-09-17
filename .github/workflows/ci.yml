@@ -389,11 +389,11 @@ jobs:
       # the old strings, and every check here still passes. That is the same
       # hole the proto freshness jobs had, so it uses the same script.
       - name: Check l10n freshness
-        working-directory: mobile/apps/farmer_app
+        working-directory: mobile/packages/flutter_l10n
         run: |
           flutter gen-l10n
           "$GITHUB_WORKSPACE/scripts/check-generated-drift.sh" \
-            "run 'flutter gen-l10n' in mobile/apps/farmer_app and commit" \
+            "run 'flutter gen-l10n' in mobile/packages/flutter_l10n and commit" \
             lib/l10n/
 
       # The mobile suite had no CI job at all. Two apps and seven packages —
@@ -416,6 +416,7 @@ jobs:
             apps/farmer_app \
             apps/agronomist_app \
             packages/flutter_analytics \
+            packages/flutter_l10n \
             packages/flutter_map_core \
             packages/flutter_proto \
             packages/flutter_ui_core; do

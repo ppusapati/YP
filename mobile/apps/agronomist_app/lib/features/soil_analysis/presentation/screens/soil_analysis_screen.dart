@@ -5,6 +5,7 @@ import '../bloc/soil_analysis_bloc.dart';
 import '../bloc/soil_analysis_event.dart';
 import '../bloc/soil_analysis_state.dart';
 import '../widgets/soil_health_card.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen displaying soil analysis results for a field.
 class SoilAnalysisScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _SoilAnalysisScreenState extends State<SoilAnalysisScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Soil Analysis')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).soilAnalysis)),
       body: BlocBuilder<SoilAnalysisBloc, SoilAnalysisState>(
         builder: (context, state) {
           if (state is SoilAnalysisLoading) {
@@ -51,7 +52,7 @@ class _SoilAnalysisScreenState extends State<SoilAnalysisScreen> {
                         .read<SoilAnalysisBloc>()
                         .add(LoadSoilAnalyses(fieldId: widget.fieldId)),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: Text(AppLocalizations.of(context).actionRetry),
                   ),
                 ],
               ),

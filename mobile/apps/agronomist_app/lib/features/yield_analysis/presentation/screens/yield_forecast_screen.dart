@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../bloc/yield_analysis_bloc.dart';
 import '../bloc/yield_analysis_event.dart';
 import '../bloc/yield_analysis_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 class YieldForecastScreen extends StatefulWidget {
   const YieldForecastScreen({super.key, required this.fieldId});
@@ -25,7 +26,7 @@ class _YieldForecastScreenState extends State<YieldForecastScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Yield Forecast')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).yieldForecast)),
       body: BlocBuilder<YieldAnalysisBloc, YieldAnalysisState>(
         builder: (context, state) {
           if (state is YieldAnalysisLoading) return const Center(child: CircularProgressIndicator());

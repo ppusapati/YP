@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../bloc/diagnosis_bloc.dart';
 import '../bloc/diagnosis_event.dart';
 import '../bloc/diagnosis_state.dart';
+import 'package:flutter_l10n/flutter_l10n.dart';
 
 /// Screen listing past diagnoses.
 class DiagnosisHistoryScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Diagnosis History')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).diagnosisHistory)),
       body: BlocBuilder<DiagnosisBloc, DiagnosisState>(
         builder: (context, state) {
           if (state is DiagnosisLoading) {
@@ -39,7 +40,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
           }
           if (state is DiagnosesLoaded) {
             if (state.diagnoses.isEmpty) {
-              return const Center(child: Text('No diagnosis history.'));
+              return Center(child: Text(AppLocalizations.of(context).diagnosisHistoryEmpty));
             }
             return ListView.builder(
               padding: const EdgeInsets.all(16),
