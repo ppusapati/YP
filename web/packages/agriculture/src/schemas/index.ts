@@ -41,6 +41,7 @@ export { yieldRecordSchema, yieldForecastRequestSchema } from './yield.schema';
 // Traceability Service
 export {
   traceabilityRecordSchema,
+  traceabilityRecordUpdateSchema,
   certificationSchema,
   supplyEventSchema,
   batchRecordSchema,

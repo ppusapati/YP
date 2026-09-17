@@ -122,12 +122,46 @@ not have: `UpdateFarm`, `DeleteFarm`, `UpdateSensor`, `UpdateSchedule`,
 `CreateQualityCheckpoint`. Editing a farm — the most ordinary operation in the
 product — had no client method behind it for this reason alone.
 
-Three pages were written to say so rather than call methods that were not
-there: the certification detail page disables Revoke, the traceability record
-page refuses to save, and both explain why in the UI. **Those guards are now
-unnecessary and have not been removed** — re-enabling a write path is a product
-change and wants testing against a running service, not a side effect of a CI
-fix.
+Two pages had been written to say so rather than call methods that were not
+there — the certification detail page disabled Revoke, and the traceability
+record page refused to save. Both are wired up now.
+
+Re-enabling them was not only deleting a guard, because two of the three call
+sites were wrong in ways the missing methods had been hiding:
+
+- The traceability edit page rendered the **create** schema. `UpdateRecord`
+  accepts origin, seed source and four dates; batch id, product name, farm,
+  field and crop are immutable by design, since a record is the chain of
+  custody for one batch and repointing it rewrites provenance. Wiring the
+  create form straight to the RPC would have let someone edit a batch id, press
+  Save, get a success, and find nothing changed. There is now a separate
+  `traceabilityRecordUpdateSchema` matching what the RPC takes.
+
+- The farm edit page was broken in **both** directions and neither failed
+  loudly. It loaded with `values = { ...res.farm }`, copying the client's
+  camelCase fields into a form whose inputs carry the proto's snake_case names,
+  so most of the form rendered blank on a fully-populated farm. It saved with
+  `updateFarm({ id, ...formValues } as any)`, handing protobuf-es keys it does
+  not recognise — it drops them, the request succeeds, and nothing changes. The
+  `as any` is what kept the typechecker quiet.
+
+### Form values are not protobuf values
+
+Three mismatches sit between a form and a message, and every one of them fails
+silently: field names (`total_area_hectares` vs `totalAreaHectares`), enums (a
+select holds `'FARM_TYPE_CROP'`, the message holds a number) and timestamps (a
+date input holds `yyyy-mm-dd`). `@samavāya/agriculture/convert` does all three
+through the generated descriptors, so a value added to a proto cannot fall out
+of step with the page that renders it.
+
+**Six more edit pages still spread snake_case form values into a request behind
+`as any`** and will silently save nothing: sensors, irrigation schedules,
+crops, fields, processing jobs and farm owners (each duplicated between its
+standalone app and the shell). They are listed here rather than fixed in the
+same pass, because each needs its own field-by-field mapping checked against
+its own proto, and a blanket camelCase rewrite would paper over the cases —
+like the farm's `latitude`/`longitude`, which belong inside a nested
+`location` — where the mapping is not mechanical.
 
 ## Go
 

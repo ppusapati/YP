@@ -16,12 +16,11 @@
    * is genuine — and Revoke, which records that it is no longer valid together
    * with the reason, leaving the original in place.
    *
-   * Only Verify is wired up. RevokeCertification is in traceability.proto and
-   * missing from the generated TypeScript client, which is stale: the proto
-   * declares twenty-one RPCs and the client has fourteen. Regenerating it needs
-   * a decision about the buf workspace layout (see docs/proto-generation.md),
-   * so the revoke control says it is unavailable rather than calling a method
-   * that is not there.
+   * Revoking asks for a reason and will not proceed without one. The proto
+   * makes `reason` an ordinary field, so the service would accept a blank one —
+   * but a revocation is read months later by someone asking why a batch lost
+   * its certification, and "revoked" with no reason answers nothing. The
+   * requirement belongs here, at the point where the person still knows.
    */
 
   $: id = $page.params.id;
@@ -40,6 +39,12 @@
   let isLoading = true;
   let isWorking = false;
   let error: string | null = null;
+
+  // Revoking is two steps rather than one. It cannot be undone from this UI,
+  // and a single button next to Verify is a slip away from being pressed by
+  // someone who meant the other one.
+  let isRevoking = false;
+  let revokeReason = '';
 
   onMount(load);
 
@@ -69,6 +74,35 @@
     }
   }
 
+  async function revoke() {
+    const reason = revokeReason.trim();
+    if (!reason) {
+      error = 'Give a reason for revoking this certification.';
+      return;
+    }
+
+    isWorking = true;
+    error = null;
+    try {
+      await traceabilityClient.revokeCertification({ id, reason });
+      // Reloaded rather than patched locally. Revoking sets the status and
+      // stamps the record on the service's side, and showing a locally-guessed
+      // state would differ from what anyone else sees.
+      await load();
+      isRevoking = false;
+      revokeReason = '';
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to revoke certification';
+    } finally {
+      isWorking = false;
+    }
+  }
+
+  function cancelRevoke() {
+    isRevoking = false;
+    revokeReason = '';
+    error = null;
+  }
 </script>
 
 <svelte:head>
@@ -106,18 +140,42 @@
     </dl>
 
     <div class="actions">
-      <button type="button" onclick={verify} disabled={isWorking}>
+      <button type="button" onclick={verify} disabled={isWorking || isRevoking}>
         Verify
       </button>
-      <button type="button" class="danger" disabled title="Revoking needs the regenerated client">
+      <button
+        type="button"
+        class="danger"
+        onclick={() => (isRevoking = true)}
+        disabled={isWorking || isRevoking}
+      >
         Revoke
       </button>
     </div>
 
-    <p class="note">
-      Revoking is not available from here yet: the RPC exists on
-      traceability-service and is missing from this app's generated client.
-    </p>
+    {#if isRevoking}
+      <form class="revoke" onsubmit={(event) => { event.preventDefault(); void revoke(); }}>
+        <label for="revoke-reason">Reason for revoking</label>
+        <input
+          id="revoke-reason"
+          type="text"
+          bind:value={revokeReason}
+          placeholder="Why is this certification no longer valid?"
+          required
+        />
+        <p class="note">
+          The certificate itself is kept. Revoking records that it is no longer
+          valid, with this reason, so the audit trail still shows what was
+          claimed and when it stopped being true.
+        </p>
+        <div class="actions">
+          <button type="submit" class="danger" disabled={isWorking || !revokeReason.trim()}>
+            {isWorking ? 'Revoking…' : 'Confirm revoke'}
+          </button>
+          <button type="button" onclick={cancelRevoke} disabled={isWorking}>Cancel</button>
+        </div>
+      </form>
+    {/if}
   {/if}
 </div>
 
@@ -176,6 +234,26 @@
   button:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+
+  .revoke {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #c0392b;
+    border-radius: var(--radius-md, 6px);
+  }
+
+  .revoke label {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary, #666);
+  }
+
+  .revoke input {
+    padding: 0.5rem;
+    border: 1px solid var(--color-border, #ddd);
+    border-radius: var(--radius-md, 6px);
   }
 
   .note {

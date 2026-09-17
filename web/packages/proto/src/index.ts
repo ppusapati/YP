@@ -49,6 +49,20 @@ export * from './gen/query_pb.js';
 
 export { CropService } from './gen/crop_pb.js';
 export { FarmService } from './gen/farm_pb.js';
+
+// Enum descriptors, not just the enums themselves.
+//
+// A form's select options are the proto's JSON names ('FARM_TYPE_CROP') while
+// the message carries a number, and `enumFromJson`/`enumToJson` need the
+// descriptor to convert between them. Exporting it means a page converts
+// through the generated schema rather than a hand-written lookup table that
+// drifts the first time the proto gains a value.
+export {
+  FarmTypeSchema,
+  SoilTypeSchema,
+  ClimateZoneSchema,
+  FarmStatusSchema,
+} from './gen/farm_pb.js';
 export { FieldService } from './gen/field_pb.js';
 export { SoilService } from './gen/soil_pb.js';
 export { SensorService } from './gen/sensor_pb.js';

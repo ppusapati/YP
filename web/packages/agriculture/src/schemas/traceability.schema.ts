@@ -36,6 +36,51 @@ export const traceabilityRecordSchema: FormSchema<Record<string, unknown>> = {
   },
 };
 
+/**
+ * Form for editing a traceability record (UpdateRecordRequest).
+ *
+ * Deliberately not the same fields as the create form above. `UpdateRecord`
+ * accepts origin, seed source, four dates and metadata — and nothing else. The
+ * edit page used to render the *create* schema, so it offered Batch ID, Product
+ * Name, Farm, Field and Crop; wiring that form straight to the RPC would have
+ * let someone change a batch id, press Save, get a success, and find the value
+ * unchanged, because protobuf simply has nowhere to put it.
+ *
+ * Those fields are immutable by design rather than by omission: a traceability
+ * record is the chain of custody for a specific batch, and repointing one at a
+ * different batch or farm rewrites provenance instead of correcting it.
+ */
+export const traceabilityRecordUpdateSchema: FormSchema<Record<string, unknown>> = {
+  fields: [
+    { type: 'text', name: 'origin_country', label: 'Origin Country', placeholder: 'Country of origin' },
+    { type: 'text', name: 'origin_region', label: 'Origin Region', placeholder: 'State or region' },
+    { type: 'text', name: 'seed_source', label: 'Seed Source', placeholder: 'Supplier or variety source' },
+    { type: 'date', name: 'planting_date', label: 'Planting Date' },
+    { type: 'date', name: 'harvest_date', label: 'Harvest Date' },
+    { type: 'date', name: 'processing_date', label: 'Processing Date' },
+    { type: 'date', name: 'packaging_date', label: 'Packaging Date' },
+  ],
+  layout: {
+    type: 'grid',
+    columns: 2,
+    gap: 'md',
+    sections: [
+      {
+        id: 'origin',
+        title: 'Origin',
+        fields: ['origin_country', 'origin_region', 'seed_source'],
+        columns: 2,
+      },
+      {
+        id: 'dates',
+        title: 'Key Dates',
+        fields: ['planting_date', 'harvest_date', 'processing_date', 'packaging_date'],
+        columns: 2,
+      },
+    ],
+  },
+};
+
 /** Form for adding a certification (AddCertificationRequest) */
 export const certificationSchema: FormSchema<Record<string, unknown>> = {
   fields: [
