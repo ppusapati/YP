@@ -30,9 +30,20 @@ import { timestampDate, timestampFromDate, type Timestamp } from '@bufbuild/prot
 // depend on @samavāya/proto or @bufbuild/protobuf directly can still convert.
 export {
   FarmTypeSchema,
-  SoilTypeSchema,
+  FarmSoilTypeSchema,
   ClimateZoneSchema,
   FarmStatusSchema,
+  FieldTypeSchema,
+  FieldSoilTypeSchema,
+  IrrigationTypeSchema,
+  AspectDirectionSchema,
+  FieldStatusSchema,
+  CropCategorySchema,
+  SensorStatusSchema,
+  SensorProtocolSchema,
+  ScheduleTypeSchema,
+  FrequencySchema,
+  IrrigationStatusSchema,
 } from '@samavāya/proto';
 
 /**
@@ -77,6 +88,28 @@ export function toDateInput(value: Timestamp | undefined): string {
   } catch {
     // A malformed timestamp blanks one field rather than failing the page: the
     // rest of the record is still worth showing and still worth editing.
+    return '';
+  }
+}
+
+/**
+ * A protobuf Timestamp as the `yyyy-mm-ddThh:mm` a datetime-local input wants.
+ *
+ * Local time, not UTC: a datetime-local input has no timezone and the browser
+ * reads whatever it is given as local, so handing it a UTC string shifts every
+ * displayed time by the offset. An irrigation schedule showing 09:30 when it
+ * runs at 04:00 is worse than showing nothing.
+ */
+export function toDateTimeInput(value: Timestamp | undefined): string {
+  if (!value) return '';
+  try {
+    const date = timestampDate(value);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+    );
+  } catch {
     return '';
   }
 }

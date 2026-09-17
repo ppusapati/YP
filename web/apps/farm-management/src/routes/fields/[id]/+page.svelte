@@ -5,6 +5,34 @@
   import { CrudFormPage } from '@samavāya/ui';
   import { createFieldSchema } from '@samavāya/agriculture/schemas';
   import { fieldClient } from '@samavāya/agriculture/services';
+  import {
+    AspectDirectionSchema,
+    FieldSoilTypeSchema,
+    FieldTypeSchema,
+    IrrigationTypeSchema,
+    enumOption,
+    enumValue,
+    numberValue,
+    stringValue,
+  } from '@samavāya/agriculture/convert';
+
+  /**
+   * Editing a field.
+   *
+   * Two names differ between the form and the proto beyond case —
+   * `elevation`/`elevationMeters` and `slope`/`slopeDegrees` — so even a
+   * camelCase rewrite of the old spread would have dropped both.
+   *
+   * `farm_id` is shown, because knowing which farm a field belongs to matters
+   * while editing it, and it is *not* sent: UpdateFieldRequest has no farm_id,
+   * since moving a field between farms is a different operation from editing
+   * one.
+   *
+   * The soil type descriptor is the field one, not the farm one. They are
+   * different enums — farm has CHALKY and LATERITE, field has CHALK and
+   * CLAY_LOAM — and converting through the wrong one maps the wrong number to
+   * the wrong name with no error anywhere.
+   */
 
   $: id = $page.params.id;
 
@@ -17,7 +45,20 @@
   onMount(async () => {
     try {
       const res = await fieldClient.getField({ id });
-      values = { ...res.field };
+      const field = res.field;
+      if (field) {
+        values = {
+          farm_id: field.farmId,
+          name: field.name,
+          area_hectares: field.areaHectares,
+          field_type: enumOption(FieldTypeSchema, field.fieldType),
+          soil_type: enumOption(FieldSoilTypeSchema, field.soilType),
+          irrigation_type: enumOption(IrrigationTypeSchema, field.irrigationType),
+          elevation: field.elevationMeters,
+          slope: field.slopeDegrees,
+          aspect_direction: enumOption(AspectDirectionSchema, field.aspectDirection),
+        };
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load field';
     } finally {
@@ -29,7 +70,17 @@
     isSubmitting = true;
     error = null;
     try {
-      await fieldClient.updateField({ id, ...formValues } as any);
+      await fieldClient.updateField({
+        id,
+        name: stringValue(formValues.name),
+        areaHectares: numberValue(formValues.area_hectares) ?? 0,
+        fieldType: enumValue(FieldTypeSchema, formValues.field_type),
+        soilType: enumValue(FieldSoilTypeSchema, formValues.soil_type),
+        irrigationType: enumValue(IrrigationTypeSchema, formValues.irrigation_type),
+        elevationMeters: numberValue(formValues.elevation) ?? 0,
+        slopeDegrees: numberValue(formValues.slope) ?? 0,
+        aspectDirection: enumValue(AspectDirectionSchema, formValues.aspect_direction),
+      });
       goto('/fields');
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update field';

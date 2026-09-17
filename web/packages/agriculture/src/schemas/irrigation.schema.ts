@@ -19,11 +19,15 @@ export const irrigationScheduleSchema: FormSchema<Record<string, unknown>> = {
     { type: 'number', name: 'duration_minutes', label: 'Duration (minutes)', min: 0, step: 1, suffix: 'min' },
     { type: 'number', name: 'water_quantity_liters', label: 'Water Quantity (liters)', min: 0, step: 0.01, suffix: 'L' },
     { type: 'number', name: 'flow_rate_liters_per_hour', label: 'Flow Rate (L/hr)', min: 0, step: 0.01, suffix: 'L/hr' },
+    // These are the four values irrigation.proto declares, and only those.
+    // The list used to offer Bi-Weekly and Monthly, which the enum has never
+    // had, and omit Every Other Day, which it does: picking one of the two
+    // invented options sent a value the service could not resolve, and the one
+    // real option in between could not be chosen at all.
     { type: 'select', name: 'frequency', label: 'Frequency', options: [
       { label: 'Daily', value: 'FREQUENCY_DAILY' },
+      { label: 'Every Other Day', value: 'FREQUENCY_EVERY_OTHER_DAY' },
       { label: 'Weekly', value: 'FREQUENCY_WEEKLY' },
-      { label: 'Bi-Weekly', value: 'FREQUENCY_BI_WEEKLY' },
-      { label: 'Monthly', value: 'FREQUENCY_MONTHLY' },
       { label: 'Custom', value: 'FREQUENCY_CUSTOM' },
     ] },
     { type: 'number', name: 'moisture_threshold_pct', label: 'Moisture Threshold (%)', min: 0, max: 100, step: 0.1, suffix: '%' },

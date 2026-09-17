@@ -154,14 +154,44 @@ date input holds `yyyy-mm-dd`). `@samavāya/agriculture/convert` does all three
 through the generated descriptors, so a value added to a proto cannot fall out
 of step with the page that renders it.
 
-**Six more edit pages still spread snake_case form values into a request behind
-`as any`** and will silently save nothing: sensors, irrigation schedules,
-crops, fields, processing jobs and farm owners (each duplicated between its
-standalone app and the shell). They are listed here rather than fixed in the
-same pass, because each needs its own field-by-field mapping checked against
-its own proto, and a blanket camelCase rewrite would paper over the cases —
-like the farm's `latitude`/`longitude`, which belong inside a nested
-`location` — where the mapping is not mechanical.
+No page spreads form values into a request any more. Working through the rest
+of them turned up four that were not naming problems at all, which is why a
+blanket camelCase rewrite would have been the wrong fix:
+
+- **Sensors** rendered the *registration* form. `UpdateSensorRequest` accepts
+  firmware version, location, status, protocol, reading interval and metadata;
+  field, type, manufacturer, model and installation date are fixed at
+  registration, because changing them describes a different physical device
+  while keeping the readings the old one recorded. Eight of the form's fields
+  had nowhere to go. There is now an `updateSensorSchema`.
+
+- **Irrigation schedules** take a whole nested `IrrigationSchedule`, not flat
+  fields, so `{ id, ...formValues }` did not merely use the wrong names — it
+  had no `schedule` at all and the service received an empty request. The page
+  now loads the schedule and lays the edited fields over it, because replacing
+  it with a message built only from the form would blank the farm, the
+  controller, the name, the description and the status: a replace with an unset
+  field is a replace with the zero value, not a skip.
+
+  Its frequency select also offered `FREQUENCY_BI_WEEKLY` and
+  `FREQUENCY_MONTHLY`, which the enum has never had, and omitted
+  `FREQUENCY_EVERY_OTHER_DAY`, which it does.
+
+- **Farm owners → new** called `TransferOwnership` with a name, email, phone and
+  percentage. That RPC needs the user the farm moves *from* and the user it
+  moves *to*, neither of which the form asked for, and it has nowhere to put
+  "is primary". Every submission was rejected for a missing `from_user_id`.
+  farm-service has no AddOwner RPC — transfer is the whole surface — so the
+  page now says that and links to `/ownership-transfer`, which already exists.
+  (That page had the same `as any` bug and is fixed too.)
+
+- **Processing jobs** "saved" by calling `SubmitProcessingJob` with an `id`.
+  That request has no id field, so protobuf dropped it: pressing Save created a
+  *second* job with the same settings and left the first untouched.
+  satellite-processing-service has no update operation — Submit, Get, List,
+  Cancel and Stats are all of it — and a job is a unit of work that has already
+  run, so editing one in place cannot mean anything. The button now says "Run
+  as a new job" and the subtitle says the original is left alone.
 
 ## Go
 

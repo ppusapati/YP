@@ -59,10 +59,33 @@ export { FarmService } from './gen/farm_pb.js';
 // drifts the first time the proto gains a value.
 export {
   FarmTypeSchema,
-  SoilTypeSchema,
   ClimateZoneSchema,
   FarmStatusSchema,
+  // Aliased, because field_pb declares a *different* SoilType. They are not
+  // variations on a spelling: farm has CHALKY, LATERITE, BLACK, RED and
+  // ALLUVIAL; field has CHALK, CLAY_LOAM and SANDY_LOAM. Converting a field's
+  // soil type through the farm descriptor would map the wrong number to the
+  // wrong name with no error anywhere.
+  SoilTypeSchema as FarmSoilTypeSchema,
 } from './gen/farm_pb.js';
+
+export {
+  FieldTypeSchema,
+  IrrigationTypeSchema,
+  AspectDirectionSchema,
+  FieldStatusSchema,
+  SoilTypeSchema as FieldSoilTypeSchema,
+} from './gen/field_pb.js';
+
+export { CropCategorySchema } from './gen/crop_pb.js';
+
+export { SensorStatusSchema, SensorProtocolSchema } from './gen/sensor_pb.js';
+
+export {
+  ScheduleTypeSchema,
+  FrequencySchema,
+  IrrigationStatusSchema,
+} from './gen/irrigation_pb.js';
 export { FieldService } from './gen/field_pb.js';
 export { SoilService } from './gen/soil_pb.js';
 export { SensorService } from './gen/sensor_pb.js';

@@ -5,6 +5,62 @@
 import type { FormSchema } from '@samavāya/core';
 
 /** Form for registering a sensor (RegisterSensorRequest) */
+/**
+ * Form for editing a registered sensor (UpdateSensorRequest).
+ *
+ * Deliberately a much shorter form than registration. `UpdateSensorRequest`
+ * accepts firmware version, location, status, protocol, reading interval and
+ * metadata — and nothing else. Which field a sensor is in, its type,
+ * manufacturer, model and installation date are set when the device is
+ * registered and are not editable, because changing them would describe a
+ * different physical device while keeping the readings the old one recorded.
+ *
+ * The edit page used to render the registration form, so it offered eight
+ * fields the RPC has nowhere to put: someone could change a manufacturer,
+ * press Save, get a success, and find it unchanged.
+ */
+export const updateSensorSchema: FormSchema<Record<string, unknown>> = {
+  fields: [
+    { type: 'select', name: 'status', label: 'Status', options: [
+      { label: 'Active', value: 'SENSOR_STATUS_ACTIVE' },
+      { label: 'Inactive', value: 'SENSOR_STATUS_INACTIVE' },
+      { label: 'Maintenance', value: 'SENSOR_STATUS_MAINTENANCE' },
+      { label: 'Decommissioned', value: 'SENSOR_STATUS_DECOMMISSIONED' },
+    ] },
+    { type: 'select', name: 'protocol', label: 'Protocol', options: [
+      { label: 'MQTT', value: 'SENSOR_PROTOCOL_MQTT' },
+      { label: 'LoRaWAN', value: 'SENSOR_PROTOCOL_LORAWAN' },
+      { label: 'Zigbee', value: 'SENSOR_PROTOCOL_ZIGBEE' },
+      { label: 'Wi-Fi', value: 'SENSOR_PROTOCOL_WIFI' },
+      { label: 'Cellular', value: 'SENSOR_PROTOCOL_CELLULAR' },
+    ] },
+    { type: 'text', name: 'firmware_version', label: 'Firmware Version', placeholder: 'e.g. 1.4.2' },
+    { type: 'number', name: 'reading_interval_seconds', label: 'Reading Interval', min: 1, step: 1, suffix: 's' },
+    { type: 'number', name: 'latitude', label: 'Latitude', step: 0.000001 },
+    { type: 'number', name: 'longitude', label: 'Longitude', step: 0.000001 },
+    { type: 'number', name: 'elevation', label: 'Elevation', step: 0.01, suffix: 'm' },
+  ],
+  layout: {
+    type: 'grid',
+    columns: 2,
+    gap: 'md',
+    sections: [
+      {
+        id: 'operation',
+        title: 'Operation',
+        fields: ['status', 'protocol', 'firmware_version', 'reading_interval_seconds'],
+        columns: 2,
+      },
+      {
+        id: 'placement',
+        title: 'Placement',
+        fields: ['latitude', 'longitude', 'elevation'],
+        columns: 3,
+      },
+    ],
+  },
+};
+
 export const registerSensorSchema: FormSchema<Record<string, unknown>> = {
   fields: [
     { type: 'select', name: 'field_id', label: 'Field', required: true, options: [], searchable: true }, // RPC: FieldService.ListFields

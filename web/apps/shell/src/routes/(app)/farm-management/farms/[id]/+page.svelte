@@ -12,7 +12,7 @@
     stringValue,
     ClimateZoneSchema,
     FarmTypeSchema,
-    SoilTypeSchema,
+    FarmSoilTypeSchema,
   } from '@samavāya/agriculture/convert';
 
   /**
@@ -54,7 +54,7 @@
           description: farm.description,
           total_area_hectares: farm.totalAreaHectares,
           farm_type: enumOption(FarmTypeSchema, farm.farmType),
-          soil_type: enumOption(SoilTypeSchema, farm.soilType),
+          soil_type: enumOption(FarmSoilTypeSchema, farm.soilType),
           climate_zone: enumOption(ClimateZoneSchema, farm.climateZone),
           elevation: farm.elevationMeters,
           address: farm.address,
@@ -85,7 +85,7 @@
         description: stringValue(formValues.description),
         totalAreaHectares: numberValue(formValues.total_area_hectares) ?? 0,
         farmType: enumValue(FarmTypeSchema, formValues.farm_type),
-        soilType: enumValue(SoilTypeSchema, formValues.soil_type),
+        soilType: enumValue(FarmSoilTypeSchema, formValues.soil_type),
         climateZone: enumValue(ClimateZoneSchema, formValues.climate_zone),
         elevationMeters: elevation ?? 0,
         address: stringValue(formValues.address),

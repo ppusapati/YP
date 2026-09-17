@@ -3,7 +3,8 @@
  */
 
 // Farm Service
-export { createFarmSchema, farmBoundarySchema, farmOwnerSchema, ownershipTransferSchema } from './farm.schema';
+export { createFarmSchema, farmBoundarySchema, farmOwnerSchema,
+  ownershipTransferSchema } from './farm.schema';
 
 // Field Service
 export { createFieldSchema, assignCropSchema, fieldSegmentSchema } from './field.schema';
@@ -15,7 +16,8 @@ export { createCropSchema, cropVarietySchema, cropRequirementsSchema } from './c
 export { createSoilSampleSchema, analyzeSoilSchema } from './soil.schema';
 
 // Sensor Service
-export { registerSensorSchema, alertRuleSchema, calibrateSensorSchema } from './sensor.schema';
+export { registerSensorSchema,
+  updateSensorSchema, alertRuleSchema, calibrateSensorSchema } from './sensor.schema';
 
 // Irrigation Service
 export { irrigationScheduleSchema, irrigationZoneSchema, irrigationControllerSchema } from './irrigation.schema';
