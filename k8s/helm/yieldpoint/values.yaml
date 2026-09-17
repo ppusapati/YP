@@ -522,6 +522,30 @@ services:
       maxReplicas: 6
       cpuTarget: 70
 
+  advisory:
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "192Mi"
+        cpu: "100m"
+      limits:
+        # Higher than its neighbours: one question holds the retrieved context,
+        # the conversation history and the tool results in memory for the
+        # length of a model call, which is seconds rather than milliseconds.
+        memory: "768Mi"
+        cpu: "1000m"
+    envSecret:
+      # Needs a PostgreSQL with pgvector — the first migration creates the
+      # extension and fails without it.
+      - secretName: database-urls
+        key: ADVISORY_SERVICE_DATABASE_URL
+        envName: DATABASE_URL
+    hpa:
+      minReplicas: 2
+      maxReplicas: 8
+      cpuTarget: 60
+
   planning:
     replicas: 2
     port: 8080

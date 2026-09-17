@@ -32,6 +32,8 @@ replicas:
     count: 1
   - name: field-service
     count: 1
+  - name: advisory-service
+    count: 1
   - name: finance-service
     count: 1
   - name: irrigation-service

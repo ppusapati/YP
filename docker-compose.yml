@@ -96,6 +96,37 @@ services:
           memory: 2G
           cpus: '2.0'
 
+  # A second PostgreSQL, with pgvector, for advisory-service alone.
+  #
+  # The shared instance above is TimescaleDB, which does not ship the vector
+  # extension, and advisory-service's first migration creates it and fails
+  # without it. Three ways out of that were possible: swap the shared image and
+  # disturb twenty-three working services, degrade the migration to a text
+  # column and ship retrieval that quietly returns nothing relevant, or give
+  # the one service with a hard requirement its own database. This is the third.
+  pgvector:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: advisory_service
+    volumes:
+      - pgvectordata:/var/lib/postgresql/data
+    ports:
+      # 5433: 5432 is the shared instance.
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yieldpoint} -d advisory_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.7.1
     restart: unless-stopped
@@ -699,6 +730,54 @@ services:
       SATELLITE_SERVICE_URL: http://satellite-service:8080
       WEATHER_SERVICE_URL: http://weather-service:8080
 
+  advisory-service:
+    <<: *go-service
+    build:
+      context: .
+      args:
+        SERVICE: advisory-service
+    ports:
+      - "8115:8080"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      <<: *go-env
+      # Its own database, on the pgvector instance rather than the shared one.
+      DATABASE_URL: ${ADVISORY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@pgvector:5432/advisory_service?sslmode=disable}
+
+      # The model. Left unset by default, and that is a supported state: with
+      # no key the assistant still retrieves, still scopes to the tenant, still
+      # evaluates and still logs — it quotes the retrieved passages instead of
+      # writing an answer, and says so in the answer itself.
+      ADVISORY_LLM_API_KEY: ${ADVISORY_LLM_API_KEY:-}
+      ADVISORY_LLM_MODEL: ${ADVISORY_LLM_MODEL:-}
+      # Token prices, in millionths of a currency unit per million tokens.
+      # Without them every exchange is costed at zero and only the daily
+      # question limit bounds spend, which the service warns about at startup.
+      ADVISORY_LLM_INPUT_MICROS_PER_MTOK: ${ADVISORY_LLM_INPUT_MICROS_PER_MTOK:-}
+      ADVISORY_LLM_OUTPUT_MICROS_PER_MTOK: ${ADVISORY_LLM_OUTPUT_MICROS_PER_MTOK:-}
+
+      # An embedding endpoint, if there is one. Without it retrieval falls back
+      # to a local hashed-lexical vector, which is not semantic and is named as
+      # such on every document it indexes.
+      EMBEDDING_URL: ${EMBEDDING_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+
+      # The services the assistant can call rather than guess. Each is
+      # optional; the tool list it is offered contains only what is reachable.
+      FIELD_SERVICE_URL: http://field-service:8080
+      YIELD_SERVICE_URL: http://yield-service:8080
+      IRRIGATION_SERVICE_URL: http://irrigation-service:8080
+      PEST_PREDICTION_SERVICE_URL: http://pest-prediction-service:8080
+      WEATHER_SERVICE_URL: http://weather-service:8080
+      ALERT_SERVICE_URL: http://alert-service:8080
+      PRESCRIPTION_SERVICE_URL: http://prescription-service:8080
+      PLANT_DIAGNOSIS_SERVICE_URL: http://plant-diagnosis-service:8080
+
   # ── Offline development ────────────────────────────────────────────────────
   # Stand-ins for the external APIs (Open-Meteo, OpenWeather, PlantNet, Google
   # Vision), so the platform runs with no network access, no API keys, and
@@ -951,6 +1030,7 @@ services:
 
 volumes:
   pgdata:
+  pgvectordata:
   zkdata:
   kafkadata:
   miniodata:

@@ -1,0 +1,355 @@
+syntax = "proto3";
+package agriculture.advisory.v1;
+option go_package = "p9e.in/samavaya/agriculture/advisory-service/api/v1;advisoryv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Locale is the set of languages the platform already ships.
+//
+// Closed enum rather than a free string. An advisory answered in a language
+// nobody asked for is worse than one that says it cannot answer in that
+// language, and a string field would let a typo through as "a language we
+// apparently support".
+enum Locale {
+  LOCALE_UNSPECIFIED = 0;
+  LOCALE_EN = 1;
+  LOCALE_HI = 2;
+  LOCALE_MR = 3;
+  LOCALE_TE = 4;
+  LOCALE_TA = 5;
+  LOCALE_KN = 6;
+  LOCALE_PA = 7;
+  LOCALE_BN = 8;
+}
+
+// CitationKind says what a citation points at.
+//
+// The distinction is not cosmetic: a document citation opens a reference page,
+// and a record citation deep-links into the tenant's own data. A farmer being
+// told "your field's soil test says" should be able to press it and see the
+// soil test.
+enum CitationKind {
+  CITATION_KIND_UNSPECIFIED = 0;
+  // A chunk of agronomy reference material, crop guide or regional advisory.
+  CITATION_KIND_DOCUMENT = 1;
+  CITATION_KIND_FIELD = 2;
+  CITATION_KIND_PRESCRIPTION = 3;
+  CITATION_KIND_ALERT = 4;
+  CITATION_KIND_WEATHER = 5;
+  CITATION_KIND_DIAGNOSIS = 6;
+  CITATION_KIND_YIELD_FORECAST = 7;
+  CITATION_KIND_IRRIGATION = 8;
+  CITATION_KIND_PEST_RISK = 9;
+  CITATION_KIND_SOIL = 10;
+}
+
+// AnswerKind is how the answer was produced.
+//
+// Kept on every exchange because a sentence assembled from a retrieved
+// paragraph and a sentence written by a language model are not the same claim,
+// and a UI that renders them identically is lying by omission. A deployment
+// with no model configured still answers — extractively — and says so.
+enum AnswerKind {
+  ANSWER_KIND_UNSPECIFIED = 0;
+  // A language model wrote it, grounded on the context below.
+  ANSWER_KIND_GENERATED = 1;
+  // Assembled from the retrieved passages themselves. No model was called.
+  ANSWER_KIND_EXTRACTIVE = 2;
+  // Nothing was found to ground an answer on, so none was given.
+  ANSWER_KIND_REFUSED = 3;
+}
+
+// GroundednessVerdict is the evaluator's read on the answer.
+enum GroundednessVerdict {
+  GROUNDEDNESS_VERDICT_UNSPECIFIED = 0;
+  GROUNDEDNESS_VERDICT_GROUNDED = 1;
+  // Some of it is supported and some of it is not.
+  GROUNDEDNESS_VERDICT_PARTIAL = 2;
+  GROUNDEDNESS_VERDICT_UNGROUNDED = 3;
+}
+
+// DocumentKind is what a piece of reference material is.
+enum DocumentKind {
+  DOCUMENT_KIND_UNSPECIFIED = 0;
+  DOCUMENT_KIND_AGRONOMY_REFERENCE = 1;
+  DOCUMENT_KIND_CROP_GUIDE = 2;
+  DOCUMENT_KIND_REGIONAL_ADVISORY = 3;
+  DOCUMENT_KIND_PACKAGE_OF_PRACTICES = 4;
+}
+
+// ── Core messages ────────────────────────────────────────────────────────────
+
+// Citation is one thing the answer is allowed to lean on.
+message Citation {
+  string id = 1;
+  CitationKind kind = 2;
+  string title = 3;
+  // The text that was actually put in front of the model, so a reviewer can
+  // check the answer against it rather than against the whole source.
+  string snippet = 4;
+  // Where to send someone who presses it: an app route for a record, a URL for
+  // a document.
+  string uri = 5;
+  // The id of the underlying record or document.
+  string source_id = 6;
+  double score = 7;
+  // The bracketed number the answer refers to, 1-based.
+  int32 marker = 8;
+  // The language the cited material is in. An answer in Marathi grounded on an
+  // English crop guide is normal, and worth showing.
+  Locale locale = 9;
+}
+
+// ToolCall records one call the assistant made into another service.
+//
+// Stored with arguments and result, not just a name. "Called yield forecast"
+// is unauditable; "called yield forecast with this field and this crop and got
+// 4.1 t/ha" can be checked against the service that answered.
+message ToolCall {
+  string name = 1;
+  string arguments_json = 2;
+  string result_json = 3;
+  bool ok = 4;
+  string error = 5;
+  int64 latency_ms = 6;
+}
+
+// UnsupportedClaim is a sentence the evaluator could not tie to the context.
+message UnsupportedClaim {
+  string text = 1;
+  string reason = 2;
+}
+
+// Evaluation is the automated check that runs on every answer before it is
+// returned.
+message Evaluation {
+  GroundednessVerdict verdict = 1;
+  // Share of the answer's sentences that are supported by the context, 0..1.
+  double groundedness = 2;
+  repeated UnsupportedClaim unsupported = 3;
+  // Quantities that appear in the answer and nowhere in the context. Separated
+  // from prose because a fabricated dose rate is the failure that costs a
+  // farmer money, and it hides inside an otherwise well-supported sentence.
+  repeated string unsupported_numbers = 4;
+  // True when a human should look at this exchange.
+  bool needs_review = 5;
+  string notes = 6;
+}
+
+// Usage is what one exchange cost.
+message Usage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int64 latency_ms = 3;
+  // Cost in millionths of the billing currency unit. Integer because summing
+  // floats across a month of exchanges and comparing against a budget is how a
+  // budget silently stops being enforced.
+  int64 cost_micros = 4;
+  string model = 5;
+}
+
+// Exchange is one question and its answer.
+message Exchange {
+  string id = 1;
+  string conversation_id = 2;
+  string question = 3;
+  string answer = 4;
+  Locale locale = 5;
+  AnswerKind answer_kind = 6;
+  repeated Citation citations = 7;
+  repeated ToolCall tool_calls = 8;
+  Evaluation evaluation = 9;
+  Usage usage = 10;
+  string asked_by = 11;
+  google.protobuf.Timestamp created_at = 12;
+
+  // Human review, filled in later by an agronomist.
+  bool reviewed = 13;
+  string reviewer_note = 14;
+  // 1..5, 0 when unrated.
+  int32 rating = 15;
+  string reviewed_by = 16;
+  google.protobuf.Timestamp reviewed_at = 17;
+}
+
+// Conversation groups exchanges so follow-up questions have context.
+message Conversation {
+  string id = 1;
+  string title = 2;
+  string field_id = 3;
+  string farm_id = 4;
+  Locale locale = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  int32 exchange_count = 8;
+}
+
+// ReferenceDocument is one piece of indexed agronomy material.
+message ReferenceDocument {
+  string id = 1;
+  string title = 2;
+  DocumentKind kind = 3;
+  Locale locale = 4;
+  // Who published it. Shown in the citation, because "ICAR package of
+  // practices" and "an unattributed PDF" carry different weight.
+  string source = 5;
+  string uri = 6;
+  repeated string crops = 7;
+  // Free-form region tag, e.g. a state or agro-climatic zone.
+  string region = 8;
+  int32 chunk_count = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+// TenantBudget is the per-tenant ceiling on advisory spend.
+message TenantBudget {
+  string tenant_id = 1;
+  // Zero means no ceiling is configured for that dimension.
+  int64 daily_cost_micros = 2;
+  int32 daily_question_limit = 3;
+  // Per-request wall-clock ceiling. An advisory that takes ninety seconds has
+  // already failed the farmer standing in the field.
+  int64 request_latency_budget_ms = 4;
+
+  int64 spent_cost_micros = 5;
+  int32 spent_questions = 6;
+  bool exhausted = 7;
+  google.protobuf.Timestamp window_resets_at = 8;
+}
+
+// ── Requests / responses ─────────────────────────────────────────────────────
+
+message AskRequest {
+  // Empty starts a new conversation.
+  string conversation_id = 1;
+  string question = 2;
+  Locale locale = 3;
+  // Optional anchors. With a field id the assistant can look up that field's
+  // own weather, soil, prescriptions and diagnoses rather than answering in
+  // the abstract.
+  string field_id = 4;
+  string farm_id = 5;
+  // Opt *out* of tool use. Default-false so the useful behaviour is the
+  // default and a caller has to ask for the degraded one.
+  bool disable_tools = 6;
+}
+
+message AskResponse {
+  string conversation_id = 1;
+  Exchange exchange = 2;
+  TenantBudget budget = 3;
+}
+
+message GetConversationRequest { string id = 1; }
+
+message GetConversationResponse {
+  Conversation conversation = 1;
+  repeated Exchange exchanges = 2;
+}
+
+message ListConversationsRequest {
+  string field_id = 1;
+  string farm_id = 2;
+  int32 page_size = 3;
+  int32 page_offset = 4;
+}
+
+message ListConversationsResponse {
+  repeated Conversation conversations = 1;
+  int32 total_count = 2;
+}
+
+message ListExchangesRequest {
+  // Review queue filters.
+  bool needs_review_only = 1;
+  bool unreviewed_only = 2;
+  string conversation_id = 3;
+  int32 page_size = 4;
+  int32 page_offset = 5;
+}
+
+message ListExchangesResponse {
+  repeated Exchange exchanges = 1;
+  int32 total_count = 2;
+}
+
+message ReviewExchangeRequest {
+  string exchange_id = 1;
+  string note = 2;
+  int32 rating = 3;
+}
+
+message ReviewExchangeResponse { Exchange exchange = 1; }
+
+message GetTenantBudgetRequest {}
+message GetTenantBudgetResponse { TenantBudget budget = 1; }
+
+message SetTenantBudgetRequest {
+  int64 daily_cost_micros = 1;
+  int32 daily_question_limit = 2;
+  int64 request_latency_budget_ms = 3;
+}
+
+message SetTenantBudgetResponse { TenantBudget budget = 1; }
+
+message IngestDocumentRequest {
+  string title = 1;
+  DocumentKind kind = 2;
+  Locale locale = 3;
+  string source = 4;
+  string uri = 5;
+  repeated string crops = 6;
+  string region = 7;
+  string text = 8;
+}
+
+message IngestDocumentResponse { ReferenceDocument document = 1; }
+
+message ListDocumentsRequest {
+  Locale locale = 1;
+  string crop = 2;
+  string region = 3;
+  int32 page_size = 4;
+  int32 page_offset = 5;
+}
+
+message ListDocumentsResponse {
+  repeated ReferenceDocument documents = 1;
+  int32 total_count = 2;
+}
+
+message DeleteDocumentRequest { string id = 1; }
+message DeleteDocumentResponse { bool deleted = 1; }
+
+message SearchReferenceRequest {
+  string query = 1;
+  Locale locale = 2;
+  string crop = 3;
+  int32 limit = 4;
+}
+
+message SearchReferenceResponse { repeated Citation results = 1; }
+
+// AdvisoryService answers agronomy questions grounded on the tenant's own data
+// and on indexed reference material, and records every exchange for review.
+service AdvisoryService {
+  rpc Ask(AskRequest) returns (AskResponse);
+
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse);
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse);
+
+  // The review queue, and the reviewer's verdict on one exchange.
+  rpc ListExchanges(ListExchangesRequest) returns (ListExchangesResponse);
+  rpc ReviewExchange(ReviewExchangeRequest) returns (ReviewExchangeResponse);
+
+  rpc GetTenantBudget(GetTenantBudgetRequest) returns (GetTenantBudgetResponse);
+  rpc SetTenantBudget(SetTenantBudgetRequest) returns (SetTenantBudgetResponse);
+
+  rpc IngestDocument(IngestDocumentRequest) returns (IngestDocumentResponse);
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
+
+  // Retrieval on its own, without an answer. Used by the citations panel and
+  // by anyone checking what the assistant would have been given.
+  rpc SearchReference(SearchReferenceRequest) returns (SearchReferenceResponse);
+}

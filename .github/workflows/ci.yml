@@ -71,6 +71,7 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - advisory-service
           - agronomy-service
           - alert-service
           - analytics-service
@@ -547,6 +548,7 @@ jobs:
       fail-fast: false
       matrix:
         service:
+          - advisory-service
           - agronomy-service
           - alert-service
           - analytics-service
