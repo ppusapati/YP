@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@bufbuild/buf": "latest",
-    "@bufbuild/protoc-gen-es": "^2.0.0",
+    "@bufbuild/protoc-gen-es": "2.11.0",
     "typescript": "^5.7.0",
     "rimraf": "^5.0.0"
   }

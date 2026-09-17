@@ -65,15 +65,21 @@ pnpm install          # in web/ — this is what pins the plugin version
 make proto-web        # runs web/packages/proto/generate.sh from the repo root
 ```
 
-The plugin comes from the workspace, not from a global `npm install -g`.
+The plugin comes from the workspace, not from a global `npm install -g`, and it
+is pinned to an exact version rather than a caret range.
+
 protoc-gen-es stamps its own version into the first line of every file it
 generates, so generating with a different version rewrites all 47 files and the
 freshness check reports drift that is nothing but a version bump. Four versions
 were in play before this was settled: the committed tree said 2.14.0, the
 lockfile pinned 2.11.0, CI installed 2.2.3, and `package.json` asked for
-`^2.0.0`. The lockfile is the only one the repository actually builds against,
-so both CI and `generate.sh` now put `web/node_modules/.bin` on PATH ahead of
-anything else.
+`^2.0.0`. Both CI and `generate.sh` now put `web/node_modules/.bin` on PATH
+ahead of anything else, and `package.json` says `"2.11.0"` with no caret.
+
+The exact pin is deliberate. Under a caret, a fresh resolution picks up a new
+minor, every generated file changes, and the freshness check fails on a pull
+request that did not touch a proto — correct, but a surprise. Pinned, upgrading
+is a deliberate three-step change: bump the pin, regenerate, commit the diff.
 
 ### The layout is flat, and why
 

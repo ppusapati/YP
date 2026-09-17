@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.66.0",
-    "@bufbuild/protoc-gen-es": "^2.11.0",
+    "@bufbuild/protoc-gen-es": "2.11.0",
     "@types/http-proxy": "^1.17.17",
     "@types/node": "^22.10.0",
     "cross-env": "^10.1.0",
