@@ -150,6 +150,7 @@ import '../../features/field_inspection/domain/usecases/submit_inspection_usecas
 
 // Crop Advisory
 import '../../features/crop_advisory/data/datasources/crop_advisory_local_datasource.dart';
+import '../../features/agronomy_assistant/data/datasources/assistant_remote_datasource.dart';
 import '../../features/crop_advisory/data/datasources/crop_advisory_remote_datasource.dart';
 import '../../features/crop_advisory/data/repositories/crop_advisory_repository_impl.dart';
 import '../../features/crop_advisory/domain/repositories/crop_advisory_repository.dart';
@@ -871,6 +872,22 @@ final submitInspectionUseCaseProvider =
     Provider<SubmitInspectionUseCase>((ref) {
   return SubmitInspectionUseCase(
       ref.watch(fieldInspectionRepositoryProvider));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Agronomy assistant (advisory-service)
+// ═══════════════════════════════════════════════════════════════════════
+
+/// The grounded question-and-answer assistant.
+///
+/// No repository or local data source: an advisory answer is not cacheable in
+/// any useful sense. It is grounded on the field's current weather, its open
+/// alerts and today's forecasts, so a cached answer from last week is a
+/// confidently-worded statement about conditions that have changed — which is
+/// worse than no answer, because it looks exactly like a fresh one.
+final assistantRemoteDataSourceProvider =
+    Provider<AssistantRemoteDataSource>((ref) {
+  return AssistantRemoteDataSourceImpl(ref.watch(connectClientProvider));
 });
 
 // ═══════════════════════════════════════════════════════════════════════

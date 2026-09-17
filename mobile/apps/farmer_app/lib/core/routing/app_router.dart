@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/main_screen.dart';
+import '../../features/agronomy_assistant/presentation/screens/assistant_screen.dart';
 import '../../features/alerts/presentation/bloc/alert_bloc.dart';
 import '../../features/alerts/presentation/bloc/alert_event.dart';
 import '../../features/alerts/presentation/screens/alert_detail_screen.dart';
@@ -208,6 +209,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          // The grounded question-and-answer assistant.
+          //
+          // '/assistant', not '/advisory': that path is the crop advisory list
+          // from agronomy-service, which is a different thing — a stored
+          // advisory record rather than a question answered now against this
+          // field's own data.
+          GoRoute(
+            path: '/assistant',
+            pageBuilder: (context, state) => NoTransitionPage(
+              // Carried in the query string so a link from a field screen
+              // arrives with its field. Without one the assistant answers
+              // about farming rather than about this farm, and says so.
+              child: AssistantScreen(
+                fieldId: state.uri.queryParameters['fieldId'] ?? '',
+                farmId: state.uri.queryParameters['farmId'] ?? '',
+              ),
+            ),
           ),
           GoRoute(
             path: '/profile',

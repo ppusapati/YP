@@ -37,6 +37,10 @@ class RoleRoutes {
     '/alerts',
     '/analytics',
     '/prescriptions',
+    // Both roles ask the assistant. A farmer asks about their own field; an
+    // agronomist asks the same questions and also works the review queue the
+    // service fills, which is the point of logging every exchange.
+    '/assistant',
   };
 
   /// Returns true if the given [path] is accessible by [role].

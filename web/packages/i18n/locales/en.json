@@ -148,5 +148,33 @@
     "serverError": "Server error. Please try again.",
     "networkError": "Network error. Check your connection.",
     "sessionExpired": "Session expired. Please login again."
+  },
+  "advisory": {
+    "title": "Agronomy assistant",
+    "subtitle": "Answers grounded on this farm's own records and on indexed reference material. Every claim is cited; press a source to open it.",
+    "askPlaceholder": "Ask about a field, a crop, a pest, an input…",
+    "send": "Ask",
+    "thinking": "Looking this up…",
+    "sources": "Sources",
+    "toolsUsed": "Services consulted",
+    "answeredIn": "Answering in {{language}}",
+    "emptyTitle": "No questions yet",
+    "emptyBody": "Ask about a field's irrigation, a crop's nutrition, a pest you have seen, or anything in the reference library.",
+    "fieldContext": "About field",
+    "noField": "No field selected",
+    "budgetRemaining": "{{used}} of {{limit}} questions used today",
+    "budgetExhausted": "Today's advisory budget is used up. It resets at midnight UTC.",
+    "kindGenerated": "Written by the model, grounded on the sources below",
+    "kindExtractive": "Quoted from the sources — no language model is configured",
+    "kindRefused": "Not answered",
+    "verdictGrounded": "Every claim matched a source",
+    "verdictPartial": "Some claims did not match a source",
+    "verdictUngrounded": "This answer could not be matched to a source",
+    "unsupportedNumbers": "Quantities with no source: {{numbers}}",
+    "reviewFlagged": "Flagged for an agronomist to review",
+    "latency": "{{ms}} ms",
+    "failed": "The assistant could not be reached. Nothing was answered.",
+    "conversations": "Earlier questions",
+    "newConversation": "New question"
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_auth/flutter_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_ui_core/flutter_ui_core.dart';
 
 import '../core/auth/role_provider.dart';
+import '../l10n/app_localizations.dart';
 import '../core/di/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/app_theme_provider.dart';
@@ -180,6 +182,17 @@ class FarmerApp extends ConsumerWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
+
+        // Without these the two translated ARB files in lib/l10n reached
+        // nothing: `Localizations.localeOf` always returned the system default
+        // with no matching delegate, and every string on every screen was the
+        // hard-coded English in the source. The advisory screen asks the
+        // service to answer in `Localizations.localeOf(context)`, so a missing
+        // delegate would also have made every answer come back in English on a
+        // Hindi phone.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         routerConfig: router,
       ),
     );

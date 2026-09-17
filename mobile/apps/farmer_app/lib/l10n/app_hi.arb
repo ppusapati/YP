@@ -1,7 +1,6 @@
 {
   "@@locale": "hi",
   "@@last_modified": "2026-09-12",
-
   "commonSave": "सहेजें",
   "commonCancel": "रद्द करें",
   "commonDelete": "हटाएं",
@@ -43,18 +42,21 @@
   "commonAmount": "राशि",
   "commonTotal": "कुल",
   "commonNotes": "टिप्पणियां",
-
   "validationRequired": "यह फ़ील्ड आवश्यक है",
   "validationMinLength": "न्यूनतम {min} अक्षर आवश्यक हैं",
   "@validationMinLength": {
     "placeholders": {
-      "min": { "type": "int" }
+      "min": {
+        "type": "int"
+      }
     }
   },
   "validationMaxLength": "अधिकतम {max} अक्षर अनुमत हैं",
   "@validationMaxLength": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "validationEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
@@ -63,18 +65,21 @@
   "validationMin": "मान कम से कम {min} होना चाहिए",
   "@validationMin": {
     "placeholders": {
-      "min": { "type": "String" }
+      "min": {
+        "type": "String"
+      }
     }
   },
   "validationMax": "मान अधिकतम {max} होना चाहिए",
   "@validationMax": {
     "placeholders": {
-      "max": { "type": "String" }
+      "max": {
+        "type": "String"
+      }
     }
   },
   "validationPattern": "अमान्य प्रारूप",
   "validationUrl": "कृपया एक मान्य URL दर्ज करें",
-
   "authLogin": "लॉगिन",
   "authLogout": "लॉगआउट",
   "authEmail": "ईमेल",
@@ -85,15 +90,15 @@
   "authWelcome": "स्वागत है, {name}",
   "@authWelcome": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "navDashboard": "डैशबोर्ड",
   "navSettings": "सेटिंग्स",
   "navProfile": "प्रोफ़ाइल",
   "navHelp": "सहायता",
-
   "agricultureCrop": "फसल",
   "agricultureFarm": "खेत",
   "agricultureHarvest": "कटाई",
@@ -104,7 +109,6 @@
   "agricultureFertilizer": "उर्वरक",
   "agriculturePesticide": "कीटनाशक",
   "agricultureEquipment": "उपकरण",
-
   "manufacturingProduction": "उत्पादन",
   "manufacturingWorkOrder": "कार्य आदेश",
   "manufacturingBom": "सामग्री विवरण",
@@ -115,7 +119,6 @@
   "manufacturingOperator": "ऑपरेटर",
   "manufacturingDefect": "दोष",
   "manufacturingBatch": "बैच",
-
   "waterSupply": "जल आपूर्ति",
   "waterTreatment": "उपचार",
   "waterDistribution": "वितरण",
@@ -126,7 +129,6 @@
   "waterPipeline": "पाइपलाइन",
   "waterPump": "पंप",
   "waterReservoir": "जलाशय",
-
   "constructionProject": "परियोजना",
   "constructionSite": "स्थल",
   "constructionContractor": "ठेकेदार",
@@ -137,7 +139,6 @@
   "constructionMilestone": "माइलस्टोन",
   "constructionBoq": "मात्रा विवरण",
   "constructionEstimate": "अनुमान",
-
   "financeInvoice": "चालान",
   "financePayment": "भुगतान",
   "financeReceipt": "रसीद",
@@ -148,7 +149,6 @@
   "financeBalance": "शेष",
   "financeTax": "कर",
   "financeCurrency": "मुद्रा",
-
   "hrEmployee": "कर्मचारी",
   "hrDepartment": "विभाग",
   "hrLeave": "छुट्टी",
@@ -159,10 +159,27 @@
   "hrShift": "पाली",
   "hrPerformance": "प्रदर्शन",
   "hrTraining": "प्रशिक्षण",
-
   "errorNotFound": "नहीं मिला",
   "errorUnauthorized": "अनधिकृत",
   "errorServerError": "सर्वर त्रुटि। कृपया पुनः प्रयास करें।",
   "errorNetworkError": "नेटवर्क त्रुटि। अपना कनेक्शन जांचें।",
-  "errorSessionExpired": "सत्र समाप्त। कृपया फिर से लॉगिन करें।"
+  "errorSessionExpired": "सत्र समाप्त। कृपया फिर से लॉगिन करें।",
+  "advisoryTitle": "कृषि सलाहकार",
+  "advisorySubtitle": "उत्तर इसी खेत के अपने रिकॉर्ड और संदर्भ सामग्री पर आधारित हैं। हर दावे का स्रोत दिया गया है।",
+  "advisoryAskHint": "खेत, फसल, कीट या किसी निवेश के बारे में पूछें…",
+  "advisorySend": "पूछें",
+  "advisoryThinking": "देख रहे हैं…",
+  "advisorySources": "स्रोत",
+  "advisoryToolsUsed": "उपयोग की गई सेवाएँ",
+  "advisoryEmptyTitle": "अभी कोई प्रश्न नहीं",
+  "advisoryEmptyBody": "खेत की सिंचाई, फसल के पोषण, दिखे हुए कीट या संदर्भ पुस्तकालय की किसी भी बात के बारे में पूछें।",
+  "advisoryKindGenerated": "मॉडल द्वारा लिखा गया, नीचे दिए स्रोतों पर आधारित",
+  "advisoryKindExtractive": "स्रोतों से सीधे उद्धृत — कोई भाषा मॉडल कॉन्फ़िगर नहीं है",
+  "advisoryKindRefused": "उत्तर नहीं दिया गया",
+  "advisoryVerdictGrounded": "हर दावा किसी स्रोत से मेल खाता है",
+  "advisoryVerdictPartial": "कुछ दावे किसी स्रोत से मेल नहीं खाते",
+  "advisoryVerdictUngrounded": "यह उत्तर किसी स्रोत से मेल नहीं खाता",
+  "advisoryReviewFlagged": "कृषि विशेषज्ञ की समीक्षा के लिए चिह्नित",
+  "advisoryFailed": "सलाहकार से संपर्क नहीं हो सका। कोई उत्तर नहीं दिया गया।",
+  "advisoryNewConversation": "नया प्रश्न"
 }

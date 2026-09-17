@@ -26,6 +26,19 @@ export 'src/generated/advisory.pb.dart';
 export 'src/generated/alert.pb.dart';
 export 'src/generated/analytics.pb.dart'
     hide AcknowledgeAlertRequest, AcknowledgeAlertResponse, TemporalAnalysis;
+// The agronomy assistant (advisory-service). Two names are withheld from the
+// flat namespace:
+//
+//   AdvisoryServiceApi — agronomy-service's advisory.pb.dart already exports a
+//   class of this name, and it is exported first, so it keeps it under the rule
+//   above.
+//
+//   Locale — Flutter's own Locale comes in with material.dart, and a screen
+//   importing both would get an ambiguous name with no obvious cause. The
+//   advisory enum is reachable by importing the generated file directly, which
+//   is what the advisory screen does.
+export 'src/generated/assistant.pb.dart'
+    hide AdvisoryServiceApi, Locale;
 export 'src/generated/crop.pb.dart'
     hide GrowthStage;
 export 'src/generated/diagnosis.pb.dart';
@@ -55,6 +68,7 @@ export 'src/generated/yield.pb.dart'
 
 // Service clients
 export 'src/services/base_service.dart';
+export 'src/services/advisory_service.dart';
 export 'src/services/analytics_service.dart';
 export 'src/services/crop_service.dart';
 export 'src/services/diagnosis_service.dart';

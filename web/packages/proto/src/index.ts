@@ -67,6 +67,37 @@ export { SatelliteAnalyticsService } from './gen/satellite-analytics-service/pro
 export { SatelliteTileService } from './gen/satellite-tile-service/proto/tile_pb.js';
 export { VegetationIndexService } from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
 
+// ─── Advisory Assistant Descriptors ─────────────────────────────────────────
+//
+// The service descriptor is AdvisoryService in package agriculture.advisory.v1.
+// agronomy-service also has a service called AdvisoryService, in its own
+// package, which is why this one is exported under the name the UI uses for it
+// rather than by its bare service name.
+
+export { AdvisoryService as AgronomyAssistantService } from './gen/advisory-service/proto/assistant_pb.js';
+
+export {
+  Locale as AdvisoryLocale,
+  CitationKind,
+  AnswerKind,
+  GroundednessVerdict,
+  DocumentKind,
+} from './gen/advisory-service/proto/assistant_pb.js';
+
+export type {
+  Citation as AdvisoryCitation,
+  ToolCall as AdvisoryToolCall,
+  UnsupportedClaim,
+  Evaluation as AdvisoryEvaluation,
+  Usage as AdvisoryUsage,
+  Exchange as AdvisoryExchange,
+  Conversation as AdvisoryConversation,
+  ReferenceDocument,
+  TenantBudget,
+  AskRequest,
+  AskResponse,
+} from './gen/advisory-service/proto/assistant_pb.js';
+
 // ─── Alert, Analytics & Prescription Service Descriptors ────────────────────
 
 export { AlertService } from './gen/alert-service/proto/alert_pb.js';

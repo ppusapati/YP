@@ -27,6 +27,7 @@ import {
   AlertService,
   FieldAnalyticsService,
   PrescriptionService,
+  AgronomyAssistantService,
 } from '@samavāya/proto';
 
 // ─── ConnectRPC Service Clients ──────────────────────────────────────────────
@@ -106,3 +107,15 @@ export const fieldAnalyticsClient: Client<typeof FieldAnalyticsService> =
 /** Prescription maps, variable-rate application, zone management */
 export const prescriptionClient: Client<typeof PrescriptionService> =
   createClient(PrescriptionService, createServiceTransport('prescription'));
+
+/**
+ * The agronomy assistant: grounded answers with citations, the review queue
+ * and the reference corpus.
+ *
+ * Exported as AgronomyAssistantService because agronomy-service also declares
+ * a service called AdvisoryService, in a different proto package. Two
+ * descriptors with the same bare name in one import list is a mistake waiting
+ * to be made silently.
+ */
+export const advisoryClient: Client<typeof AgronomyAssistantService> =
+  createClient(AgronomyAssistantService, createServiceTransport('advisory'));

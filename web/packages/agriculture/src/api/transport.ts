@@ -38,6 +38,7 @@ export const SERVICE_URLS = {
   alert: '/api/alert',
   'field-analytics': '/api/field-analytics',
   prescription: '/api/prescription',
+  advisory: '/api/advisory',
 } as const;
 
 /** Create a transport for a specific service */

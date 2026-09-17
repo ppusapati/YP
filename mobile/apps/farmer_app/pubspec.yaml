@@ -111,6 +111,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Generate AppLocalizations from lib/l10n/*.arb.
+  #
+  # Two translated ARB files sat in this app reaching nothing: no generate
+  # flag, no delegates on MaterialApp and no import of AppLocalizations
+  # anywhere. The strings were in the repository and the app was hard-coded
+  # English.
+  generate: true
+
   assets:
     - assets/images/
     - assets/icons/

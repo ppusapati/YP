@@ -1,5 +1,11 @@
+# Localisation generation for farmer_app.
+#
+# Generated next to the ARB files rather than into the old flutter_gen
+# synthetic package, which is deprecated. A generated file that sits beside the
+# ARB it came from is one a person can open and read when a string looks wrong.
 arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 output-class: AppLocalizations
-synthetic-package: true
+output-dir: lib/l10n
+nullable-getter: false
