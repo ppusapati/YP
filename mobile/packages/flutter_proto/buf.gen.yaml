@@ -1,4 +1,19 @@
+# Dart codegen for the Flutter apps.
+#
+# Run from the repository root:
+#
+#   buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
+#
+# `out` is resolved against the *working directory*, not against this file, so
+# it has to be written relative to the repository root. It used to be
+# `lib/src/generated`, which meant the command above — the one in the Makefile,
+# in docs/proto-generation.md and in CI — quietly created a stray
+# `lib/src/generated/` at the repository root and left the real tree untouched.
+# CI then diffed `mobile/packages/flutter_proto/lib/src/generated/`, saw no
+# change because nothing had been written there, and passed. Six services'
+# Dart bindings were missing and a seventh was stale for months behind a green
+# check.
 version: v2
 plugins:
   - local: protoc-gen-dart
-    out: lib/src/generated
+    out: mobile/packages/flutter_proto/lib/src/generated

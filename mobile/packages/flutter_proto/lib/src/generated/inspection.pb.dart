@@ -13,6 +13,7 @@
 import 'dart:async' as $async;
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $0;
@@ -811,6 +812,212 @@ class CreateInspectionResponse extends $pb.GeneratedMessage {
   Inspection ensureInspection() => $_ensure(0);
 }
 
+/// UpdateInspectionRequest edits a draft inspection.
+///
+/// There was no way to edit one at all: the service had Create and Submit and
+/// nothing between them, so a draft was written once and then only its status
+/// could change. Collaborative editing needs somewhere for an edit to land, and
+/// so does the ordinary case of an agronomist correcting a typo.
+class UpdateInspectionRequest extends $pb.GeneratedMessage {
+  factory UpdateInspectionRequest({
+    $core.String? id,
+    $core.String? findings,
+    $core.Iterable<$core.String>? photos,
+    $core.Iterable<$core.String>? recommendations,
+    $core.Iterable<InspectionIssue>? issues,
+    $core.double? healthScore,
+    $core.String? notes,
+    $fixnum.Int64? baseVersion,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (findings != null) result.findings = findings;
+    if (photos != null) result.photos.addAll(photos);
+    if (recommendations != null) result.recommendations.addAll(recommendations);
+    if (issues != null) result.issues.addAll(issues);
+    if (healthScore != null) result.healthScore = healthScore;
+    if (notes != null) result.notes = notes;
+    if (baseVersion != null) result.baseVersion = baseVersion;
+    return result;
+  }
+
+  UpdateInspectionRequest._();
+
+  factory UpdateInspectionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateInspectionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateInspectionRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.agronomy.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'findings')
+    ..pPS(3, _omitFieldNames ? '' : 'photos')
+    ..pPS(4, _omitFieldNames ? '' : 'recommendations')
+    ..pPM<InspectionIssue>(5, _omitFieldNames ? '' : 'issues',
+        subBuilder: InspectionIssue.create)
+    ..aD(6, _omitFieldNames ? '' : 'healthScore')
+    ..aOS(7, _omitFieldNames ? '' : 'notes')
+    ..aInt64(8, _omitFieldNames ? '' : 'baseVersion')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateInspectionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateInspectionRequest copyWith(
+          void Function(UpdateInspectionRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateInspectionRequest))
+          as UpdateInspectionRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateInspectionRequest create() => UpdateInspectionRequest._();
+  @$core.override
+  UpdateInspectionRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateInspectionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateInspectionRequest>(create);
+  static UpdateInspectionRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get findings => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set findings($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasFindings() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearFindings() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$core.String> get photos => $_getList(2);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<$core.String> get recommendations => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<InspectionIssue> get issues => $_getList(4);
+
+  @$pb.TagNumber(6)
+  $core.double get healthScore => $_getN(5);
+  @$pb.TagNumber(6)
+  set healthScore($core.double value) => $_setDouble(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasHealthScore() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearHealthScore() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get notes => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set notes($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasNotes() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearNotes() => $_clearField(7);
+
+  /// The version the editor was working from, matching the per-field versions
+  /// the real-time session hands out. Zero means "I did not check", which is
+  /// accepted — a single editor with no collaborator should not have to
+  /// participate in the versioning — but a non-zero value that has been
+  /// overtaken is refused rather than silently overwriting the newer edit.
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get baseVersion => $_getI64(7);
+  @$pb.TagNumber(8)
+  set baseVersion($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasBaseVersion() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearBaseVersion() => $_clearField(8);
+}
+
+class UpdateInspectionResponse extends $pb.GeneratedMessage {
+  factory UpdateInspectionResponse({
+    Inspection? inspection,
+    $fixnum.Int64? version,
+  }) {
+    final result = create();
+    if (inspection != null) result.inspection = inspection;
+    if (version != null) result.version = version;
+    return result;
+  }
+
+  UpdateInspectionResponse._();
+
+  factory UpdateInspectionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateInspectionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateInspectionResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'agriculture.agronomy.v1'),
+      createEmptyInstance: create)
+    ..aOM<Inspection>(1, _omitFieldNames ? '' : 'inspection',
+        subBuilder: Inspection.create)
+    ..aInt64(2, _omitFieldNames ? '' : 'version')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateInspectionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateInspectionResponse copyWith(
+          void Function(UpdateInspectionResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdateInspectionResponse))
+          as UpdateInspectionResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateInspectionResponse create() => UpdateInspectionResponse._();
+  @$core.override
+  UpdateInspectionResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateInspectionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateInspectionResponse>(create);
+  static UpdateInspectionResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Inspection get inspection => $_getN(0);
+  @$pb.TagNumber(1)
+  set inspection(Inspection value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasInspection() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearInspection() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Inspection ensureInspection() => $_ensure(0);
+
+  /// The inspection's version after this update.
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get version => $_getI64(1);
+  @$pb.TagNumber(2)
+  set version($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasVersion() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearVersion() => $_clearField(2);
+}
+
 class SubmitInspectionRequest extends $pb.GeneratedMessage {
   factory SubmitInspectionRequest({
     $core.String? id,
@@ -944,6 +1151,10 @@ class InspectionServiceApi {
           $pb.ClientContext? ctx, CreateInspectionRequest request) =>
       _client.invoke<CreateInspectionResponse>(ctx, 'InspectionService',
           'CreateInspection', request, CreateInspectionResponse());
+  $async.Future<UpdateInspectionResponse> updateInspection(
+          $pb.ClientContext? ctx, UpdateInspectionRequest request) =>
+      _client.invoke<UpdateInspectionResponse>(ctx, 'InspectionService',
+          'UpdateInspection', request, UpdateInspectionResponse());
   $async.Future<SubmitInspectionResponse> submitInspection(
           $pb.ClientContext? ctx, SubmitInspectionRequest request) =>
       _client.invoke<SubmitInspectionResponse>(ctx, 'InspectionService',

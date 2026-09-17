@@ -291,6 +291,59 @@ final $typed_data.Uint8List createInspectionResponseDescriptor =
         'ChhDcmVhdGVJbnNwZWN0aW9uUmVzcG9uc2USQwoKaW5zcGVjdGlvbhgBIAEoCzIjLmFncmljdW'
         'x0dXJlLmFncm9ub215LnYxLkluc3BlY3Rpb25SCmluc3BlY3Rpb24=');
 
+@$core.Deprecated('Use updateInspectionRequestDescriptor instead')
+const UpdateInspectionRequest$json = {
+  '1': 'UpdateInspectionRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'findings', '3': 2, '4': 1, '5': 9, '10': 'findings'},
+    {'1': 'photos', '3': 3, '4': 3, '5': 9, '10': 'photos'},
+    {'1': 'recommendations', '3': 4, '4': 3, '5': 9, '10': 'recommendations'},
+    {
+      '1': 'issues',
+      '3': 5,
+      '4': 3,
+      '5': 11,
+      '6': '.agriculture.agronomy.v1.InspectionIssue',
+      '10': 'issues'
+    },
+    {'1': 'health_score', '3': 6, '4': 1, '5': 1, '10': 'healthScore'},
+    {'1': 'notes', '3': 7, '4': 1, '5': 9, '10': 'notes'},
+    {'1': 'base_version', '3': 8, '4': 1, '5': 3, '10': 'baseVersion'},
+  ],
+};
+
+/// Descriptor for `UpdateInspectionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateInspectionRequestDescriptor = $convert.base64Decode(
+    'ChdVcGRhdGVJbnNwZWN0aW9uUmVxdWVzdBIOCgJpZBgBIAEoCVICaWQSGgoIZmluZGluZ3MYAi'
+    'ABKAlSCGZpbmRpbmdzEhYKBnBob3RvcxgDIAMoCVIGcGhvdG9zEigKD3JlY29tbWVuZGF0aW9u'
+    'cxgEIAMoCVIPcmVjb21tZW5kYXRpb25zEkAKBmlzc3VlcxgFIAMoCzIoLmFncmljdWx0dXJlLm'
+    'Fncm9ub215LnYxLkluc3BlY3Rpb25Jc3N1ZVIGaXNzdWVzEiEKDGhlYWx0aF9zY29yZRgGIAEo'
+    'AVILaGVhbHRoU2NvcmUSFAoFbm90ZXMYByABKAlSBW5vdGVzEiEKDGJhc2VfdmVyc2lvbhgIIA'
+    'EoA1ILYmFzZVZlcnNpb24=');
+
+@$core.Deprecated('Use updateInspectionResponseDescriptor instead')
+const UpdateInspectionResponse$json = {
+  '1': 'UpdateInspectionResponse',
+  '2': [
+    {
+      '1': 'inspection',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.agriculture.agronomy.v1.Inspection',
+      '10': 'inspection'
+    },
+    {'1': 'version', '3': 2, '4': 1, '5': 3, '10': 'version'},
+  ],
+};
+
+/// Descriptor for `UpdateInspectionResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateInspectionResponseDescriptor = $convert.base64Decode(
+    'ChhVcGRhdGVJbnNwZWN0aW9uUmVzcG9uc2USQwoKaW5zcGVjdGlvbhgBIAEoCzIjLmFncmljdW'
+    'x0dXJlLmFncm9ub215LnYxLkluc3BlY3Rpb25SCmluc3BlY3Rpb24SGAoHdmVyc2lvbhgCIAEo'
+    'A1IHdmVyc2lvbg==');
+
 @$core.Deprecated('Use submitInspectionRequestDescriptor instead')
 const SubmitInspectionRequest$json = {
   '1': 'SubmitInspectionRequest',
@@ -343,6 +396,11 @@ const $core.Map<$core.String, $core.dynamic> InspectionServiceBase$json = {
       '3': '.agriculture.agronomy.v1.CreateInspectionResponse'
     },
     {
+      '1': 'UpdateInspection',
+      '2': '.agriculture.agronomy.v1.UpdateInspectionRequest',
+      '3': '.agriculture.agronomy.v1.UpdateInspectionResponse'
+    },
+    {
       '1': 'SubmitInspection',
       '2': '.agriculture.agronomy.v1.SubmitInspectionRequest',
       '3': '.agriculture.agronomy.v1.SubmitInspectionResponse'
@@ -366,6 +424,10 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
       CreateInspectionRequest$json,
   '.agriculture.agronomy.v1.CreateInspectionResponse':
       CreateInspectionResponse$json,
+  '.agriculture.agronomy.v1.UpdateInspectionRequest':
+      UpdateInspectionRequest$json,
+  '.agriculture.agronomy.v1.UpdateInspectionResponse':
+      UpdateInspectionResponse$json,
   '.agriculture.agronomy.v1.SubmitInspectionRequest':
       SubmitInspectionRequest$json,
   '.agriculture.agronomy.v1.SubmitInspectionResponse':
@@ -380,6 +442,9 @@ final $typed_data.Uint8List inspectionServiceDescriptor = $convert.base64Decode(
     'dyb25vbXkudjEuTGlzdEluc3BlY3Rpb25zUmVxdWVzdBowLmFncmljdWx0dXJlLmFncm9ub215'
     'LnYxLkxpc3RJbnNwZWN0aW9uc1Jlc3BvbnNlEncKEENyZWF0ZUluc3BlY3Rpb24SMC5hZ3JpY3'
     'VsdHVyZS5hZ3Jvbm9teS52MS5DcmVhdGVJbnNwZWN0aW9uUmVxdWVzdBoxLmFncmljdWx0dXJl'
-    'LmFncm9ub215LnYxLkNyZWF0ZUluc3BlY3Rpb25SZXNwb25zZRJ3ChBTdWJtaXRJbnNwZWN0aW'
-    '9uEjAuYWdyaWN1bHR1cmUuYWdyb25vbXkudjEuU3VibWl0SW5zcGVjdGlvblJlcXVlc3QaMS5h'
-    'Z3JpY3VsdHVyZS5hZ3Jvbm9teS52MS5TdWJtaXRJbnNwZWN0aW9uUmVzcG9uc2U=');
+    'LmFncm9ub215LnYxLkNyZWF0ZUluc3BlY3Rpb25SZXNwb25zZRJ3ChBVcGRhdGVJbnNwZWN0aW'
+    '9uEjAuYWdyaWN1bHR1cmUuYWdyb25vbXkudjEuVXBkYXRlSW5zcGVjdGlvblJlcXVlc3QaMS5h'
+    'Z3JpY3VsdHVyZS5hZ3Jvbm9teS52MS5VcGRhdGVJbnNwZWN0aW9uUmVzcG9uc2USdwoQU3VibW'
+    'l0SW5zcGVjdGlvbhIwLmFncmljdWx0dXJlLmFncm9ub215LnYxLlN1Ym1pdEluc3BlY3Rpb25S'
+    'ZXF1ZXN0GjEuYWdyaWN1bHR1cmUuYWdyb25vbXkudjEuU3VibWl0SW5zcGVjdGlvblJlc3Bvbn'
+    'Nl');

@@ -27,6 +27,8 @@ abstract class InspectionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.ListInspectionsRequest request);
   $async.Future<$1.CreateInspectionResponse> createInspection(
       $pb.ServerContext ctx, $1.CreateInspectionRequest request);
+  $async.Future<$1.UpdateInspectionResponse> updateInspection(
+      $pb.ServerContext ctx, $1.UpdateInspectionRequest request);
   $async.Future<$1.SubmitInspectionResponse> submitInspection(
       $pb.ServerContext ctx, $1.SubmitInspectionRequest request);
 
@@ -38,6 +40,8 @@ abstract class InspectionServiceBase extends $pb.GeneratedService {
         return $1.ListInspectionsRequest();
       case 'CreateInspection':
         return $1.CreateInspectionRequest();
+      case 'UpdateInspection':
+        return $1.UpdateInspectionRequest();
       case 'SubmitInspection':
         return $1.SubmitInspectionRequest();
       default:
@@ -54,6 +58,8 @@ abstract class InspectionServiceBase extends $pb.GeneratedService {
         return listInspections(ctx, request as $1.ListInspectionsRequest);
       case 'CreateInspection':
         return createInspection(ctx, request as $1.CreateInspectionRequest);
+      case 'UpdateInspection':
+        return updateInspection(ctx, request as $1.UpdateInspectionRequest);
       case 'SubmitInspection':
         return submitInspection(ctx, request as $1.SubmitInspectionRequest);
       default:

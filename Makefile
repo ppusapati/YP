@@ -44,18 +44,21 @@ tools: ## Install pinned protoc-gen-* tools from tools.go
 proto: ## Regenerate Go protobuf code (run 'make tools' first)
 	buf generate
 
+# All three run from the repository root. Both generator templates resolve
+# their `out` and `inputs` against the working directory, so running them from
+# anywhere else writes to the wrong place — which is exactly what the previous
+# `cd` in proto-mobile did, silently.
 proto-web: ## Regenerate TypeScript proto types
-	cd web/packages/proto && bash generate.sh
+	bash web/packages/proto/generate.sh
 
 proto-mobile: ## Regenerate Dart proto types
-	cd mobile/packages/flutter_proto && buf generate
+	buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
 
 proto-all: proto proto-web proto-mobile ## Regenerate all proto code (Go + TS + Dart)
 
 proto-check: ## Check proto freshness (CI gate)
 	buf generate
-	@git diff --quiet -- '*.pb.go' '*.connect.go' || \
-		(echo "Proto generated code is stale — run 'make proto' and commit" && exit 1)
+	@./scripts/check-proto-drift.sh "run 'make proto' and commit" '*.pb.go' '*.connect.go'
 
 clean: ## Remove build artifacts
 	rm -f server

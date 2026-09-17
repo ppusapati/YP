@@ -1,12 +1,41 @@
+# TypeScript codegen for @samavāya/proto.
+#
+# Run from the repository root:
+#
+#   buf generate --template web/packages/proto/buf.gen.yaml
+#
+# `out` and `inputs` are both resolved against the *working directory*, not
+# against this file. This used to say `out: src/gen` with `inputs:
+# - directory: ../../..`, which only worked when run from web/packages/proto —
+# and CI runs it from the repository root, where `../../..` climbs out of the
+# checkout entirely and buf fails trying to read /proc. The job then never
+# generated anything, `git diff` on an untouched directory was empty, and the
+# check passed without checking. Both paths are written relative to the root
+# now, so the one documented command works from the one documented place.
 version: v2
+
+# Wipe the output directory first, so a proto that is deleted or renamed shows
+# up as a deletion in the diff. Without this the check only ever notices
+# additions and edits, and a stale file for a removed service survives every
+# regeneration.
+clean: true
+
 plugins:
-  # protoc-gen-es v2 generates BOTH message types AND service descriptors
-  # No separate protoc-gen-connect-es needed in Connect-ES v2
   - local: protoc-gen-es
-    out: src/gen
+    out: web/packages/proto/src/gen
     opt:
       - target=ts
       - import_extension=.js
+
+# Two inputs, because the barrel re-exports from two buf workspaces.
+#
+# The repository root holds the per-service modules listed in the root
+# buf.yaml. `packages/` is its own workspace whose single module is rooted at
+# `packages/proto`, and it carries the shared TenantContext, BaseResponse,
+# Money and Pagination types that src/index.ts re-exports. It is deliberately
+# not added to the root buf.yaml: its `go_package` options put it under
+# p9e.in/samavaya/packages, a different Go module, so generating it from the
+# root template would emit Go into the wrong place.
 inputs:
-  # Repo root as proto module (cross-package imports resolve correctly)
-  - directory: ../../..
+  - directory: .
+  - directory: packages

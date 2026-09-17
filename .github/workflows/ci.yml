@@ -200,8 +200,9 @@ jobs:
       - name: Generate and check Go proto drift
         run: |
           buf generate
-          git diff --exit-code -- '*.pb.go' '*.connect.go' || \
-            (echo "Proto generated code is stale — run 'buf generate' and commit" && exit 1)
+          ./scripts/check-proto-drift.sh \
+            "run 'buf generate' and commit" \
+            '*.pb.go' '*.connect.go'
 
   proto-check-dart:
     name: Proto freshness (Dart)
@@ -221,8 +222,9 @@ jobs:
       - name: Generate and check Dart proto drift
         run: |
           buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
-          git diff --exit-code -- 'mobile/packages/flutter_proto/lib/src/generated/' || \
-            (echo "Dart proto generated code is stale — run 'buf generate --template mobile/packages/flutter_proto/buf.gen.yaml' and commit" && exit 1)
+          ./scripts/check-proto-drift.sh \
+            "run 'make proto-mobile' and commit" \
+            'mobile/packages/flutter_proto/lib/src/generated/'
 
   proto-check-ts:
     name: Proto freshness (TypeScript)
@@ -232,16 +234,33 @@ jobs:
       - uses: bufbuild/buf-action@v1
         with:
           setup_only: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Install protoc-gen-es
-        run: npm install -g @bufbuild/protoc-gen-es@2.2.3
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      # The plugin comes from the lockfile, not from a global npm install.
+      #
+      # protoc-gen-es stamps its own version into the first line of every file
+      # it generates, so generating with a version other than the one the
+      # repository pins makes all 47 files differ and the check reports drift
+      # that is nothing but a version bump. Four versions were in play here:
+      # the committed tree said 2.14.0, the lockfile pinned 2.11.0, this step
+      # installed 2.2.3, and package.json asked for ^2.0.0. The lockfile is the
+      # only one of those the repository actually builds against.
+      - name: Install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
       - name: Generate and check TypeScript proto drift
         run: |
+          export PATH="$PWD/web/node_modules/.bin:$PATH"
           buf generate --template web/packages/proto/buf.gen.yaml
-          git diff --exit-code -- 'web/packages/proto/src/gen/' || \
-            (echo "TypeScript proto generated code is stale — run the generate script in web/packages/proto/ and commit" && exit 1)
+          ./scripts/check-proto-drift.sh \
+            "run 'make proto-web' and commit" \
+            'web/packages/proto/src/gen/'
 
   rust-engines:
     name: Rust engines check & test

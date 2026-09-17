@@ -17,19 +17,19 @@
 export {
   TenantContextSchema,
   type TenantContext,
-} from './gen/packages/proto/context_pb.js';
+} from './gen/context_pb.js';
 
 export {
   BaseResponseSchema,
   type BaseResponse,
   type Status,
   CanonicalReason,
-} from './gen/packages/proto/response_pb.js';
+} from './gen/response_pb.js';
 
 export {
   MoneySchema,
   type Money,
-} from './gen/packages/proto/money_pb.js';
+} from './gen/money_pb.js';
 
 export {
   PaginationSchema,
@@ -38,34 +38,34 @@ export {
   type PaginationRequest,
   PaginationResponseSchema,
   type PaginationResponse,
-} from './gen/packages/proto/pagination_pb.js';
+} from './gen/pagination_pb.js';
 
-export * from './gen/packages/proto/enum_pb.js';
-export * from './gen/packages/proto/filter_pb.js';
-export * from './gen/packages/proto/geo_pb.js';
-export * from './gen/packages/proto/query_pb.js';
+export * from './gen/enum_pb.js';
+export * from './gen/filter_pb.js';
+export * from './gen/geo_pb.js';
+export * from './gen/query_pb.js';
 
 // ─── Agriculture Service Descriptors ─────────────────────────────────────────
 
-export { CropService } from './gen/crop-service/proto/crop_pb.js';
-export { FarmService } from './gen/farm-service/proto/farm_pb.js';
-export { FieldService } from './gen/field-service/proto/field_pb.js';
-export { SoilService } from './gen/soil-service/proto/soil_pb.js';
-export { SensorService } from './gen/sensor-service/proto/sensor_pb.js';
-export { IrrigationService } from './gen/irrigation-service/proto/irrigation_pb.js';
-export { SatelliteService } from './gen/satellite-service/proto/satellite_pb.js';
-export { PestPredictionService } from './gen/pest-prediction-service/proto/pest_pb.js';
-export { PlantDiagnosisService } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
-export { YieldService } from './gen/yield-service/proto/yield_pb.js';
-export { TraceabilityService } from './gen/traceability-service/proto/traceability_pb.js';
+export { CropService } from './gen/crop_pb.js';
+export { FarmService } from './gen/farm_pb.js';
+export { FieldService } from './gen/field_pb.js';
+export { SoilService } from './gen/soil_pb.js';
+export { SensorService } from './gen/sensor_pb.js';
+export { IrrigationService } from './gen/irrigation_pb.js';
+export { SatelliteService } from './gen/satellite_pb.js';
+export { PestPredictionService } from './gen/pest_pb.js';
+export { PlantDiagnosisService } from './gen/diagnosis_pb.js';
+export { YieldService } from './gen/yield_pb.js';
+export { TraceabilityService } from './gen/traceability_pb.js';
 
 // ─── Satellite Sub-Service Descriptors ──────────────────────────────────────
 
-export { SatelliteIngestionService } from './gen/satellite-ingestion-service/proto/ingestion_pb.js';
-export { SatelliteProcessingService } from './gen/satellite-processing-service/proto/processing_pb.js';
-export { SatelliteAnalyticsService } from './gen/satellite-analytics-service/proto/analytics_pb.js';
-export { SatelliteTileService } from './gen/satellite-tile-service/proto/tile_pb.js';
-export { VegetationIndexService } from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
+export { SatelliteIngestionService } from './gen/ingestion_pb.js';
+export { SatelliteProcessingService } from './gen/processing_pb.js';
+export { SatelliteAnalyticsService } from './gen/analytics_pb.js';
+export { SatelliteTileService } from './gen/tile_pb.js';
+export { VegetationIndexService } from './gen/vegetation_index_pb.js';
 
 // ─── Advisory Assistant Descriptors ─────────────────────────────────────────
 //
@@ -74,7 +74,7 @@ export { VegetationIndexService } from './gen/vegetation-index-service/proto/veg
 // package, which is why this one is exported under the name the UI uses for it
 // rather than by its bare service name.
 
-export { AdvisoryService as AgronomyAssistantService } from './gen/advisory-service/proto/assistant_pb.js';
+export { AdvisoryService as AgronomyAssistantService } from './gen/assistant_pb.js';
 
 export {
   Locale as AdvisoryLocale,
@@ -82,7 +82,7 @@ export {
   AnswerKind,
   GroundednessVerdict,
   DocumentKind,
-} from './gen/advisory-service/proto/assistant_pb.js';
+} from './gen/assistant_pb.js';
 
 export type {
   Citation as AdvisoryCitation,
@@ -96,13 +96,13 @@ export type {
   TenantBudget,
   AskRequest,
   AskResponse,
-} from './gen/advisory-service/proto/assistant_pb.js';
+} from './gen/assistant_pb.js';
 
 // ─── Alert, Analytics & Prescription Service Descriptors ────────────────────
 
-export { AlertService } from './gen/alert-service/proto/alert_pb.js';
-export { FieldAnalyticsService } from './gen/analytics-service/proto/field_analytics_pb.js';
-export { PrescriptionService } from './gen/prescription-service/proto/prescription_pb.js';
+export { AlertService } from './gen/alert_pb.js';
+export { FieldAnalyticsService } from './gen/field_analytics_pb.js';
+export { PrescriptionService } from './gen/prescription_pb.js';
 
 // ─── Agriculture Message Types (re-exports for convenience) ──────────────────
 
@@ -122,9 +122,9 @@ export type {
   UpdateCropResponse,
   DeleteCropRequest,
   DeleteCropResponse,
-} from './gen/crop-service/proto/crop_pb.js';
+} from './gen/crop_pb.js';
 
-export { CropCategory } from './gen/crop-service/proto/crop_pb.js';
+export { CropCategory } from './gen/crop_pb.js';
 
 export type {
   Farm,
@@ -141,14 +141,14 @@ export type {
   UpdateFarmResponse,
   DeleteFarmRequest,
   DeleteFarmResponse,
-} from './gen/farm-service/proto/farm_pb.js';
+} from './gen/farm_pb.js';
 
 export {
   FarmType,
   FarmStatus,
   SoilType as FarmSoilType,
   ClimateZone,
-} from './gen/farm-service/proto/farm_pb.js';
+} from './gen/farm_pb.js';
 
 export type {
   Field,
@@ -165,28 +165,28 @@ export type {
   UpdateFieldResponse,
   DeleteFieldRequest,
   DeleteFieldResponse,
-} from './gen/field-service/proto/field_pb.js';
+} from './gen/field_pb.js';
 
 export {
   FieldStatus,
   FieldType,
   SoilType as FieldSoilType,
   IrrigationType,
-} from './gen/field-service/proto/field_pb.js';
+} from './gen/field_pb.js';
 
 export type {
   SoilSample,
   SoilAnalysis,
   SoilHealthScore,
   SoilNutrient,
-} from './gen/soil-service/proto/soil_pb.js';
+} from './gen/soil_pb.js';
 
 export {
   SoilTexture,
   AnalysisStatus,
   NutrientLevel,
   HealthCategory,
-} from './gen/soil-service/proto/soil_pb.js';
+} from './gen/soil_pb.js';
 
 export type {
   Sensor,
@@ -194,7 +194,7 @@ export type {
   SensorAlert,
   SensorNetwork,
   SensorCalibration,
-} from './gen/sensor-service/proto/sensor_pb.js';
+} from './gen/sensor_pb.js';
 
 export {
   SensorType,
@@ -206,7 +206,7 @@ export {
   // got whichever the bundler resolved to, silently. alert-service owns alerts,
   // so it keeps the plain name and the sensor one is qualified.
   AlertSeverity as SensorAlertSeverity,
-} from './gen/sensor-service/proto/sensor_pb.js';
+} from './gen/sensor_pb.js';
 
 export type {
   IrrigationSchedule,
@@ -214,19 +214,19 @@ export type {
   WaterController,
   IrrigationEvent,
   IrrigationDecision,
-} from './gen/irrigation-service/proto/irrigation_pb.js';
+} from './gen/irrigation_pb.js';
 
 export {
   ScheduleType,
   ControllerType,
   ControllerStatus,
   IrrigationStatus,
-} from './gen/irrigation-service/proto/irrigation_pb.js';
+} from './gen/irrigation_pb.js';
 
 export type {
   SatelliteImage,
   VegetationIndex,
-} from './gen/satellite-service/proto/satellite_pb.js';
+} from './gen/satellite_pb.js';
 
 export type {
   PestSpecies,
@@ -234,12 +234,12 @@ export type {
   PestAlert,
   PestObservation,
   PestTreatment,
-} from './gen/pest-prediction-service/proto/pest_pb.js';
+} from './gen/pest_pb.js';
 
 export {
   RiskLevel,
   TreatmentType,
-} from './gen/pest-prediction-service/proto/pest_pb.js';
+} from './gen/pest_pb.js';
 
 export type {
   DiagnosisRequest,
@@ -252,76 +252,76 @@ export type {
   PestDamage,
   ReviewAgreement,
   LabelDisagreement,
-} from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
+} from './gen/diagnosis_pb.js';
 
-export { LabelReviewDecision } from './gen/plant-diagnosis-service/proto/diagnosis_pb.js';
+export { LabelReviewDecision } from './gen/diagnosis_pb.js';
 
 export type {
   YieldPrediction,
   YieldRecord,
   HarvestPlan,
-} from './gen/yield-service/proto/yield_pb.js';
+} from './gen/yield_pb.js';
 
 export type {
   TraceabilityRecord,
   Certification,
   BatchRecord,
-} from './gen/traceability-service/proto/traceability_pb.js';
+} from './gen/traceability_pb.js';
 
 // ─── Satellite Sub-Service Types ─────────────────────────────────────────────
 
 export type {
   IngestionTask,
-} from './gen/satellite-ingestion-service/proto/ingestion_pb.js';
+} from './gen/ingestion_pb.js';
 
 export {
   SatelliteProvider as IngestionSatelliteProvider,
   IngestionStatus,
   SpectralBand as IngestionSpectralBand,
-} from './gen/satellite-ingestion-service/proto/ingestion_pb.js';
+} from './gen/ingestion_pb.js';
 
 export type {
   ProcessingJob,
-} from './gen/satellite-processing-service/proto/processing_pb.js';
+} from './gen/processing_pb.js';
 
 export {
   ProcessingStatus as SatProcessingStatus,
   ProcessingLevel,
   CorrectionAlgorithm,
-} from './gen/satellite-processing-service/proto/processing_pb.js';
+} from './gen/processing_pb.js';
 
 export type {
   StressAlert,
   TemporalAnalysis as SatTemporalAnalysis,
-} from './gen/satellite-analytics-service/proto/analytics_pb.js';
+} from './gen/analytics_pb.js';
 
 export {
   StressType,
   SeverityLevel,
   AnalysisType,
-} from './gen/satellite-analytics-service/proto/analytics_pb.js';
+} from './gen/analytics_pb.js';
 
 export type {
   Tileset,
-} from './gen/satellite-tile-service/proto/tile_pb.js';
+} from './gen/tile_pb.js';
 
 export {
   TileFormat,
   TilesetStatus,
   TileLayer,
-} from './gen/satellite-tile-service/proto/tile_pb.js';
+} from './gen/tile_pb.js';
 
 export type {
   VegetationIndex as VegIndex,
   ComputeTask,
   NDVITimeSeries,
   TimeSeriesPoint,
-} from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
+} from './gen/vegetation_index_pb.js';
 
 export {
   VegetationIndexType,
   ComputeStatus,
-} from './gen/vegetation-index-service/proto/vegetation_index_pb.js';
+} from './gen/vegetation_index_pb.js';
 
 // ─── Alert Service Types ────────────────────────────────────────────────────
 
@@ -329,12 +329,12 @@ export type {
   Alert,
   AlertRule,
   FieldRiskScore,
-} from './gen/alert-service/proto/alert_pb.js';
+} from './gen/alert_pb.js';
 
 export {
   AlertSeverity,
   AlertStatus,
-} from './gen/alert-service/proto/alert_pb.js';
+} from './gen/alert_pb.js';
 
 // ─── Field Analytics Service Types ──────────────────────────────────────────
 
@@ -345,7 +345,7 @@ export type {
   RotationAnalysis,
   HistoricalMetrics,
   CrossFieldTrendPoint,
-} from './gen/analytics-service/proto/field_analytics_pb.js';
+} from './gen/field_analytics_pb.js';
 
 // ─── Prescription Service Types ─────────────────────────────────────────────
 
@@ -353,8 +353,8 @@ export type {
   PrescriptionBundle,
   PrescriptionMap,
   ZoneSummary,
-} from './gen/prescription-service/proto/prescription_pb.js';
+} from './gen/prescription_pb.js';
 
 export {
   PrescriptionType,
-} from './gen/prescription-service/proto/prescription_pb.js';
+} from './gen/prescription_pb.js';

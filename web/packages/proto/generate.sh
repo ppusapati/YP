@@ -5,7 +5,7 @@
 # Uses buf to generate TypeScript proto types from the monorepo's .proto files.
 #
 # Prerequisites:
-#   npm install -g @bufbuild/protoc-gen-es@2.2.3
+#   pnpm install   (in web/ — the protoc-gen-es version is pinned by the lockfile)
 #   buf installed (https://buf.build/docs/installation)
 #
 # Usage:
@@ -16,6 +16,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 FINAL_OUT="$SCRIPT_DIR/src/gen"
+
+# buf resolves the template's `out` and `inputs` against the working directory,
+# and both are written relative to the repository root, so this has to run from
+# there regardless of where it was invoked from.
+cd "$REPO_ROOT"
+
+# Prefer the workspace's own plugin over whatever happens to be on PATH.
+# protoc-gen-es writes its version into every file it generates, so a globally
+# installed copy at a different version rewrites all 47 of them and the CI
+# freshness check reports drift that is only a version bump.
+export PATH="$REPO_ROOT/web/node_modules/.bin:$PATH"
 
 echo "============================================"
 echo "Proto Codegen for @samavaya/proto"
@@ -34,10 +45,11 @@ done
 
 # ── Generate using buf ──────────────────────────────────────────────
 echo "Generating TypeScript proto types..."
-rm -rf "$FINAL_OUT"
+# The template declares `clean: true`, so buf removes the output directory
+# itself; this only guarantees it exists on a first run.
 mkdir -p "$FINAL_OUT"
 
-buf generate --template "$SCRIPT_DIR/buf.gen.yaml"
+buf generate --template web/packages/proto/buf.gen.yaml
 
 TOTAL=$(find "$FINAL_OUT" -name "*.ts" 2>/dev/null | wc -l)
 
