@@ -58,7 +58,7 @@ proto-all: proto proto-web proto-mobile ## Regenerate all proto code (Go + TS + 
 
 proto-check: ## Check proto freshness (CI gate)
 	buf generate
-	@./scripts/check-proto-drift.sh "run 'make proto' and commit" '*.pb.go' '*.connect.go'
+	@./scripts/check-generated-drift.sh "run 'make proto' and commit" '*.pb.go' '*.connect.go'
 
 clean: ## Remove build artifacts
 	rm -f server

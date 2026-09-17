@@ -29,7 +29,7 @@ repository root, and every caller runs from there.
 the working tree, and an untracked file is in neither. That is not a corner
 case for this check: a new service's bindings are *all* new files, so the
 check passed while six services had no Dart client at all. The jobs now call
-`scripts/check-proto-drift.sh`, which uses `git status --porcelain` and so
+`scripts/check-generated-drift.sh`, which uses `git status --porcelain` and so
 reports additions, modifications and deletions alike.
 
 ## Dart

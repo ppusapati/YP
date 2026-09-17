@@ -200,7 +200,7 @@ jobs:
       - name: Generate and check Go proto drift
         run: |
           buf generate
-          ./scripts/check-proto-drift.sh \
+          ./scripts/check-generated-drift.sh \
             "run 'buf generate' and commit" \
             '*.pb.go' '*.connect.go'
 
@@ -222,7 +222,7 @@ jobs:
       - name: Generate and check Dart proto drift
         run: |
           buf generate --template mobile/packages/flutter_proto/buf.gen.yaml
-          ./scripts/check-proto-drift.sh \
+          ./scripts/check-generated-drift.sh \
             "run 'make proto-mobile' and commit" \
             'mobile/packages/flutter_proto/lib/src/generated/'
 
@@ -258,7 +258,7 @@ jobs:
         run: |
           export PATH="$PWD/web/node_modules/.bin:$PATH"
           buf generate --template web/packages/proto/buf.gen.yaml
-          ./scripts/check-proto-drift.sh \
+          ./scripts/check-generated-drift.sh \
             "run 'make proto-web' and commit" \
             'web/packages/proto/src/gen/'
 
@@ -380,6 +380,21 @@ jobs:
       - name: Resolve workspace
         working-directory: mobile
         run: flutter pub get
+
+      # Regenerate AppLocalizations and fail if it moved.
+      #
+      # lib/l10n/app_localizations*.dart is generated from the ARB files and
+      # committed, and `flutter analyze` does not regenerate it — so an ARB
+      # edited without running gen-l10n leaves the generated Dart describing
+      # the old strings, and every check here still passes. That is the same
+      # hole the proto freshness jobs had, so it uses the same script.
+      - name: Check l10n freshness
+        working-directory: mobile/apps/farmer_app
+        run: |
+          flutter gen-l10n
+          "$GITHUB_WORKSPACE/scripts/check-generated-drift.sh" \
+            "run 'flutter gen-l10n' in mobile/apps/farmer_app and commit" \
+            lib/l10n/
 
       # The mobile suite had no CI job at all. Two apps and seven packages —
       # every test in them only ran when someone remembered to, which is how

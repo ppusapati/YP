@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Fail if regenerating protobuf code changed anything under the given paths.
+# Fail if regenerating code changed anything under the given paths.
 #
 # Usage:
-#   check-proto-drift.sh "<how to fix it>" <pathspec> [<pathspec>...]
+#   check-generated-drift.sh "<how to fix it>" <pathspec> [<pathspec>...]
 #
-# Run this straight after `buf generate`, with the paths that generation was
-# supposed to write to.
+# Run this straight after a generator — `buf generate`, `flutter gen-l10n` —
+# with the paths that generation was supposed to write to.
 #
 # Why this is not `git diff --exit-code`
 # -------------------------------------
@@ -39,7 +39,7 @@ if [ -z "$drift" ]; then
   exit 0
 fi
 
-echo "Generated protobuf code is stale — $remedy."
+echo "Generated code is stale — $remedy."
 echo
 echo "Changed by regeneration:"
 echo "$drift"
