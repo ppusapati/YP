@@ -86,3 +86,28 @@ export 'src/services/tile_service.dart';
 export 'src/services/traceability_service.dart';
 export 'src/services/vegetation_index_service.dart';
 export 'src/services/yield_service.dart';
+
+// The thirteen services that had no client at all.
+//
+// Each of these backends is built, deployed and routed by the gateway, and the
+// Flutter app had no way to call any of them — including market prices and
+// commerce orders, which are the two things E-023 exists to put in a farmer's
+// hand. An absent client is not a compile error; it is a screen nobody wrote.
+//
+// Generated from the protos by scripts/gen-dart-clients.py rather than
+// transcribed: one hundred and one RPCs is where a wrong method name slips in,
+// and neither the method name (a string) nor the response type (decoded from
+// bytes) is something the analyzer can check.
+export 'src/services/agronomy_advisory_service.dart';
+export 'src/services/alert_service.dart';
+export 'src/services/commerce_service.dart';
+export 'src/services/device_service.dart';
+export 'src/services/field_analytics_service.dart';
+export 'src/services/finance_service.dart';
+export 'src/services/inspection_service.dart';
+export 'src/services/market_service.dart';
+export 'src/services/planning_service.dart';
+export 'src/services/prescription_service.dart';
+export 'src/services/soillab_service.dart';
+export 'src/services/sustainability_service.dart';
+export 'src/services/weather_service.dart';

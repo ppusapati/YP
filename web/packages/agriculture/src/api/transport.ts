@@ -39,6 +39,19 @@ export const SERVICE_URLS = {
   'field-analytics': '/api/field-analytics',
   prescription: '/api/prescription',
   advisory: '/api/advisory',
+  // The services that had no client at all. Each has a running backend, a
+  // gateway route and a generated descriptor; what was missing was these four
+  // lines and the ones in ../services/index.ts.
+  weather: '/api/weather',
+  commerce: '/api/commerce',
+  task: '/api/task',
+  market: '/api/market',
+  device: '/api/device',
+  finance: '/api/finance',
+  planning: '/api/planning',
+  'soil-lab': '/api/soil-lab',
+  sustainability: '/api/sustainability',
+  agronomy: '/api/agronomy',
 } as const;
 
 /** Create a transport for a specific service */

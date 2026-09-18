@@ -262,7 +262,7 @@
 		}
 	}
 
-	handle /agriculture.analytics.v1.AnalyticsService/* {
+	handle /agriculture.field.analytics.v1.FieldAnalyticsService/* {
 		reverse_proxy analytics-service:8080 {
 			transport http {
 				dial_timeout 5s
@@ -334,7 +334,7 @@
 		}
 	}
 
-	handle /agriculture.vegetation.v1.VegetationIndexService/* {
+	handle /agriculture.satellite.vegetation.v1.VegetationIndexService/* {
 		reverse_proxy vegetation-index-service:8080 {
 			transport http {
 				dial_timeout 5s
@@ -387,6 +387,31 @@
 			transport http {
 				dial_timeout 5s
 				response_header_timeout 60s
+			}
+			health_uri /health
+			health_interval 30s
+			health_timeout 5s
+		}
+	}
+
+	# The agronomy assistant. Not agronomy-service's AdvisoryService above: that
+	# one keeps crop advisories, this one answers questions, and they are
+	# different services in different packages that share a bare name.
+	#
+	# This route did not exist, so every call the chat UI made landed on the
+	# catch-all 404 below — a service that was built, deployed and unreachable.
+	#
+	# The response timeout is far longer than any other route here because an
+	# answer is a model call with a retrieval and tool loop in front of it. The
+	# service enforces its own per-request budget (25s by default); this has to
+	# be above that, or the gateway cuts the answer off before the budget it was
+	# given has expired and the user sees a gateway error instead of the partial
+	# the service would have returned.
+	handle /agriculture.advisory.v1.AdvisoryService/* {
+		reverse_proxy advisory-service:8080 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 120s
 			}
 			health_uri /health
 			health_interval 30s

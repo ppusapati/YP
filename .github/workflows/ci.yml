@@ -56,6 +56,19 @@ jobs:
       - name: API specs match the protos
         run: ./scripts/generate-api-docs.sh --check
 
+      # A generated proto module that the TS barrel does not re-export is a
+      # service the web app cannot reach, and an absence is not a compile error.
+      # Twenty-eight of forty-seven were exported, which is how eleven finished
+      # services had no client.
+      - name: Proto barrel exports every generated module
+        run: python3 scripts/check-proto-barrel.py
+
+      # The same for Flutter: eighteen hand-written clients against thirty-one
+      # services. The thirteen new ones are generated from the protos, so this
+      # fails when a proto gains an RPC and the client does not.
+      - name: Dart service clients match the protos
+        run: python3 scripts/gen-dart-clients.py --check
+
       - name: Shell scripts parse
         run: |
           for f in scripts/*.sh; do

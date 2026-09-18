@@ -191,6 +191,29 @@ if missing_port:
 problems: list[str] = []
 written: list[str] = []
 
+# Every service needs a route through the api-gateway, and one of them did not
+# have it.
+#
+# advisory-service — the agronomy assistant — was built, deployed, given a web
+# client and a Flutter screen, and had no `handle` block in the Caddyfile, so
+# every question asked of it landed on the catch-all 404. Nothing upstream could
+# notice: the service was healthy, the client was correct, and the gateway
+# answered.
+#
+# The route is keyed by the fully-qualified service name, which is exactly what
+# the proto declares, so this is checkable rather than reviewable.
+caddyfile = (root / "api-gateway" / "Caddyfile").read_text()
+for svc, entry in sorted(services.items()):
+    # Distinct fully-qualified service names, because one directory can declare
+    # more than one — agronomy-service has both AdvisoryService and
+    # InspectionService, and each needs its own route.
+    for fqsn in sorted({p.lstrip("/").rsplit("/", 1)[0] for p in entry["rpcs"]}):
+        if f"handle /{fqsn}/*" not in caddyfile:
+            problems.append(
+                f"api-gateway/Caddyfile has no route for {fqsn} ({svc}) — every "
+                f"call to it reaches the catch-all 404"
+            )
+
 for svc, entry in sorted(services.items()):
     path = spec_path(svc)
     if not path.exists():

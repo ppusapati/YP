@@ -28,6 +28,17 @@ import {
   FieldAnalyticsService,
   PrescriptionService,
   AgronomyAssistantService,
+  WeatherService,
+  CommerceService,
+  TaskService,
+  MarketService,
+  DeviceService,
+  FinanceService,
+  PlanningService,
+  SoilLabService,
+  SustainabilityService,
+  InspectionService,
+  AgronomyAdvisoryService,
 } from '@samavāya/proto';
 
 // ─── ConnectRPC Service Clients ──────────────────────────────────────────────
@@ -119,3 +130,64 @@ export const prescriptionClient: Client<typeof PrescriptionService> =
  */
 export const advisoryClient: Client<typeof AgronomyAssistantService> =
   createClient(AgronomyAssistantService, createServiceTransport('advisory'));
+
+// ─── The eleven that had no client ──────────────────────────────────────────
+//
+// Each of these services is built, deployed, routed by the gateway and has a
+// generated descriptor. None of them had a line here, so from the web app they
+// did not exist — including the two E-023 services whose whole point is that a
+// farmer can see a price and place an order.
+//
+// Nothing in the build could have said so. An absent client is not an error;
+// it is a page nobody wrote. scripts/check-proto-barrel.py now fails when a
+// generated module is not re-exported, which is the step before this one.
+
+/** Field weather, forecasts, and derived agromet metrics (GDD, ET0, chill hours) */
+export const weatherClient: Client<typeof WeatherService> =
+  createClient(WeatherService, createServiceTransport('weather'));
+
+/** Marketplace listings, orders, and settlement */
+export const commerceClient: Client<typeof CommerceService> =
+  createClient(CommerceService, createServiceTransport('commerce'));
+
+/** Field tasks, assignment, and completion */
+export const taskClient: Client<typeof TaskService> =
+  createClient(TaskService, createServiceTransport('task'));
+
+/** Mandi prices, price history, and market advisories */
+export const marketClient: Client<typeof MarketService> =
+  createClient(MarketService, createServiceTransport('market'));
+
+/** Farm equipment and IoT device registry, telemetry, and commands */
+export const deviceClient: Client<typeof DeviceService> =
+  createClient(DeviceService, createServiceTransport('device'));
+
+/** Farm finance — costs, revenue, margins, and season profitability */
+export const financeClient: Client<typeof FinanceService> =
+  createClient(FinanceService, createServiceTransport('finance'));
+
+/** Season planning, crop calendars, and rotation plans */
+export const planningClient: Client<typeof PlanningService> =
+  createClient(PlanningService, createServiceTransport('planning'));
+
+/** Soil laboratory orders, sample tracking, and lab results */
+export const soilLabClient: Client<typeof SoilLabService> =
+  createClient(SoilLabService, createServiceTransport('soil-lab'));
+
+/** Sustainability — carbon, water footprint, certifications, practice logs */
+export const sustainabilityClient: Client<typeof SustainabilityService> =
+  createClient(SustainabilityService, createServiceTransport('sustainability'));
+
+/** Field inspections — drafts, edits and submission */
+export const inspectionClient: Client<typeof InspectionService> =
+  createClient(InspectionService, createServiceTransport('agronomy'));
+
+/**
+ * Crop advisories kept by agronomy-service.
+ *
+ * Not `advisoryClient` above, which is the assistant that answers questions.
+ * Two services named AdvisoryService in two proto packages; the names here say
+ * which is which so a call site cannot pick the wrong one by accident.
+ */
+export const agronomyAdvisoryClient: Client<typeof AgronomyAdvisoryService> =
+  createClient(AgronomyAdvisoryService, createServiceTransport('agronomy'));

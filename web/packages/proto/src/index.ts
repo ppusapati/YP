@@ -104,6 +104,36 @@ export { SatelliteAnalyticsService } from './gen/analytics_pb.js';
 export { SatelliteTileService } from './gen/tile_pb.js';
 export { VegetationIndexService } from './gen/vegetation_index_pb.js';
 
+// ─── The services that had no descriptor exported ───────────────────────────
+//
+// Eleven descriptors were generated and not re-exported here, so eleven
+// services were unreachable from the web app however complete their backends
+// were: weather, commerce, task, market, device, finance, planning, soil-lab,
+// sustainability and agronomy's two. A barrel that lists what it exports is a
+// list, and this one had fallen behind by a third of the platform.
+//
+// The namespace exports at the foot of this file are what keeps that from
+// recurring: they cover every generated module, and a check fails the build
+// when one is missing.
+
+export { WeatherService } from './gen/weather_pb.js';
+export { CommerceService } from './gen/commerce_pb.js';
+export { TaskService } from './gen/task_pb.js';
+export { MarketService } from './gen/market_pb.js';
+export { DeviceService } from './gen/device_pb.js';
+export { FinanceService } from './gen/finance_pb.js';
+export { PlanningService } from './gen/planning_pb.js';
+export { SoilLabService } from './gen/soillab_pb.js';
+export { SustainabilityService } from './gen/sustainability_pb.js';
+export { InspectionService } from './gen/inspection_pb.js';
+export { AIGatewayService } from './gen/ai_gateway_pb.js';
+
+// agronomy-service's AdvisoryService, which is not advisory-service's. The two
+// are different services in different proto packages that happen to share a
+// bare name — one keeps crop advisories, the other answers questions — and
+// exporting both unqualified is a mistake nothing would catch at the call site.
+export { AdvisoryService as AgronomyAdvisoryService } from './gen/advisory_pb.js';
+
 // ─── Advisory Assistant Descriptors ─────────────────────────────────────────
 //
 // The service descriptor is AdvisoryService in package agriculture.advisory.v1.
@@ -395,3 +425,70 @@ export type {
 export {
   PrescriptionType,
 } from './gen/prescription_pb.js';
+
+// ─── Every generated module, namespaced ─────────────────────────────────────
+//
+// The flat exports above are curated, and they have to be: 101 names collide
+// across the generated modules — four different `AcknowledgeAlertRequest`s,
+// three `AlertSeverity`s, two of `CropCategory`, `BoundingBox`, `Explanation`
+// and `CertificationStatus` — so `export *` for everything is not available
+// even in principle. Curation is why this file fell a third of the platform
+// behind: nothing failed when a module was left out.
+//
+// These namespaces close that. Every module in gen/ appears exactly once,
+// under its own name, so nothing collides and nothing can be missing;
+// scripts/check-proto-barrel.py fails the build if one is. Reach for a
+// namespace when the flat export you want is not there:
+//
+//   import { marketPb } from '@samavāya/proto';
+//   const price: marketPb.PriceQuote = ...;
+//
+// and add a flat export when a type earns one by being used across pages.
+
+export * as advisoryPb from './gen/advisory_pb.js';
+export * as aiGatewayPb from './gen/ai_gateway_pb.js';
+export * as alertPb from './gen/alert_pb.js';
+export * as analyticsPb from './gen/analytics_pb.js';
+export * as assistantPb from './gen/assistant_pb.js';
+export * as blobPb from './gen/blob_pb.js';
+export * as commercePb from './gen/commerce_pb.js';
+export * as configPb from './gen/config_pb.js';
+export * as contextPb from './gen/context_pb.js';
+export * as cropPb from './gen/crop_pb.js';
+export * as dataPb from './gen/data_pb.js';
+export * as devicePb from './gen/device_pb.js';
+export * as diagnosisPb from './gen/diagnosis_pb.js';
+export * as enumPb from './gen/enum_pb.js';
+export * as farmPb from './gen/farm_pb.js';
+export * as fieldAnalyticsPb from './gen/field_analytics_pb.js';
+export * as fieldOptionsPb from './gen/field_options_pb.js';
+export * as fieldPb from './gen/field_pb.js';
+export * as fieldsPb from './gen/fields_pb.js';
+export * as filterPb from './gen/filter_pb.js';
+export * as financePb from './gen/finance_pb.js';
+export * as geoPb from './gen/geo_pb.js';
+export * as ingestionPb from './gen/ingestion_pb.js';
+export * as inspectionPb from './gen/inspection_pb.js';
+export * as irrigationPb from './gen/irrigation_pb.js';
+export * as marketPb from './gen/market_pb.js';
+export * as messagePb from './gen/message_pb.js';
+export * as moneyPb from './gen/money_pb.js';
+export * as paginationPb from './gen/pagination_pb.js';
+export * as pestPb from './gen/pest_pb.js';
+export * as planningPb from './gen/planning_pb.js';
+export * as prescriptionPb from './gen/prescription_pb.js';
+export * as processingPb from './gen/processing_pb.js';
+export * as queryPb from './gen/query_pb.js';
+export * as responsePb from './gen/response_pb.js';
+export * as satellitePb from './gen/satellite_pb.js';
+export * as sensorPb from './gen/sensor_pb.js';
+export * as soilPb from './gen/soil_pb.js';
+export * as soillabPb from './gen/soillab_pb.js';
+export * as sustainabilityPb from './gen/sustainability_pb.js';
+export * as taskPb from './gen/task_pb.js';
+export * as tilePb from './gen/tile_pb.js';
+export * as traceabilityPb from './gen/traceability_pb.js';
+export * as validationPb from './gen/validation_pb.js';
+export * as vegetationIndexPb from './gen/vegetation_index_pb.js';
+export * as weatherPb from './gen/weather_pb.js';
+export * as yieldPb from './gen/yield_pb.js';
