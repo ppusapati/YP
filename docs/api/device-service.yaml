@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Device Service API
+  description: |
+    Scaffolded from device-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8110
+    description: Local development
+
+paths:
+  /agriculture.device.v1.DeviceService/ProvisionDevice:
+    post:
+      summary: "ProvisionDevice"
+      operationId: ProvisionDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ProvisionDeviceRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ProvisionDeviceResponse"
+
+  /agriculture.device.v1.DeviceService/GetDevice:
+    post:
+      summary: "GetDevice"
+      operationId: GetDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetDeviceRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetDeviceResponse"
+
+  /agriculture.device.v1.DeviceService/ListDevices:
+    post:
+      summary: "ListDevices"
+      operationId: ListDevices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListDevicesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListDevicesResponse"
+
+  /agriculture.device.v1.DeviceService/RecordHeartbeats:
+    post:
+      summary: "RecordHeartbeats"
+      operationId: RecordHeartbeats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RecordHeartbeatsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RecordHeartbeatsResponse"
+
+  /agriculture.device.v1.DeviceService/RetireDevice:
+    post:
+      summary: "RetireDevice"
+      operationId: RetireDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RetireDeviceRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RetireDeviceResponse"
+
+  /agriculture.device.v1.DeviceService/GetFleetHealth:
+    post:
+      summary: "GetFleetHealth"
+      operationId: GetFleetHealth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetFleetHealthRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetFleetHealthResponse"
+
+  /agriculture.device.v1.DeviceService/CreateRollout:
+    post:
+      summary: "CreateRollout"
+      operationId: CreateRollout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "CreateRolloutRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "CreateRolloutResponse"
+
+  /agriculture.device.v1.DeviceService/AdvanceRollout:
+    post:
+      summary: "AdvanceRollout"
+      operationId: AdvanceRollout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "AdvanceRolloutRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "AdvanceRolloutResponse"
+
+  /agriculture.device.v1.DeviceService/ReportUpdate:
+    post:
+      summary: "ReportUpdate"
+      operationId: ReportUpdate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ReportUpdateRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ReportUpdateResponse"
+
+  /agriculture.device.v1.DeviceService/ListRollouts:
+    post:
+      summary: "ListRollouts"
+      operationId: ListRollouts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListRolloutsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListRolloutsResponse"

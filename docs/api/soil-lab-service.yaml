@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Soil Lab Service API
+  description: |
+    Scaffolded from soil-lab-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8111
+    description: Local development
+
+paths:
+  /agriculture.soillab.v1.SoilLabService/RegisterLab:
+    post:
+      summary: "RegisterLab"
+      operationId: RegisterLab
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RegisterLabRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RegisterLabResponse"
+
+  /agriculture.soillab.v1.SoilLabService/ListLabs:
+    post:
+      summary: "ListLabs"
+      operationId: ListLabs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListLabsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListLabsResponse"
+
+  /agriculture.soillab.v1.SoilLabService/UploadReport:
+    post:
+      summary: "UploadReport"
+      operationId: UploadReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "UploadReportRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "UploadReportResponse"
+
+  /agriculture.soillab.v1.SoilLabService/GetReport:
+    post:
+      summary: "GetReport"
+      operationId: GetReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetReportRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetReportResponse"
+
+  /agriculture.soillab.v1.SoilLabService/ListReports:
+    post:
+      summary: "ListReports"
+      operationId: ListReports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListReportsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListReportsResponse"
+
+  /agriculture.soillab.v1.SoilLabService/ApplyReport:
+    post:
+      summary: "ApplyReport"
+      operationId: ApplyReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ApplyReportRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ApplyReportResponse"
+
+  /agriculture.soillab.v1.SoilLabService/RejectReport:
+    post:
+      summary: "RejectReport"
+      operationId: RejectReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RejectReportRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RejectReportResponse"

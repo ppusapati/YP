@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"p9e.in/samavaya/packages/events/bus"
@@ -192,7 +193,7 @@ func TestSubscribeToEvent_TypeFiltering(t *testing.T) {
 
 	// Publish different event type
 	event := domain.NewDomainEvent(
-		domain.EventTypeInventoryAllocated,
+		domain.EventTypeInventoryIssued,
 		"inv-123",
 		"Inventory",
 		map[string]interface{}{},
@@ -240,7 +241,7 @@ func TestSubscribeToMultipleEvents_Success(t *testing.T) {
 	err := wrapper.SubscribeToMultipleEvents(
 		[]domain.EventType{
 			domain.EventTypeSalesOrderCreated,
-			domain.EventTypeInventoryAllocated,
+			domain.EventTypeInventoryIssued,
 		},
 		func(ctx context.Context, event *domain.DomainEvent) error {
 			capturedEvents = append(capturedEvents, event)
@@ -265,7 +266,7 @@ func TestSubscribeToMultipleEvents_Success(t *testing.T) {
 
 	// Publish second event type
 	event2 := domain.NewDomainEvent(
-		domain.EventTypeInventoryAllocated,
+		domain.EventTypeInventoryIssued,
 		"inv-456",
 		"Inventory",
 		map[string]interface{}{},
@@ -467,6 +468,3 @@ func TestConcurrency(t *testing.T) {
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr || len(s) > len(substr) && contains(s[1:], substr)
 }
-
-// For concurrency test
-import "sync"

@@ -1,10 +1,12 @@
 .PHONY: all build test lint vet proto clean help api-docs new-service setup
 
-SERVICES := farm-service field-service crop-service sensor-service \
-            irrigation-service soil-service yield-service \
-            pest-prediction-service plant-diagnosis-service \
-            satellite-service traceability-service commerce-service \
-            auth-service weather-service advisory-service
+# Every service with a main package, discovered rather than listed.
+#
+# The list written here by hand named fifteen of thirty-one, so `make build`
+# built half the platform and `make test` ran half the tests — and both printed
+# a clean run. A service is a directory with cmd/server in it; there is no
+# second place for that to be true.
+SERVICES := $(sort $(patsubst %/cmd/server,%,$(wildcard *-service/cmd/server)))
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -18,20 +20,19 @@ build: ## Build all service binaries
 		go build -trimpath ./$$svc/cmd/server || exit 1; \
 	done
 
+# packages/ is its own Go module, so `./packages/...` from the root matches
+# nothing the root module owns and the command fails with "main module does not
+# contain package" — which is what these targets did. -C runs in that module.
 vet: ## Run go vet on all services and packages
-	go vet ./packages/...
-	@for svc in $(SERVICES); do \
-		go vet ./$$svc/... || exit 1; \
-	done
+	go vet ./...
+	go vet -C packages ./...
 
 test: ## Run all tests
-	go test -race -count=1 -timeout=5m ./packages/...
-	@for svc in $(SERVICES); do \
-		go test -race -count=1 -timeout=5m ./$$svc/... || exit 1; \
-	done
+	go test -race -count=1 -timeout=10m ./...
+	$(MAKE) test-packages
 
 test-packages: ## Run shared package tests only
-	go test -race -count=1 -timeout=5m ./packages/...
+	go test -C packages -race -count=1 -timeout=5m ./...
 
 lint: ## Run golangci-lint
 	golangci-lint run --timeout=5m

@@ -76,7 +76,6 @@ func TestNewProvider_DatadogProvider(t *testing.T) {
 		ddProvider := provider.(*DatadogProvider)
 		assert.Equal(t, "test-datadog-service", ddProvider.serviceName)
 		assert.NotNil(t, ddProvider.client)
-		assert.NotNil(t, ddProvider.dbOperationCount)
 
 		// Clean up
 		_ = ddProvider.Shutdown(context.Background())
@@ -200,7 +199,6 @@ func TestPrometheusProvider_AllMethods(t *testing.T) {
 	assert.NoError(t, shutdownErr)
 }
 
-
 // =============================================================================
 // OpenTelemetryProvider Tests
 // =============================================================================
@@ -300,8 +298,14 @@ func TestDatadogProvider_RecordDBOperation(t *testing.T) {
 	provider.RecordDBOperation("SELECT", 100*time.Millisecond, true)
 	provider.RecordDBOperation("INSERT", 50*time.Millisecond, false)
 
-	assert.Contains(t, provider.dbOperationCount, "SELECT")
-	assert.Equal(t, int64(1), provider.dbOperationCount["SELECT"])
+	// Nothing to read back, and that is the design: this provider forwards to
+	// the StatsD daemon and keeps no counter of its own, deliberately, so a
+	// long-lived process does not accumulate a map entry per distinct
+	// operation string. The assertions that used to be here read a
+	// `dbOperationCount` field that was removed with the counter, which is why
+	// this whole package stopped compiling — and, because CI ran the tests
+	// with a pattern that matched nothing, why nobody was told.
+	assert.NotNil(t, provider.client)
 }
 
 func TestDatadogProvider_RecordDBRetry(t *testing.T) {
@@ -327,7 +331,7 @@ func TestDatadogProvider_SetDBConnections(t *testing.T) {
 
 	provider.SetDBConnections(20)
 
-	assert.Equal(t, 20.0, provider.dbConnections)
+	assert.NotNil(t, provider.client)
 }
 
 func TestDatadogProvider_RecordHTTPRequest(t *testing.T) {
@@ -353,8 +357,7 @@ func TestDatadogProvider_RecordCircuitBreakerState(t *testing.T) {
 	provider.RecordCircuitBreakerState("auth-service", "open")
 	provider.RecordCircuitBreakerState("auth-service", "half-open")
 
-	assert.Contains(t, provider.circuitBreakerState, "auth-service")
-	assert.Equal(t, int64(2), provider.circuitBreakerState["auth-service"])
+	assert.NotNil(t, provider.client)
 }
 
 func TestDatadogProvider_RecordCircuitBreakerFailure(t *testing.T) {
@@ -367,8 +370,7 @@ func TestDatadogProvider_RecordCircuitBreakerFailure(t *testing.T) {
 	provider.RecordCircuitBreakerFailure("auth-service")
 	provider.RecordCircuitBreakerFailure("auth-service")
 
-	assert.Contains(t, provider.circuitBreakerFailure, "auth-service")
-	assert.Equal(t, int64(2), provider.circuitBreakerFailure["auth-service"])
+	assert.NotNil(t, provider.client)
 }
 
 func TestDatadogProvider_RecordCircuitBreakerSuccess(t *testing.T) {
@@ -380,8 +382,7 @@ func TestDatadogProvider_RecordCircuitBreakerSuccess(t *testing.T) {
 
 	provider.RecordCircuitBreakerSuccess("payment-service")
 
-	assert.Contains(t, provider.circuitBreakerSuccess, "payment-service")
-	assert.Equal(t, int64(1), provider.circuitBreakerSuccess["payment-service"])
+	assert.NotNil(t, provider.client)
 }
 
 func TestDatadogProvider_RecordServiceRequestCount(t *testing.T) {
@@ -394,8 +395,7 @@ func TestDatadogProvider_RecordServiceRequestCount(t *testing.T) {
 	provider.RecordServiceRequestCount("user-service")
 	provider.RecordServiceRequestCount("user-service")
 
-	assert.Contains(t, provider.serviceRequestCount, "user-service")
-	assert.Equal(t, int64(2), provider.serviceRequestCount["user-service"])
+	assert.NotNil(t, provider.client)
 }
 
 func TestDatadogProvider_Shutdown(t *testing.T) {
@@ -479,8 +479,10 @@ func TestDatadogProvider_ConcurrentAccess(t *testing.T) {
 		<-done
 	}
 
-	// Verify concurrent updates worked
-	assert.GreaterOrEqual(t, provider.dbOperationCount["SELECT"], int64(10))
+	// What this can check is that ten goroutines calling into the provider at
+	// once neither panic nor race — run with -race, which CI does. The count
+	// they produced lives in the StatsD daemon, not here.
+	assert.NotNil(t, provider.client)
 }
 
 // =============================================================================

@@ -75,6 +75,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateInspectionResponse'
 
+  /agriculture.agronomy.v1.InspectionService/UpdateInspection:
+    post:
+      tags: [Inspections]
+      summary: Edit a draft inspection
+      description: |
+        Only a draft is editable. A submitted inspection is a record of what was
+        found on a date; a wrong one is corrected by filing another, not by
+        rewriting it.
+
+        `expectedVersion` is the version the editor was working from, matching
+        the per-field versions the real-time session hands out. Zero means "I
+        did not check", which is accepted — a single editor with no collaborator
+        should not have to participate in the versioning — but a non-zero value
+        that has been overtaken is refused rather than applied, so the loser of
+        a race is told instead of having their findings vanish while they are
+        looking at them.
+      operationId: UpdateInspection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInspectionRequest'
+      responses:
+        '200':
+          description: Inspection updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateInspectionResponse'
+        '409':
+          description: |
+            The inspection has been edited since `expectedVersion`. Re-read it
+            and reapply the change.
+
   /agriculture.agronomy.v1.InspectionService/SubmitInspection:
     post:
       tags: [Inspections]
@@ -336,6 +371,46 @@ components:
       properties:
         inspection:
           $ref: '#/components/schemas/Inspection'
+
+    UpdateInspectionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        findings:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionIssue'
+        healthScore:
+          type: number
+          format: double
+        notes:
+          type: string
+        expectedVersion:
+          type: integer
+          format: int64
+          description: |
+            The version the edit was made against. Zero skips the check.
+
+    UpdateInspectionResponse:
+      type: object
+      properties:
+        inspection:
+          $ref: '#/components/schemas/Inspection'
+        version:
+          type: integer
+          format: int64
+          description: The inspection's version after this update.
 
     SubmitInspectionRequest:
       type: object

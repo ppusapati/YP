@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"p9e.in/samavaya/packages/loadbalancer"
 	"p9e.in/samavaya/packages/registry"
 )
 

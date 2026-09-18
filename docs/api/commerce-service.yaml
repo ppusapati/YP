@@ -201,6 +201,36 @@ paths:
                   listing:
                     type: object
 
+  /agriculture.commerce.v1.CommerceService/ActivateListing:
+    post:
+      tags: [Listings]
+      summary: Publish a draft listing to the marketplace
+      description: |
+        Moves a listing from draft to active, which is the point at which buyers
+        can see it and order against it. Separate from CreateListing so a seller
+        can prepare a listing — quantity, grade, photos, price — and publish it
+        when the harvest is actually in hand.
+      operationId: ActivateListing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Listing activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing:
+                    type: object
+
   /agriculture.commerce.v1.CommerceService/CancelListing:
     post:
       tags: [Listings]

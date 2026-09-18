@@ -9,7 +9,7 @@ info:
   contact:
     name: YieldPoint Engineering
 servers:
-  - url: http://localhost:8089
+  - url: http://localhost:8103
     description: Local development
 tags:
   - name: StressDetection

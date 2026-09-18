@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: Advisory Service API
+  description: |
+    Scaffolded from advisory-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8115
+    description: Local development
+
+paths:
+  /agriculture.advisory.v1.AdvisoryService/Ask:
+    post:
+      summary: "Ask"
+      operationId: Ask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "AskRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "AskResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/GetConversation:
+    post:
+      summary: "GetConversation"
+      operationId: GetConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetConversationRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetConversationResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/ListConversations:
+    post:
+      summary: "ListConversations"
+      operationId: ListConversations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListConversationsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListConversationsResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/ListExchanges:
+    post:
+      summary: "ListExchanges"
+      operationId: ListExchanges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListExchangesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListExchangesResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/ReviewExchange:
+    post:
+      summary: "ReviewExchange"
+      operationId: ReviewExchange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ReviewExchangeRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ReviewExchangeResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/GetTenantBudget:
+    post:
+      summary: "GetTenantBudget"
+      operationId: GetTenantBudget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetTenantBudgetRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetTenantBudgetResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/SetTenantBudget:
+    post:
+      summary: "SetTenantBudget"
+      operationId: SetTenantBudget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "SetTenantBudgetRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "SetTenantBudgetResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/IngestDocument:
+    post:
+      summary: "IngestDocument"
+      operationId: IngestDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "IngestDocumentRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "IngestDocumentResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/ListDocuments:
+    post:
+      summary: "ListDocuments"
+      operationId: ListDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListDocumentsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListDocumentsResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/DeleteDocument:
+    post:
+      summary: "DeleteDocument"
+      operationId: DeleteDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "DeleteDocumentRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "DeleteDocumentResponse"
+
+  /agriculture.advisory.v1.AdvisoryService/SearchReference:
+    post:
+      summary: "SearchReference"
+      operationId: SearchReference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "SearchReferenceRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "SearchReferenceResponse"

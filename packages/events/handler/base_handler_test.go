@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"p9e.in/samavaya/packages/events"
 	"p9e.in/samavaya/packages/events/bus"
@@ -15,7 +14,7 @@ func TestNewBaseEventHandler(t *testing.T) {
 	eventBus := events.NewEventBusWrapper(bus.New())
 	eventTypes := []domain.EventType{
 		domain.EventTypeSalesOrderCreated,
-		domain.EventTypeInventoryAllocated,
+		domain.EventTypeInventoryIssued,
 	}
 
 	handler := NewBaseEventHandler(eventBus, "TestHandler", eventTypes...)
@@ -37,7 +36,7 @@ func TestGetHandledEventTypes(t *testing.T) {
 	eventBus := events.NewEventBusWrapper(bus.New())
 	eventTypes := []domain.EventType{
 		domain.EventTypeSalesOrderCreated,
-		domain.EventTypeInventoryAllocated,
+		domain.EventTypeInventoryIssued,
 	}
 
 	handler := NewBaseEventHandler(eventBus, "TestHandler", eventTypes...)
@@ -124,7 +123,7 @@ func TestPublishEventWithCorrelation(t *testing.T) {
 	).WithCorrelationID("corr-456")
 
 	newEvent := domain.NewDomainEvent(
-		domain.EventTypeARPosted,
+		domain.EventTypePaymentRecorded,
 		"ar-789",
 		"AR",
 		map[string]interface{}{},

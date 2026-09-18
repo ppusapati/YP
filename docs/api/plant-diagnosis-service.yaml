@@ -10,7 +10,7 @@ info:
   contact:
     name: YieldPoint Engineering
 servers:
-  - url: http://localhost:8088
+  - url: http://localhost:8089
     description: Local development
 tags:
   - name: Diagnosis
@@ -348,3 +348,204 @@ paths:
                   processingTimeMs:
                     type: string
                     format: int64
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/ListLabelReviewQueue:
+    post:
+      tags: [Label review]
+      summary: List training samples awaiting human review
+      description: |
+        The queue a reviewer works through. Ordering is the point of it: the
+        default is lowest model confidence first, which is where a label is most
+        likely to be wrong and where one correction buys the most.
+
+        `suspectOnly` narrows it to labels a trained model contradicted, worst
+        disagreement first — those are samples where the data is probably wrong
+        rather than merely hard. `secondOpinionOnly` shows the ones a reviewer
+        has explicitly escalated.
+      operationId: ListLabelReviewQueue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task]
+              properties:
+                task:
+                  type: string
+                  description: Which training task's queue, e.g. "disease".
+                includeReviewed:
+                  type: boolean
+                  description: Default false — only unreviewed samples.
+                maxConfidence:
+                  type: number
+                  format: double
+                  description: Upper bound on the model's top confidence; 0 means no bound.
+                provenance:
+                  type: string
+                pageSize:
+                  type: integer
+                  format: int32
+                pageOffset:
+                  type: integer
+                  format: int32
+                newestFirst:
+                  type: boolean
+                  description: |
+                    Overrides the lowest-confidence-first ordering that drives
+                    active learning.
+                suspectOnly:
+                  type: boolean
+                secondOpinionOnly:
+                  type: boolean
+      responses:
+        '200':
+          description: Queue page
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  samples:
+                    type: array
+                    items:
+                      type: object
+                  totalCount:
+                    type: integer
+                    format: int32
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/SubmitLabelReview:
+    post:
+      tags: [Label review]
+      summary: Record a reviewer's verdict on one sample
+      description: |
+        A decision of `CORRECTED` requires `correctedLabel`; the training loader
+        reads the corrected label in place of the original, so a correction with
+        nothing to correct to would quietly drop the sample from the set.
+      operationId: SubmitLabelReview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task, sampleId, decision]
+              properties:
+                task:
+                  type: string
+                sampleId:
+                  type: string
+                decision:
+                  type: string
+                  description: CONFIRMED, CORRECTED or REJECTED.
+                correctedLabel:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Review recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sample:
+                    type: object
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/GetLabelReviewImage:
+    post:
+      tags: [Label review]
+      summary: Fetch the image behind a queue entry
+      description: |
+        Returns the bytes rather than a URL, because the collected training
+        images live in the gateway's own store and are not served publicly. A
+        reviewer cannot judge a label without seeing the photo.
+      operationId: GetLabelReviewImage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task, sampleId]
+              properties:
+                task:
+                  type: string
+                sampleId:
+                  type: string
+      responses:
+        '200':
+          description: Image bytes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageBytes:
+                    type: string
+                    format: byte
+                  mimeType:
+                    type: string
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/RequestSecondOpinion:
+    post:
+      tags: [Label review]
+      summary: Flag a sample for another reviewer
+      operationId: RequestSecondOpinion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task, sampleId]
+              properties:
+                task:
+                  type: string
+                sampleId:
+                  type: string
+                wanted:
+                  type: boolean
+                  description: false clears the flag.
+      responses:
+        '200':
+          description: Flag updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sample:
+                    type: object
+
+  /agriculture.diagnosis.v1.PlantDiagnosisService/GetReviewAgreement:
+    post:
+      tags: [Label review]
+      summary: Inter-reviewer agreement for a task
+      description: |
+        How often two reviewers reached the same verdict on the same sample.
+        Low agreement means the label taxonomy is ambiguous, not that the
+        reviewers are careless — and a model trained on labels the labellers
+        cannot agree on has a ceiling no amount of data will lift.
+      operationId: GetReviewAgreement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task]
+              properties:
+                task:
+                  type: string
+      responses:
+        '200':
+          description: Agreement statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agreement:
+                    type: object

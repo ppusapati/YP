@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Finance Service API
+  description: |
+    Scaffolded from finance-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8114
+    description: Local development
+
+paths:
+  /agriculture.finance.v1.FinanceService/QuoteInsurance:
+    post:
+      summary: "QuoteInsurance"
+      operationId: QuoteInsurance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "QuoteInsuranceRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "QuoteInsuranceResponse"
+
+  /agriculture.finance.v1.FinanceService/GetQuote:
+    post:
+      summary: "GetQuote"
+      operationId: GetQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetQuoteRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetQuoteResponse"
+
+  /agriculture.finance.v1.FinanceService/ListQuotes:
+    post:
+      summary: "ListQuotes"
+      operationId: ListQuotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListQuotesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListQuotesResponse"
+
+  /agriculture.finance.v1.FinanceService/AssessCredit:
+    post:
+      summary: "AssessCredit"
+      operationId: AssessCredit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "AssessCreditRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "AssessCreditResponse"
+
+  /agriculture.finance.v1.FinanceService/GetCreditAssessment:
+    post:
+      summary: "GetCreditAssessment"
+      operationId: GetCreditAssessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetCreditAssessmentRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetCreditAssessmentResponse"
+
+  /agriculture.finance.v1.FinanceService/FileClaim:
+    post:
+      summary: "FileClaim"
+      operationId: FileClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "FileClaimRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "FileClaimResponse"
+
+  /agriculture.finance.v1.FinanceService/GatherEvidence:
+    post:
+      summary: "GatherEvidence"
+      operationId: GatherEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GatherEvidenceRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GatherEvidenceResponse"
+
+  /agriculture.finance.v1.FinanceService/GetClaim:
+    post:
+      summary: "GetClaim"
+      operationId: GetClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetClaimRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetClaimResponse"
+
+  /agriculture.finance.v1.FinanceService/ListClaims:
+    post:
+      summary: "ListClaims"
+      operationId: ListClaims
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListClaimsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListClaimsResponse"
+
+  /agriculture.finance.v1.FinanceService/UpdateClaimStatus:
+    post:
+      summary: "UpdateClaimStatus"
+      operationId: UpdateClaimStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "UpdateClaimStatusRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "UpdateClaimStatusResponse"

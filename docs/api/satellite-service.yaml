@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Satellite Service API
+  description: |
+    Scaffolded from satellite-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8090
+    description: Local development
+
+paths:
+  /agriculture.satellite.v1.SatelliteService/RequestImagery:
+    post:
+      summary: "RequestImagery"
+      operationId: RequestImagery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RequestImageryRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RequestImageryResponse"
+
+  /agriculture.satellite.v1.SatelliteService/GetImage:
+    post:
+      summary: "GetImage"
+      operationId: GetImage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetImageRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetImageResponse"
+
+  /agriculture.satellite.v1.SatelliteService/ListImages:
+    post:
+      summary: "ListImages"
+      operationId: ListImages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListImagesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListImagesResponse"
+
+  /agriculture.satellite.v1.SatelliteService/ComputeNDVI:
+    post:
+      summary: "ComputeNDVI"
+      operationId: ComputeNDVI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ComputeIndexRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ComputeIndexResponse"
+
+  /agriculture.satellite.v1.SatelliteService/ComputeNDWI:
+    post:
+      summary: "ComputeNDWI"
+      operationId: ComputeNDWI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ComputeIndexRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ComputeIndexResponse"
+
+  /agriculture.satellite.v1.SatelliteService/ComputeEVI:
+    post:
+      summary: "ComputeEVI"
+      operationId: ComputeEVI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ComputeIndexRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ComputeIndexResponse"
+
+  /agriculture.satellite.v1.SatelliteService/GetVegetationIndices:
+    post:
+      summary: "GetVegetationIndices"
+      operationId: GetVegetationIndices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetVegetationIndicesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetVegetationIndicesResponse"
+
+  /agriculture.satellite.v1.SatelliteService/DetectCropStress:
+    post:
+      summary: "DetectCropStress"
+      operationId: DetectCropStress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "DetectCropStressRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "DetectCropStressResponse"
+
+  /agriculture.satellite.v1.SatelliteService/GetTemporalAnalysis:
+    post:
+      summary: "GetTemporalAnalysis"
+      operationId: GetTemporalAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetTemporalAnalysisRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetTemporalAnalysisResponse"
+
+  /agriculture.satellite.v1.SatelliteService/ListAlerts:
+    post:
+      summary: "ListAlerts"
+      operationId: ListAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListAlertsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListAlertsResponse"

@@ -9,7 +9,7 @@ info:
   contact:
     name: YieldPoint Engineering
 servers:
-  - url: http://localhost:8081
+  - url: http://localhost:8082
     description: Local development
 tags:
   - name: Fields

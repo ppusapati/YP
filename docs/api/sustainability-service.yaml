@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Sustainability Service API
+  description: |
+    Scaffolded from sustainability-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8113
+    description: Local development
+
+paths:
+  /agriculture.sustainability.v1.SustainabilityService/RecordInputUse:
+    post:
+      summary: "RecordInputUse"
+      operationId: RecordInputUse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RecordInputUseRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RecordInputUseResponse"
+
+  /agriculture.sustainability.v1.SustainabilityService/ListInputUse:
+    post:
+      summary: "ListInputUse"
+      operationId: ListInputUse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListInputUseRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListInputUseResponse"
+
+  /agriculture.sustainability.v1.SustainabilityService/ComputeFootprint:
+    post:
+      summary: "ComputeFootprint"
+      operationId: ComputeFootprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ComputeFootprintRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ComputeFootprintResponse"
+
+  /agriculture.sustainability.v1.SustainabilityService/GetFootprint:
+    post:
+      summary: "GetFootprint"
+      operationId: GetFootprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetFootprintRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetFootprintResponse"
+
+  /agriculture.sustainability.v1.SustainabilityService/ListFootprints:
+    post:
+      summary: "ListFootprints"
+      operationId: ListFootprints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListFootprintsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListFootprintsResponse"
+
+  /agriculture.sustainability.v1.SustainabilityService/CheckCertification:
+    post:
+      summary: "CheckCertification"
+      operationId: CheckCertification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "CheckCertificationRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "CheckCertificationResponse"
+
+  /agriculture.sustainability.v1.SustainabilityService/ExportCertificationPack:
+    post:
+      summary: "ExportCertificationPack"
+      operationId: ExportCertificationPack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ExportCertificationPackRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ExportCertificationPackResponse"

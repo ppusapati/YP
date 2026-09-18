@@ -46,6 +46,16 @@ jobs:
       - name: Manifests match the service list
         run: python3 scripts/k8s-manifests.py --check
 
+      # The same class of drift, one directory over. docs/api/ held specs for
+      # nine services the generator no longer touched and none at all for nine
+      # more, and every port in it was off by one position — farm documented on
+      # 8080, which is the gateway; field on 8081, which is farm — so each spec
+      # sent its reader to the next service along. These specs are hand-written
+      # and nothing regenerates them, which is why an added RPC needs a check
+      # rather than a rebuild.
+      - name: API specs match the protos
+        run: ./scripts/generate-api-docs.sh --check
+
       - name: Shell scripts parse
         run: |
           for f in scripts/*.sh; do
@@ -127,8 +137,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      # -C packages, not ./packages/... — packages/ is its own Go module, so
+      # the pattern matched nothing the root module owns and the command failed
+      # with "main module does not contain package". This job has been red.
       - name: Run package tests
-        run: go test -race -count=1 -timeout=5m ./packages/...
+        run: go test -C packages -race -count=1 -timeout=5m ./...
 
   test-python-client:
     name: Test Python client
@@ -152,33 +165,18 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      # ./... , not a list of directories.
+      #
+      # The list here named twenty-four of the thirty-one services, so the tests
+      # of the seven newest — advisory, device, finance, market, planning,
+      # soil-lab and sustainability — had never run in CI. Nothing said so: the
+      # step passed, in green, for every one of them.
+      #
+      # The root module contains every service, so ./... is the same set by
+      # construction and cannot fall behind. The shared packages are their own
+      # module and are covered by test-packages above.
       - name: Run service tests
-        run: |
-          go test -race -count=1 -timeout=5m \
-            ./agronomy-service/... \
-            ./alert-service/... \
-            ./analytics-service/... \
-            ./auth-service/... \
-            ./commerce-service/... \
-            ./crop-service/... \
-            ./farm-service/... \
-            ./field-service/... \
-            ./irrigation-service/... \
-            ./pest-prediction-service/... \
-            ./plant-diagnosis-service/... \
-            ./prescription-service/... \
-            ./satellite-analytics-service/... \
-            ./satellite-ingestion-service/... \
-            ./satellite-processing-service/... \
-            ./satellite-service/... \
-            ./satellite-tile-service/... \
-            ./sensor-service/... \
-            ./soil-service/... \
-            ./task-service/... \
-            ./traceability-service/... \
-            ./vegetation-index-service/... \
-            ./weather-service/... \
-            ./yield-service/...
+        run: go test -race -count=1 -timeout=10m ./...
 
   proto-check:
     name: Proto freshness

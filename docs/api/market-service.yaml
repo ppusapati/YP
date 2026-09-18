@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: Market Service API
+  description: |
+    Scaffolded from market-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8109
+    description: Local development
+
+paths:
+  /agriculture.market.v1.MarketService/ListMarkets:
+    post:
+      summary: "ListMarkets"
+      operationId: ListMarkets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListMarketsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListMarketsResponse"
+
+  /agriculture.market.v1.MarketService/RecordQuotes:
+    post:
+      summary: "RecordQuotes"
+      operationId: RecordQuotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "RecordQuotesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "RecordQuotesResponse"
+
+  /agriculture.market.v1.MarketService/ListQuotes:
+    post:
+      summary: "ListQuotes"
+      operationId: ListQuotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListQuotesRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListQuotesResponse"
+
+  /agriculture.market.v1.MarketService/GetPriceStatistics:
+    post:
+      summary: "GetPriceStatistics"
+      operationId: GetPriceStatistics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetPriceStatisticsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetPriceStatisticsResponse"
+
+  /agriculture.market.v1.MarketService/GetSellSignal:
+    post:
+      summary: "GetSellSignal"
+      operationId: GetSellSignal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetSellSignalRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetSellSignalResponse"
+
+  /agriculture.market.v1.MarketService/CreatePriceAlert:
+    post:
+      summary: "CreatePriceAlert"
+      operationId: CreatePriceAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "CreatePriceAlertRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "CreatePriceAlertResponse"
+
+  /agriculture.market.v1.MarketService/ListPriceAlerts:
+    post:
+      summary: "ListPriceAlerts"
+      operationId: ListPriceAlerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListPriceAlertsRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListPriceAlertsResponse"
+
+  /agriculture.market.v1.MarketService/DeletePriceAlert:
+    post:
+      summary: "DeletePriceAlert"
+      operationId: DeletePriceAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "DeletePriceAlertRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "DeletePriceAlertResponse"

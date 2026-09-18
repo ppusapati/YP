@@ -10,7 +10,7 @@ info:
   contact:
     name: YieldPoint Engineering
 servers:
-  - url: http://localhost:8090
+  - url: http://localhost:8091
     description: Local development
 tags:
   - name: Records

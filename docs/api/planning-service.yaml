@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Planning Service API
+  description: |
+    Scaffolded from planning-service/proto/. Uses the ConnectRPC protocol — every
+    RPC is an HTTP POST with a JSON body.
+
+    This paragraph and the schemas below are a starting point, not a
+    generated artifact: nothing regenerates this file, so describe what
+    each call is for and what it can fail with.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8112
+    description: Local development
+
+paths:
+  /agriculture.planning.v1.PlanningService/CreatePlan:
+    post:
+      summary: "CreatePlan"
+      operationId: CreatePlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "CreatePlanRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "CreatePlanResponse"
+
+  /agriculture.planning.v1.PlanningService/GetPlan:
+    post:
+      summary: "GetPlan"
+      operationId: GetPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetPlanRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetPlanResponse"
+
+  /agriculture.planning.v1.PlanningService/ListPlans:
+    post:
+      summary: "ListPlans"
+      operationId: ListPlans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "ListPlansRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "ListPlansResponse"
+
+  /agriculture.planning.v1.PlanningService/UpdatePlan:
+    post:
+      summary: "UpdatePlan"
+      operationId: UpdatePlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "UpdatePlanRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "UpdatePlanResponse"
+
+  /agriculture.planning.v1.PlanningService/CommitPlan:
+    post:
+      summary: "CommitPlan"
+      operationId: CommitPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "CommitPlanRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "CommitPlanResponse"
+
+  /agriculture.planning.v1.PlanningService/CheckRotation:
+    post:
+      summary: "CheckRotation"
+      operationId: CheckRotation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "CheckRotationRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "CheckRotationResponse"
+
+  /agriculture.planning.v1.PlanningService/GetSowingWindow:
+    post:
+      summary: "GetSowingWindow"
+      operationId: GetSowingWindow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "GetSowingWindowRequest"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: "GetSowingWindowResponse"

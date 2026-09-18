@@ -9,7 +9,7 @@ info:
   contact:
     name: YieldPoint Engineering
 servers:
-  - url: http://localhost:8084
+  - url: http://localhost:8085
     description: Local development
 tags:
   - name: Schedules
