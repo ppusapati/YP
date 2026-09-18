@@ -97,8 +97,8 @@ the topic string itself.
 
 ## Where the transports are served
 
-`/ws` and `/events`, on the monolith, mounted by `registerRealtimeModule` in
-`cmd/monolith/realtime_module.go` and routed by the api-gateway.
+`/ws` and `/events`, by the `realtime` binary — `cmd/realtime`, mounted by
+`registerRealtimeModule` and routed by the api-gateway.
 
 That wiring did not exist before. The hub, the SSE broker, the Kafka bridge and
 the routing middleware were all written, and **nothing constructed or mounted
@@ -106,22 +106,77 @@ any of them** — no service called `NewHub`, no mux served `/ws`, and the
 Caddyfile had no route, so a client that connected reached the catch-all 404.
 Both transports were complete as code and unreachable as product.
 
+It ran in the monolith first, which was the wrong home: the monolith also
+carried a stale second copy of twenty-two services, and it had no Kubernetes
+manifest, so the real-time features ran under compose and nowhere else. The
+transport now has its own image, its own Deployment and its own Service, and the
+ingress points at the api-gateway that knows how to reach it.
+
 The gateway routes them without the timeouts that suit a unary RPC, and
 `/events` disables response buffering: without `flush_interval -1` an SSE event
 waits in Caddy's buffer until enough accumulate, which for an alert stream is
-indefinitely.
+indefinitely. The nginx ingress in front of it needs the same two things —
+`proxy-read-timeout` well past the 60s default and `proxy-buffering: "off"` —
+because either hop alone still holds the event.
+
+### One replica, deliberately
+
+The hub, the presence registry and the inspection sessions are process memory,
+and nothing joins two copies of them. A second replica splits every room: half a
+field's watchers see an event and half do not, and two people editing one
+inspection get two sessions that diverge silently. So the Deployment is one
+replica with no autoscaler and a `Recreate` strategy — a rolling update would
+briefly run two pods, which is the same split. Clients reconnect, which they
+must handle regardless; a tractor leaves signal several times a day.
+
+A Redis or Kafka fan-out behind the hub is what would lift that limit.
 
 ## Topics in use
 
-| Topic | Carries | Published by |
-| --- | --- | --- |
-| `sensor.<field_id>` | Live sensor readings | Kafka bridge |
-| `alert.<farm_id>` | Alert notifications | Kafka bridge, SSE |
-| `irrigation.<field_id>` | Irrigation decisions and actuator state | irrigation-service |
-| `fieldmap.<field_id>` | Machine positions, imagery overlays, presence | Kafka bridge, `PublishPosition` |
-| `inspection.<inspection_id>` | Presence, edits, snapshots | `ApplyInspectionEdit` |
+| Topic | Carries | Intended publisher | Publishing today |
+| --- | --- | --- | --- |
+| `sensor.<field_id>` | Live sensor readings | Kafka bridge | **no** |
+| `alert.<farm_id>` | Alert notifications | Kafka bridge | **no** |
+| `irrigation.<field_id>` | Irrigation decisions and actuator state | irrigation-service | **no** |
+| `fieldmap.<field_id>` | Machine positions, imagery overlays, presence | `PublishPosition`, `PublishOverlay` | **no** |
+| `inspection.<inspection_id>` | Presence, edits, snapshots | `ApplyInspectionEdit` | **no** |
 
 All five are qualified with `TenantTopic` before they reach a transport.
+
+### Nothing publishes yet
+
+The fourth column is not a typo. A client can connect to `/ws`, authenticate,
+subscribe to a field and be acked — and then receive nothing, for ever, because
+no code path in the platform broadcasts on any of these topics.
+
+Two separate gaps produce that:
+
+**The Kafka bridge is written and not connected.**
+`packages/websocket/kafka_bridge.go` maps a Kafka topic onto a WebSocket topic
+prefix. No binary constructs it — not the monolith before, not `cmd/realtime`
+now. Mounting it is not a one-line change, which is why it has not been done
+quietly: the bridge reads the tenant from `tenant_id` at the top level of the
+message, and the envelope every service publishes
+(`packages/events/domain.DomainEvent`) has no such field — it carries
+`aggregate_id`, `data` and `metadata`. Every message would be dropped,
+correctly, for being unqualified. Connecting the bridge means first putting the
+tenant in the envelope, across the twelve services that publish one. Until then
+`cmd/realtime` is given no `KAFKA_BROKER`, so the deployment does not advertise
+a connection it never opens.
+
+**The field-map and inspection publishers have no caller.**
+`PublishPosition`, `PublishOverlay`, `JoinInspection` and `ApplyInspectionEdit`
+are written, tested and exported on the realtime module, and nothing invokes
+them: there is no RPC, no HTTP route and no inbound WebSocket message type that
+reaches them. The client's own socket is the natural source for both — a tractor
+reports its position and an editor sends an edit — but `handleMessage` in
+`packages/websocket/client.go` accepts only `subscribe`, `unsubscribe` and
+`pong`. A publish message type, authorised against the connection's tenant, is
+what closes this.
+
+The browser end is in the same state: `web/packages/stores` has a WebSocket
+store that no page mounts, and it sends `{"type":"subscribe","channel":…}` where
+the server reads `topic`.
 
 ## Field map
 

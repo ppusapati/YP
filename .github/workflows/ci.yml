@@ -623,17 +623,20 @@ jobs:
             -t yieldpoint/${{ matrix.service }}:ci \
             .
 
-  docker-build-monolith:
-    name: Docker build (monolith)
+  docker-build-realtime:
+    name: Docker build (realtime)
     runs-on: ubuntu-latest
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - name: Build Monolith Docker image
+      # Not in the matrix above: the matrix passes SERVICE, which the shared
+      # Dockerfile turns into ./<service>/cmd/server, and this binary lives at
+      # ./cmd/realtime. Same Dockerfile, different entry point.
+      - name: Build realtime Docker image
         run: |
           docker build \
-            -f cmd/monolith/Dockerfile \
-            -t yieldpoint/monolith:ci \
+            --build-arg CMD_PATH=./cmd/realtime \
+            -t yieldpoint/realtime:ci \
             .
 
   docker-build-ai-gateway:

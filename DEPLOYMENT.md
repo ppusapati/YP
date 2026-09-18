@@ -199,30 +199,41 @@ The CD pipeline (`.github/workflows/cd.yml`) will:
 ### 4.2 Option B: Manual
 
 ```bash
-# Build and push images
-for svc in auth farm field crop soil sensor irrigation pest-prediction \
-  plant-diagnosis yield commerce traceability satellite \
-  satellite-ingestion satellite-processing satellite-analytics \
-  satellite-tile vegetation-index task agronomy alert analytics \
-  prescription; do
-  docker build --build-arg SERVICE=${svc}-service \
-    -t ghcr.io/<owner>/yieldpoint/${svc}-service:v1.0.0 .
-  docker push ghcr.io/<owner>/yieldpoint/${svc}-service:v1.0.0
+# Build and push images.
+#
+# The service list is read from docker-compose.yml rather than written out
+# here. The list that used to be written out here named twenty-three services
+# when the platform had thirty-one, and nothing about running it said so: the
+# loop finished, every build succeeded, and eight services were simply never
+# pushed.
+TAG=v1.0.0
+for svc in $(python3 -c "
+import yaml
+c = yaml.safe_load(open('docker-compose.yml'))
+for n, s in sorted(c['services'].items()):
+    if isinstance(s.get('build'), dict) and 'SERVICE' in (s['build'].get('args') or {}):
+        print(n)
+"); do
+  docker build --build-arg SERVICE=${svc} \
+    -t ghcr.io/<owner>/yieldpoint/${svc}:${TAG} .
+  docker push ghcr.io/<owner>/yieldpoint/${svc}:${TAG}
 done
 
-# Build monolith and ai-gateway
-docker build -f cmd/monolith/Dockerfile -t ghcr.io/<owner>/yieldpoint/monolith:v1.0.0 .
-docker build -f ai-gateway/Dockerfile -t ghcr.io/<owner>/yieldpoint/ai-gateway:v1.0.0 .
+# The three images that are not services at <name>/cmd/server.
+docker build --build-arg CMD_PATH=./cmd/realtime \
+  -t ghcr.io/<owner>/yieldpoint/realtime:${TAG} .
+docker build -f ai-gateway/Dockerfile -t ghcr.io/<owner>/yieldpoint/ai-gateway:${TAG} .
+docker build -f api-gateway/Dockerfile -t ghcr.io/<owner>/yieldpoint/api-gateway:${TAG} .
 
 # Deploy k8s manifests
-TAG=v1.0.0
 for f in k8s/base/*.yaml; do
   sed "s|:latest|:${TAG}|g" "$f" | kubectl apply -f -
 done
 
-# Wait for rollout
-kubectl -n yieldpoint rollout status deployment --timeout=300s \
-  -l app.kubernetes.io/part-of=yieldpoint
+# Wait for rollout. Not `kubectl rollout status -l <selector>`, which exits
+# zero when the selector matches nothing at all; this counts what came up and
+# compares it against what the manifests describe.
+./scripts/verify-rollout.sh yieldpoint
 ```
 
 ### 4.3 Option C: Docker Compose (single-node)

@@ -142,48 +142,73 @@ spec:
             periodSeconds: 5
 
 {{/*
-  Monolith deployment (opt-in).
+  Real-time transport deployment: /ws and /events.
+
+  Replaces the monolith deployment, which was opt-in and disabled by default —
+  so the chart's /ws and /events were served by nothing at all unless an
+  operator turned on a binary that also carried a stale second copy of
+  twenty-two services. This one is on by default and carries only the transport.
+
+  One replica and no autoscaler: the hub, presence and inspection sessions are
+  in process memory with no backplane, so a second pod splits every room. See
+  render_realtime() in scripts/k8s-manifests.py for the same reasoning applied
+  to the kustomize base.
 */}}
-{{- if .Values.monolith.enabled }}
+{{- if .Values.realtime.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: yieldpoint-monolith
+  name: realtime
   namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "yieldpoint.serviceLabels" (dict "name" "yieldpoint-monolith" "context" $) | nindent 4 }}
+    {{- include "yieldpoint.serviceLabels" (dict "name" "realtime" "context" $) | nindent 4 }}
 spec:
-  replicas: {{ .Values.monolith.replicas | default 1 }}
+  replicas: 1
   selector:
     matchLabels:
-      {{- include "yieldpoint.selectorLabels" (dict "name" "yieldpoint-monolith") | nindent 6 }}
+      {{- include "yieldpoint.selectorLabels" (dict "name" "realtime") | nindent 6 }}
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
-        {{- include "yieldpoint.selectorLabels" (dict "name" "yieldpoint-monolith") | nindent 8 }}
+        {{- include "yieldpoint.selectorLabels" (dict "name" "realtime") | nindent 8 }}
     spec:
+      # Longer than the 30s shutdown deadline in cmd/realtime/main.go; at the
+      # 30s default the SIGKILL lands as the server gives up.
+      terminationGracePeriodSeconds: 45
       containers:
-        - name: yieldpoint-monolith
-          image: {{ include "yieldpoint.image" (dict "svcName" "yieldpoint-monolith" "tag" "" "global" .Values.global) }}
+        - name: realtime
+          image: {{ include "yieldpoint.image" (dict "svcName" "realtime" "tag" "" "global" .Values.global) }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           ports:
-            - containerPort: {{ .Values.monolith.port }}
+            - containerPort: {{ .Values.realtime.port }}
           envFrom:
             - configMapRef:
                 name: yieldpoint-config
+          env:
+            # Refused rather than defaulted by the binary: an unauthenticated
+            # upgrade would stream one tenant's machine positions to anyone.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: JWT_SECRET
+            - name: PORT
+              value: {{ .Values.realtime.port | quote }}
           resources:
-            {{- toYaml .Values.monolith.resources | nindent 12 }}
+            {{- toYaml .Values.realtime.resources | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /health
-              port: {{ .Values.monolith.port }}
-            initialDelaySeconds: 15
-            periodSeconds: 15
+              port: {{ .Values.realtime.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
           readinessProbe:
             httpGet:
               path: /ready
-              port: {{ .Values.monolith.port }}
-            initialDelaySeconds: 5
+              port: {{ .Values.realtime.port }}
+            initialDelaySeconds: 3
             periodSeconds: 5
 {{- end }}

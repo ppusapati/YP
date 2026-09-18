@@ -59,23 +59,27 @@ spec:
       protocol: TCP
 
 {{/*
-  Monolith service (opt-in).
+  Real-time transport service.
+
+  Named `realtime`, not `yieldpoint-realtime`: the api-gateway's Caddyfile
+  proxies /ws and /events to the host `realtime`, and a Service under any other
+  name is a Service the gateway cannot find.
 */}}
-{{- if .Values.monolith.enabled }}
+{{- if .Values.realtime.enabled }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: yieldpoint-monolith
+  name: realtime
   namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "yieldpoint.serviceLabels" (dict "name" "yieldpoint-monolith" "context" $) | nindent 4 }}
+    {{- include "yieldpoint.serviceLabels" (dict "name" "realtime" "context" $) | nindent 4 }}
 spec:
   selector:
-    {{- include "yieldpoint.selectorLabels" (dict "name" "yieldpoint-monolith") | nindent 4 }}
+    {{- include "yieldpoint.selectorLabels" (dict "name" "realtime") | nindent 4 }}
   ports:
-    - port: {{ .Values.monolith.port }}
-      targetPort: {{ .Values.monolith.port }}
+    - port: {{ .Values.realtime.port }}
+      targetPort: {{ .Values.realtime.port }}
       protocol: TCP
 {{- end }}
 

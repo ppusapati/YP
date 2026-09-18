@@ -551,10 +551,146 @@ spec:
 """
 
 
+def render_realtime() -> str:
+    """The real-time transport: /ws and /events.
+
+    Written out rather than run through the service template, because the one
+    assumption that template makes about every service is the one thing this
+    binary cannot do: scale out.
+
+    The hub, the presence registry and the collaborative-inspection sessions are
+    all in process memory, and no backplane joins two copies of them. At two
+    replicas a field's watchers are split across pods and each half sees only
+    its own half's events; two people editing the same inspection get two
+    sessions that silently diverge and the last writer wins. So: one replica, no
+    autoscaler, and Recreate rather than RollingUpdate — a rolling deploy runs
+    the new pod alongside the old one, which is the split-room state again for
+    as long as the rollout takes. Clients reconnect, which they must handle
+    anyway; a tractor drives out of signal several times a day.
+
+    Nothing about that is permanent. A Redis or Kafka fan-out behind the hub
+    would make this horizontally scalable, and then it belongs in the template
+    like everything else.
+    """
+    return """---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: realtime
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: realtime
+  strategy:
+    # See render_realtime(): two live pods split every room, so the old one goes
+    # before the new one arrives.
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: realtime
+        app.kubernetes.io/part-of: yieldpoint
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      # Longer than the 30s shutdown in cmd/realtime/main.go. At the default of
+      # 30s the kubelet's SIGKILL lands exactly as the server gives up on its
+      # own deadline, so a drain would cut open WebSockets mid-frame every time.
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: realtime
+          image: ghcr.io/ppusapati/yieldpoint/realtime:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: yieldpoint-config
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: yieldpoint-secrets
+                  key: JWT_SECRET
+            - name: PORT
+              value: "8080"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              # Memory is the dimension that matters: one entry per open
+              # connection, per room member and per live inspection session.
+              memory: "512Mi"
+              cpu: "500m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realtime
+  namespace: yieldpoint
+  labels:
+    app.kubernetes.io/name: realtime
+    app.kubernetes.io/part-of: yieldpoint
+spec:
+  selector:
+    app.kubernetes.io/name: realtime
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: realtime
+  namespace: yieldpoint
+spec:
+  # A single replica, so this cannot protect availability — it can only refuse
+  # to let a node drain, for ever. It is written as "one may go" deliberately:
+  # the transport is reconnectable and a stuck drain is worse than a reconnect.
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: realtime
+"""
+
+
 def render_services(services: dict[str, dict]) -> str:
     parts = [BANNER]
     for name, spec in services.items():
         parts.append(render_service(name, spec))
+    # realtime serves /ws and /events and is built from the shared Dockerfile
+    # with CMD_PATH rather than SERVICE, so it is not in load_services() either.
+    # It had no Kubernetes manifest at all until now, and neither did the
+    # monolith it replaces — which means the real-time features have never run
+    # in a cluster, only under compose.
+    parts.append(render_realtime())
     # The two gateways are not Go microservices and are not built from the
     # shared Dockerfile, so compose does not describe them with a SERVICE arg.
     # They are still deployed, and leaving them out of the generated base would

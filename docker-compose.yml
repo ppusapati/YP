@@ -801,38 +801,45 @@ services:
       timeout: 3s
       retries: 3
 
-  # ── Monolith (all services in one binary) ──────────────────────────────────
-  # Start with: docker compose --profile monolith up
-  # Plain `docker compose up` still starts only the microservices above.
-
-  monolith:
+  # ── Real-time transport ────────────────────────────────────────────────────
+  #
+  # /ws and /events, which nothing else in the platform serves. It replaces the
+  # monolith, which mounted them alongside a stale second copy of twenty-two
+  # services.
+  #
+  # Not behind a profile. The api-gateway proxies /ws and /events here
+  # unconditionally, so while this was `profiles: ["monolith"]` a plain
+  # `docker compose up` left the gateway pointing at a host that did not exist:
+  # the live field map and collaborative inspection were a connection refused
+  # in the default stack.
+  realtime:
     build:
       context: .
-      dockerfile: cmd/monolith/Dockerfile
+      # The shared Dockerfile, with CMD_PATH pointing at a package that is not
+      # a service. A second Dockerfile for one binary is a second place for the
+      # Go version, the base image and the non-root user to drift.
+      args:
+        CMD_PATH: ./cmd/realtime
     restart: unless-stopped
-    profiles: ["monolith"]
     ports:
-      - "8080:8080"
+      - "8120:8080"
     environment:
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
-      KAFKA_BROKER: kafka:9092
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}
+      PORT: "8080"
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+    # No database and no Kafka. The hub, broker, presence and session store are
+    # in memory, and durable state belongs to the services that own it.
+    #
+    # packages/websocket has a Kafka→hub bridge, but nothing mounts it — here or
+    # anywhere — and it would drop every message if it were: it reads tenant_id
+    # from the top level of the payload and the domain event envelope carries no
+    # such field. Giving this container a KAFKA_BROKER it never dials would
+    # describe a data path that does not exist. See docs/realtime-topics.md.
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
       interval: 10s
       timeout: 3s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.5'
 
   # ── Rust AI Gateway ────────────────────────────────────────────────────────
 

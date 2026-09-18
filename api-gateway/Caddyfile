@@ -88,7 +88,7 @@
 	# buffering, without which SSE events sit in Caddy's buffer until enough
 	# accumulate — which for an alert stream is indefinitely.
 	handle /ws {
-		reverse_proxy monolith:8080 {
+		reverse_proxy realtime:8080 {
 			transport http {
 				dial_timeout 5s
 			}
@@ -96,7 +96,7 @@
 	}
 
 	handle /events {
-		reverse_proxy monolith:8080 {
+		reverse_proxy realtime:8080 {
 			flush_interval -1
 			transport http {
 				dial_timeout 5s

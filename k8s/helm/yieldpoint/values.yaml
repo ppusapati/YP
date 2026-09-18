@@ -638,19 +638,29 @@ apiGateway:
     cpuTarget: 60
 
 ## ---------------------------------------------------------------------------
-## Monolith (legacy, disabled by default)
+## Real-time transport (/ws and /events)
 ## ---------------------------------------------------------------------------
-monolith:
-  enabled: false
-  replicas: 1
+## Enabled by default, unlike the monolith it replaces. The api-gateway proxies
+## /ws and /events to the host `realtime` unconditionally, so an opt-in that
+## nobody opts into leaves the live field map and collaborative inspection
+## pointing at a Service that does not exist.
+##
+## replicas is not configurable: the hub, presence registry and inspection
+## sessions are in process memory with no backplane joining two copies, so a
+## second pod splits every room. Making that a value invites someone to scale a
+## transport that cannot be scaled.
+realtime:
+  enabled: true
   port: 8080
   resources:
     requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      # Memory is the dimension that matters: one entry per open connection,
+      # per room member and per live inspection session.
       memory: "512Mi"
       cpu: "500m"
-    limits:
-      memory: "2Gi"
-      cpu: "2"
 
 ## ---------------------------------------------------------------------------
 ## PostgreSQL

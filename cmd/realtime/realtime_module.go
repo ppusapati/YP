@@ -47,11 +47,11 @@ const presenceSweepInterval = realtime.DefaultPresenceTTL / 3
 // Returns the module so the caller can stop it, and so publishers — the Kafka
 // bridge, the inspection service — can broadcast through the same hub the
 // clients are connected to.
-func registerRealtimeModule(ctx context.Context, mux *http.ServeMux, infra *sharedInfra) *realtimeModule {
-	log := p9log.NewHelper(p9log.With(infra.logger, "module", "realtime"))
+func registerRealtimeModule(ctx context.Context, mux *http.ServeMux, logger p9log.Logger) *realtimeModule {
+	log := p9log.NewHelper(p9log.With(logger, "module", "realtime"))
 
-	hub := websocket.NewHub(infra.logger)
-	broker := sse.NewBroker(infra.logger)
+	hub := websocket.NewHub(logger)
+	broker := sse.NewBroker(logger)
 
 	m := &realtimeModule{
 		Hub:      hub,
@@ -73,12 +73,12 @@ func registerRealtimeModule(ctx context.Context, mux *http.ServeMux, infra *shar
 	mux.Handle("/ws", websocket.NewHandler(websocket.HandlerConfig{
 		Hub:  hub,
 		Auth: auth,
-		Log:  infra.logger,
+		Log:  logger,
 	}))
 
 	mux.Handle("/events", sse.NewHandler(sse.HandlerConfig{
 		Broker: broker,
-		Log:    infra.logger,
+		Log:    logger,
 	}))
 
 	log.Infow("msg", "real-time transport mounted", "paths", "/ws,/events")

@@ -111,36 +111,31 @@ Worth naming because implementing them as written would have produced a table
 full of supply chain events attached to nothing, which counts as clearing the
 debt and is worse than the TODO.
 
-### 4. The duplicated package trees
+### 4. The duplicated package trees — resolved
 
-Most services keep two copies of each package: `<svc>/internal/...` for the
-standalone binary and `<svc>/...` for `cmd/monolith`. Both compile. **They have
+Most services kept two copies of each package: `<svc>/internal/...` for the
+standalone binary and `<svc>/...` for `cmd/monolith`. Both compiled. **They had
 already drifted**, and the drift is what produced the fabricated temporal
 analysis above.
 
-`alert-service`, `satellite-analytics-service`, `satellite-tile-service`,
-`traceability-service` and `field-service` are now collapsed onto alias shims —
-`type X = internal.X`, which is the same type, so one implementation serves
-both. The remaining services should follow.
+The audit that followed measured it: twenty-two services carried a duplicate and
+fifteen had diverged. The monolith's yield-service had no weather client, its
+irrigation-service had no AI adapter and no actuator, and its field and
+traceability services were an architecture generation behind — no Kafka
+consumer, no repository. The image was built by CI and pushed by CD, so the
+stale copy shipped.
 
-This is the highest-leverage item on the list, because until it is done every
-fix elsewhere has to be made twice and there is measured evidence that the
-second one gets missed.
+Alias shims (`type X = internal.X`) collapsed five of them, and the rest were
+never going to follow: the nine newest services are hexagonal with their own
+`internal/` trees, which Go will not let a package outside their directory
+import, so the monolith could not have served them however much of it was
+collapsed.
 
-### 4. The duplicated package trees
-
-Most services keep two copies of each package: `<svc>/internal/...` for the
-standalone binary and `<svc>/...` for `cmd/monolith`. Both compile. **They have
-already drifted**, and the drift is what produced the fabricated temporal
-analysis above.
-
-`alert-service`, `satellite-analytics-service` and `satellite-tile-service` are
-now collapsed onto alias shims — `type X = internal.X`, which is the same type,
-so one implementation serves both. The remaining services should follow.
-
-This is the highest-leverage item on the list, because until it is done every
-fix elsewhere has to be made twice and there is measured evidence that the
-second one gets missed.
+So the monolith is gone, and with it ninety-seven duplicate packages and one
+hundred and thirty-two files. What it uniquely served — `/ws` and `/events` —
+moved to `cmd/realtime`, a binary with no services in it. The single-binary
+deployment it offered is Option C in `DEPLOYMENT.md`: docker-compose, which runs
+all thirty-one services on one host rather than twenty-two stale ones.
 
 ### 5. Informational markers — leave
 
@@ -175,8 +170,9 @@ reads as enforcement. Both filters are fixed and `.todo-budget` re-baselined.
 
 ## Suggested order
 
-1. **Collapse the duplicated trees** onto alias shims. Everything else is
-   cheaper afterwards, and safer.
+1. ~~**Collapse the duplicated trees** onto alias shims.~~ Done differently and
+   more thoroughly: the monolith that needed them is deleted, so there is only
+   one tree left to fix things in. See §4.
 2. **The remaining silent-success cases** in §2 — particularly the web
    dashboard, which shows a logged-in user fabricated revenue for their own
    tenant, and the two percentile functions, which will be wrong the moment

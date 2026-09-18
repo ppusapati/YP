@@ -7,6 +7,17 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # /ws and /events are long-lived. nginx closes an idle upstream connection
+    # after 60s by default, which for a WebSocket that is quiet between GPS
+    # fixes, or an SSE stream that is quiet between alerts, means a disconnect
+    # every minute for ever.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Without this nginx buffers the response and an SSE event waits in the
+    # buffer until enough accumulate to flush — which for an alert stream is
+    # indefinitely. The api-gateway already disables buffering on its side; both
+    # hops have to, because either one alone still holds the event.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
 spec:
   ingressClassName: nginx
   tls:
@@ -17,45 +28,23 @@ spec:
     - host: api.yieldpoint.io
       http:
         paths:
-          - path: /auth
-            pathType: Prefix
-            backend:
-              service:
-                name: auth-service
-                port:
-                  number: 8080
-          - path: /agriculture.farm.v1
-            pathType: Prefix
-            backend:
-              service:
-                name: farm-service
-                port:
-                  number: 8080
-          - path: /agriculture.field.v1
-            pathType: Prefix
-            backend:
-              service:
-                name: field-service
-                port:
-                  number: 8080
-          - path: /agriculture.crop.v1
-            pathType: Prefix
-            backend:
-              service:
-                name: crop-service
-                port:
-                  number: 8080
-          - path: /agriculture.ai.v1
-            pathType: Prefix
-            backend:
-              service:
-                name: ai-gateway
-                port:
-                  number: 50051
+          # One rule, to the gateway, on purpose.
+          #
+          # This listed four services by path prefix and sent everything else to
+          # farm-service. The platform has thirty-one services plus /ws and
+          # /events, so in a cluster every request outside those four prefixes
+          # reached a server that does not implement it: twenty-seven services
+          # and the entire real-time transport answered from farm-service, which
+          # returns unimplemented rather than an error that names the problem.
+          #
+          # api-gateway already holds the full routing table, in a Caddyfile
+          # that is exercised by every local run and so stays current. A second
+          # copy of it here is a copy that goes stale — this one went stale at
+          # four of thirty-one — and the ingress has no way to notice.
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: farm-service
+                name: api-gateway
                 port:
                   number: 8080
