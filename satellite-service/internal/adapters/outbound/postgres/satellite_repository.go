@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"p9e.in/samavaya/packages/errors"
@@ -47,6 +48,13 @@ func (r *satelliteRepository) query(ctx context.Context, sql string, args ...any
 		return r.tx.Query(ctx, sql, args...)
 	}
 	return r.pool.Query(ctx, sql, args...)
+}
+
+func (r *satelliteRepository) exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	if r.tx != nil {
+		return r.tx.Exec(ctx, sql, args...)
+	}
+	return r.pool.Exec(ctx, sql, args...)
 }
 
 // ---------------------------------------------------------------------------
@@ -512,6 +520,42 @@ func (r *satelliteRepository) CreateTask(ctx context.Context, task *domain.Satel
 		task.InputImageID, task.ResultID, task.ErrorMessage, task.RetryCount,
 	)
 	return scanTask(row)
+}
+
+// AbandonTasksForField retires the outstanding tasks for a field that no
+// longer exists, and reports how many rows it retired.
+//
+// Soft-deleted rather than moved to a cancelled status, because
+// ProcessingStatus is a proto enum with PENDING, PROCESSING, COMPLETED and
+// FAILED and no CANCELLED. Writing FAILED here would tell whoever reads these
+// rows next that the acquisition was attempted and went wrong, which is a
+// different fact from the field being deleted underneath it. Extending the
+// enum is a proto change and does not belong in a cascade.
+//
+// Terminal tasks are left alone: a completed acquisition is a record of work
+// that did happen, and the imagery it produced is still the tenant's.
+func (r *satelliteRepository) AbandonTasksForField(ctx context.Context, fieldID, tenantID string) (int64, error) {
+	if fieldID == "" || tenantID == "" {
+		return 0, errors.BadRequest("MISSING_IDENTIFIER", "field_id and tenant_id are required")
+	}
+
+	tag, err := r.exec(ctx, `
+		UPDATE satellite_tasks
+		SET deleted_at   = NOW(),
+		    updated_at   = NOW(),
+		    error_message = 'field deleted'
+		WHERE tenant_id = $1
+		  AND field_id  = $2
+		  AND deleted_at IS NULL
+		  AND status NOT IN ($3, $4)`,
+		tenantID, fieldID,
+		string(domain.ProcessingStatusCompleted), string(domain.ProcessingStatusFailed))
+	if err != nil {
+		r.log.Errorw("msg", "failed to abandon satellite tasks",
+			"field_id", fieldID, "error", err)
+		return 0, errors.InternalServer("DB_ERROR", "failed to abandon satellite tasks")
+	}
+	return tag.RowsAffected(), nil
 }
 
 func scanTask(row pgx.Row) (*domain.SatelliteTask, error) {

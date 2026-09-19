@@ -75,7 +75,7 @@ and the event is gone.
 
 This used to read "about 25 distinct handlers (≈40 across the duplicated trees)".
 The duplicated trees no longer exist — see §4 — so the second number is meaningless
-and the first is now the whole population. Seven remain open below.
+and the first is now the whole population. Four remain open below.
 
 Ordered by consequence rather than by count:
 
@@ -87,9 +87,9 @@ Ordered by consequence rather than by count:
 | traceability, farm/field/crop created | Provenance links never written | **Closed as not applicable** — see below |
 | `field_consumer.go` farm deleted | Orphaned fields stay active under a deleted farm | **Fixed** |
 | `farm_consumer.go:88,104,120` field created/updated/deleted | Farm field counts and total area diverge from reality, then `GetFarm` serves them as authoritative | Open |
-| `irrigation_consumer.go:137` field deleted | Active irrigation schedules keep running against a deleted field | Open |
-| `satellite_consumer.go:115,146` farm/field deleted | Pending imagery tasks are never cancelled and keep billing | Open |
-| `sensor_consumer.go:99,114` field/farm deleted | Sensors are never decommissioned | Open |
+| `irrigation_consumer.go:137` field deleted | Active irrigation schedules keep running against a deleted field | **Fixed** — the worst of the three, because a schedule is not a stale row but a valve: the next window would have run water onto ground nobody farms and billed for it. Zones are deliberately left alone; a zone describes hardware in the ground, which outlives the field record |
+| `satellite_consumer.go:115,146` farm/field deleted | Pending imagery tasks are never cancelled and keep billing | **Fixed for the field, closed as not applicable for the farm.** The billing consequence recorded here was wrong: nothing reads `satellite_tasks` — the repository could only insert — so no acquisition was ever ordered from one. The real defect was a table accumulating PENDING rows for fields nobody can open, and the first thing to drain that queue would have picked them up. The farm handler was the wrong thing to ask for: a task carries `field_id` and no `farm_id`, and field-service already cascades a farm deletion into one delete event per field |
+| `sensor_consumer.go:99,114` field/farm deleted | Sensors are never decommissioned | **Fixed** — sensors stayed ACTIVE against a deleted field, still ingesting and still raising threshold alerts naming a field nobody could open. Both handlers are kept, not just the farm one: a sensor can sit at the farm with no field — a weather station by the gate — and no field-deleted event would ever reach it |
 | `yield_consumer.go:119` crop assigned | No prediction generated; the UI shows "no data" rather than an error | Open |
 | `crop_consumer.go:104`, `soil_consumer.go:129` | Assignments stay active; samples never archived | Open |
 

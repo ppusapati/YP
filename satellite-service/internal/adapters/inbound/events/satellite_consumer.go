@@ -10,7 +10,9 @@ import (
 	"fmt"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
 	"p9e.in/samavaya/agriculture/satellite-service/internal/ports/inbound"
 )
@@ -103,16 +105,25 @@ func (c *SatelliteConsumer) onFarmBoundarySet(ctx context.Context, event *domain
 }
 
 // onFarmDeleted handles a farm being deleted.
+//
+// Deliberately does nothing beyond logging, and the TODO asking for a
+// farm-level cancellation was the wrong thing to ask for. A satellite task
+// carries a field_id and no farm_id, so "cancel this farm's tasks" is not a
+// query this service can express. It does not need to be: field-service
+// cascades a farm deletion into a delete per field, each of which emits
+// agriculture.field.deleted, and onFieldDeleted below retires that field's
+// tasks. Adding a farm path would either duplicate that work or reach into
+// field-service for a listing to fan out over, which is a round trip to
+// rediscover events already on the way.
 func (c *SatelliteConsumer) onFarmDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFarmDeleted: %w", err)
 	}
 	farmID, _ := data["farm_id"].(string)
-	c.log.Infow("msg", "farm deleted, removing satellite monitoring tasks",
+	c.log.Infow("msg", "farm deleted; tasks retire with each field's own delete event",
 		"farm_id", farmID,
 	)
-	// TODO: cancel pending satellite tasks for this farm
 	return nil
 }
 
@@ -133,18 +144,64 @@ func (c *SatelliteConsumer) onFieldCreated(ctx context.Context, event *domain.Do
 	return nil
 }
 
-// onFieldDeleted handles a field being deleted.
+// onFieldDeleted retires the outstanding acquisition tasks for a deleted field.
+//
+// This used to log "field deleted, cancelling satellite analysis tasks" and
+// return nil, having cancelled nothing. Kafka committed the offset and the
+// rows stayed PENDING for ever against a field that no longer existed.
+//
+// The debt register recorded the consequence as "pending imagery tasks keep
+// billing". That is not what happens today: nothing in this service reads
+// satellite_tasks — the repository could only insert — so no acquisition was
+// ever going to be ordered from one. The real defect is narrower and still
+// worth closing: the table accumulates rows for fields nobody can open, and
+// the first thing to process that queue would pick them up.
 func (c *SatelliteConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "field deleted, cancelling satellite analysis tasks",
-		"field_id", fieldID,
-	)
-	// TODO: cancel pending satellite tasks for this field
+	tenantID, _ := data["tenant_id"].(string)
+
+	if fieldID == "" || tenantID == "" {
+		// Dropped rather than retried: a message that can never succeed would
+		// block the partition, and guessing a tenant would touch another
+		// tenant's rows.
+		c.log.Warnw("msg", "field deleted event missing field or tenant; cannot retire tasks",
+			"event_id", event.ID, "field_id", fieldID)
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it the update runs unscoped, row-level security
+	// matches nothing, and the handler reports success over zero rows.
+	ctx = c.systemContext(ctx, tenantID)
+
+	retired, err := c.svc.AbandonTasksForField(ctx, fieldID)
+	if err != nil {
+		// Returned, so the consumer retries: a database that is briefly
+		// unavailable must not leave the tasks behind.
+		return fmt.Errorf("onFieldDeleted: retire tasks for field %s: %w", fieldID, err)
+	}
+
+	c.log.Infow("msg", "field deleted, satellite tasks retired",
+		"field_id", fieldID, "tasks_retired", retired)
 	return nil
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// Both the RLS scope and the connection info are set: the repository layer
+// reads one and the service layer the other, and setting only one leaves
+// queries running unscoped in a way that returns empty rather than failing.
+func (c *SatelliteConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 func extractEventData(event *domain.DomainEvent) (map[string]interface{}, error) {

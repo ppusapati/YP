@@ -27,6 +27,9 @@ type SatelliteRepository interface {
 
 	// Tasks
 	CreateTask(ctx context.Context, task *domain.SatelliteTask) (*domain.SatelliteTask, error)
+	// AbandonTasksForField retires the outstanding tasks for a deleted field
+	// and reports how many rows it retired.
+	AbandonTasksForField(ctx context.Context, fieldID, tenantID string) (int64, error)
 
 	WithTx(tx pgx.Tx) SatelliteRepository
 }

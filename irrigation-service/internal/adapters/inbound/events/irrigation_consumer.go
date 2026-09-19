@@ -10,8 +10,11 @@ import (
 	"fmt"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
+	irrigationdomain "p9e.in/samavaya/agriculture/irrigation-service/internal/domain"
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/inbound"
 )
 
@@ -123,19 +126,111 @@ func (c *IrrigationConsumer) onFieldCreated(ctx context.Context, event *domain.D
 	return nil
 }
 
-// onFieldDeleted handles a field being deleted.
-// Irrigation zones and schedules for this field should be cancelled.
+// cascadePageSize is how many schedules are read per round.
+const cascadePageSize = 100
+
+// cascadeMaxPages bounds the sweep.
+//
+// The offset advances rather than re-reading the first page: cancelling is a
+// status change, so the schedule stays in the listing and re-reading page zero
+// would return the same rows for ever.
+const cascadeMaxPages = 1000
+
+// onFieldDeleted cancels the irrigation schedules for a deleted field.
+//
+// This used to log "field deleted, cancelling irrigation schedules" and return
+// nil, having cancelled nothing. Kafka committed the offset, so the schedules
+// stayed SCHEDULED against a field that no longer existed — and an irrigation
+// schedule is not a stale row, it is a valve. The next window would have run
+// water onto ground the system no longer believes anybody farms, and billed
+// for it.
+//
+// Zones are left alone. A zone is a description of hardware in the ground,
+// which outlives the field record and is what a replacement field would be
+// attached to; the schedules are the part that acts.
 func (c *IrrigationConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "field deleted, cancelling irrigation schedules",
-		"field_id", fieldID,
-	)
-	// TODO: list zones and schedules by field, cancel active schedules
+	tenantID, _ := data["tenant_id"].(string)
+
+	if fieldID == "" || tenantID == "" {
+		c.log.Warnw("msg", "field deleted event missing field or tenant; cannot cancel schedules",
+			"event_id", event.ID, "field_id", fieldID)
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it every query below runs unscoped, row-level
+	// security returns nothing, and the cascade reports success over an empty
+	// list — which looks exactly like a field with no schedules.
+	ctx = c.systemContext(ctx, tenantID)
+
+	var cancelled, skipped int
+	for page := 0; page < cascadeMaxPages; page++ {
+		schedules, _, listErr := c.svc.ListSchedulesByField(
+			ctx, fieldID, cascadePageSize, int32(page)*cascadePageSize)
+		if listErr != nil {
+			// Returned, so the consumer retries: a database that is briefly
+			// unavailable must not leave a valve scheduled to open.
+			return fmt.Errorf("onFieldDeleted: list schedules for field %s: %w", fieldID, listErr)
+		}
+		if len(schedules) == 0 {
+			break
+		}
+
+		var attempted, failed int
+		for _, s := range schedules {
+			// Terminal schedules are skipped rather than cancelled: the
+			// service rejects both with ALREADY_CANCELLED and ALREADY_COMPLETED,
+			// and counting those rejections as failures would abandon the page
+			// on a field whose schedules had simply all finished.
+			if s.Status == irrigationdomain.IrrigationStatusCancelled ||
+				s.Status == irrigationdomain.IrrigationStatusCompleted {
+				skipped++
+				continue
+			}
+			attempted++
+			if cancelErr := c.svc.CancelSchedule(ctx, s.ID); cancelErr != nil {
+				c.log.Errorw("msg", "failed to cancel schedule during field cascade",
+					"field_id", fieldID, "schedule_id", s.ID, "error", cancelErr)
+				failed++
+				continue
+			}
+			cancelled++
+		}
+
+		// Every schedule on the page failed, so the next page would fail the
+		// same way. Reported rather than swallowed: a valve left scheduled is
+		// not something to report success on.
+		if attempted > 0 && failed == attempted {
+			return fmt.Errorf("onFieldDeleted: could not cancel any of %d schedules on page %d for field %s",
+				failed, page, fieldID)
+		}
+		if len(schedules) < cascadePageSize {
+			break
+		}
+	}
+
+	c.log.Infow("msg", "field deleted, irrigation schedules cancelled",
+		"field_id", fieldID, "cancelled", cancelled, "already_terminal", skipped)
 	return nil
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// Both the RLS scope and the connection info are set: the repository layer
+// reads one and the service layer the other, and setting only one leaves
+// queries running unscoped in a way that returns empty rather than failing.
+func (c *IrrigationConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 // onSoilSampleCreated handles new soil data that affects irrigation decisions.

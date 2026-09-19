@@ -302,6 +302,23 @@ func (s *satelliteService) ListAlerts(ctx context.Context, params domain.ListAle
 	return s.repo.ListAlerts(ctx, params)
 }
 
+// AbandonTasksForField retires the outstanding acquisition tasks for a field
+// that no longer exists, and reports how many it retired.
+//
+// Not exposed over the API: no client asks satellite-service to forget a
+// field, and the only caller is the consumer reacting to field-service having
+// deleted one.
+func (s *satelliteService) AbandonTasksForField(ctx context.Context, fieldID string) (int64, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if fieldID == "" {
+		return 0, errors.BadRequest("MISSING_FIELD_ID", "field ID is required")
+	}
+	return s.repo.AbandonTasksForField(ctx, fieldID, tenantID)
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

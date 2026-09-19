@@ -17,4 +17,8 @@ type SatelliteService interface {
 	DetectCropStress(ctx context.Context, imageID, fieldID string) (*domain.CropStressAlert, error)
 	GetTemporalAnalysis(ctx context.Context, params domain.TemporalAnalysisParams) (*domain.TemporalAnalysis, error)
 	ListAlerts(ctx context.Context, params domain.ListAlertsParams) ([]domain.CropStressAlert, int32, error)
+
+	// AbandonTasksForField retires the outstanding acquisition tasks for a
+	// deleted field. Consumer-only: there is no RPC behind it.
+	AbandonTasksForField(ctx context.Context, fieldID string) (int64, error)
 }
