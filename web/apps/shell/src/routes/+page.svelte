@@ -1,13 +1,16 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { browser } from '$app/environment';
-
-  // Temporarily bypass auth - go directly to dashboard
-  $effect(() => {
-    if (browser) {
-      goto('/dashboard');
-    }
-  });
+  // Nothing to decide here.
+  //
+  // `+page.server.ts` beside this file always redirects — to /dashboard with a
+  // session, to /login without — so this component is only ever on screen for
+  // the instant before the browser follows a 303, and on a slow connection it
+  // is what the visitor sees in the meantime.
+  //
+  // It used to carry a client-side `$effect` calling `goto('/dashboard')` under
+  // a comment reading "Temporarily bypass auth". The server load replaced it,
+  // making the effect unreachable, but the comment stayed — and a comment
+  // announcing an auth bypass is worth removing even when it is describing code
+  // that can no longer run, because the next reader has no way to know that.
 </script>
 
 <div class="loading-container">

@@ -58,8 +58,8 @@ plausible-looking synthetic values."*
 | `packages/loadbalancer/algorithms/latency_aware.go:115` | Percentiles | `P95 = 0.95 × Max` is an affine transform of the maximum, not a percentile. Any routing keyed on P95 is keyed on max |
 | `packages/config` `Watch()` | A config-change callback was registered | The observer is stored and never invoked; the file watcher underneath returns "not implemented". No non-test callers today |
 | `alert-service/internal/scheduler` | Threshold alerts are scanned periodically | The package is imported by nothing and its `FieldProvider` has no implementation. Alerts now arrive via the event consumer, so the scanner is redundant rather than broken — **delete it or wire it**, but do not leave it looking live |
-| `web/apps/shell/.../dashboard/+page.svelte` | These are their tenant's numbers | Hardcoded $125,430 revenue and 1,234 orders under a live user greeting |
-| `web/apps/shell/src/routes/+page.svelte` | — | `// Temporarily bypass auth`; `/` goes straight to the dashboard |
+| `web/apps/shell/.../dashboard/+page.svelte` | These are their tenant's numbers | **Fixed** — hardcoded $125,430 revenue and 1,234 orders under a live user greeting; now fetched from farm, field and alert clients, and a figure that cannot be retrieved is shown as unavailable rather than as a number |
+| `web/apps/shell/src/routes/+page.svelte` | — | **Fixed** — closed twice over: `(app)/+layout.server.ts` now requires a validated session for every route in the group, and `+page.server.ts` routes `/` on the server to the dashboard or to login. That made the client-side `$effect` unreachable, but it and its `// Temporarily bypass auth` comment stayed behind; both are gone now, because a comment announcing a bypass misleads whether or not the code under it can still run |
 | `mobile/.../irrigation_remote_datasource.dart` | The field has no irrigation alerts | **Fixed** — returned an empty list with no network call; now asks alert-service, which owns alerts, and throws rather than swallowing a failure into an empty list |
 | `mobile/.../soil_remote_datasource.dart` | Results are date-filtered | **Fixed** — `from`/`to` were accepted and ignored; now applied client-side, with a note on when the filter should move into the proto |
 | `mobile/.../create_listing_screen.dart` | Their listing is attached to a farm | **Fixed** — submitted `farmId: ''`; the form now requires the seller to pick one |
@@ -70,8 +70,12 @@ neighbouring code in the same files and need `flutter analyze` before release.
 
 ### 3. Events consumed, acked, and dropped
 
-About 25 distinct handlers (≈40 across the duplicated trees) log as if they did
-work, then `return nil`. Kafka commits the offset and the event is gone.
+Handlers that log as if they did work, then `return nil`. Kafka commits the offset
+and the event is gone.
+
+This used to read "about 25 distinct handlers (≈40 across the duplicated trees)".
+The duplicated trees no longer exist — see §4 — so the second number is meaningless
+and the first is now the whole population. Seven remain open below.
 
 Ordered by consequence rather than by count:
 
