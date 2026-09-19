@@ -422,6 +422,22 @@ func (s *soilService) GetSoilMap(ctx context.Context, fieldID, tenantID, mapType
 	return s.repo.GetSoilMapByFieldAndType(ctx, fieldID, tenantID, mapType)
 }
 
+// ArchiveFieldSoilData retires the soil records for a field that no longer
+// exists, and reports how many rows it retired.
+//
+// Not exposed over the API: no client asks soil-service to forget a field, and
+// the only caller is the consumer reacting to field-service having deleted one.
+func (s *soilService) ArchiveFieldSoilData(ctx context.Context, fieldID string) (int64, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return 0, errors.BadRequest("INVALID_ARGUMENT", "tenant id is required")
+	}
+	if fieldID == "" {
+		return 0, errors.BadRequest("INVALID_ARGUMENT", "field id is required")
+	}
+	return s.repo.ArchiveFieldSoilData(ctx, fieldID, tenantID)
+}
+
 func (s *soilService) GetSoilHealth(ctx context.Context, fieldID, tenantID string) (*domain.SoilHealthScore, error) {
 	if fieldID == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "field id is required")

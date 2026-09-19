@@ -203,10 +203,16 @@ func (s *fieldService) DeleteField(ctx context.Context, uuid string) error {
 		return errors.NotFound("FIELD_NOT_FOUND", fmt.Sprintf("field not found: %s", uuid))
 	}
 
+	// The repository deletes the field and its crop assignments, segments and
+	// crop cycles in one statement. It used to touch the field alone, leaving
+	// every one of those live and unreachable.
 	if err := s.repo.DeleteField(ctx, uuid, tenantID, userID); err != nil {
 		return err
 	}
 
+	// Emitted after the write, so nothing downstream acts on a delete that
+	// failed. The consumers this reaches — sensors, irrigation, satellite —
+	// take real action on it.
 	s.emitEvent(ctx, "agriculture.field.deleted", uuid, map[string]interface{}{
 		"field_id": uuid, "tenant_id": tenantID,
 	})
@@ -274,8 +280,14 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		return nil, err
 	}
 
+	// farm_id, season and planting_date ride along because the consumers need
+	// them and cannot get them: yield-service requires a farm, a season and a
+	// year to make a prediction, and looking each one up would be a round trip
+	// back to this service to re-read what it already had in hand here.
 	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.ID, map[string]interface{}{
 		"field_id": field.ID, "crop_id": params.CropID, "tenant_id": tenantID,
+		"farm_id": field.FarmID, "season": params.Season,
+		"planting_date": params.PlantingDate.UTC().Format(time.RFC3339),
 	})
 	return created, nil
 }

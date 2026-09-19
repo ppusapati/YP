@@ -75,7 +75,7 @@ and the event is gone.
 
 This used to read "about 25 distinct handlers (≈40 across the duplicated trees)".
 The duplicated trees no longer exist — see §4 — so the second number is meaningless
-and the first is now the whole population. Four remain open below.
+and the first is now the whole population. **None remain open below.**
 
 Ordered by consequence rather than by count:
 
@@ -86,34 +86,60 @@ Ordered by consequence rather than by count:
 | traceability, irrigation | "Recording for compliance" while recording nothing, for one of the inputs an organic or GAP audit asks about | **Fixed** — attached to the batch growing in that field |
 | traceability, farm/field/crop created | Provenance links never written | **Closed as not applicable** — see below |
 | `field_consumer.go` farm deleted | Orphaned fields stay active under a deleted farm | **Fixed** |
-| `farm_consumer.go:88,104,120` field created/updated/deleted | Farm field counts and total area diverge from reality, then `GetFarm` serves them as authoritative | Open |
+| `farm_consumer.go:88,104,120` field created/updated/deleted | Farm field counts and total area diverge from reality, then `GetFarm` serves them as authoritative | **Part fixed, part closed as not applicable.** The consequence recorded here was wrong on both counts. There is no field count — not on `Farm`, not in the `farms` table, not in the proto — so nothing could drift; whoever needs one asks field-service. `total_area_hectares` is the farmer's own declared area for the parcel, typed into CreateFarm and editable, so summing the fields into it would have overwritten what they entered with a strictly smaller number, silently, on every field created. What farm-service *does* hold about a field is its `management_unit_fields` membership, keyed on an id from another service with no foreign key to cascade from — a deleted field stayed in its unit for ever. `onFieldDeleted` now drops it |
 | `irrigation_consumer.go:137` field deleted | Active irrigation schedules keep running against a deleted field | **Fixed** — the worst of the three, because a schedule is not a stale row but a valve: the next window would have run water onto ground nobody farms and billed for it. Zones are deliberately left alone; a zone describes hardware in the ground, which outlives the field record |
 | `satellite_consumer.go:115,146` farm/field deleted | Pending imagery tasks are never cancelled and keep billing | **Fixed for the field, closed as not applicable for the farm.** The billing consequence recorded here was wrong: nothing reads `satellite_tasks` — the repository could only insert — so no acquisition was ever ordered from one. The real defect was a table accumulating PENDING rows for fields nobody can open, and the first thing to drain that queue would have picked them up. The farm handler was the wrong thing to ask for: a task carries `field_id` and no `farm_id`, and field-service already cascades a farm deletion into one delete event per field |
 | `sensor_consumer.go:99,114` field/farm deleted | Sensors are never decommissioned | **Fixed** — sensors stayed ACTIVE against a deleted field, still ingesting and still raising threshold alerts naming a field nobody could open. Both handlers are kept, not just the farm one: a sensor can sit at the farm with no field — a weather station by the gate — and no field-deleted event would ever reach it |
-| `yield_consumer.go:119` crop assigned | No prediction generated; the UI shows "no data" rather than an error | Open |
-| `crop_consumer.go:104`, `soil_consumer.go:129` | Assignments stay active; samples never archived | Open |
+| `yield_consumer.go:119` crop assigned | No prediction generated; the UI shows "no data" rather than an error | **Fixed** — the field's yield page showed "no data" from planting until somebody asked for a prediction by hand, which is the one moment a farmer is least likely to, having just told the system what they planted. The opening prediction is a baseline: no soil, weather or pest scores exist on planting day, so it stores the crop's base yield at **zero confidence** rather than dressing it up. `field.crop.assigned` now carries `farm_id`, `season` and `planting_date`, which a prediction needs and the consumer could not otherwise get |
+| `crop_consumer.go:104` field deleted | Crop assignments stay active | **Closed as not applicable, and the real bug was elsewhere.** crop-service has no assignment table — its schema is the catalogue of what a crop *is*. Assignments are facts about a field and live in field-service's `crop_assignments`, which `DeleteField` was not touching: it soft-deleted the `fields` row alone and left the assignments, segments and crop cycles live and unreachable, so `GetCropHistory` on a re-created field would have served the previous occupant's plantings. Fixed there, in one statement with the field |
+| `soil_consumer.go:129` field deleted | Samples never archived | **Fixed** — a farm-level soil listing kept returning samples and health scores for a field nobody could open. Archived (`is_active = FALSE`) rather than soft-deleted: these are laboratory measurements of ground that still exists — the field record was an administrative boundary, not the dirt — and they are what an organic or GAP audit asks for years later, so `deleted_at` stays NULL |
 
-**Triage: implement.** These are not hard — each is a call to a service method
-that already exists — but they are numerous, and the cascade deletes have
-correctness implications (orphaned rows, phantom billing) that make them worth
-doing before the cosmetic ones.
+**Triage: done.** The original note said "these are not hard — each is a call to
+a service method that already exists". That was true of about half of them.
 
-**Do not** convert these to "log and return an error" as a stopgap: that turns a
-silent drop into a poison-pill message that blocks the partition.
+**Do not** convert a dropped handler to "log and return an error" as a stopgap:
+that turns a silent drop into a poison-pill message that blocks the partition.
+The error contract that came out of doing these, and which the tests pin:
 
-**One of them was the wrong thing to ask for.** The TODOs on traceability's
-farm-created, farm-updated, field-created and crop-created handlers said to call
-`AddSupplyChainEvent`, which the model cannot express: a supply chain event
-hangs off a traceability record, and a record is one batch from one field's
-season. A farm being renamed or a crop *type* being registered belongs to no
-batch. Those four now do nothing on purpose, with the reasoning in the code, and
-what the farm and field actually contribute to provenance is read through the
-outbound clients when a chain is assembled — current at that moment rather than
-duplicated into an event stream that then drifts.
+- A listing or write failure is **returned**, so the consumer retries. A
+  database blip must not orphan the rows.
+- One item in a batch failing is **logged and skipped**, because a replay finds
+  whatever is left and abandoning the page strands the rest.
+- A page where *every* item failed is **returned** — the next page would fail
+  identically, and reporting success is a lie Kafka then commits.
+- An event with no tenant is **dropped, not retried**: it can never succeed,
+  retrying blocks the partition, and guessing a tenant touches another
+  tenant's rows.
 
-Worth naming because implementing them as written would have produced a table
-full of supply chain events attached to nothing, which counts as clearing the
-debt and is worse than the TODO.
+And the loop shape is not one shape. A cascading *delete* re-reads the first
+page, because deleting shifts the window and an advancing offset skips as many
+rows as it deletes. A cascading *status change* must advance the offset instead,
+because the row stays in the listing. Confusing the two silently skips half the
+rows or never terminates.
+
+**Six of them were the wrong thing to ask for**, which is the more useful
+finding: a TODO is a note somebody wrote before they understood the model, and
+implementing one as written can be worse than leaving it.
+
+- **traceability** farm-created, farm-updated, field-created, crop-created said
+  to call `AddSupplyChainEvent`, which the model cannot express: an event hangs
+  off a record, and a record is one batch from one field's season. A farm being
+  renamed belongs to no batch. Implementing them would have produced a table
+  full of supply chain events attached to nothing.
+- **`farm_consumer`** field-created and field-updated said to recalculate the
+  farm's field count and total area. There is no field count anywhere in the
+  service, and total area is the farmer's own declared figure — summing the
+  fields into it would have overwritten what they typed with a smaller number
+  on every field created.
+- **`crop_consumer`** field-deleted said to deactivate crop assignments.
+  crop-service has no assignment table; the rows are field-service's, and
+  field-service was the thing not deleting them.
+- **`satellite_consumer`** farm-deleted said to cancel the farm's tasks. A task
+  carries `field_id` and no `farm_id`, and field-service already cascades a
+  farm deletion into one delete event per field.
+
+Each now does nothing on purpose, with the reasoning in the code and a test
+asserting it, so that a future attempt to "finish" them has to argue first.
 
 ### 4. The duplicated package trees — resolved
 
@@ -181,7 +207,9 @@ reads as enforcement. Both filters are fixed and `.todo-budget` re-baselined.
    dashboard, which shows a logged-in user fabricated revenue for their own
    tenant, and the two percentile functions, which will be wrong the moment
    anything routes on them.
-3. **The dropped event handlers** in §3, cascade deletes first.
+3. ~~**The dropped event handlers** in §3, cascade deletes first.~~ Done. Six of
+   them turned out to be asking for something the model could not express; see
+   §3 for which, and why implementing a TODO as written is not always progress.
 4. ~~**Delete `alert-service/internal/scheduler`** or wire it.~~ Wired, and the
    suggestion to consider deleting it was wrong: it was the only reader of the
    alert rules the product lets farmers configure. See §2.

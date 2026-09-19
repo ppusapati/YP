@@ -29,4 +29,8 @@ type SoilService interface {
 
 	// Reports
 	GenerateSoilReport(ctx context.Context, fieldID, tenantID, farmID string) (*domain.SoilReport, error)
+
+	// ArchiveFieldSoilData marks a deleted field's soil records inactive,
+	// keeping them on record. Consumer-only: there is no RPC behind it.
+	ArchiveFieldSoilData(ctx context.Context, fieldID string) (int64, error)
 }

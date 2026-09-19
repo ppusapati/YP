@@ -685,6 +685,22 @@ func (s *farmService) AssignFieldsToUnit(ctx context.Context, unitID string, fie
 	return unit, nil
 }
 
+// ForgetDeletedField drops a deleted field's membership of every management
+// unit, and reports how many memberships it dropped.
+//
+// Not exposed over the API: no client asks farm-service to forget a field, and
+// the only caller is the consumer reacting to field-service having deleted one.
+func (s *farmService) ForgetDeletedField(ctx context.Context, fieldID string) (int64, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if fieldID == "" {
+		return 0, errors.BadRequest("MISSING_FIELD_ID", "field_id is required")
+	}
+	return s.repo.RemoveFieldFromAllUnits(ctx, fieldID, tenantID)
+}
+
 // RemoveFieldsFromUnit removes fields from a management unit.
 func (s *farmService) RemoveFieldsFromUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error) {
 	tenantID := p9context.TenantID(ctx)

@@ -8,10 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
+	yielddomain "p9e.in/samavaya/agriculture/yield-service/internal/domain"
 	"p9e.in/samavaya/agriculture/yield-service/internal/ports/inbound"
 )
 
@@ -103,8 +107,22 @@ func (c *YieldConsumer) onCropUpdated(ctx context.Context, event *domain.DomainE
 	return nil
 }
 
-// onFieldCropAssigned handles a crop being assigned to a field.
-// This triggers initial yield prediction for the crop-field combination.
+// onFieldCropAssigned generates the opening yield prediction for a new
+// crop-field assignment.
+//
+// This used to log "generating initial yield prediction" and return nil,
+// having generated nothing. Kafka committed the offset, and the field's yield
+// page showed "no data" from planting until somebody went and asked for a
+// prediction by hand — which is the one moment a farmer is least likely to,
+// because they have just told the system what they planted and reasonably
+// expect it to know.
+//
+// The prediction is a baseline: no soil, weather or pest scores exist for a
+// field on the day it is planted, so the factors are all zero and the service
+// falls back to the crop's base yield. computeConfidence returns 0 against no
+// factors, so it is stored at zero confidence rather than dressed up — a
+// figure the UI can show as provisional, and one later predictions replace as
+// real measurements arrive.
 func (c *YieldConsumer) onFieldCropAssigned(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
@@ -112,12 +130,102 @@ func (c *YieldConsumer) onFieldCropAssigned(ctx context.Context, event *domain.D
 	}
 	fieldID, _ := data["field_id"].(string)
 	cropID, _ := data["crop_id"].(string)
-	c.log.Infow("msg", "crop assigned to field, generating initial yield prediction",
-		"field_id", fieldID,
-		"crop_id", cropID,
-	)
-	// TODO: call c.svc.PredictYield for the new crop-field assignment
+	tenantID, _ := data["tenant_id"].(string)
+	farmID, _ := data["farm_id"].(string)
+	season, _ := data["season"].(string)
+
+	if fieldID == "" || cropID == "" || tenantID == "" || farmID == "" || season == "" {
+		// Dropped rather than retried: nothing about a replay supplies a field
+		// the producer did not send, and retrying forever blocks the partition
+		// for every event behind it.
+		c.log.Warnw("msg", "crop assigned event is missing what a prediction needs; skipping",
+			"event_id", event.ID, "field_id", fieldID, "crop_id", cropID,
+			"farm_id", farmID, "season", season, "has_tenant", tenantID != "")
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it the write runs unscoped and row-level security
+	// rejects it.
+	ctx = c.systemContext(ctx, tenantID)
+
+	year := plantingYear(data["planting_date"])
+
+	// Kafka delivery is at-least-once and a rebalance replays whatever was in
+	// flight, so the handler checks before writing. Several predictions per
+	// season are normal and wanted — that is what makes them useful as the
+	// season progresses — but a replay of the *same* assignment should not add
+	// a second identical baseline.
+	//
+	// A read-then-write, so two replicas racing can still produce a duplicate.
+	// Left as a read rather than an upsert because the cost of losing that race
+	// is one redundant row in a list that is meant to hold many, and because
+	// the alternative is a uniqueness constraint that would also forbid the
+	// later predictions this table exists to accumulate.
+	existing, _, err := c.svc.ListPredictions(ctx, yielddomain.ListPredictionsParams{
+		FieldID: fieldID, CropID: cropID, Season: season, Year: year, PageSize: 1,
+	})
+	if err != nil {
+		return fmt.Errorf("onFieldCropAssigned: check existing predictions for field %s: %w", fieldID, err)
+	}
+	if len(existing) > 0 {
+		c.log.Infow("msg", "crop assignment already has a prediction; skipping",
+			"field_id", fieldID, "crop_id", cropID, "season", season, "year", year)
+		return nil
+	}
+
+	prediction := &yielddomain.YieldPrediction{
+		FarmID:  farmID,
+		FieldID: fieldID,
+		CropID:  cropID,
+		Season:  season,
+		Year:    year,
+	}
+
+	created, err := c.svc.PredictYield(ctx, prediction)
+	if err != nil {
+		// Returned, so the consumer retries. A prediction that fails because
+		// the AI gateway is briefly down is worth another attempt; silently
+		// accepting the failure is how the field ends up showing "no data"
+		// again, which is the defect this handler exists to fix.
+		return fmt.Errorf("onFieldCropAssigned: predict yield for field %s: %w", fieldID, err)
+	}
+
+	c.log.Infow("msg", "opening yield prediction generated",
+		"field_id", fieldID, "crop_id", cropID, "prediction_id", created.ID,
+		"predicted_kg_per_ha", created.PredictedYieldKgPerHectare,
+		"confidence_pct", created.PredictionConfidencePct)
 	return nil
+}
+
+// plantingYear reads the season year from the planting date.
+//
+// The planting date rather than today, because a crop sown in December for the
+// following season belongs to that season's year, and filing it under the
+// calendar year of the event would put it in the wrong one. Falls back to now
+// when the producer sent no date, which is the common case and off by at most
+// the width of a sowing window.
+func plantingYear(raw any) int32 {
+	if s, ok := raw.(string); ok && s != "" {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			return int32(t.UTC().Year())
+		}
+	}
+	return int32(time.Now().UTC().Year())
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// Both the RLS scope and the connection info are set: the repository layer
+// reads one and the service layer the other, and setting only one leaves
+// queries running unscoped in a way that returns empty rather than failing.
+func (c *YieldConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 // onFieldDeleted handles a field being deleted.

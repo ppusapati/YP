@@ -91,17 +91,29 @@ func (c *CropConsumer) onFieldCropAssigned(ctx context.Context, event *domain.Do
 }
 
 // onFieldDeleted handles a field being deleted.
-// Crop assignments for this field should be cleaned up.
+//
+// Deliberately does nothing. The marker that used to sit here asked this
+// handler to "deactivate crop assignments linked to the deleted field", which
+// was the wrong thing to ask for: crop-service has no assignment table. Its
+// schema is crops,
+// crop_varieties, crop_growth_stages, crop_requirements and
+// crop_recommendations — the catalogue of what a crop *is*. A crop assignment
+// is a fact about a field, lives in field-service's `crop_assignments`, and
+// is written there by AssignCrop.
+//
+// Implementing this as written would have meant reaching across a service
+// boundary to deactivate rows another service owns. field-service now deletes
+// them itself, in the same statement as the field, which is where the
+// invariant belongs and is the only place it can be made atomic.
 func (c *CropConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "field deleted, cleaning up crop assignments",
+	c.log.Infow("msg", "field deleted; its crop assignments belong to field-service",
 		"field_id", fieldID,
 	)
-	// TODO: deactivate crop assignments linked to the deleted field
 	return nil
 }
 

@@ -15,8 +15,8 @@ alert-service 0
 analytics-service 0
 auth-service 0
 commerce-service 0
-crop-service 4
-farm-service 5
+crop-service 3
+farm-service 2
 field-service 5
 irrigation-service 4
 pest-prediction-service 5
@@ -28,12 +28,12 @@ satellite-processing-service 0
 satellite-service 4
 satellite-tile-service 0
 sensor-service 1
-soil-service 4
+soil-service 3
 task-service 0
 traceability-service 0
 vegetation-index-service 0
 weather-service 0
-yield-service 5
+yield-service 4
 advisory-service 0
 market-service 0
 device-service 0

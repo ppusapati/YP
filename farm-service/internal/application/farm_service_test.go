@@ -205,6 +205,10 @@ func (m *mockFarmRepo) RemoveFieldsFromUnit(context.Context, string, string, []s
 	return nil
 }
 
+func (m *mockFarmRepo) RemoveFieldFromAllUnits(context.Context, string, string) (int64, error) {
+	return 0, nil
+}
+
 func (m *mockFarmRepo) WithTx(_ pgx.Tx) outbound.FarmRepository {
 	return m
 }

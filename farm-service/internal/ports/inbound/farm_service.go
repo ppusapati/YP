@@ -30,4 +30,8 @@ type FarmService interface {
 	DeleteManagementUnit(ctx context.Context, id string) error
 	AssignFieldsToUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error)
 	RemoveFieldsFromUnit(ctx context.Context, unitID string, fieldIDs []string) (*domain.ManagementUnit, error)
+
+	// ForgetDeletedField drops a deleted field's membership of every management
+	// unit. Consumer-only: there is no RPC behind it.
+	ForgetDeletedField(ctx context.Context, fieldID string) (int64, error)
 }

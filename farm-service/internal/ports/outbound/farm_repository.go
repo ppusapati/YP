@@ -42,6 +42,9 @@ type FarmRepository interface {
 	GetUnitFieldIDs(ctx context.Context, unitID, tenantID string) ([]string, error)
 	AssignFieldsToUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error
 	RemoveFieldsFromUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error
+	// RemoveFieldFromAllUnits drops a deleted field's membership of every
+	// management unit, and reports how many memberships it dropped.
+	RemoveFieldFromAllUnits(ctx context.Context, fieldID, tenantID string) (int64, error)
 
 	// WithTx returns a copy of this repository that executes queries inside the
 	// provided pgx transaction.  Used by the application layer to compose

@@ -180,9 +180,36 @@ func (r *fieldRepository) UpdateField(ctx context.Context, field *domain.Field) 
 	return f, nil
 }
 
+// DeleteField soft-deletes a field and everything hanging off it.
+//
+// It used to touch the `fields` row alone, which left the field's crop
+// assignments, its segments and its crop cycles live: every one of them
+// carries the field id, none is reached through the `fields` row any more,
+// and none has a foreign key to cascade from — these tables reference
+// `fields(id)` by convention, and `ON DELETE CASCADE` could not express a
+// soft delete anyway. GetCropHistory on a re-created field would then have
+// served the previous occupant's plantings.
+//
+// One statement rather than four in a transaction. Data-modifying CTEs run
+// against a single snapshot and commit together, so there is no window in
+// which the field is gone and its children are live — the state that is
+// hardest to notice and hardest to repair, since nothing can reach the
+// orphans afterwards to clean them up. It also keeps this a plain repository
+// call, so the service does not have to hold a pool to delete a field.
 func (r *fieldRepository) DeleteField(ctx context.Context, uuid, tenantID, deletedBy string) error {
-	return r.exec(ctx,
-		`UPDATE fields SET deleted_at=NOW(), updated_by=$1 WHERE id=$2 AND tenant_id=$3 AND deleted_at IS NULL`,
+	return r.exec(ctx, `
+		WITH del_assignments AS (
+			UPDATE crop_assignments SET deleted_at=NOW()
+			WHERE field_id=$2 AND tenant_id=$3 AND deleted_at IS NULL
+		), del_segments AS (
+			UPDATE field_segments SET deleted_at=NOW()
+			WHERE field_id=$2 AND tenant_id=$3 AND deleted_at IS NULL
+		), del_cycles AS (
+			UPDATE crop_cycles SET deleted_at=NOW()
+			WHERE field_id=$2 AND tenant_id=$3 AND deleted_at IS NULL
+		)
+		UPDATE fields SET deleted_at=NOW(), updated_by=$1
+		WHERE id=$2 AND tenant_id=$3 AND deleted_at IS NULL`,
 		deletedBy, uuid, tenantID,
 	)
 }

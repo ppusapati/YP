@@ -24,6 +24,10 @@ type SoilRepository interface {
 	GetSoilSampleByUUID(ctx context.Context, uuid, tenantID string) (*domain.SoilSample, error)
 	ListSoilSamples(ctx context.Context, tenantID, fieldID, farmID string, pageSize, pageOffset int32) ([]domain.SoilSample, int64, error)
 	DeleteSoilSample(ctx context.Context, uuid, tenantID string) error
+	// ArchiveFieldSoilData marks a deleted field's samples, analyses, maps and
+	// health scores inactive, and reports how many rows it archived. Archived,
+	// not deleted: the rows stay on record for a later audit.
+	ArchiveFieldSoilData(ctx context.Context, fieldID, tenantID string) (int64, error)
 
 	CreateSoilAnalysis(ctx context.Context, analysis *domain.SoilAnalysis) (*domain.SoilAnalysis, error)
 	GetSoilAnalysisByUUID(ctx context.Context, uuid, tenantID string) (*domain.SoilAnalysis, error)

@@ -313,6 +313,41 @@ func (r *soilRepository) ListSoilSamples(ctx context.Context, tenantID, fieldID,
 	return samples, totalCount, nil
 }
 
+// ArchiveFieldSoilData retires the soil records for a field that no longer
+// exists, and reports how many rows it retired.
+//
+// `is_active = FALSE` with `deleted_at` left NULL, which is the distinction
+// these tables already draw: the operational listings filter on both, so an
+// archived row stops appearing in a farm's soil listing, but it is not marked
+// deleted and any compliance export still finds it. That matters more here
+// than elsewhere. A soil analysis is a laboratory measurement of ground that
+// still exists — the field record was an administrative boundary, not the
+// dirt — and it is exactly the record an organic or GAP audit asks for years
+// later. Soft-deleting it, as "archive the samples" could easily have been
+// read, would have destroyed that.
+//
+// Field-scoped tables only. soil_nutrients hangs off a sample rather than a
+// field and is reached through one, so archiving the sample already takes it
+// out of every listing that could reach it.
+func (r *soilRepository) ArchiveFieldSoilData(ctx context.Context, fieldID, tenantID string) (int64, error) {
+	var total int64
+	for _, table := range []string{"soil_samples", "soil_analyses", "soil_maps", "soil_health_scores"} {
+		// Table names come from this fixed literal list, never from input.
+		affected, err := r.exec(ctx, `
+			UPDATE `+table+` SET is_active = FALSE, updated_at = NOW()
+			WHERE tenant_id = $1 AND field_id = $2
+			  AND is_active = TRUE AND deleted_at IS NULL`,
+			tenantID, fieldID)
+		if err != nil {
+			r.log.Errorw("msg", "ArchiveFieldSoilData failed",
+				"table", table, "field_id", fieldID, "error", err)
+			return total, errors.InternalServer("ARCHIVE_FIELD_SOIL_FAILED", "an internal error occurred")
+		}
+		total += affected
+	}
+	return total, nil
+}
+
 func (r *soilRepository) DeleteSoilSample(ctx context.Context, uuid, tenantID string) error {
 	query := `
 		UPDATE soil_samples

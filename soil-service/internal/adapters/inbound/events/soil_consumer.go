@@ -9,7 +9,9 @@ import (
 	"fmt"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
 	"p9e.in/samavaya/agriculture/soil-service/internal/ports/inbound"
 )
@@ -116,18 +118,65 @@ func (c *SoilConsumer) onFieldCreated(ctx context.Context, event *domain.DomainE
 	return nil
 }
 
-// onFieldDeleted handles a field being deleted.
+// onFieldDeleted archives the soil records for a deleted field.
+//
+// This used to log "field deleted, archiving soil data" and return nil, having
+// archived nothing. Kafka committed the offset and the rows stayed active, so
+// a farm-level soil listing kept returning samples, analyses and health scores
+// attributed to a field nobody could open — and `GetSoilHealth` would still
+// answer for it.
+//
+// Archived, not deleted, and the difference is the point. These rows are
+// laboratory measurements of ground that still exists; the field record was an
+// administrative boundary, not the dirt. They are also what an organic or GAP
+// audit asks for years later. `is_active = FALSE` takes them out of the
+// operational listings; `deleted_at` stays NULL so they remain on record.
 func (c *SoilConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "field deleted, archiving soil data",
-		"field_id", fieldID,
-	)
-	// TODO: archive soil samples/analyses for the deleted field
+	tenantID, _ := data["tenant_id"].(string)
+
+	if fieldID == "" || tenantID == "" {
+		// Dropped rather than retried: a message that can never succeed would
+		// block the partition, and guessing a tenant would archive another
+		// tenant's soil records.
+		c.log.Warnw("msg", "field deleted event missing field or tenant; cannot archive soil data",
+			"event_id", event.ID, "field_id", fieldID)
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it the updates run unscoped, row-level security
+	// matches nothing, and the handler reports success over zero rows.
+	ctx = c.systemContext(ctx, tenantID)
+
+	archived, err := c.svc.ArchiveFieldSoilData(ctx, fieldID)
+	if err != nil {
+		// Returned, so the consumer retries: a database blip must not leave a
+		// deleted field's soil data live in a farm listing.
+		return fmt.Errorf("onFieldDeleted: archive soil data for field %s: %w", fieldID, err)
+	}
+
+	c.log.Infow("msg", "field deleted, soil data archived",
+		"field_id", fieldID, "rows_archived", archived)
 	return nil
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// Both the RLS scope and the connection info are set: the repository layer
+// reads one and the service layer the other, and setting only one leaves
+// queries running unscoped in a way that returns empty rather than failing.
+func (c *SoilConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 func extractEventData(event *domain.DomainEvent) (map[string]interface{}, error) {

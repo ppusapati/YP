@@ -9,7 +9,9 @@ import (
 	"fmt"
 
 	"p9e.in/samavaya/packages/events/domain"
+	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 
 	"p9e.in/samavaya/agriculture/farm-service/internal/ports/inbound"
 )
@@ -72,8 +74,27 @@ func (c *FarmConsumer) HandleEvent(ctx context.Context, event *domain.DomainEven
 	}
 }
 
-// onFieldCreated handles a new field being added to a farm.
-// The farm-service can use this to update field counts or warm caches.
+// Field creation and update carry nothing farm-service has to record, and the
+// markers that used to sit here — asking them to "update the farm aggregate
+// (e.g. field count, total area)" — were the wrong thing to ask for.
+//
+// There is no field count. Not on `Farm`, not in the `farms` table, not in the
+// proto — nothing in this service counts fields, and nothing serves a count,
+// so there is no figure here that could drift. Whoever needs one asks
+// field-service, which is where fields live and where the answer is current
+// rather than a copy that goes stale between events.
+//
+// `total_area_hectares` does exist, and is the farmer's own declared area for
+// the parcel: they type it into CreateFarm and can edit it. Summing the fields
+// into it would overwrite what they entered with a strictly smaller number,
+// because fields do not cover tracks, buildings, margins or watercourses —
+// silently, on every field created. Implementing that as written would
+// have corrupted user data while looking like the debt was cleared.
+//
+// These stay as log lines because the events are genuinely useful to see in a
+// trace, not because there is work left here.
+
+// onFieldCreated records that a field appeared on a farm.
 func (c *FarmConsumer) onFieldCreated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
@@ -85,11 +106,10 @@ func (c *FarmConsumer) onFieldCreated(ctx context.Context, event *domain.DomainE
 		"farm_id", farmID,
 		"field_id", fieldID,
 	)
-	// TODO: call c.svc to update farm aggregate (e.g. field count, total area)
 	return nil
 }
 
-// onFieldUpdated handles a field being updated (e.g. boundary change).
+// onFieldUpdated records that a field on a farm changed.
 func (c *FarmConsumer) onFieldUpdated(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
@@ -101,24 +121,64 @@ func (c *FarmConsumer) onFieldUpdated(ctx context.Context, event *domain.DomainE
 		"farm_id", farmID,
 		"field_id", fieldID,
 	)
-	// TODO: call c.svc to refresh farm summary (e.g. recalc total area)
 	return nil
 }
 
-// onFieldDeleted handles a field being removed from a farm.
+// onFieldDeleted drops the field's membership of every management unit.
+//
+// This is the one thing a farm genuinely holds about a field, and it is not a
+// count: `management_unit_fields` is farm-service's own junction table, keyed
+// on a `field_id` that belongs to another service and therefore has no foreign
+// key to cascade from. Nothing else can reach the row — fields live in
+// field-service — so without this the deleted field stays a member of its unit
+// for ever and `GetManagementUnit` lists it. `AssignFieldsToUnit` is
+// `ON CONFLICT DO NOTHING`, so even reusing the id would not clear it.
 func (c *FarmConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
-	farmID, _ := data["farm_id"].(string)
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "field deleted from farm",
-		"farm_id", farmID,
-		"field_id", fieldID,
-	)
-	// TODO: call c.svc to update farm aggregate (decrement field count)
+	tenantID, _ := data["tenant_id"].(string)
+
+	if fieldID == "" || tenantID == "" {
+		// Dropped rather than retried: a message that can never succeed would
+		// block the partition, and guessing a tenant would touch another
+		// tenant's units.
+		c.log.Warnw("msg", "field deleted event missing field or tenant; cannot update units",
+			"event_id", event.ID, "field_id", fieldID)
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it the delete runs unscoped, row-level security
+	// matches nothing, and the handler reports success over zero rows.
+	ctx = c.systemContext(ctx, tenantID)
+
+	removed, err := c.svc.ForgetDeletedField(ctx, fieldID)
+	if err != nil {
+		// Returned, so the consumer retries: a database blip must not leave a
+		// unit listing a field that no longer exists.
+		return fmt.Errorf("onFieldDeleted: remove field %s from units: %w", fieldID, err)
+	}
+
+	c.log.Infow("msg", "field deleted, unit memberships dropped",
+		"field_id", fieldID, "memberships_removed", removed)
 	return nil
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// Both the RLS scope and the connection info are set: the repository layer
+// reads one and the service layer the other, and setting only one leaves
+// queries running unscoped in a way that returns empty rather than failing.
+func (c *FarmConsumer) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	ctx = p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
 // onSensorDeployed handles a sensor being deployed on the farm.

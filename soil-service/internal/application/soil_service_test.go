@@ -152,6 +152,9 @@ func (m *mockSoilRepo) CreateSoilSample(_ context.Context, s *domain.SoilSample)
 	if s.ID == "" {
 		s.ID = "sample-uuid-001"
 	}
+	// The column defaults to TRUE, so a freshly inserted sample is active
+	// whether or not the caller said so.
+	s.IsActive = true
 	m.samples[s.ID] = s
 	return s, nil
 }
@@ -167,11 +170,28 @@ func (m *mockSoilRepo) GetSoilSampleByUUID(_ context.Context, uuid, tenantID str
 func (m *mockSoilRepo) ListSoilSamples(_ context.Context, tenantID, fieldID, _ string, _, _ int32) ([]domain.SoilSample, int64, error) {
 	var result []domain.SoilSample
 	for _, s := range m.samples {
-		if s.TenantID == tenantID && (fieldID == "" || s.FieldID == fieldID) {
+		// Mirrors the real query, which filters `is_active = TRUE AND
+		// deleted_at IS NULL`. Without the is_active term the mock would
+		// hide the difference between archiving a sample and doing nothing.
+		if s.TenantID == tenantID && s.IsActive && s.DeletedAt == nil &&
+			(fieldID == "" || s.FieldID == fieldID) {
 			result = append(result, *s)
 		}
 	}
 	return result, int64(len(result)), nil
+}
+
+// ArchiveFieldSoilData marks a field's samples inactive rather than removing
+// them, which is the distinction the real repository draws.
+func (m *mockSoilRepo) ArchiveFieldSoilData(_ context.Context, fieldID, tenantID string) (int64, error) {
+	var n int64
+	for _, s := range m.samples {
+		if s.TenantID == tenantID && s.FieldID == fieldID && s.IsActive {
+			s.IsActive = false
+			n++
+		}
+	}
+	return n, nil
 }
 
 func (m *mockSoilRepo) DeleteSoilSample(_ context.Context, uuid, tenantID string) error {
@@ -302,7 +322,7 @@ func newService() (*mockSoilRepo, *mockEventPublisher, *soilService) {
 }
 
 func validSoilSample() *domain.SoilSample {
-	return &domain.SoilSample{
+	sample := &domain.SoilSample{
 		TenantID:               "tenant-1",
 		FieldID:                "field-001",
 		FarmID:                 "farm-001",
@@ -327,6 +347,10 @@ func validSoilSample() *domain.SoilSample {
 		Latitude:               12.5,
 		Longitude:              77.5,
 	}
+	// IsActive is promoted from BaseModel and defaults to TRUE in the column;
+	// the listings filter on it, so a fixture without it is not a real row.
+	sample.IsActive = true
+	return sample
 }
 
 // ---------------------------------------------------------------------------
@@ -752,6 +776,9 @@ func TestListSoilSamples_HappyPath(t *testing.T) {
 
 	repo.samples["s1"] = &domain.SoilSample{TenantID: "tenant-1", FieldID: "f1"}
 	repo.samples["s1"].ID = "s1"
+	// IsActive is promoted from BaseModel and defaults to TRUE in the column;
+	// the listings filter on it, so a fixture without it is not a real row.
+	repo.samples["s1"].IsActive = true
 
 	samples, total, err := svc.ListSoilSamples(ctx, "", "", "", 20, 0)
 	require.NoError(t, err)
@@ -1084,4 +1111,86 @@ func TestGenerateRecommendations_LowPH(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "expected lime recommendation for low pH")
+}
+
+// ---------------------------------------------------------------------------
+// Tests: ArchiveFieldSoilData
+// ---------------------------------------------------------------------------
+
+// Archiving takes the field's soil records out of the listings without
+// deleting them.
+//
+// The distinction is the whole point. A soil analysis is a laboratory
+// measurement of ground that still exists — the field record was an
+// administrative boundary, not the dirt — and it is what an organic or GAP
+// audit asks for years later. `is_active = FALSE` hides it; `deleted_at`
+// stays NULL so it remains on record.
+func TestArchiveFieldSoilData_HidesWithoutDeleting(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	sample := validSoilSample()
+	sample.ID = "sample-001"
+	repo.samples["sample-001"] = sample
+
+	archived, err := svc.ArchiveFieldSoilData(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), archived)
+
+	listed, total, err := svc.ListSoilSamples(ctx, "", "field-001", "", 20, 0)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total, "an archived sample is still listed")
+	assert.Empty(t, listed)
+
+	assert.NotNil(t, repo.samples["sample-001"], "the row was removed rather than archived")
+	assert.Nil(t, repo.samples["sample-001"].DeletedAt,
+		"archiving set deleted_at; the record is meant to survive for an audit")
+}
+
+// Another field's records are untouched.
+func TestArchiveFieldSoilData_LeavesOtherFieldsAlone(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	keep := validSoilSample()
+	keep.ID = "sample-002"
+	keep.FieldID = "field-002"
+	repo.samples["sample-002"] = keep
+
+	archived, err := svc.ArchiveFieldSoilData(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), archived)
+
+	_, total, err := svc.ListSoilSamples(ctx, "", "field-002", "", 20, 0)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total, "a different field's sample was archived")
+}
+
+// Replaying the cascade finds nothing left and says so rather than failing.
+func TestArchiveFieldSoilData_IsIdempotent(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	sample := validSoilSample()
+	sample.ID = "sample-001"
+	repo.samples["sample-001"] = sample
+
+	first, err := svc.ArchiveFieldSoilData(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), first)
+
+	second, err := svc.ArchiveFieldSoilData(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), second, "a replay archived the same rows again")
+}
+
+// Without a tenant there is nothing to scope the archive to, and guessing one
+// would archive another tenant's soil records.
+func TestArchiveFieldSoilData_MissingTenant(t *testing.T) {
+	_, _, svc := newService()
+	ctx := testContext("", "")
+
+	_, err := svc.ArchiveFieldSoilData(ctx, "field-001")
+	require.Error(t, err)
+	assert.True(t, errors.IsBadRequest(err))
 }

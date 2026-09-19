@@ -13,6 +13,8 @@ type FieldRepository interface {
 	GetFieldByUUID(ctx context.Context, uuid, tenantID string) (*domain.Field, error)
 	ListFields(ctx context.Context, params domain.ListFieldsParams) ([]domain.Field, int32, error)
 	UpdateField(ctx context.Context, field *domain.Field) (*domain.Field, error)
+	// DeleteField soft-deletes the field and, in the same statement, the crop
+	// assignments, segments and crop cycles hanging off it.
 	DeleteField(ctx context.Context, uuid, tenantID, deletedBy string) error
 	CheckFieldExists(ctx context.Context, uuid, tenantID string) (bool, error)
 	CheckFieldNameExists(ctx context.Context, name, farmID, tenantID string) (bool, error)

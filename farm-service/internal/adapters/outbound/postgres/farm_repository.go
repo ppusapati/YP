@@ -693,6 +693,39 @@ func (r *farmRepository) AssignFieldsToUnit(ctx context.Context, unitID, tenantI
 	return nil
 }
 
+// RemoveFieldFromAllUnits drops a field's membership of every management unit
+// it belongs to, and reports how many memberships it dropped.
+//
+// Needed because the membership row is not reachable from the field. Fields
+// live in field-service, so `management_unit_fields.field_id` has no foreign
+// key and nothing cascades when the field goes; the only way back to the row
+// is the field id itself. Without this, a deleted field stays a member of its
+// unit for ever, and `GetManagementUnit` lists it.
+//
+// A hard delete rather than a soft one: the junction has no `deleted_at` and
+// carries no information of its own — it records that a field is in a unit,
+// which stops being true.
+func (r *farmRepository) RemoveFieldFromAllUnits(ctx context.Context, fieldID, tenantID string) (int64, error) {
+	var removed int64
+	sql := `DELETE FROM management_unit_fields WHERE tenant_id = $1 AND field_id = $2`
+	if r.tx != nil {
+		tag, err := r.tx.Exec(ctx, sql, tenantID, fieldID)
+		if err != nil {
+			return 0, err
+		}
+		removed = tag.RowsAffected()
+	} else {
+		tag, err := r.pool.Exec(ctx, sql, tenantID, fieldID)
+		if err != nil {
+			r.log.Errorw("msg", "failed to remove field from units",
+				"field_id", fieldID, "error", err)
+			return 0, errors.InternalServer("UNIT_REMOVE_FAILED", "an internal error occurred")
+		}
+		removed = tag.RowsAffected()
+	}
+	return removed, nil
+}
+
 func (r *farmRepository) RemoveFieldsFromUnit(ctx context.Context, unitID, tenantID string, fieldIDs []string) error {
 	for _, fid := range fieldIDs {
 		if err := r.exec(ctx, `
