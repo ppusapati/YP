@@ -120,23 +120,48 @@ limiter := algorithms.NewTokenBucketLimiter(
 - Need simple burst handling
 - Per-API key limits
 
-### BBR (Bottleneck Bandwidth and RTT)
+### Adaptive concurrency
 
-Adaptive and efficient:
+No configured rate; the limit is derived from the service's own latency.
+
 ```go
-bbr := algorithms.NewBBRLimiter()
+adaptive := algorithms.NewAdaptiveLimiter()
 
-// Record actual latencies
-bbr.RecordRTT(latency)
+lease, ok, err := adaptive.Acquire(ctx, "soil-service")
+if err != nil || !ok {
+    return errTooManyRequests
+}
+defer lease.Failure() // replaced by Success on the happy path
 
-// Track deliveries
-bbr.RecordDelivery(numPackets, latency)
+resp, err := client.Call(ctx, req)
+if err != nil {
+    return err // the deferred Failure backs the limit off
+}
+lease.Success()
 ```
 
+Exactly one of `Success`, `Failure` or `Ignore` must be called, and `defer`
+makes that hard to forget. Calling more than once is a no-op after the first,
+so the deferred `Failure` above is safe alongside an explicit `Success`.
+
+Use `Ignore` for work whose duration says nothing about the service — a
+cancelled context, a request the caller abandoned — so the limiter does not
+learn a latency that was never the service's.
+
 **Use when:**
-- High-throughput services
-- Variable latency
-- Want automatic congestion control
+- Calling a dependency you can overload
+- The safe concurrency is not a number you know, and moves
+- You want the limit to find capacity rather than be told it
+
+**Tuning:** `AdaptiveConfig` sets only the bounds and how fast the limit moves
+(`MinLimit`, `MaxLimit`, `Smoothing`, `DropPenalty`, `LongWindow`). Any zero
+field is filled from `DefaultAdaptiveConfig`.
+
+> Replaced `NewBBRLimiter`, which had no callers and a control loop that never
+> closed: its window had no path that could grow, its bandwidth estimate only
+> ratcheted upward, it computed a bandwidth-delay product from queueing latency,
+> it had no failure path for in-flight accounting, and every key shared one
+> window.
 
 ### Distributed (PostgreSQL)
 
@@ -273,7 +298,7 @@ go test -bench=. ./packages/ratelimit/algorithms/
 ## Performance
 
 - **Token Bucket**: <1μs per Allow() call
-- **BBR**: <10μs per Allow() call (with RTT tracking)
+- **Adaptive**: <1μs per Acquire, plus an O(in-flight) sweep at most once a second
 - **Distributed**: ~10ms per Allow() call (with DB round trip)
 
 Use local caching with distributed limiter to achieve <100μs latency:

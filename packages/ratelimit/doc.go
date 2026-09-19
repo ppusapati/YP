@@ -1,46 +1,83 @@
-// Package ratelimit provides rate limiting for 125+ microservices using multiple algorithms.
+// Package ratelimit provides rate and concurrency limiting for the platform's
+// services.
 //
-// # Algorithms
+// # Choosing between them
 //
-// The package supports multiple rate limiting algorithms:
+// Two different questions, two different tools:
 //
-//   - TokenBucket: Classic token bucket with refill rate
-//   - BBR: Google's Bottleneck Bandwidth and RTT congestion control
-//   - Adaptive: Dynamic limits based on system load
-//   - Distributed: PostgreSQL-backed for multi-instance coordination
+//   - TokenBucket answers "how many requests per second may this caller make",
+//     which is what you want when the limit is a policy: a quota, a tier, an
+//     agreement. You know the number because you chose it.
+//
+//   - AdaptiveLimiter answers "how much work can this service take right now",
+//     which is what you want when the limit is a property of the service rather
+//     than a decision about the caller. You do not know the number, and it
+//     moves — so it is measured instead of configured.
+//
+//   - Distributed coordinates a token bucket's state across instances in
+//     PostgreSQL, for when the limit is per-fleet rather than per-process.
+//
+// Reach for the token bucket at the edge, facing clients. Reach for the
+// adaptive limiter in front of a dependency you can overload.
 //
 // # Token Bucket
 //
-// Simple and effective rate limiting:
-//   - Capacity: Maximum tokens in bucket
-//   - Refill rate: Tokens added per second
-//   - Each request consumes 1 token
-//   - Allows burst traffic up to capacity
+// A configured rate with burst capacity:
+//   - Capacity: maximum tokens in the bucket
+//   - Refill rate: tokens added per second
+//   - Each request consumes one token
+//   - Bursts are allowed up to the capacity
 //
-// # BBR Algorithm
+// State is kept per key, so one caller exhausting its bucket does not affect
+// another.
 //
-// Advanced congestion control based on:
-//   - Bandwidth estimation (BDP - Bandwidth Delay Product)
-//   - RTT (Round Trip Time) tracking
-//   - Congestion window (CWND) management
-//   - Four states: STARTUP, DRAIN, PROBE_BW, PROBE_RTT
+// # Adaptive Concurrency
 //
-// BBR is more efficient than token bucket for high-throughput, variable-latency workloads.
+// A ceiling on in-flight requests, derived from the service's own latency:
+//   - The smallest latency seen recently is the service's cost with no queue
+//   - The ratio of that to the current latency says how deep the queue is
+//   - The limit follows that ratio, probing upward when there is no queue
+//   - Failures back the limit off multiplicatively
 //
-// # Usage Example
+// Nothing is configured except the bounds it may move between. The window over
+// which the no-load latency is remembered rotates, so the estimate rises when a
+// service genuinely becomes slower rather than treating the new normal as
+// permanent congestion.
 //
-//	// Token bucket
-//	limiter := algorithms.NewTokenBucketLimiter(100, 50.0) // 100 capacity, 50 req/sec
-//	if limiter.Allow() {
-//	    processRequest()
+// This replaced a BBRLimiter. That implementation carried BBR's vocabulary over
+// a control loop that never closed — a congestion window with no path that
+// could raise it, a bandwidth estimate that could only ratchet up, a BDP
+// computed from queueing latency, no failure path for in-flight accounting, and
+// one window shared by every key. None of it had a caller. The name is gone
+// along with it, because the four-state machine is about pacing packets over a
+// link and this is about admitting requests to a service.
+//
+// # Usage
+//
+//	// Token bucket: a rate you chose.
+//	limiter := algorithms.NewTokenBucketLimiter(100, 50.0) // burst 100, 50 req/sec
+//	if ok, _ := limiter.Allow(ctx, clientID); !ok {
+//	    return errTooManyRequests
 //	}
 //
-//	// BBR
-//	bbrLimiter := algorithms.NewBBRLimiter()
-//	allowed := bbrLimiter.Allow(requestDuration)
-//	if allowed {
-//	    processRequest()
+//	// Adaptive: a concurrency the service tells you.
+//	//
+//	// Acquire returns a lease; exactly one of Success, Failure or Ignore must
+//	// be called, which defer makes hard to forget. Failure is the deferred
+//	// default so an early return or a panic still backs the limiter off.
+//	adaptive := algorithms.NewAdaptiveLimiter()
+//
+//	lease, ok, err := adaptive.Acquire(ctx, "soil-service")
+//	if err != nil || !ok {
+//	    return errTooManyRequests
 //	}
+//	defer lease.Failure()
+//
+//	resp, err := client.Call(ctx, req)
+//	if err != nil {
+//	    return err // the deferred Failure backs the limit off
+//	}
+//	lease.Success()
 //
 //	// Distributed (multi-instance)
 //	pool := pgxpool.New(ctx, connString)

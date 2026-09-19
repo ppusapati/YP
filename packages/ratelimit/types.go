@@ -9,10 +9,15 @@ import (
 type Algorithm string
 
 const (
-	AlgorithmTokenBucket   Algorithm = "token_bucket"
-	AlgorithmBBR           Algorithm = "bbr"
-	AlgorithmAdaptive      Algorithm = "adaptive"
-	AlgorithmDistributed   Algorithm = "distributed"
+	// AlgorithmTokenBucket enforces a configured rate with burst capacity.
+	AlgorithmTokenBucket Algorithm = "token_bucket"
+
+	// AlgorithmAdaptive bounds concurrency from measured latency degradation,
+	// with no configured rate. See algorithms.AdaptiveLimiter.
+	AlgorithmAdaptive Algorithm = "adaptive"
+
+	// AlgorithmDistributed coordinates limits across instances in PostgreSQL.
+	AlgorithmDistributed Algorithm = "distributed"
 )
 
 // Limiter defines the rate limiting interface
@@ -100,13 +105,13 @@ type RateLimitConfig struct {
 // DefaultRateLimitConfig returns sensible defaults
 func DefaultRateLimitConfig() RateLimitConfig {
 	return RateLimitConfig{
-		Algorithm:         AlgorithmTokenBucket,
-		DefaultLimit:      100,
-		BurstCapacity:     200,
-		WindowSize:        1 * time.Second,
-		EnableAdaptive:    false,
-		AdaptiveHighLoad:  0.8,
-		AdaptiveLowLoad:   0.2,
+		Algorithm:          AlgorithmTokenBucket,
+		DefaultLimit:       100,
+		BurstCapacity:      200,
+		WindowSize:         1 * time.Second,
+		EnableAdaptive:     false,
+		AdaptiveHighLoad:   0.8,
+		AdaptiveLowLoad:    0.2,
 		AdaptiveMultiplier: 1.2,
 	}
 }
@@ -197,36 +202,36 @@ func WithOnRateLimitHit(callback func(ctx context.Context, key string)) Option {
 	}
 }
 
-// BBRState represents the state of the BBR algorithm
-type BBRState string
+// AdaptiveMetrics describes what an adaptive concurrency limiter exposes.
+//
+// It replaces a BBRMetrics that named a bandwidth estimate, a bandwidth-delay
+// product and four BBR states. Those were the wrong quantities for admitting
+// requests to a service: a service has no bottleneck bandwidth to estimate, and
+// the BDP computed from queueing latency drives the window the wrong way. What
+// is worth reporting is the limit, how much of it is in use, the latency the
+// service shows when idle, the latency it is showing now, and the ratio between
+// them that moves the limit.
+type AdaptiveMetrics struct {
+	// Limit is the current concurrency ceiling.
+	Limit int64
 
-const (
-	BBRStartup   BBRState = "STARTUP"   // Initial phase: measure initial bandwidth
-	BBRDrain     BBRState = "DRAIN"     // Drain excess packets from network
-	BBRProbeBW   BBRState = "PROBE_BW"  // Steady state: probe for available bandwidth
-	BBRProbeRTT  BBRState = "PROBE_RTT" // Measure minimum RTT
-)
-
-// BBRMetrics contains BBR algorithm metrics
-type BBRMetrics struct {
-	// Current state
-	State BBRState
-
-	// Bandwidth estimation (packets per second)
-	Bandwidth float64
-
-	// Round Trip Time
-	RTT time.Duration
-
-	// Minimum observed RTT
-	MinRTT time.Duration
-
-	// Congestion window (allowed in-flight packets)
-	CWND int64
-
-	// In-flight packets
+	// InFlight is how much of it is in use.
 	InFlight int64
 
-	// Bandwidth Delay Product
-	BDP int64
+	// NoLoadRTT is the smallest latency seen recently, which is the service's
+	// cost with no queue in front of it. Windowed, so it rises when the
+	// service genuinely becomes slower.
+	NoLoadRTT time.Duration
+
+	// SampleRTT is the smallest latency in the window just measured.
+	SampleRTT time.Duration
+
+	// Gradient is NoLoadRTT/SampleRTT: 1 when there is no queue, falling
+	// toward 0 as one builds. Zero means the last window contained a failure
+	// and no gradient was computed from it.
+	Gradient float64
+
+	// Allowed and Rejected count admissions and refusals for the key.
+	Allowed  int64
+	Rejected int64
 }

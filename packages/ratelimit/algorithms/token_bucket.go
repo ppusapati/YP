@@ -18,11 +18,11 @@ type TokenBucketLimiter struct {
 
 // TokenBucket represents a single bucket for a key
 type TokenBucket struct {
-	tokens      float64
-	capacity    float64
-	refillRate  float64
-	lastRefill  time.Time
-	mu          sync.Mutex
+	tokens     float64
+	capacity   float64
+	refillRate float64
+	lastRefill time.Time
+	mu         sync.Mutex
 }
 
 // NewTokenBucketLimiter creates a new token bucket rate limiter
@@ -81,7 +81,7 @@ func (tbl *TokenBucketLimiter) Reserve(ctx context.Context, key string) (*rateli
 		return &ratelimit.Reservation{
 			ReadyAt: time.Now(),
 			Delay:   0,
-			OK:       true,
+			OK:      true,
 		}, nil
 	}
 
@@ -93,7 +93,7 @@ func (tbl *TokenBucketLimiter) Reserve(ctx context.Context, key string) (*rateli
 	return &ratelimit.Reservation{
 		ReadyAt: time.Now().Add(delay),
 		Delay:   delay,
-		OK:       false,
+		OK:      false,
 	}, nil
 }
 
@@ -117,9 +117,9 @@ func (tbl *TokenBucketLimiter) GetStats(ctx context.Context, key string) (*ratel
 		WindowStart:   bucket.lastRefill,
 		WindowEnd:     time.Now().Add(time.Duration(bucket.refillRate) * time.Second),
 		Metrics: map[string]interface{}{
-			"tokens":        currentTokens,
-			"capacity":      bucket.capacity,
-			"refill_rate":   bucket.refillRate,
+			"tokens":      currentTokens,
+			"capacity":    bucket.capacity,
+			"refill_rate": bucket.refillRate,
 		},
 	}, nil
 }
@@ -169,9 +169,9 @@ func (tbl *TokenBucketLimiter) getOrCreateBucket(key string) *TokenBucket {
 	return bucket
 }
 
-func min(a, b float64) float64 {
-	if a < b {
-		return a
-	}
-	return b
-}
+// A package-level `min(a, b float64) float64` used to live here. Go 1.21 made
+// min and max builtins over any ordered type, so it was redundant — and worse
+// than redundant, because a package-level function of that name shadows the
+// builtin for every file in the package. Any other file wanting min on two
+// time.Durations or two ints got a type error pointing at its own correct code.
+// The three call sites above use the builtin and behave identically.
