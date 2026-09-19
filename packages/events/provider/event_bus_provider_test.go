@@ -8,6 +8,7 @@ import (
 
 	"p9e.in/samavaya/packages/events"
 	"p9e.in/samavaya/packages/events/bus"
+	"p9e.in/samavaya/packages/events/domain"
 )
 
 func TestNewDefaultEventBus(t *testing.T) {
@@ -259,9 +260,30 @@ func TestEventBusModuleWithMultipleDependencies(t *testing.T) {
 		t.Fatal("expected wrapper to be populated")
 	}
 
-	// Verify they're connected
-	if wrapper == nil {
-		t.Fatal("expected wrapper to reference the bus")
+	// Verify they're connected.
+	//
+	// This used to repeat `wrapper == nil` under a comment claiming to check a
+	// relationship, which is a check that cannot fail for the reason it names:
+	// two separately-constructed objects would have passed it. Publishing
+	// through the wrapper and receiving on the bus is the property itself.
+	received := false
+	subscribe := bus.Subscribe[*domain.DomainEvent](eventBus)
+	if _, err := subscribe(func(ctx context.Context, e *domain.DomainEvent) error {
+		received = true
+		return nil
+	}); err != nil {
+		t.Fatalf("failed to subscribe on the bus: %v", err)
+	}
+
+	event := domain.NewDomainEvent(
+		domain.EventTypeSalesOrderCreated, "order-1", "SalesOrder",
+		map[string]interface{}{},
+	)
+	if err := wrapper.PublishEvent(context.Background(), event); err != nil {
+		t.Fatalf("failed to publish through the wrapper: %v", err)
+	}
+	if !received {
+		t.Fatal("the wrapper published to a different bus than fx provided")
 	}
 
 	if err := app.Stop(context.Background()); err != nil {
@@ -273,22 +295,28 @@ func TestEventBusModuleIsSingleton(t *testing.T) {
 	var wrapper1 *events.EventBusWrapper
 	var wrapper2 *events.EventBusWrapper
 
+	// fx.Invoke, not fx.Provide.
+	//
+	// Written as two providers, each both *taking* and *returning*
+	// *events.EventBusWrapper, this asked fx to supply a type from two
+	// constructors that each need that same type — which fx rejects outright
+	// ("already provided"), so the app never started and the singleton property
+	// was never examined. Two invoked consumers is the question the test means
+	// to ask: does everything that depends on the wrapper get the same one?
 	app := fx.New(
 		EventBusModule,
-		fx.Provide(
-			func(w *events.EventBusWrapper) *events.EventBusWrapper {
-				wrapper1 = w
-				return w
-			},
-			func(w *events.EventBusWrapper) *events.EventBusWrapper {
-				wrapper2 = w
-				return w
-			},
+		fx.Invoke(
+			func(w *events.EventBusWrapper) { wrapper1 = w },
+			func(w *events.EventBusWrapper) { wrapper2 = w },
 		),
 	)
 
 	if err := app.Start(context.Background()); err != nil {
 		t.Fatalf("failed to start app: %v", err)
+	}
+
+	if wrapper1 == nil || wrapper2 == nil {
+		t.Fatal("expected both consumers to receive a wrapper")
 	}
 
 	// Both should reference the same instance

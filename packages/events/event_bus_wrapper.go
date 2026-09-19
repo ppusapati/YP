@@ -13,12 +13,12 @@ import (
 // EventBusWrapper provides application-specific event bus methods
 // It wraps the generic bus.EventBus with convenience methods for domain events
 type EventBusWrapper struct {
-	bus              *bus.EventBus
-	mu               sync.RWMutex
-	publishedCount   int64
-	subscriberCount  int64
-	errorCount       int64
-	lastPublishTime  time.Time
+	bus             *bus.EventBus
+	mu              sync.RWMutex
+	publishedCount  int64
+	subscriberCount int64
+	errorCount      int64
+	lastPublishTime time.Time
 }
 
 // NewEventBusWrapper creates new wrapper around event bus
@@ -94,13 +94,29 @@ func (e *EventBusWrapper) SubscribeToEvent(
 		// Log handler invocation
 		e.logEvent("HANDLE", event)
 
-		// Call actual handler
+		// Call actual handler.
+		//
+		// The error is counted and logged and then *not* returned to the bus,
+		// which is what a subscription is as opposed to a command.
+		//
+		// bus.publish walks its handlers in order and returns on the first
+		// error, so returning it here did two things nobody asked for: every
+		// handler registered after the failing one never saw the event at all
+		// — delivery silently depending on subscription order — and the
+		// publisher was told its event had not been published, when in fact it
+		// had been, to a subscriber that then failed on its own account. A
+		// caller that reacted by retrying would redeliver to the handlers that
+		// already succeeded.
+		//
+		// A subscriber's failure is the subscriber's to recover from. It is
+		// visible in error_count and in the log, which is where an operator
+		// looks for it.
 		if err := handler(ctx, event); err != nil {
 			e.mu.Lock()
 			e.errorCount++
 			e.mu.Unlock()
 			e.logError("HANDLER_ERROR", event, err)
-			return err
+			return nil
 		}
 
 		return nil
@@ -158,13 +174,29 @@ func (e *EventBusWrapper) SubscribeToMultipleEvents(
 		// Log handler invocation
 		e.logEvent("HANDLE", event)
 
-		// Call actual handler
+		// Call actual handler.
+		//
+		// The error is counted and logged and then *not* returned to the bus,
+		// which is what a subscription is as opposed to a command.
+		//
+		// bus.publish walks its handlers in order and returns on the first
+		// error, so returning it here did two things nobody asked for: every
+		// handler registered after the failing one never saw the event at all
+		// — delivery silently depending on subscription order — and the
+		// publisher was told its event had not been published, when in fact it
+		// had been, to a subscriber that then failed on its own account. A
+		// caller that reacted by retrying would redeliver to the handlers that
+		// already succeeded.
+		//
+		// A subscriber's failure is the subscriber's to recover from. It is
+		// visible in error_count and in the log, which is where an operator
+		// looks for it.
 		if err := handler(ctx, event); err != nil {
 			e.mu.Lock()
 			e.errorCount++
 			e.mu.Unlock()
 			e.logError("HANDLER_ERROR", event, err)
-			return err
+			return nil
 		}
 
 		return nil

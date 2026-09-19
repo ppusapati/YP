@@ -351,6 +351,63 @@ func TestHandlerError(t *testing.T) {
 	}
 }
 
+// A failing subscriber must not starve the ones behind it.
+//
+// bus.publish walks its handlers in order and returns on the first error, so
+// while the wrapper passed handler errors back, whether a subscriber received
+// an event depended on whether some *other* subscriber — registered earlier,
+// possibly by another module entirely — happened to fail first. That is the
+// kind of defect that shows up as one module quietly missing events in
+// production and nothing at all in a test.
+func TestHandlerErrorDoesNotStarveLaterSubscribers(t *testing.T) {
+	wrapper := NewEventBusWrapper(nil)
+	ctx := context.Background()
+
+	firstCalled, secondCalled := false, false
+
+	if err := wrapper.SubscribeToEvent(
+		domain.EventTypeSalesOrderCreated,
+		func(ctx context.Context, event *domain.DomainEvent) error {
+			firstCalled = true
+			return errors.New("first handler fails")
+		},
+	); err != nil {
+		t.Fatalf("subscribe first: %v", err)
+	}
+
+	if err := wrapper.SubscribeToEvent(
+		domain.EventTypeSalesOrderCreated,
+		func(ctx context.Context, event *domain.DomainEvent) error {
+			secondCalled = true
+			return nil
+		},
+	); err != nil {
+		t.Fatalf("subscribe second: %v", err)
+	}
+
+	event := domain.NewDomainEvent(
+		domain.EventTypeSalesOrderCreated,
+		"order-123",
+		"SalesOrder",
+		map[string]interface{}{},
+	)
+
+	if err := wrapper.PublishEvent(ctx, event); err != nil {
+		t.Fatalf("expected no error on publish, got %v", err)
+	}
+
+	if !firstCalled {
+		t.Error("first handler was not called")
+	}
+	if !secondCalled {
+		t.Error("second handler was not called — the first one's error stopped delivery")
+	}
+
+	if got := wrapper.GetStats()["error_count"].(int64); got != 1 {
+		t.Errorf("error_count = %d, want 1", got)
+	}
+}
+
 func TestGetStats(t *testing.T) {
 	wrapper := NewEventBusWrapper(nil)
 

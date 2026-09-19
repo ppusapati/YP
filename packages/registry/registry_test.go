@@ -274,6 +274,65 @@ func TestWatch(t *testing.T) {
 	}
 }
 
+// Cancelling a watcher while the registry shuts down must not close the same
+// channel twice.
+//
+// Watch used to unregister the channel and close it as two steps, with the
+// lock released in between, while Close closed every channel still in the map.
+// Interleaved, both closed the same channel and the process died with "close of
+// closed channel" — not an error a caller can recover from, and it happened on
+// the one path every service takes: shutdown.
+//
+// The failure was timing-dependent, about two runs in five, and the package's
+// tests never ran in CI because `go test ./packages/...` from the repository
+// root matches nothing. So the crash was live, intermittent, and invisible.
+func TestWatcherCloseRacesShutdown(t *testing.T) {
+	for i := 0; i < 200; i++ {
+		backend := NewMockBackend()
+		reg := New(backend, &testLogger{}, WithAutoCleanup(false))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		ch, err := reg.Watch(ctx, "test-service")
+		if err != nil {
+			cancel()
+			t.Fatalf("Watch: %v", err)
+		}
+
+		// Cancel and Close from two goroutines started together, so their
+		// order is genuinely undecided rather than fixed by the test.
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			<-start
+			cancel()
+		}()
+		go func() {
+			defer wg.Done()
+			<-start
+			_ = reg.Close()
+		}()
+		close(start)
+		wg.Wait()
+
+		// Whichever path won, the channel is closed exactly once and draining
+		// it terminates.
+		deadline := time.After(2 * time.Second)
+		for {
+			select {
+			case _, ok := <-ch:
+				if !ok {
+					goto next
+				}
+			case <-deadline:
+				t.Fatal("watcher channel was never closed")
+			}
+		}
+	next:
+	}
+}
+
 func TestHeartbeat(t *testing.T) {
 	backend := NewMockBackend()
 	logger := &testLogger{}

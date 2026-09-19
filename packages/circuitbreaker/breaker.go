@@ -63,6 +63,12 @@ func (cb *CircuitBreaker) CheckWithConfig(ctx context.Context, key string, cfg C
 	cached.mu.Lock()
 	defer cached.mu.Unlock()
 
+	// Re-read under the lock. Two goroutines arriving on a cold cache each load
+	// their own copy from storage and race to install one; the loser then held
+	// a different object from the one in the cache, and mutating it lost the
+	// winner's increments when it wrote itself back at the end.
+	state = cached.state
+
 	now := time.Now()
 
 	switch state.State {
@@ -165,6 +171,12 @@ func (cb *CircuitBreaker) RecordSuccess(ctx context.Context, key string) error {
 	cached.mu.Lock()
 	defer cached.mu.Unlock()
 
+	// Re-read under the lock. Two goroutines arriving on a cold cache each load
+	// their own copy from storage and race to install one; the loser then held
+	// a different object from the one in the cache, and mutating it lost the
+	// winner's increments when it wrote itself back at the end.
+	state = cached.state
+
 	now := time.Now()
 	state.LastSuccessAt = &now
 
@@ -215,6 +227,12 @@ func (cb *CircuitBreaker) RecordFailure(ctx context.Context, key string) error {
 	cached.mu.Lock()
 	defer cached.mu.Unlock()
 
+	// Re-read under the lock. Two goroutines arriving on a cold cache each load
+	// their own copy from storage and race to install one; the loser then held
+	// a different object from the one in the cache, and mutating it lost the
+	// winner's increments when it wrote itself back at the end.
+	state = cached.state
+
 	now := time.Now()
 	state.LastFailureAt = &now
 	state.FailureCount++
@@ -257,7 +275,11 @@ func (cb *CircuitBreaker) RecordFailure(ctx context.Context, key string) error {
 
 // Reset resets the circuit breaker to closed state.
 func (cb *CircuitBreaker) Reset(ctx context.Context, key string) error {
-	state, err := cb.getState(ctx, key)
+	// Straight from storage, which hands back a copy, rather than from the
+	// cache, which hands back the object Check and RecordFailure are mutating
+	// under a lock this function never took. Reset wrote six fields of a live,
+	// shared state with no synchronisation at all.
+	state, err := cb.storage.Get(ctx, key)
 	if err != nil {
 		return fmt.Errorf("failed to get circuit state: %w", err)
 	}
@@ -278,6 +300,8 @@ func (cb *CircuitBreaker) Reset(ctx context.Context, key string) error {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
+	// Drop the cache entry so the next Check reloads the reset state rather
+	// than continuing with the counters it had in memory.
 	cb.cacheMu.Lock()
 	delete(cb.cache, key)
 	cb.cacheMu.Unlock()
@@ -303,8 +327,28 @@ func (cb *CircuitBreaker) Remove(ctx context.Context, key string) error {
 }
 
 // GetStatus returns the current status of a circuit breaker.
+//
+// A copy, not the live state. Returning the cached pointer handed the caller an
+// object that Check and RecordFailure mutate under a lock the caller has no way
+// to take, so reading two fields of it could see two different moments — a
+// circuit reported closed with the failure count that opened it.
 func (cb *CircuitBreaker) GetStatus(ctx context.Context, key string) (*CircuitState, error) {
-	return cb.getState(ctx, key)
+	cb.cacheMu.RLock()
+	cached, ok := cb.cache[key]
+	cb.cacheMu.RUnlock()
+
+	if ok {
+		// The copy is taken while holding the entry's lock. Copying after
+		// releasing it would read the same fields the writers are changing,
+		// which is the race this method was meant to avoid.
+		cached.mu.Lock()
+		state := copyState(cached.state)
+		cached.mu.Unlock()
+		return state, nil
+	}
+
+	// Not cached: storage returns a copy of its own.
+	return cb.storage.Get(ctx, key)
 }
 
 // ProcessRecoveries checks for open circuit breakers that can transition to half-open.
@@ -386,6 +430,12 @@ func (cb *CircuitBreaker) Stop() {
 }
 
 // getState retrieves state from cache or storage.
+//
+// cachedState.mu guards the `state` field as well as the struct it points at.
+// Reading the pointer without it was a data race the detector finds in seconds:
+// RecordFailure and RecordSuccess reassign `cached.state` while holding that
+// mutex, and this read held neither it nor cacheMu, which is only taken long
+// enough to find the entry.
 func (cb *CircuitBreaker) getState(ctx context.Context, key string) (*CircuitState, error) {
 	// Check cache first
 	cb.cacheMu.RLock()
@@ -393,7 +443,10 @@ func (cb *CircuitBreaker) getState(ctx context.Context, key string) (*CircuitSta
 	cb.cacheMu.RUnlock()
 
 	if ok {
-		return cached.state, nil
+		cached.mu.Lock()
+		state := cached.state
+		cached.mu.Unlock()
+		return state, nil
 	}
 
 	// Load from storage

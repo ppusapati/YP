@@ -347,6 +347,16 @@ func (s *weatherService) ingestObservations(ctx context.Context, loc domain.Fiel
 	if err != nil {
 		return 0, fmt.Errorf("%s: fetch hourly: %w", provider.Name(), err)
 	}
+	// Stamp ownership on a copy, not on the provider's slice.
+	//
+	// The provider owns what it returns and nothing in its contract says the
+	// slice is freshly allocated per call. RefreshAll runs one goroutine per
+	// field, so a provider that returns a cached or shared slice — a reasonable
+	// thing to do against a rate-limited external API — had two tenants writing
+	// their own TenantID and FieldID over the same rows at the same time. The
+	// race detector finds it; a production incident would look like one
+	// tenant's readings filed under another tenant's field.
+	obs = append([]domain.Observation(nil), obs...)
 	for i := range obs {
 		obs[i].TenantID, obs[i].FieldID = loc.TenantID, loc.FieldID
 	}
@@ -382,6 +392,8 @@ func (s *weatherService) ingestForecast(ctx context.Context, loc domain.FieldLoc
 	if err != nil {
 		return 0, fmt.Errorf("%s: fetch forecast: %w", provider.Name(), err)
 	}
+	// Copied before stamping, for the reason given in ingestObservations.
+	fc = append([]domain.DailyForecast(nil), fc...)
 	for i := range fc {
 		fc[i].TenantID, fc[i].FieldID = loc.TenantID, loc.FieldID
 	}
@@ -477,6 +489,8 @@ func (s *weatherService) BackfillHistory(ctx context.Context, fieldID string, ye
 		if err != nil {
 			return total, from, to, fmt.Errorf("%s: backfill %s..%s: %w", provider.Name(), chunkStart.Format("2006-01-02"), chunkEnd.Format("2006-01-02"), err)
 		}
+		// Copied before stamping, for the reason given in ingestObservations.
+		rows = append([]domain.DailyAgroMetrics(nil), rows...)
 		for i := range rows {
 			rows[i].TenantID, rows[i].FieldID = loc.TenantID, loc.FieldID
 		}

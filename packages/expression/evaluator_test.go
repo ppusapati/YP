@@ -129,9 +129,9 @@ func TestEvaluator_EvaluateRule(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "missing field error",
-			rule: "status == \"approved\"",
-			data: map[string]interface{}{},
+			name:    "missing field error",
+			rule:    "status == \"approved\"",
+			data:    map[string]interface{}{},
 			wantErr: true,
 		},
 		{
@@ -162,6 +162,213 @@ func TestEvaluator_EvaluateRule(t *testing.T) {
 	}
 }
 
+// Field names that contain an operator as a substring.
+//
+// None of these were covered, and every one of them evaluated against a field
+// that does not exist or a condition that was never parsed: `order_total` split
+// on the OR at its start, `brand` split on the AND inside it, `origin` and
+// `printing_status` split on their IN. A rule author gets no error they can act
+// on — the rule names a real column and the evaluator reports it missing — and
+// for a rule driving access control, a condition that cannot be parsed is worse
+// than one that is wrong.
+func TestEvaluator_FieldNamesContainingOperators(t *testing.T) {
+	e := NewEvaluator()
+
+	tests := []struct {
+		name string
+		rule string
+		data map[string]interface{}
+		want bool
+	}{
+		{
+			name: "field starting with OR",
+			rule: "order_total > 100",
+			data: map[string]interface{}{"order_total": 500},
+			want: true,
+		},
+		{
+			name: "field containing AND",
+			rule: "brand == \"acme\"",
+			data: map[string]interface{}{"brand": "acme"},
+			want: true,
+		},
+		{
+			name: "field containing IN",
+			rule: "origin == \"india\"",
+			data: map[string]interface{}{"origin": "india"},
+			want: true,
+		},
+		{
+			name: "field containing IN, with a word operator too",
+			rule: "printing_status CONTAINS queued",
+			data: map[string]interface{}{"printing_status": "queued for print"},
+			want: true,
+		},
+		{
+			name: "two such fields joined by AND",
+			rule: "order_total > 100 AND brand == \"acme\"",
+			data: map[string]interface{}{"order_total": 500, "brand": "acme"},
+			want: true,
+		},
+		{
+			name: "operator word inside a quoted literal",
+			rule: "status == \"PENDING OR APPROVED\"",
+			data: map[string]interface{}{"status": "PENDING OR APPROVED"},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := e.EvaluateRule(tt.rule, tt.data)
+			if err != nil {
+				t.Fatalf("EvaluateRule() error = %v, want none", err)
+			}
+			if got != tt.want {
+				t.Errorf("EvaluateRule() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// A comparison that cannot be made must say so rather than answer.
+//
+// `!lessThan` on a failed comparison is true, so `name >= 5` used to report
+// that a customer's name was greater than five.
+func TestEvaluator_NonNumericComparisonErrors(t *testing.T) {
+	e := NewEvaluator()
+
+	for _, rule := range []string{
+		"name >= 5",
+		"name > 5",
+		"name <= 5",
+		"name < 5",
+	} {
+		t.Run(rule, func(t *testing.T) {
+			got, err := e.EvaluateRule(rule, map[string]interface{}{"name": "acme"})
+			if err == nil {
+				t.Fatalf("EvaluateRule(%q) = %v, want an error", rule, got)
+			}
+			if got {
+				t.Errorf("EvaluateRule(%q) = true alongside an error", rule)
+			}
+		})
+	}
+}
+
+// Quoted and unquoted list members, and a nested group.
+func TestEvaluator_ListsAndGroups(t *testing.T) {
+	e := NewEvaluator()
+
+	tests := []struct {
+		name string
+		rule string
+		data map[string]interface{}
+		want bool
+	}{
+		{
+			name: "quoted list members",
+			rule: `status IN ("active", "pending")`,
+			data: map[string]interface{}{"status": "pending"},
+			want: true,
+		},
+		{
+			name: "NOT IN with a member present",
+			rule: "status NOT IN (rejected,cancelled)",
+			data: map[string]interface{}{"status": "cancelled"},
+			want: false,
+		},
+		{
+			name: "group on the left of AND",
+			rule: `(amount > 1000 OR priority == "high") AND status == "pending"`,
+			data: map[string]interface{}{"amount": 500, "priority": "high", "status": "pending"},
+			want: true,
+		},
+		{
+			name: "two groups",
+			rule: `(amount > 1000) AND (status == "pending")`,
+			data: map[string]interface{}{"amount": 5000, "status": "pending"},
+			want: true,
+		},
+		{
+			name: "nested groups",
+			rule: `status == "pending" AND (amount > 1000 OR (priority == "high" AND urgent == true))`,
+			data: map[string]interface{}{
+				"status": "pending", "amount": 500, "priority": "high", "urgent": true,
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := e.EvaluateRule(tt.rule, tt.data)
+			if err != nil {
+				t.Fatalf("EvaluateRule() error = %v, want none", err)
+			}
+			if got != tt.want {
+				t.Errorf("EvaluateRule() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// A right-hand side naming another field is read as that field's value; a
+// right-hand side naming nothing stays a literal.
+func TestEvaluator_FieldOnBothSides(t *testing.T) {
+	e := NewEvaluator()
+
+	tests := []struct {
+		name string
+		rule string
+		data map[string]interface{}
+		want bool
+	}{
+		{
+			name: "numeric field reference",
+			rule: "discount < subtotal",
+			data: map[string]interface{}{"discount": 100, "subtotal": 500},
+			want: true,
+		},
+		{
+			name: "numeric field reference, false",
+			rule: "discount < subtotal",
+			data: map[string]interface{}{"discount": 900, "subtotal": 500},
+			want: false,
+		},
+		{
+			name: "string field reference",
+			rule: "ship_to == bill_to",
+			data: map[string]interface{}{"ship_to": "warehouse-1", "bill_to": "warehouse-1"},
+			want: true,
+		},
+		{
+			name: "unquoted literal that names no field stays a literal",
+			rule: "status == approved",
+			data: map[string]interface{}{"status": "approved"},
+			want: true,
+		},
+		{
+			name: "a quoted value is never a field reference",
+			rule: `status == "subtotal"`,
+			data: map[string]interface{}{"status": "subtotal", "subtotal": 500},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := e.EvaluateRule(tt.rule, tt.data)
+			if err != nil {
+				t.Fatalf("EvaluateRule() error = %v, want none", err)
+			}
+			if got != tt.want {
+				t.Errorf("EvaluateRule() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestEvaluator_ValidateRuleExpression(t *testing.T) {
 	e := NewEvaluator()
 
@@ -179,18 +386,18 @@ func TestEvaluator_ValidateRuleExpression(t *testing.T) {
 			rule: "status == \"pending\" AND (amount > 1000 OR priority == \"high\")",
 		},
 		{
-			name: "unbalanced opening paren",
-			rule: "status == \"approved\"(AND amount > 1000",
+			name:    "unbalanced opening paren",
+			rule:    "status == \"approved\"(AND amount > 1000",
 			wantErr: true,
 		},
 		{
-			name: "unbalanced closing paren",
-			rule: "status == \"approved\") AND amount > 1000",
+			name:    "unbalanced closing paren",
+			rule:    "status == \"approved\") AND amount > 1000",
 			wantErr: true,
 		},
 		{
-			name: "no operator",
-			rule: "status",
+			name:    "no operator",
+			rule:    "status",
 			wantErr: true,
 		},
 		{
@@ -213,29 +420,29 @@ func TestEvaluator_ConditionalVisibility(t *testing.T) {
 	e := NewEvaluator()
 
 	tests := []struct {
-		name      string
+		name       string
 		hiddenWhen string
-		data      map[string]interface{}
-		want      bool
-		wantErr   bool
+		data       map[string]interface{}
+		want       bool
+		wantErr    bool
 	}{
 		{
-			name:      "visible when hidden_when is false",
+			name:       "visible when hidden_when is false",
 			hiddenWhen: "status == \"rejected\"",
-			data:      map[string]interface{}{"status": "approved"},
-			want:      true,
+			data:       map[string]interface{}{"status": "approved"},
+			want:       true,
 		},
 		{
-			name:      "hidden when hidden_when is true",
+			name:       "hidden when hidden_when is true",
 			hiddenWhen: "status == \"rejected\"",
-			data:      map[string]interface{}{"status": "rejected"},
-			want:      false,
+			data:       map[string]interface{}{"status": "rejected"},
+			want:       false,
 		},
 		{
-			name:      "visible by default when hidden_when is empty",
+			name:       "visible by default when hidden_when is empty",
 			hiddenWhen: "",
-			data:      map[string]interface{}{},
-			want:      true,
+			data:       map[string]interface{}{},
+			want:       true,
 		},
 	}
 

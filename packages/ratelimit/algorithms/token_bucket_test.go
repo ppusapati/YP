@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"p9e.in/samavaya/packages/ratelimit"
 )
 
 func TestTokenBucketAllow(t *testing.T) {
@@ -182,10 +184,19 @@ func TestBBRStateTransition(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Start in STARTUP
-	stats, _ := bbr.GetStats(ctx, "test")
-	if stats.Metrics["state"] != "STARTUP" {
-		t.Errorf("Expected STARTUP state, got %v", stats.Metrics["state"])
+	// Start in STARTUP.
+	//
+	// Compared against ratelimit.BBRStartup, not against the untyped string
+	// "STARTUP". Metrics is a map[string]interface{} and the value in it is a
+	// ratelimit.BBRState, so comparing it to a string compares the dynamic
+	// types first and is false however the two print — which is why this
+	// assertion used to fail with "Expected STARTUP state, got STARTUP".
+	stats, err := bbr.GetStats(ctx, "test")
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+	if got := stats.Metrics["state"]; got != ratelimit.BBRStartup {
+		t.Errorf("Expected %v state, got %v (%T)", ratelimit.BBRStartup, got, got)
 	}
 
 	// Record deliveries to trigger state transitions
@@ -193,10 +204,69 @@ func TestBBRStateTransition(t *testing.T) {
 		bbr.RecordDelivery(10, 10*time.Millisecond)
 	}
 
-	stats, _ = bbr.GetStats(ctx, "test")
-	state := stats.Metrics["state"]
-	t.Logf("State after deliveries: %v", state)
-	// Should transition through states
+	stats, err = bbr.GetStats(ctx, "test")
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+
+	// The tail of this test used to be a t.Logf and the comment "Should
+	// transition through states", which is a test that passes whatever the
+	// limiter does — including never leaving STARTUP, which is the failure that
+	// matters: a limiter stuck in startup doubles its congestion window on
+	// every delivery and stops limiting anything.
+	state, ok := stats.Metrics["state"].(ratelimit.BBRState)
+	if !ok {
+		t.Fatalf("state metric is %T, want ratelimit.BBRState", stats.Metrics["state"])
+	}
+	if state == ratelimit.BBRStartup {
+		t.Error("still in STARTUP after 50 deliveries; the state machine did not advance")
+	}
+	switch state {
+	case ratelimit.BBRDrain, ratelimit.BBRProbeBW, ratelimit.BBRProbeRTT:
+	default:
+		t.Errorf("unknown state %v", state)
+	}
+
+	// The congestion window must stay within its own floor.
+	if cwnd := stats.Metrics["cwnd"].(int64); cwnd < 4 {
+		t.Errorf("cwnd = %d, below the minimum of 4", cwnd)
+	}
+}
+
+// PROBE_BW and PROBE_RTT alternate on every delivery when only deliveries are
+// recorded, because the interval that gates them is measured in roundCount and
+// roundCount only advances in RecordRTT.
+//
+// PROBE_RTT clamps the congestion window to 4, so a caller that records
+// deliveries without also recording round-trip times has its admission window
+// collapse to the floor on alternate calls whatever bandwidth it measured. This
+// test records the behaviour rather than asserting it is right: it is a real
+// defect in the state machine, and changing the gating is a change to
+// congestion control that wants its own decision rather than being slipped in
+// alongside a test repair.
+func TestBBRProbeCyclingWithoutRTTSamples(t *testing.T) {
+	bbr := NewBBRLimiter()
+	ctx := context.Background()
+
+	for i := 0; i < 10; i++ {
+		bbr.RecordDelivery(10, 10*time.Millisecond)
+	}
+
+	var seen []ratelimit.BBRState
+	for i := 0; i < 4; i++ {
+		bbr.RecordDelivery(10, 10*time.Millisecond)
+		stats, err := bbr.GetStats(ctx, "test")
+		if err != nil {
+			t.Fatalf("GetStats: %v", err)
+		}
+		seen = append(seen, stats.Metrics["state"].(ratelimit.BBRState))
+	}
+
+	alternating := seen[0] != seen[1] && seen[0] == seen[2] && seen[1] == seen[3]
+	if !alternating {
+		t.Logf("states no longer alternate (%v) — if the roundCount gating was "+
+			"fixed, this test has served its purpose and can go", seen)
+	}
 }
 
 func BenchmarkBBRAllow(b *testing.B) {

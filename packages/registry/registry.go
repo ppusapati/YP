@@ -252,11 +252,18 @@ func (r *Registry) Watch(ctx context.Context, serviceName string) (<-chan Regist
 
 	r.watchers[serviceName] = append(r.watchers[serviceName], ch)
 
-	// Remove watcher when context is cancelled
+	// Remove watcher when context is cancelled.
+	//
+	// The close happens inside removeWatcher, under the same lock that takes
+	// the channel out of the map, and only if this goroutine is the one that
+	// took it out. It used to remove and then close as two separate steps, so a
+	// Close() running concurrently could close the channel from the map while
+	// this goroutine was between them, and the second close panicked the whole
+	// process with "close of closed channel" — a shutdown racing a cancelled
+	// watcher, which is the ordinary way a service stops.
 	go func() {
 		<-ctx.Done()
 		r.removeWatcher(serviceName, ch)
-		close(ch)
 	}()
 
 	return ch, nil
@@ -295,7 +302,12 @@ func (r *Registry) broadcastEvent(serviceName string, event RegistryEvent) {
 	}
 }
 
-// removeWatcher removes a watcher from the registry
+// removeWatcher unregisters a watcher's channel and closes it.
+//
+// Closing here, holding watchersMu, is what makes the close happen exactly
+// once: whoever removes the channel from the map is the one that closes it, and
+// a caller that does not find it does nothing. Close() below takes the same
+// lock for the same reason.
 func (r *Registry) removeWatcher(serviceName string, ch chan RegistryEvent) {
 	r.watchersMu.Lock()
 	defer r.watchersMu.Unlock()
@@ -304,6 +316,7 @@ func (r *Registry) removeWatcher(serviceName string, ch chan RegistryEvent) {
 	for i, watcher := range watchers {
 		if watcher == ch {
 			r.watchers[serviceName] = append(watchers[:i], watchers[i+1:]...)
+			close(ch)
 			break
 		}
 	}

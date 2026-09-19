@@ -209,26 +209,48 @@ func (r *fakeRepo) InTenantTx(ctx context.Context, tenantID string, fn func(cont
 	return fn(ctx, r)
 }
 
+// fakeProvider stands in for a weather API.
+//
+// RefreshAll fans out one goroutine per field, so this is called concurrently
+// and has to behave like a real provider under that: the call counter is
+// guarded, and each call returns its own copy of the fixture. Returning the
+// same slice to every caller is what a caching provider would do, and the
+// service used to stamp tenant and field IDs straight onto it.
 type fakeProvider struct {
 	name       domain.Provider
 	hourly     []domain.Observation
 	forecast   []domain.DailyForecast
 	historical func(start, end time.Time) []domain.DailyAgroMetrics
 	err        error
-	calls      int
+
+	mu    sync.Mutex
+	calls int
+}
+
+func (p *fakeProvider) record() {
+	p.mu.Lock()
+	p.calls++
+	p.mu.Unlock()
+}
+
+// callCount reads the counter under the lock, for assertions after a fan-out.
+func (p *fakeProvider) callCount() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.calls
 }
 
 func (p *fakeProvider) Name() domain.Provider { return p.name }
 func (p *fakeProvider) FetchHourly(_ context.Context, _ domain.FieldLocation, _, _ time.Time) ([]domain.Observation, error) {
-	p.calls++
-	return p.hourly, p.err
+	p.record()
+	return append([]domain.Observation(nil), p.hourly...), p.err
 }
 func (p *fakeProvider) FetchDailyForecast(_ context.Context, _ domain.FieldLocation, _ int) ([]domain.DailyForecast, error) {
-	p.calls++
-	return p.forecast, p.err
+	p.record()
+	return append([]domain.DailyForecast(nil), p.forecast...), p.err
 }
 func (p *fakeProvider) FetchHistoricalDaily(_ context.Context, _ domain.FieldLocation, start, end time.Time) ([]domain.DailyAgroMetrics, error) {
-	p.calls++
+	p.record()
 	if p.err != nil {
 		return nil, p.err
 	}
@@ -283,7 +305,9 @@ func (f fakeFieldClient) FieldCentroid(context.Context, string) (float64, float6
 
 var fixedNow = time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 
-func newSvc(repo *fakeRepo, p *fakeProvider, pub *fakePub, fc outbound.FieldClient) *weatherService {
+// newSvc takes the provider as its interface, so a test can substitute a
+// provider with different behaviour — one that shares its slices, say.
+func newSvc(repo *fakeRepo, p outbound.WeatherProvider, pub *fakePub, fc outbound.FieldClient) *weatherService {
 	logger := p9log.NewLogger(zap.NewNop())
 	s := NewWeatherService(repo, fakeResolver{p}, pub, fc, logger).(*weatherService)
 	s.now = func() time.Time { return fixedNow }
@@ -429,13 +453,13 @@ func TestGetCurrentWeather_LazyRefreshAndStaleFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if obs.TemperatureC != 25 || p.calls != 1 {
-		t.Errorf("expected lazy fetch, temp=%v calls=%d", obs.TemperatureC, p.calls)
+	if obs.TemperatureC != 25 || p.callCount() != 1 {
+		t.Errorf("expected lazy fetch, temp=%v calls=%d", obs.TemperatureC, p.callCount())
 	}
 
 	// Fresh cache: no provider call.
-	if _, err := s.GetCurrentWeather(ctx, "f1"); err != nil || p.calls != 1 {
-		t.Errorf("expected cache hit, calls=%d err=%v", p.calls, err)
+	if _, err := s.GetCurrentWeather(ctx, "f1"); err != nil || p.callCount() != 1 {
+		t.Errorf("expected cache hit, calls=%d err=%v", p.callCount(), err)
 	}
 
 	// Stale cache + provider failure: serve stale.
@@ -464,14 +488,14 @@ func TestGetForecast(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(fc) != 7 || p.calls != 1 {
-		t.Errorf("expected 7-day lazy forecast, got %d calls=%d", len(fc), p.calls)
+	if len(fc) != 7 || p.callCount() != 1 {
+		t.Errorf("expected 7-day lazy forecast, got %d calls=%d", len(fc), p.callCount())
 	}
-	if _, err := s.GetForecast(ctx, "f1", 7); err != nil || p.calls != 1 {
-		t.Errorf("expected cached forecast, calls=%d", p.calls)
+	if _, err := s.GetForecast(ctx, "f1", 7); err != nil || p.callCount() != 1 {
+		t.Errorf("expected cached forecast, calls=%d", p.callCount())
 	}
-	if _, err := s.GetForecast(ctx, "f1", 10); err != nil || p.calls != 2 {
-		t.Errorf("longer horizon should refetch, calls=%d", p.calls)
+	if _, err := s.GetForecast(ctx, "f1", 10); err != nil || p.callCount() != 2 {
+		t.Errorf("longer horizon should refetch, calls=%d", p.callCount())
 	}
 }
 
@@ -529,8 +553,8 @@ func TestBackfillHistory_ChunksByYear(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.calls != 2 {
-		t.Errorf("expected 2 yearly chunks, got %d calls", p.calls)
+	if p.callCount() != 2 {
+		t.Errorf("expected 2 yearly chunks, got %d calls", p.callCount())
 	}
 	wantTo := startOfDay(fixedNow).AddDate(0, 0, -1)
 	if !to.Equal(wantTo) || !from.Equal(wantTo.AddDate(-2, 0, 0)) {
@@ -545,8 +569,8 @@ func TestBackfillHistory_ChunksByYear(t *testing.T) {
 		}
 	}
 
-	if _, _, _, err := s.BackfillHistory(ctx, "f1", 50); err != nil || p.calls != 2+maxBackfillYears {
-		t.Errorf("years should be capped at %d, calls=%d err=%v", maxBackfillYears, p.calls, err)
+	if _, _, _, err := s.BackfillHistory(ctx, "f1", 50); err != nil || p.callCount() != 2+maxBackfillYears {
+		t.Errorf("years should be capped at %d, calls=%d err=%v", maxBackfillYears, p.callCount(), err)
 	}
 }
 
@@ -578,6 +602,75 @@ func TestRefreshAll_ScopesEachTenant(t *testing.T) {
 	p.err = errors.New("down")
 	if err := s.RefreshAll(context.Background()); err == nil {
 		t.Error("expected aggregated failure error")
+	}
+}
+
+// sharingProvider hands every caller the same slice, the way a provider that
+// caches a response for a rate-limited upstream would.
+type sharingProvider struct {
+	name     domain.Provider
+	hourly   []domain.Observation
+	forecast []domain.DailyForecast
+}
+
+func (p *sharingProvider) Name() domain.Provider { return p.name }
+func (p *sharingProvider) FetchHourly(_ context.Context, _ domain.FieldLocation, _, _ time.Time) ([]domain.Observation, error) {
+	return p.hourly, nil
+}
+func (p *sharingProvider) FetchDailyForecast(_ context.Context, _ domain.FieldLocation, _ int) ([]domain.DailyForecast, error) {
+	return p.forecast, nil
+}
+func (p *sharingProvider) FetchHistoricalDaily(_ context.Context, _ domain.FieldLocation, _, _ time.Time) ([]domain.DailyAgroMetrics, error) {
+	return nil, nil
+}
+
+// The service must not write into what a provider returns.
+//
+// It stamped TenantID and FieldID straight onto the provider's slice, and
+// RefreshAll runs a goroutine per field, so against a provider that returns a
+// shared slice two tenants raced to label the same rows. The visible result is
+// not a crash: it is one tenant's readings stored under another tenant's field,
+// which no amount of downstream filtering can undo.
+//
+// This test asserts the contract directly rather than relying on the race
+// detector, so it holds even when the fake happens to copy.
+func TestRefreshDoesNotMutateProviderData(t *testing.T) {
+	shared := hourlyObs(2, 20)
+	sharedForecast := forecastDays(2, 15, 25, 0)
+
+	repo := newFakeRepo()
+	p := &sharingProvider{name: domain.ProviderOpenMeteo, hourly: shared, forecast: sharedForecast}
+	s := newSvc(repo, p, &fakePub{}, nil)
+
+	_, _ = s.RegisterFieldLocation(tenantCtx("tA"), &domain.FieldLocation{FieldID: "f1"})
+	_, _ = s.RegisterFieldLocation(tenantCtx("tB"), &domain.FieldLocation{FieldID: "f2"})
+
+	if err := s.RefreshAll(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, o := range shared {
+		if o.TenantID != "" || o.FieldID != "" {
+			t.Fatalf("observation %d came back stamped: tenant=%q field=%q — the "+
+				"service wrote into the provider's slice", i, o.TenantID, o.FieldID)
+		}
+	}
+	for i, f := range sharedForecast {
+		if f.TenantID != "" || f.FieldID != "" {
+			t.Fatalf("forecast %d came back stamped: tenant=%q field=%q", i, f.TenantID, f.FieldID)
+		}
+	}
+
+	// And both tenants' rows were stored, each under its own tenant.
+	seen := map[string]string{}
+	for _, o := range repo.obs {
+		if prev, ok := seen[o.FieldID]; ok && prev != o.TenantID {
+			t.Fatalf("field %s stored under two tenants: %s and %s", o.FieldID, prev, o.TenantID)
+		}
+		seen[o.FieldID] = o.TenantID
+	}
+	if len(seen) != 2 {
+		t.Errorf("expected observations for both fields, got %v", seen)
 	}
 }
 

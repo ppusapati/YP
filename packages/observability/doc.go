@@ -13,12 +13,12 @@
 //
 // Collect and export metrics compatible with Prometheus:
 //
-//	collector := metrics.NewCollector()
+//	collector := metrics.NewCollector("myservice", logger)
 //	counter := collector.Counter("requests_total", "Request count", []string{"service"})
 //	counter.WithLabelValues("payment-service").Inc()
 //
-//	histogram := collector.Histogram("request_duration_ms", "Request latency")
-//	histogram.Observe(45.5)
+//	histogram := collector.Histogram("request_duration_ms", "Request latency", []string{"service"})
+//	histogram.WithLabelValues("payment-service").Observe(45.5)
 //
 //	exporter, _ := metrics.NewPrometheusExporter(collector)
 //	http.Handle("/metrics", exporter)
@@ -74,5 +74,4 @@
 //   - Load Balancer: Monitor endpoint latency
 //   - Rate Limiter: Track rate limit rejections
 //   - Health Checker: Emit health metrics
-//
 package observability

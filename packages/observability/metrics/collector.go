@@ -9,16 +9,30 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/observability"
+	"p9e.in/samavaya/packages/p9log"
 )
 
-// Collector collects and manages metrics
+// Collector collects and manages metrics.
+//
+// The caches hold the *Vec types, which is what a labelled metric is. They used
+// to hold the unlabelled forms — prometheus.Counter rather than
+// *prometheus.CounterVec — and the only way to put one in was
+// `counter.WithLabelValues()` with no values at all, which panics on any vector
+// that declares a label: "inconsistent label cardinality: expected 1 label
+// values but got 0". Every call to Counter with labels crashed the process, and
+// the second call for the same name crashed differently, on a type assertion
+// from an interface to a struct it could never hold. Histogram and Summary
+// cached a literal nil and asserted on it.
+//
+// So this package could not be used at all, and nothing said so because its own
+// tests were never run: `go test ./packages/...` from the repository root
+// matches nothing, packages/ being a separate module.
 type Collector struct {
-	counters   map[string]prometheus.Counter
-	gauges     map[string]prometheus.Gauge
-	histograms map[string]prometheus.Histogram
-	summaries  map[string]prometheus.Summary
+	counters   map[string]*prometheus.CounterVec
+	gauges     map[string]*prometheus.GaugeVec
+	histograms map[string]*prometheus.HistogramVec
+	summaries  map[string]*prometheus.SummaryVec
 	mu         sync.RWMutex
 	logger     p9log.Logger
 	registry   *prometheus.Registry
@@ -29,24 +43,27 @@ type Collector struct {
 // NewCollector creates a new metrics collector
 func NewCollector(namespace string, logger p9log.Logger) *Collector {
 	return &Collector{
-		counters:   make(map[string]prometheus.Counter),
-		gauges:     make(map[string]prometheus.Gauge),
-		histograms: make(map[string]prometheus.Histogram),
-		summaries:  make(map[string]prometheus.Summary),
+		counters:   make(map[string]*prometheus.CounterVec),
+		gauges:     make(map[string]*prometheus.GaugeVec),
+		histograms: make(map[string]*prometheus.HistogramVec),
+		summaries:  make(map[string]*prometheus.SummaryVec),
 		logger:     logger,
 		registry:   prometheus.NewRegistry(),
 		namespace:  namespace,
 	}
 }
 
-// Counter creates or gets a counter metric
-func (c *Collector) Counter(name, help string, labels []string) prometheus.CounterVec {
+// Counter creates or gets a counter metric.
+//
+// Returns the vector itself rather than a copy of it, so that two callers
+// asking for the same name get one metric and not two views that disagree about
+// which registry they belong to.
+func (c *Collector) Counter(name, help string, labels []string) *prometheus.CounterVec {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	key := name
-	if _, exists := c.counters[key]; exists {
-		return c.getCounter(key).(prometheus.CounterVec)
+	if existing, ok := c.counters[name]; ok {
+		return existing
 	}
 
 	opts := prometheus.CounterOpts{
@@ -56,22 +73,19 @@ func (c *Collector) Counter(name, help string, labels []string) prometheus.Count
 	}
 
 	counter := promauto.With(c.registry).NewCounterVec(opts, labels)
-
-	// Store for later retrieval
-	c.counters[key] = counter.WithLabelValues()
+	c.counters[name] = counter
 
 	c.logger.Log(p9log.LevelDebug, "msg", "created counter metric", "name", name)
-	return *counter
+	return counter
 }
 
 // Gauge creates or gets a gauge metric
-func (c *Collector) Gauge(name, help string, labels []string) prometheus.GaugeVec {
+func (c *Collector) Gauge(name, help string, labels []string) *prometheus.GaugeVec {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	key := name
-	if _, exists := c.gauges[key]; exists {
-		return c.getGauge(key).(prometheus.GaugeVec)
+	if existing, ok := c.gauges[name]; ok {
+		return existing
 	}
 
 	opts := prometheus.GaugeOpts{
@@ -81,21 +95,19 @@ func (c *Collector) Gauge(name, help string, labels []string) prometheus.GaugeVe
 	}
 
 	gauge := promauto.With(c.registry).NewGaugeVec(opts, labels)
-
-	c.gauges[key] = gauge.WithLabelValues()
+	c.gauges[name] = gauge
 
 	c.logger.Log(p9log.LevelDebug, "msg", "created gauge metric", "name", name)
-	return *gauge
+	return gauge
 }
 
 // Histogram creates or gets a histogram metric
-func (c *Collector) Histogram(name, help string, labels []string) prometheus.HistogramVec {
+func (c *Collector) Histogram(name, help string, labels []string) *prometheus.HistogramVec {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	key := name
-	if _, exists := c.histograms[key]; exists {
-		return c.getHistogram(key).(prometheus.HistogramVec)
+	if existing, ok := c.histograms[name]; ok {
+		return existing
 	}
 
 	opts := prometheus.HistogramOpts{
@@ -106,21 +118,19 @@ func (c *Collector) Histogram(name, help string, labels []string) prometheus.His
 	}
 
 	histogram := promauto.With(c.registry).NewHistogramVec(opts, labels)
-
-	c.histograms[key] = nil // histogram.WithLabelValues() returns Observer, not Histogram; stored separately via HistogramVec
+	c.histograms[name] = histogram
 
 	c.logger.Log(p9log.LevelDebug, "msg", "created histogram metric", "name", name)
-	return *histogram
+	return histogram
 }
 
 // Summary creates or gets a summary metric
-func (c *Collector) Summary(name, help string, labels []string) prometheus.SummaryVec {
+func (c *Collector) Summary(name, help string, labels []string) *prometheus.SummaryVec {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	key := name
-	if _, exists := c.summaries[key]; exists {
-		return c.getSummary(key).(prometheus.SummaryVec)
+	if existing, ok := c.summaries[name]; ok {
+		return existing
 	}
 
 	opts := prometheus.SummaryOpts{
@@ -130,11 +140,10 @@ func (c *Collector) Summary(name, help string, labels []string) prometheus.Summa
 	}
 
 	summary := promauto.With(c.registry).NewSummaryVec(opts, labels)
-
-	c.summaries[key] = nil // summary.WithLabelValues() returns Observer, not Summary; stored separately via SummaryVec
+	c.summaries[name] = summary
 
 	c.logger.Log(p9log.LevelDebug, "msg", "created summary metric", "name", name)
-	return *summary
+	return summary
 }
 
 // GetSnapshot returns a snapshot of all metrics
@@ -194,34 +203,4 @@ func (c *Collector) GetSnapshot(ctx context.Context) (*observability.MetricSnaps
 // GetRegistry returns the underlying Prometheus registry
 func (c *Collector) GetRegistry() *prometheus.Registry {
 	return c.registry
-}
-
-// Helper methods
-
-func (c *Collector) getCounter(key string) interface{} {
-	if counter, ok := c.counters[key]; ok {
-		return counter
-	}
-	return nil
-}
-
-func (c *Collector) getGauge(key string) interface{} {
-	if gauge, ok := c.gauges[key]; ok {
-		return gauge
-	}
-	return nil
-}
-
-func (c *Collector) getHistogram(key string) interface{} {
-	if histogram, ok := c.histograms[key]; ok {
-		return histogram
-	}
-	return nil
-}
-
-func (c *Collector) getSummary(key string) interface{} {
-	if summary, ok := c.summaries[key]; ok {
-		return summary
-	}
-	return nil
 }
