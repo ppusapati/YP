@@ -55,6 +55,21 @@ type AlertRepository interface {
 	ExpireDue(ctx context.Context, tenantID string, now time.Time) (int32, error)
 
 	ListRules(ctx context.Context, tenantID, fieldID string) ([]*models.AlertRule, error)
+
+	// ListDueRules returns every enabled rule, across all tenants, whose
+	// cooldown has elapsed.
+	//
+	// Cross-tenant on purpose: this serves a background scanner with no request
+	// and therefore no tenant, and the alternative — enumerating tenants from
+	// somewhere else and querying each — would need a tenant registry this
+	// service does not have and would miss a tenant the moment that registry
+	// drifted.
+	//
+	// The cooldown is applied here rather than in the scanner's memory. An
+	// in-process map is lost on restart and is per-replica, so two replicas
+	// each raise the alert and a rolling deploy raises it again; `last_fired_at`
+	// is one row that every replica and every restart agrees on.
+	ListDueRules(ctx context.Context, now time.Time, limit int) ([]*models.AlertRule, error)
 	GetRule(ctx context.Context, tenantID, id string) (*models.AlertRule, error)
 	CreateRule(ctx context.Context, tenantID string, r *models.AlertRule) (*models.AlertRule, error)
 	UpdateRule(ctx context.Context, tenantID string, r *models.AlertRule) (*models.AlertRule, error)
@@ -491,9 +506,9 @@ const ruleCols = `
 
 func scanRule(row pgx.Row) (*models.AlertRule, error) {
 	var r models.AlertRule
-	var tenant, alertType, severity string
+	var alertType, severity string
 	if err := row.Scan(
-		&r.ID, &tenant, &r.FieldID, &r.FarmID, &alertType, &r.Metric, &r.Condition,
+		&r.ID, &r.TenantID, &r.FieldID, &r.FarmID, &alertType, &r.Metric, &r.Condition,
 		&r.Threshold, &severity, &r.Enabled, &r.ThresholdJSON, &r.NotifyChannels,
 		&r.CooldownMinutes, &r.CreatedAt, &r.UpdatedAt,
 	); err != nil {
@@ -502,6 +517,43 @@ func scanRule(row pgx.Row) (*models.AlertRule, error) {
 	r.AlertType = models.AlertType(alertType)
 	r.Severity = models.AlertSeverity(severity)
 	return &r, nil
+}
+
+// ListDueRules returns enabled rules whose cooldown has elapsed, across every
+// tenant. See the interface for why it is not tenant-scoped.
+func (r *alertRepository) ListDueRules(ctx context.Context, now time.Time, limit int) ([]*models.AlertRule, error) {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	if limit <= 0 {
+		limit = 500
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT `+ruleCols+` FROM alert_rules
+		WHERE enabled = TRUE
+		  AND deleted_at IS NULL
+		  AND (last_fired_at IS NULL
+		       OR last_fired_at <= $1 - make_interval(mins => cooldown_minutes))
+		ORDER BY tenant_id, field_id, metric
+		LIMIT $2`, now, limit)
+	if err != nil {
+		return nil, r.dbErr("list due rules", err)
+	}
+	defer rows.Close()
+
+	var out []*models.AlertRule
+	for rows.Next() {
+		rule, err := scanRule(rows)
+		if err != nil {
+			return nil, r.dbErr("scan due rule", err)
+		}
+		out = append(out, rule)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, r.dbErr("list due rules", err)
+	}
+	return out, nil
 }
 
 func (r *alertRepository) ListRules(ctx context.Context, tenantID, fieldID string) ([]*models.AlertRule, error) {

@@ -457,6 +457,10 @@ spec:
               value: "us-east-1"
             - name: AI_GATEWAY_ADDR
               value: "ai-gateway:50051"
+            # The only reader of the alert rules farmers configure. Set to 0
+            # to disable; disabled means those rules never fire.
+            - name: ALERT_SCAN_INTERVAL
+              value: "5m"
           resources:
             requests:
               memory: "128Mi"

@@ -31,6 +31,7 @@ import (
 	alertevents "p9e.in/samavaya/agriculture/alert-service/internal/events"
 	"p9e.in/samavaya/agriculture/alert-service/internal/handlers"
 	"p9e.in/samavaya/agriculture/alert-service/internal/repositories"
+	"p9e.in/samavaya/agriculture/alert-service/internal/scheduler"
 	"p9e.in/samavaya/agriculture/alert-service/internal/services"
 )
 
@@ -165,6 +166,29 @@ func main() {
 		}
 	}
 
+	// ── Rule scanner: the alerts the farmer asked for in advance ────────────
+	//
+	// The consumer above ingests what other services noticed. This is the
+	// other half: rules somebody configured through the web or the app, which
+	// nothing evaluated until it was wired here. A rule that is written and
+	// never read is worse than no rule, because the farmer believes they will
+	// be told.
+	//
+	// It needs the AI gateway to score a field, so it is skipped when there is
+	// no gateway client rather than run against nothing.
+	if aiClient == nil {
+		p9log.NewHelper(logger).Warnw("msg",
+			"AI gateway client unavailable; configured alert rules will not be evaluated")
+	} else if interval := scanInterval(); interval > 0 {
+		scanner := scheduler.NewRuleScanner(repo, svc, logger)
+		scannerCtx, scannerCancel := context.WithCancel(context.Background())
+		defer scannerCancel()
+		go scanner.Run(scannerCtx, interval)
+	} else {
+		p9log.NewHelper(logger).Infow("msg",
+			"ALERT_SCAN_INTERVAL is 0; configured alert rules will not be evaluated")
+	}
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -190,4 +214,21 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// scanInterval reads ALERT_SCAN_INTERVAL as a Go duration. An explicit "0"
+// disables the scanner; an unparseable value falls back to the default rather
+// than stopping the service, but says so, since the alternative is a
+// deployment that refuses to start over a typo in an optional knob.
+func scanInterval() time.Duration {
+	raw := os.Getenv("ALERT_SCAN_INTERVAL")
+	if raw == "" {
+		return scheduler.DefaultInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		log.Printf("WARNING: ALERT_SCAN_INTERVAL=%q is not a duration; using %s", raw, scheduler.DefaultInterval)
+		return scheduler.DefaultInterval
+	}
+	return d
 }

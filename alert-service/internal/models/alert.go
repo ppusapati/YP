@@ -140,7 +140,12 @@ type Alert struct {
 
 // AlertRule defines a user-configurable rule that triggers alerts.
 type AlertRule struct {
-	ID              string        `json:"id" db:"id"`
+	ID string `json:"id" db:"id"`
+	// TenantID is carried on the model because the background scanner reads
+	// rules across every tenant at once and then has to act on each one in its
+	// own tenant's context. Request-scoped paths take the tenant as a parameter
+	// and can leave this empty.
+	TenantID        string        `json:"tenant_id" db:"tenant_id"`
 	FieldID         string        `json:"field_id" db:"field_id"`
 	FarmID          string        `json:"farm_id" db:"farm_id"`
 	AlertType       AlertType     `json:"alert_type" db:"alert_type"`

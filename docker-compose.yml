@@ -503,6 +503,10 @@ services:
       # raise their alerts as events; without a broker alert-service is a store
       # with no writer.
       KAFKA_BROKER: kafka:9092
+      # How often configured alert rules are evaluated. Set to 0 to turn the
+      # scanner off; it is the only thing that reads the thresholds farmers set
+      # in the web app, so off means those rules never fire.
+      ALERT_SCAN_INTERVAL: ${ALERT_SCAN_INTERVAL:-5m}
     depends_on:
       postgres:
         condition: service_healthy
