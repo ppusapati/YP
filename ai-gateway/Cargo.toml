@@ -7,6 +7,9 @@ description = "AI Gateway gRPC service wrapping Rust ML engines for Go microserv
 [dependencies]
 # gRPC / protobuf
 tonic = "0.12"
+# Already in the tree via tonic; named here for the global concurrency
+# limit and load-shed layers the server applies.
+tower = { version = "0.5", features = ["limit", "load-shed"] }
 tonic-health = "0.12"
 prost = "0.13"
 prost-types = "0.13"

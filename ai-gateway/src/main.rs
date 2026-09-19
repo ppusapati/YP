@@ -10,6 +10,9 @@ use std::path::Path;
 use std::time::Duration;
 
 use tonic::transport::Server;
+use tower::limit::GlobalConcurrencyLimitLayer;
+use tower::load_shed::LoadShedLayer;
+use tower::ServiceBuilder;
 use tonic_health::server::health_reporter;
 use tonic_health::ServingStatus;
 use tracing_subscriber::{fmt, EnvFilter};
@@ -82,9 +85,37 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Start the gRPC server.
+    //
+    // Two limits, because they bound different things.
+    //
+    // `concurrency_limit_per_connection` is tonic's, and it is per connection
+    // by definition: nine services dial this gateway, seventy pods at their
+    // autoscaler ceilings, so that number multiplies by the number of callers
+    // rather than capping the total. It is kept because a single misbehaving
+    // connection should still be bounded on its own.
+    //
+    // The global layer is the one that bounds the process. Inference here is
+    // CPU- and memory-bound against a fixed replica count, so past some
+    // concurrency the work does not go faster — it queues, and a queued request
+    // is one whose caller is still holding a slot waiting for it.
+    //
+    // LoadShed sits outside the limit so that reaching it returns an error
+    // immediately rather than exerting backpressure. Backpressure on an HTTP/2
+    // connection stops the whole connection being read, which head-of-line
+    // blocks every other stream a caller had in flight on it; shedding one
+    // request lets its caller's adaptive limiter see the refusal and narrow,
+    // which is the signal the whole arrangement runs on.
+    let layers = ServiceBuilder::new()
+        .layer(LoadShedLayer::new())
+        .layer(GlobalConcurrencyLimitLayer::new(
+            config.server.max_global_concurrent_requests,
+        ))
+        .into_inner();
+
     Server::builder()
         .timeout(timeout)
         .concurrency_limit_per_connection(config.server.max_concurrent_requests)
+        .layer(layers)
         .add_service(health_service)
         .add_service(AiGatewayServiceServer::new(ai_service))
         .serve(addr)

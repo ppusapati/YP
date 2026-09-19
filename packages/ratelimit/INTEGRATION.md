@@ -86,6 +86,51 @@ func RateLimitMiddleware(limiter ratelimit.Limiter) http.HandlerFunc {
 }
 ```
 
+### 5. Outbound gRPC Integration
+
+`ratelimit/grpclimit` pairs the adaptive limiter with a per-call deadline as a
+gRPC client interceptor, so no call site can forget to release a slot.
+
+```go
+import (
+    "p9e.in/samavaya/packages/ratelimit/algorithms"
+    "p9e.in/samavaya/packages/ratelimit/grpclimit"
+)
+
+conn, err := grpc.NewClient(addr,
+    grpcdial.TransportCredentials(),
+    grpclimit.WithAdaptiveConcurrency(grpclimit.Options{
+        Limiter: algorithms.NewAdaptiveLimiter(),
+        Name:    "ai-gateway",   // metrics label
+        Timeout: 30 * time.Second,
+    }),
+)
+```
+
+Past the limit the interceptor returns `ResourceExhausted` **without touching
+the wire**, which is the point: the dependency being protected should not have
+to accept, parse and queue a request before refusing it.
+
+**Outcome classification** decides what each call taught the limiter:
+
+| Result | Bucket | Why |
+|---|---|---|
+| `OK` | success | its duration is service time, which is what the loop measures |
+| `DeadlineExceeded`, `ResourceExhausted`, `Unavailable` | failure | congestion signals; back the limit off multiplicatively |
+| everything else | ignore | an `InvalidArgument` returned in 2ms is a fast answer to a bad request — counting it as a latency sample would drag the no-load baseline down and make every honest call look congested |
+
+**Keying** defaults to `PerMethod`. That matters when one server does mixed
+work: a vision call answering in seconds and a tabular call answering in
+milliseconds should not share a limit, or the slow one sheds the fast one. Use
+`PerService` when every method on a server costs about the same.
+
+**Metrics**: `grpc_client_adaptive_admitted_total`,
+`grpc_client_adaptive_shed_total` and `grpc_client_adaptive_limit`, labelled by
+`target` and `method`.
+
+**Failing open**: if the limiter itself errors, the call proceeds unlimited. A
+bug in admission control should not become an outage.
+
 ## Database Schema
 
 The rate limiter uses the `rate_limits` table created in Phase 1:

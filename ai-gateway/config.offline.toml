@@ -25,7 +25,11 @@
 
 [server]
 address = "0.0.0.0:50051"
+# Per connection. Rises with the number of callers, so it bounds one
+# misbehaving client rather than the process.
 max_concurrent_requests = 256
+# Across every connection. This is the one that bounds the process.
+max_global_concurrent_requests = 256
 request_timeout_secs = 30
 
 [models]

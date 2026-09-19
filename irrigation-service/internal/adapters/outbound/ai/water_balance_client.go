@@ -12,6 +12,8 @@ import (
 
 	"p9e.in/samavaya/packages/grpcdial"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/ratelimit/algorithms"
+	"p9e.in/samavaya/packages/ratelimit/grpclimit"
 
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/outbound"
 )
@@ -28,6 +30,16 @@ type WaterBalanceClient struct {
 func NewWaterBalanceClient(addr string, logger *p9log.Helper) (*WaterBalanceClient, error) {
 	conn, err := grpc.NewClient(addr,
 		grpcdial.TransportCredentials(),
+		// Bound what this service will ask of the shared gateway, and give
+		// every call a deadline. Nine services dial ai-gateway; at their
+		// autoscaler ceilings that is seventy pods against two gateway
+		// replicas, and the gateway's own guard is per-connection, so it
+		// rises with the caller count instead of capping the total.
+		grpclimit.WithAdaptiveConcurrency(grpclimit.Options{
+			Limiter: algorithms.NewAdaptiveLimiter(),
+			Name:    "ai-gateway",
+			Timeout: 30 * time.Second,
+		}),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                10 * time.Second,
 			Timeout:             3 * time.Second,

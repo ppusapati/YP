@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"p9e.in/samavaya/packages/grpcdial"
+	"p9e.in/samavaya/packages/ratelimit/algorithms"
+	"p9e.in/samavaya/packages/ratelimit/grpclimit"
 
 	"p9e.in/samavaya/packages/circuitbreaker"
 	"p9e.in/samavaya/packages/p9log"
@@ -27,6 +29,16 @@ type AIClient struct {
 func NewAIClient(addr string, logger *p9log.Helper) (*AIClient, error) {
 	conn, err := grpc.NewClient(addr,
 		grpcdial.TransportCredentials(),
+		// Bound what this service will ask of the shared gateway, and give
+		// every call a deadline. Nine services dial ai-gateway; at their
+		// autoscaler ceilings that is seventy pods against two gateway
+		// replicas, and the gateway's own guard is per-connection, so it
+		// rises with the caller count instead of capping the total.
+		grpclimit.WithAdaptiveConcurrency(grpclimit.Options{
+			Limiter: algorithms.NewAdaptiveLimiter(),
+			Name:    "ai-gateway",
+			Timeout: 60 * time.Second,
+		}),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                10 * time.Second,
 			Timeout:             3 * time.Second,

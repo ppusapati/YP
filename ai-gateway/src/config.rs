@@ -21,10 +21,29 @@ pub struct Config {
 pub struct ServerConfig {
     /// Address to bind the gRPC server (e.g. "0.0.0.0:50051").
     pub address: String,
-    /// Maximum concurrent requests.
+    /// Maximum concurrent requests **per connection**.
+    ///
+    /// This is tonic's own guard and it is per connection by definition, so it
+    /// rises with the number of callers rather than capping the total. Nine
+    /// services dial this gateway; at their autoscaler ceilings that is seventy
+    /// connections, and seventy times this number is the ceiling they can ask
+    /// for between them. Use `max_global_concurrent_requests` for the number
+    /// that actually bounds the process.
     pub max_concurrent_requests: usize,
+    /// Maximum concurrent requests across every connection.
+    ///
+    /// The real bound. Inference here is CPU- and memory-bound and the replica
+    /// count is fixed, so past some level of concurrency the work does not go
+    /// faster, it only queues — and a queued request is one whose caller is
+    /// still holding a slot waiting for it.
+    #[serde(default = "default_max_global_concurrent_requests")]
+    pub max_global_concurrent_requests: usize,
     /// Request timeout in seconds.
     pub request_timeout_secs: u64,
+}
+
+fn default_max_global_concurrent_requests() -> usize {
+    256
 }
 
 /// Paths and versions for AI/ML model artifacts.
@@ -153,6 +172,7 @@ impl Default for Config {
             server: ServerConfig {
                 address: "0.0.0.0:50051".to_string(),
                 max_concurrent_requests: 256,
+                max_global_concurrent_requests: default_max_global_concurrent_requests(),
                 request_timeout_secs: 30,
             },
             models: ModelPaths {
