@@ -10,9 +10,9 @@ type MetricType string
 
 const (
 	MetricTypeCounter   MetricType = "counter"
-	MetricTypeGauge    MetricType = "gauge"
+	MetricTypeGauge     MetricType = "gauge"
 	MetricTypeHistogram MetricType = "histogram"
-	MetricTypeSummary  MetricType = "summary"
+	MetricTypeSummary   MetricType = "summary"
 )
 
 // Metric represents a single metric value
@@ -119,6 +119,15 @@ type Dependency struct {
 	// Dependent service name
 	Service string
 
+	// Operation called on that service.
+	//
+	// The tracker keys its statistics by service *and* operation, which is the
+	// useful granularity — one slow RPC on an otherwise healthy dependency is
+	// exactly what a dependency view should show. There was nowhere to put it,
+	// so the tracker wrote "service:operation" into Service above and called it
+	// parsed. Every operation then appeared in the graph as its own service.
+	Operation string
+
 	// Number of calls
 	CallCount int64
 
@@ -166,8 +175,8 @@ type ServiceDependencies struct {
 type AlertSeverity string
 
 const (
-	SeverityInfo    AlertSeverity = "info"
-	SeverityWarning AlertSeverity = "warning"
+	SeverityInfo     AlertSeverity = "info"
+	SeverityWarning  AlertSeverity = "warning"
 	SeverityCritical AlertSeverity = "critical"
 )
 

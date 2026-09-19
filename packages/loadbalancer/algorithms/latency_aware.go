@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"p9e.in/samavaya/packages/loadbalancer"
+	"p9e.in/samavaya/packages/quantile"
 	"p9e.in/samavaya/packages/registry"
 )
 
@@ -15,19 +16,47 @@ import (
 type LatencyAwareBalancer struct {
 	metrics map[string]*loadbalancer.EndpointMetrics
 	conns   map[string]int64
-	mu      sync.RWMutex
+
+	// samples holds the recent latencies each endpoint's percentiles are
+	// computed from, keyed by instance ID.
+	//
+	// There were none. The percentiles were derived arithmetically from the
+	// mean and the maximum, which is why they were not percentiles.
+	samples map[string]*quantile.Window
+
+	mu sync.RWMutex
 
 	// Alpha for EWMA calculation (0.0-1.0, default 0.3)
 	// Higher value gives more weight to recent measurements
 	alpha float64
+
+	// sampleSize is how many recent latencies each endpoint keeps.
+	sampleSize int
 }
 
 // NewLatencyAwareBalancer creates a new latency-aware load balancer
 func NewLatencyAwareBalancer() *LatencyAwareBalancer {
+	return NewLatencyAwareBalancerWithSamples(loadbalancer.DefaultOptions().MaxLatencySamples)
+}
+
+// NewLatencyAwareBalancerWithSamples creates a balancer keeping sampleSize
+// recent latencies per endpoint.
+//
+// `MaxLatencySamples` has been in loadbalancer.Options since the beginning,
+// with a `WithMaxLatencySamples` setter beside it, and nothing ever read
+// either: the percentiles were computed from the mean and the maximum, so
+// there was no sample set for the option to size. This is the constructor that
+// makes it mean something.
+func NewLatencyAwareBalancerWithSamples(sampleSize int) *LatencyAwareBalancer {
+	if sampleSize <= 0 {
+		sampleSize = quantile.DefaultSize
+	}
 	return &LatencyAwareBalancer{
-		metrics: make(map[string]*loadbalancer.EndpointMetrics),
-		conns:   make(map[string]int64),
-		alpha:   0.3, // Default EWMA alpha
+		metrics:    make(map[string]*loadbalancer.EndpointMetrics),
+		conns:      make(map[string]int64),
+		samples:    make(map[string]*quantile.Window),
+		alpha:      0.3, // Default EWMA alpha
+		sampleSize: sampleSize,
 	}
 }
 
@@ -112,10 +141,26 @@ func (lab *LatencyAwareBalancer) RecordMetrics(instanceID string, latency time.D
 		metrics.AvgLatency = time.Duration(ewma)
 	}
 
-	// Update percentiles (simplified - would use histogram in production)
-	metrics.P50Latency = metrics.AvgLatency
-	metrics.P95Latency = time.Duration(float64(metrics.MaxLatency) * 0.95)
-	metrics.P99Latency = time.Duration(float64(metrics.MaxLatency) * 0.99)
+	// Percentiles from the samples, not from the mean and the maximum.
+	//
+	// This read:
+	//
+	//	P50 = AvgLatency
+	//	P95 = MaxLatency * 0.95
+	//	P99 = MaxLatency * 0.99
+	//
+	// None of those is a percentile. A latency distribution is right-skewed, so
+	// its mean sits above its median — which is the reason anyone asks for a
+	// median rather than a mean in the first place. And multiplying the maximum
+	// by a constant is an affine transform of one sample: p95 and p99 moved only
+	// when the maximum moved, they stayed in fixed proportion to each other, and
+	// since MaxLatency above only ever rises, a single slow call at startup
+	// pinned both high for the life of the process. Select() routes on these.
+	window := lab.samplesLocked(instanceID)
+	window.Add(latency.Nanoseconds())
+	metrics.P50Latency = time.Duration(window.Quantile(0.50))
+	metrics.P95Latency = time.Duration(window.Quantile(0.95))
+	metrics.P99Latency = time.Duration(window.Quantile(0.99))
 
 	if metrics.TotalRequests > 0 {
 		metrics.ErrorRate = float64(metrics.FailureCount) / float64(metrics.TotalRequests)
@@ -147,6 +192,9 @@ func (lab *LatencyAwareBalancer) Reset() {
 
 	lab.metrics = make(map[string]*loadbalancer.EndpointMetrics)
 	lab.conns = make(map[string]int64)
+	// The sample windows too. A reset that left them would carry the
+	// percentiles that prompted the reset into the state after it.
+	lab.samples = make(map[string]*quantile.Window)
 }
 
 // GetMetrics returns metrics for an endpoint
@@ -182,4 +230,15 @@ func (lab *LatencyAwareBalancer) getOrCreateMetricsLocked(instanceID string) *lo
 	}
 	lab.metrics[instanceID] = metrics
 	return metrics
+}
+
+// samplesLocked returns the endpoint's latency window, creating it on first
+// use. Callers hold lab.mu.
+func (lab *LatencyAwareBalancer) samplesLocked(instanceID string) *quantile.Window {
+	if w, ok := lab.samples[instanceID]; ok {
+		return w
+	}
+	w := quantile.New(lab.sampleSize)
+	lab.samples[instanceID] = w
+	return w
 }

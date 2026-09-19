@@ -2,11 +2,13 @@ package graph
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
-	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/observability"
+	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/quantile"
 )
 
 // Tracker tracks service dependencies
@@ -24,7 +26,7 @@ type dependencyStats struct {
 	errorCount   int64
 	totalLatency int64 // nanoseconds
 	lastCallTime time.Time
-	latencies    []int64 // for percentile calculation
+	latencies    *quantile.Window // sliding window for percentiles
 	mu           sync.RWMutex
 }
 
@@ -47,7 +49,7 @@ func (t *Tracker) RecordCall(ctx context.Context, from, to, operation string, la
 	key := to + ":" + operation
 	if t.dependencies[from][key] == nil {
 		t.dependencies[from][key] = &dependencyStats{
-			latencies: make([]int64, 0, 1000),
+			latencies: quantile.New(quantile.DefaultSize),
 		}
 	}
 
@@ -67,10 +69,13 @@ func (t *Tracker) RecordCall(ctx context.Context, from, to, operation string, la
 		stats.errorCount++
 	}
 
-	// Keep recent latencies (last 1000)
-	if len(stats.latencies) < 1000 {
-		stats.latencies = append(stats.latencies, latency.Nanoseconds())
-	}
+	// Recent latencies, in a window that actually slides.
+	//
+	// This used to append only while `len(latencies) < 1000`, under this same
+	// comment — so it kept the *first* thousand samples and then recorded
+	// nothing. A dependency that degraded after its first thousand calls
+	// reported the p99 of its healthiest hour for the life of the process.
+	stats.latencies.Add(latency.Nanoseconds())
 
 	t.logger.Log(p9log.LevelDebug, "msg", "recorded dependency call",
 		"from", from,
@@ -89,11 +94,11 @@ func (t *Tracker) GetDependencies(ctx context.Context, service string) *observab
 
 	if !ok {
 		return &observability.ServiceDependencies{
-			Service:        service,
-			Dependencies:   make([]observability.Dependency, 0),
-			Depth:          0,
-			HasCircular:    false,
-			GeneratedAt:    time.Now(),
+			Service:      service,
+			Dependencies: make([]observability.Dependency, 0),
+			Depth:        0,
+			HasCircular:  false,
+			GeneratedAt:  time.Now(),
 		}
 	}
 
@@ -104,8 +109,18 @@ func (t *Tracker) GetDependencies(ctx context.Context, service string) *observab
 	}
 
 	for key, stats := range deps {
-		// Parse key format: "service:operation"
-		depService := key // Input parsing uses structured type conversion.
+		// Parse key format: "service:operation".
+		//
+		// It used to read `depService := key`, under this same comment and a
+		// second one claiming "input parsing uses structured type conversion",
+		// which is a sentence rather than a parse. The composite key went
+		// straight into the Service field, so a caller with three operations
+		// against soil-service saw three services in its dependency graph, none
+		// of them named soil-service.
+		depService, operation, found := strings.Cut(key, ":")
+		if !found {
+			depService, operation = key, ""
+		}
 
 		stats.mu.RLock()
 
@@ -125,14 +140,15 @@ func (t *Tracker) GetDependencies(ctx context.Context, service string) *observab
 		}
 
 		p99Latency := int64(0)
-		if len(stats.latencies) > 0 {
-			p99Latency = calculatePercentile(stats.latencies, 99) / 1e6 // Convert to ms
+		if stats.latencies.Len() > 0 {
+			p99Latency = stats.latencies.Quantile(0.99) / 1e6 // Convert to ms
 		}
 
 		stats.mu.RUnlock()
 
 		result.Dependencies = append(result.Dependencies, observability.Dependency{
 			Service:      depService,
+			Operation:    operation,
 			CallCount:    stats.callCount,
 			SuccessCount: stats.successCount,
 			ErrorCount:   stats.errorCount,
@@ -233,17 +249,9 @@ func (t *Tracker) hasCircular(service string, path map[string]bool) bool {
 	return false
 }
 
-func calculatePercentile(values []int64, percentile int) int64 {
-	if len(values) == 0 {
-		return 0
-	}
-
-	// Simple percentile calculation (not perfectly accurate but good enough)
-	index := (len(values) * percentile) / 100
-	if index >= len(values) {
-		index = len(values) - 1
-	}
-
-	// Would need proper sorting for real percentile, but simplified here
-	return values[index]
-}
+// calculatePercentile used to live here. It indexed the slice at
+// `len*p/100` **without sorting it**, under a comment conceding "would need
+// proper sorting for real percentile, but simplified here" — so it returned
+// whichever sample happened to arrive at that position, and shuffling the same
+// observations produced a different answer. packages/quantile replaces it with
+// a sorted, interpolated estimate over a sliding window.
