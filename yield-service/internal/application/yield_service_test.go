@@ -66,6 +66,9 @@ func newMockYieldRepo() *mockYieldRepo {
 
 func (m *mockYieldRepo) CreatePrediction(_ context.Context, p *domain.YieldPrediction) (*domain.YieldPrediction, error) {
 	p.ID = "prediction-uuid-001"
+	// The column defaults to TRUE, so a freshly inserted row is active
+	// whether or not the caller said so.
+	p.IsActive = true
 	m.predictions[p.ID] = p
 	return p, nil
 }
@@ -81,11 +84,34 @@ func (m *mockYieldRepo) GetPredictionByID(_ context.Context, id, tenantID string
 func (m *mockYieldRepo) ListPredictions(_ context.Context, params domain.ListPredictionsParams) ([]domain.YieldPrediction, int32, error) {
 	var result []domain.YieldPrediction
 	for _, p := range m.predictions {
-		if p.TenantID == params.TenantID {
+		// Mirrors the real query, which filters `deleted_at IS NULL AND
+		// is_active = TRUE`. Without the is_active term the mock would hide
+		// the difference between archiving a forecast and doing nothing.
+		if p.TenantID == params.TenantID && p.IsActive && p.DeletedAt == nil {
 			result = append(result, *p)
 		}
 	}
 	return result, int32(len(result)), nil
+}
+
+// ArchiveFieldForecasts marks a field's forecasts inactive without deleting
+// them, and leaves yield records alone — the distinction the real repository
+// draws, and the reason the crop-performance join keeps working.
+func (m *mockYieldRepo) ArchiveFieldForecasts(_ context.Context, fieldID, tenantID string) (int64, error) {
+	var n int64
+	for _, p := range m.predictions {
+		if p.TenantID == tenantID && p.FieldID == fieldID && p.IsActive {
+			p.IsActive = false
+			n++
+		}
+	}
+	for _, p := range m.harvestPlans {
+		if p.TenantID == tenantID && p.FieldID == fieldID && p.IsActive {
+			p.IsActive = false
+			n++
+		}
+	}
+	return n, nil
 }
 
 func (m *mockYieldRepo) CreateYieldRecord(_ context.Context, r *domain.YieldRecord) (*domain.YieldRecord, error) {
@@ -106,6 +132,7 @@ func (m *mockYieldRepo) ListYieldRecords(_ context.Context, params domain.YieldH
 
 func (m *mockYieldRepo) CreateHarvestPlan(_ context.Context, p *domain.HarvestPlan) (*domain.HarvestPlan, error) {
 	p.ID = "plan-uuid-001"
+	p.IsActive = true
 	m.harvestPlans[p.ID] = p
 	return p, nil
 }
@@ -121,7 +148,7 @@ func (m *mockYieldRepo) GetHarvestPlanByID(_ context.Context, id, tenantID strin
 func (m *mockYieldRepo) ListHarvestPlans(_ context.Context, params domain.ListHarvestPlansParams) ([]domain.HarvestPlan, int32, error) {
 	var result []domain.HarvestPlan
 	for _, p := range m.harvestPlans {
-		if p.TenantID == params.TenantID {
+		if p.TenantID == params.TenantID && p.IsActive && p.DeletedAt == nil {
 			result = append(result, *p)
 		}
 	}
@@ -425,12 +452,16 @@ func TestListPredictions_HappyPath(t *testing.T) {
 	repo, _, svc := newService()
 	ctx := testContext("tenant-1", "user-1")
 
+	// IsActive is promoted from BaseModel and defaults to TRUE in the column;
+	// the listings filter on it, so a fixture without it is not a real row.
 	repo.predictions["p1"] = &domain.YieldPrediction{FarmID: "farm-001"}
 	repo.predictions["p1"].TenantID = "tenant-1"
 	repo.predictions["p1"].ID = "p1"
+	repo.predictions["p1"].IsActive = true
 	repo.predictions["p2"] = &domain.YieldPrediction{FarmID: "farm-001"}
 	repo.predictions["p2"].TenantID = "tenant-1"
 	repo.predictions["p2"].ID = "p2"
+	repo.predictions["p2"].IsActive = true
 
 	predictions, total, err := svc.ListPredictions(ctx, domain.ListPredictionsParams{})
 	require.NoError(t, err)
@@ -681,6 +712,7 @@ func TestListHarvestPlans_HappyPath(t *testing.T) {
 	repo.harvestPlans["hp1"] = &domain.HarvestPlan{FarmID: "farm-001"}
 	repo.harvestPlans["hp1"].TenantID = "tenant-1"
 	repo.harvestPlans["hp1"].ID = "hp1"
+	repo.harvestPlans["hp1"].IsActive = true
 
 	plans, total, err := svc.ListHarvestPlans(ctx, domain.ListHarvestPlansParams{})
 	require.NoError(t, err)
@@ -793,4 +825,127 @@ func TestClampPageSize(t *testing.T) {
 	assert.Equal(t, defaultPageSize, clampPageSize(-5))
 	assert.Equal(t, int32(50), clampPageSize(50))
 	assert.Equal(t, maxPageSize, clampPageSize(200))
+}
+
+// ---------------------------------------------------------------------------
+// Tests: ArchiveFieldForecasts
+// ---------------------------------------------------------------------------
+
+// Archiving takes a deleted field's forecasts out of the listings.
+func TestArchiveFieldForecasts_HidesForecasts(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.predictions["p1"] = &domain.YieldPrediction{FarmID: "farm-001", FieldID: "field-001"}
+	repo.predictions["p1"].TenantID = "tenant-1"
+	repo.predictions["p1"].ID = "p1"
+	repo.predictions["p1"].IsActive = true
+
+	repo.harvestPlans["hp1"] = &domain.HarvestPlan{FarmID: "farm-001", FieldID: "field-001"}
+	repo.harvestPlans["hp1"].TenantID = "tenant-1"
+	repo.harvestPlans["hp1"].ID = "hp1"
+	repo.harvestPlans["hp1"].IsActive = true
+
+	archived, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), archived)
+
+	_, predTotal, err := svc.ListPredictions(ctx, domain.ListPredictionsParams{})
+	require.NoError(t, err)
+	assert.Equal(t, int32(0), predTotal, "an archived prediction is still listed")
+
+	_, planTotal, err := svc.ListHarvestPlans(ctx, domain.ListHarvestPlansParams{})
+	require.NoError(t, err)
+	assert.Equal(t, int32(0), planTotal, "an archived harvest plan is still listed")
+}
+
+// The forecast is archived, not deleted, and that is not cosmetic.
+//
+// GetCropPerformance joins a yield record to its prediction on
+// `yp.deleted_at IS NULL`, wrapped in COALESCE(..., 0). Soft-deleting the
+// prediction would drop that join and render a real forecast as a predicted
+// yield of zero, so a harvest that beat its forecast would show as
+// "predicted 0, actual 4200" — the model made to look as though it had
+// forecast nothing.
+func TestArchiveFieldForecasts_DoesNotSoftDelete(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.predictions["p1"] = &domain.YieldPrediction{FarmID: "farm-001", FieldID: "field-001"}
+	repo.predictions["p1"].TenantID = "tenant-1"
+	repo.predictions["p1"].ID = "p1"
+	repo.predictions["p1"].IsActive = true
+
+	_, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.NoError(t, err)
+
+	require.NotNil(t, repo.predictions["p1"], "the row was removed rather than archived")
+	assert.Nil(t, repo.predictions["p1"].DeletedAt,
+		"archiving set deleted_at, which drops the crop-performance join and "+
+			"turns a real forecast into a predicted yield of zero")
+}
+
+// Yield records are never archived. A record is what was actually cut off that
+// ground; it happened whether or not the field record survives, and it is what
+// a traceability or subsidy audit asks for later.
+func TestArchiveFieldForecasts_LeavesYieldRecordsAlone(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.yieldRecords["r1"] = &domain.YieldRecord{FarmID: "farm-001", FieldID: "field-001"}
+	repo.yieldRecords["r1"].TenantID = "tenant-1"
+	repo.yieldRecords["r1"].ID = "r1"
+	repo.yieldRecords["r1"].IsActive = true
+
+	archived, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), archived, "a yield record was counted as a forecast")
+	assert.True(t, repo.yieldRecords["r1"].IsActive,
+		"the harvest that actually happened was archived along with the forecasts")
+}
+
+// Another field's forecasts are untouched.
+func TestArchiveFieldForecasts_LeavesOtherFieldsAlone(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.predictions["p2"] = &domain.YieldPrediction{FarmID: "farm-001", FieldID: "field-002"}
+	repo.predictions["p2"].TenantID = "tenant-1"
+	repo.predictions["p2"].ID = "p2"
+	repo.predictions["p2"].IsActive = true
+
+	archived, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), archived)
+	assert.True(t, repo.predictions["p2"].IsActive, "a different field's forecast was archived")
+}
+
+// Replaying the cascade finds nothing left and says so rather than failing.
+func TestArchiveFieldForecasts_IsIdempotent(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.predictions["p1"] = &domain.YieldPrediction{FarmID: "farm-001", FieldID: "field-001"}
+	repo.predictions["p1"].TenantID = "tenant-1"
+	repo.predictions["p1"].ID = "p1"
+	repo.predictions["p1"].IsActive = true
+
+	first, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), first)
+
+	second, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), second, "a replay archived the same rows again")
+}
+
+// Without a tenant there is nothing to scope the archive to, and guessing one
+// would archive another tenant's forecasts.
+func TestArchiveFieldForecasts_MissingTenant(t *testing.T) {
+	_, _, svc := newService()
+	ctx := testContext("", "")
+
+	_, err := svc.ArchiveFieldForecasts(ctx, "field-001")
+	require.Error(t, err)
+	assert.True(t, errors.IsBadRequest(err))
 }

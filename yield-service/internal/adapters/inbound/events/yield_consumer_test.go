@@ -24,6 +24,12 @@ type predictingService struct {
 
 	predictErr error
 	listErr    error
+	archiveErr error
+
+	// archivedFields records which fields were asked to be archived.
+	archivedFields []string
+	archiveTenants []string
+	archivedRows   int64
 	// existing is returned by ListPredictions, modelling a prediction that is
 	// already on record for this assignment.
 	existing []domain.YieldPrediction
@@ -50,6 +56,25 @@ func (s *predictingService) PredictYield(ctx context.Context, p *domain.YieldPre
 	out.PredictionConfidencePct = 0
 	s.predicted = append(s.predicted, out)
 	return &out, nil
+}
+
+func (s *predictingService) ArchiveFieldForecasts(ctx context.Context, fieldID string) (int64, error) {
+	s.archivedFields = append(s.archivedFields, fieldID)
+	s.archiveTenants = append(s.archiveTenants, p9context.TenantID(ctx))
+	if s.archiveErr != nil {
+		return 0, s.archiveErr
+	}
+	return s.archivedRows, nil
+}
+
+func fieldDeleted(fieldID, tenantID string) *eventsdomain.DomainEvent {
+	return &eventsdomain.DomainEvent{
+		ID:          "evt-2",
+		Type:        eventsdomain.EventTypeFieldDeleted,
+		AggregateID: fieldID,
+		Timestamp:   time.Now(),
+		Data:        map[string]any{"field_id": fieldID, "tenant_id": tenantID},
+	}
 }
 
 func cropAssigned(data map[string]any) *eventsdomain.DomainEvent {
@@ -222,6 +247,78 @@ func TestAnIncompleteEventIsDroppedNotRetried(t *testing.T) {
 		}
 		if len(svc.predicted) != 0 {
 			t.Errorf("an event without %s still produced a prediction", missing)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Field deleted
+// ---------------------------------------------------------------------------
+
+// A deleted field's forecasts stop appearing.
+//
+// The handler used to log "field deleted, archiving yield predictions" and
+// return nil, having archived nothing — so a farm-level listing kept showing
+// forecasts and harvest plans for ground nobody farms, and a harvest plan is
+// not a stale row but a date somebody is meant to turn up with a combine.
+func TestFieldDeletedArchivesItsForecasts(t *testing.T) {
+	svc := &predictingService{archivedRows: 3}
+	c := NewYieldConsumer(svc, testutil.NopLogger{})
+
+	if err := c.HandleEvent(context.Background(), fieldDeleted("fld-1", "tenant-a")); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+	if len(svc.archivedFields) != 1 || svc.archivedFields[0] != "fld-1" {
+		t.Errorf("archived forecasts for %v, want [fld-1]", svc.archivedFields)
+	}
+}
+
+// The consumer has no request to inherit a tenant from, so it must attach one.
+func TestTheArchiveRunsInTheEventsTenant(t *testing.T) {
+	svc := &predictingService{}
+	c := NewYieldConsumer(svc, testutil.NopLogger{})
+
+	if err := c.HandleEvent(context.Background(), fieldDeleted("fld-1", "tenant-a")); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+	if len(svc.archiveTenants) != 1 || svc.archiveTenants[0] != "tenant-a" {
+		t.Errorf("archived with tenants %v, want [tenant-a]", svc.archiveTenants)
+	}
+}
+
+// A write failure is returned so the consumer retries, rather than leaving a
+// harvest plan standing against a field that no longer exists.
+func TestAnArchiveFailureIsRetryable(t *testing.T) {
+	svc := &predictingService{archiveErr: errors.New("database unavailable")}
+	c := NewYieldConsumer(svc, testutil.NopLogger{})
+
+	if err := c.HandleEvent(context.Background(), fieldDeleted("fld-1", "tenant-a")); err == nil {
+		t.Error("an archive failure was reported as a successful handle")
+	}
+}
+
+// An event with no tenant is dropped, not retried: it can never succeed, and
+// guessing a tenant would archive another tenant's forecasts.
+func TestAFieldDeletedWithoutATenantIsDroppedNotRetried(t *testing.T) {
+	svc := &predictingService{}
+	c := NewYieldConsumer(svc, testutil.NopLogger{})
+
+	if err := c.HandleEvent(context.Background(), fieldDeleted("fld-1", "")); err != nil {
+		t.Errorf("a tenantless event was retried: %v", err)
+	}
+	if len(svc.archivedFields) != 0 {
+		t.Errorf("a tenantless event still archived %v", svc.archivedFields)
+	}
+}
+
+// Replaying is safe: the second pass finds nothing active and says so.
+func TestReplayingAFieldDeletedIsSafe(t *testing.T) {
+	svc := &predictingService{archivedRows: 0}
+	c := NewYieldConsumer(svc, testutil.NopLogger{})
+
+	for i := 0; i < 2; i++ {
+		if err := c.HandleEvent(context.Background(), fieldDeleted("fld-1", "tenant-a")); err != nil {
+			t.Fatalf("pass %d: %v", i+1, err)
 		}
 	}
 }

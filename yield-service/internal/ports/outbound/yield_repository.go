@@ -24,5 +24,10 @@ type YieldRepository interface {
 
 	GetCropPerformance(ctx context.Context, params domain.CropPerformanceParams) (*domain.CropPerformance, error)
 
+	// ArchiveFieldForecasts marks a deleted field's predictions and harvest
+	// plans inactive, and reports how many rows it archived. Yield records are
+	// untouched: a harvest happened whether or not the field record survives.
+	ArchiveFieldForecasts(ctx context.Context, fieldID, tenantID string) (int64, error)
+
 	WithTx(tx pgx.Tx) YieldRepository
 }

@@ -22,4 +22,9 @@ type YieldService interface {
 
 	GetCropPerformance(ctx context.Context, params domain.CropPerformanceParams) (*domain.CropPerformance, error)
 	CompareYields(ctx context.Context, params domain.CompareYieldsParams) (*domain.CropPerformance, *domain.CropPerformance, error)
+
+	// ArchiveFieldForecasts marks a deleted field's predictions and harvest
+	// plans inactive, leaving its yield records alone. Consumer-only: there is
+	// no RPC behind it.
+	ArchiveFieldForecasts(ctx context.Context, fieldID string) (int64, error)
 }

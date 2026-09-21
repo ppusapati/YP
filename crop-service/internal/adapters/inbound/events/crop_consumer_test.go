@@ -34,9 +34,8 @@ func fieldDeleted(fieldID, tenantID string) *eventsdomain.DomainEvent {
 // assignments linked to the deleted field". crop-service has no assignment
 // table: its schema is crops, varieties, growth stages, requirements and
 // recommendations — the catalogue of what a crop *is*. An assignment is a fact
-// about a field, lives in
-// field-service's `crop_assignments`, and is now deleted there in the same
-// statement as the field.
+// about a field, lives in field-service's `crop_assignments`, and is now
+// deleted there in the same statement as the field.
 //
 // Asserted rather than left implicit, so that a future attempt to "finish"
 // this handler by reaching across the service boundary has to argue with a

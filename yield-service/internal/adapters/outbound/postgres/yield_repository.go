@@ -161,8 +161,12 @@ func (r *yieldRepository) ListPredictions(ctx context.Context, params domain.Lis
 	}
 
 	addFilter("tenant_id", params.TenantID)
-	conditions = append(conditions, "deleted_at IS NULL")
-	countConds = append(countConds, "deleted_at IS NULL")
+	// is_active as well as deleted_at. A forecast for a field that has since
+	// been deleted is archived rather than deleted, so that the predicted-vs-
+	// actual join in GetCropPerformance — which filters on deleted_at alone —
+	// keeps working for harvests that did happen. See ArchiveFieldForecasts.
+	conditions = append(conditions, "deleted_at IS NULL", "is_active = TRUE")
+	countConds = append(countConds, "deleted_at IS NULL", "is_active = TRUE")
 
 	if params.FarmID != "" {
 		addFilter("farm_id", params.FarmID)
@@ -394,6 +398,56 @@ func scanHarvestPlanRows(rows pgx.Rows) ([]domain.HarvestPlan, error) {
 	return result, rows.Err()
 }
 
+// ArchiveFieldForecasts retires the forward-looking yield artefacts for a
+// field that no longer exists, and reports how many rows it retired.
+//
+// Predictions and harvest plans only. `yield_records` are deliberately left
+// alone: a record is what was actually cut off that ground, which happened
+// whether or not the field record survives, and is exactly what a traceability
+// or subsidy audit asks for later. A forecast for a field nobody farms is void;
+// a harvest is history.
+//
+// `is_active = FALSE` with `deleted_at` left NULL, and the choice is not
+// cosmetic. GetCropPerformance joins a record to its prediction with
+// `ON yr.prediction_id = yp.id AND yp.deleted_at IS NULL`, wrapped in
+// COALESCE(..., 0). Soft-deleting the prediction would drop that join and turn
+// a real forecast into a predicted yield of zero, so a harvest that beat its
+// forecast would render as "predicted 0, actual 4200" — the model made to look
+// as though it had forecast nothing. The listings filter on is_active instead,
+// which hides the forecast without breaking the comparison behind it.
+func (r *yieldRepository) ArchiveFieldForecasts(ctx context.Context, fieldID, tenantID string) (int64, error) {
+	if fieldID == "" || tenantID == "" {
+		return 0, errors.BadRequest("MISSING_IDENTIFIER", "field_id and tenant_id are required")
+	}
+
+	var total int64
+	for _, table := range []string{"yield_predictions", "harvest_plans"} {
+		// Table names come from this fixed literal list, never from input.
+		affected, err := r.execCount(ctx, `
+			UPDATE `+table+` SET is_active = FALSE, updated_at = NOW()
+			WHERE tenant_id = $1 AND field_id = $2
+			  AND is_active = TRUE AND deleted_at IS NULL`,
+			tenantID, fieldID)
+		if err != nil {
+			r.log.Errorw("msg", "failed to archive field forecasts",
+				"table", table, "field_id", fieldID, "error", err)
+			return total, errors.InternalServer("DB_ERROR", "an internal error occurred")
+		}
+		total += affected
+	}
+	return total, nil
+}
+
+// execCount is exec with the row count, which the plain exec above discards.
+func (r *yieldRepository) execCount(ctx context.Context, sql string, args ...any) (int64, error) {
+	if r.tx != nil {
+		tag, err := r.tx.Exec(ctx, sql, args...)
+		return tag.RowsAffected(), err
+	}
+	tag, err := r.pool.Exec(ctx, sql, args...)
+	return tag.RowsAffected(), err
+}
+
 func (r *yieldRepository) CreateHarvestPlan(ctx context.Context, p *domain.HarvestPlan) (*domain.HarvestPlan, error) {
 	p.ID = ulid.NewString()
 	row := r.queryRow(ctx,
@@ -452,8 +506,12 @@ func (r *yieldRepository) ListHarvestPlans(ctx context.Context, params domain.Li
 	}
 
 	addFilter("tenant_id", params.TenantID)
-	conditions = append(conditions, "deleted_at IS NULL")
-	countConds = append(countConds, "deleted_at IS NULL")
+	// is_active as well as deleted_at. A forecast for a field that has since
+	// been deleted is archived rather than deleted, so that the predicted-vs-
+	// actual join in GetCropPerformance — which filters on deleted_at alone —
+	// keeps working for harvests that did happen. See ArchiveFieldForecasts.
+	conditions = append(conditions, "deleted_at IS NULL", "is_active = TRUE")
+	countConds = append(countConds, "deleted_at IS NULL", "is_active = TRUE")
 
 	if params.FarmID != "" {
 		addFilter("farm_id", params.FarmID)

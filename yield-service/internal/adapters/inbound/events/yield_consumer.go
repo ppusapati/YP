@@ -228,17 +228,51 @@ func (c *YieldConsumer) systemContext(ctx context.Context, tenantID string) cont
 	return p9context.NewRLSScopeTenantOnly(ctx, tenantID)
 }
 
-// onFieldDeleted handles a field being deleted.
+// onFieldDeleted archives the forward-looking yield artefacts for a deleted
+// field.
+//
+// This used to log "field deleted, archiving yield predictions" and return nil,
+// having archived nothing. Kafka committed the offset, so a farm-level listing
+// kept showing forecasts and harvest plans for ground nobody farms — and a
+// harvest plan is not a stale row, it is a date somebody is meant to turn up
+// with a combine.
+//
+// Predictions and plans only. Yield *records* are deliberately untouched: a
+// record is what was actually cut off that ground, which happened whether or
+// not the field record survives, and is exactly what a traceability or subsidy
+// audit asks for later. A forecast for a field nobody farms is void; a harvest
+// is history.
 func (c *YieldConsumer) onFieldDeleted(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
 		return fmt.Errorf("onFieldDeleted: %w", err)
 	}
 	fieldID, _ := data["field_id"].(string)
-	c.log.Infow("msg", "field deleted, archiving yield predictions",
-		"field_id", fieldID,
-	)
-	// TODO: archive yield predictions and harvest plans for the deleted field
+	tenantID, _ := data["tenant_id"].(string)
+
+	if fieldID == "" || tenantID == "" {
+		// Dropped rather than retried: a message that can never succeed would
+		// block the partition, and guessing a tenant would archive another
+		// tenant's forecasts.
+		c.log.Warnw("msg", "field deleted event missing field or tenant; cannot archive forecasts",
+			"event_id", event.ID, "field_id", fieldID)
+		return nil
+	}
+
+	// A consumer has no request to inherit a tenant from, so one is attached
+	// explicitly. Without it the updates run unscoped, row-level security
+	// matches nothing, and the handler reports success over zero rows.
+	ctx = c.systemContext(ctx, tenantID)
+
+	archived, err := c.svc.ArchiveFieldForecasts(ctx, fieldID)
+	if err != nil {
+		// Returned, so the consumer retries: a database blip must not leave a
+		// harvest plan standing against a field that no longer exists.
+		return fmt.Errorf("onFieldDeleted: archive forecasts for field %s: %w", fieldID, err)
+	}
+
+	c.log.Infow("msg", "field deleted, yield forecasts archived",
+		"field_id", fieldID, "rows_archived", archived)
 	return nil
 }
 

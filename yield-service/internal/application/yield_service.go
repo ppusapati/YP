@@ -407,6 +407,22 @@ func (s *yieldService) GetCropPerformance(ctx context.Context, params domain.Cro
 	return s.repo.GetCropPerformance(ctx, params)
 }
 
+// ArchiveFieldForecasts retires the predictions and harvest plans for a field
+// that no longer exists, and reports how many rows it retired.
+//
+// Not exposed over the API: no client asks yield-service to forget a field, and
+// the only caller is the consumer reacting to field-service having deleted one.
+func (s *yieldService) ArchiveFieldForecasts(ctx context.Context, fieldID string) (int64, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return 0, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if fieldID == "" {
+		return 0, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
+	}
+	return s.repo.ArchiveFieldForecasts(ctx, fieldID, tenantID)
+}
+
 func (s *yieldService) CompareYields(ctx context.Context, params domain.CompareYieldsParams) (*domain.CropPerformance, *domain.CropPerformance, error) {
 	tenantID := p9context.TenantID(ctx)
 	if tenantID == "" {
