@@ -122,8 +122,8 @@ func TestReplayingTheEventIsSafe(t *testing.T) {
 //
 // The markers that used to sit here asked these to "update the farm aggregate
 // (e.g. field count, total area)". There is no field count anywhere in this
-// service, and
-// total_area_hectares is the farmer's own declared area for the parcel —
+// service, and total_area_hectares is the farmer's own declared area for the
+// parcel —
 // summing the fields into it would overwrite what they typed with a strictly
 // smaller number, because fields do not cover tracks, buildings or margins.
 //

@@ -33,8 +33,8 @@ func fieldDeleted(fieldID, tenantID string) *eventsdomain.DomainEvent {
 // The marker that used to sit here asked this handler to "deactivate crop
 // assignments linked to the deleted field". crop-service has no assignment
 // table: its schema is crops, varieties, growth stages, requirements and
-// recommendations — the catalogue
-// of what a crop *is*. An assignment is a fact about a field, lives in
+// recommendations — the catalogue of what a crop *is*. An assignment is a fact
+// about a field, lives in
 // field-service's `crop_assignments`, and is now deleted there in the same
 // statement as the field.
 //
