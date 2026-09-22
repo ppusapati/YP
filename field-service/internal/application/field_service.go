@@ -236,7 +236,11 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		userID = "system"
 	}
 
-	exists, err := s.cropClient.CropExists(ctx, params.CropID, tenantID)
+	// The name comes back from the same call that checks existence, and rides
+	// on the event below. Consumers otherwise hold an opaque crop id where a
+	// crop name belongs, and pest-prediction stamps that value onto a
+	// farmer-facing prediction.
+	cropName, exists, err := s.cropClient.CropName(ctx, params.CropID, tenantID)
 	if err != nil {
 		s.log.Errorw("msg", "failed to verify crop", "error", err)
 		return nil, errors.InternalServer("CROP_CHECK_FAILED", "an internal error occurred")
@@ -280,13 +284,20 @@ func (s *fieldService) AssignCrop(ctx context.Context, params domain.AssignCropP
 		return nil, err
 	}
 
-	// farm_id, season and planting_date ride along because the consumers need
-	// them and cannot get them: yield-service requires a farm, a season and a
-	// year to make a prediction, and looking each one up would be a round trip
-	// back to this service to re-read what it already had in hand here.
+	// Everything after tenant_id rides along because the consumers need it and
+	// cannot get it: yield-service requires a farm, a season and a year to make
+	// a prediction, and pest-prediction needs a crop *name* and a growth stage
+	// — the stage is worth a quarter of its risk score. Looking each one up
+	// would be a round trip back to this service to re-read what it already
+	// had in hand here.
+	//
+	// crop_name is separate from crop_id on purpose. crop_id is an opaque
+	// crop-service identifier; a consumer that puts it where a crop type
+	// belongs stores and displays something no farmer can read.
 	s.emitEvent(ctx, "agriculture.field.crop.assigned", field.ID, map[string]interface{}{
 		"field_id": field.ID, "crop_id": params.CropID, "tenant_id": tenantID,
 		"farm_id": field.FarmID, "season": params.Season,
+		"crop_name": cropName, "growth_stage": string(params.GrowthStage),
 		"planting_date": params.PlantingDate.UTC().Format(time.RFC3339),
 	})
 	return created, nil

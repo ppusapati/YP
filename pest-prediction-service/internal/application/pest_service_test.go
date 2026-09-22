@@ -368,6 +368,46 @@ func TestPredictPestRisk_HighRiskCreatesAlert(t *testing.T) {
 	assert.NotEmpty(t, repo.alerts, "expected auto-created alert for high risk")
 }
 
+// SuppressAlert records the prediction without raising an alert from it.
+//
+// The same conditions as the test above — which do raise one — so the only
+// difference is the flag. It exists for predictions the system asks for on the
+// farmer's behalf: the opening assessment at planting scores on weather and
+// growth stage alone, and a warm wet morning clears HIGH, so without this
+// planting three fields on one damp day pages them three times about pests on
+// bare ground.
+func TestPredictPestRisk_SuppressAlert(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	gs := domain.GrowthStageFlowering
+	params := &domain.PredictPestRiskParams{
+		FarmID:      "farm-001",
+		FieldID:     "field-001",
+		CropType:    "wheat",
+		GrowthStage: &gs,
+		Weather: domain.WeatherFactors{
+			TemperatureCelsius: 30,
+			HumidityPct:        90,
+			RainfallMm:         60,
+			WindSpeedKmh:       20,
+		},
+		SuppressAlert: true,
+	}
+
+	pred, err := svc.PredictPestRisk(ctx, params)
+	require.NoError(t, err)
+
+	// The prediction is still made, and still high risk — it is recorded and
+	// visible on the field, it just does not interrupt anyone.
+	require.True(t, pred.RiskLevel.Severity() >= domain.RiskLevelHigh.Severity(),
+		"expected risk >= HIGH, got %s (score=%d)", pred.RiskLevel, pred.RiskScore)
+	assert.NotEmpty(t, pred.ID, "the prediction was not recorded")
+
+	assert.Empty(t, repo.alerts,
+		"a suppressed prediction still raised a farmer-facing alert")
+}
+
 // ---------------------------------------------------------------------------
 // Tests: GetPrediction
 // ---------------------------------------------------------------------------

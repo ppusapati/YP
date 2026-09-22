@@ -19,7 +19,7 @@ crop-service 3
 farm-service 2
 field-service 5
 irrigation-service 4
-pest-prediction-service 5
+pest-prediction-service 4
 plant-diagnosis-service 4
 prescription-service 0
 satellite-analytics-service 0

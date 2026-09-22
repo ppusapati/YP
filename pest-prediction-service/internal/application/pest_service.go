@@ -199,8 +199,9 @@ func (s *pestService) PredictPestRisk(ctx context.Context, params *domain.Predic
 		return nil, err
 	}
 
-	// Auto-create alert if risk >= HIGH
-	if riskLevel.Severity() >= domain.RiskLevelHigh.Severity() {
+	// Auto-create alert if risk >= HIGH, unless the caller asked for a silent
+	// prediction. See PredictPestRiskParams.SuppressAlert.
+	if riskLevel.Severity() >= domain.RiskLevelHigh.Severity() && !params.SuppressAlert {
 		alert := &domain.PestAlert{
 			TenantID:        tenantID,
 			PredictionUUID:  created.ID,

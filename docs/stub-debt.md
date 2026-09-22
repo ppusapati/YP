@@ -85,7 +85,17 @@ the markers swept properly, `yield_consumer.go`'s field-deleted handler turned u
 as a silent drop of exactly the class already in the table, and it had never been
 listed. A register of debt that is itself hand-maintained goes stale the same way
 a hand-maintained service list does — and §4 of this document is about exactly
-that failure. The rows below now come from a marker sweep.
+that failure. The rows below now come from a marker sweep, which turned up two
+more — `yield_consumer`'s field-deleted handler and `pest_consumer`'s
+crop-assigned one.
+
+The sweep is also how the **growth-stage vocabularies were found to diverge**.
+field-service has BUDDING, FRUIT_SET, RIPENING, MATURITY and SENESCENCE;
+pest-prediction has FRUITING, MATURATION and HARVEST; only GERMINATION,
+SEEDLING, VEGETATIVE and FLOWERING appear in both. A stage from either
+non-overlapping half is scored as unstaged, which is the safe direction and is
+logged, but the two lists should be reconciled — at planting the stages happen
+to overlap, so nothing would have shown it.
 
 Ordered by consequence rather than by count:
 
@@ -102,6 +112,7 @@ Ordered by consequence rather than by count:
 | `sensor_consumer.go:99,114` field/farm deleted | Sensors are never decommissioned | **Fixed** — sensors stayed ACTIVE against a deleted field, still ingesting and still raising threshold alerts naming a field nobody could open. Both handlers are kept, not just the farm one: a sensor can sit at the farm with no field — a weather station by the gate — and no field-deleted event would ever reach it |
 | `yield_consumer.go:119` crop assigned | No prediction generated; the UI shows "no data" rather than an error | **Fixed** — the field's yield page showed "no data" from planting until somebody asked for a prediction by hand, which is the one moment a farmer is least likely to, having just told the system what they planted. The opening prediction is a baseline: no soil, weather or pest scores exist on planting day, so it stores the crop's base yield at **zero confidence** rather than dressing it up. `field.crop.assigned` now carries `farm_id`, `season` and `planting_date`, which a prediction needs and the consumer could not otherwise get |
 | `crop_consumer.go:104` field deleted | Crop assignments stay active | **Closed as not applicable, and the real bug was elsewhere.** crop-service has no assignment table — its schema is the catalogue of what a crop *is*. Assignments are facts about a field and live in field-service's `crop_assignments`, which `DeleteField` was not touching: it soft-deleted the `fields` row alone and left the assignments, segments and crop cycles live and unreachable, so `GetCropHistory` on a re-created field would have served the previous occupant's plantings. Fixed there, in one statement with the field |
+| `pest_consumer.go` crop assigned | No pest risk assessment until somebody asks for one by hand | **Fixed** — also never listed above. Three things about it had to be got right, and the obvious implementation gets each of them wrong. It reads `crop_name`, not `crop_id`: `PredictPestRisk` stores whatever it is given as the prediction's crop type and forwards it to the AI gateway, and the rules scorer ignores crop type entirely — so passing the opaque id would file a farmer-facing prediction against an unreadable crop while the risk number looked perfectly normal. It carries the growth stage, worth a quarter of the score. And it suppresses the alert: risk ≥ HIGH normally raises one and weather alone clears that on a warm wet day, so without it, planting three fields on one damp morning pages the farmer three times about pests on bare ground. No pest species is named, because a crop assignment does not imply one |
 | `yield_consumer.go` field deleted | Forecasts and harvest plans stand against a field nobody farms | **Fixed** — never listed above until a marker sweep found it. A harvest plan is not a stale row: it is a date somebody is meant to turn up with a combine. Predictions and plans are archived; **yield records are deliberately untouched**, because a record is what was actually cut off that ground and is what a traceability or subsidy audit asks for. `is_active = FALSE` rather than `deleted_at`, and that is not cosmetic: `GetCropPerformance` joins a record to its prediction on `yp.deleted_at IS NULL` inside `COALESCE(..., 0)`, so soft-deleting would have rendered a real forecast as a predicted yield of zero — a harvest that beat its forecast showing as "predicted 0, actual 4200" |
 | `soil_consumer.go:129` field deleted | Samples never archived | **Fixed** — a farm-level soil listing kept returning samples and health scores for a field nobody could open. Archived (`is_active = FALSE`) rather than soft-deleted: these are laboratory measurements of ground that still exists — the field record was an administrative boundary, not the dirt — and they are what an organic or GAP audit asks for years later, so `deleted_at` stays NULL |
 

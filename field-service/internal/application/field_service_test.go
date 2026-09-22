@@ -65,10 +65,14 @@ func (m *mockFarmClient) GetFarmBoundary(context.Context, string, string) (strin
 
 type mockCropClient struct {
 	existing map[string]bool
+	// names maps a crop id to its display name. A crop present in `existing`
+	// but absent here has an empty name, which is what a crop-service row with
+	// no name would give.
+	names map[string]string
 }
 
-func (m *mockCropClient) CropExists(_ context.Context, uuid, _ string) (bool, error) {
-	return m.existing[uuid], nil
+func (m *mockCropClient) CropName(_ context.Context, uuid, _ string) (string, bool, error) {
+	return m.names[uuid], m.existing[uuid], nil
 }
 
 // ---------------------------------------------------------------------------

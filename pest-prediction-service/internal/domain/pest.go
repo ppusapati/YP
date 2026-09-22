@@ -322,6 +322,21 @@ type PredictPestRiskParams struct {
 	Weather       WeatherFactors
 	Latitude      float64
 	Longitude     float64
+
+	// SuppressAlert records the prediction without raising a PestAlert from it,
+	// however high the risk comes out.
+	//
+	// For predictions the system asks for on the farmer's behalf rather than
+	// ones they requested. The opening assessment at planting is the case it
+	// exists for: the risk score there is weather and growth stage, and a warm
+	// wet morning alone clears the HIGH threshold — so without this, planting
+	// three fields on one damp day pages the farmer three times about pests on
+	// bare ground. The prediction is still stored and still visible on the
+	// field; it just does not interrupt anyone.
+	//
+	// Alert fatigue is the failure mode. A list that cries wolf at planting is
+	// a list nobody reads in August.
+	SuppressAlert bool
 }
 
 // ListPredictionsParams holds filter and pagination params for listing predictions.

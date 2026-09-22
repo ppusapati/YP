@@ -24,13 +24,17 @@ func NewCropClient(baseURL string, httpClient *http.Client, opts ...connect.Clie
 	}
 }
 
-func (c *cropClient) CropExists(ctx context.Context, uuid, tenantID string) (bool, error) {
+func (c *cropClient) CropName(ctx context.Context, uuid, tenantID string) (string, bool, error) {
 	resp, err := c.client.GetCrop(ctx, connect.NewRequest(&cropv1.GetCropRequest{Id: uuid}))
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeNotFound {
-			return false, nil
+			return "", false, nil
 		}
-		return false, err
+		return "", false, err
 	}
-	return resp.Msg.GetCrop() != nil, nil
+	crop := resp.Msg.GetCrop()
+	if crop == nil {
+		return "", false, nil
+	}
+	return crop.GetName(), true, nil
 }
