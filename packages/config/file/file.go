@@ -1,7 +1,6 @@
 package file
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -88,11 +87,4 @@ func (f *file) Load() (kvs []*config.KeyValue, err error) {
 
 func (f *file) Watch() (config.Watcher, error) {
 	return newWatcher(f)
-}
-
-// newWatcher creates a new file watcher.
-func newWatcher(_ *file) (config.Watcher, error) {
-	// Implementation of the watcher goes here.
-	// For now, return nil and a not implemented error.
-	return nil, fmt.Errorf("newWatcher not implemented")
 }

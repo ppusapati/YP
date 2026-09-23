@@ -44,6 +44,12 @@ type config struct {
 	reader    Reader
 	cached    sync.Map
 	observers sync.Map
+
+	// watchers are the per-source watchers started by Load, held so that
+	// Close can stop them. Guarded because Close may be called from a
+	// different goroutine than Load.
+	mu       sync.Mutex
+	watchers []Watcher
 }
 
 type GrpcServerConfig struct {
@@ -73,11 +79,15 @@ func (c *config) watch(w Watcher) {
 		kvs, err := w.Next()
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
-				p9log.Infof("watcher's ctx cancel : %v", err)
+				p9log.Infof("config watcher stopped: %v", err)
 				return
 			}
-			time.Sleep(time.Second)
+			// Logged before the pause, not after: this used to sleep first,
+			// which delayed every report of a watch failure by a second for
+			// no benefit. The pause is here so that a source failing
+			// repeatedly does not spin.
 			p9log.Errorf("failed to watch next config: %v", err)
+			time.Sleep(time.Second)
 			continue
 		}
 		if err := c.reader.Merge(kvs...); err != nil {
@@ -115,11 +125,25 @@ func (c *config) Load() error {
 			p9log.Errorf("failed to merge config source: %v", err)
 			return err
 		}
-		// NOTE: Config watching is not implemented yet.
-		// If needed in the future, uncomment and implement:
-		// w, err := src.Watch()
-		// if err != nil { return err }
-		// go c.watch(w)
+
+		// A source that cannot be watched is not a reason to fail Load.
+		//
+		// The config is already loaded and correct at this point; watching is
+		// the extra that keeps it current. Returning an error here would take
+		// a service that can run with static config and stop it from starting
+		// at all — on a platform with no inotify, say, or with the descriptor
+		// limit reached. Logged at warning so the degradation is visible
+		// rather than assumed.
+		w, err := src.Watch()
+		if err != nil {
+			p9log.Warnf("config source will not be watched, so changes to it "+
+				"will not be picked up: %v", err)
+			continue
+		}
+		c.mu.Lock()
+		c.watchers = append(c.watchers, w)
+		c.mu.Unlock()
+		go c.watch(w)
 	}
 	if err := c.reader.Resolve(); err != nil {
 		p9log.Errorf("failed to resolve config source: %v", err)
@@ -155,8 +179,24 @@ func (c *config) Watch(key string, o Observer) error {
 	return nil
 }
 
+// Close stops every watcher Load started.
+//
+// Each watcher's Next then returns a cancelled context, which is how the
+// goroutines in watch end. Every watcher is stopped even if one fails, and the
+// first failure is returned: leaving the rest running because an earlier one
+// errored is how a test suite or a repeatedly-reloaded process runs out of
+// file descriptors.
 func (c *config) Close() error {
-	// NOTE: No watchers to close yet. If watching is implemented,
-	// add cleanup logic here.
-	return nil
+	c.mu.Lock()
+	watchers := c.watchers
+	c.watchers = nil
+	c.mu.Unlock()
+
+	var firstErr error
+	for _, w := range watchers {
+		if err := w.Stop(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
