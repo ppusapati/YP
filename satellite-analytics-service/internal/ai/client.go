@@ -1,6 +1,10 @@
 // Package ai provides a gRPC client for the AI Gateway service.
 // It exposes NDVI computation and vegetation stress detection operations
 // needed by the satellite-analytics-service.
+// Calls go through the gateway's generated stubs. An earlier version sent
+// `structpb.Struct` values over `conn.Invoke` with the method name written out
+// by hand, which cannot work: a Struct serialises as a map entry list and
+// bears no resemblance on the wire to the typed request the server decodes.
 package ai
 
 import (
@@ -10,17 +14,13 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/protobuf/types/known/structpb"
 	"p9e.in/samavaya/packages/grpcdial"
 	"p9e.in/samavaya/packages/ratelimit/algorithms"
 	"p9e.in/samavaya/packages/ratelimit/grpclimit"
 
 	"p9e.in/samavaya/packages/p9log"
-)
 
-const (
-	methodComputeNDVI            = "/agriculture.ai.v1.AIGatewayService/ComputeNDVI"
-	methodDetectVegetationStress = "/agriculture.ai.v1.AIGatewayService/DetectVegetationStress"
+	aipb "p9e.in/samavaya/agriculture/ai-gateway/api/v1"
 )
 
 // AIClient wraps the gRPC connection to the AI Gateway for satellite analytics.
@@ -149,39 +149,58 @@ type RasterBandsInput struct {
 	CloudBufferPixels int32
 }
 
-// bandsToStruct serializes RasterBandsInput for the structpb transport,
-// including the band arrays and QA metadata.
-func bandsToStruct(bands *RasterBandsInput) *structpb.Struct {
+// bandsToProto converts the caller's raster bands to the gateway's message.
+//
+// A nil input becomes a nil message rather than an empty one, so the gateway
+// can tell "no inline bands, use raster_url" from "inline bands, all empty".
+func bandsToProto(bands *RasterBandsInput) *aipb.RasterBands {
 	if bands == nil {
-		s, _ := structpb.NewStruct(map[string]interface{}{})
-		return s
+		return nil
 	}
-	fields := map[string]interface{}{
-		"width":               float64(bands.Width),
-		"height":              float64(bands.Height),
-		"processing_level":    bands.ProcessingLevel,
-		"sensor":              bands.Sensor,
-		"cloud_buffer_pixels": float64(bands.CloudBufferPixels),
+	return &aipb.RasterBands{
+		NirBand:           bands.NIRBand,
+		RedBand:           bands.RedBand,
+		GreenBand:         bands.GreenBand,
+		BlueBand:          bands.BlueBand,
+		RedEdgeBand:       bands.RedEdgeBand,
+		SclBand:           bands.SCLBand,
+		QaPixelBand:       bands.QAPixelBand,
+		Width:             bands.Width,
+		Height:            bands.Height,
+		ProcessingLevel:   bands.ProcessingLevel,
+		Sensor:            bands.Sensor,
+		CloudBufferPixels: bands.CloudBufferPixels,
 	}
-	addBand := func(key string, values []float64) {
-		if len(values) == 0 {
-			return
-		}
-		list := make([]interface{}, len(values))
-		for i, v := range values {
-			list[i] = v
-		}
-		fields[key] = list
+}
+
+func boundsToProto(b *BoundingBoxInput) *aipb.BoundingBox {
+	if b == nil {
+		return nil
 	}
-	addBand("nir_band", bands.NIRBand)
-	addBand("red_band", bands.RedBand)
-	addBand("green_band", bands.GreenBand)
-	addBand("blue_band", bands.BlueBand)
-	addBand("red_edge_band", bands.RedEdgeBand)
-	addBand("scl_band", bands.SCLBand)
-	addBand("qa_pixel_band", bands.QAPixelBand)
-	s, _ := structpb.NewStruct(fields)
-	return s
+	return &aipb.BoundingBox{
+		MinLon: b.MinLon,
+		MinLat: b.MinLat,
+		MaxLon: b.MaxLon,
+		MaxLat: b.MaxLat,
+	}
+}
+
+func bandStatsFromProto(s *aipb.BandStatistics) *BandStatistics {
+	if s == nil {
+		return nil
+	}
+	return &BandStatistics{
+		Min:             s.GetMin(),
+		Max:             s.GetMax(),
+		Mean:            s.GetMean(),
+		StdDev:          s.GetStdDev(),
+		Median:          s.GetMedian(),
+		ValidPixelCount: s.GetValidPixelCount(),
+	}
+}
+
+func (c *AIClient) gateway() aipb.AIGatewayServiceClient {
+	return aipb.NewAIGatewayServiceClient(c.conn)
 }
 
 // BoundingBoxInput describes the spatial clip bounds.
@@ -193,182 +212,76 @@ type BoundingBoxInput struct {
 }
 
 // ComputeNDVI calls the AI Gateway to compute NDVI from satellite raster bands.
-// This replaces the placeholder computation with the Rust satellite-ndvi-engine.
 func (c *AIClient) ComputeNDVI(ctx context.Context, requestID string, bands *RasterBandsInput, clipBounds *BoundingBoxInput) (*NDVIResult, error) {
-	reqFields := map[string]*structpb.Value{
-		"request_id": structpb.NewStringValue(requestID),
-		"bands":      structpb.NewStructValue(bandsToStruct(bands)),
-	}
-
-	if clipBounds != nil {
-		boundsStruct, _ := structpb.NewStruct(map[string]interface{}{
-			"min_lon": clipBounds.MinLon,
-			"min_lat": clipBounds.MinLat,
-			"max_lon": clipBounds.MaxLon,
-			"max_lat": clipBounds.MaxLat,
-		})
-		reqFields["clip_bounds"] = structpb.NewStructValue(boundsStruct)
-	}
-
-	reqMsg := &structpb.Struct{Fields: reqFields}
-	respMsg := &structpb.Struct{}
-
-	err := c.conn.Invoke(ctx, methodComputeNDVI, reqMsg, respMsg)
+	resp, err := c.gateway().ComputeNDVI(ctx, &aipb.ComputeNDVIRequest{
+		RequestId:  requestID,
+		Bands:      bandsToProto(bands),
+		ClipBounds: boundsToProto(clipBounds),
+	})
 	if err != nil {
 		c.logger.Errorw("msg", "AI ComputeNDVI failed", "request_id", requestID, "error", err)
-		return nil, fmt.Errorf("ComputeNDVI invoke failed: %w", err)
+		return nil, fmt.Errorf("ComputeNDVI: %w", err)
 	}
 
-	result := parseNDVIResult(respMsg)
-	c.logger.Infow("msg", "AI NDVI computation completed",
-		"request_id", requestID,
-		"width", result.Width,
-		"height", result.Height,
-		"processing_ms", result.ProcessingTimeMs,
-	)
-
+	result := &NDVIResult{
+		RequestID: resp.GetRequestId(),
+		// The NDVI grid itself, which the previous parser never read despite
+		// NDVIResult having the field — the RPC's actual output was dropped on
+		// the floor and every caller saw an empty slice.
+		NDVIValues:         resp.GetNdviValues(),
+		Width:              resp.GetWidth(),
+		Height:             resp.GetHeight(),
+		Statistics:         bandStatsFromProto(resp.GetStatistics()),
+		ModelVersion:       resp.GetModelVersion(),
+		ProcessingTimeMs:   resp.GetProcessingTimeMs(),
+		CloudMasked:        resp.GetCloudMasked(),
+		CloudFraction:      resp.GetCloudFraction(),
+		ValidPixelFraction: resp.GetValidPixelFraction(),
+		ProcessingLevel:    resp.GetProcessingLevel(),
+		ProcessingAdvisory: resp.GetProcessingAdvisory(),
+		Sensor:             resp.GetSensor(),
+		Harmonized:         resp.GetHarmonized(),
+	}
+	for _, z := range resp.GetZones() {
+		result.Zones = append(result.Zones, NDVIZone{
+			Classification: z.GetClassification(),
+			MinValue:       z.GetMinValue(),
+			MaxValue:       z.GetMaxValue(),
+			PixelCount:     z.GetPixelCount(),
+			AreaPct:        z.GetAreaPct(),
+		})
+	}
 	return result, nil
 }
 
-// DetectVegetationStress calls the AI Gateway to detect crop stress from satellite data.
-// This replaces the placeholder stress detection with the Rust engine.
+// DetectVegetationStress asks the gateway to classify stressed areas.
 func (c *AIClient) DetectVegetationStress(ctx context.Context, requestID string, bands *RasterBandsInput, ndviThreshold, ndwiThreshold float64) (*VegetationStressResult, error) {
-	reqFields := map[string]*structpb.Value{
-		"request_id":            structpb.NewStringValue(requestID),
-		"bands":                 structpb.NewStructValue(bandsToStruct(bands)),
-		"ndvi_stress_threshold": structpb.NewNumberValue(ndviThreshold),
-		"ndwi_stress_threshold": structpb.NewNumberValue(ndwiThreshold),
-	}
-
-	reqMsg := &structpb.Struct{Fields: reqFields}
-	respMsg := &structpb.Struct{}
-
-	err := c.conn.Invoke(ctx, methodDetectVegetationStress, reqMsg, respMsg)
+	resp, err := c.gateway().DetectVegetationStress(ctx, &aipb.DetectVegetationStressRequest{
+		RequestId:           requestID,
+		Bands:               bandsToProto(bands),
+		NdviStressThreshold: ndviThreshold,
+		NdwiStressThreshold: ndwiThreshold,
+	})
 	if err != nil {
 		c.logger.Errorw("msg", "AI DetectVegetationStress failed", "request_id", requestID, "error", err)
-		return nil, fmt.Errorf("DetectVegetationStress invoke failed: %w", err)
+		return nil, fmt.Errorf("DetectVegetationStress: %w", err)
 	}
 
-	result := parseStressResult(respMsg)
-	c.logger.Infow("msg", "AI vegetation stress detection completed",
-		"request_id", requestID,
-		"stress_zones", len(result.StressZones),
-		"overall_stress_pct", result.OverallStressPct,
-		"processing_ms", result.ProcessingTimeMs,
-	)
-
+	result := &VegetationStressResult{
+		RequestID:        resp.GetRequestId(),
+		OverallStressPct: resp.GetOverallStressPct(),
+		HealthyPct:       resp.GetHealthyPct(),
+		NDVIStatistics:   bandStatsFromProto(resp.GetNdviStatistics()),
+		ModelVersion:     resp.GetModelVersion(),
+		ProcessingTimeMs: resp.GetProcessingTimeMs(),
+	}
+	for _, z := range resp.GetStressZones() {
+		result.StressZones = append(result.StressZones, StressZone{
+			StressType:      z.GetStressType(),
+			Severity:        z.GetSeverity(),
+			AffectedAreaPct: z.GetAffectedAreaPct(),
+			Confidence:      z.GetConfidence(),
+		})
+	}
 	return result, nil
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Response parsers
-// ─────────────────────────────────────────────────────────────────────────────
-
-func parseNDVIResult(resp *structpb.Struct) *NDVIResult {
-	result := &NDVIResult{}
-	if resp == nil || resp.Fields == nil {
-		return result
-	}
-
-	result.RequestID = getStringField(resp, "request_id")
-	result.Width = int32(getNumberField(resp, "width"))
-	result.Height = int32(getNumberField(resp, "height"))
-	result.ModelVersion = getStringField(resp, "model_version")
-	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
-	result.CloudFraction = getNumberField(resp, "cloud_fraction")
-	result.ValidPixelFraction = getNumberField(resp, "valid_pixel_fraction")
-	result.ProcessingLevel = getStringField(resp, "processing_level")
-	result.ProcessingAdvisory = getStringField(resp, "processing_advisory")
-	result.Sensor = getStringField(resp, "sensor")
-	if v, ok := resp.Fields["cloud_masked"]; ok {
-		result.CloudMasked = v.GetBoolValue()
-	}
-	if v, ok := resp.Fields["harmonized"]; ok {
-		result.Harmonized = v.GetBoolValue()
-	}
-
-	if statsVal, ok := resp.Fields["statistics"]; ok {
-		if ss := statsVal.GetStructValue(); ss != nil {
-			result.Statistics = parseBandStats(ss)
-		}
-	}
-
-	if zoneList, ok := resp.Fields["zones"]; ok {
-		if lv := zoneList.GetListValue(); lv != nil {
-			for _, zv := range lv.Values {
-				if zs := zv.GetStructValue(); zs != nil {
-					result.Zones = append(result.Zones, NDVIZone{
-						Classification: getStringField(zs, "classification"),
-						MinValue:       getNumberField(zs, "min_value"),
-						MaxValue:       getNumberField(zs, "max_value"),
-						PixelCount:     int64(getNumberField(zs, "pixel_count")),
-						AreaPct:        getNumberField(zs, "area_pct"),
-					})
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-func parseStressResult(resp *structpb.Struct) *VegetationStressResult {
-	result := &VegetationStressResult{}
-	if resp == nil || resp.Fields == nil {
-		return result
-	}
-
-	result.RequestID = getStringField(resp, "request_id")
-	result.OverallStressPct = getNumberField(resp, "overall_stress_pct")
-	result.HealthyPct = getNumberField(resp, "healthy_pct")
-	result.ModelVersion = getStringField(resp, "model_version")
-	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
-
-	if statsVal, ok := resp.Fields["ndvi_statistics"]; ok {
-		if ss := statsVal.GetStructValue(); ss != nil {
-			result.NDVIStatistics = parseBandStats(ss)
-		}
-	}
-
-	if szList, ok := resp.Fields["stress_zones"]; ok {
-		if lv := szList.GetListValue(); lv != nil {
-			for _, sv := range lv.Values {
-				if ss := sv.GetStructValue(); ss != nil {
-					result.StressZones = append(result.StressZones, StressZone{
-						StressType:      getStringField(ss, "stress_type"),
-						Severity:        getStringField(ss, "severity"),
-						AffectedAreaPct: getNumberField(ss, "affected_area_pct"),
-						Confidence:      getNumberField(ss, "confidence"),
-					})
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-func parseBandStats(s *structpb.Struct) *BandStatistics {
-	return &BandStatistics{
-		Min:             getNumberField(s, "min"),
-		Max:             getNumberField(s, "max"),
-		Mean:            getNumberField(s, "mean"),
-		StdDev:          getNumberField(s, "std_dev"),
-		Median:          getNumberField(s, "median"),
-		ValidPixelCount: int64(getNumberField(s, "valid_pixel_count")),
-	}
-}
-
-func getStringField(s *structpb.Struct, key string) string {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetStringValue()
-	}
-	return ""
-}
-
-func getNumberField(s *structpb.Struct, key string) float64 {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetNumberValue()
-	}
-	return 0
 }

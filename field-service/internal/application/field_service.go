@@ -702,7 +702,7 @@ func (s *fieldService) EvaluateFieldRisk(ctx context.Context, req *ai.EvaluateFi
 	if s.aiClient == nil {
 		return nil, nil
 	}
-	return s.aiClient.EvaluateFieldRisk(ctx, req)
+	return s.aiClient.EvaluateFieldRisk(ctx, s.requestID(ctx), req)
 }
 
 // ComputeFieldAnalytics delegates to the AI gateway to compute analytics for a
@@ -712,7 +712,7 @@ func (s *fieldService) ComputeFieldAnalytics(ctx context.Context, fieldID, farmI
 	if s.aiClient == nil {
 		return nil, nil
 	}
-	return s.aiClient.ComputeFieldAnalytics(ctx, fieldID, farmID, seasons)
+	return s.aiClient.ComputeFieldAnalytics(ctx, s.requestID(ctx), fieldID, farmID, seasons)
 }
 
 // GeneratePrescription delegates to the AI gateway to generate a variable-rate
@@ -730,7 +730,30 @@ func (s *fieldService) GeneratePrescription(
 	if s.aiClient == nil {
 		return nil, nil
 	}
-	return s.aiClient.GeneratePrescription(ctx, fieldID, gridRows, gridCols, cellSizeM, ndvi, soilN, soilP, soilK, soilPH, soilMoisture, soilOM, cropType, targetYield)
+	// These seven arrays used to be accepted here, passed down, and dropped
+	// before the request left the process. They are the per-cell data the
+	// rates are varied against, so without them every map came back uniform.
+	return s.aiClient.GeneratePrescription(ctx, s.requestID(ctx), fieldID,
+		gridRows, gridCols, cellSizeM,
+		ai.PrescriptionZones{
+			NDVI:              ndvi,
+			SoilNitrogen:      soilN,
+			SoilPhosphorus:    soilP,
+			SoilPotassium:     soilK,
+			SoilPH:            soilPH,
+			SoilMoisture:      soilMoisture,
+			SoilOrganicMatter: soilOM,
+		},
+		cropType, targetYield, nil)
+}
+
+// requestID returns the inbound request id, or a fresh one for a call that has
+// none, so every gateway call can be traced to something.
+func (s *fieldService) requestID(ctx context.Context) string {
+	if id := p9context.RequestID(ctx); id != "" {
+		return id
+	}
+	return ulid.NewString()
 }
 
 // ---------------------------------------------------------------------------

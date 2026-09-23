@@ -1,6 +1,12 @@
 // Package ai provides a gRPC client for the AI Gateway service.
 // It exposes yield prediction and crop growth simulation operations
 // needed by the yield-service.
+// Calls go through the gateway's generated stubs. An earlier version sent
+// `structpb.Struct` values over `conn.Invoke` with the method name written out
+// by hand, which cannot work: a Struct serialises as a map entry list and
+// bears no resemblance on the wire to the typed request the server decodes.
+//
+// The field names here were right, so this was broken purely by the encoding.
 package ai
 
 import (
@@ -10,17 +16,13 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/protobuf/types/known/structpb"
 	"p9e.in/samavaya/packages/grpcdial"
 	"p9e.in/samavaya/packages/ratelimit/algorithms"
 	"p9e.in/samavaya/packages/ratelimit/grpclimit"
 
 	"p9e.in/samavaya/packages/p9log"
-)
 
-const (
-	methodPredictYield       = "/agriculture.ai.v1.AIGatewayService/PredictYield"
-	methodSimulateCropGrowth = "/agriculture.ai.v1.AIGatewayService/SimulateCropGrowth"
+	aipb "p9e.in/samavaya/agriculture/ai-gateway/api/v1"
 )
 
 // AIClient wraps the gRPC connection to the AI Gateway for yield operations.
@@ -79,6 +81,10 @@ type YieldPredictionResult struct {
 	TabularWeight    float64
 	CropSupported    bool
 	IntervalCoverage float64
+	// ParametricYieldKgPerHectare is the stress-factor estimate the gateway
+	// keeps alongside a blended one. It was in the response all along and
+	// nothing read it.
+	ParametricYieldKgPerHectare float64
 }
 
 // StressFactor represents a factor that impacts yield negatively.
@@ -138,177 +144,114 @@ func (c *AIClient) PredictYield(ctx context.Context, requestID, cropType string,
 // PredictYieldWithEnvironment calls the AI Gateway using observed season
 // weather when available.
 func (c *AIClient) PredictYieldWithEnvironment(ctx context.Context, requestID, cropType string, factors YieldFactorsInput, env *EnvironmentInput, fieldAreaHectares float64) (*YieldPredictionResult, error) {
-	envFields := map[string]interface{}{
-		"temperature_celsius": 20.0,
-		"humidity_pct":        factors.WeatherScore * 100.0,
-		"rainfall_mm":         factors.IrrigationScore * 600.0,
-		"solar_radiation":     20.0,
-		"wind_speed_kmh":      10.0,
-		"growing_degree_days": 2000.0,
+	// Without observed weather the gateway is handed a nominal season. These
+	// are placeholders derived from the factor scores, not measurements, which
+	// is why the caller prefers observed weather wherever it can assemble it.
+	environment := &aipb.EnvironmentFactors{
+		TemperatureCelsius: 20.0,
+		HumidityPct:        factors.WeatherScore * 100.0,
+		RainfallMm:         factors.IrrigationScore * 600.0,
+		SolarRadiation:     20.0,
+		WindSpeedKmh:       10.0,
+		GrowingDegreeDays:  2000.0,
 	}
 	if env != nil {
-		envFields["temperature_celsius"] = env.AvgTemperatureC
-		envFields["humidity_pct"] = env.HumidityPct
-		envFields["rainfall_mm"] = env.RainfallMM
-		envFields["solar_radiation"] = env.SolarRadiationMJ
-		envFields["growing_degree_days"] = env.GrowingDegreeDays
-		envFields["frost_days"] = float64(env.FrostDays)
-		envFields["heat_stress_days"] = float64(env.HeatStressDays)
-	}
-	envStruct, _ := structpb.NewStruct(envFields)
-
-	soilStruct, _ := structpb.NewStruct(map[string]interface{}{
-		"ph":                 factors.SoilQualityScore * 7.0,
-		"organic_matter_pct": factors.SoilQualityScore * 5.0,
-		"nitrogen_ppm":       factors.NutrientScore * 80.0,
-		"phosphorus_ppm":     factors.NutrientScore * 40.0,
-		"potassium_ppm":      factors.NutrientScore * 60.0,
-		"moisture_pct":       factors.IrrigationScore * 100.0,
-		"texture":            "loam",
-		"compaction_index":   0.1,
-	})
-
-	mgmtStruct, _ := structpb.NewStruct(map[string]interface{}{
-		"irrigation_efficiency":     factors.IrrigationScore,
-		"fertilizer_rate_kg_per_ha": factors.NutrientScore * 150.0,
-		"tillage_type":              "conventional",
-		"planting_density":          3500000.0,
-		"pest_management_level":     fmt.Sprintf("%.0f", factors.PestPressureScore*100),
-	})
-
-	reqFields := map[string]*structpb.Value{
-		"request_id":          structpb.NewStringValue(requestID),
-		"crop_type":           structpb.NewStringValue(cropType),
-		"environment":         structpb.NewStructValue(envStruct),
-		"soil":                structpb.NewStructValue(soilStruct),
-		"management":          structpb.NewStructValue(mgmtStruct),
-		"field_area_hectares": structpb.NewNumberValue(fieldAreaHectares),
+		environment = &aipb.EnvironmentFactors{
+			TemperatureCelsius: env.AvgTemperatureC,
+			HumidityPct:        env.HumidityPct,
+			RainfallMm:         env.RainfallMM,
+			SolarRadiation:     env.SolarRadiationMJ,
+			WindSpeedKmh:       10.0,
+			GrowingDegreeDays:  env.GrowingDegreeDays,
+			FrostDays:          int32(env.FrostDays),
+			HeatStressDays:     int32(env.HeatStressDays),
+		}
 	}
 
-	reqMsg := &structpb.Struct{Fields: reqFields}
-	respMsg := &structpb.Struct{}
-
-	err := c.conn.Invoke(ctx, methodPredictYield, reqMsg, respMsg)
+	resp, err := c.gateway().PredictYield(ctx, &aipb.PredictYieldRequest{
+		RequestId:   requestID,
+		CropType:    cropType,
+		Environment: environment,
+		Soil: &aipb.SoilFactors{
+			Ph:               factors.SoilQualityScore * 7.0,
+			OrganicMatterPct: factors.SoilQualityScore * 5.0,
+			NitrogenPpm:      factors.NutrientScore * 80.0,
+			PhosphorusPpm:    factors.NutrientScore * 40.0,
+			PotassiumPpm:     factors.NutrientScore * 60.0,
+			MoisturePct:      factors.IrrigationScore * 100.0,
+			Texture:          "loam",
+			CompactionIndex:  0.1,
+		},
+		Management: &aipb.ManagementFactors{
+			IrrigationEfficiency:  factors.IrrigationScore,
+			FertilizerRateKgPerHa: factors.NutrientScore * 150.0,
+			TillageType:           "conventional",
+			PlantingDensity:       3500000.0,
+			PestManagementLevel:   fmt.Sprintf("%.0f", factors.PestPressureScore*100),
+		},
+		FieldAreaHectares: fieldAreaHectares,
+	})
 	if err != nil {
 		c.logger.Errorw("msg", "AI PredictYield failed", "request_id", requestID, "error", err)
-		return nil, fmt.Errorf("PredictYield invoke failed: %w", err)
+		return nil, fmt.Errorf("PredictYield: %w", err)
 	}
 
-	result := parseYieldResult(respMsg)
-	c.logger.Infow("msg", "AI yield prediction completed",
-		"request_id", requestID,
-		"predicted_yield", result.PredictedYieldKgPerHectare,
-		"confidence_pct", result.ConfidencePct,
-		"processing_ms", result.ProcessingTimeMs,
-	)
-
+	result := &YieldPredictionResult{
+		RequestID:                   resp.GetRequestId(),
+		PredictedYieldKgPerHectare:  resp.GetPredictedYieldKgPerHectare(),
+		ConfidencePct:               resp.GetConfidencePct(),
+		YieldLowerBound:             resp.GetYieldLowerBound(),
+		YieldUpperBound:             resp.GetYieldUpperBound(),
+		ModelVersion:                resp.GetModelVersion(),
+		ProcessingTimeMs:            resp.GetProcessingTimeMs(),
+		ModelSource:                 resp.GetModelSource(),
+		TabularWeight:               resp.GetTabularWeight(),
+		CropSupported:               resp.GetCropSupported(),
+		IntervalCoverage:            resp.GetIntervalCoverage(),
+		ParametricYieldKgPerHectare: resp.GetParametricYieldKgPerHectare(),
+	}
+	for _, sf := range resp.GetStressFactors() {
+		result.StressFactors = append(result.StressFactors, StressFactor{
+			FactorName:     sf.GetFactorName(),
+			Severity:       sf.GetSeverity(),
+			YieldImpactPct: sf.GetYieldImpactPct(),
+		})
+	}
 	return result, nil
 }
 
-// SimulateCropGrowth calls the AI Gateway to simulate crop growth over time.
+// SimulateCropGrowth runs the gateway's growth model for a crop.
 func (c *AIClient) SimulateCropGrowth(ctx context.Context, requestID, cropType string, simulationDays int32) (*CropGrowthResult, error) {
-	reqFields := map[string]*structpb.Value{
-		"request_id":      structpb.NewStringValue(requestID),
-		"crop_type":       structpb.NewStringValue(cropType),
-		"simulation_days": structpb.NewNumberValue(float64(simulationDays)),
-	}
-
-	reqMsg := &structpb.Struct{Fields: reqFields}
-	respMsg := &structpb.Struct{}
-
-	err := c.conn.Invoke(ctx, methodSimulateCropGrowth, reqMsg, respMsg)
+	resp, err := c.gateway().SimulateCropGrowth(ctx, &aipb.SimulateCropGrowthRequest{
+		RequestId:      requestID,
+		CropType:       cropType,
+		SimulationDays: simulationDays,
+	})
 	if err != nil {
 		c.logger.Errorw("msg", "AI SimulateCropGrowth failed", "request_id", requestID, "error", err)
-		return nil, fmt.Errorf("SimulateCropGrowth invoke failed: %w", err)
+		return nil, fmt.Errorf("SimulateCropGrowth: %w", err)
 	}
 
-	result := parseGrowthResult(respMsg)
+	result := &CropGrowthResult{
+		RequestID:               resp.GetRequestId(),
+		FinalBiomassKgPerHa:     resp.GetFinalBiomassKgPerHa(),
+		EstimatedDaysToMaturity: resp.GetEstimatedDaysToMaturity(),
+		ModelVersion:            resp.GetModelVersion(),
+		ProcessingTimeMs:        resp.GetProcessingTimeMs(),
+	}
+	for _, st := range resp.GetStages() {
+		result.Stages = append(result.Stages, GrowthStageResult{
+			Day:            st.GetDay(),
+			StageName:      st.GetStageName(),
+			BiomassKgPerHa: st.GetBiomassKgPerHa(),
+			LeafAreaIndex:  st.GetLeafAreaIndex(),
+			CanopyHeightCm: st.GetCanopyHeightCm(),
+			WaterDemandMm:  st.GetWaterDemandMm(),
+		})
+	}
 	return result, nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Response parsers
-// ─────────────────────────────────────────────────────────────────────────────
-
-func parseYieldResult(resp *structpb.Struct) *YieldPredictionResult {
-	result := &YieldPredictionResult{}
-	if resp == nil || resp.Fields == nil {
-		return result
-	}
-
-	result.RequestID = getStringField(resp, "request_id")
-	result.PredictedYieldKgPerHectare = getNumberField(resp, "predicted_yield_kg_per_hectare")
-	result.ConfidencePct = getNumberField(resp, "confidence_pct")
-	result.YieldLowerBound = getNumberField(resp, "yield_lower_bound")
-	result.YieldUpperBound = getNumberField(resp, "yield_upper_bound")
-	result.ModelVersion = getStringField(resp, "model_version")
-	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
-	result.ModelSource = getStringField(resp, "model_source")
-	result.TabularWeight = getNumberField(resp, "tabular_weight")
-	result.IntervalCoverage = getNumberField(resp, "interval_coverage")
-	if v, ok := resp.Fields["crop_supported"]; ok {
-		result.CropSupported = v.GetBoolValue()
-	}
-
-	if sfList, ok := resp.Fields["stress_factors"]; ok {
-		if lv := sfList.GetListValue(); lv != nil {
-			for _, sfv := range lv.Values {
-				if sfs := sfv.GetStructValue(); sfs != nil {
-					result.StressFactors = append(result.StressFactors, StressFactor{
-						FactorName:     getStringField(sfs, "factor_name"),
-						Severity:       getNumberField(sfs, "severity"),
-						YieldImpactPct: getNumberField(sfs, "yield_impact_pct"),
-					})
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-func parseGrowthResult(resp *structpb.Struct) *CropGrowthResult {
-	result := &CropGrowthResult{}
-	if resp == nil || resp.Fields == nil {
-		return result
-	}
-
-	result.RequestID = getStringField(resp, "request_id")
-	result.FinalBiomassKgPerHa = getNumberField(resp, "final_biomass_kg_per_ha")
-	result.EstimatedDaysToMaturity = int32(getNumberField(resp, "estimated_days_to_maturity"))
-	result.ModelVersion = getStringField(resp, "model_version")
-	result.ProcessingTimeMs = int64(getNumberField(resp, "processing_time_ms"))
-
-	if stageList, ok := resp.Fields["stages"]; ok {
-		if lv := stageList.GetListValue(); lv != nil {
-			for _, sv := range lv.Values {
-				if ss := sv.GetStructValue(); ss != nil {
-					result.Stages = append(result.Stages, GrowthStageResult{
-						Day:            int32(getNumberField(ss, "day")),
-						StageName:      getStringField(ss, "stage_name"),
-						BiomassKgPerHa: getNumberField(ss, "biomass_kg_per_ha"),
-						LeafAreaIndex:  getNumberField(ss, "leaf_area_index"),
-						CanopyHeightCm: getNumberField(ss, "canopy_height_cm"),
-						WaterDemandMm:  getNumberField(ss, "water_demand_mm"),
-					})
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-func getStringField(s *structpb.Struct, key string) string {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetStringValue()
-	}
-	return ""
-}
-
-func getNumberField(s *structpb.Struct, key string) float64 {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetNumberValue()
-	}
-	return 0
+func (c *AIClient) gateway() aipb.AIGatewayServiceClient {
+	return aipb.NewAIGatewayServiceClient(c.conn)
 }
