@@ -191,15 +191,15 @@ func (c *PestConsumer) onFieldCropAssigned(ctx context.Context, event *domain.Do
 
 	stage, recognised := growthStage(data["growth_stage"])
 	if !recognised {
-		// field-service and this service do not share a growth-stage
-		// vocabulary: field has BUDDING, FRUIT_SET, RIPENING, MATURITY and
-		// SENESCENCE, this service has FRUITING, MATURATION and HARVEST, and
-		// only GERMINATION, SEEDLING, VEGETATIVE and FLOWERING appear in both.
-		// A stage from the half that does not overlap scores as unstaged,
-		// which is the safe direction, but it is a real divergence and the log
-		// is how it gets noticed rather than quietly costing a quarter of the
-		// score.
-		c.log.Warnw("msg", "unrecognised growth stage; scoring as unstaged",
+		// The two services now share a vocabulary — agriculture.pest.v1
+		// GrowthStage is a copy of agriculture.field.v1's, names and numbers —
+		// so a stage arriving here that this service cannot read means the two
+		// have drifted apart again, not that the lists were always different.
+		// That is worth a warning rather than a shrug: growth stage is a
+		// quarter of the risk score, so drift costs a farmer-facing number
+		// without erroring.
+		c.log.Warnw("msg", "growth stage not in this service's vocabulary; "+
+			"scoring as unstaged — field.proto and pest.proto may have drifted",
 			"event_id", event.ID, "field_id", fieldID,
 			"growth_stage", data["growth_stage"])
 	}

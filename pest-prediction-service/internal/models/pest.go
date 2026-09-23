@@ -135,17 +135,20 @@ const (
 	GrowthStageGermination GrowthStage = "GERMINATION"
 	GrowthStageSeedling    GrowthStage = "SEEDLING"
 	GrowthStageVegetative  GrowthStage = "VEGETATIVE"
+	GrowthStageBudding     GrowthStage = "BUDDING"
 	GrowthStageFlowering   GrowthStage = "FLOWERING"
-	GrowthStageFruiting    GrowthStage = "FRUITING"
-	GrowthStageMaturation  GrowthStage = "MATURATION"
-	GrowthStageHarvest     GrowthStage = "HARVEST"
+	GrowthStageFruitSet    GrowthStage = "FRUIT_SET"
+	GrowthStageRipening    GrowthStage = "RIPENING"
+	GrowthStageMaturity    GrowthStage = "MATURITY"
+	GrowthStageSenescence  GrowthStage = "SENESCENCE"
 )
 
 // IsValid checks if the growth stage is a valid value.
 func (g GrowthStage) IsValid() bool {
 	switch g {
 	case GrowthStageGermination, GrowthStageSeedling, GrowthStageVegetative,
-		GrowthStageFlowering, GrowthStageFruiting, GrowthStageMaturation, GrowthStageHarvest:
+		GrowthStageBudding, GrowthStageFlowering, GrowthStageFruitSet,
+		GrowthStageRipening, GrowthStageMaturity, GrowthStageSenescence:
 		return true
 	case GrowthStageUnspecified:
 		return true

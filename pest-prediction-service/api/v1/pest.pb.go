@@ -249,6 +249,23 @@ func (DamageLevel) EnumDescriptor() ([]byte, []int) {
 	return file_pest_proto_rawDescGZIP(), []int{3}
 }
 
+// GrowthStage must stay identical — names and numbers — to
+// agriculture.field.v1.GrowthStage.
+//
+// It did not used to be. This service had FLOWERING = 4, FRUITING = 5,
+// MATURATION = 6, HARVEST = 7 against field-service's BUDDING = 4,
+// FLOWERING = 5, FRUIT_SET = 6, RIPENING = 7, MATURITY = 8, SENESCENCE = 9.
+// Two separate hazards: a stage named in one vocabulary and absent from the
+// other was silently dropped, and — worse, because nothing would have shown
+// it — the *numbers* collided, so field's FLOWERING(5) decoded here as
+// FRUITING(5) on any path that carried the enum rather than its name.
+//
+// field-service's list won because it is the phenological sequence and it is
+// where a farmer actually records the stage; this service only reads it.
+// Growth stage is worth a quarter of the pest risk score, so a stage read as
+// the wrong one, or not read at all, moves a farmer-facing number.
+//
+// If you add a stage here, add it to field.proto in the same commit.
 type GrowthStage int32
 
 const (
@@ -256,10 +273,12 @@ const (
 	GrowthStage_GROWTH_STAGE_GERMINATION GrowthStage = 1
 	GrowthStage_GROWTH_STAGE_SEEDLING    GrowthStage = 2
 	GrowthStage_GROWTH_STAGE_VEGETATIVE  GrowthStage = 3
-	GrowthStage_GROWTH_STAGE_FLOWERING   GrowthStage = 4
-	GrowthStage_GROWTH_STAGE_FRUITING    GrowthStage = 5
-	GrowthStage_GROWTH_STAGE_MATURATION  GrowthStage = 6
-	GrowthStage_GROWTH_STAGE_HARVEST     GrowthStage = 7
+	GrowthStage_GROWTH_STAGE_BUDDING     GrowthStage = 4
+	GrowthStage_GROWTH_STAGE_FLOWERING   GrowthStage = 5
+	GrowthStage_GROWTH_STAGE_FRUIT_SET   GrowthStage = 6
+	GrowthStage_GROWTH_STAGE_RIPENING    GrowthStage = 7
+	GrowthStage_GROWTH_STAGE_MATURITY    GrowthStage = 8
+	GrowthStage_GROWTH_STAGE_SENESCENCE  GrowthStage = 9
 )
 
 // Enum value maps for GrowthStage.
@@ -269,20 +288,24 @@ var (
 		1: "GROWTH_STAGE_GERMINATION",
 		2: "GROWTH_STAGE_SEEDLING",
 		3: "GROWTH_STAGE_VEGETATIVE",
-		4: "GROWTH_STAGE_FLOWERING",
-		5: "GROWTH_STAGE_FRUITING",
-		6: "GROWTH_STAGE_MATURATION",
-		7: "GROWTH_STAGE_HARVEST",
+		4: "GROWTH_STAGE_BUDDING",
+		5: "GROWTH_STAGE_FLOWERING",
+		6: "GROWTH_STAGE_FRUIT_SET",
+		7: "GROWTH_STAGE_RIPENING",
+		8: "GROWTH_STAGE_MATURITY",
+		9: "GROWTH_STAGE_SENESCENCE",
 	}
 	GrowthStage_value = map[string]int32{
 		"GROWTH_STAGE_UNSPECIFIED": 0,
 		"GROWTH_STAGE_GERMINATION": 1,
 		"GROWTH_STAGE_SEEDLING":    2,
 		"GROWTH_STAGE_VEGETATIVE":  3,
-		"GROWTH_STAGE_FLOWERING":   4,
-		"GROWTH_STAGE_FRUITING":    5,
-		"GROWTH_STAGE_MATURATION":  6,
-		"GROWTH_STAGE_HARVEST":     7,
+		"GROWTH_STAGE_BUDDING":     4,
+		"GROWTH_STAGE_FLOWERING":   5,
+		"GROWTH_STAGE_FRUIT_SET":   6,
+		"GROWTH_STAGE_RIPENING":    7,
+		"GROWTH_STAGE_MATURITY":    8,
+		"GROWTH_STAGE_SENESCENCE":  9,
 	}
 )
 
@@ -3059,16 +3082,18 @@ const file_pest_proto_rawDesc = "" +
 	"\x12DAMAGE_LEVEL_LIGHT\x10\x02\x12\x19\n" +
 	"\x15DAMAGE_LEVEL_MODERATE\x10\x03\x12\x17\n" +
 	"\x13DAMAGE_LEVEL_SEVERE\x10\x04\x12\x1c\n" +
-	"\x18DAMAGE_LEVEL_DEVASTATING\x10\x05*\xef\x01\n" +
+	"\x18DAMAGE_LEVEL_DEVASTATING\x10\x05*\xa6\x02\n" +
 	"\vGrowthStage\x12\x1c\n" +
 	"\x18GROWTH_STAGE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18GROWTH_STAGE_GERMINATION\x10\x01\x12\x19\n" +
 	"\x15GROWTH_STAGE_SEEDLING\x10\x02\x12\x1b\n" +
-	"\x17GROWTH_STAGE_VEGETATIVE\x10\x03\x12\x1a\n" +
-	"\x16GROWTH_STAGE_FLOWERING\x10\x04\x12\x19\n" +
-	"\x15GROWTH_STAGE_FRUITING\x10\x05\x12\x1b\n" +
-	"\x17GROWTH_STAGE_MATURATION\x10\x06\x12\x18\n" +
-	"\x14GROWTH_STAGE_HARVEST\x10\a2\xb9\t\n" +
+	"\x17GROWTH_STAGE_VEGETATIVE\x10\x03\x12\x18\n" +
+	"\x14GROWTH_STAGE_BUDDING\x10\x04\x12\x1a\n" +
+	"\x16GROWTH_STAGE_FLOWERING\x10\x05\x12\x1a\n" +
+	"\x16GROWTH_STAGE_FRUIT_SET\x10\x06\x12\x19\n" +
+	"\x15GROWTH_STAGE_RIPENING\x10\a\x12\x19\n" +
+	"\x15GROWTH_STAGE_MATURITY\x10\b\x12\x1b\n" +
+	"\x17GROWTH_STAGE_SENESCENCE\x10\t2\xb9\t\n" +
 	"\x15PestPredictionService\x12l\n" +
 	"\x0fPredictPestRisk\x12+.agriculture.pest.v1.PredictPestRiskRequest\x1a,.agriculture.pest.v1.PredictPestRiskResponse\x12f\n" +
 	"\rGetPrediction\x12).agriculture.pest.v1.GetPredictionRequest\x1a*.agriculture.pest.v1.GetPredictionResponse\x12l\n" +

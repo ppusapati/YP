@@ -2156,6 +2156,12 @@ export const IrrigationTypeSchema: GenEnum<IrrigationType> = /*@__PURE__*/
   enumDesc(file_field, 3);
 
 /**
+ * GrowthStage is the phenological sequence a crop moves through, and this is
+ * where a farmer records it. agriculture.pest.v1.GrowthStage is a copy of it —
+ * names and numbers — because pest risk is scored partly on the stage.
+ *
+ * If you add a stage here, add it to pest.proto in the same commit.
+ *
  * @generated from enum agriculture.field.v1.GrowthStage
  */
 export enum GrowthStage {

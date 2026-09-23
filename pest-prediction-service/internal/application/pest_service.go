@@ -481,22 +481,37 @@ func computeRiskScore(params *domain.PredictPestRiskParams) int {
 		score += 5
 	}
 
-	// Growth stage modifier (0-25 points)
+	// Growth stage modifier (0-25 points), rising to a peak at flowering and
+	// falling away as the crop finishes.
+	//
+	// BUDDING and RIPENING are scored here for the first time: this service's
+	// vocabulary used to lack them, so a field in either stage arrived as a
+	// name it did not recognise and was scored as unstaged — a quarter of the
+	// scale silently missing. They are placed either side of the peak, keeping
+	// the curve monotonic: budding just short of flowering, ripening alongside
+	// vegetative growth, since fruit on the plant is still worth eating.
+	//
+	// A nil stage adds nothing, which is the honest reading of "not known"
+	// rather than a guess at the middle of the range.
 	if params.GrowthStage != nil {
 		switch *params.GrowthStage {
 		case domain.GrowthStageFlowering:
 			score += 25
-		case domain.GrowthStageFruiting:
+		case domain.GrowthStageBudding:
+			score += 20
+		case domain.GrowthStageFruitSet:
 			score += 20
 		case domain.GrowthStageVegetative:
 			score += 15
 		case domain.GrowthStageSeedling:
 			score += 15
+		case domain.GrowthStageRipening:
+			score += 15
 		case domain.GrowthStageGermination:
 			score += 10
-		case domain.GrowthStageMaturation:
+		case domain.GrowthStageMaturity:
 			score += 10
-		case domain.GrowthStageHarvest:
+		case domain.GrowthStageSenescence:
 			score += 5
 		}
 	}

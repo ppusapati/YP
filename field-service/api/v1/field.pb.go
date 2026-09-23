@@ -279,6 +279,11 @@ func (IrrigationType) EnumDescriptor() ([]byte, []int) {
 	return file_field_proto_rawDescGZIP(), []int{3}
 }
 
+// GrowthStage is the phenological sequence a crop moves through, and this is
+// where a farmer records it. agriculture.pest.v1.GrowthStage is a copy of it —
+// names and numbers — because pest risk is scored partly on the stage.
+//
+// If you add a stage here, add it to pest.proto in the same commit.
 type GrowthStage int32
 
 const (

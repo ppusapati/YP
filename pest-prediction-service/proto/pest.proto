@@ -45,15 +45,34 @@ enum DamageLevel {
   DAMAGE_LEVEL_DEVASTATING = 5;
 }
 
+// GrowthStage must stay identical — names and numbers — to
+// agriculture.field.v1.GrowthStage.
+//
+// It did not used to be. This service had FLOWERING = 4, FRUITING = 5,
+// MATURATION = 6, HARVEST = 7 against field-service's BUDDING = 4,
+// FLOWERING = 5, FRUIT_SET = 6, RIPENING = 7, MATURITY = 8, SENESCENCE = 9.
+// Two separate hazards: a stage named in one vocabulary and absent from the
+// other was silently dropped, and — worse, because nothing would have shown
+// it — the *numbers* collided, so field's FLOWERING(5) decoded here as
+// FRUITING(5) on any path that carried the enum rather than its name.
+//
+// field-service's list won because it is the phenological sequence and it is
+// where a farmer actually records the stage; this service only reads it.
+// Growth stage is worth a quarter of the pest risk score, so a stage read as
+// the wrong one, or not read at all, moves a farmer-facing number.
+//
+// If you add a stage here, add it to field.proto in the same commit.
 enum GrowthStage {
   GROWTH_STAGE_UNSPECIFIED   = 0;
   GROWTH_STAGE_GERMINATION   = 1;
   GROWTH_STAGE_SEEDLING      = 2;
   GROWTH_STAGE_VEGETATIVE    = 3;
-  GROWTH_STAGE_FLOWERING     = 4;
-  GROWTH_STAGE_FRUITING      = 5;
-  GROWTH_STAGE_MATURATION    = 6;
-  GROWTH_STAGE_HARVEST       = 7;
+  GROWTH_STAGE_BUDDING       = 4;
+  GROWTH_STAGE_FLOWERING     = 5;
+  GROWTH_STAGE_FRUIT_SET     = 6;
+  GROWTH_STAGE_RIPENING      = 7;
+  GROWTH_STAGE_MATURITY      = 8;
+  GROWTH_STAGE_SENESCENCE    = 9;
 }
 
 // ---------------------------------------------------------------------------

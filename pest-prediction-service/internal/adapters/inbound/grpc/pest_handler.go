@@ -748,14 +748,18 @@ func domainGrowthStageToProto(g domain.GrowthStage) pb.GrowthStage {
 		return pb.GrowthStage_GROWTH_STAGE_SEEDLING
 	case domain.GrowthStageVegetative:
 		return pb.GrowthStage_GROWTH_STAGE_VEGETATIVE
+	case domain.GrowthStageBudding:
+		return pb.GrowthStage_GROWTH_STAGE_BUDDING
 	case domain.GrowthStageFlowering:
 		return pb.GrowthStage_GROWTH_STAGE_FLOWERING
-	case domain.GrowthStageFruiting:
-		return pb.GrowthStage_GROWTH_STAGE_FRUITING
-	case domain.GrowthStageMaturation:
-		return pb.GrowthStage_GROWTH_STAGE_MATURATION
-	case domain.GrowthStageHarvest:
-		return pb.GrowthStage_GROWTH_STAGE_HARVEST
+	case domain.GrowthStageFruitSet:
+		return pb.GrowthStage_GROWTH_STAGE_FRUIT_SET
+	case domain.GrowthStageRipening:
+		return pb.GrowthStage_GROWTH_STAGE_RIPENING
+	case domain.GrowthStageMaturity:
+		return pb.GrowthStage_GROWTH_STAGE_MATURITY
+	case domain.GrowthStageSenescence:
+		return pb.GrowthStage_GROWTH_STAGE_SENESCENCE
 	default:
 		return pb.GrowthStage_GROWTH_STAGE_UNSPECIFIED
 	}
@@ -769,14 +773,18 @@ func protoGrowthStageToDomain(g pb.GrowthStage) domain.GrowthStage {
 		return domain.GrowthStageSeedling
 	case pb.GrowthStage_GROWTH_STAGE_VEGETATIVE:
 		return domain.GrowthStageVegetative
+	case pb.GrowthStage_GROWTH_STAGE_BUDDING:
+		return domain.GrowthStageBudding
 	case pb.GrowthStage_GROWTH_STAGE_FLOWERING:
 		return domain.GrowthStageFlowering
-	case pb.GrowthStage_GROWTH_STAGE_FRUITING:
-		return domain.GrowthStageFruiting
-	case pb.GrowthStage_GROWTH_STAGE_MATURATION:
-		return domain.GrowthStageMaturation
-	case pb.GrowthStage_GROWTH_STAGE_HARVEST:
-		return domain.GrowthStageHarvest
+	case pb.GrowthStage_GROWTH_STAGE_FRUIT_SET:
+		return domain.GrowthStageFruitSet
+	case pb.GrowthStage_GROWTH_STAGE_RIPENING:
+		return domain.GrowthStageRipening
+	case pb.GrowthStage_GROWTH_STAGE_MATURITY:
+		return domain.GrowthStageMaturity
+	case pb.GrowthStage_GROWTH_STAGE_SENESCENCE:
+		return domain.GrowthStageSenescence
 	default:
 		return domain.GrowthStageUnspecified
 	}

@@ -147,12 +147,49 @@ func TestTheGrowthStageIsCarried(t *testing.T) {
 	}
 }
 
-// field-service and this service do not share a growth-stage vocabulary:
-// field has BUDDING, FRUIT_SET, RIPENING, MATURITY and SENESCENCE that this
-// service does not. A stage from that half must score as unstaged rather than
-// fall through to whichever stage happens to be first.
+// The whole shared vocabulary reaches the scorer.
+//
+// These two services' growth-stage enums used to diverge — field had BUDDING,
+// FRUIT_SET, RIPENING, MATURITY and SENESCENCE that pest did not — so a field
+// in any of those stages was scored as unstaged, losing a quarter of the
+// scale. They are one vocabulary now, pinned by the conformance test in
+// internal/domain, and every stage a field can be in must arrive intact.
+func TestEveryStageInTheSharedVocabularyIsRead(t *testing.T) {
+	for _, stage := range []domain.GrowthStage{
+		domain.GrowthStageGermination,
+		domain.GrowthStageSeedling,
+		domain.GrowthStageVegetative,
+		domain.GrowthStageBudding,
+		domain.GrowthStageFlowering,
+		domain.GrowthStageFruitSet,
+		domain.GrowthStageRipening,
+		domain.GrowthStageMaturity,
+		domain.GrowthStageSenescence,
+	} {
+		data := fullAssignment()
+		data["growth_stage"] = string(stage)
+
+		svc := &assessingService{}
+		c := NewPestConsumer(svc, testutil.NopLogger{})
+
+		if err := c.HandleEvent(context.Background(), cropAssigned(data)); err != nil {
+			t.Fatalf("%s: %v", stage, err)
+		}
+		got := svc.asked[0].GrowthStage
+		if got == nil {
+			t.Errorf("stage %q was dropped; it is in the shared vocabulary", stage)
+			continue
+		}
+		if *got != stage {
+			t.Errorf("stage %q arrived as %q", stage, *got)
+		}
+	}
+}
+
+// A stage that is in neither vocabulary still scores as unstaged rather than
+// falling through to whichever stage happens to be first in the switch.
 func TestAnUnknownGrowthStageScoresAsUnstaged(t *testing.T) {
-	for _, stage := range []string{"RIPENING", "SENESCENCE", "BUDDING", "NONSENSE"} {
+	for _, stage := range []string{"NONSENSE", "FRUITING", "MATURATION", "HARVEST"} {
 		data := fullAssignment()
 		data["growth_stage"] = stage
 
@@ -163,8 +200,9 @@ func TestAnUnknownGrowthStageScoresAsUnstaged(t *testing.T) {
 			t.Fatalf("%s: %v", stage, err)
 		}
 		if got := svc.asked[0].GrowthStage; got != nil {
-			t.Errorf("growth stage %q was read as %v; it is not in this "+
-				"service's vocabulary", stage, *got)
+			t.Errorf("growth stage %q was read as %v; it is not in the shared "+
+				"vocabulary (FRUITING, MATURATION and HARVEST are this "+
+				"service's retired names)", stage, *got)
 		}
 	}
 }

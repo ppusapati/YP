@@ -89,13 +89,30 @@ that failure. The rows below now come from a marker sweep, which turned up two
 more — `yield_consumer`'s field-deleted handler and `pest_consumer`'s
 crop-assigned one.
 
-The sweep is also how the **growth-stage vocabularies were found to diverge**.
-field-service has BUDDING, FRUIT_SET, RIPENING, MATURITY and SENESCENCE;
-pest-prediction has FRUITING, MATURATION and HARVEST; only GERMINATION,
-SEEDLING, VEGETATIVE and FLOWERING appear in both. A stage from either
-non-overlapping half is scored as unstaged, which is the safe direction and is
-logged, but the two lists should be reconciled — at planting the stages happen
-to overlap, so nothing would have shown it.
+The sweep is also how the **growth-stage vocabularies were found to diverge** —
+**now reconciled**, and the divergence was worse than it first looked.
+field-service had BUDDING = 4, FLOWERING = 5, FRUIT_SET = 6, RIPENING = 7,
+MATURITY = 8, SENESCENCE = 9; pest-prediction had FLOWERING = 4, FRUITING = 5,
+MATURATION = 6, HARVEST = 7. Two failures, neither of which raised an error:
+
+- **By name.** A stage in one list and not the other was scored as unstaged,
+  and growth stage is a quarter of the pest risk score.
+- **By number.** field's `FLOWERING(5)` was pest's `FRUITING(5)`, so any path
+  carrying the enum rather than its name decoded one stage as another and
+  produced a plausible score for the wrong thing. Nothing would have shown
+  this: at planting the overlapping stages happen to agree.
+
+pest-prediction adopted field's list, names and numbers, because field is the
+phenological sequence and the place a farmer actually records the stage. Three
+stored values were renamed by migration (`FRUITING`→`FRUIT_SET`,
+`MATURATION`→`MATURITY`, `HARVEST`→`SENESCENCE`, each keeping its scoring
+band), and BUDDING and RIPENING are scored for the first time.
+
+The guard is a conformance test, not a comment: `pest-prediction-service/
+internal/domain/growth_stage_conformance_test.go` compares the two generated
+enums through their name/number maps, so drift fails the build instead of
+warning at runtime. It is written against the generated maps rather than a
+hand-written list, so it cannot go stale the way the vocabularies did.
 
 Ordered by consequence rather than by count:
 

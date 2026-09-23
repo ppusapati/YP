@@ -159,14 +159,18 @@ func ProtoGrowthStageToDomain(g pb.GrowthStage) pestmodels.GrowthStage {
 		return pestmodels.GrowthStageSeedling
 	case pb.GrowthStage_GROWTH_STAGE_VEGETATIVE:
 		return pestmodels.GrowthStageVegetative
+	case pb.GrowthStage_GROWTH_STAGE_BUDDING:
+		return pestmodels.GrowthStageBudding
 	case pb.GrowthStage_GROWTH_STAGE_FLOWERING:
 		return pestmodels.GrowthStageFlowering
-	case pb.GrowthStage_GROWTH_STAGE_FRUITING:
-		return pestmodels.GrowthStageFruiting
-	case pb.GrowthStage_GROWTH_STAGE_MATURATION:
-		return pestmodels.GrowthStageMaturation
-	case pb.GrowthStage_GROWTH_STAGE_HARVEST:
-		return pestmodels.GrowthStageHarvest
+	case pb.GrowthStage_GROWTH_STAGE_FRUIT_SET:
+		return pestmodels.GrowthStageFruitSet
+	case pb.GrowthStage_GROWTH_STAGE_RIPENING:
+		return pestmodels.GrowthStageRipening
+	case pb.GrowthStage_GROWTH_STAGE_MATURITY:
+		return pestmodels.GrowthStageMaturity
+	case pb.GrowthStage_GROWTH_STAGE_SENESCENCE:
+		return pestmodels.GrowthStageSenescence
 	default:
 		return pestmodels.GrowthStageUnspecified
 	}
@@ -181,14 +185,18 @@ func DomainGrowthStageToProto(g pestmodels.GrowthStage) pb.GrowthStage {
 		return pb.GrowthStage_GROWTH_STAGE_SEEDLING
 	case pestmodels.GrowthStageVegetative:
 		return pb.GrowthStage_GROWTH_STAGE_VEGETATIVE
+	case pestmodels.GrowthStageBudding:
+		return pb.GrowthStage_GROWTH_STAGE_BUDDING
 	case pestmodels.GrowthStageFlowering:
 		return pb.GrowthStage_GROWTH_STAGE_FLOWERING
-	case pestmodels.GrowthStageFruiting:
-		return pb.GrowthStage_GROWTH_STAGE_FRUITING
-	case pestmodels.GrowthStageMaturation:
-		return pb.GrowthStage_GROWTH_STAGE_MATURATION
-	case pestmodels.GrowthStageHarvest:
-		return pb.GrowthStage_GROWTH_STAGE_HARVEST
+	case pestmodels.GrowthStageFruitSet:
+		return pb.GrowthStage_GROWTH_STAGE_FRUIT_SET
+	case pestmodels.GrowthStageRipening:
+		return pb.GrowthStage_GROWTH_STAGE_RIPENING
+	case pestmodels.GrowthStageMaturity:
+		return pb.GrowthStage_GROWTH_STAGE_MATURITY
+	case pestmodels.GrowthStageSenescence:
+		return pb.GrowthStage_GROWTH_STAGE_SENESCENCE
 	default:
 		return pb.GrowthStage_GROWTH_STAGE_UNSPECIFIED
 	}
