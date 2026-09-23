@@ -162,6 +162,11 @@ class IrrigationType extends $pb.ProtobufEnum {
   const IrrigationType._(super.value, super.name);
 }
 
+/// GrowthStage is the phenological sequence a crop moves through, and this is
+/// where a farmer records it. agriculture.pest.v1.GrowthStage is a copy of it —
+/// names and numbers — because pest risk is scored partly on the stage.
+///
+/// If you add a stage here, add it to pest.proto in the same commit.
 class GrowthStage extends $pb.ProtobufEnum {
   static const GrowthStage GROWTH_STAGE_UNSPECIFIED =
       GrowthStage._(0, _omitEnumNames ? '' : 'GROWTH_STAGE_UNSPECIFIED');

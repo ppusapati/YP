@@ -132,6 +132,23 @@ class DamageLevel extends $pb.ProtobufEnum {
   const DamageLevel._(super.value, super.name);
 }
 
+/// GrowthStage must stay identical — names and numbers — to
+/// agriculture.field.v1.GrowthStage.
+///
+/// It did not used to be. This service had FLOWERING = 4, FRUITING = 5,
+/// MATURATION = 6, HARVEST = 7 against field-service's BUDDING = 4,
+/// FLOWERING = 5, FRUIT_SET = 6, RIPENING = 7, MATURITY = 8, SENESCENCE = 9.
+/// Two separate hazards: a stage named in one vocabulary and absent from the
+/// other was silently dropped, and — worse, because nothing would have shown
+/// it — the *numbers* collided, so field's FLOWERING(5) decoded here as
+/// FRUITING(5) on any path that carried the enum rather than its name.
+///
+/// field-service's list won because it is the phenological sequence and it is
+/// where a farmer actually records the stage; this service only reads it.
+/// Growth stage is worth a quarter of the pest risk score, so a stage read as
+/// the wrong one, or not read at all, moves a farmer-facing number.
+///
+/// If you add a stage here, add it to field.proto in the same commit.
 class GrowthStage extends $pb.ProtobufEnum {
   static const GrowthStage GROWTH_STAGE_UNSPECIFIED =
       GrowthStage._(0, _omitEnumNames ? '' : 'GROWTH_STAGE_UNSPECIFIED');
@@ -141,28 +158,34 @@ class GrowthStage extends $pb.ProtobufEnum {
       GrowthStage._(2, _omitEnumNames ? '' : 'GROWTH_STAGE_SEEDLING');
   static const GrowthStage GROWTH_STAGE_VEGETATIVE =
       GrowthStage._(3, _omitEnumNames ? '' : 'GROWTH_STAGE_VEGETATIVE');
+  static const GrowthStage GROWTH_STAGE_BUDDING =
+      GrowthStage._(4, _omitEnumNames ? '' : 'GROWTH_STAGE_BUDDING');
   static const GrowthStage GROWTH_STAGE_FLOWERING =
-      GrowthStage._(4, _omitEnumNames ? '' : 'GROWTH_STAGE_FLOWERING');
-  static const GrowthStage GROWTH_STAGE_FRUITING =
-      GrowthStage._(5, _omitEnumNames ? '' : 'GROWTH_STAGE_FRUITING');
-  static const GrowthStage GROWTH_STAGE_MATURATION =
-      GrowthStage._(6, _omitEnumNames ? '' : 'GROWTH_STAGE_MATURATION');
-  static const GrowthStage GROWTH_STAGE_HARVEST =
-      GrowthStage._(7, _omitEnumNames ? '' : 'GROWTH_STAGE_HARVEST');
+      GrowthStage._(5, _omitEnumNames ? '' : 'GROWTH_STAGE_FLOWERING');
+  static const GrowthStage GROWTH_STAGE_FRUIT_SET =
+      GrowthStage._(6, _omitEnumNames ? '' : 'GROWTH_STAGE_FRUIT_SET');
+  static const GrowthStage GROWTH_STAGE_RIPENING =
+      GrowthStage._(7, _omitEnumNames ? '' : 'GROWTH_STAGE_RIPENING');
+  static const GrowthStage GROWTH_STAGE_MATURITY =
+      GrowthStage._(8, _omitEnumNames ? '' : 'GROWTH_STAGE_MATURITY');
+  static const GrowthStage GROWTH_STAGE_SENESCENCE =
+      GrowthStage._(9, _omitEnumNames ? '' : 'GROWTH_STAGE_SENESCENCE');
 
   static const $core.List<GrowthStage> values = <GrowthStage>[
     GROWTH_STAGE_UNSPECIFIED,
     GROWTH_STAGE_GERMINATION,
     GROWTH_STAGE_SEEDLING,
     GROWTH_STAGE_VEGETATIVE,
+    GROWTH_STAGE_BUDDING,
     GROWTH_STAGE_FLOWERING,
-    GROWTH_STAGE_FRUITING,
-    GROWTH_STAGE_MATURATION,
-    GROWTH_STAGE_HARVEST,
+    GROWTH_STAGE_FRUIT_SET,
+    GROWTH_STAGE_RIPENING,
+    GROWTH_STAGE_MATURITY,
+    GROWTH_STAGE_SENESCENCE,
   ];
 
   static final $core.List<GrowthStage?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 7);
+      $pb.ProtobufEnum.$_initByValueList(values, 9);
   static GrowthStage? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
