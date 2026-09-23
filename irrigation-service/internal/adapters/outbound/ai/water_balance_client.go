@@ -8,10 +8,11 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"p9e.in/samavaya/packages/grpcdial"
 	"p9e.in/samavaya/packages/p9log"
+
+	aipb "p9e.in/samavaya/agriculture/ai-gateway/api/v1"
 	"p9e.in/samavaya/packages/ratelimit/algorithms"
 	"p9e.in/samavaya/packages/ratelimit/grpclimit"
 
@@ -71,84 +72,64 @@ func (c *WaterBalanceClient) Simulate(ctx context.Context, req outbound.WaterBal
 	if days <= 0 {
 		days = 7
 	}
-	rain := make([]interface{}, 0, days)
-	for i := 0; i < days; i++ {
-		if i < len(req.DailyRainfallMM) {
-			rain = append(rain, req.DailyRainfallMM[i])
-		} else {
-			rain = append(rain, 0.0)
-		}
-	}
 
-	balance, _ := structpb.NewStruct(map[string]interface{}{
-		"field_area_ha":                req.FieldAreaHa,
-		"crop_type":                    req.CropType,
-		"growth_stage":                 req.GrowthStage,
-		"days_after_planting":          float64(req.DaysAfterPlanting),
-		"reference_et_mm_day":          req.ReferenceET0MMDay,
-		"root_zone_depth_m":            req.RootZoneDepthM,
-		"field_capacity":               req.FieldCapacity,
-		"wilting_point":                req.WiltingPoint,
-		"management_allowed_depletion": req.AllowedDepletion,
+	// Padded to the simulation length so a short rainfall series means "no
+	// rain after this point" rather than a series the gateway reads as
+	// shorter than the run.
+	rain := make([]float64, days)
+	copy(rain, req.DailyRainfallMM)
+
+	resp, err := c.gateway().SimulateWaterFlow(ctx, &aipb.SimulateWaterFlowRequest{
+		RequestId: fmt.Sprintf("wb-%d", time.Now().UnixNano()),
+		BalanceParams: &aipb.WaterFlowBalanceParams{
+			FieldAreaHa:                req.FieldAreaHa,
+			ReferenceEtMmDay:           req.ReferenceET0MMDay,
+			RootZoneDepthM:             req.RootZoneDepthM,
+			FieldCapacity:              req.FieldCapacity,
+			WiltingPoint:               req.WiltingPoint,
+			ManagementAllowedDepletion: req.AllowedDepletion,
+			CropType:                   req.CropType,
+			GrowthStage:                req.GrowthStage,
+			DaysAfterPlanting:          int32(req.DaysAfterPlanting),
+		},
+		DailyRainfallMm:    rain,
+		SimulationDays:     float64(days),
+		EtMmDay:            req.ReferenceET0MMDay,
+		InitialDepletionMm: req.InitialDepletionMM,
 	})
-	reqMsg := &structpb.Struct{Fields: map[string]*structpb.Value{
-		"request_id":           structpb.NewStringValue(fmt.Sprintf("wb-%d", time.Now().UnixNano())),
-		"balance_params":       structpb.NewStructValue(balance),
-		"daily_rainfall_mm":    structpb.NewListValue(mustList(rain)),
-		"simulation_days":      structpb.NewNumberValue(float64(days)),
-		"et_mm_day":            structpb.NewNumberValue(req.ReferenceET0MMDay),
-		"initial_depletion_mm": structpb.NewNumberValue(req.InitialDepletionMM),
-	}}
-	respMsg := &structpb.Struct{}
-	if err := c.conn.Invoke(ctx, methodSimulateWaterFlow, reqMsg, respMsg); err != nil {
+	if err != nil {
 		c.logger.Errorw("msg", "AI SimulateWaterFlow failed", "error", err)
-		return nil, fmt.Errorf("SimulateWaterFlow invoke failed: %w", err)
+		return nil, fmt.Errorf("SimulateWaterFlow: %w", err)
 	}
-	return parseWaterBalance(respMsg), nil
-}
 
-func mustList(values []interface{}) *structpb.ListValue {
-	lv, _ := structpb.NewList(values)
-	return lv
-}
-
-func parseWaterBalance(resp *structpb.Struct) *outbound.WaterBalanceResult {
 	out := &outbound.WaterBalanceResult{}
-	if resp == nil || resp.Fields == nil {
-		return out
+	for _, d := range resp.GetWaterBalance() {
+		out.Days = append(out.Days, outbound.WaterBalanceDay{
+			Day:                 int(d.GetDay()),
+			ETcMMDay:            d.GetEtcMmDay(),
+			DepletionMM:         d.GetDepletionMm(),
+			TotalAvailableMM:    d.GetTotalAvailableWaterMm(),
+			ReadilyAvailableMM:  d.GetReadilyAvailableWaterMm(),
+			IrrigationNeeded:    d.GetIrrigationNeeded(),
+			IrrigationAmountMM:  d.GetIrrigationAmountMm(),
+			EffectiveRainfallMM: d.GetEffectiveRainfallMm(),
+		})
 	}
-	if lv := resp.Fields["water_balance"].GetListValue(); lv != nil {
-		for _, v := range lv.Values {
-			s := v.GetStructValue()
-			if s == nil {
-				continue
-			}
-			out.Days = append(out.Days, outbound.WaterBalanceDay{
-				Day:                 int(num(s, "day")),
-				ETcMMDay:            num(s, "etc_mm_day"),
-				DepletionMM:         num(s, "depletion_mm"),
-				TotalAvailableMM:    num(s, "total_available_water_mm"),
-				ReadilyAvailableMM:  num(s, "readily_available_water_mm"),
-				IrrigationNeeded:    s.Fields["irrigation_needed"].GetBoolValue(),
-				IrrigationAmountMM:  num(s, "irrigation_amount_mm"),
-				EffectiveRainfallMM: num(s, "effective_rainfall_mm"),
-			})
-		}
+	if s := resp.GetIrrigationSummary(); s != nil {
+		out.TotalIrrigationMM = s.GetTotalIrrigationMm()
+		out.IrrigationEvents = int(s.GetIrrigationEvents())
 	}
-	if s := resp.Fields["irrigation_summary"].GetStructValue(); s != nil {
-		out.TotalIrrigationMM = num(s, "total_irrigation_mm")
-		out.IrrigationEvents = int(num(s, "irrigation_events"))
+
+	// Kc is ETc divided by ET0, and the division was missing: this used to
+	// assign ETc straight across under a comment reading "ETc/ET0", so the
+	// crop coefficient carried millimetres per day where a dimensionless
+	// ratio belongs — roughly 4 to 6 where FAO-56 expects 0.3 to 1.2.
+	if len(out.Days) > 0 && req.ReferenceET0MMDay > 0 {
+		out.CropCoefficient = out.Days[0].ETcMMDay / req.ReferenceET0MMDay
 	}
-	// ETc/ET0 on day 1 recovers the crop coefficient the gateway resolved.
-	if len(out.Days) > 0 && out.Days[0].ETcMMDay > 0 {
-		out.CropCoefficient = out.Days[0].ETcMMDay
-	}
-	return out
+	return out, nil
 }
 
-func num(s *structpb.Struct, key string) float64 {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetNumberValue()
-	}
-	return 0
+func (c *WaterBalanceClient) gateway() aipb.AIGatewayServiceClient {
+	return aipb.NewAIGatewayServiceClient(c.conn)
 }

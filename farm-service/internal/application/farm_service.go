@@ -739,7 +739,11 @@ func (s *farmService) ComputeFieldAnalytics(ctx context.Context, fieldID, farmID
 	if s.aiClient == nil {
 		return nil, nil
 	}
-	return s.aiClient.ComputeFieldAnalytics(ctx, fieldID, farmID, seasons)
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+	return s.aiClient.ComputeFieldAnalytics(ctx, requestID, fieldID, farmID, seasons)
 }
 
 // emitEvent publishes a domain event best-effort (errors are logged, not propagated).
