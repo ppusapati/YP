@@ -1,5 +1,16 @@
 // Package ai provides a gRPC client for the AI Gateway service.
 // It exposes field risk evaluation operations needed by the alert-service.
+//
+// Calls go through the gateway's generated stubs. An earlier version sent
+// `structpb.Struct` values over `conn.Invoke` with the method name written out
+// by hand, which cannot work: a Struct serialises as a map entry list and
+// bears no resemblance on the wire to the typed request the server decodes.
+//
+// Two of the fields it read back do not exist on the response at all.
+// EvaluateFieldRiskResponse has no `farm_id` and no `evaluated_at`, and
+// FieldAlert has neither `field_id` nor `farm_id` — so FarmID was always empty
+// and the evaluation timestamp always fell through to "now". Those reads are
+// gone rather than reinstated, because the server has nothing to put in them.
 package ai
 
 import (
@@ -9,17 +20,13 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/protobuf/types/known/structpb"
 	"p9e.in/samavaya/packages/grpcdial"
 	"p9e.in/samavaya/packages/ratelimit/algorithms"
 	"p9e.in/samavaya/packages/ratelimit/grpclimit"
 
+	aipb "p9e.in/samavaya/agriculture/ai-gateway/api/v1"
 	alertmodels "p9e.in/samavaya/agriculture/alert-service/internal/models"
 	"p9e.in/samavaya/packages/p9log"
-)
-
-const (
-	methodEvaluateFieldRisk = "/agriculture.ai.v1.AIGatewayService/EvaluateFieldRisk"
 )
 
 // AIClient wraps the gRPC connection to the AI Gateway for alert operations.
@@ -63,108 +70,66 @@ func (c *AIClient) Close() error {
 	return nil
 }
 
-// EvaluateFieldRisk sends a field risk evaluation request to the AI Gateway
-// and returns the resulting FieldRiskScore.
+func (c *AIClient) gateway() aipb.AIGatewayServiceClient {
+	return aipb.NewAIGatewayServiceClient(c.conn)
+}
+
+// EvaluateFieldRisk asks the gateway to score a field's risk.
+//
+// Only the field id is sent, because that is all alert-service holds. The
+// gateway fills the rest in with defaults — 22°C, 30% soil moisture, no
+// detections — so the score that comes back describes a temperate day on an
+// average field rather than this one. That is a real limitation and it is
+// worse now than it was, because the rule scanner calls this on a timer:
+// closing it means alert-service acquiring weather, soil and detection inputs
+// for the field and passing them here, which is a larger change than moving
+// onto the generated stubs.
 func (c *AIClient) EvaluateFieldRisk(ctx context.Context, requestID, fieldID string) (*alertmodels.FieldRiskScore, error) {
-	reqFields := map[string]*structpb.Value{
-		"request_id": structpb.NewStringValue(requestID),
-		"field_id":   structpb.NewStringValue(fieldID),
-	}
-
-	reqMsg := &structpb.Struct{Fields: reqFields}
-	respMsg := &structpb.Struct{}
-
-	err := c.conn.Invoke(ctx, methodEvaluateFieldRisk, reqMsg, respMsg)
+	resp, err := c.gateway().EvaluateFieldRisk(ctx, &aipb.EvaluateFieldRiskRequest{
+		RequestId: requestID,
+		FieldId:   fieldID,
+	})
 	if err != nil {
 		c.logger.Errorw("msg", "AI EvaluateFieldRisk failed", "request_id", requestID, "error", err)
-		return nil, fmt.Errorf("EvaluateFieldRisk invoke failed: %w", err)
+		return nil, fmt.Errorf("EvaluateFieldRisk: %w", err)
 	}
 
-	result := parseFieldRiskScore(respMsg)
+	result := &alertmodels.FieldRiskScore{
+		FieldID:         resp.GetFieldId(),
+		OverallRisk:     resp.GetOverallRisk(),
+		TemperatureRisk: resp.GetTemperatureRisk(),
+		WaterRisk:       resp.GetWaterRisk(),
+		PestRisk:        resp.GetPestRisk(),
+		DiseaseRisk:     resp.GetDiseaseRisk(),
+		NutrientRisk:    resp.GetNutrientRisk(),
+		GrowthRisk:      resp.GetGrowthRisk(),
+		// The response carries no timestamp, so this is when the answer
+		// arrived here. Stamped locally rather than left zero, because
+		// UpsertFieldRisk guards on it to reject an out-of-order write.
+		EvaluatedAt: time.Now().UTC(),
+	}
+
+	for _, a := range resp.GetAlerts() {
+		result.Alerts = append(result.Alerts, alertmodels.Alert{
+			AlertType: alertmodels.AlertType(a.GetAlertType()),
+			Severity:  alertmodels.AlertSeverity(a.GetSeverity()),
+			// FieldID comes from the request, not the alert: FieldAlert has no
+			// field of its own, and an alert with no field cannot be stored.
+			FieldID:         fieldID,
+			Title:           a.GetTitle(),
+			Message:         a.GetMessage(),
+			Recommendations: a.GetRecommendations(),
+			MetricValue:     a.GetMetricValue(),
+			ThresholdValue:  a.GetThresholdValue(),
+			Status:          alertmodels.AlertStatusActive,
+		})
+	}
+
 	c.logger.Infow("msg", "AI field risk evaluation completed",
 		"request_id", requestID,
 		"field_id", result.FieldID,
 		"overall_risk", result.OverallRisk,
 		"alert_count", len(result.Alerts),
 	)
-
 	return result, nil
-}
-
-func parseFieldRiskScore(resp *structpb.Struct) *alertmodels.FieldRiskScore {
-	result := &alertmodels.FieldRiskScore{}
-	if resp == nil || resp.Fields == nil {
-		return result
-	}
-
-	result.FieldID = getStringField(resp, "field_id")
-	result.FarmID = getStringField(resp, "farm_id")
-	result.OverallRisk = getNumberField(resp, "overall_risk")
-	result.TemperatureRisk = getNumberField(resp, "temperature_risk")
-	result.WaterRisk = getNumberField(resp, "water_risk")
-	result.PestRisk = getNumberField(resp, "pest_risk")
-	result.DiseaseRisk = getNumberField(resp, "disease_risk")
-	result.NutrientRisk = getNumberField(resp, "nutrient_risk")
-	result.GrowthRisk = getNumberField(resp, "growth_risk")
-
-	if evalAt := getStringField(resp, "evaluated_at"); evalAt != "" {
-		if t, err := time.Parse(time.RFC3339, evalAt); err == nil {
-			result.EvaluatedAt = t
-		}
-	}
-	if result.EvaluatedAt.IsZero() {
-		result.EvaluatedAt = time.Now()
-	}
-
-	// Parse embedded alerts
-	if alertList, ok := resp.Fields["alerts"]; ok {
-		if lv := alertList.GetListValue(); lv != nil {
-			for _, av := range lv.Values {
-				if as := av.GetStructValue(); as != nil {
-					alert := alertmodels.Alert{
-						AlertType:       alertmodels.AlertType(getStringField(as, "alert_type")),
-						Severity:        alertmodels.AlertSeverity(getStringField(as, "severity")),
-						FieldID:         getStringField(as, "field_id"),
-						FarmID:          getStringField(as, "farm_id"),
-						Title:           getStringField(as, "title"),
-						Message:         getStringField(as, "message"),
-						Recommendations: getStringListField(as, "recommendations"),
-						MetricValue:     getNumberField(as, "metric_value"),
-						ThresholdValue:  getNumberField(as, "threshold_value"),
-						Status:          alertmodels.AlertStatusActive,
-					}
-					result.Alerts = append(result.Alerts, alert)
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-func getStringField(s *structpb.Struct, key string) string {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetStringValue()
-	}
-	return ""
-}
-
-func getNumberField(s *structpb.Struct, key string) float64 {
-	if v, ok := s.Fields[key]; ok {
-		return v.GetNumberValue()
-	}
-	return 0
-}
-
-func getStringListField(s *structpb.Struct, key string) []string {
-	if v, ok := s.Fields[key]; ok {
-		if lv := v.GetListValue(); lv != nil {
-			result := make([]string, 0, len(lv.Values))
-			for _, item := range lv.Values {
-				result = append(result, item.GetStringValue())
-			}
-			return result
-		}
-	}
-	return nil
 }

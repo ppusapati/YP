@@ -500,29 +500,32 @@ func (s *cropService) generateGenericRecommendation(
 // RecommendCropsForField delegates to the AI gateway to get crop recommendations
 // for the given field conditions. Returns an empty slice when the AI client is
 // not configured (graceful degradation).
+//
+// Latitude, longitude and season used to be parameters and are gone. The
+// gateway's RecommendCropsRequest has no field for any of them, so they were
+// only ever packed into a Struct the server never decoded — accepting them
+// here implied they reached the model.
 func (s *cropService) RecommendCropsForField(
 	ctx context.Context,
-	soilType string,
+	soilTexture string,
 	soilPH float64,
 	rainfall float64,
 	temperature float64,
 	humidity float64,
-	latitude float64,
-	longitude float64,
-	season string,
 ) ([]ai.CropRecommendation, error) {
 	if s.aiClient == nil {
 		return nil, nil
 	}
-	return s.aiClient.RecommendCrops(ctx, &ai.RecommendCropsRequest{
-		SoilType:    soilType,
+	requestID := p9context.RequestID(ctx)
+	if requestID == "" {
+		requestID = ulid.NewString()
+	}
+	return s.aiClient.RecommendCrops(ctx, requestID, &ai.RecommendCropsRequest{
+		SoilTexture: soilTexture,
 		SoilPH:      soilPH,
 		Rainfall:    rainfall,
 		Temperature: temperature,
 		Humidity:    humidity,
-		Latitude:    latitude,
-		Longitude:   longitude,
-		Season:      season,
 	})
 }
 
