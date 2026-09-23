@@ -41,10 +41,25 @@ func (s *stubSoil) LatestMoistureFraction(_ context.Context, fieldID string) (fl
 	return s.moisture, s.found, s.err
 }
 
+type stubDiagnosis struct {
+	detections *clients.FieldDetections
+	err        error
+	calls      []string
+}
+
+func (s *stubDiagnosis) LatestDetections(_ context.Context, fieldID string) (*clients.FieldDetections, error) {
+	s.calls = append(s.calls, fieldID)
+	return s.detections, s.err
+}
+
 func newService(w clients.WeatherClient, so clients.SoilClient) *alertService {
+	return newServiceWithDiagnosis(w, so, nil)
+}
+
+func newServiceWithDiagnosis(w clients.WeatherClient, so clients.SoilClient, dg clients.DiagnosisClient) *alertService {
 	return NewAlertService(
 		deps.ServiceDeps{Log: testutil.NopLogger{}},
-		nil, nil, w, so,
+		nil, nil, w, so, dg,
 	).(*alertService)
 }
 
@@ -180,5 +195,70 @@ func TestASampleWithoutMoistureIsNotTreatedAsZero(t *testing.T) {
 
 	if got.SoilMoisture != 0 {
 		t.Errorf("SoilMoisture = %v", got.SoilMoisture)
+	}
+}
+
+// ---------------------------------------------------------------------------
+
+// What was actually found in the field's plants reaches the gateway.
+//
+// Without this the pest, disease and nutrient dimensions score 0 on every
+// field, which is indistinguishable from a farm where nothing is ever wrong.
+func TestDetectionsFromTheLatestDiagnosisAreSent(t *testing.T) {
+	dg := &stubDiagnosis{detections: &clients.FieldDetections{
+		PestConfidence:    0.71,
+		PestSpecies:       "Fall armyworm",
+		DiseaseConfidence: 0.82,
+		DiseaseName:       "Late blight",
+		NutrientSeverity:  0.75,
+		NutrientType:      "Nitrogen",
+	}}
+	got := newServiceWithDiagnosis(&stubWeather{weather: &clients.FieldWeather{TemperatureCurrent: 20}}, nil, dg).
+		fieldConditions(context.Background(), "fld-1")
+
+	if got.PestConfidence != 0.71 || got.PestSpecies != "Fall armyworm" {
+		t.Errorf("pest = %v %q", got.PestConfidence, got.PestSpecies)
+	}
+	if got.DiseaseConfidence != 0.82 || got.DiseaseName != "Late blight" {
+		t.Errorf("disease = %v %q", got.DiseaseConfidence, got.DiseaseName)
+	}
+	if got.NutrientSeverity != 0.75 || got.NutrientType != "Nitrogen" {
+		t.Errorf("nutrient = %v %q", got.NutrientSeverity, got.NutrientType)
+	}
+	if !got.HasDetections {
+		t.Error("HasDetections = false although the field was diagnosed")
+	}
+	if len(dg.calls) != 1 || dg.calls[0] != "fld-1" {
+		t.Errorf("diagnoses looked up for %v", dg.calls)
+	}
+}
+
+// A field with no recent diagnosis is not a field that was looked at and found
+// clean, and the difference is carried rather than flattened.
+func TestAFieldWithNoDiagnosisCarriesNoDetections(t *testing.T) {
+	dg := &stubDiagnosis{detections: nil}
+	got := newServiceWithDiagnosis(&stubWeather{weather: &clients.FieldWeather{TemperatureCurrent: 20}}, nil, dg).
+		fieldConditions(context.Background(), "fld-1")
+
+	if got.HasDetections {
+		t.Error("HasDetections = true although there was no diagnosis")
+	}
+	if got.PestSpecies != "" || got.DiseaseName != "" || got.NutrientType != "" {
+		t.Errorf("named findings on an undiagnosed field: %+v", got)
+	}
+}
+
+// A diagnosis failure degrades the score rather than failing the evaluation,
+// and leaves the weather that was already gathered in place.
+func TestADiagnosisFailureDegradesRatherThanFails(t *testing.T) {
+	dg := &stubDiagnosis{err: errors.New("plant-diagnosis unreachable")}
+	got := newServiceWithDiagnosis(&stubWeather{weather: &clients.FieldWeather{TemperatureCurrent: 28}}, nil, dg).
+		fieldConditions(context.Background(), "fld-1")
+
+	if got.TemperatureCurrent != 28 {
+		t.Errorf("TemperatureCurrent = %v; a diagnosis failure discarded the weather", got.TemperatureCurrent)
+	}
+	if got.HasDetections {
+		t.Error("HasDetections = true after a failed lookup")
 	}
 }

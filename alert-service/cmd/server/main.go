@@ -55,6 +55,7 @@ func main() {
 	aiGatewayAddr := envOr("AI_GATEWAY_ADDR", "localhost:9090")
 	weatherServiceURL := os.Getenv("WEATHER_SERVICE_URL")
 	soilServiceURL := os.Getenv("SOIL_SERVICE_URL")
+	diagnosisServiceURL := os.Getenv("PLANT_DIAGNOSIS_SERVICE_URL")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 
 	dsn := os.Getenv("DATABASE_URL")
@@ -116,9 +117,19 @@ func main() {
 			"SOIL_SERVICE_URL not set; soil moisture falls back to weather observations, then to the gateway default")
 	}
 
+	var diagnosisClient alertclients.DiagnosisClient
+	if diagnosisServiceURL != "" {
+		diagnosisClient = alertclients.NewDiagnosisClient(diagnosisServiceURL,
+			connectclient.NewHTTPClient(connectclient.DefaultConfig(diagnosisServiceURL)),
+			connect.WithInterceptors(connectclient.ContextPropagator()))
+	} else {
+		p9log.NewHelper(logger).Warnw("msg",
+			"PLANT_DIAGNOSIS_SERVICE_URL not set; pest, disease and nutrient risk will score as zero on every field")
+	}
+
 	// Application service
 	repo := repositories.NewAlertRepository(pool, logger)
-	svc := services.NewAlertService(d, repo, aiClient, weatherClient, soilClient)
+	svc := services.NewAlertService(d, repo, aiClient, weatherClient, soilClient, diagnosisClient)
 
 	// Handler
 	handler := handlers.NewAlertHandler(d, svc)

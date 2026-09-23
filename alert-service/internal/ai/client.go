@@ -94,18 +94,46 @@ type FieldConditions struct {
 	// SoilMoisture is volumetric, m³/m³, on the same 0..1 scale as the
 	// gateway's own default of 0.30 — not a percentage.
 	SoilMoisture float64
+
+	// Detections are findings from the field's most recent plant diagnosis.
+	// Confidences are probabilities on 0..1; NutrientSeverity is a graded
+	// 0..1 severity, not a confidence.
+	//
+	// HasDetections separates "nothing was found" from "nobody looked". The
+	// two score identically today — an absent DetectionResults and an
+	// all-zero one both fall below every threshold — but only one of them is
+	// true, and sending a DetectionResults full of zeros would put an
+	// "Unknown" pest species one threshold change away from an alert.
+	PestConfidence    float64
+	PestSpecies       string
+	DiseaseConfidence float64
+	DiseaseName       string
+	NutrientSeverity  float64
+	NutrientType      string
+	HasDetections     bool
 }
 
 // EvaluateFieldRisk asks the gateway to score a field's risk from its
 // current conditions.
 //
-// Detections and growth are still unset: pest and disease confidences live in
-// pest-prediction and plant-diagnosis, and NDVI in satellite-analytics, so
-// they need clients this service does not have yet. Their risk dimensions are
-// therefore still scored against gateway defaults, which is worth knowing when
-// reading a pest or growth figure from here.
+// Growth is still unset, and deliberately so. The gateway's growth risk is a
+// comparison — growth_actual against growth_expected — and nothing in this
+// platform holds an expected value to compare against. There is no crop growth
+// curve, no per-stage NDVI reference, nothing; satellite-analytics' baseline is
+// the fitted start of whatever window was asked for, which a healthy crop
+// outgrows by far more than the 20% deviation threshold within weeks of
+// emergence. Wiring that in would generate a "Growth anomaly" alert for every
+// field that is growing normally. Growth risk therefore reads 0 here, which is
+// worth knowing when reading a growth figure from this service.
+//
+// NDVI is unset for the same reason rather than a different one. The gateway
+// accepts ndvi_current and ndvi_previous, but the alert engine only ever prints
+// them inside the growth-anomaly message — they enter no score — so with no
+// expected value to raise that alert, sending them would add a dependency on
+// vegetation-index-service, and a field-to-farm lookup to satisfy it, in
+// exchange for nothing observable.
 func (c *AIClient) EvaluateFieldRisk(ctx context.Context, requestID, fieldID string, cond FieldConditions) (*alertmodels.FieldRiskScore, error) {
-	resp, err := c.gateway().EvaluateFieldRisk(ctx, &aipb.EvaluateFieldRiskRequest{
+	req := &aipb.EvaluateFieldRiskRequest{
 		RequestId: requestID,
 		FieldId:   fieldID,
 		Weather: &aipb.FieldWeather{
@@ -117,7 +145,21 @@ func (c *AIClient) EvaluateFieldRisk(ctx context.Context, requestID, fieldID str
 			EtReferenceMm:           cond.EtReferenceMm,
 		},
 		SoilState: &aipb.FieldSoilState{SoilMoisture: cond.SoilMoisture},
-	})
+	}
+	// Left nil when the field has no recent diagnosis, so that "not looked at"
+	// stays distinguishable from "looked at and clean".
+	if cond.HasDetections {
+		req.Detections = &aipb.DetectionResults{
+			PestConfidence:    cond.PestConfidence,
+			PestSpecies:       cond.PestSpecies,
+			DiseaseConfidence: cond.DiseaseConfidence,
+			DiseaseName:       cond.DiseaseName,
+			NutrientSeverity:  cond.NutrientSeverity,
+			NutrientType:      cond.NutrientType,
+		}
+	}
+
+	resp, err := c.gateway().EvaluateFieldRisk(ctx, req)
 	if err != nil {
 		c.logger.Errorw("msg", "AI EvaluateFieldRisk failed", "request_id", requestID, "error", err)
 		return nil, fmt.Errorf("EvaluateFieldRisk: %w", err)

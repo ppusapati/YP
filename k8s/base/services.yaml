@@ -464,6 +464,12 @@ spec:
               value: "http://weather-service.yieldpoint.svc.cluster.local:8080"
             - name: SOIL_SERVICE_URL
               value: "http://soil-service.yieldpoint.svc.cluster.local:8080"
+            # Pest, disease and nutrient risk come from what was found in the
+            # field's plants, not from a forecast. Without this they score
+            # zero on every field, which reads the same as a farm where
+            # nothing is ever wrong.
+            - name: PLANT_DIAGNOSIS_SERVICE_URL
+              value: "http://plant-diagnosis-service.yieldpoint.svc.cluster.local:8080"
             # The only reader of the alert rules farmers configure. Set to 0
             # to disable; disabled means those rules never fire.
             - name: ALERT_SCAN_INTERVAL

@@ -80,13 +80,14 @@ type AlertService interface {
 type alertService struct {
 	deps deps.ServiceDeps
 	repo repositories.AlertRepository
-	// weatherClient and soilClient are optional. Without them a risk score is
-	// computed from the gateway's defaults rather than the field, which is
-	// what this service used to do unconditionally.
-	weatherClient clients.WeatherClient
-	soilClient    clients.SoilClient
-	aiClient      *ai.AIClient
-	logger        *p9log.Helper
+	// These three are optional. Without them a risk score is computed from the
+	// gateway's defaults rather than the field, which is what this service
+	// used to do unconditionally.
+	weatherClient   clients.WeatherClient
+	soilClient      clients.SoilClient
+	diagnosisClient clients.DiagnosisClient
+	aiClient        *ai.AIClient
+	logger          *p9log.Helper
 }
 
 // NewAlertService creates a new AlertService instance.
@@ -96,14 +97,16 @@ func NewAlertService(
 	aiClient *ai.AIClient,
 	weatherClient clients.WeatherClient,
 	soilClient clients.SoilClient,
+	diagnosisClient clients.DiagnosisClient,
 ) AlertService {
 	return &alertService{
-		deps:          d,
-		repo:          repo,
-		weatherClient: weatherClient,
-		soilClient:    soilClient,
-		aiClient:      aiClient,
-		logger:        p9log.NewHelper(p9log.With(d.Log, "component", "AlertService")),
+		deps:            d,
+		repo:            repo,
+		weatherClient:   weatherClient,
+		soilClient:      soilClient,
+		diagnosisClient: diagnosisClient,
+		aiClient:        aiClient,
+		logger:          p9log.NewHelper(p9log.With(d.Log, "component", "AlertService")),
 	}
 }
 
@@ -339,10 +342,31 @@ func (s *alertService) fieldConditions(ctx context.Context, fieldID string) ai.F
 		}
 	}
 
+	// Detections come from plant-diagnosis because they have to be findings,
+	// not forecasts. pest-prediction also holds a per-field pest number, and
+	// it is the wrong one: it is a risk forecast, while the alert the gateway
+	// raises from pest_confidence is titled "Pest detected" — so routing a
+	// prediction through it would tell a farmer something was seen in their
+	// field when nobody ever saw it.
+	if s.diagnosisClient != nil {
+		det, err := s.diagnosisClient.LatestDetections(ctx, fieldID)
+		switch {
+		case err != nil:
+			s.logger.Warnw("msg", "no diagnosis for field; pest, disease and nutrient risk will score as zero",
+				"field_id", fieldID, "error", err)
+		case det != nil:
+			cond.PestConfidence, cond.PestSpecies = det.PestConfidence, det.PestSpecies
+			cond.DiseaseConfidence, cond.DiseaseName = det.DiseaseConfidence, det.DiseaseName
+			cond.NutrientSeverity, cond.NutrientType = det.NutrientSeverity, det.NutrientType
+			cond.HasDetections = true
+		}
+	}
+
 	s.logger.Infow("msg", "field conditions gathered",
 		"field_id", fieldID,
 		"has_weather", cond.TemperatureCurrent != 0 || cond.PrecipitationMm != 0,
-		"has_soil_moisture", haveSoil)
+		"has_soil_moisture", haveSoil,
+		"has_detections", cond.HasDetections)
 	return cond
 }
 

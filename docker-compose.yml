@@ -504,6 +504,10 @@ services:
       # describes an imaginary field rather than the one asked about.
       WEATHER_SERVICE_URL: http://weather-service:8080
       SOIL_SERVICE_URL: http://soil-service:8080
+      # Pest, disease and nutrient risk come from what was found in the field's
+      # plants, not from a forecast. Without this they score zero on every
+      # field, which reads the same as a farm where nothing is ever wrong.
+      PLANT_DIAGNOSIS_SERVICE_URL: http://plant-diagnosis-service:8080
       # The consumer is what fills this service. Weather, sensor and pest all
       # raise their alerts as events; without a broker alert-service is a store
       # with no writer.
