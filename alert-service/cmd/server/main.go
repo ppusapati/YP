@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
+	connectclient "p9e.in/samavaya/packages/connect/client"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
@@ -28,6 +29,7 @@ import (
 
 	"p9e.in/samavaya/agriculture/alert-service/api/v1/v1connect"
 	"p9e.in/samavaya/agriculture/alert-service/internal/ai"
+	alertclients "p9e.in/samavaya/agriculture/alert-service/internal/clients"
 	alertevents "p9e.in/samavaya/agriculture/alert-service/internal/events"
 	"p9e.in/samavaya/agriculture/alert-service/internal/handlers"
 	"p9e.in/samavaya/agriculture/alert-service/internal/repositories"
@@ -51,6 +53,8 @@ func main() {
 
 	port := envOr("PORT", "8080")
 	aiGatewayAddr := envOr("AI_GATEWAY_ADDR", "localhost:9090")
+	weatherServiceURL := os.Getenv("WEATHER_SERVICE_URL")
+	soilServiceURL := os.Getenv("SOIL_SERVICE_URL")
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 
 	dsn := os.Getenv("DATABASE_URL")
@@ -86,9 +90,35 @@ func main() {
 		Pool: pool,
 	}
 
+	// Field condition inputs for risk evaluation.
+	//
+	// Both optional, and a missing one is a real degradation rather than a
+	// configuration detail: the AI gateway substitutes its own defaults —
+	// 22°C, 30% soil moisture — for anything it is not given, so a risk score
+	// computed without these describes an imaginary field and says so nowhere.
+	var weatherClient alertclients.WeatherClient
+	if weatherServiceURL != "" {
+		weatherClient = alertclients.NewWeatherClient(weatherServiceURL,
+			connectclient.NewHTTPClient(connectclient.DefaultConfig(weatherServiceURL)),
+			connect.WithInterceptors(connectclient.ContextPropagator()))
+	} else {
+		p9log.NewHelper(logger).Warnw("msg",
+			"WEATHER_SERVICE_URL not set; field risk will be scored against gateway defaults, not observed weather")
+	}
+
+	var soilClient alertclients.SoilClient
+	if soilServiceURL != "" {
+		soilClient = alertclients.NewSoilClient(soilServiceURL,
+			connectclient.NewHTTPClient(connectclient.DefaultConfig(soilServiceURL)),
+			connect.WithInterceptors(connectclient.ContextPropagator()))
+	} else {
+		p9log.NewHelper(logger).Warnw("msg",
+			"SOIL_SERVICE_URL not set; soil moisture falls back to weather observations, then to the gateway default")
+	}
+
 	// Application service
 	repo := repositories.NewAlertRepository(pool, logger)
-	svc := services.NewAlertService(d, repo, aiClient)
+	svc := services.NewAlertService(d, repo, aiClient, weatherClient, soilClient)
 
 	// Handler
 	handler := handlers.NewAlertHandler(d, svc)

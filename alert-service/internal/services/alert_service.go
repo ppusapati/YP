@@ -10,6 +10,7 @@ import (
 
 	pb "p9e.in/samavaya/agriculture/alert-service/api/v1"
 	"p9e.in/samavaya/agriculture/alert-service/internal/ai"
+	"p9e.in/samavaya/agriculture/alert-service/internal/clients"
 	"p9e.in/samavaya/agriculture/alert-service/internal/models"
 	"p9e.in/samavaya/agriculture/alert-service/internal/repositories"
 	"p9e.in/samavaya/packages/deps"
@@ -77,19 +78,32 @@ type AlertService interface {
 
 // alertService is the concrete implementation of AlertService.
 type alertService struct {
-	deps     deps.ServiceDeps
-	repo     repositories.AlertRepository
-	aiClient *ai.AIClient
-	logger   *p9log.Helper
+	deps deps.ServiceDeps
+	repo repositories.AlertRepository
+	// weatherClient and soilClient are optional. Without them a risk score is
+	// computed from the gateway's defaults rather than the field, which is
+	// what this service used to do unconditionally.
+	weatherClient clients.WeatherClient
+	soilClient    clients.SoilClient
+	aiClient      *ai.AIClient
+	logger        *p9log.Helper
 }
 
 // NewAlertService creates a new AlertService instance.
-func NewAlertService(d deps.ServiceDeps, repo repositories.AlertRepository, aiClient *ai.AIClient) AlertService {
+func NewAlertService(
+	d deps.ServiceDeps,
+	repo repositories.AlertRepository,
+	aiClient *ai.AIClient,
+	weatherClient clients.WeatherClient,
+	soilClient clients.SoilClient,
+) AlertService {
 	return &alertService{
-		deps:     d,
-		repo:     repo,
-		aiClient: aiClient,
-		logger:   p9log.NewHelper(p9log.With(d.Log, "component", "AlertService")),
+		deps:          d,
+		repo:          repo,
+		weatherClient: weatherClient,
+		soilClient:    soilClient,
+		aiClient:      aiClient,
+		logger:        p9log.NewHelper(p9log.With(d.Log, "component", "AlertService")),
 	}
 }
 
@@ -278,6 +292,60 @@ func (s *alertService) UpdateAlertRule(ctx context.Context, rule *pb.AlertRule) 
 
 // ---------- Field Risk ----------
 
+// fieldConditions gathers what this service can learn about a field's current
+// state before asking the gateway to score it.
+//
+// Failures are logged and skipped rather than returned. A risk evaluation that
+// refuses to run because weather-service is briefly unreachable is worse than
+// one computed from fewer inputs: the scanner would then raise nothing at all
+// for that field, and a farmer waiting on a threshold hears silence. What each
+// call did or did not contribute is logged, so a score that looks wrong can be
+// traced to the inputs it was built from rather than guessed at.
+func (s *alertService) fieldConditions(ctx context.Context, fieldID string) ai.FieldConditions {
+	var cond ai.FieldConditions
+	haveSoil := false
+
+	if s.weatherClient != nil {
+		w, err := s.weatherClient.FieldWeather(ctx, fieldID)
+		switch {
+		case err != nil:
+			s.logger.Warnw("msg", "no weather for field; risk will be scored against gateway defaults",
+				"field_id", fieldID, "error", err)
+		case w != nil:
+			cond.TemperatureCurrent = w.TemperatureCurrent
+			cond.TemperatureMinForecast = w.TemperatureMinForecast
+			cond.TemperatureMaxForecast = w.TemperatureMaxForecast
+			cond.PrecipitationMm = w.PrecipitationMm
+			cond.PrecipitationForecastMm = w.PrecipitationForecastMm
+			cond.EtReferenceMm = w.EtReferenceMm
+			if w.HasSoilMoisture {
+				cond.SoilMoisture, haveSoil = w.SoilMoisture, true
+			}
+		}
+	}
+
+	// soil-service is the fallback, not the first choice. A weather
+	// observation's soil moisture is continuous and current; a soil sample is
+	// an occasional lab result, so it is the better answer only when there is
+	// no observation to prefer.
+	if !haveSoil && s.soilClient != nil {
+		moisture, found, err := s.soilClient.LatestMoistureFraction(ctx, fieldID)
+		switch {
+		case err != nil:
+			s.logger.Warnw("msg", "no soil moisture for field; water risk will be scored against the gateway default",
+				"field_id", fieldID, "error", err)
+		case found:
+			cond.SoilMoisture, haveSoil = moisture, true
+		}
+	}
+
+	s.logger.Infow("msg", "field conditions gathered",
+		"field_id", fieldID,
+		"has_weather", cond.TemperatureCurrent != 0 || cond.PrecipitationMm != 0,
+		"has_soil_moisture", haveSoil)
+	return cond
+}
+
 func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.FieldRiskScore, error) {
 	if strings.TrimSpace(fieldID) == "" {
 		return nil, errors.BadRequest("INVALID_FIELD_ID", "field_id is required")
@@ -295,7 +363,7 @@ func (s *alertService) GetFieldRisk(ctx context.Context, fieldID string) (*pb.Fi
 		requestID = ulid.NewString()
 	}
 
-	result, err := s.aiClient.EvaluateFieldRisk(ctx, requestID, fieldID)
+	result, err := s.aiClient.EvaluateFieldRisk(ctx, requestID, fieldID, s.fieldConditions(ctx, fieldID))
 	if err != nil {
 		s.logger.Errorw("msg", "field risk evaluation failed", "field_id", fieldID, "error", err)
 		return nil, errors.InternalServer("FIELD_EVALUATION_FAILED", "failed to evaluate field risk")

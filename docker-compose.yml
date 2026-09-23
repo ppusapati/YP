@@ -499,6 +499,11 @@ services:
       <<: *go-env
       DATABASE_URL: ${ALERT_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/alert_service?sslmode=disable}
       AI_GATEWAY_ADDR: ai-gateway:50051
+      # Field conditions for risk evaluation. Without these the AI gateway
+      # substitutes its own defaults — 22C, 30% soil moisture — so a risk score
+      # describes an imaginary field rather than the one asked about.
+      WEATHER_SERVICE_URL: http://weather-service:8080
+      SOIL_SERVICE_URL: http://soil-service:8080
       # The consumer is what fills this service. Weather, sensor and pest all
       # raise their alerts as events; without a broker alert-service is a store
       # with no writer.

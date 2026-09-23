@@ -74,20 +74,49 @@ func (c *AIClient) gateway() aipb.AIGatewayServiceClient {
 	return aipb.NewAIGatewayServiceClient(c.conn)
 }
 
-// EvaluateFieldRisk asks the gateway to score a field's risk.
+// FieldConditions is what alert-service knows about a field's current state.
 //
-// Only the field id is sent, because that is all alert-service holds. The
-// gateway fills the rest in with defaults — 22°C, 30% soil moisture, no
-// detections — so the score that comes back describes a temperate day on an
-// average field rather than this one. That is a real limitation and it is
-// worse now than it was, because the rule scanner calls this on a timer:
-// closing it means alert-service acquiring weather, soil and detection inputs
-// for the field and passing them here, which is a larger change than moving
-// onto the generated stubs.
-func (c *AIClient) EvaluateFieldRisk(ctx context.Context, requestID, fieldID string) (*alertmodels.FieldRiskScore, error) {
+// Every field here was previously left unset, and the gateway substitutes its
+// own defaults for anything absent — 22°C, 30% soil moisture — so a score came
+// back describing an imaginary temperate day rather than this field. Nothing
+// errored and the number looked like a measurement.
+//
+// A zero-valued FieldConditions therefore still works and still means "score
+// against the defaults"; it is the honest representation of knowing nothing,
+// and the caller says so explicitly rather than by omission.
+type FieldConditions struct {
+	TemperatureCurrent      float64
+	TemperatureMinForecast  float64
+	TemperatureMaxForecast  float64
+	PrecipitationMm         float64
+	PrecipitationForecastMm float64
+	EtReferenceMm           float64
+	// SoilMoisture is volumetric, m³/m³, on the same 0..1 scale as the
+	// gateway's own default of 0.30 — not a percentage.
+	SoilMoisture float64
+}
+
+// EvaluateFieldRisk asks the gateway to score a field's risk from its
+// current conditions.
+//
+// Detections and growth are still unset: pest and disease confidences live in
+// pest-prediction and plant-diagnosis, and NDVI in satellite-analytics, so
+// they need clients this service does not have yet. Their risk dimensions are
+// therefore still scored against gateway defaults, which is worth knowing when
+// reading a pest or growth figure from here.
+func (c *AIClient) EvaluateFieldRisk(ctx context.Context, requestID, fieldID string, cond FieldConditions) (*alertmodels.FieldRiskScore, error) {
 	resp, err := c.gateway().EvaluateFieldRisk(ctx, &aipb.EvaluateFieldRiskRequest{
 		RequestId: requestID,
 		FieldId:   fieldID,
+		Weather: &aipb.FieldWeather{
+			TemperatureCurrent:      cond.TemperatureCurrent,
+			TemperatureMinForecast:  cond.TemperatureMinForecast,
+			TemperatureMaxForecast:  cond.TemperatureMaxForecast,
+			PrecipitationMm:         cond.PrecipitationMm,
+			PrecipitationForecastMm: cond.PrecipitationForecastMm,
+			EtReferenceMm:           cond.EtReferenceMm,
+		},
+		SoilState: &aipb.FieldSoilState{SoilMoisture: cond.SoilMoisture},
 	})
 	if err != nil {
 		c.logger.Errorw("msg", "AI EvaluateFieldRisk failed", "request_id", requestID, "error", err)

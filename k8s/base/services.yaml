@@ -457,6 +457,13 @@ spec:
               value: "us-east-1"
             - name: AI_GATEWAY_ADDR
               value: "ai-gateway:50051"
+            # Field conditions for risk evaluation. Without these the AI
+            # gateway substitutes its own defaults — 22C, 30% soil moisture —
+            # so a risk score describes an imaginary field.
+            - name: WEATHER_SERVICE_URL
+              value: "http://weather-service.yieldpoint.svc.cluster.local:8080"
+            - name: SOIL_SERVICE_URL
+              value: "http://soil-service.yieldpoint.svc.cluster.local:8080"
             # The only reader of the alert rules farmers configure. Set to 0
             # to disable; disabled means those rules never fire.
             - name: ALERT_SCAN_INTERVAL
