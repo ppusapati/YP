@@ -1,5 +1,17 @@
-# Build artifacts
-**/server
+# Compiled binaries a developer may have left in the tree.
+#
+# Deliberately not `**/server`, which is what this said and which also matches
+# every service's `cmd/server` *directory* — dockerignore patterns do not
+# distinguish a file from a directory. That excluded the source of every
+# binary in this repository from the build context, so `docker build` failed
+# on `stat /src/<service>/cmd/server: directory not found` for all thirty-one
+# services, and had since the Docker stack was first added.
+#
+# `*/server` matches one path segment before `server`, so it still catches
+# `irrigation-service/server` from a stray `go build -o server`, and cannot
+# reach `irrigation-service/cmd/server`.
+/server
+*/server
 **/*.exe
 
 # Version control
