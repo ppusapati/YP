@@ -38,8 +38,33 @@ type irrigationService struct {
 	// its absence is a refusal rather than a silent fallback to recording runs
 	// that did not happen.
 	actuator *Actuator
-	pool     *pgxpool.Pool
-	log      *p9log.Helper
+	// systemRuns lists runs across every tenant, for the sweep that closes
+	// them. Separate from repo because repo's connections are scoped to the
+	// caller's tenant and a sweep has no caller: under row-level security a
+	// cross-tenant read through it returns nothing, silently, for ever.
+	systemRuns DueRunLister
+	pool       *pgxpool.Pool
+	log        *p9log.Helper
+}
+
+// DueRunLister reads runs whose water has stopped, across every tenant.
+//
+// Its own interface rather than the whole repository, because the thing behind
+// it connects with a role row-level security does not apply to — and that is
+// not a privilege to hand a component that can also write.
+type DueRunLister interface {
+	ListRunsDueToClose(ctx context.Context, now time.Time, limit int32) ([]domain.IrrigationEvent, error)
+}
+
+// WithSystemRuns supplies the cross-tenant reader the closing sweep needs.
+//
+// Without it the sweep falls back to the tenant-scoped repository, which under
+// row-level security reads nothing — so runs are never closed and never
+// metered, and nothing anywhere reports a problem. main warns at startup when
+// that is the configuration.
+func (s *irrigationService) WithSystemRuns(l DueRunLister) *irrigationService {
+	s.systemRuns = l
+	return s
 }
 
 // WithActuator enables real actuation.
@@ -1364,7 +1389,13 @@ func (s *irrigationService) CloseFinishedRuns(ctx context.Context, limit int32) 
 		return 0, nil
 	}
 
-	due, err := s.repo.ListRunsDueToClose(ctx, time.Now(), limit)
+	// The listing crosses tenants; everything done with each row is scoped to
+	// that row's own tenant in closeFinishedRun.
+	lister := s.systemRuns
+	if lister == nil {
+		lister = s.repo
+	}
+	due, err := lister.ListRunsDueToClose(ctx, time.Now(), limit)
 	if err != nil {
 		return 0, err
 	}

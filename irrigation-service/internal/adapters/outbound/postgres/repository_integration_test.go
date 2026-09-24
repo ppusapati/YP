@@ -24,7 +24,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"go.uber.org/zap"
+	"p9e.in/samavaya/packages/database/rlspool"
 
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
@@ -42,7 +44,10 @@ func newPool(t *testing.T) *pgxpool.Pool {
 	if *dsn == "" {
 		t.Skip("no -irrigation-dsn given")
 	}
-	pool, err := pgxpool.New(context.Background(), *dsn)
+	// Built the way main builds it, so the RLS session settings are applied
+	// per acquire. A plain pgxpool here would be testing a pool no service
+	// uses, and under the application role it would fail every write.
+	pool, err := rlspool.New(context.Background(), *dsn)
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
@@ -71,44 +76,32 @@ func setup(t *testing.T) (context.Context, *pgxpool.Pool, *irrigationRepository,
 	return ctx, pool, repo, tenantID
 }
 
-// requireWritableRole stops the suite with an explanation rather than a dozen
-// identical failures when the connected role cannot write.
+// requireWritableRole checks the connected role can write, and says what it
+// means when it cannot.
 //
-// It has one cause, and it is worth stating plainly: this repository issues
-// its queries straight on the pool, and nothing on that path ever runs
-// set_config('app.tenant_id', ...). The RLS policies are keyed on that
-// setting, so under a role that is subject to them every INSERT violates its
-// WITH CHECK and every SELECT matches nothing. Only uow.RLSFactory sets it,
-// and only inside a transaction the repository does not open.
+// This used to skip the whole suite. The repositories queried the pool
+// directly and nothing on that path ran set_config('app.tenant_id', ...), so
+// under a role subject to RLS every INSERT violated its policy's WITH CHECK
+// and every SELECT matched nothing — and nobody had noticed, because
+// docker-compose connects as a superuser, which bypasses RLS entirely.
 //
-// Nobody has hit this because docker-compose connects as the superuser
-// `yieldpoint`, which bypasses RLS entirely — so the policies have never been
-// exercised anywhere.
+// rlspool now sets the scope on every acquire, so this passes under the
+// application role. It is kept as a check rather than deleted: a failure here
+// again means the wiring has come undone, and the symptom of that is a service
+// that silently reads nothing.
 func requireWritableRole(t *testing.T, ctx context.Context, pool *pgxpool.Pool, tenantID string) {
 	t.Helper()
 
-	var super, bypass bool
-	if err := pool.QueryRow(ctx,
-		`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`).
-		Scan(&super, &bypass); err != nil {
-		t.Fatalf("read the connected role: %v", err)
-	}
-	if super || bypass {
-		return
-	}
-
 	probe := ulid.NewString()
-	_, err := pool.Exec(ctx, `
+	if _, err := pool.Exec(ctx, `
 		INSERT INTO irrigation_zones (id, tenant_id, field_id, farm_id, name)
-		VALUES ($1, $2, 'probe', 'probe', 'rls probe')`, probe, tenantID)
-	if err == nil {
-		_, _ = pool.Exec(ctx, `DELETE FROM irrigation_zones WHERE id = $1`, probe)
-		return
+		VALUES ($1, $2, 'probe', 'probe', 'rls probe')`, probe, tenantID); err != nil {
+		t.Fatalf("this role cannot write its own tenant's rows, so the RLS session "+
+			"settings are not reaching the connection: %v", err)
 	}
-	t.Skipf("this role is subject to RLS and the repository never sets app.tenant_id, "+
-		"so every write fails: %v. "+
-		"Point -irrigation-dsn at the migration/owner role to exercise the SQL, and see "+
-		"requireWritableRole for why the application role cannot be used yet.", err)
+	if _, err := pool.Exec(ctx, `DELETE FROM irrigation_zones WHERE id = $1`, probe); err != nil {
+		t.Fatalf("probe cleanup: %v", err)
+	}
 }
 
 // seedZone creates a zone, a controller on it, and an adaptive schedule.
@@ -529,11 +522,11 @@ func TestAnUnmeteredRunIsStillRecorded(t *testing.T) {
 
 // ---------------------------------------------------------------------------
 
-// Row-level security keeps one tenant's runs out of another's.
+// Row-level security keeps one tenant's rows out of another's.
 //
 // Only meaningful against a non-superuser role: a superuser bypasses RLS
-// entirely, and this test would pass whatever the policies said. That is what
-// the check below is for.
+// entirely, and this would pass whatever the policies said. That is what the
+// check below is for.
 func TestRowLevelSecurityIsInForce(t *testing.T) {
 	ctx, pool, repo, tenantID := setup(t)
 
@@ -544,13 +537,15 @@ func TestRowLevelSecurityIsInForce(t *testing.T) {
 		t.Fatalf("read role: %v", err)
 	}
 	if super || bypass {
-		t.Skipf("connected as %s, which bypasses RLS; point -irrigation-dsn at the application role",
-			roleDescription(super, bypass))
+		t.Skip("connected as a role that bypasses RLS; point -irrigation-dsn at the " +
+			"application role to exercise the policies")
 	}
 
 	zone, _, _ := seedZone(t, ctx, repo, tenantID)
 
-	// A second tenant's context over the same pool.
+	// A second tenant's context over the same pool. The connection may well be
+	// the one that just served the first tenant, which is the case that
+	// matters: the scope is rewritten on every acquire.
 	otherID := ulid.NewString()
 	other := context.Background()
 	other = p9context.NewConnectionInfo(other, &saas.ConnectionInfo{TenantID: otherID})
@@ -559,15 +554,17 @@ func TestRowLevelSecurityIsInForce(t *testing.T) {
 	if _, err := repo.ZoneState(other, otherID, zone.ID); err == nil {
 		t.Error("another tenant read a zone's state")
 	}
-}
 
-func roleDescription(super, bypass bool) string {
-	switch {
-	case super:
-		return "a superuser"
-	case bypass:
-		return "a role with BYPASSRLS"
-	default:
-		return "an ordinary role"
+	// And the policy, not just the repository's own WHERE clause, is what
+	// stops it: asked for the row by id with no tenant predicate at all, the
+	// other tenant still sees nothing.
+	var seen int
+	if err := pool.QueryRow(other,
+		`SELECT count(*) FROM irrigation_zones WHERE id = $1`, zone.ID).Scan(&seen); err != nil {
+		t.Fatalf("cross-tenant count: %v", err)
+	}
+	if seen != 0 {
+		t.Error("a query with no tenant predicate read another tenant's row; " +
+			"the policies are not doing anything")
 	}
 }

@@ -20,6 +20,7 @@ import (
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/database/rlspool"
 	"p9e.in/samavaya/packages/ratelimit/algorithms"
 	"p9e.in/samavaya/packages/ulid"
 
@@ -48,7 +49,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, dsn)
+	pool, err := rlspool.New(ctx, dsn)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

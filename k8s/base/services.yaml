@@ -465,6 +465,8 @@ spec:
               value: "http://plant-diagnosis-service:8080"
             - name: ALERT_SCAN_INTERVAL
               value: "5m"
+            - name: DATABASE_URL_SYSTEM
+              value: ""
           resources:
             requests:
               memory: "128Mi"
@@ -2044,6 +2046,8 @@ spec:
               value: "true"
             - name: RUN_CLOSE_INTERVAL
               value: "1m"
+            - name: DATABASE_URL_SYSTEM
+              value: ""
           resources:
             requests:
               memory: "128Mi"

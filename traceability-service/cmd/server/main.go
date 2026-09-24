@@ -16,7 +16,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/IBM/sarama"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
@@ -24,6 +23,7 @@ import (
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/database/rlspool"
 	kafkaconfig "p9e.in/samavaya/packages/events/config"
 	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
 	"p9e.in/samavaya/packages/events/domain"
@@ -72,7 +72,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, dsn)
+	pool, err := rlspool.New(ctx, dsn)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

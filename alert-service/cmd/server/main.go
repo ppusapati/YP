@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
@@ -20,6 +19,7 @@ import (
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/database/rlspool"
 	"p9e.in/samavaya/packages/deps"
 	kafkaconfig "p9e.in/samavaya/packages/events/config"
 	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, dsn)
+	pool, err := rlspool.New(ctx, dsn)
 	if err != nil {
 		log.Fatalf("failed to create database pool: %v", err)
 	}
@@ -221,7 +221,31 @@ func main() {
 		p9log.NewHelper(logger).Warnw("msg",
 			"AI gateway client unavailable; configured alert rules will not be evaluated")
 	} else if interval := scanInterval(); interval > 0 {
-		scanner := scheduler.NewRuleScanner(repo, svc, logger)
+		// The scanner enumerates every tenant's due rules and has no request
+		// to inherit a tenant from, so it reads through a pool that is not
+		// scoped to one. The application pool scopes every connection to the
+		// caller's tenant — correct for the RPCs, and it would leave this
+		// reading nothing and firing nothing, silently.
+		//
+		// Falls back to the application DSN when DATABASE_URL_SYSTEM is
+		// unset, which is right for a development superuser and wrong in
+		// production; the probe says which one this is.
+		systemDSN := envOr("DATABASE_URL_SYSTEM", dsn)
+		systemPool, err := rlspool.NewSystem(ctx, systemDSN)
+		if err != nil {
+			log.Fatalf("failed to create the system database pool: %v", err)
+		}
+		defer systemPool.Close()
+
+		if err := rlspool.Probe(ctx, systemPool); err != nil {
+			// Logged as an error rather than a warning because the symptom is
+			// silence: no rule ever fires, and that is indistinguishable from
+			// a platform where no threshold is ever crossed.
+			log.Printf("ERROR: configured alert rules will never fire: %v", err)
+		}
+
+		scanner := scheduler.NewRuleScanner(
+			repositories.NewAlertRepository(systemPool, logger), svc, logger)
 		scannerCtx, scannerCancel := context.WithCancel(context.Background())
 		defer scannerCancel()
 		go scanner.Run(scannerCtx, interval)

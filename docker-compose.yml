@@ -375,6 +375,13 @@ services:
       # sensor-driven run ends that way. Set to 0 to disable, which means
       # water usage is recorded only for runs stopped by hand.
       RUN_CLOSE_INTERVAL: ${RUN_CLOSE_INTERVAL:-1m}
+      # The sweep above reads across every tenant, and the application pool
+      # scopes each connection to the caller's tenant — so it needs a role
+      # row-level security does not apply to. Unset here because this stack
+      # connects as the superuser `yieldpoint`, which already bypasses RLS;
+      # in production point it at a role with BYPASSRLS. The service probes
+      # at startup and logs an error if the role cannot read across tenants.
+      DATABASE_URL_SYSTEM: ${IRRIGATION_SERVICE_SYSTEM_DATABASE_URL:-}
     depends_on:
       rmqtt:
         condition: service_started
@@ -552,6 +559,13 @@ services:
       # scanner off; it is the only thing that reads the thresholds farmers set
       # in the web app, so off means those rules never fire.
       ALERT_SCAN_INTERVAL: ${ALERT_SCAN_INTERVAL:-5m}
+      # The scanner enumerates every tenant's due rules, and the application
+      # pool scopes each connection to the caller's tenant — so it needs a
+      # role row-level security does not apply to. Unset here because this
+      # stack connects as the superuser `yieldpoint`, which already bypasses
+      # RLS; in production point it at a role with BYPASSRLS. The service
+      # probes at startup and logs an error if the role cannot.
+      DATABASE_URL_SYSTEM: ${ALERT_SERVICE_SYSTEM_DATABASE_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

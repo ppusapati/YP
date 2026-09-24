@@ -171,18 +171,40 @@ for a duplicate, because `ON CONFLICT DO NOTHING ... RETURNING` yields no rows
 usage could not be recorded". `tools/migrationcheck` now applies every
 service's migrations to its own empty database, and CI runs it.
 
-**Row-level security has never been exercised anywhere.** The repositories
-issue their queries straight on the pool, and nothing on that path runs
-`set_config('app.tenant_id', ...)`; only `uow.RLSFactory` does, inside a
-transaction they do not open. Under the non-superuser role
-`scripts/setup-db-roles.sql` defines for production, every INSERT violates its
-policy's WITH CHECK and every SELECT matches nothing — verified against a real
+**Row-level security had never been exercised anywhere — now fixed.** The
+repositories issued their queries straight on the pool, and nothing on that
+path ran `set_config('app.tenant_id', ...)`; only `uow.RLSFactory` did, inside
+a transaction they do not open. Under the non-superuser role
+`scripts/setup-db-roles.sql` defines for production, every INSERT violated its
+policy's WITH CHECK and every SELECT matched nothing — verified against a real
 database. docker-compose connects as the superuser `yieldpoint`, which bypasses
-RLS entirely, which is why nobody has hit it. Tenant isolation today rests on
-the `tenant_id = $1` clauses in the application SQL, which are present and
-correct; the policies are a second layer that cannot currently engage. Fixing
-it means routing repository calls through a transaction that sets the variable,
-which is a change across every service.
+RLS entirely, which is why it went unnoticed: the policies had never run in
+development, in tests, or in CI.
+
+`packages/database/rlspool` fixes it in one place. A pool built there sets
+`app.tenant_id`, `app.company_id` and `app.branch_id` on every connection as it
+is acquired, from the context of the query acquiring it — pgx's `PrepareConn`
+receives that context, which is what makes this possible without touching a
+single repository. All 29 services now build their pool through it.
+
+The settings are written on **every** acquire, empty included, and that costs a
+round trip. Connections are shared between tenants, so skipping the write when
+a caller has no tenant would leave the previous caller's in place and hand the
+next query somebody else's rows. A cache keyed on the connection would avoid
+most of those round trips and is not worth the class of bug a stale entry would
+be.
+
+Two things read across tenants on purpose — alert-service's rule scanner and
+irrigation-service's run-closing sweep — and a scoped pool would leave them
+reading nothing, silently, for ever. They now take a separate unscoped pool
+from `DATABASE_URL_SYSTEM`, and `rlspool.Probe` checks at startup whether that
+role can actually bypass RLS, logging an error naming the consequence when it
+cannot. A sweep that finds nothing is otherwise indistinguishable from a
+platform with nothing to do.
+
+CI runs both halves against a real database under the application role: that a
+pool isolates tenants, and that a service's repository works through it. The
+irrigation repository suite, which skipped under `yp_app` before, passes.
 
 **Triage: done.** The original note said "these are not hard — each is a call to
 a service method that already exists". That was true of about half of them.

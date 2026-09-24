@@ -15,13 +15,13 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/IBM/sarama"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
 	"p9e.in/samavaya/packages/connect/interceptors"
 	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/database/migrate"
+	"p9e.in/samavaya/packages/database/rlspool"
 	kafkaconfig "p9e.in/samavaya/packages/events/config"
 	kafkaconsumer "p9e.in/samavaya/packages/events/consumer"
 	"p9e.in/samavaya/packages/events/domain"
@@ -76,7 +76,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, dsn)
+	pool, err := rlspool.New(ctx, dsn)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
@@ -268,6 +268,31 @@ func main() {
 			}
 		}
 	}
+
+	// ── Cross-tenant reads ───────────────────────────────────────────────────
+	//
+	// The closing sweep has no request to inherit a tenant from, and the pool
+	// above scopes every connection to the caller's — so under row-level
+	// security it would read nothing and close nothing, silently. This pool is
+	// unscoped and needs a role RLS does not apply to.
+	//
+	// Falls back to the application DSN when DATABASE_URL_SYSTEM is unset,
+	// which is right for a development superuser and wrong in production; the
+	// probe below says which one this is.
+	systemDSN := envOr("DATABASE_URL_SYSTEM", dsn)
+	systemPool, err := rlspool.NewSystem(ctx, systemDSN)
+	if err != nil {
+		log.Fatalf("failed to create the system database pool: %v", err)
+	}
+	defer systemPool.Close()
+
+	if err := rlspool.Probe(ctx, systemPool); err != nil {
+		// Not fatal: a deployment may genuinely not want the sweep. Logged as
+		// an error rather than a warning because the symptom is nothing
+		// happening, which is indistinguishable from nothing being due.
+		log.Printf("ERROR: finished runs will never be closed or metered: %v", err)
+	}
+	svc.WithSystemRuns(postgresadapter.NewIrrigationRepository(systemPool, logger))
 
 	// ── Closing finished runs ────────────────────────────────────────────────
 	//

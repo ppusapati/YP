@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap"
 
 	"p9e.in/samavaya/packages/authz"
-	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/connect/interceptors"
+	connectserver "p9e.in/samavaya/packages/connect/server"
 	"p9e.in/samavaya/packages/deps"
 	"p9e.in/samavaya/packages/middleware"
 	"p9e.in/samavaya/packages/p9log"
