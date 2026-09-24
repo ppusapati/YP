@@ -168,6 +168,18 @@ type IrrigationEvent struct {
 	SoilMoistureBeforePct float64          `json:"soil_moisture_before_pct"`
 	SoilMoistureAfterPct  float64          `json:"soil_moisture_after_pct"`
 	FailureReason         string           `json:"failure_reason"`
+
+	// MeterStartLiters and MeterEndLiters are the controller's cumulative
+	// water meter, read when the valve opened and when it closed. Their
+	// difference is the only measurement of volume this platform can take.
+	//
+	// Nil rather than zero for a panel with no meter, because zero is a
+	// reading and "no meter" is not.
+	MeterStartLiters *float64 `json:"meter_start_liters,omitempty"`
+	MeterEndLiters   *float64 `json:"meter_end_liters,omitempty"`
+	// WaterSource says where ActualWaterLiters came from. Without it the
+	// figure is a number with no provenance.
+	WaterSource WaterSource `json:"water_source"`
 }
 
 // DecisionInputs contains sensor and environmental data used for irrigation decisions.
@@ -229,6 +241,15 @@ type WaterUsageLog struct {
 	RecordedAt   time.Time `json:"recorded_at"`
 	PeriodStart  time.Time `json:"period_start"`
 	PeriodEnd    time.Time `json:"period_end"`
+
+	// EventID is the run this measures, so a figure that looks wrong can be
+	// traced back to the command that opened the valve.
+	EventID string `json:"event_id"`
+	// Source is what makes WaterLiters readable. An UNMETERED row carries
+	// zero litres and is still written: a zone's usage has to distinguish
+	// "no water was applied" from "water was applied and nobody measured it",
+	// and omitting the row makes an unmetered farm look like an idle one.
+	Source WaterSource `json:"source"`
 }
 
 // ControllerCommand represents a command sent to a physical water controller.

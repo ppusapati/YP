@@ -48,6 +48,7 @@ import (
 	// Aliased: `domain` above is the shared event vocabulary, not this
 	// service's.
 	irrigationdomain "p9e.in/samavaya/agriculture/irrigation-service/internal/domain"
+	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/inbound"
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/outbound"
 	connectclient "p9e.in/samavaya/packages/connect/client"
 )
@@ -268,6 +269,23 @@ func main() {
 		}
 	}
 
+	// ── Closing finished runs ────────────────────────────────────────────────
+	//
+	// A start command carries a duration the controller enforces locally, so
+	// the valve shuts on its own and nothing tells this service. Without this
+	// sweep those runs stay ACTIVE for ever and are never metered — and every
+	// sensor-driven run ends that way, because nobody is present to stop one.
+	//
+	// Set RUN_CLOSE_INTERVAL to 0 to turn it off; off means water usage is
+	// recorded only for runs an operator stopped by hand.
+	sweepCtx, sweepCancel := context.WithCancel(context.Background())
+	defer sweepCancel()
+	if interval := envDuration("RUN_CLOSE_INTERVAL", time.Minute); interval > 0 {
+		go closeFinishedRuns(sweepCtx, svc, interval, p9log.NewHelper(logger))
+	} else {
+		log.Printf("run closing disabled; water usage will only be recorded for runs stopped by hand")
+	}
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -280,6 +298,7 @@ func main() {
 
 	<-quit
 	p9log.NewHelper(logger).Infow("msg", "shutting down irrigation-service")
+	sweepCancel()
 
 	shutCtx, shutCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutCancel()
@@ -293,4 +312,44 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// closeFinishedRuns sweeps for runs whose water has stopped, on a ticker.
+//
+// runCloseBatch bounds one pass so a backlog — a service that was down for an
+// afternoon — is worked through over several ticks rather than in one
+// transaction that holds a connection while it reads a meter per run.
+const runCloseBatch = 100
+
+func closeFinishedRuns(ctx context.Context, svc inbound.IrrigationService, every time.Duration, log *p9log.Helper) {
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if _, err := svc.CloseFinishedRuns(ctx, runCloseBatch); err != nil {
+				// Logged and retried on the next tick. A database blip must
+				// not stop runs being closed for the rest of the process's
+				// life.
+				log.Warnw("msg", "could not close finished runs", "error", err)
+			}
+		}
+	}
+}
+
+// envDuration reads a duration, falling back when it is unset or unreadable.
+func envDuration(key string, fallback time.Duration) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		log.Printf("WARNING: %s=%q is not a duration; using %s", key, raw, fallback)
+		return fallback
+	}
+	return d
 }

@@ -548,3 +548,127 @@ func AdaptiveSchedule(schedules []IrrigationSchedule) (*IrrigationSchedule, erro
 			len(found), strings.Join(ids, ", "))
 	}
 }
+
+// ── How much water a run applied ────────────────────────────────────────────
+
+// WaterSource records where a volume figure came from.
+//
+// It exists because a number in a column called water_liters says nothing
+// about whether anybody measured it, and the three cases below are not
+// interchangeable: one is a meter reading, one is arithmetic on a measured
+// rate, and one is an admission. An auditor, or a farmer comparing two
+// seasons, needs to know which they are looking at.
+type WaterSource string
+
+const (
+	// WaterSourceMeter is a difference between two readings of the
+	// controller's cumulative water meter. The only measurement of volume
+	// this platform can take.
+	WaterSourceMeter WaterSource = "METER"
+
+	// WaterSourceEstimated is the measured flow rate multiplied by the run's
+	// measured duration, for a panel that reports a rate but keeps no
+	// totaliser.
+	//
+	// Honest arithmetic on two measurements, and still an estimate: the rate
+	// is sampled at the ends of the run, so a line that blocked in the middle
+	// and delivered nothing for twenty minutes produces the same figure as
+	// one that ran clean.
+	WaterSourceEstimated WaterSource = "ESTIMATED"
+
+	// WaterSourceUnmetered is a run whose volume nobody measured.
+	//
+	// Recorded as its own row with zero litres rather than omitted, so that a
+	// zone's water usage can distinguish "no water was applied" from "water
+	// was applied and not measured". Omitting it would make an unmetered farm
+	// indistinguishable from an idle one.
+	WaterSourceUnmetered WaterSource = "UNMETERED"
+)
+
+// MeterRollover is where a cumulative meter wraps back to zero.
+//
+// 2^32 litres, because that is what a 32-bit totaliser holds and what the
+// irrigation panels that expose one use. Four billion litres is about eleven
+// years of continuous flow at a hundred litres a minute, so a farm reaches it
+// eventually rather than never — and the field it wraps on is one where the
+// naive subtraction produces a run that applied minus four billion litres.
+const MeterRollover = 4294967296.0
+
+// MaxPlausibleRunLiters is the most water a single run could deliver.
+//
+// MaxRunMinutes bounds a run at four hours, and a very large agricultural pump
+// moves on the order of 200 m³ an hour, so eight hundred thousand litres is
+// already generous. A million is the round number above it.
+//
+// This is a sanity bound on a *measurement*, not a limit on irrigation: a
+// difference larger than this did not come from water passing a meter, and
+// the run is recorded as unmetered rather than credited with it.
+const MaxPlausibleRunLiters = 1_000_000.0
+
+// MeteredVolume is how much water passed between two meter readings.
+//
+// Handles the wrap, which is the whole reason this is a function rather than a
+// subtraction at the call site. A cumulative counter that has rolled over
+// reads lower at the end of a run than at the start, and `end - start` is then
+// a large negative number that would be stored as the run's water usage, sum
+// into a season's total, and take it negative.
+//
+// Reports false when the readings cannot describe a run: a drop too large to
+// be a rollover means the meter was replaced or reset, and a guess at how much
+// water flowed across that is worse than admitting the run is unmetered.
+func MeteredVolume(start, end float64) (float64, bool) {
+	// Both readings have to be from the same counter before any arithmetic on
+	// them means anything. Without this check an out-of-range start makes the
+	// wrap branch below produce a *negative* volume, which is the exact
+	// failure the wrap handling exists to prevent.
+	if start < 0 || end < 0 || start >= MeterRollover || end >= MeterRollover {
+		return 0, false
+	}
+
+	delta := end - start
+	if delta < 0 {
+		// The counter wrapped. What passed is the remainder of the range plus
+		// whatever has accumulated since zero.
+		delta = (MeterRollover - start) + end
+	}
+
+	// A single run cannot deliver this much, so a jump this large is a reset,
+	// a replaced unit, or a decoding error rather than water.
+	//
+	// The ceiling matters most on the wrap branch, where the arithmetic is
+	// happy to turn a meter swapped mid-season into a plausible-looking
+	// several hundred million litres. Comparing against the counter's whole
+	// range would not catch that; comparing against what a run can physically
+	// deliver does.
+	if delta > MaxPlausibleRunLiters {
+		return 0, false
+	}
+	return delta, true
+}
+
+// EstimatedVolume is the fallback for a panel that reports a flow rate and
+// keeps no totaliser: the mean of the rates seen at the ends of the run,
+// multiplied by how long it ran.
+//
+// Returns false rather than zero when there is no rate to work from, so that
+// "the panel has no flow sensor" stays distinguishable from "no water flowed".
+func EstimatedVolume(startRateLitersPerHour, endRateLitersPerHour float64, haveStart, haveEnd bool, ran time.Duration) (float64, bool) {
+	if ran <= 0 {
+		return 0, false
+	}
+
+	var sum float64
+	var n int
+	if haveStart && startRateLitersPerHour >= 0 {
+		sum += startRateLitersPerHour
+		n++
+	}
+	if haveEnd && endRateLitersPerHour >= 0 {
+		sum += endRateLitersPerHour
+		n++
+	}
+	if n == 0 {
+		return 0, false
+	}
+	return (sum / float64(n)) * ran.Hours(), true
+}

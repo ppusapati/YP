@@ -743,11 +743,27 @@ func (s *irrigationService) recordRun(
 		ControllerID: cmd.ControllerID,
 		Status:       domain.IrrigationStatusActive,
 		StartedAt:    &now,
+		// Unmetered until the run closes and the meter is read again. The
+		// default is the honest one: a run in progress has no measured volume,
+		// and a source of UNMETERED claims nothing.
+		WaterSource: domain.WaterSourceUnmetered,
 		// Deliberately not pre-filled with the schedule's figures. They used
 		// to be copied into ActualDurationMinutes and ActualWaterLiters at
 		// start time — before water could have flowed — so a plan was stored
 		// in a column named "actual" and nothing ever revised it.
 		// StopIrrigation now fills them in from the run that happened.
+	}
+
+	// The opening meter reading, taken after the valve was opened rather than
+	// before. A failure here is logged and skipped: the water is on, and
+	// refusing to record the run because a meter did not answer would lose
+	// the record of something that is happening.
+	if status, err := s.actuator.MeterReading(ctx, tenantID, schedule.ZoneID); err != nil {
+		s.log.Warnw("msg", "could not read the water meter at the start of a run",
+			"zone_id", schedule.ZoneID, "error", err)
+	} else if status != nil && status.HasVolumeTotal {
+		start := status.VolumeTotalLiters
+		evt.MeterStartLiters = &start
 	}
 
 	createdEvent, err := s.repo.CreateEvent(ctx, evt)
@@ -869,21 +885,32 @@ func (s *irrigationService) StopIrrigation(ctx context.Context, eventID, reason 
 	now := time.Now()
 	evt.EndedAt = &now
 	evt.Status = domain.IrrigationStatusCompleted
+	var ran time.Duration
 	if evt.StartedAt != nil {
 		// Measured, not planned: wall clock between the start and the stop.
-		// This is the only figure on the row that anything has observed.
-		evt.ActualDurationMinutes = int32(now.Sub(*evt.StartedAt) / time.Minute)
+		ran = now.Sub(*evt.StartedAt)
+		evt.ActualDurationMinutes = int32(ran / time.Minute)
 	}
-	// ActualWaterLiters is deliberately left alone. Multiplying the elapsed
-	// minutes by a controller's nameplate flow rate would produce a number
-	// that looks like a meter reading and is not one; a blocked line or a
-	// closed manual valve upstream delivers nothing at the same nameplate
-	// rate. It stays zero until something meters the water.
+
+	// The closing meter reading, and the volume the run applied.
+	//
+	// This is where actual_water_liters stops being the schedule's plan. It
+	// used to hold the planned quantity, copied in at start time before water
+	// could have flowed, and nothing ever revised it — so a column called
+	// "actual" held a forecast and a season's water usage was a sum of
+	// intentions.
+	s.meterRun(ctx, evt, ran)
 
 	updated, err := s.repo.UpdateEvent(ctx, evt)
 	if err != nil {
 		return nil, err
 	}
+
+	// Recorded whatever the source, including UNMETERED with zero litres. A
+	// zone's water usage has to distinguish "no water was applied" from
+	// "water was applied and nobody measured it", and omitting the unmetered
+	// rows makes a farm with no meters look like a farm that never irrigates.
+	s.recordWaterUsage(ctx, updated)
 
 	// The schedule is cancelled after the valve is shut, not instead of it.
 	if evt.ScheduleID != "" {
@@ -1222,4 +1249,180 @@ func (s *irrigationService) emitEvent(ctx context.Context, eventType, aggregateI
 	if err := s.pub.Publish(ctx, eventTopic, aggregateID, raw); err != nil {
 		s.log.Errorw("msg", "failed to publish event", "event_type", eventType, "error", err)
 	}
+}
+
+// meterRun fills in how much water a run applied, and says where the figure
+// came from.
+//
+// Three outcomes, in descending order of what they are worth:
+//
+//   - METER: the controller's cumulative totaliser, read at both ends of the
+//     run. A measurement.
+//   - ESTIMATED: the measured flow rate times the measured duration, for a
+//     panel that reports a rate and keeps no totaliser. Honest arithmetic on
+//     two measurements, and still an estimate.
+//   - UNMETERED: nobody measured it, and the row says so rather than carrying
+//     a plausible number.
+//
+// What is deliberately absent is a fourth: the controller's nameplate
+// MaxFlowRateLitersPerHour multiplied by the duration. Every panel has one,
+// so it would always produce a figure, and the figure would be wrong in the
+// one case anybody cares about — a blocked line or a closed manual valve
+// upstream delivers nothing at exactly the nameplate rate.
+func (s *irrigationService) meterRun(ctx context.Context, evt *domain.IrrigationEvent, ran time.Duration) {
+	evt.WaterSource = domain.WaterSourceUnmetered
+
+	status, err := s.actuator.MeterReading(ctx, evt.TenantID, evt.ZoneID)
+	if err != nil {
+		s.log.Warnw("msg", "could not read the water meter at the end of a run",
+			"event_id", evt.ID, "zone_id", evt.ZoneID, "error", err)
+		return
+	}
+	if status == nil {
+		return
+	}
+
+	if status.HasVolumeTotal {
+		end := status.VolumeTotalLiters
+		evt.MeterEndLiters = &end
+
+		if evt.MeterStartLiters != nil {
+			if liters, ok := domain.MeteredVolume(*evt.MeterStartLiters, end); ok {
+				evt.ActualWaterLiters = liters
+				evt.WaterSource = domain.WaterSourceMeter
+				return
+			}
+			// The readings cannot describe a run — a reset meter, a replaced
+			// unit, a decoding error. Both readings are kept, because they
+			// are what somebody will need to work out what happened, and the
+			// volume stays unclaimed.
+			s.log.Warnw("msg", "meter readings do not describe a run; recording it as unmetered",
+				"event_id", evt.ID, "start", *evt.MeterStartLiters, "end", end)
+		}
+	}
+
+	// No totaliser, or no opening reading to subtract from. A measured flow
+	// rate is the next best thing and is labelled as the estimate it is.
+	if liters, ok := domain.EstimatedVolume(
+		status.FlowRateLitersPerHour, status.FlowRateLitersPerHour,
+		status.HasFlowRate, status.HasFlowRate, ran,
+	); ok {
+		evt.ActualWaterLiters = liters
+		evt.WaterSource = domain.WaterSourceEstimated
+	}
+}
+
+// recordWaterUsage writes the run's usage row.
+//
+// Best effort, and logged rather than returned: the water is off and the run
+// is recorded, which is what the caller asked for. A missing usage row is a
+// reporting gap, not a valve.
+//
+// This is the first caller CreateWaterUsageLog has ever had. Without it
+// GetWaterUsage returned an empty list for every zone on every farm — which
+// reads as a farm that has never used water, rather than as a query with no
+// writer behind it.
+func (s *irrigationService) recordWaterUsage(ctx context.Context, evt *domain.IrrigationEvent) {
+	if evt == nil || evt.StartedAt == nil || evt.EndedAt == nil {
+		return
+	}
+	if _, err := s.repo.CreateWaterUsageLog(ctx, &domain.WaterUsageLog{
+		TenantID:     evt.TenantID,
+		ZoneID:       evt.ZoneID,
+		ControllerID: evt.ControllerID,
+		WaterLiters:  evt.ActualWaterLiters,
+		RecordedAt:   *evt.EndedAt,
+		PeriodStart:  *evt.StartedAt,
+		PeriodEnd:    *evt.EndedAt,
+		EventID:      evt.ID,
+		Source:       evt.WaterSource,
+	}); err != nil {
+		s.log.Errorw("msg", "run completed but its water usage could not be recorded",
+			"event_id", evt.ID, "zone_id", evt.ZoneID, "error", err)
+	}
+}
+
+// CloseFinishedRuns reads the meter on runs whose water has stopped and which
+// nothing has closed, and records what they used.
+//
+// Every run an operator does not stop by hand ends this way, which is most of
+// them: a start command carries a duration the controller enforces locally —
+// there is no unbounded open — so the valve shuts on its own and nothing tells
+// this service. Without this sweep those runs stay ACTIVE for ever, and the
+// sensor-driven ones, which nobody is present to stop, would be permanently
+// unmetered: the metering would work only for the runs somebody watched.
+//
+// The closing meter reading is taken when the sweep notices rather than at the
+// instant the valve shut. Nothing can have run on that zone in between — the
+// rest interlock holds it closed for ninety minutes — so the reading is the
+// same water, just read late.
+//
+// Returns the number closed. Errors on individual runs are logged and skipped:
+// one unreachable panel must not strand every other farm's runs.
+func (s *irrigationService) CloseFinishedRuns(ctx context.Context, limit int32) (int, error) {
+	if s.actuator == nil {
+		return 0, nil
+	}
+
+	due, err := s.repo.ListRunsDueToClose(ctx, time.Now(), limit)
+	if err != nil {
+		return 0, err
+	}
+
+	var closed int
+	for i := range due {
+		evt := &due[i]
+		if err := s.closeFinishedRun(ctx, evt); err != nil {
+			s.log.Warnw("msg", "could not close a finished run",
+				"event_id", evt.ID, "zone_id", evt.ZoneID, "error", err)
+			continue
+		}
+		closed++
+	}
+	if closed > 0 {
+		s.log.Infow("msg", "finished runs closed and metered", "count", closed)
+	}
+	return closed, nil
+}
+
+func (s *irrigationService) closeFinishedRun(ctx context.Context, evt *domain.IrrigationEvent) error {
+	// Scoped per run: the listing is cross-tenant, and every write below has
+	// to run as the tenant that owns the row.
+	ctx = s.systemContext(ctx, evt.TenantID)
+
+	now := time.Now()
+	var ran time.Duration
+	if evt.StartedAt != nil {
+		ran = now.Sub(*evt.StartedAt)
+	}
+
+	// The valve is already shut — the controller enforced the duration — so
+	// no stop command is sent. Sending one would be a second instruction to a
+	// panel that has already finished, and the interlocks never refuse a
+	// stop, so it would go out on every sweep.
+	evt.EndedAt = &now
+	evt.Status = domain.IrrigationStatusCompleted
+	evt.ActualDurationMinutes = int32(ran / time.Minute)
+
+	s.meterRun(ctx, evt, ran)
+
+	updated, err := s.repo.UpdateEvent(ctx, evt)
+	if err != nil {
+		return err
+	}
+	s.recordWaterUsage(ctx, updated)
+
+	s.emitEvent(ctx, string(eventsdomain.EventTypeIrrigationStopped), updated.ID, map[string]interface{}{
+		"event_id":                updated.ID,
+		"schedule_id":             updated.ScheduleID,
+		"tenant_id":               updated.TenantID,
+		"zone_id":                 updated.ZoneID,
+		"ended_at":                now.UTC().Format(time.RFC3339),
+		"actual_duration_minutes": updated.ActualDurationMinutes,
+		"actual_water_liters":     updated.ActualWaterLiters,
+		"water_source":            string(updated.WaterSource),
+		"stopped_by":              "system",
+		"reason":                  "the run's duration elapsed",
+	})
+	return nil
 }

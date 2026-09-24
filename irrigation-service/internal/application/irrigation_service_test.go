@@ -308,8 +308,16 @@ func (m *mockIrrigationRepo) ListEventsByTimeRange(_ context.Context, _ string, 
 	return nil, nil
 }
 
+// UpdateEvent stores, which the real repository does and this used to not.
+//
+// Returning the argument unchanged made every test that read the event back
+// from the store pass against a repository that had written nothing — and the
+// one property worth checking about a run being closed is that it stays
+// closed.
 func (m *mockIrrigationRepo) UpdateEvent(_ context.Context, evt *domain.IrrigationEvent) (*domain.IrrigationEvent, error) {
-	return evt, nil
+	stored := *evt
+	m.events[evt.ID] = &stored
+	return &stored, nil
 }
 
 func (m *mockIrrigationRepo) CreateDecision(_ context.Context, d *domain.IrrigationDecision) (*domain.IrrigationDecision, error) {
@@ -324,6 +332,29 @@ func (m *mockIrrigationRepo) MarkDecisionApplied(_ context.Context, uuid string)
 		return nil
 	}
 	return errors.NotFound("DECISION_NOT_FOUND", "not found")
+}
+
+// ListRunsDueToClose returns the runs whose duration has elapsed, the way the
+// sweep sees them: cross-tenant, oldest first.
+func (m *mockIrrigationRepo) ListRunsDueToClose(_ context.Context, now time.Time, limit int32) ([]domain.IrrigationEvent, error) {
+	var out []domain.IrrigationEvent
+	for _, evt := range m.events {
+		if evt.EndedAt != nil || evt.StartedAt == nil || evt.Status != domain.IrrigationStatusActive {
+			continue
+		}
+		sched, ok := m.schedules[evt.ScheduleID]
+		if !ok || sched.DurationMinutes <= 0 {
+			continue
+		}
+		if evt.StartedAt.Add(time.Duration(sched.DurationMinutes) * time.Minute).After(now) {
+			continue
+		}
+		out = append(out, *evt)
+		if int32(len(out)) >= limit {
+			break
+		}
+	}
+	return out, nil
 }
 
 func (m *mockIrrigationRepo) CreateWaterUsageLog(_ context.Context, log *domain.WaterUsageLog) (*domain.WaterUsageLog, error) {

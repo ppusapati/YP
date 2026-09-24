@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -185,21 +186,101 @@ func (m *mqttClient) Send(
 	}
 }
 
-// Status asks the controller to report, on the same request/reply shape.
+// statusPayload is what a controller publishes on its state topic.
 //
-// Implemented through Send's machinery rather than separately, because a
-// status request that used a different topic convention would be one more
-// thing for a device integrator to get wrong.
+// volume_total_liters is the one that matters: a cumulative meter reading,
+// which is the only measurement of how much water a run applied. The pointers
+// distinguish a panel that reports zero from one that has no meter at all —
+// decoded into a plain float and a bool, because a zero volume that was never
+// measured would otherwise be stored as a run that used no water.
+type statusPayload struct {
+	Running           bool     `json:"running"`
+	VolumeTotalLiters *float64 `json:"volume_total_liters"`
+	FlowRateLPH       *float64 `json:"flow_rate_liters_per_hour"`
+	Firmware          string   `json:"firmware_version"`
+	Fault             string   `json:"fault"`
+}
+
+// Status asks the controller to report, on the same request/reply shape as a
+// command.
+//
+// It really asks. Reporting the broker connection as the controller's status
+// would say the platform can reach a message broker, which is not a fact about
+// a valve or a water meter — and this is the call a run's metered volume comes
+// from, so an answer that did not come from the panel would be a fabricated
+// measurement rather than merely an unhelpful one.
 func (m *mqttClient) Status(ctx context.Context, c *domain.WaterController) (*outbound.ControllerStatus, error) {
 	if c == nil {
 		return nil, fmt.Errorf("mqtt: controller is required")
+	}
+	ep, err := parseEndpoint(c.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("mqtt: %w", err)
 	}
 	if err := m.connect(); err != nil {
 		// Unreachable is a status rather than an error: the caller asked what
 		// the controller is doing and "we cannot reach it" is the answer.
 		return &outbound.ControllerStatus{Online: false, Fault: err.Error()}, nil
 	}
-	return &outbound.ControllerStatus{Online: m.client.IsConnectionOpen()}, nil
+
+	askTopic, stateTopic := mqttStatusTopics(ep.target)
+
+	replies := make(chan []byte, 1)
+	sub := m.client.Subscribe(stateTopic, 1, func(_ mqtt.Client, msg mqtt.Message) {
+		select {
+		case replies <- msg.Payload():
+		default:
+		}
+	})
+	if !sub.WaitTimeout(m.cfg.AckTimeout) || sub.Error() != nil {
+		return &outbound.ControllerStatus{Online: false,
+			Fault: fmt.Sprintf("could not subscribe to %s", stateTopic)}, nil
+	}
+	defer m.client.Unsubscribe(stateTopic) //nolint:errcheck
+
+	pub := m.client.Publish(askTopic, 1, false, []byte(`{"request":"status"}`))
+	if !pub.WaitTimeout(m.cfg.AckTimeout) || pub.Error() != nil {
+		return &outbound.ControllerStatus{Online: false,
+			Fault: fmt.Sprintf("could not ask %s for its status", askTopic)}, nil
+	}
+
+	select {
+	case raw := <-replies:
+		var payload statusPayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return &outbound.ControllerStatus{Online: true,
+				Fault: fmt.Sprintf("controller sent an unreadable status: %v", err)}, nil
+		}
+		status := &outbound.ControllerStatus{
+			Online:          true,
+			Running:         payload.Running,
+			FirmwareVersion: payload.Firmware,
+			Fault:           payload.Fault,
+		}
+		if payload.VolumeTotalLiters != nil {
+			status.VolumeTotalLiters, status.HasVolumeTotal = *payload.VolumeTotalLiters, true
+		}
+		if payload.FlowRateLPH != nil {
+			status.FlowRateLitersPerHour, status.HasFlowRate = *payload.FlowRateLPH, true
+		}
+		return status, nil
+
+	case <-time.After(m.cfg.AckTimeout):
+		// Silence is a status: the panel is not answering. Reported as
+		// offline with no meter reading rather than as an error, because the
+		// caller asked what the controller is doing.
+		return &outbound.ControllerStatus{Online: false,
+			Fault: fmt.Sprintf("controller %s did not report within %s", c.ID, m.cfg.AckTimeout)}, nil
+
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// mqttStatusTopics derives the status request and reply topics.
+func mqttStatusTopics(base string) (askTopic, stateTopic string) {
+	base = strings.Trim(strings.TrimSpace(base), "/")
+	return base + "/status", base + "/state"
 }
 
 // mqttTopics derives the command and ack topics from a controller's endpoint.

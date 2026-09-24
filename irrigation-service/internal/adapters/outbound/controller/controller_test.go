@@ -485,3 +485,168 @@ func TestAnAckForAnotherCommandIsNotAnAnswer(t *testing.T) {
 		t.Errorf("ack = %+v", ack)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// The water meter
+
+// regPanel answers write functions with an echo and register reads from a map.
+func regPanel(t *testing.T, regs map[uint16][]byte) string {
+	t.Helper()
+	return fakePanel(t, func(fn byte, addr, value uint16) []byte {
+		if fn != modbusReadHoldingRegs {
+			return echo(fn, addr, value)
+		}
+		data, ok := regs[addr]
+		if !ok {
+			return []byte{fn | modbusExceptionFlag, 0x02} // illegal data address
+		}
+		pdu := []byte{fn, byte(len(data))}
+		return append(pdu, data...)
+	})
+}
+
+// A totaliser lives across two registers, high word first.
+func TestModbusReadsTheWaterMeter(t *testing.T) {
+	// 1,234,567 litres = 0x0012D687
+	addr := regPanel(t, map[uint16][]byte{
+		200: {0x00, 0x12, 0xD6, 0x87},
+	})
+
+	got, err := NewModbusClient(2*time.Second).Status(context.Background(),
+		&domain.WaterController{
+			Protocol: domain.ProtocolModbus,
+			Endpoint: addr + "?coil=3&meter_register=200",
+		})
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if !got.HasVolumeTotal {
+		t.Fatalf("HasVolumeTotal = false; status = %+v", got)
+	}
+	if got.VolumeTotalLiters != 1234567 {
+		t.Errorf("VolumeTotalLiters = %v, want 1234567", got.VolumeTotalLiters)
+	}
+}
+
+// Meters rarely count in whole litres. One that counts tenths and is read as
+// litres reports a run ten times larger than it was.
+func TestTheMeterScaleIsApplied(t *testing.T) {
+	// 84,000 tenths of a litre = 8,400 L
+	addr := regPanel(t, map[uint16][]byte{
+		200: {0x00, 0x01, 0x48, 0x20},
+	})
+
+	got, err := NewModbusClient(2*time.Second).Status(context.Background(),
+		&domain.WaterController{
+			Protocol: domain.ProtocolModbus,
+			Endpoint: addr + "?coil=3&meter_register=200&meter_scale=0.1",
+		})
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if got.VolumeTotalLiters != 8400 {
+		t.Errorf("VolumeTotalLiters = %v, want 8400", got.VolumeTotalLiters)
+	}
+}
+
+// A panel with no meter configured reports none, rather than a zero reading.
+// A zero totaliser would be a run that used no water.
+func TestAPanelWithNoMeterReportsNone(t *testing.T) {
+	addr := regPanel(t, nil)
+
+	got, err := NewModbusClient(2*time.Second).Status(context.Background(),
+		&domain.WaterController{Protocol: domain.ProtocolModbus, Endpoint: addr + "?coil=3"})
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if got.HasVolumeTotal {
+		t.Error("a panel with no meter_register reported a volume")
+	}
+	if got.VolumeTotalLiters != 0 {
+		t.Errorf("VolumeTotalLiters = %v with no meter", got.VolumeTotalLiters)
+	}
+}
+
+// A meter that refuses the read is a fault, not a zero.
+func TestAMeterThatRefusesIsAFaultNotAZeroReading(t *testing.T) {
+	addr := regPanel(t, map[uint16][]byte{}) // every register read is refused
+
+	got, err := NewModbusClient(2*time.Second).Status(context.Background(),
+		&domain.WaterController{
+			Protocol: domain.ProtocolModbus,
+			Endpoint: addr + "?coil=3&meter_register=200",
+		})
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if got.HasVolumeTotal {
+		t.Error("a refused meter read was reported as a reading")
+	}
+	if got.Fault == "" {
+		t.Error("a refused meter read left no fault to explain the missing volume")
+	}
+	// The valve state was still read.
+	if !got.Online {
+		t.Error("the panel was marked offline because only its meter failed")
+	}
+}
+
+// Register zero is a real address, so "not configured" cannot be represented
+// by it. Every panel would otherwise report whatever sits at register 0 as
+// its water meter.
+func TestRegisterZeroIsAnAddressNotAnAbsence(t *testing.T) {
+	ep, err := parseEndpoint("host:502?meter_register=0")
+	if err != nil {
+		t.Fatalf("parseEndpoint: %v", err)
+	}
+	reg, ok := ep.registerOpt("meter_register")
+	if !ok || reg != 0 {
+		t.Errorf("registerOpt = %d, %v; want register 0 to be configured", reg, ok)
+	}
+
+	ep, _ = parseEndpoint("host:502")
+	if _, ok := ep.registerOpt("meter_register"); ok {
+		t.Error("an unset meter_register was read as configured")
+	}
+}
+
+// A flow rate is one register, and a panel that has one is what makes an
+// estimate possible where there is no totaliser.
+func TestModbusReadsTheFlowRate(t *testing.T) {
+	addr := regPanel(t, map[uint16][]byte{
+		300: {0x04, 0xB0}, // 1200 L/h
+	})
+
+	got, err := NewModbusClient(2*time.Second).Status(context.Background(),
+		&domain.WaterController{
+			Protocol: domain.ProtocolModbus,
+			Endpoint: addr + "?coil=3&flow_register=300",
+		})
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if !got.HasFlowRate || got.FlowRateLitersPerHour != 1200 {
+		t.Errorf("flow = %v, %v; want 1200", got.FlowRateLitersPerHour, got.HasFlowRate)
+	}
+}
+
+// LoRaWAN cannot be asked. A downlink is queued for the device's next receive
+// window, so there is no synchronous way to read a meter — and reporting one
+// anyway would be a fabricated measurement.
+func TestLoRaWANReportsNoMeter(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	client, _ := NewLoRaWANClient(LoRaWANConfig{BaseURL: srv.URL, APIToken: "tok"})
+	got, err := client.Status(context.Background(), &domain.WaterController{
+		Protocol: domain.ProtocolLoRaWAN, Endpoint: "0004a30b001c0530",
+	})
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if got.HasVolumeTotal {
+		t.Error("LoRaWAN reported a water meter it cannot read")
+	}
+}

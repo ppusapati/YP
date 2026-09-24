@@ -45,6 +45,10 @@ type IrrigationService interface {
 	// arrives from sensor-service and, where a zone has opted in and every
 	// interlock agrees, a valve opens without anybody present.
 	ApplyMoistureReading(ctx context.Context, reading domain.MoistureReading) error
+	// CloseFinishedRuns reads the meter on runs whose water has stopped and
+	// which nothing has closed. Every run an operator does not stop by hand
+	// ends this way, including every sensor-driven one.
+	CloseFinishedRuns(ctx context.Context, limit int32) (int, error)
 	GetEvent(ctx context.Context, uuid string) (*domain.IrrigationEvent, error)
 	ListEventsBySchedule(ctx context.Context, scheduleID string, pageSize, offset int32) ([]domain.IrrigationEvent, int32, error)
 

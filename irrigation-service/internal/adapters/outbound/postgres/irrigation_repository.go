@@ -707,15 +707,18 @@ func (r *irrigationRepository) CreateEvent(ctx context.Context, evt *domain.Irri
 		INSERT INTO irrigation_events (
 			id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
-			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason,
+			meter_start_liters, meter_end_liters, water_source
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 		RETURNING id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
-			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at`,
+			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason,
+			meter_start_liters, meter_end_liters, water_source, created_at`,
 		evt.ID, evt.TenantID, evt.ScheduleID, evt.ZoneID, evt.ControllerID,
 		string(evt.Status), evt.StartedAt, evt.EndedAt,
 		evt.ActualDurationMinutes, evt.ActualWaterLiters,
 		evt.SoilMoistureBeforePct, evt.SoilMoistureAfterPct, evt.FailureReason,
+		evt.MeterStartLiters, evt.MeterEndLiters, waterSourceOrDefault(evt.WaterSource),
 	)
 
 	result, err := scanEvent(row)
@@ -731,7 +734,8 @@ func (r *irrigationRepository) GetEventByUUID(ctx context.Context, uuid string) 
 	row := r.queryRow(ctx, `
 		SELECT id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
-			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at
+			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason,
+			meter_start_liters, meter_end_liters, water_source, created_at
 		FROM irrigation_events
 		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
 		uuid, tenantID,
@@ -765,7 +769,8 @@ func (r *irrigationRepository) ListEventsByZone(ctx context.Context, zoneID stri
 	rows, err := r.query(ctx, `
 		SELECT id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
-			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at
+			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason,
+			meter_start_liters, meter_end_liters, water_source, created_at
 		FROM irrigation_events
 		WHERE tenant_id = $1 AND zone_id = $2 AND deleted_at IS NULL
 		ORDER BY created_at DESC
@@ -795,7 +800,8 @@ func (r *irrigationRepository) ListEventsByTimeRange(ctx context.Context, zoneID
 	rows, err := r.query(ctx, `
 		SELECT id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
-			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at
+			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason,
+			meter_start_liters, meter_end_liters, water_source, created_at
 		FROM irrigation_events
 		WHERE tenant_id = $1 AND zone_id = $2 AND started_at >= $3 AND started_at <= $4 AND deleted_at IS NULL
 		ORDER BY started_at DESC`,
@@ -825,14 +831,17 @@ func (r *irrigationRepository) UpdateEvent(ctx context.Context, evt *domain.Irri
 		UPDATE irrigation_events SET
 			status = $3, ended_at = $4, actual_duration_minutes = $5,
 			actual_water_liters = $6, soil_moisture_after_pct = $7,
-			failure_reason = $8, updated_at = NOW()
+			failure_reason = $8, meter_end_liters = $9, water_source = $10,
+			updated_at = NOW()
 		WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
 		RETURNING id, tenant_id, schedule_id, zone_id, controller_id, status,
 			started_at, ended_at, actual_duration_minutes, actual_water_liters,
-			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason, created_at`,
+			soil_moisture_before_pct, soil_moisture_after_pct, failure_reason,
+			meter_start_liters, meter_end_liters, water_source, created_at`,
 		evt.ID, tenantID,
 		string(evt.Status), evt.EndedAt, evt.ActualDurationMinutes,
 		evt.ActualWaterLiters, evt.SoilMoistureAfterPct, evt.FailureReason,
+		evt.MeterEndLiters, waterSourceOrDefault(evt.WaterSource),
 	)
 
 	result, err := scanEvent(row)
@@ -848,19 +857,32 @@ func (r *irrigationRepository) UpdateEvent(ctx context.Context, evt *domain.Irri
 
 func scanEvent(row pgx.Row) (*domain.IrrigationEvent, error) {
 	e := &domain.IrrigationEvent{}
-	var status string
+	var status, source string
 	err := row.Scan(
 		&e.ID, &e.TenantID, &e.ScheduleID, &e.ZoneID, &e.ControllerID,
 		&status, &e.StartedAt, &e.EndedAt,
 		&e.ActualDurationMinutes, &e.ActualWaterLiters,
 		&e.SoilMoistureBeforePct, &e.SoilMoistureAfterPct,
-		&e.FailureReason, &e.CreatedAt,
+		&e.FailureReason,
+		&e.MeterStartLiters, &e.MeterEndLiters, &source,
+		&e.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
 	e.Status = domain.IrrigationStatus(status)
+	e.WaterSource = domain.WaterSource(source)
 	return e, nil
+}
+
+// waterSourceOrDefault keeps the column NOT NULL for a caller that has not
+// said where a figure came from. UNMETERED is the safe default: it claims
+// nothing was measured, which is never a lie about a number nobody took.
+func waterSourceOrDefault(src domain.WaterSource) string {
+	if src == "" {
+		return string(domain.WaterSourceUnmetered)
+	}
+	return string(src)
 }
 
 // =========================================================================
@@ -961,12 +983,18 @@ func (r *irrigationRepository) CreateWaterUsageLog(ctx context.Context, wl *doma
 	row := r.queryRow(ctx, `
 		INSERT INTO water_usage_logs (
 			id, tenant_id, zone_id, controller_id, water_liters,
-			recorded_at, period_start, period_end, created_by
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+			recorded_at, period_start, period_end, created_by,
+			event_id, source
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NULLIF($10,''),$11)
+		-- One row per run: a second row for the same run is a double count,
+		-- and a seasonal total is exactly the query that would absorb it
+		-- without complaint.
+		ON CONFLICT (event_id) WHERE event_id IS NOT NULL DO NOTHING
 		RETURNING id, tenant_id, zone_id, controller_id, water_liters,
-			recorded_at, period_start, period_end, created_by, created_at`,
+			recorded_at, period_start, period_end, created_by, event_id, source, created_at`,
 		wl.ID, wl.TenantID, wl.ZoneID, wl.ControllerID, wl.WaterLiters,
 		wl.RecordedAt, wl.PeriodStart, wl.PeriodEnd, wl.CreatedBy,
+		wl.EventID, waterSourceOrDefault(wl.Source),
 	)
 
 	result, err := scanWaterUsageLog(row)
@@ -981,7 +1009,7 @@ func (r *irrigationRepository) ListWaterUsageLogs(ctx context.Context, zoneID st
 	tenantID := r.tenantID(ctx)
 	rows, err := r.query(ctx, `
 		SELECT id, tenant_id, zone_id, controller_id, water_liters,
-			recorded_at, period_start, period_end, created_by, created_at
+			recorded_at, period_start, period_end, created_by, event_id, source, created_at
 		FROM water_usage_logs
 		WHERE tenant_id = $1 AND zone_id = $2 AND period_start >= $3 AND period_end <= $4 AND deleted_at IS NULL
 		ORDER BY recorded_at DESC`,
@@ -1023,10 +1051,19 @@ func (r *irrigationRepository) SumWaterUsageByZone(ctx context.Context, zoneID s
 
 func scanWaterUsageLog(row pgx.Row) (*domain.WaterUsageLog, error) {
 	wl := &domain.WaterUsageLog{}
+	var eventID *string
+	var source string
 	err := row.Scan(
 		&wl.ID, &wl.TenantID, &wl.ZoneID, &wl.ControllerID,
 		&wl.WaterLiters, &wl.RecordedAt, &wl.PeriodStart, &wl.PeriodEnd,
-		&wl.CreatedBy, &wl.CreatedAt,
+		&wl.CreatedBy, &eventID, &source, &wl.CreatedAt,
 	)
-	return wl, err
+	if err != nil {
+		return nil, err
+	}
+	if eventID != nil {
+		wl.EventID = *eventID
+	}
+	wl.Source = domain.WaterSource(source)
+	return wl, nil
 }

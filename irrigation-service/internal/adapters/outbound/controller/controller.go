@@ -212,3 +212,37 @@ func (r *Registry) Status(ctx context.Context, c *domain.WaterController) (*outb
 	}
 	return client.Status(ctx, c)
 }
+
+// registerOpt reads an optional register address from the endpoint.
+//
+// The bool separates "not configured" from register zero, which is a real and
+// commonly used address — and getting that wrong would have every panel
+// reporting whatever sits at register 0 as its water meter.
+func (e endpoint) registerOpt(key string) (int, bool) {
+	if e.opts.Get(key) == "" {
+		return 0, false
+	}
+	v, err := e.intOpt(key, 0)
+	if err != nil || v < 0 || v > 0xFFFF {
+		return 0, false
+	}
+	return v, true
+}
+
+// floatOpt reads a scaling factor, which is rarely 1: water meters commonly
+// count in tenths of a litre, in gallons, or in cubic metres, and the register
+// alone does not say which.
+func (e endpoint) floatOpt(key string, fallback float64) (float64, error) {
+	raw := e.opts.Get(key)
+	if raw == "" {
+		return fallback, nil
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return 0, fmt.Errorf("endpoint option %s=%q is not a number", key, raw)
+	}
+	if v <= 0 {
+		return 0, fmt.Errorf("endpoint option %s=%q must be positive", key, raw)
+	}
+	return v, nil
+}

@@ -235,3 +235,56 @@ func (r *irrigationRepository) RecordOutcome(ctx context.Context, commandID stri
 	}
 	return nil
 }
+
+// ListRunsDueToClose finds runs whose water has stopped and which nothing has
+// closed.
+//
+// Cross-tenant, because the sweep that calls this has no request to inherit a
+// tenant from and every farm's runs need closing. Each row carries its own
+// tenant, and the caller scopes the work it does per run.
+//
+// "Due to close" is start plus the run's own duration, in SQL rather than in
+// Go so the database does the filtering: on a platform of any size most open
+// rows at any moment are runs still in progress.
+func (r *irrigationRepository) ListRunsDueToClose(ctx context.Context, now time.Time, limit int32) ([]domain.IrrigationEvent, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	rows, err := r.query(ctx, `
+		SELECT e.id, e.tenant_id, e.schedule_id, e.zone_id, e.controller_id, e.status,
+			e.started_at, e.ended_at, e.actual_duration_minutes, e.actual_water_liters,
+			e.soil_moisture_before_pct, e.soil_moisture_after_pct, e.failure_reason,
+			e.meter_start_liters, e.meter_end_liters, e.water_source, e.created_at
+		FROM irrigation_events e
+		JOIN irrigation_schedules s ON s.id = e.schedule_id
+		WHERE e.ended_at IS NULL
+		  AND e.deleted_at IS NULL
+		  AND e.status = $1
+		  AND e.started_at IS NOT NULL
+		  AND s.duration_minutes > 0
+		  AND e.started_at + (s.duration_minutes * INTERVAL '1 minute') <= $2
+		ORDER BY e.started_at
+		LIMIT $3`,
+		string(domain.IrrigationStatusActive), now, limit,
+	)
+	if err != nil {
+		r.log.Errorw("msg", "failed to list runs due to close", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
+	}
+	defer rows.Close()
+
+	var out []domain.IrrigationEvent
+	for rows.Next() {
+		evt, err := scanEvent(rows)
+		if err != nil {
+			r.log.Errorw("msg", "failed to scan a run due to close", "error", err)
+			return nil, errors.InternalServer("DB_SCAN_ERROR", "an internal error occurred")
+		}
+		out = append(out, *evt)
+	}
+	if err := rows.Err(); err != nil {
+		r.log.Errorw("msg", "failed to list runs due to close", "error", err)
+		return nil, errors.InternalServer("DB_ERROR", "an internal error occurred")
+	}
+	return out, nil
+}

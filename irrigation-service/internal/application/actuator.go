@@ -283,3 +283,28 @@ func (a *Actuator) emit(ctx context.Context, cmd *domain.IrrigationCommand) {
 		a.log.Warnw("msg", "failed to publish command event", "command_id", cmd.ID, "error", err)
 	}
 }
+
+// MeterReading asks a zone's controller what its water meter and flow sensor
+// currently read.
+//
+// On the actuator because it is the only thing here that talks to controllers,
+// and separate from Actuate because a reading is taken twice per run — once
+// when the valve opens and once when it closes — and the difference between
+// those two is the only measurement of volume this platform can take.
+//
+// Returns nil, nil when there is nothing to ask: no controller client, no
+// controller on the zone. The caller records the run as unmetered, which is
+// the honest outcome and is distinct from a meter that read zero.
+func (a *Actuator) MeterReading(ctx context.Context, tenantID, zoneID string) (*outbound.ControllerStatus, error) {
+	if a.controller == nil {
+		return nil, nil
+	}
+	controller, err := a.zones.ControllerForZone(ctx, tenantID, zoneID)
+	if err != nil {
+		return nil, err
+	}
+	if controller == nil {
+		return nil, nil
+	}
+	return a.controller.Status(ctx, controller)
+}

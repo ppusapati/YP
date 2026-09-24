@@ -43,6 +43,10 @@ type IrrigationRepository interface {
 	GetEventByUUID(ctx context.Context, uuid string) (*domain.IrrigationEvent, error)
 	ListEventsByZone(ctx context.Context, zoneID string, pageSize, offset int32) ([]domain.IrrigationEvent, int32, error)
 	ListEventsByTimeRange(ctx context.Context, zoneID string, start, end time.Time) ([]domain.IrrigationEvent, error)
+	// ListRunsDueToClose finds runs whose duration has elapsed and which
+	// nothing has closed. Cross-tenant: the sweep that calls it has no
+	// request to inherit a tenant from.
+	ListRunsDueToClose(ctx context.Context, now time.Time, limit int32) ([]domain.IrrigationEvent, error)
 	UpdateEvent(ctx context.Context, evt *domain.IrrigationEvent) (*domain.IrrigationEvent, error)
 
 	CreateDecision(ctx context.Context, decision *domain.IrrigationDecision) (*domain.IrrigationDecision, error)

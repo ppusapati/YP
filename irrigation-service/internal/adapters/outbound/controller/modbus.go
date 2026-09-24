@@ -26,6 +26,7 @@ const (
 	modbusWriteSingleCoil     byte = 0x05
 	modbusWriteSingleRegister byte = 0x06
 	modbusReadCoils           byte = 0x01
+	modbusReadHoldingRegs     byte = 0x03
 	modbusExceptionFlag       byte = 0x80
 
 	// modbusCoilOn is the only value a write-single-coil accepts for "on";
@@ -169,7 +170,84 @@ func (m *modbusClient) Status(ctx context.Context, c *domain.WaterController) (*
 	if len(resp) < 3 {
 		return &outbound.ControllerStatus{Online: true, Fault: "panel sent a truncated coil reply"}, nil
 	}
-	return &outbound.ControllerStatus{Online: true, Running: resp[2]&0x01 == 1}, nil
+	status := &outbound.ControllerStatus{Online: true, Running: resp[2]&0x01 == 1}
+
+	// The meter, where the panel keeps one. This is the only measurement of
+	// volume available anywhere in this platform, so a panel that exposes a
+	// totaliser is the difference between a farm that knows what it used and
+	// one that multiplies a nameplate rate by a duration and calls it water.
+	if reg, ok := ep.registerOpt("meter_register"); ok {
+		scale, err := ep.floatOpt("meter_scale", 1.0)
+		if err != nil {
+			status.Fault = err.Error()
+			return status, nil
+		}
+		raw, err := m.readUint32(conn, byte(unit), uint16(reg))
+		switch {
+		case err != nil:
+			// The valve state was read; only the meter failed. Reported as a
+			// fault rather than as a zero reading, because a zero totaliser
+			// would be a run that used no water.
+			status.Fault = fmt.Sprintf("could not read the water meter: %v", err)
+		default:
+			status.VolumeTotalLiters = float64(raw) * scale
+			status.HasVolumeTotal = true
+		}
+	}
+
+	// A flow rate, where the panel has a sensor for it. Sixteen bits: rates
+	// fit where a cumulative total does not.
+	if reg, ok := ep.registerOpt("flow_register"); ok {
+		scale, err := ep.floatOpt("flow_scale", 1.0)
+		if err != nil {
+			status.Fault = err.Error()
+			return status, nil
+		}
+		raw, err := m.readUint16(conn, byte(unit), uint16(reg))
+		if err == nil {
+			status.FlowRateLitersPerHour = float64(raw) * scale
+			status.HasFlowRate = true
+		}
+	}
+
+	return status, nil
+}
+
+// readUint32 reads a totaliser held across two consecutive registers.
+//
+// Big-endian word order, high register first, which is what the Modbus
+// specification implies and what irrigation panels overwhelmingly do. A panel
+// that words them the other way round reports a meter reading wrong by a
+// factor of sixty-five thousand — large enough that it shows up as an absurd
+// volume on the first run rather than as a quiet drift.
+func (m *modbusClient) readUint32(conn net.Conn, unit byte, address uint16) (uint32, error) {
+	resp, err := m.roundTrip(conn, unit, modbusReadHoldingRegs, address, 2)
+	if err != nil {
+		return 0, err
+	}
+	if code, ok := modbusException(resp); ok {
+		return 0, fmt.Errorf("%s", modbusExceptionText(code))
+	}
+	// [fn][byte count][hi hi][lo lo]
+	if len(resp) < 6 || resp[1] != 4 {
+		return 0, fmt.Errorf("panel sent a %d-byte reply to a two-register read", len(resp))
+	}
+	return binary.BigEndian.Uint32(resp[2:6]), nil
+}
+
+// readUint16 reads one register.
+func (m *modbusClient) readUint16(conn net.Conn, unit byte, address uint16) (uint16, error) {
+	resp, err := m.roundTrip(conn, unit, modbusReadHoldingRegs, address, 1)
+	if err != nil {
+		return 0, err
+	}
+	if code, ok := modbusException(resp); ok {
+		return 0, fmt.Errorf("%s", modbusExceptionText(code))
+	}
+	if len(resp) < 4 || resp[1] != 2 {
+		return 0, fmt.Errorf("panel sent a %d-byte reply to a one-register read", len(resp))
+	}
+	return binary.BigEndian.Uint16(resp[2:4]), nil
 }
 
 // write performs one write function and reads the slave's reply.

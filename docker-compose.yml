@@ -369,6 +369,12 @@ services:
       # Modbus needs no shared config — the panel's address is the
       # controller's own endpoint — so it is on unless turned off.
       MODBUS_ENABLED: "true"
+      # How often finished runs are closed and their meters read. A start
+      # command carries a duration the controller enforces locally, so the
+      # valve shuts on its own and nothing tells this service; every
+      # sensor-driven run ends that way. Set to 0 to disable, which means
+      # water usage is recorded only for runs stopped by hand.
+      RUN_CLOSE_INTERVAL: ${RUN_CLOSE_INTERVAL:-1m}
     depends_on:
       rmqtt:
         condition: service_started

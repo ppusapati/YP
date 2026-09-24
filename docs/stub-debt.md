@@ -142,9 +142,16 @@ caller, so the actuator, its interlocks and the whole `ControllerClient` port
 were unreachable, and no implementation of that port existed. **That is now
 wired** — clients for MQTT, LoRaWAN and Modbus, a commands table written before
 each send, and `TriggerIrrigation` refusing rather than recording a run nothing
-performed. The quantity stays planned regardless, because none of the three
-transports meters water. A figure from that path labelled "applied" would be a
-plan entering an audit record as a measurement.
+performed. **The quantity is now measured too**: the controller's cumulative water meter
+is read when the valve opens and again when it closes, and the difference is
+recorded with the source that produced it — METER, ESTIMATED from a measured
+flow rate, or UNMETERED, because a number in a column called water_liters says
+nothing about whether anybody measured it. `CreateWaterUsageLog` has its first
+caller, so `GetWaterUsage` no longer returns an empty list for every zone on
+every farm. What is still deliberately absent is the nameplate flow rate times
+the duration: every panel has one, so it would always produce a figure, and the
+figure would be wrong in the one case anybody cares about — a blocked line
+delivers nothing at exactly that rate.
 An auditor reading "12000 L planned" knows to ask for the meter; one reading
 "12000 L" does not. The consumer prefers a measured `water_amount_liters` when
 a producer ever sends one, so metering this path later needs no change there.

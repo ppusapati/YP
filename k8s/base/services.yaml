@@ -2042,6 +2042,8 @@ spec:
               value: ""
             - name: MODBUS_ENABLED
               value: "true"
+            - name: RUN_CLOSE_INTERVAL
+              value: "1m"
           resources:
             requests:
               memory: "128Mi"

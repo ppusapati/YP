@@ -71,6 +71,26 @@ type ControllerStatus struct {
 	// one. Zero while a run is supposedly in progress is the signature of a
 	// blocked line or a closed manual valve upstream.
 	FlowRateLitersPerHour float64
+	// HasFlowRate separates a measured zero from a panel with no flow sensor.
+	// A zero rate mid-run is a blocked line and worth an alarm; no sensor is
+	// not.
+	HasFlowRate bool
+
+	// VolumeTotalLiters is the controller's cumulative water meter, and it is
+	// the only honest source of how much water a run applied.
+	//
+	// Read at the start of a run and again at the end, the difference is a
+	// measurement. Everything else available here is arithmetic on a plan: a
+	// nameplate flow rate times a duration produces a number that looks like
+	// a meter reading and is not one, and a blocked line delivers nothing at
+	// exactly that nameplate rate.
+	//
+	// Cumulative and monotonic, so it wraps. See domain.MeteredVolume.
+	VolumeTotalLiters float64
+	// HasVolumeTotal is false for a controller with no meter, and for
+	// LoRaWAN, where there is no synchronous way to ask.
+	HasVolumeTotal bool
+
 	// FirmwareVersion and Fault are reported as the controller gives them.
 	FirmwareVersion string
 	Fault           string
