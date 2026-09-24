@@ -64,7 +64,13 @@ func main() {
 	// ── Auto-migrate ─────────────────────────────────────────────────────
 	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer migrateCancel()
-	if err := migrate.Up(migrateCtx, pool, os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
+	// Migrations run as the migration role, not the request role: DDL is
+	// not something the role serving requests should be able to do, and
+	// in production it cannot. Falls back to the application DSN, which
+	// is right for a stack connecting as a superuser and fails loudly on
+	// the first CREATE TABLE anywhere else.
+	if err := migrate.UpFromDSN(migrateCtx, envOr("DATABASE_URL_MIGRATOR", dsn),
+		os.DirFS(envOr("MIGRATIONS_DIR", "migrations")), zapLogger); err != nil {
 		log.Fatalf("migration failed: %v", err)
 	}
 

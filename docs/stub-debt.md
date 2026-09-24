@@ -202,9 +202,25 @@ role can actually bypass RLS, logging an error naming the consequence when it
 cannot. A sweep that finds nothing is otherwise indistinguishable from a
 platform with nothing to do.
 
-CI runs both halves against a real database under the application role: that a
-pool isolates tenants, and that a service's repository works through it. The
-irrigation repository suite, which skipped under `yp_app` before, passes.
+**docker-compose now connects as `yp_app` too**, which is what makes any of
+this real in the place people actually run the platform. Three roles, created
+by `scripts/init-databases.sh`: `yp_migrator` owns the schema and is the only
+one that runs DDL, `yp_app` is DML-only and not a superuser so the policies
+apply to it, and `yp_system` has BYPASSRLS for the two jobs that read across
+tenants. Services migrate as the migration role at boot through
+`migrate.UpFromDSN` and then drop it.
+
+That init script is now generated from compose, because the hand-written one
+had gone **seven databases stale** — advisory, device, finance, market,
+planning, soil-lab and sustainability all had migrations and no database to
+apply them to, so those containers could not start at all. `.env.example`'s
+per-service DSN list had gone eight stale in the same way and is deleted: every
+DSN has a working default in compose now.
+
+CI runs the whole bootstrap in the order compose runs it — init script, then
+every migration as `yp_migrator`, then the RLS suites as `yp_app` — so a
+regression in any of it fails the build. The irrigation repository suite, which
+skipped under `yp_app` before, passes.
 
 **Triage: done.** The original note said "these are not hard — each is a call to
 a service method that already exists". That was true of about half of them.

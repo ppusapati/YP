@@ -156,3 +156,29 @@ func collectUpFiles(migrations fs.FS) ([]string, error) {
 	sort.Strings(files)
 	return files, nil
 }
+
+// UpFromDSN applies pending migrations over a connection of its own, then
+// closes it.
+//
+// Migrations are DDL, and the role a service serves requests with does not run
+// DDL: it is the DML-only, non-superuser role the row-level security policies
+// apply to. Handing migrations the request pool would mean either giving that
+// role the ability to drop tables, or a service that cannot start.
+//
+// So this opens a short-lived pool as the migration role and closes it before
+// the service begins serving. A plain pgxpool rather than an rlspool one:
+// migrations are not tenant-scoped, and a connection carrying an empty
+// app.tenant_id is exactly right for DDL.
+//
+// dsn falls back to the application DSN at the call site, which is correct for
+// a development stack that connects as a superuser and wrong in production —
+// where it will fail loudly on the first CREATE TABLE rather than quietly.
+func UpFromDSN(ctx context.Context, dsn string, migrations fs.FS, logger *zap.Logger) error {
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return fmt.Errorf("migrate: connect as the migration role: %w", err)
+	}
+	defer pool.Close()
+
+	return Up(ctx, pool, migrations, logger)
+}

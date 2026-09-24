@@ -60,6 +60,17 @@ func main() {
 	}
 
 	admin := dsn("postgres")
+
+	// When the databases already exist — because scripts/init-databases.sh has
+	// just bootstrapped the cluster the way docker-compose does — they are
+	// kept rather than recreated. Dropping them would take the roles' default
+	// privileges with them, and those are per-database: every table a service
+	// creates afterwards would then be readable by nobody but its owner.
+	//
+	// They are still empty, so this still answers the question it exists to
+	// answer, and answers a second one: whether the non-superuser migration
+	// role can run every migration.
+	keepDatabases := os.Getenv("MIGRATIONCHECK_KEEP_DATABASES") == "1"
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
@@ -75,10 +86,12 @@ func main() {
 		}
 
 		db := strings.ReplaceAll(svc, "-", "_")
-		if err := recreate(ctx, admin, db); err != nil {
-			failures = append(failures, fmt.Sprintf("%s: %v", svc, err))
-			fmt.Printf("  FAIL  %-32s %v\n", svc, err)
-			continue
+		if !keepDatabases {
+			if err := recreate(ctx, admin, db); err != nil {
+				failures = append(failures, fmt.Sprintf("%s: %v", svc, err))
+				fmt.Printf("  FAIL  %-32s %v\n", svc, err)
+				continue
+			}
 		}
 
 		n, err := apply(ctx, dsn(db), filepath.Join(root, svc, "migrations"), logger)

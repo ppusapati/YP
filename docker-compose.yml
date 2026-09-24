@@ -56,6 +56,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-yieldpoint}
+      # The three roles init-databases.sh creates. Services no longer connect
+      # as the superuser: a superuser bypasses row-level security entirely, so
+      # the policies never ran in development and nobody noticed they had
+      # never been wired up at all.
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+      DB_SYSTEM_PASSWORD: ${DB_SYSTEM_PASSWORD:?Set DB_SYSTEM_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
@@ -111,8 +118,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: advisory_service
+      # The same three roles as the shared instance. Without them
+      # advisory-service would be the one service still connecting as a
+      # superuser, and the one place row-level security does not apply —
+      # which is how an exception becomes the rule.
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+      DB_SYSTEM_PASSWORD: ${DB_SYSTEM_PASSWORD:?Set DB_SYSTEM_PASSWORD in .env}
     volumes:
       - pgvectordata:/var/lib/postgresql/data
+      - ./scripts/init-vector-db.sh:/docker-entrypoint-initdb.d/01-init-vector-db.sh:ro
     ports:
       # 5433: 5432 is the shared instance.
       - "5433:5432"
@@ -298,7 +313,8 @@ services:
       - "8081:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${FARM_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/farm_service?sslmode=disable}
+      DATABASE_URL: ${FARM_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/farm_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${FARM_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/farm_service?sslmode=disable}
 
   field-service:
     <<: *go-service
@@ -310,7 +326,8 @@ services:
       - "8082:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${FIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/field_service?sslmode=disable}
+      DATABASE_URL: ${FIELD_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/field_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${FIELD_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/field_service?sslmode=disable}
       FARM_SERVICE_URL: http://farm-service:8080
       CROP_SERVICE_URL: http://crop-service:8080
 
@@ -324,7 +341,8 @@ services:
       - "8083:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${CROP_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/crop_service?sslmode=disable}
+      DATABASE_URL: ${CROP_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/crop_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${CROP_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/crop_service?sslmode=disable}
 
   sensor-service:
     <<: *go-service
@@ -336,7 +354,8 @@ services:
       - "8084:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SENSOR_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/sensor_service?sslmode=disable}
+      DATABASE_URL: ${SENSOR_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/sensor_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SENSOR_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/sensor_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
 
@@ -350,7 +369,8 @@ services:
       - "8085:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/irrigation_service?sslmode=disable}
+      DATABASE_URL: ${IRRIGATION_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/irrigation_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${IRRIGATION_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/irrigation_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
       WEATHER_SERVICE_URL: http://weather-service:8080
@@ -376,12 +396,10 @@ services:
       # water usage is recorded only for runs stopped by hand.
       RUN_CLOSE_INTERVAL: ${RUN_CLOSE_INTERVAL:-1m}
       # The sweep above reads across every tenant, and the application pool
-      # scopes each connection to the caller's tenant — so it needs a role
-      # row-level security does not apply to. Unset here because this stack
-      # connects as the superuser `yieldpoint`, which already bypasses RLS;
-      # in production point it at a role with BYPASSRLS. The service probes
-      # at startup and logs an error if the role cannot read across tenants.
-      DATABASE_URL_SYSTEM: ${IRRIGATION_SERVICE_SYSTEM_DATABASE_URL:-}
+      # scopes each connection to the caller's tenant — so it connects as
+      # yp_system, the one role with BYPASSRLS. The service probes at startup
+      # and logs an error if that role cannot in fact read across tenants.
+      DATABASE_URL_SYSTEM: ${IRRIGATION_SERVICE_SYSTEM_DATABASE_URL:-postgres://yp_system:${DB_SYSTEM_PASSWORD:?Set DB_SYSTEM_PASSWORD in .env}@postgres:5432/irrigation_service?sslmode=disable}
     depends_on:
       rmqtt:
         condition: service_started
@@ -409,7 +427,8 @@ services:
       - "8086:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SOIL_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_service?sslmode=disable}
+      DATABASE_URL: ${SOIL_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/soil_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SOIL_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/soil_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
 
@@ -423,7 +442,8 @@ services:
       - "8087:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${YIELD_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/yield_service?sslmode=disable}
+      DATABASE_URL: ${YIELD_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/yield_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${YIELD_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/yield_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       SOIL_SERVICE_URL: http://soil-service:8080
       IRRIGATION_SERVICE_URL: http://irrigation-service:8080
@@ -448,7 +468,8 @@ services:
       - "8088:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${PEST_PREDICTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/pest_prediction_service?sslmode=disable}
+      DATABASE_URL: ${PEST_PREDICTION_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/pest_prediction_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${PEST_PREDICTION_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/pest_prediction_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       SENSOR_SERVICE_URL: http://sensor-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
@@ -467,7 +488,8 @@ services:
       - "8089:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/plant_diagnosis_service?sslmode=disable}
+      DATABASE_URL: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/plant_diagnosis_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${PLANT_DIAGNOSIS_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/plant_diagnosis_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
@@ -482,7 +504,8 @@ services:
       - "8090:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SATELLITE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_service?sslmode=disable}
+      DATABASE_URL: ${SATELLITE_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/satellite_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SATELLITE_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/satellite_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       FARM_SERVICE_URL: http://farm-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
@@ -497,7 +520,8 @@ services:
       - "8091:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${TRACEABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/traceability_service?sslmode=disable}
+      DATABASE_URL: ${TRACEABILITY_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/traceability_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${TRACEABILITY_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/traceability_service?sslmode=disable}
       FARM_SERVICE_URL: http://farm-service:8080
       FIELD_SERVICE_URL: http://field-service:8080
       YIELD_SERVICE_URL: http://yield-service:8080
@@ -513,7 +537,8 @@ services:
       - "8092:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${COMMERCE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/commerce_service?sslmode=disable}
+      DATABASE_URL: ${COMMERCE_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/commerce_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${COMMERCE_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/commerce_service?sslmode=disable}
       FARM_SERVICE_URL: http://farm-service:8080
       CROP_SERVICE_URL: http://crop-service:8080
       TRACEABILITY_SERVICE_URL: http://traceability-service:8080
@@ -528,7 +553,8 @@ services:
       - "8093:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${AUTH_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/auth_service?sslmode=disable}
+      DATABASE_URL: ${AUTH_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/auth_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${AUTH_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/auth_service?sslmode=disable}
 
   alert-service:
     <<: *go-service
@@ -540,7 +566,8 @@ services:
       - "8098:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${ALERT_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/alert_service?sslmode=disable}
+      DATABASE_URL: ${ALERT_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/alert_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${ALERT_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/alert_service?sslmode=disable}
       AI_GATEWAY_ADDR: ai-gateway:50051
       # Field conditions for risk evaluation. Without these the AI gateway
       # substitutes its own defaults — 22C, 30% soil moisture — so a risk score
@@ -560,12 +587,11 @@ services:
       # in the web app, so off means those rules never fire.
       ALERT_SCAN_INTERVAL: ${ALERT_SCAN_INTERVAL:-5m}
       # The scanner enumerates every tenant's due rules, and the application
-      # pool scopes each connection to the caller's tenant — so it needs a
-      # role row-level security does not apply to. Unset here because this
-      # stack connects as the superuser `yieldpoint`, which already bypasses
-      # RLS; in production point it at a role with BYPASSRLS. The service
-      # probes at startup and logs an error if the role cannot.
-      DATABASE_URL_SYSTEM: ${ALERT_SERVICE_SYSTEM_DATABASE_URL:-}
+      # pool scopes each connection to the caller's tenant — so it connects
+      # as yp_system, the one role with BYPASSRLS. The service probes at
+      # startup and logs an error if that role cannot in fact read across
+      # tenants.
+      DATABASE_URL_SYSTEM: ${ALERT_SERVICE_SYSTEM_DATABASE_URL:-postgres://yp_system:${DB_SYSTEM_PASSWORD:?Set DB_SYSTEM_PASSWORD in .env}@postgres:5432/alert_service?sslmode=disable}
     depends_on:
       postgres:
         condition: service_healthy
@@ -610,7 +636,8 @@ services:
       - "8101:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SATELLITE_INGESTION_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_ingestion_service?sslmode=disable}
+      DATABASE_URL: ${SATELLITE_INGESTION_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/satellite_ingestion_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SATELLITE_INGESTION_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/satellite_ingestion_service?sslmode=disable}
 
   satellite-processing-service:
     <<: *go-service
@@ -622,7 +649,8 @@ services:
       - "8102:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SATELLITE_PROCESSING_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_processing_service?sslmode=disable}
+      DATABASE_URL: ${SATELLITE_PROCESSING_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/satellite_processing_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SATELLITE_PROCESSING_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/satellite_processing_service?sslmode=disable}
 
   satellite-analytics-service:
     <<: *go-service
@@ -634,7 +662,8 @@ services:
       - "8103:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SATELLITE_ANALYTICS_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_analytics_service?sslmode=disable}
+      DATABASE_URL: ${SATELLITE_ANALYTICS_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/satellite_analytics_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SATELLITE_ANALYTICS_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/satellite_analytics_service?sslmode=disable}
       VEGETATION_INDEX_SERVICE_URL: http://vegetation-index-service:8080
 
   satellite-tile-service:
@@ -647,7 +676,8 @@ services:
       - "8104:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SATELLITE_TILE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/satellite_tile_service?sslmode=disable}
+      DATABASE_URL: ${SATELLITE_TILE_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/satellite_tile_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SATELLITE_TILE_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/satellite_tile_service?sslmode=disable}
 
   vegetation-index-service:
     <<: *go-service
@@ -659,7 +689,8 @@ services:
       - "8105:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${VEGETATION_INDEX_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/vegetation_index_service?sslmode=disable}
+      DATABASE_URL: ${VEGETATION_INDEX_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/vegetation_index_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${VEGETATION_INDEX_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/vegetation_index_service?sslmode=disable}
 
   task-service:
     <<: *go-service
@@ -671,7 +702,8 @@ services:
       - "8106:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${TASK_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/task_service?sslmode=disable}
+      DATABASE_URL: ${TASK_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/task_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${TASK_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/task_service?sslmode=disable}
 
   agronomy-service:
     <<: *go-service
@@ -683,7 +715,8 @@ services:
       - "8107:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${AGRONOMY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/agronomy_service?sslmode=disable}
+      DATABASE_URL: ${AGRONOMY_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/agronomy_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${AGRONOMY_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/agronomy_service?sslmode=disable}
 
   weather-service:
     <<: *go-service
@@ -695,7 +728,8 @@ services:
       - "8108:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${WEATHER_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/weather_service?sslmode=disable}
+      DATABASE_URL: ${WEATHER_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/weather_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${WEATHER_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/weather_service?sslmode=disable}
       FIELD_SERVICE_URL: http://field-service:8080
       WEATHER_POLL_INTERVAL: ${WEATHER_POLL_INTERVAL:-1h}
       WEATHER_DEFAULT_PROVIDER: ${WEATHER_DEFAULT_PROVIDER:-OPEN_METEO}
@@ -718,7 +752,8 @@ services:
       - "8109:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${MARKET_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/market_service?sslmode=disable}
+      DATABASE_URL: ${MARKET_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/market_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${MARKET_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/market_service?sslmode=disable}
 
   device-service:
     <<: *go-service
@@ -730,7 +765,8 @@ services:
       - "8110:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${DEVICE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/device_service?sslmode=disable}
+      DATABASE_URL: ${DEVICE_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/device_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${DEVICE_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/device_service?sslmode=disable}
 
   soil-lab-service:
     <<: *go-service
@@ -742,7 +778,8 @@ services:
       - "8111:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SOIL_LAB_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/soil_lab_service?sslmode=disable}
+      DATABASE_URL: ${SOIL_LAB_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/soil_lab_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SOIL_LAB_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/soil_lab_service?sslmode=disable}
       SOIL_SERVICE_URL: http://soil-service:8080
 
   planning-service:
@@ -755,7 +792,8 @@ services:
       - "8112:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${PLANNING_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/planning_service?sslmode=disable}
+      DATABASE_URL: ${PLANNING_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/planning_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${PLANNING_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/planning_service?sslmode=disable}
       # Optional. Without it a sowing window comes from the crop calendar and
       # says so; with it the window follows the monsoon's local onset, which is
       # what actually decides when a kharif crop goes in.
@@ -771,7 +809,8 @@ services:
       - "8113:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${SUSTAINABILITY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/sustainability_service?sslmode=disable}
+      DATABASE_URL: ${SUSTAINABILITY_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/sustainability_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${SUSTAINABILITY_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/sustainability_service?sslmode=disable}
 
   finance-service:
     <<: *go-service
@@ -783,7 +822,8 @@ services:
       - "8114:8080"
     environment:
       <<: *go-env
-      DATABASE_URL: ${FINANCE_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@postgres:5432/finance_service?sslmode=disable}
+      DATABASE_URL: ${FINANCE_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@postgres:5432/finance_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${FINANCE_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@postgres:5432/finance_service?sslmode=disable}
       # Everything here rests on the harvest record: without yield-service a
       # quote is priced from a crop benchmark and a credit assessment is
       # refused outright.
@@ -809,7 +849,8 @@ services:
     environment:
       <<: *go-env
       # Its own database, on the pgvector instance rather than the shared one.
-      DATABASE_URL: ${ADVISORY_SERVICE_DATABASE_URL:-postgres://yieldpoint:yieldpoint@pgvector:5432/advisory_service?sslmode=disable}
+      DATABASE_URL: ${ADVISORY_SERVICE_DATABASE_URL:-postgres://yp_app:${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}@pgvector:5432/advisory_service?sslmode=disable}
+      DATABASE_URL_MIGRATOR: ${ADVISORY_SERVICE_DATABASE_URL_MIGRATOR:-postgres://yp_migrator:${DB_MIGRATOR_PASSWORD:?Set DB_MIGRATOR_PASSWORD in .env}@pgvector:5432/advisory_service?sslmode=disable}
 
       # The model. Left unset by default, and that is a supported state: with
       # no key the assistant still retrieves, still scopes to the tenant, still
