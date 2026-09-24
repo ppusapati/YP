@@ -13,6 +13,7 @@ import (
 	eventsdomain "p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
+	"p9e.in/samavaya/packages/saas"
 	"p9e.in/samavaya/packages/ulid"
 
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/domain"
@@ -563,14 +564,181 @@ func (s *irrigationService) TriggerIrrigation(ctx context.Context, scheduleID st
 		return nil, err
 	}
 
-	now := time.Now()
 	if _, err := s.repo.UpdateScheduleStatus(ctx, scheduleID, domain.IrrigationStatusActive); err != nil {
 		return nil, err
 	}
+	return s.recordRun(ctx, tenantID, schedule, cmd)
+}
+
+// ApplyMoistureReading is the sensor leg: a measurement arrives and, if the
+// zone has opted in and every interlock agrees, a valve opens.
+//
+// This is the part of the platform that acts on a farm without anybody
+// present, so the shape is again mostly refusal. Of everything that arrives
+// here, the overwhelming majority ends in no action: a reading from a sensor
+// that is not a moisture probe, a zone with no adaptive schedule, soil that is
+// wet enough, a zone that irrigated an hour ago. None of those is an error and
+// none is logged as one.
+//
+// Errors are returned only when a retry could help — a database blip mid-scan.
+// A malformed or unusable reading returns nil: Kafka would redeliver it for
+// ever, and it can never succeed.
+func (s *irrigationService) ApplyMoistureReading(ctx context.Context, reading domain.MoistureReading) error {
+	if err := reading.UsableForActuation(); err != nil {
+		// Logged at info, not warn: an irrigation service sees every sensor
+		// reading on the farm and most of them are temperature and humidity.
+		// A warn per reading would bury the ones that matter.
+		s.log.Infow("msg", "reading not acted on", "sensor_id", reading.SensorID, "reason", err.Error())
+		return nil
+	}
+	if s.actuator == nil {
+		// Nothing to open a valve with. Not an error: blocking the partition
+		// over a deployment that has no controllers would stop every other
+		// consumer on this topic too.
+		s.log.Infow("msg", "no controller client configured; moisture reading not acted on",
+			"sensor_id", reading.SensorID, "field_id", reading.FieldID)
+		return nil
+	}
+
+	ctx = s.systemContext(ctx, reading.TenantID)
+
+	zones, _, err := s.repo.ListZonesByField(ctx, reading.FieldID, maxPageSize, 0)
+	if err != nil {
+		// Returned, so the consumer retries: a database blip must not silently
+		// skip an irrigation the field needed.
+		return fmt.Errorf("ApplyMoistureReading: list zones for field %s: %w", reading.FieldID, err)
+	}
+	if len(zones) == 0 {
+		return nil
+	}
+
+	var failures int
+	for i := range zones {
+		zone := &zones[i]
+		acted, err := s.applyReadingToZone(ctx, reading, zone)
+		if err != nil {
+			// One zone's controller being unreachable must not strand the
+			// others: the next zone may be on a different panel entirely.
+			failures++
+			s.log.Warnw("msg", "could not apply a moisture reading to a zone",
+				"zone_id", zone.ID, "sensor_id", reading.SensorID, "error", err)
+			continue
+		}
+		if acted {
+			s.log.Infow("msg", "irrigation started from a soil moisture reading",
+				"zone_id", zone.ID, "sensor_id", reading.SensorID,
+				"moisture_pct", reading.Percent)
+		}
+	}
+
+	// Every zone failing is a fault on this side rather than a run of
+	// coincidences, and reporting success would have Kafka commit the offset
+	// over a reading that watered nothing.
+	if failures == len(zones) {
+		return fmt.Errorf("ApplyMoistureReading: all %d zones on field %s failed", failures, reading.FieldID)
+	}
+	return nil
+}
+
+// applyReadingToZone acts on one zone, and reports whether it started a run.
+func (s *irrigationService) applyReadingToZone(
+	ctx context.Context,
+	reading domain.MoistureReading,
+	zone *domain.IrrigationZone,
+) (bool, error) {
+	schedules, _, err := s.repo.ListSchedulesByZone(ctx, zone.ID, maxPageSize, 0)
+	if err != nil {
+		return false, fmt.Errorf("list schedules for zone %s: %w", zone.ID, err)
+	}
+
+	schedule, err := domain.AdaptiveSchedule(schedules)
+	if err != nil {
+		// Ambiguous configuration. Logged and skipped rather than returned:
+		// a retry produces the same ambiguity for ever, and the fix is a
+		// farmer editing a schedule.
+		s.log.Warnw("msg", "zone not watered from its sensor", "zone_id", zone.ID, "error", err)
+		return false, nil
+	}
+	if schedule == nil {
+		// The zone has not opted in. The common case, and not worth a line
+		// per reading.
+		return false, nil
+	}
+
+	// Both sides of this comparison are percentages on 0..100 — the reading
+	// because sensor-service records soil moisture that way, the threshold
+	// because the column is SoilMoistureThresholdPct. They are checked
+	// against each other by a test, because the mistake is not a crash: a
+	// fraction on one side reads as bone-dry soil and waters a saturated
+	// field on every reading that arrives.
+	cmd, err := s.actuator.ActuateFromReading(ctx,
+		reading.TenantID, zone.ID,
+		reading.Percent, schedule.SoilMoistureThresholdPct,
+		reading.RecordedAt, schedule.DurationMinutes)
+	if err != nil {
+		return false, err
+	}
+	if cmd == nil {
+		// No action called for: wet enough, too stale, or an interlock
+		// declined. ActuateFromReading reports all three as (nil, nil)
+		// because none of them is a failure.
+		return false, nil
+	}
+
+	// The run is written even though nobody asked for it, and especially
+	// because nobody did: ZoneState derives the rest interval and the daily
+	// cap from these rows, so an automatic run that actuated without
+	// recording one would be invisible to the interlocks meant to bound it.
+	// A flapping sensor could then water a field all day inside a limit that
+	// was counting nothing.
+	//
+	// The schedule's status is deliberately not touched. An adaptive schedule
+	// is a standing rule, not a one-shot; flipping it to ACTIVE the way
+	// TriggerIrrigation does would take the rule out of service after its
+	// first firing.
+	if _, err := s.recordRun(ctx, reading.TenantID, schedule, cmd); err != nil {
+		// The valve is open. Failing to record that is bad, and it is not a
+		// reason to report failure upward and have the reading redelivered —
+		// which would try to open the same valve again.
+		s.log.Errorw("msg", "irrigation started but the run could not be recorded",
+			"zone_id", zone.ID, "command_id", cmd.ID, "error", err)
+	}
+	return true, nil
+}
+
+// systemContext scopes a consumer-initiated operation to a tenant.
+//
+// A consumer has no request to inherit one from, so without this every query
+// runs unscoped and row-level security returns nothing — which looks like a
+// field with no irrigation zones rather than a failure.
+func (s *irrigationService) systemContext(ctx context.Context, tenantID string) context.Context {
+	ctx = p9context.NewConnectionInfo(ctx, &saas.ConnectionInfo{TenantID: tenantID})
+	return p9context.NewUserContext(ctx, p9context.UserContext{
+		UserID:   "system",
+		TenantID: tenantID,
+	})
+}
+
+// recordRun writes the run and announces it, once a controller has taken the
+// command.
+//
+// Shared by the operator's TriggerIrrigation and the sensor-driven path, and
+// sharing it is not just tidiness: the run row is what ZoneState reads to
+// derive minutes-run-today and the rest interval. An automatic run that
+// actuated without writing one would be invisible to the very interlocks meant
+// to bound it — the daily cap would never engage, and a flapping sensor could
+// water a field all day inside a limit that was counting nothing.
+func (s *irrigationService) recordRun(
+	ctx context.Context,
+	tenantID string,
+	schedule *domain.IrrigationSchedule,
+	cmd *domain.IrrigationCommand,
+) (*domain.IrrigationEvent, error) {
+	now := time.Now()
 
 	evt := &domain.IrrigationEvent{
 		TenantID:     tenantID,
-		ScheduleID:   scheduleID,
+		ScheduleID:   schedule.ID,
 		ZoneID:       schedule.ZoneID,
 		ControllerID: cmd.ControllerID,
 		Status:       domain.IrrigationStatusActive,
@@ -578,8 +746,8 @@ func (s *irrigationService) TriggerIrrigation(ctx context.Context, scheduleID st
 		// Deliberately not pre-filled with the schedule's figures. They used
 		// to be copied into ActualDurationMinutes and ActualWaterLiters at
 		// start time — before water could have flowed — so a plan was stored
-		// in a column named "actual" and nothing ever revised it. StopIrrigation
-		// now fills them in from the run that happened.
+		// in a column named "actual" and nothing ever revised it.
+		// StopIrrigation now fills them in from the run that happened.
 	}
 
 	createdEvent, err := s.repo.CreateEvent(ctx, evt)
@@ -597,21 +765,19 @@ func (s *irrigationService) TriggerIrrigation(ctx context.Context, scheduleID st
 	// irrigation on every field took that branch.
 	//
 	// The water figure is `planned_`, not `actual_`, because nothing here has
-	// measured anything. This RPC writes the schedule's quantity into the
-	// event's ActualWaterLiters at start time — before water could have
-	// flowed — and no completion path ever revises it: UpdateEvent has no
-	// caller. Publishing it as an actual would put a plan into a compliance
-	// record as a measurement, which is a worse failure than the silence it
-	// replaces.
+	// measured anything: the quantity is the schedule's, and no transport in
+	// this service meters water. Publishing it as an actual would put a plan
+	// into a compliance record as a measurement.
 	s.emitEvent(ctx, string(eventsdomain.EventTypeIrrigationTriggered), createdEvent.ID, map[string]interface{}{
 		"event_id":                 createdEvent.ID,
-		"schedule_id":              scheduleID,
+		"schedule_id":              schedule.ID,
 		"tenant_id":                tenantID,
 		"zone_id":                  schedule.ZoneID,
 		"field_id":                 fieldID,
 		"farm_id":                  farmID,
-		"controller_id":            schedule.ControllerID,
+		"controller_id":            cmd.ControllerID,
 		"started_at":               now.UTC().Format(time.RFC3339),
+		"issued_by":                cmd.IssuedBy,
 		"planned_water_liters":     schedule.WaterQuantityLiters,
 		"planned_duration_minutes": schedule.DurationMinutes,
 	})

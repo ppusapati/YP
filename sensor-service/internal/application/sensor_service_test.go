@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"testing"
@@ -653,6 +654,109 @@ func TestIngestReading_HappyPath(t *testing.T) {
 	assert.Equal(t, "reading-uuid-001", reading.ID)
 	assert.Nil(t, alert) // No alert rules set up.
 	assert.Len(t, pub.published, 1)
+}
+
+// The reading payload names the tenant and the time it was taken.
+//
+// irrigation-service now opens a valve from one of these, and it cannot
+// without either: no tenant means every query runs unscoped and row-level
+// security returns nothing — which reads as a field with no irrigation zones
+// rather than as a failure — and no timestamp means the guard that stops a
+// field being watered on a stale measurement has nothing to check.
+//
+// Asserted against the literal keys that consumer reads. The last consumer in
+// this platform that hand-built its own payload passed for months while
+// recording nothing, because the producer never sent the field it keyed on.
+func TestAReadingPayloadNamesTheTenantAndTheTime(t *testing.T) {
+	repo, pub, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.sensors["sensor-001"] = &domain.Sensor{
+		TenantID:   "tenant-1",
+		SensorType: domain.SensorTypeSoilMoisture,
+		Status:     domain.SensorStatusActive,
+		FieldID:    "field-001",
+	}
+	repo.sensors["sensor-001"].ID = "sensor-001"
+
+	taken := time.Date(2026, 9, 24, 9, 15, 0, 0, time.UTC)
+	_, _, err := svc.IngestReading(ctx, "sensor-001", 18.5, "%", taken, domain.ReadingQualityGood, nil, nil, nil)
+	require.NoError(t, err)
+
+	data := readingPayload(t, pub)
+	assert.Equal(t, "tenant-1", data["tenant_id"])
+	assert.Equal(t, "2026-09-24T09:15:00Z", data["recorded_at"])
+	assert.Equal(t, "field-001", data["field_id"])
+	assert.Equal(t, "SOIL_MOISTURE", data["sensor_type"])
+	assert.Equal(t, "GOOD", data["quality"])
+	assert.Equal(t, "%", data["unit"], "the consumer refuses a unit that is not a percentage")
+
+	// A number, not a quoted string. Read with a string assertion on the
+	// other side it would come back as zero — and zero percent is the driest
+	// possible soil, so a value dropped that way does not go missing, it
+	// waters the field.
+	assert.IsType(t, float64(0), data["value"])
+	assert.Equal(t, 18.5, data["value"])
+}
+
+// A batch upload publishes per reading. This path published nothing at all, so
+// a reading's consumers saw it only when it arrived one at a time — and a
+// gateway uploading a morning's telemetry in one call is the normal case in
+// the field.
+func TestBatchIngestPublishesEveryReading(t *testing.T) {
+	repo, pub, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.sensors["sensor-001"] = &domain.Sensor{
+		TenantID:   "tenant-1",
+		SensorType: domain.SensorTypeSoilMoisture,
+		Status:     domain.SensorStatusActive,
+		FieldID:    "field-001",
+	}
+	repo.sensors["sensor-001"].ID = "sensor-001"
+
+	taken := time.Date(2026, 9, 24, 9, 15, 0, 0, time.UTC)
+	ingested, failed, _, _, err := svc.BatchIngestReadings(ctx, []domain.ReadingInput{
+		{SensorID: "sensor-001", Value: 18.5, Unit: "%", Timestamp: taken, Quality: domain.ReadingQualityGood},
+		{SensorID: "sensor-001", Value: 19.0, Unit: "%", Timestamp: taken, Quality: domain.ReadingQualityGood},
+	})
+	require.NoError(t, err)
+	require.Equal(t, int32(2), ingested)
+	require.Zero(t, failed)
+
+	var readings int
+	for _, ev := range pub.published {
+		var envelope struct {
+			Type string                 `json:"type"`
+			Data map[string]interface{} `json:"data"`
+		}
+		require.NoError(t, json.Unmarshal(ev.payload, &envelope))
+		if envelope.Type == "agriculture.sensor.reading.ingested" {
+			readings++
+			assert.Equal(t, "tenant-1", envelope.Data["tenant_id"])
+			assert.Equal(t, "2026-09-24T09:15:00Z", envelope.Data["recorded_at"])
+		}
+	}
+	assert.Equal(t, 2, readings, "a batch upload did not publish one event per reading")
+}
+
+// readingPayload decodes the reading event the service published.
+func readingPayload(t *testing.T, pub *mockEventPublisher) map[string]interface{} {
+	t.Helper()
+	for _, ev := range pub.published {
+		var envelope struct {
+			Type string                 `json:"type"`
+			Data map[string]interface{} `json:"data"`
+		}
+		if err := json.Unmarshal(ev.payload, &envelope); err != nil {
+			continue
+		}
+		if envelope.Type == "agriculture.sensor.reading.ingested" {
+			return envelope.Data
+		}
+	}
+	t.Fatal("no agriculture.sensor.reading.ingested event was published")
+	return nil
 }
 
 func TestIngestReading_MissingTenant(t *testing.T) {

@@ -259,3 +259,152 @@ func TestTheSweepRunsInTheEventsTenant(t *testing.T) {
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+// The sensor leg
+
+// readingService captures what the consumer hands the application layer.
+type readingService struct {
+	inbound.IrrigationService // nil: the consumer only calls ApplyMoistureReading
+
+	got []domain.MoistureReading
+	err error
+}
+
+func (s *readingService) ApplyMoistureReading(_ context.Context, r domain.MoistureReading) error {
+	s.got = append(s.got, r)
+	return s.err
+}
+
+// ingestedReading is the payload sensor-service publishes, with the types it
+// publishes: value as a JSON number, recorded_at as an RFC 3339 string.
+//
+// Pinned against the producer rather than written to suit this test. The last
+// consumer in this platform that hand-built its own payload passed for months
+// while recording nothing, because the producer never sent the field it keyed
+// on — see traceability's irrigation handler.
+func ingestedReading() map[string]interface{} {
+	return map[string]interface{}{
+		"sensor_id":   "sen-1",
+		"tenant_id":   "t-1",
+		"value":       18.5,
+		"unit":        "%",
+		"quality":     "GOOD",
+		"sensor_type": "SOIL_MOISTURE",
+		"field_id":    "fld-1",
+		"recorded_at": "2026-09-24T09:15:00Z",
+	}
+}
+
+func TestAMoistureReadingReachesTheApplicationLayer(t *testing.T) {
+	svc := &readingService{}
+	c := NewIrrigationConsumer(svc, testutil.NopLogger{})
+
+	err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID:        "evt-1",
+		Type:      eventsdomain.EventTypeSensorReadingIngested,
+		Timestamp: time.Now(),
+		Data:      ingestedReading(),
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	if len(svc.got) != 1 {
+		t.Fatalf("the application layer saw %d readings, want 1", len(svc.got))
+	}
+	got := svc.got[0]
+
+	// The value is a number on the wire. Read with a string assertion it
+	// would come back as zero — and zero percent is the driest possible soil,
+	// so a value dropped that way does not go missing, it waters the field.
+	if got.Percent != 18.5 {
+		t.Errorf("Percent = %v, want 18.5", got.Percent)
+	}
+	if got.TenantID != "t-1" || got.FieldID != "fld-1" {
+		t.Errorf("tenant/field = %q/%q", got.TenantID, got.FieldID)
+	}
+	if got.Quality != "GOOD" || got.SensorType != "SOIL_MOISTURE" || got.Unit != "%" {
+		t.Errorf("quality/type/unit = %q/%q/%q", got.Quality, got.SensorType, got.Unit)
+	}
+	want := time.Date(2026, 9, 24, 9, 15, 0, 0, time.UTC)
+	if !got.RecordedAt.Equal(want) {
+		t.Errorf("RecordedAt = %v, want %v", got.RecordedAt, want)
+	}
+}
+
+// A missing timestamp arrives as the zero time, which the staleness guard
+// reads as "do not act". Substituting time.Now() here would turn that guard
+// into a no-op that still looked like a guard.
+func TestAMissingTimestampDoesNotBecomeNow(t *testing.T) {
+	svc := &readingService{}
+	c := NewIrrigationConsumer(svc, testutil.NopLogger{})
+
+	data := ingestedReading()
+	delete(data, "recorded_at")
+
+	if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-1", Type: eventsdomain.EventTypeSensorReadingIngested,
+		Timestamp: time.Now(), Data: data,
+	}); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	if !svc.got[0].RecordedAt.IsZero() {
+		t.Errorf("RecordedAt = %v; an absent timestamp was invented", svc.got[0].RecordedAt)
+	}
+}
+
+// An unreadable payload is dropped rather than retried: Kafka would redeliver
+// it for ever, and a blocked partition stops every other reading on the farm,
+// including the ones that should be opening valves.
+func TestAnUnreadablePayloadDoesNotBlockThePartition(t *testing.T) {
+	svc := &readingService{}
+	c := NewIrrigationConsumer(svc, testutil.NopLogger{})
+
+	err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-1", Type: eventsdomain.EventTypeSensorReadingIngested,
+		Timestamp: time.Now(),
+		// A value that cannot be marshalled, standing in for a payload
+		// whose shape this consumer cannot read.
+		Data: map[string]interface{}{"value": make(chan int)},
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent returned %v; this must not block the partition", err)
+	}
+	if len(svc.got) != 0 {
+		t.Error("an unreadable payload reached the application layer")
+	}
+}
+
+// A failure the application layer reports as retryable is passed up, so the
+// reading is redelivered rather than lost.
+func TestARetryableFailureIsReturned(t *testing.T) {
+	svc := &readingService{err: errors.New("database unreachable")}
+	c := NewIrrigationConsumer(svc, testutil.NopLogger{})
+
+	if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-1", Type: eventsdomain.EventTypeSensorReadingIngested,
+		Timestamp: time.Now(), Data: ingestedReading(),
+	}); err == nil {
+		t.Fatal("a retryable failure was swallowed; the reading would be lost")
+	}
+}
+
+// sensor-service emits `registered` and `decommissioned`. The consumer used to
+// listen only for `created` and `updated`, which nothing publishes — so these
+// handlers had never run.
+func TestTheSpellingsSensorServiceActuallyEmitsAreHandled(t *testing.T) {
+	for _, evType := range []eventsdomain.EventType{
+		eventsdomain.EventTypeSensorRegistered,
+		eventsdomain.EventTypeSensorDecommissioned,
+	} {
+		c := NewIrrigationConsumer(&readingService{}, testutil.NopLogger{})
+		if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+			ID: "evt-1", Type: evType, Timestamp: time.Now(),
+			Data: map[string]interface{}{"sensor_id": "sen-1", "field_id": "fld-1"},
+		}); err != nil {
+			t.Errorf("%s: %v", evType, err)
+		}
+	}
+}

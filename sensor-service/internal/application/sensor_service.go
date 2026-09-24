@@ -270,13 +270,28 @@ func (s *sensorService) IngestReading(ctx context.Context, sensorID string, valu
 
 	triggeredAlert := s.evaluateThresholdAlerts(ctx, tenantID, sensorID, sensor, calibratedValue)
 
+	// tenant_id and recorded_at are here because a consumer cannot act on this
+	// without them, and irrigation-service now does: a soil-moisture reading
+	// can open a valve.
+	//
+	// The tenant, because a consumer has no request to inherit one from, and
+	// running unscoped means row-level security returns nothing — which reads
+	// as "this field has no irrigation zones" rather than as a failure.
+	//
+	// recorded_at, because the guard that stops a field being watered on a
+	// stale measurement has nothing else to check. A sensor that has died
+	// while reading dry otherwise justifies irrigation for ever, and a
+	// consumer that had to substitute "now" would turn that guard into a
+	// no-op that still looked like a guard.
 	s.emitEvent(ctx, "agriculture.sensor.reading.ingested", sensorID, map[string]interface{}{
 		"sensor_id":   sensorID,
+		"tenant_id":   tenantID,
 		"value":       calibratedValue,
 		"unit":        unit,
 		"quality":     string(quality),
 		"sensor_type": string(sensor.SensorType),
 		"field_id":    sensor.FieldID,
+		"recorded_at": timestamp.UTC().Format(time.RFC3339),
 	})
 
 	return created, triggeredAlert, nil
@@ -375,6 +390,27 @@ func (s *sensorService) BatchIngestReadings(ctx context.Context, readings []doma
 		if alert := s.evaluateThresholdAlerts(ctx, tenantID, input.SensorID, sensor, calibratedValue); alert != nil {
 			alerts = append(alerts, *alert)
 		}
+
+		// Emitted here too, and it was not before: this path published
+		// nothing at all, so a reading's consumers saw it only when it
+		// arrived one at a time. A gateway uploading a morning's telemetry
+		// in one call is the normal case in the field, and irrigation-service
+		// now acts on these — so the leg would have worked on a bench and not
+		// on a farm.
+		//
+		// A backfill of yesterday's readings does not water anything: the
+		// consumer refuses to act on a measurement older than two hours, and
+		// recorded_at below is what lets it tell.
+		s.emitEvent(ctx, "agriculture.sensor.reading.ingested", input.SensorID, map[string]interface{}{
+			"sensor_id":   input.SensorID,
+			"tenant_id":   tenantID,
+			"value":       calibratedValue,
+			"unit":        unit,
+			"quality":     string(quality),
+			"sensor_type": string(sensor.SensorType),
+			"field_id":    sensor.FieldID,
+			"recorded_at": ts.UTC().Format(time.RFC3339),
+		})
 	}
 
 	s.log.Infow("msg", "batch ingest completed", "ingested", ingestedCount, "failed", failedCount, "tenant_id", tenantID)

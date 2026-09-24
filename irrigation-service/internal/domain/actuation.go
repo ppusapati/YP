@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -422,4 +423,128 @@ func minTime(a, b time.Time) time.Time {
 		return a
 	}
 	return b
+}
+
+// ── Acting on a sensor reading ──────────────────────────────────────────────
+
+// SoilMoistureSensorType is the sensor_type a reading must carry to open a
+// valve. Nothing else on a farm's sensor network implies irrigation, and a
+// temperature reading that reached the moisture path would be compared against
+// a moisture threshold and water the field whenever it was cold.
+const SoilMoistureSensorType = "SOIL_MOISTURE"
+
+// GoodReadingQuality is the only quality that may open a valve.
+//
+// sensor-service grades every reading, marking one outside its sensor's valid
+// range SUSPECT or BAD. A probe that has been pulled out of the ground, or
+// whose cable has failed, reads far outside range — and reads dry.
+const GoodReadingQuality = "GOOD"
+
+// MoistureReading is a soil-moisture measurement as it arrives from
+// sensor-service.
+type MoistureReading struct {
+	SensorID string
+	TenantID string
+	FieldID  string
+	// Percent is volumetric water content as a percentage, 0..100.
+	//
+	// The name carries the unit deliberately. sensor-service records soil
+	// moisture on a 0..100 scale with unit "%", and a schedule's threshold is
+	// SoilMoistureThresholdPct on the same scale — but weather observations
+	// elsewhere in this platform carry m³/m³ on 0..1, and the two are a
+	// hundredfold apart. A fraction arriving here would read as 0.3% and
+	// water a field that is already saturated, every time a reading arrived.
+	Percent    float64
+	Unit       string
+	Quality    string
+	SensorType string
+	RecordedAt time.Time
+}
+
+// UsableForActuation reports whether a reading may be acted on.
+//
+// Returns an error naming the reason rather than a bool, because every one of
+// these is worth seeing in a log: a run of refusals means a sensor needs
+// attention, and "reading not usable" would not say which.
+func (r MoistureReading) UsableForActuation() error {
+	if r.TenantID == "" {
+		// Cannot be scoped, so every query would run unscoped and row-level
+		// security would return nothing — which reads as a field with no
+		// irrigation zones rather than as a failure.
+		return fmt.Errorf("reading carries no tenant")
+	}
+	if r.FieldID == "" {
+		return fmt.Errorf("reading carries no field, so there is no zone to water")
+	}
+	if r.SensorType != SoilMoistureSensorType {
+		return fmt.Errorf("sensor type %q does not measure soil moisture", r.SensorType)
+	}
+	if r.Quality != GoodReadingQuality {
+		return fmt.Errorf("reading is graded %s, not %s", r.Quality, GoodReadingQuality)
+	}
+	// Outside the physical range the value is not a moisture percentage at
+	// all. Most often it is a probe reading its own disconnection, which
+	// presents as dry — the exact reading that opens a valve.
+	if r.Percent < 0 || r.Percent > 100 {
+		return fmt.Errorf("moisture of %.1f%% is outside 0..100 and is not a percentage", r.Percent)
+	}
+	// A unit is not always sent, and an absent one is taken as the percentage
+	// sensor-service records. A unit that is present and is not a percentage
+	// is refused rather than converted: guessing at a scale is how a fraction
+	// becomes a hundredfold error that still looks like a reading.
+	if r.Unit != "" && r.Unit != "%" && r.Unit != "pct" {
+		return fmt.Errorf("moisture is reported in %q, not a percentage", r.Unit)
+	}
+	if r.RecordedAt.IsZero() {
+		return fmt.Errorf("reading carries no timestamp, so its age cannot be checked")
+	}
+	return nil
+}
+
+// AdaptiveSchedule picks the schedule that says when a sensor may water a zone.
+//
+// A zone opts into automatic irrigation by having exactly one ADAPTIVE
+// schedule with a threshold and a duration. Zones without one are not watered
+// from a sensor at all, which is the opt-in: this is unattended irrigation,
+// and it should start happening because somebody configured it rather than
+// because a sensor was installed.
+//
+// Two eligible schedules is a refusal, not a choice. They carry different
+// thresholds, so acting on whichever sorted first would silently ignore the
+// other and water the field on a rule nobody selected — and the farmer who
+// set the second one would have no way to tell.
+func AdaptiveSchedule(schedules []IrrigationSchedule) (*IrrigationSchedule, error) {
+	var found []*IrrigationSchedule
+	for i := range schedules {
+		s := &schedules[i]
+		if s.ScheduleType != ScheduleTypeAdaptive {
+			continue
+		}
+		if s.Status == IrrigationStatusCancelled || s.Status == IrrigationStatusCompleted {
+			continue
+		}
+		// Both are required. A threshold of zero would water a field only
+		// when the soil reads bone dry, and a duration of zero is a start
+		// command the interlocks reject as malformed — neither is a rule
+		// anybody meant to write.
+		if s.SoilMoistureThresholdPct <= 0 || s.DurationMinutes <= 0 {
+			continue
+		}
+		found = append(found, s)
+	}
+
+	switch len(found) {
+	case 0:
+		return nil, nil
+	case 1:
+		return found[0], nil
+	default:
+		ids := make([]string, 0, len(found))
+		for _, s := range found {
+			ids = append(ids, s.ID)
+		}
+		return nil, fmt.Errorf(
+			"zone has %d adaptive schedules (%s); their thresholds disagree and acting on one would ignore the rest",
+			len(found), strings.Join(ids, ", "))
+	}
 }

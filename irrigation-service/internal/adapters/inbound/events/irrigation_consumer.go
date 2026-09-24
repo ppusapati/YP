@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/p9context"
@@ -56,10 +57,19 @@ func (c *IrrigationConsumer) HandleEvent(ctx context.Context, event *domain.Doma
 	)
 
 	switch event.Type {
-	// Sensor events: soil moisture data drives irrigation decisions
-	case domain.EventTypeSensorCreated:
+	// A soil-moisture measurement, which can open a valve. The only event
+	// this service acts on rather than notes.
+	case domain.EventTypeSensorReadingIngested:
+		return c.onSensorReading(ctx, event)
+
+	// Sensor lifecycle. Both spellings are handled, and the second pair is
+	// why these handlers had never run: sensor-service emits
+	// `agriculture.sensor.registered` and `agriculture.sensor.decommissioned`,
+	// while this consumer listened for `...created` and `...updated`, which
+	// nothing publishes.
+	case domain.EventTypeSensorCreated, domain.EventTypeSensorRegistered:
 		return c.onSensorDeployed(ctx, event)
-	case domain.EventTypeSensorUpdated:
+	case domain.EventTypeSensorUpdated, domain.EventTypeSensorDecommissioned:
 		return c.onSensorUpdated(ctx, event)
 
 	// Field events: fields need irrigation zones
@@ -76,6 +86,81 @@ func (c *IrrigationConsumer) HandleEvent(ctx context.Context, event *domain.Doma
 		c.log.Infow("msg", "unhandled event type", "type", string(event.Type))
 		return nil
 	}
+}
+
+// onSensorReading turns a soil-moisture measurement into a valve movement,
+// where a zone has opted in and every interlock agrees.
+//
+// The parsing is here and the deciding is in the application service, so that
+// what happens to a reading can be tested without a Kafka message and a
+// malformed payload cannot reach an actuator.
+//
+// A payload this cannot read returns nil rather than an error. Kafka would
+// redeliver it for ever, and no amount of retrying makes a missing tenant
+// appear — while a blocked partition stops every other reading on the farm,
+// including the ones that should be opening valves.
+func (c *IrrigationConsumer) onSensorReading(ctx context.Context, event *domain.DomainEvent) error {
+	data, err := extractEventData(event)
+	if err != nil {
+		c.log.Warnw("msg", "unreadable sensor reading; not acted on",
+			"event_id", event.ID, "error", err)
+		return nil
+	}
+
+	reading := irrigationdomain.MoistureReading{
+		SensorID:   str(data, "sensor_id"),
+		TenantID:   str(data, "tenant_id"),
+		FieldID:    str(data, "field_id"),
+		Percent:    num(data, "value"),
+		Unit:       str(data, "unit"),
+		Quality:    str(data, "quality"),
+		SensorType: str(data, "sensor_type"),
+		RecordedAt: timestamp(data, "recorded_at"),
+	}
+
+	return c.svc.ApplyMoistureReading(ctx, reading)
+}
+
+// str, num and timestamp read a JSON payload field.
+//
+// num handles a number sent as a number, which is how sensor-service sends a
+// reading and is what a `.(string)` assertion would silently read as zero —
+// and zero percent moisture is the driest possible soil, so a value dropped
+// that way does not go missing, it waters the field.
+func str(data map[string]interface{}, key string) string {
+	v, _ := data[key].(string)
+	return v
+}
+
+func num(data map[string]interface{}, key string) float64 {
+	switch v := data[key].(type) {
+	case float64:
+		return v
+	case json.Number:
+		f, err := v.Float64()
+		if err != nil {
+			return 0
+		}
+		return f
+	default:
+		return 0
+	}
+}
+
+// timestamp reads an RFC 3339 string, and returns the zero time when there is
+// none. Zero is what the staleness guard reads as "no timestamp, do not act" —
+// substituting time.Now() here would turn that guard into a no-op that still
+// looked like a guard.
+func timestamp(data map[string]interface{}, key string) time.Time {
+	raw := str(data, key)
+	if raw == "" {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return time.Time{}
+	}
+	return t.UTC()
 }
 
 // onSensorDeployed handles a moisture sensor being deployed.

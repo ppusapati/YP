@@ -172,6 +172,15 @@ const (
 	EventTypeSensorCreated EventType = "agriculture.sensor.created"
 	EventTypeSensorUpdated EventType = "agriculture.sensor.updated"
 	EventTypeSensorDeleted EventType = "agriculture.sensor.deleted"
+	// ReadingIngested carries a measurement rather than a device's lifecycle,
+	// and it is the only sensor event that can move anything on a farm:
+	// irrigation-service opens a valve from a soil-moisture reading.
+	EventTypeSensorReadingIngested EventType = "agriculture.sensor.reading.ingested"
+	// Registered and Decommissioned are what sensor-service actually emits
+	// for a device arriving and leaving. Created/Updated/Deleted above are
+	// the vocabulary consumers were written against, and match nothing.
+	EventTypeSensorRegistered     EventType = "agriculture.sensor.registered"
+	EventTypeSensorDecommissioned EventType = "agriculture.sensor.decommissioned"
 
 	// Agriculture - Soil Events
 	EventTypeSoilSampleCreated EventType = "agriculture.soil.created"
@@ -350,7 +359,8 @@ func (e *DomainEvent) GetTopic() string {
 		return "samavaya.agriculture.field.events"
 	case EventTypeCropCreated, EventTypeCropUpdated, EventTypeCropDeleted:
 		return "samavaya.agriculture.crop.events"
-	case EventTypeSensorCreated, EventTypeSensorUpdated, EventTypeSensorDeleted:
+	case EventTypeSensorCreated, EventTypeSensorUpdated, EventTypeSensorDeleted,
+		EventTypeSensorReadingIngested, EventTypeSensorRegistered, EventTypeSensorDecommissioned:
 		return "samavaya.agriculture.sensor.events"
 	case EventTypeSoilSampleCreated, EventTypeSoilSampleUpdated, EventTypeSoilSampleDeleted:
 		return "samavaya.agriculture.soil.events"

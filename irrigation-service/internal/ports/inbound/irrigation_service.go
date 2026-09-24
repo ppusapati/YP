@@ -41,6 +41,10 @@ type IrrigationService interface {
 	// across three calls in a transport adapter meant the one step that
 	// mattered — telling the controller — had nowhere to live.
 	StopIrrigation(ctx context.Context, eventID, reason string) (*domain.IrrigationEvent, error)
+	// ApplyMoistureReading is the sensor leg: a soil-moisture measurement
+	// arrives from sensor-service and, where a zone has opted in and every
+	// interlock agrees, a valve opens without anybody present.
+	ApplyMoistureReading(ctx context.Context, reading domain.MoistureReading) error
 	GetEvent(ctx context.Context, uuid string) (*domain.IrrigationEvent, error)
 	ListEventsBySchedule(ctx context.Context, scheduleID string, pageSize, offset int32) ([]domain.IrrigationEvent, int32, error)
 
