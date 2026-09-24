@@ -265,7 +265,12 @@ func main() {
 				}
 				return eventConsumer.HandleEvent(ctx, &event)
 			}); err != nil {
-				log.Printf("WARNING: failed to subscribe to %s: %v", topic, err)
+				// Not fatal, and it used to be: ConsumerGroup ended the
+				// process from inside the library, so this line had never
+				// run. The consumer keeps retrying in the background, so
+				// this says "not consuming yet" rather than "never will".
+				log.Printf("WARNING: not consuming %s yet, retrying in the background; "+
+					"events on this topic are not being handled meanwhile: %v", topic, err)
 			}
 		}
 	}

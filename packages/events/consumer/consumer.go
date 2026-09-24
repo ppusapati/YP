@@ -2,8 +2,10 @@ package consumer
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"p9e.in/samavaya/packages/api/v1/message"
 	"p9e.in/samavaya/packages/events/config"
@@ -31,27 +33,49 @@ func NewKafkaConsumer(config *config.KafkaConfig, lg p9log.Logger) *KafkaConsume
 	return kc
 }
 
-func (kc *KafkaConsumer) ConsumerGroup(groupName string) sarama.ConsumerGroup {
+// ConsumerGroup joins a Kafka consumer group.
+//
+// Returns the error rather than ending the process, which is what this used to
+// do: a Fatalf here called os.Exit inside a library, so a broker that was
+// briefly unreachable at boot took the whole service down — including the RPCs
+// it could still have served. Worse, Subscribe below declares an error return
+// that every caller checks, and could never return one: the only failure path
+// exited instead, so thirteen services had a warning branch that had never
+// run.
+//
+// Returns (nil, nil) once Cleanup has been called, which is a shutdown in
+// progress rather than a failure.
+func (kc *KafkaConsumer) ConsumerGroup(groupName string) (sarama.ConsumerGroup, error) {
 	if kc.shutdown.Load() {
-		return nil
+		return nil, nil
 	}
 
 	consumerConfig := kc.createConsumerConfig()
 	consumer, err := sarama.NewConsumerGroup([]string{kc.config.Broker}, groupName, consumerConfig)
 	if err != nil {
-		kc.log.Fatalf("Error creating Kafka consumer group: %v", err)
+		return nil, fmt.Errorf("joining Kafka consumer group %q at %s: %w",
+			groupName, kc.config.Broker, err)
 	}
 
 	kc.groupsMu.Lock()
 	kc.groups = append(kc.groups, consumer)
 	kc.groupsMu.Unlock()
-	return consumer
+	return consumer, nil
 }
 
 func (kc *KafkaConsumer) Consume(ctx context.Context, kafkaMessages chan *message.EventMessage) {
 	ctx = kc.watchSignals(ctx)
 
-	consumer := kc.ConsumerGroup(kc.config.Group)
+	consumer, err := kc.ConsumerGroup(kc.config.Group)
+	if err != nil {
+		kc.log.Errorf("Not consuming: %v", err)
+		return
+	}
+	if consumer == nil {
+		// Shutting down. Deferring Close on this used to panic on a nil
+		// interface, turning an orderly shutdown into a crash.
+		return
+	}
 	defer consumer.Close()
 
 	for _, topic := range kc.config.Topic {
@@ -119,20 +143,89 @@ func (kc *KafkaConsumer) closeAllGroups() {
 	kc.groups = nil
 }
 
+// reconnectBackoff is how long Subscribe waits between attempts to reach a
+// broker that was not there when the service started.
+//
+// Bounded and capped rather than immediate, because a broker that is down
+// tends to be down for a while, and thirty services retrying in a tight loop
+// is its own outage.
+const (
+	reconnectInitial = 2 * time.Second
+	reconnectMax     = 30 * time.Second
+)
+
 // Subscribe registers a callback handler for a given topic. It creates a
 // consumer group and starts consuming in the background. The handler is called
 // for each message received on the topic with the raw payload bytes extracted
 // from the EventMessage's Any value.
+//
+// Returns an error when the broker cannot be reached on the first attempt —
+// which is new, and is the point. This used to end the process from inside
+// ConsumerGroup, so the error every caller checks could never be returned and
+// their warning branch had never run.
+//
+// It then keeps trying in the background until ctx ends. Without that, fixing
+// the crash would have traded a service that restarts loudly for one that
+// starts, consumes nothing for ever, and reports itself healthy — and a
+// consumer that silently stops is how a farm's sensor readings, field
+// deletions and crop assignments go quietly missing.
+//
+// So the error means "not consuming yet", not "never will". A caller that
+// wants to refuse to start can still treat it as fatal.
 func (kc *KafkaConsumer) Subscribe(ctx context.Context, topic string, handler func(ctx context.Context, data []byte) error) error {
 	if kc.shutdown.Load() {
 		return nil
 	}
 
-	consumer := kc.ConsumerGroup(kc.config.Group + "-" + topic)
+	consumer, err := kc.ConsumerGroup(kc.config.Group + "-" + topic)
+	if err != nil {
+		// Keep trying, and tell the caller it is not consuming right now.
+		go kc.resubscribe(ctx, topic, handler)
+		return err
+	}
 	if consumer == nil {
 		return nil
 	}
 
+	kc.consume(ctx, consumer, topic, handler)
+	return nil
+}
+
+// resubscribe retries until the broker accepts or ctx ends.
+func (kc *KafkaConsumer) resubscribe(ctx context.Context, topic string, handler func(ctx context.Context, data []byte) error) {
+	wait := reconnectInitial
+	for {
+		timer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
+
+		if kc.shutdown.Load() {
+			return
+		}
+
+		consumer, err := kc.ConsumerGroup(kc.config.Group + "-" + topic)
+		if err != nil {
+			if wait *= 2; wait > reconnectMax {
+				wait = reconnectMax
+			}
+			continue
+		}
+		if consumer == nil {
+			return
+		}
+
+		kc.log.Infow("msg", "subscribed to topic after an earlier failure", "topic", topic)
+		kc.consume(ctx, consumer, topic, handler)
+		return
+	}
+}
+
+// consume pumps one topic's messages into the handler until ctx ends.
+func (kc *KafkaConsumer) consume(ctx context.Context, consumer sarama.ConsumerGroup, topic string, handler func(ctx context.Context, data []byte) error) {
 	msgCh := make(chan *message.EventMessage, 100)
 	kc.ConsumingTopic(ctx, consumer, topic, msgCh)
 
@@ -153,8 +246,6 @@ func (kc *KafkaConsumer) Subscribe(ctx context.Context, topic string, handler fu
 			}
 		}
 	}()
-
-	return nil
 }
 
 func (kc *KafkaConsumer) Cleanup() {
