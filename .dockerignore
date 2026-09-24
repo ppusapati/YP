@@ -23,6 +23,18 @@ mobile/.dart_tool
 mobile/**/build
 mobile/**/.flutter-plugins
 
+# Rust build artifacts.
+#
+# By far the largest thing in this repository — ml-training/target alone runs
+# to several gigabytes — and nothing a Go service image can use. Left in, every
+# one of the thirty-one service builds copies all of it into the build context
+# before the first instruction runs: slow in CI, and enough to exhaust the disk
+# on a smaller machine.
+#
+# A glob rather than a list, so a new Rust crate is covered without anybody
+# remembering to add it.
+**/target/
+
 # Python caches
 python-ai/**/__pycache__
 python-ai/**/*.pyc
