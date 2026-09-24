@@ -492,7 +492,15 @@ func (r MoistureReading) UsableForActuation() error {
 	// sensor-service records. A unit that is present and is not a percentage
 	// is refused rather than converted: guessing at a scale is how a fraction
 	// becomes a hundredfold error that still looks like a reading.
-	if r.Unit != "" && r.Unit != "%" && r.Unit != "pct" {
+	//
+	// The accepted spellings are only the ones that unambiguously mean a
+	// percentage. sensor-service passes the unit through as free text from the
+	// device or its configuration, so which of these a given probe sends is
+	// not something this service gets to decide — and refusing "percent"
+	// because the fixture happened to say "%" would strand a reading over
+	// nothing. Anything outside this set is still refused, because "m3/m3"
+	// differs from "%" by a factor of a hundred.
+	if !isPercentUnit(r.Unit) {
 		return fmt.Errorf("moisture is reported in %q, not a percentage", r.Unit)
 	}
 	if r.RecordedAt.IsZero() {
@@ -671,4 +679,18 @@ func EstimatedVolume(startRateLitersPerHour, endRateLitersPerHour float64, haveS
 		return 0, false
 	}
 	return (sum / float64(n)) * ran.Hours(), true
+}
+
+// isPercentUnit reports whether a unit string means "percent".
+//
+// An empty unit counts: sensor-service leaves it unset when neither the
+// reading nor the sensor's configuration carries one, and what it records in
+// that case is a percentage.
+func isPercentUnit(unit string) bool {
+	switch strings.ToLower(strings.TrimSpace(unit)) {
+	case "", "%", "pct", "percent":
+		return true
+	default:
+		return false
+	}
 }

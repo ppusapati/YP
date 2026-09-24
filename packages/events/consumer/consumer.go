@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	"p9e.in/samavaya/packages/api/v1/message"
 	"p9e.in/samavaya/packages/events/config"
 	"p9e.in/samavaya/packages/events/handler"
@@ -16,7 +18,10 @@ import (
 )
 
 type KafkaConsumer struct {
-	config    *config.KafkaConfig
+	config *config.KafkaConfig
+	// logger is kept alongside the helper because the message handler needs a
+	// Logger, not a Helper, to build its own.
+	logger    p9log.Logger
 	log       p9log.Helper
 	committed atomic.Value
 	shutdown  atomic.Bool
@@ -27,6 +32,7 @@ type KafkaConsumer struct {
 func NewKafkaConsumer(config *config.KafkaConfig, lg p9log.Logger) *KafkaConsumer {
 	kc := &KafkaConsumer{
 		config: config,
+		logger: lg,
 		log:    *p9log.NewHelper(p9log.With(lg, "caller", "Kafka Consumer")),
 	}
 	kc.committed.Store(make(map[string]map[int32]int64))
@@ -87,10 +93,8 @@ func (kc *KafkaConsumer) Consume(ctx context.Context, kafkaMessages chan *messag
 }
 
 func (kc *KafkaConsumer) ConsumingTopic(ctx context.Context, consumer sarama.ConsumerGroup, topic string, kafkaMessages chan *message.EventMessage) {
-	handler := &handler.KafkaHandler{
-		KafkaMessages: kafkaMessages,
-		// Consumer:      kc,
-	}
+	handler := handler.NewKafkaHandler(kc.logger)
+	handler.KafkaMessages = kafkaMessages
 
 	go func() {
 		for {
@@ -239,7 +243,7 @@ func (kc *KafkaConsumer) consume(ctx context.Context, consumer sarama.ConsumerGr
 				if !ok {
 					return
 				}
-				data := msg.GetValue().GetValue()
+				data := payloadOf(msg)
 				if err := handler(ctx, data); err != nil {
 					kc.log.Errorf("Error handling message from topic %s: %v", topic, err)
 				}
@@ -269,4 +273,37 @@ func (kc *KafkaConsumer) createConsumerConfig() *sarama.Config {
 	}
 
 	return config
+}
+
+// payloadOf returns the bytes a domain handler should parse.
+//
+// Three shapes reach here and they are not interchangeable:
+//
+//   - A bare payload, put on the partition by the outbox relay. The handler
+//     carries it through in an Any with no type URL, so the bytes are the
+//     payload exactly as published. This is what every service in this
+//     repository actually produces.
+//   - An Any wrapping a StringValue, which is how DomainEventPublisher packs
+//     an event. Reading Any.Value directly here yields the marshalled
+//     StringValue — the JSON with a protobuf tag and length glued to the
+//     front — which no json.Unmarshal will accept.
+//   - Anything else, returned as-is for the handler to reject.
+func payloadOf(m *message.EventMessage) []byte {
+	v := m.GetValue()
+	if v == nil {
+		return nil
+	}
+	if v.GetTypeUrl() == "" {
+		return v.GetValue()
+	}
+
+	var s wrapperspb.StringValue
+	if v.MessageIs(&s) && v.UnmarshalTo(&s) == nil {
+		return []byte(s.GetValue())
+	}
+	var b wrapperspb.BytesValue
+	if v.MessageIs(&b) && v.UnmarshalTo(&b) == nil {
+		return b.GetValue()
+	}
+	return v.GetValue()
 }

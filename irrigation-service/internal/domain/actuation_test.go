@@ -285,3 +285,30 @@ func TestAutomationIsOffByDefault(t *testing.T) {
 		t.Error("a zone with no configuration would accept automatic commands")
 	}
 }
+
+// Which spelling of "percent" a probe sends is not this service's choice.
+//
+// sensor-service passes the unit through as free text from the device or its
+// configuration, so a reading can arrive as "%", "pct", "percent" or with no
+// unit at all, and all four mean the same thing. What must stay refused is a
+// unit on a different scale: m³/m³ differs from a percentage by a factor of a
+// hundred, and converting on a guess turns dry soil into wet soil.
+func TestWhichSpellingOfPercentAProbeSendsDoesNotDecideWhetherItIrrigates(t *testing.T) {
+	percentages := []string{"", "%", "pct", "percent", "PERCENT", "Pct", " % "}
+	for _, unit := range percentages {
+		t.Run("accepts "+unit, func(t *testing.T) {
+			if !isPercentUnit(unit) {
+				t.Errorf("unit %q was refused, but it means a percentage", unit)
+			}
+		})
+	}
+
+	otherScales := []string{"m3/m3", "m³/m³", "fraction", "kPa", "cb", "vwc"}
+	for _, unit := range otherScales {
+		t.Run("refuses "+unit, func(t *testing.T) {
+			if isPercentUnit(unit) {
+				t.Errorf("unit %q was accepted as a percentage; it is a different scale", unit)
+			}
+		})
+	}
+}

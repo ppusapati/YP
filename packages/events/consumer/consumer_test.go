@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"p9e.in/samavaya/packages/api/v1/message"
 	"p9e.in/samavaya/packages/events/config"
 	"p9e.in/samavaya/packages/testutil"
 )
@@ -176,4 +180,62 @@ func indexOf(haystack, needle string) int {
 		}
 	}
 	return -1
+}
+
+// The payload a domain handler receives is the payload that was published.
+//
+// Reading Any.Value directly worked only by accident for one of the three
+// shapes on the wire. For an Any wrapping a StringValue it handed the handler
+// the JSON with protobuf framing glued to the front, so json.Unmarshal failed
+// on bytes that were never malformed.
+func TestThePayloadSurvivesEveryWireFormat(t *testing.T) {
+	const published = `{"type":"agriculture.sensor.reading.ingested"}`
+
+	wrapped, err := anypb.New(wrapperspb.String(published))
+	if err != nil {
+		t.Fatalf("wrapping: %v", err)
+	}
+	asBytes, err := anypb.New(wrapperspb.Bytes([]byte(published)))
+	if err != nil {
+		t.Fatalf("wrapping: %v", err)
+	}
+
+	cases := []struct {
+		name string
+		msg  *message.EventMessage
+		want string
+	}{
+		{
+			// What the outbox relay puts on the partition, which is what every
+			// service in this repository publishes.
+			name: "a bare payload",
+			msg:  &message.EventMessage{Value: &anypb.Any{Value: []byte(published)}},
+			want: published,
+		},
+		{
+			name: "an Any wrapping a StringValue",
+			msg:  &message.EventMessage{Value: wrapped},
+			want: published,
+		},
+		{
+			name: "an Any wrapping a BytesValue",
+			msg:  &message.EventMessage{Value: asBytes},
+			want: published,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := string(payloadOf(tc.msg)); got != tc.want {
+				t.Errorf("payload = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// A message with no value at all yields nothing rather than panicking.
+func TestAnEmptyMessageHasNoPayload(t *testing.T) {
+	if got := payloadOf(&message.EventMessage{}); len(got) != 0 {
+		t.Errorf("payload = %q, want empty", got)
+	}
 }
