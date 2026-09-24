@@ -45,6 +45,21 @@ type ControllerAck struct {
 	// nothing. Distinguished from Accepted so a retry does not look like a
 	// second run in the logs or the daily total.
 	Duplicate bool
+
+	// Queued means the command was handed to a network that will deliver it
+	// later, and the device itself has not answered.
+	//
+	// LoRaWAN forces this distinction into the open. A class A device only
+	// listens in the short receive window after its own next uplink, so a
+	// downlink is enqueued at the network server and may sit there for
+	// minutes. The network server's 200 means "accepted for delivery", which
+	// is not the valve moving — and recording it as an acceptance would put
+	// "irrigation started" against a command still waiting in a queue.
+	//
+	// The same care applies to MQTT: a broker's PUBACK is the broker's, not
+	// the device's, which is why the MQTT client waits for the controller to
+	// answer on its own topic rather than treating the publish as the ack.
+	Queued bool
 }
 
 // ControllerStatus is a controller's reported state.

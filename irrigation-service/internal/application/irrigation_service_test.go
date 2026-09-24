@@ -1196,7 +1196,7 @@ func TestCancelSchedule_NotFound(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTriggerIrrigation_HappyPath(t *testing.T) {
-	repo, pub, svc := newService()
+	repo, pub, svc, hw := actuated()
 	ctx := testContext("tenant-1", "user-1")
 
 	repo.schedules["sched-001"] = &domain.IrrigationSchedule{
@@ -1213,7 +1213,61 @@ func TestTriggerIrrigation_HappyPath(t *testing.T) {
 	assert.Equal(t, "event-uuid-001", evt.ID)
 	assert.Equal(t, domain.IrrigationStatusActive, evt.Status)
 	assert.NotNil(t, evt.StartedAt)
-	assert.Len(t, pub.published, 1)
+
+	// The point of the whole exercise: a command reached a controller. This
+	// used to pass with nothing dialled at all.
+	require.Len(t, hw.sent, 1, "no command was sent to a controller")
+	assert.Equal(t, domain.CommandStart, hw.sent[0].Kind)
+	assert.Equal(t, int32(30), hw.sent[0].DurationMinutes)
+	assert.Equal(t, "zone-001", hw.sent[0].ZoneID)
+
+	// Two events: the actuator's command.sent and the service's triggered.
+	assert.Len(t, pub.published, 2)
+
+	// And the run's "actual" columns are left empty rather than pre-filled
+	// with the schedule's figures at start time.
+	assert.Zero(t, evt.ActualWaterLiters)
+	assert.Zero(t, evt.ActualDurationMinutes)
+}
+
+// A refused command writes no run. A row saying a field was irrigated is a
+// claim that water went on it.
+func TestTriggerIrrigation_RefusedCommandRecordsNoRun(t *testing.T) {
+	repo, pub, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	hw := &fakeController{ack: &outbound.ControllerAck{Accepted: false, Reason: "low reservoir"}}
+	svc.WithActuator(NewActuator(readyZone(), hw, &fakeCommands{}, pub, p9log.NewLogger(zap.NewNop())))
+
+	repo.schedules["sched-001"] = &domain.IrrigationSchedule{
+		TenantID: "tenant-1", ZoneID: "zone-001", DurationMinutes: 30,
+		Status: domain.IrrigationStatusScheduled,
+	}
+	repo.schedules["sched-001"].ID = "sched-001"
+
+	_, err := svc.TriggerIrrigation(ctx, "sched-001")
+	require.Error(t, err)
+	assert.Empty(t, repo.events, "a refused command left a run in the history")
+	assert.Equal(t, domain.IrrigationStatusScheduled, repo.schedules["sched-001"].Status,
+		"a refused command flipped the schedule to ACTIVE")
+}
+
+// With no controller client at all, the RPC refuses rather than recording a
+// run nothing performed. That is the whole shape of this change.
+func TestTriggerIrrigation_WithNoHardwareRefuses(t *testing.T) {
+	repo, _, svc := newService()
+	ctx := testContext("tenant-1", "user-1")
+
+	repo.schedules["sched-001"] = &domain.IrrigationSchedule{
+		TenantID: "tenant-1", ZoneID: "zone-001", DurationMinutes: 30,
+		Status: domain.IrrigationStatusScheduled,
+	}
+	repo.schedules["sched-001"].ID = "sched-001"
+
+	_, err := svc.TriggerIrrigation(ctx, "sched-001")
+	require.Error(t, err)
+	assert.Equal(t, "ACTUATOR_UNAVAILABLE", errors.Reason(err))
+	assert.Empty(t, repo.events)
 }
 
 func TestTriggerIrrigation_MissingTenant(t *testing.T) {
@@ -1244,28 +1298,34 @@ func TestTriggerIrrigation_ScheduleNotFound(t *testing.T) {
 	assert.True(t, errors.IsNotFound(err))
 }
 
+// A controller that is not answering refuses the start, and the refusal names
+// the interlock.
+//
+// This used to read a stored status column, and only when the schedule
+// happened to name a controller — so a schedule without one skipped the check
+// entirely. It is now an interlock over the zone's actual controller, and
+// reachability comes from the heartbeat rather than from a cached opinion.
 func TestTriggerIrrigation_ControllerNotOnline(t *testing.T) {
-	repo, _, svc := newService()
+	repo, pub, svc := newService()
 	ctx := testContext("tenant-1", "user-1")
 
-	repo.controllers["ctrl-001"] = &domain.WaterController{
-		TenantID: "tenant-1",
-		Status:   domain.ControllerStatusOffline,
-	}
-	repo.controllers["ctrl-001"].ID = "ctrl-001"
+	zones := readyZone()
+	zones.state.ControllerOnline = false
+	hw := &fakeController{}
+	svc.WithActuator(NewActuator(zones, hw, &fakeCommands{}, pub, p9log.NewLogger(zap.NewNop())))
 
 	repo.schedules["sched-001"] = &domain.IrrigationSchedule{
-		TenantID:     "tenant-1",
-		ZoneID:       "zone-001",
-		ControllerID: "ctrl-001",
-		Status:       domain.IrrigationStatusScheduled,
+		TenantID:        "tenant-1",
+		ZoneID:          "zone-001",
+		DurationMinutes: 30,
+		Status:          domain.IrrigationStatusScheduled,
 	}
 	repo.schedules["sched-001"].ID = "sched-001"
 
 	_, err := svc.TriggerIrrigation(ctx, "sched-001")
 	require.Error(t, err)
-	assert.True(t, errors.IsBadRequest(err))
-	assert.Equal(t, "CONTROLLER_NOT_ONLINE", errors.Reason(err))
+	assert.Equal(t, "INTERLOCK_controller_offline", errors.Reason(err))
+	assert.Empty(t, hw.sent, "a start was sent to a controller that is not answering")
 }
 
 // ---------------------------------------------------------------------------

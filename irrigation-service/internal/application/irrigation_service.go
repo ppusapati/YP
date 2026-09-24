@@ -33,8 +33,22 @@ type irrigationService struct {
 	farmClient    outbound.FarmClient
 	weatherClient outbound.WeatherClient
 	waterClient   outbound.WaterBalanceClient
-	pool          *pgxpool.Pool
-	log           *p9log.Helper
+	// actuator is what turns a decision into a valve movement. Optional, and
+	// its absence is a refusal rather than a silent fallback to recording runs
+	// that did not happen.
+	actuator *Actuator
+	pool     *pgxpool.Pool
+	log      *p9log.Helper
+}
+
+// WithActuator enables real actuation.
+//
+// An option rather than a constructor argument to match WithWaterBalance, and
+// because a deployment with no controllers is a legitimate one: it keeps
+// schedules, decisions and history, and refuses to claim it opened a valve.
+func (s *irrigationService) WithActuator(a *Actuator) *irrigationService {
+	s.actuator = a
+	return s
 }
 
 // NewIrrigationService creates a new application-layer IrrigationService.
@@ -507,32 +521,65 @@ func (s *irrigationService) TriggerIrrigation(ctx context.Context, scheduleID st
 		return nil, errors.NotFound("SCHEDULE_NOT_FOUND", fmt.Sprintf("schedule not found: %s", scheduleID))
 	}
 
-	if schedule.ControllerID != "" {
-		controller, err := s.repo.GetControllerByUUID(ctx, schedule.ControllerID)
-		if err != nil {
-			return nil, errors.NotFound("CONTROLLER_NOT_FOUND", fmt.Sprintf("controller not found: %s", schedule.ControllerID))
-		}
-		if controller.Status != domain.ControllerStatusOnline {
-			return nil, errors.BadRequest("CONTROLLER_NOT_ONLINE",
-				fmt.Sprintf("controller %s is not online (status: %s)", schedule.ControllerID, controller.Status))
-		}
+	// The valve first, the record second, and that order is the change.
+	//
+	// This used to flip the schedule to ACTIVE, write an event row and return
+	// success without dialling anything: "turn on zone 3" was a database entry
+	// rather than a valve movement, and a farmer reading their irrigation
+	// history saw runs that never happened. The stored controller status was
+	// consulted, which is a cached opinion something has to remember to
+	// revise, and only when the schedule happened to name a controller.
+	//
+	// Now the actuator runs every interlock — automation, already running,
+	// maximum run, minimum rest, daily cap, controller reachability — records
+	// the command before sending it, and sends it. An event row is written
+	// only once a controller has taken the command, because the row is a
+	// record of water going on a field.
+	if s.actuator == nil {
+		return nil, errors.ServiceUnavailable("ACTUATOR_UNAVAILABLE",
+			"this deployment has no controller client configured, so irrigation cannot be started")
+	}
+
+	userID := p9context.UserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
+
+	cmd := &domain.IrrigationCommand{
+		ID:              ulid.NewString(),
+		TenantID:        tenantID,
+		ZoneID:          schedule.ZoneID,
+		Kind:            domain.CommandStart,
+		DurationMinutes: schedule.DurationMinutes,
+		LitersRequested: schedule.WaterQuantityLiters,
+		IssuedBy:        userID,
+		Reason:          fmt.Sprintf("schedule %s triggered", scheduleID),
+	}
+	if _, err := s.actuator.Actuate(ctx, cmd); err != nil {
+		// Returned as-is. The actuator's refusals already name the interlock
+		// that stopped the command — INTERLOCK_MIN_REST, INTERLOCK_MAX_DAILY —
+		// and flattening them into one message would cost an operator the
+		// difference between a safety limit and a fault.
+		return nil, err
 	}
 
 	now := time.Now()
-	_, err = s.repo.UpdateScheduleStatus(ctx, scheduleID, domain.IrrigationStatusActive)
-	if err != nil {
+	if _, err := s.repo.UpdateScheduleStatus(ctx, scheduleID, domain.IrrigationStatusActive); err != nil {
 		return nil, err
 	}
 
 	evt := &domain.IrrigationEvent{
-		TenantID:              tenantID,
-		ScheduleID:            scheduleID,
-		ZoneID:                schedule.ZoneID,
-		ControllerID:          schedule.ControllerID,
-		Status:                domain.IrrigationStatusActive,
-		StartedAt:             &now,
-		ActualDurationMinutes: schedule.DurationMinutes,
-		ActualWaterLiters:     schedule.WaterQuantityLiters,
+		TenantID:     tenantID,
+		ScheduleID:   scheduleID,
+		ZoneID:       schedule.ZoneID,
+		ControllerID: cmd.ControllerID,
+		Status:       domain.IrrigationStatusActive,
+		StartedAt:    &now,
+		// Deliberately not pre-filled with the schedule's figures. They used
+		// to be copied into ActualDurationMinutes and ActualWaterLiters at
+		// start time — before water could have flowed — so a plan was stored
+		// in a column named "actual" and nothing ever revised it. StopIrrigation
+		// now fills them in from the run that happened.
 	}
 
 	createdEvent, err := s.repo.CreateEvent(ctx, evt)
@@ -604,6 +651,96 @@ func (s *irrigationService) locate(ctx context.Context, schedule *domain.Irrigat
 		farmID = zone.FarmID
 	}
 	return fieldID, farmID
+}
+
+// StopIrrigation closes the valve for a run, then closes the run.
+//
+// The valve first. Cancelling the schedule was what this used to do and it
+// stops nothing: a schedule is a plan, and a cancelled plan does not reach the
+// panel that currently has water flowing. A stop is never refused by an
+// interlock — every guard in this service applies to starting water, because
+// the one thing worse than a valve that will not open is a valve that will not
+// close.
+func (s *irrigationService) StopIrrigation(ctx context.Context, eventID, reason string) (*domain.IrrigationEvent, error) {
+	tenantID := p9context.TenantID(ctx)
+	if tenantID == "" {
+		return nil, errors.BadRequest("MISSING_TENANT", "tenant ID is required")
+	}
+	if eventID == "" {
+		return nil, errors.BadRequest("MISSING_EVENT_ID", "event_id is required")
+	}
+	userID := p9context.UserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
+
+	evt, err := s.repo.GetEventByUUID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	if evt.EndedAt != nil {
+		// Already closed. Idempotent rather than an error: an operator
+		// pressing stop twice on a slow connection means stop.
+		return evt, nil
+	}
+
+	if s.actuator == nil {
+		return nil, errors.ServiceUnavailable("ACTUATOR_UNAVAILABLE",
+			"this deployment has no controller client configured, so the valve cannot be closed from here")
+	}
+	if reason == "" {
+		reason = "stop requested"
+	}
+	if _, err := s.actuator.Stop(ctx, tenantID, evt.ZoneID, userID, reason); err != nil {
+		// Not swallowed, and the run is left open. Marking it finished while
+		// the valve may still be open is the one outcome that leaves nobody
+		// looking for the water.
+		s.log.Errorw("msg", "could not close the valve", "event_id", eventID,
+			"zone_id", evt.ZoneID, "error", err)
+		return nil, err
+	}
+
+	now := time.Now()
+	evt.EndedAt = &now
+	evt.Status = domain.IrrigationStatusCompleted
+	if evt.StartedAt != nil {
+		// Measured, not planned: wall clock between the start and the stop.
+		// This is the only figure on the row that anything has observed.
+		evt.ActualDurationMinutes = int32(now.Sub(*evt.StartedAt) / time.Minute)
+	}
+	// ActualWaterLiters is deliberately left alone. Multiplying the elapsed
+	// minutes by a controller's nameplate flow rate would produce a number
+	// that looks like a meter reading and is not one; a blocked line or a
+	// closed manual valve upstream delivers nothing at the same nameplate
+	// rate. It stays zero until something meters the water.
+
+	updated, err := s.repo.UpdateEvent(ctx, evt)
+	if err != nil {
+		return nil, err
+	}
+
+	// The schedule is cancelled after the valve is shut, not instead of it.
+	if evt.ScheduleID != "" {
+		if err := s.CancelSchedule(ctx, evt.ScheduleID); err != nil {
+			// Logged and swallowed: the water is off and the run is recorded,
+			// which is what the caller asked for. A schedule left ACTIVE is a
+			// tidiness problem, not a valve.
+			s.log.Warnw("msg", "valve closed but the schedule could not be cancelled",
+				"event_id", eventID, "schedule_id", evt.ScheduleID, "error", err)
+		}
+	}
+
+	s.emitEvent(ctx, string(eventsdomain.EventTypeIrrigationStopped), updated.ID, map[string]interface{}{
+		"event_id":                updated.ID,
+		"schedule_id":             updated.ScheduleID,
+		"tenant_id":               tenantID,
+		"zone_id":                 updated.ZoneID,
+		"ended_at":                now.UTC().Format(time.RFC3339),
+		"actual_duration_minutes": updated.ActualDurationMinutes,
+		"stopped_by":              userID,
+		"reason":                  reason,
+	})
+	return updated, nil
 }
 
 func (s *irrigationService) GetEvent(ctx context.Context, uuid string) (*domain.IrrigationEvent, error) {

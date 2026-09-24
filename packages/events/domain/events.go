@@ -195,6 +195,9 @@ const (
 	EventTypeIrrigationUpdated   EventType = "agriculture.irrigation.updated"
 	EventTypeIrrigationDeleted   EventType = "agriculture.irrigation.deleted"
 	EventTypeIrrigationTriggered EventType = "agriculture.irrigation.triggered"
+	// Stopped closes what Triggered opened, and carries the measured duration
+	// — the only figure on an irrigation run that anything observes.
+	EventTypeIrrigationStopped EventType = "agriculture.irrigation.stopped"
 
 	// Agriculture - Yield Events
 	EventTypeYieldCreated EventType = "agriculture.yield.created"
@@ -353,7 +356,8 @@ func (e *DomainEvent) GetTopic() string {
 		return "samavaya.agriculture.soil.events"
 	case EventTypeWeatherLocationRegistered, EventTypeWeatherObservation, EventTypeWeatherForecast, EventTypeWeatherAlertTriggered, EventTypeWeatherBackfillCompleted:
 		return "samavaya.agriculture.weather.events"
-	case EventTypeIrrigationCreated, EventTypeIrrigationUpdated, EventTypeIrrigationDeleted, EventTypeIrrigationTriggered:
+	case EventTypeIrrigationCreated, EventTypeIrrigationUpdated, EventTypeIrrigationDeleted,
+		EventTypeIrrigationTriggered, EventTypeIrrigationStopped:
 		return "samavaya.agriculture.irrigation.events"
 	case EventTypeYieldCreated, EventTypeYieldUpdated, EventTypeYieldDeleted:
 		return "samavaya.agriculture.yield.events"

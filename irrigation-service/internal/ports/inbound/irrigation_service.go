@@ -34,6 +34,13 @@ type IrrigationService interface {
 	CancelSchedule(ctx context.Context, uuid string) error
 
 	TriggerIrrigation(ctx context.Context, scheduleID string) (*domain.IrrigationEvent, error)
+	// StopIrrigation closes the valve for a run and closes the run.
+	//
+	// One call rather than the handler's old sequence of get-event, cancel-
+	// schedule, re-fetch: stopping water is the operation, and spreading it
+	// across three calls in a transport adapter meant the one step that
+	// mattered — telling the controller — had nowhere to live.
+	StopIrrigation(ctx context.Context, eventID, reason string) (*domain.IrrigationEvent, error)
 	GetEvent(ctx context.Context, uuid string) (*domain.IrrigationEvent, error)
 	ListEventsBySchedule(ctx context.Context, scheduleID string, pageSize, offset int32) ([]domain.IrrigationEvent, int32, error)
 

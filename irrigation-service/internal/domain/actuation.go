@@ -44,6 +44,14 @@ type IrrigationCommand struct {
 	ZoneID   string      `json:"zone_id"`
 	Kind     CommandKind `json:"kind"`
 
+	// ControllerID is the box this was sent to, filled in by the actuator once
+	// it has resolved the zone's controller.
+	//
+	// Recorded rather than left to be derived from the zone, because a zone's
+	// controller can be replaced: asking later which device received a command
+	// would otherwise give the answer for whatever box is there now.
+	ControllerID string `json:"controller_id"`
+
 	// DurationMinutes bounds a start. There is no unbounded open.
 	//
 	// A command that says "on" and relies on a later command to say "off"
@@ -119,6 +127,25 @@ const (
 	// dry. Without this, its last value justifies irrigation forever, and the
 	// field is watered on the strength of a measurement from last week.
 	MaxReadingAge = 2 * time.Hour
+
+	// ControllerHeartbeatTTL is how long a heartbeat stays evidence that a
+	// controller is reachable.
+	//
+	// The failure this catches is a controller that was answering and stopped.
+	// Its stored status still says ONLINE, because a status column is a cached
+	// opinion that something has to remember to revise, while the absence of a
+	// heartbeat is the device itself not speaking.
+	ControllerHeartbeatTTL = 15 * time.Minute
+
+	// DailyWindow is the period MaxDailyMinutes is counted over.
+	//
+	// A rolling 24 hours rather than a calendar day, because no zone stores a
+	// timezone and the alternative is counting from UTC midnight — which on an
+	// Indian farm falls at 05:30 local, in the middle of the morning irrigation
+	// set, and would reset the daily cap halfway through it. A rolling window
+	// has no boundary to land badly and is never more permissive than a
+	// calendar day.
+	DailyWindow = 24 * time.Hour
 )
 
 // ZoneLimits are the per-zone overrides.
@@ -273,4 +300,126 @@ func ReadingTooOld(readingAt, now time.Time, maxAge time.Duration) bool {
 		return true
 	}
 	return now.Sub(readingAt) > maxAge
+}
+
+// ── Deriving a zone's state from what was recorded ──────────────────────────
+
+// Run is one irrigation run as the events table holds it.
+type Run struct {
+	StartedAt time.Time
+	// EndedAt is when the run was recorded as finished. Nil is the common
+	// case rather than the exception: nothing in this service closes a run, so
+	// almost every row has a start and a duration and no end.
+	EndedAt         *time.Time
+	DurationMinutes int32
+}
+
+// End is when the run stopped, or is due to stop.
+//
+// An open-ended row does not mean water is still flowing. A start command
+// carries a duration the controller enforces locally — there is no unbounded
+// open — so a run that began 90 minutes ago for 30 minutes is over, whether or
+// not anything wrote the end back.
+//
+// This matters more than it looks. Read naively, an unclosed row makes a zone
+// permanently "running", and the already_running interlock then refuses every
+// subsequent start on that zone for ever: one safety check silently disabling
+// irrigation entirely.
+func (r Run) End() time.Time {
+	if r.EndedAt != nil {
+		return *r.EndedAt
+	}
+	if r.DurationMinutes <= 0 {
+		return r.StartedAt
+	}
+	return r.StartedAt.Add(time.Duration(r.DurationMinutes) * time.Minute)
+}
+
+// RunSummary is the part of ZoneState that comes from a zone's run history.
+type RunSummary struct {
+	LastRunEndedAt  time.Time
+	MinutesRunToday int32
+	Running         bool
+}
+
+// SummariseRuns derives a zone's run state from its recent runs.
+//
+// Kept here, out of SQL, because it is the arithmetic the interlocks depend on
+// and it is the part worth testing: a query can be eyeballed, an off-by-one in
+// a rest interval cannot.
+func SummariseRuns(runs []Run, now time.Time) RunSummary {
+	var out RunSummary
+	windowStart := now.Add(-DailyWindow)
+
+	for _, run := range runs {
+		if run.StartedAt.IsZero() || run.StartedAt.After(now) {
+			// A run that has not begun contributes nothing, and a start
+			// timestamped in the future is a clock problem on the device
+			// rather than water on a field.
+			continue
+		}
+		end := run.End()
+
+		if run.EndedAt == nil && end.After(now) {
+			out.Running = true
+			// Deliberately not counted towards the daily total yet, and not
+			// treated as a last run: it is this run, still going.
+			out.MinutesRunToday += minutesBetween(maxTime(run.StartedAt, windowStart), now)
+			continue
+		}
+
+		if end.After(out.LastRunEndedAt) {
+			out.LastRunEndedAt = end
+		}
+		// Only the part of the run inside the window counts. A four-hour set
+		// that began five hours ago has an hour of it outside.
+		if end.After(windowStart) {
+			out.MinutesRunToday += minutesBetween(maxTime(run.StartedAt, windowStart), minTime(end, now))
+		}
+	}
+	return out
+}
+
+// ControllerReachable reports whether a controller should be treated as online.
+//
+// A fresh heartbeat is the only positive evidence, and a stale one is a
+// refusal whatever the status column says — a controller that went quiet is
+// exactly the case the controller_offline interlock exists for.
+//
+// A controller that has *never* reported falls back to its status, which is
+// what registration sets. That is a weaker guard and it is deliberate: nothing
+// in this platform currently sends heartbeats, and reading "never reported" as
+// "offline" would refuse every command on every farm rather than protect
+// anyone. The fix is to make controllers heartbeat, not to loosen this.
+func ControllerReachable(status ControllerStatus, lastHeartbeat *time.Time, now time.Time) bool {
+	if lastHeartbeat == nil || lastHeartbeat.IsZero() {
+		return status == ControllerStatusOnline
+	}
+	if lastHeartbeat.After(now.Add(5 * time.Minute)) {
+		// A heartbeat from the future is a clock problem, and trusting it
+		// would keep a dead controller permanently fresh.
+		return false
+	}
+	return now.Sub(*lastHeartbeat) <= ControllerHeartbeatTTL
+}
+
+func minutesBetween(from, to time.Time) int32 {
+	if !to.After(from) {
+		return 0
+	}
+	return int32(to.Sub(from) / time.Minute)
+}
+
+func maxTime(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func minTime(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
 }

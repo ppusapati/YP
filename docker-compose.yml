@@ -355,6 +355,36 @@ services:
       FARM_SERVICE_URL: http://farm-service:8080
       WEATHER_SERVICE_URL: http://weather-service:8080
       AI_GATEWAY_URL: ai-gateway:50051
+      # Actuation. Without at least one of these, TriggerIrrigation and
+      # StopIrrigation refuse every request rather than recording runs that
+      # never happened — which is the honest behaviour for a deployment with
+      # no hardware, and is logged loudly at startup.
+      MQTT_BROKER_URL: tcp://rmqtt:1883
+      MQTT_CLIENT_ID: irrigation-service
+      # A LoRaWAN network server is site-specific: set LORAWAN_SERVER_URL and
+      # LORAWAN_API_TOKEN where one exists. Unset here, so the protocol is
+      # refused by name rather than routed over whichever client does exist.
+      LORAWAN_SERVER_URL: ${LORAWAN_SERVER_URL:-}
+      LORAWAN_API_TOKEN: ${LORAWAN_API_TOKEN:-}
+      # Modbus needs no shared config — the panel's address is the
+      # controller's own endpoint — so it is on unless turned off.
+      MODBUS_ENABLED: "true"
+    depends_on:
+      rmqtt:
+        condition: service_started
+
+  # MQTT broker for irrigation controllers.
+  #
+  # Commands go to <controller endpoint>/cmd and the panel answers on
+  # /ack. The ack matters: a broker's PUBACK says the broker has the
+  # message, not that a valve moved, so irrigation-service waits for the
+  # controller's own reply before recording a run.
+  rmqtt:
+    image: rmqtt/rmqtt:latest
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8883:8883"
 
   soil-service:
     <<: *go-service

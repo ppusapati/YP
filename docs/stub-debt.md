@@ -137,10 +137,14 @@ Ordered by consequence rather than by count:
 actual**, and that is not pedantry. `TriggerIrrigation` copies the schedule's
 figure into the event's `ActualWaterLiters` at start time — before water could
 have flowed — and nothing revises it afterwards, because `UpdateEvent` has no
-caller. Nor does anything dial a valve: `NewActuator` is never constructed, so
-the actuator, its interlocks and the whole `ControllerClient` port are
-unreachable, and no implementation of that port exists. A figure from that path
-labelled "applied" would be a plan entering an audit record as a measurement.
+caller. Nothing dialled a valve either, when that was written: `NewActuator` had no
+caller, so the actuator, its interlocks and the whole `ControllerClient` port
+were unreachable, and no implementation of that port existed. **That is now
+wired** — clients for MQTT, LoRaWAN and Modbus, a commands table written before
+each send, and `TriggerIrrigation` refusing rather than recording a run nothing
+performed. The quantity stays planned regardless, because none of the three
+transports meters water. A figure from that path labelled "applied" would be a
+plan entering an audit record as a measurement.
 An auditor reading "12000 L planned" knows to ask for the meter; one reading
 "12000 L" does not. The consumer prefers a measured `water_amount_liters` when
 a producer ever sends one, so metering this path later needs no change there.

@@ -253,16 +253,15 @@ func (h *IrrigationHandler) StopIrrigation(ctx context.Context, req *connect.Req
 	if req.Msg.GetEventId() == "" {
 		return nil, errors.BadRequest("INVALID_ARGUMENT", "event_id is required")
 	}
-	// Get the event, then cancel the associated schedule to stop irrigation.
-	evt, err := h.svc.GetEvent(ctx, req.Msg.GetEventId())
-	if err != nil {
-		return nil, errors.ToConnectError(err)
-	}
-	if err := h.svc.CancelSchedule(ctx, evt.ScheduleID); err != nil {
-		return nil, errors.ToConnectError(err)
-	}
-	// Re-fetch the event to get updated state.
-	evt, err = h.svc.GetEvent(ctx, req.Msg.GetEventId())
+	// One call. This used to fetch the event, cancel its schedule and re-read
+	// the event — three round trips that between them closed no valve, because
+	// a schedule is a plan and cancelling a plan does not reach the panel that
+	// has water flowing.
+	//
+	// No reason travels on the request — StopIrrigationRequest has no field
+	// for one — so the service supplies a default rather than the proto
+	// growing a field and every generated client in three languages with it.
+	evt, err := h.svc.StopIrrigation(ctx, req.Msg.GetEventId(), "")
 	if err != nil {
 		return nil, errors.ToConnectError(err)
 	}

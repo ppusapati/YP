@@ -39,11 +39,16 @@ import (
 	// Outbound adapters
 	aiadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/ai"
 	clientsadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/clients"
+	controlleradapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/controller"
 	kafkaadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/kafka"
 	postgresadapter "p9e.in/samavaya/agriculture/irrigation-service/internal/adapters/outbound/postgres"
 
 	// Application core
 	"p9e.in/samavaya/agriculture/irrigation-service/internal/application"
+	// Aliased: `domain` above is the shared event vocabulary, not this
+	// service's.
+	irrigationdomain "p9e.in/samavaya/agriculture/irrigation-service/internal/domain"
+	"p9e.in/samavaya/agriculture/irrigation-service/internal/ports/outbound"
 	connectclient "p9e.in/samavaya/packages/connect/client"
 )
 
@@ -128,6 +133,64 @@ func main() {
 		}
 	} else {
 		log.Printf("water-balance scheduling disabled (set WEATHER_SERVICE_URL and AI_GATEWAY_URL to enable)")
+	}
+
+	// ── Actuation ────────────────────────────────────────────────────────────
+	//
+	// The part that acts on a real farm. Everything above produces advice;
+	// this opens a valve, so a deployment with nothing configured here refuses
+	// to start irrigation rather than recording runs it did not perform.
+	clients := map[irrigationdomain.Protocol]outbound.ControllerClient{}
+
+	if broker := envOr("MQTT_BROKER_URL", ""); broker != "" {
+		client, err := controlleradapter.NewMQTTClient(controlleradapter.MQTTConfig{
+			BrokerURL: broker,
+			ClientID:  envOr("MQTT_CLIENT_ID", "irrigation-service"),
+			Username:  os.Getenv("MQTT_USERNAME"),
+			Password:  os.Getenv("MQTT_PASSWORD"),
+		}, logger)
+		if err != nil {
+			log.Printf("WARNING: MQTT controller client not configured: %v", err)
+		} else {
+			clients[irrigationdomain.ProtocolMQTT] = client
+		}
+	}
+
+	if ns := envOr("LORAWAN_SERVER_URL", ""); ns != "" {
+		client, err := controlleradapter.NewLoRaWANClient(controlleradapter.LoRaWANConfig{
+			BaseURL:  ns,
+			APIToken: os.Getenv("LORAWAN_API_TOKEN"),
+			// Confirmed downlinks cost airtime and a retransmission budget.
+			// For a command that opens a valve that is the right trade: the
+			// alternative is not knowing whether a stop was heard.
+			Confirmed: true,
+		})
+		if err != nil {
+			log.Printf("WARNING: LoRaWAN controller client not configured: %v", err)
+		} else {
+			clients[irrigationdomain.ProtocolLoRaWAN] = client
+		}
+	}
+
+	// Modbus needs no shared configuration: the panel's address is the
+	// controller's own endpoint, so it is enabled unless explicitly turned off.
+	if envOr("MODBUS_ENABLED", "true") == "true" {
+		clients[irrigationdomain.ProtocolModbus] = controlleradapter.NewModbusClient(controlleradapter.DefaultTimeout)
+	}
+
+	if len(clients) == 0 {
+		// Warned loudly rather than defaulted, because the symptom is a
+		// TriggerIrrigation that refuses every request and an operator with no
+		// reason to connect that to a missing environment variable.
+		log.Printf("WARNING: no controller clients configured; TriggerIrrigation and StopIrrigation " +
+			"will refuse every request. Set MQTT_BROKER_URL, LORAWAN_SERVER_URL, or leave MODBUS_ENABLED on.")
+	} else {
+		registry := controlleradapter.NewRegistry(clients)
+		// A narrow store rather than the whole repository: the component that
+		// opens valves does not get the ability to rewrite schedules.
+		actuationStore := postgresadapter.NewActuationStore(pool, logger)
+		svc.WithActuator(application.NewActuator(actuationStore, registry, actuationStore, kafkaPub, logger))
+		log.Printf("actuation enabled for protocols: %v", registry.Protocols())
 	}
 
 	// ── Inbound adapters ─────────────────────────────────────────────────────

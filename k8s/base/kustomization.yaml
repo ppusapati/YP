@@ -15,6 +15,7 @@ resources:
   - configmap.yaml
   - secrets.yaml
   - kafka.yaml
+  - rmqtt.yaml
   - services.yaml
   - ingress.yaml
   - monitoring.yaml

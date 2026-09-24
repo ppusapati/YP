@@ -122,8 +122,10 @@ func (a *Actuator) Actuate(ctx context.Context, cmd *domain.IrrigationCommand) (
 		return nil, p9errors.BadRequest("INVALID_COMMAND", err.Error())
 	}
 
-	// Recorded before sending. A send that times out otherwise leaves a valve
-	// that may be open and no row saying so.
+	// Recorded before sending, and against the box it is going to: a zone's
+	// controller can be replaced, so a command that only names the zone cannot
+	// say afterwards which device received it.
+	cmd.ControllerID = controller.ID
 	if err := a.commands.RecordCommand(ctx, cmd); err != nil {
 		return nil, err
 	}
@@ -146,6 +148,23 @@ func (a *Actuator) Actuate(ctx context.Context, cmd *domain.IrrigationCommand) (
 		a.log.Infow("msg", "controller reported a duplicate command",
 			"zone_id", cmd.ZoneID, "command_id", cmd.ID)
 		_ = a.commands.RecordOutcome(ctx, cmd.ID, true, "duplicate")
+		return cmd, nil
+
+	case ack != nil && ack.Queued:
+		// Handed to a network that will deliver it later; the device has not
+		// answered. Recorded as its own outcome rather than as an acceptance,
+		// because "irrigation started" against a command still sitting in a
+		// LoRaWAN downlink queue is the kind of entry an operator later reads
+		// as proof that water went on.
+		//
+		// Not an error either: enqueuing is the normal, correct outcome on
+		// those networks, and failing the call would mean no unattended
+		// irrigation on any class A device.
+		_ = a.commands.RecordOutcome(ctx, cmd.ID, true,
+			"queued for delivery; the controller has not confirmed it")
+		a.log.Infow("msg", "irrigation command queued for delivery",
+			"zone_id", cmd.ZoneID, "command_id", cmd.ID, "kind", cmd.Kind)
+		a.emit(ctx, cmd)
 		return cmd, nil
 
 	case ack == nil || !ack.Accepted:
