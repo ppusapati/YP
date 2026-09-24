@@ -586,6 +586,52 @@ jobs:
         run: |
           go test -tags=e2e -v -count=1 -timeout=5m ./tests/integration/...
 
+  migrations:
+    name: Migrations apply to a fresh database
+    runs-on: ubuntu-latest
+    needs: [build]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: yieldpoint
+          POSTGRES_PASSWORD: yieldpoint
+          POSTGRES_DB: postgres
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U yieldpoint"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Every service's migrations, each against its own empty database.
+      #
+      # This job exists because auth-service's 000004_add_rls could not apply
+      # to a fresh database at all: it referenced a deleted_at column that
+      # table has never had, so CREATE POLICY failed and the whole file rolled
+      # back. Nothing caught it, because nobody creates an empty database
+      # except a new deployment — which would have found it by failing to
+      # start the authentication service.
+      #
+      # Services needing an extension this image does not ship (pgvector,
+      # postgis, timescaledb) are skipped by name rather than silently: a
+      # migration that fails for a reason other than a missing extension is
+      # what this is looking for.
+      - name: Apply every service's migrations
+        env:
+          PGHOST: localhost
+          PGPORT: "5434"
+          PGUSER: yieldpoint
+          PGPASSWORD: yieldpoint
+        run: go run ./tools/migrationcheck
+
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest

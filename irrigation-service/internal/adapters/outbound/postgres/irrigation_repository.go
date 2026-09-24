@@ -998,11 +998,40 @@ func (r *irrigationRepository) CreateWaterUsageLog(ctx context.Context, wl *doma
 	)
 
 	result, err := scanWaterUsageLog(row)
-	if err != nil {
+	switch {
+	case err == pgx.ErrNoRows && wl.EventID != "":
+		// DO NOTHING returns no rows, so a conflict lands here rather than in
+		// the success path. That is the *normal* outcome for a redelivered
+		// close or a sweep racing an operator's stop, and reporting it as a
+		// failure would fill an error log with alarms about a working
+		// idempotency guard. The row that is already there is the answer.
+		existing, err := r.waterUsageLogByEvent(ctx, wl.EventID)
+		if err != nil {
+			return nil, err
+		}
+		return existing, nil
+	case err != nil:
 		r.log.Errorw("msg", "CreateWaterUsageLog failed", "error", err)
 		return nil, errors.InternalServer("USAGE_LOG_CREATE_FAILED", "an internal error occurred")
 	}
 	return result, nil
+}
+
+// waterUsageLogByEvent reads the usage row already recorded for a run.
+func (r *irrigationRepository) waterUsageLogByEvent(ctx context.Context, eventID string) (*domain.WaterUsageLog, error) {
+	row := r.queryRow(ctx, `
+		SELECT id, tenant_id, zone_id, controller_id, water_liters,
+			recorded_at, period_start, period_end, created_by, event_id, source, created_at
+		FROM water_usage_logs
+		WHERE event_id = $1 AND deleted_at IS NULL`,
+		eventID,
+	)
+	existing, err := scanWaterUsageLog(row)
+	if err != nil {
+		r.log.Errorw("msg", "could not read the usage row for a run", "event_id", eventID, "error", err)
+		return nil, errors.InternalServer("USAGE_LOG_CREATE_FAILED", "an internal error occurred")
+	}
+	return existing, nil
 }
 
 func (r *irrigationRepository) ListWaterUsageLogs(ctx context.Context, zoneID string, start, end time.Time) ([]domain.WaterUsageLog, error) {

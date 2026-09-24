@@ -156,6 +156,34 @@ An auditor reading "12000 L planned" knows to ask for the meter; one reading
 "12000 L" does not. The consumer prefers a measured `water_amount_liters` when
 a producer ever sends one, so metering this path later needs no change there.
 
+**The migrations now run against a real PostgreSQL**, and that found two things
+review had not. **auth-service's `000004_add_rls` could not apply to an empty
+database at all**: it copied `AND deleted_at IS NULL` from the other services'
+policy template into a `CREATE POLICY` on `users`, a table that has never had
+that column, so the statement failed and migrate rolled the whole file back.
+The authentication service could not be deployed from scratch, and nothing
+caught it because the only thing that creates an empty database is a new
+deployment. (The column is not missing by oversight: this service disables an
+account with `is_active`, and a disabled user has to stay readable or an
+administrator cannot re-enable it.) And `CreateWaterUsageLog` returned a 500
+for a duplicate, because `ON CONFLICT DO NOTHING ... RETURNING` yields no rows
+— so the idempotency guard working correctly was logged as "the run's water
+usage could not be recorded". `tools/migrationcheck` now applies every
+service's migrations to its own empty database, and CI runs it.
+
+**Row-level security has never been exercised anywhere.** The repositories
+issue their queries straight on the pool, and nothing on that path runs
+`set_config('app.tenant_id', ...)`; only `uow.RLSFactory` does, inside a
+transaction they do not open. Under the non-superuser role
+`scripts/setup-db-roles.sql` defines for production, every INSERT violates its
+policy's WITH CHECK and every SELECT matches nothing — verified against a real
+database. docker-compose connects as the superuser `yieldpoint`, which bypasses
+RLS entirely, which is why nobody has hit it. Tenant isolation today rests on
+the `tenant_id = $1` clauses in the application SQL, which are present and
+correct; the policies are a second layer that cannot currently engage. Fixing
+it means routing repository calls through a transaction that sets the variable,
+which is a change across every service.
+
 **Triage: done.** The original note said "these are not hard — each is a call to
 a service method that already exists". That was true of about half of them.
 
