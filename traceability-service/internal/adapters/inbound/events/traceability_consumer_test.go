@@ -356,6 +356,28 @@ func TestAReplayedPlantingDoesNotOpenASecondBatch(t *testing.T) {
 	}
 }
 
+// triggeredRun is the payload irrigation-service publishes when a schedule
+// fires, with the types it publishes: the quantity as a number, not a quoted
+// string.
+//
+// This used to be written inline with a `field_id` and a `water_amount_liters`
+// that the producer did not send, which is why the handler passed its test and
+// recorded nothing in production. It is pinned from the other side too, in
+// irrigation-service's irrigation_event_payload_test.go.
+func triggeredRun() map[string]interface{} {
+	return map[string]interface{}{
+		"event_id":                 "run-9",
+		"schedule_id":              "sched-1",
+		"tenant_id":                "t-1",
+		"zone_id":                  "zone-1",
+		"field_id":                 "f-1",
+		"farm_id":                  "farm-1",
+		"started_at":               "2026-01-08T05:00:00Z",
+		"planned_water_liters":     12000.0,
+		"planned_duration_minutes": 30.0,
+	}
+}
+
 func TestIrrigationAttachesToTheBatchGrowingInThatField(t *testing.T) {
 	// "Recording for compliance" while recording nothing was the worst possible
 	// version of this handler: water application is one of the inputs an
@@ -365,12 +387,9 @@ func TestIrrigationAttachesToTheBatchGrowingInThatField(t *testing.T) {
 
 	err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
 		ID:        "evt-irr",
-		Type:      eventsdomain.EventTypeIrrigationCreated,
+		Type:      eventsdomain.EventTypeIrrigationTriggered,
 		Timestamp: time.Date(2026, 1, 8, 5, 30, 0, 0, time.UTC),
-		Data: map[string]interface{}{
-			"tenant_id": "t-1", "field_id": "f-1", "irrigation_id": "irr-9",
-			"started_at": "2026-01-08T05:00:00Z", "water_amount_liters": "12000",
-		},
+		Data:      triggeredRun(),
 	})
 	if err != nil {
 		t.Fatalf("HandleEvent: %v", err)
@@ -386,8 +405,85 @@ func TestIrrigationAttachesToTheBatchGrowingInThatField(t *testing.T) {
 	if got.RecordID != "trace-1" {
 		t.Errorf("attached to record %q, want the open batch", got.RecordID)
 	}
-	if !strings.Contains(got.Details, "irr-9") || !strings.Contains(got.Details, "12000") {
+	if !strings.Contains(got.Details, "run-9") || !strings.Contains(got.Details, "12000") {
 		t.Errorf("details %q lose the irrigation", got.Details)
+	}
+	// The run started at 05:00; the event reached Kafka at 05:30. An audit
+	// asks when water went on the field.
+	if !got.Timestamp.Equal(time.Date(2026, 1, 8, 5, 0, 0, 0, time.UTC)) {
+		t.Errorf("recorded at %v, want the run's start", got.Timestamp)
+	}
+}
+
+// The quantity is a plan and is labelled as one.
+//
+// irrigation-service copies the schedule's figure into the run at start time
+// and never revises it, so rendering it as applied would put a plan into an
+// audit record as a measurement. An auditor reading "planned" knows to ask for
+// the meter.
+func TestAPlannedQuantityIsNotRecordedAsApplied(t *testing.T) {
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{ID: "trace-1"}
+
+	if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationTriggered,
+		Timestamp: time.Now(), Data: triggeredRun(),
+	}); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	details := svc.events[0].Details
+	if !strings.Contains(details, "12000 L planned") {
+		t.Errorf("details %q do not say the quantity is a plan", details)
+	}
+	if strings.Contains(details, "applied") {
+		t.Errorf("details %q report a plan as a measurement", details)
+	}
+}
+
+// A measured figure wins when a producer sends one, so that metering this path
+// later needs no change here.
+func TestAMeasuredQuantityIsPreferred(t *testing.T) {
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{ID: "trace-1"}
+
+	data := triggeredRun()
+	data["water_amount_liters"] = 11480.0
+
+	if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationTriggered,
+		Timestamp: time.Now(), Data: data,
+	}); err != nil {
+		t.Fatalf("HandleEvent: %v", err)
+	}
+
+	details := svc.events[0].Details
+	if !strings.Contains(details, "11480 L applied") {
+		t.Errorf("details %q ignore the measured figure", details)
+	}
+	if strings.Contains(details, "planned") {
+		t.Errorf("details %q report the plan alongside the measurement", details)
+	}
+}
+
+// Creating an Irrigation record is master data, not a water application.
+//
+// The domain type behind `agriculture.irrigation.created` is a named plan with
+// a status — no field, no zone, no water — so this consumer listening for it
+// meant dropping every message at the field_id guard while appearing wired.
+func TestCreatingAnIrrigationRecordIsNotAWaterApplication(t *testing.T) {
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{ID: "trace-1"}
+
+	if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationCreated,
+		Timestamp: time.Now(),
+		Data:      map[string]interface{}{"tenant_id": "t-1", "irrigation_id": "irr-9"},
+	}); err != nil {
+		t.Fatalf("HandleEvent returned %v", err)
+	}
+	if len(svc.events) != 0 {
+		t.Errorf("an irrigation plan was recorded as water on a field: %+v", svc.events)
 	}
 }
 
@@ -397,15 +493,34 @@ func TestIrrigatingAFallowFieldIsNotAnError(t *testing.T) {
 	c, svc := newConsumer() // no open record for f-1
 
 	err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
-		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationCreated,
+		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationTriggered,
 		Timestamp: time.Now(),
-		Data:      map[string]interface{}{"tenant_id": "t-1", "field_id": "f-1", "irrigation_id": "irr-9"},
+		Data:      triggeredRun(),
 	})
 	if err != nil {
 		t.Fatalf("HandleEvent returned %v; this must not block the partition", err)
 	}
 	if len(svc.events) != 0 {
 		t.Errorf("an irrigation was attached to a batch that does not exist: %+v", svc.events)
+	}
+}
+
+// A run with no field is declined rather than attached to a guess.
+func TestARunWithNoFieldIsNotRecorded(t *testing.T) {
+	c, svc := newConsumer()
+	svc.openFor["f-1"] = &tracedomain.TraceabilityRecord{ID: "trace-1"}
+
+	data := triggeredRun()
+	data["field_id"] = ""
+
+	if err := c.HandleEvent(context.Background(), &eventsdomain.DomainEvent{
+		ID: "evt-irr", Type: eventsdomain.EventTypeIrrigationTriggered,
+		Timestamp: time.Now(), Data: data,
+	}); err != nil {
+		t.Fatalf("HandleEvent returned %v; this must not block the partition", err)
+	}
+	if len(svc.events) != 0 {
+		t.Errorf("a run with no field was recorded against a batch: %+v", svc.events)
 	}
 }
 

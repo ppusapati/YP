@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"p9e.in/samavaya/packages/events/domain"
@@ -74,8 +75,14 @@ func (c *TraceabilityConsumer) HandleEvent(ctx context.Context, event *domain.Do
 	case domain.EventTypeCropCreated:
 		return c.onCropCreated(ctx, event)
 
-	// Irrigation events: record irrigation for compliance
-	case domain.EventTypeIrrigationCreated:
+	// Irrigation events: record water application for compliance.
+	//
+	// The triggered event, not the created one. `agriculture.irrigation.created`
+	// announces an *Irrigation* record — a named plan with a status — whose
+	// domain type carries no field, no zone and no water, so this handler's
+	// field_id guard dropped every one of them and logged that it had. The run
+	// is what a GAP or organic audit asks about, and the run is `triggered`.
+	case domain.EventTypeIrrigationTriggered:
 		return c.onIrrigationEvent(ctx, event)
 
 	// Yield events: harvest and yield records for traceability.
@@ -228,12 +235,19 @@ func (c *TraceabilityConsumer) onFieldCropAssigned(ctx context.Context, event *d
 	return nil
 }
 
-// onIrrigationEvent attaches an irrigation to the batch growing in that field.
+// onIrrigationEvent attaches an irrigation run to the batch growing in that field.
 //
 // This used to log "irrigation event, recording for compliance" and return nil.
 // Water application is one of the inputs an organic or GAP audit asks about, so
 // "recording for compliance" while recording nothing was the worst possible
 // version of it.
+//
+// Fixing the handler was not enough, and that is the part worth remembering.
+// It read `field_id` from an event whose producer never sent one, so it took
+// the guard below on every message and logged that it had — correct code, a
+// green test that hand-built the payload it wanted, and not one row written.
+// The run id is `event_id`, which is the id of the IrrigationEvent that
+// irrigation-service writes when a schedule fires.
 func (c *TraceabilityConsumer) onIrrigationEvent(ctx context.Context, event *domain.DomainEvent) error {
 	data, err := extractEventData(event)
 	if err != nil {
@@ -242,9 +256,10 @@ func (c *TraceabilityConsumer) onIrrigationEvent(ctx context.Context, event *dom
 
 	tenantID := str(data, "tenant_id")
 	fieldID := str(data, "field_id")
+	runID := str(data, "event_id")
 	if tenantID == "" || fieldID == "" {
 		c.log.Warnw("msg", "irrigation event missing tenant or field; not recorded",
-			"event_id", event.ID, "irrigation_id", str(data, "irrigation_id"))
+			"event_id", event.ID, "irrigation_run_id", runID)
 		return nil
 	}
 
@@ -260,7 +275,7 @@ func (c *TraceabilityConsumer) onIrrigationEvent(ctx context.Context, event *dom
 		// either — a run of these means plantings are not reaching this
 		// consumer, which is worth being able to see.
 		c.log.Infow("msg", "irrigation on a field with no open batch; nothing to attach it to",
-			"field_id", fieldID, "irrigation_id", str(data, "irrigation_id"))
+			"field_id", fieldID, "irrigation_run_id", runID)
 		return nil
 	}
 
@@ -276,9 +291,18 @@ func (c *TraceabilityConsumer) onIrrigationEvent(ctx context.Context, event *dom
 		when = &t
 	}
 
-	details := fmt.Sprintf("irrigation %s", str(data, "irrigation_id"))
-	if litres := str(data, "water_amount_liters"); litres != "" {
-		details += ", " + litres + " L"
+	// The quantity is rendered as planned, because that is what it is.
+	// irrigation-service writes the schedule's figure into the run at start
+	// time and nothing revises it afterwards, so labelling it "applied" would
+	// put a plan into an audit record as a measurement. An auditor reading
+	// "12000 L planned" knows to ask for the meter; one reading "12000 L" does
+	// not. A measured figure is read in preference when a producer ever sends
+	// one.
+	details := fmt.Sprintf("irrigation run %s", runID)
+	if litres, ok := num(data, "water_amount_liters"); ok {
+		details += fmt.Sprintf(", %g L applied", litres)
+	} else if litres, ok := num(data, "planned_water_liters"); ok {
+		details += fmt.Sprintf(", %g L planned", litres)
 	}
 
 	if err := c.addEvent(ctx, record.ID, tracedomain.SupplyChainEventTypeIrrigated, *when, data, details); err != nil {
@@ -493,6 +517,37 @@ func batchNumberFor(yieldRecordID string) string {
 func str(data map[string]interface{}, key string) string {
 	v, _ := data[key].(string)
 	return v
+}
+
+// num reads a numeric field, and reports whether one was there.
+//
+// Separate from str because a number sent as a number does not arrive as one:
+// the payload is JSON, so a float64 comes back as float64 and `str` returns ""
+// for it. Reading a quantity with `str` therefore drops every value a producer
+// sends honestly and keeps only the ones sent as quoted strings — which is
+// precisely how a test that quotes its numbers passes against a producer that
+// does not.
+//
+// A string is still accepted, because a producer is free to send one and
+// refusing it would lose a real figure over its encoding. Zero is a value, not
+// an absence: a run that applied no water is a fact, and the bool is what says
+// whether anyone reported one.
+func num(data map[string]interface{}, key string) (float64, bool) {
+	switch v := data[key].(type) {
+	case float64:
+		return v, true
+	case json.Number:
+		f, err := v.Float64()
+		return f, err == nil
+	case string:
+		if v == "" {
+			return 0, false
+		}
+		f, err := strconv.ParseFloat(v, 64)
+		return f, err == nil
+	default:
+		return 0, false
+	}
 }
 
 // timestamp reads an RFC 3339 string into a time.

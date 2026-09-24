@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"p9e.in/samavaya/packages/errors"
+	eventsdomain "p9e.in/samavaya/packages/events/domain"
 	"p9e.in/samavaya/packages/p9context"
 	"p9e.in/samavaya/packages/p9log"
 	"p9e.in/samavaya/packages/ulid"
@@ -539,10 +540,70 @@ func (s *irrigationService) TriggerIrrigation(ctx context.Context, scheduleID st
 		return nil, err
 	}
 
-	s.emitEvent(ctx, "agriculture.irrigation.triggered", createdEvent.ID, map[string]interface{}{
-		"event_id": createdEvent.ID, "schedule_id": scheduleID, "tenant_id": tenantID,
+	fieldID, farmID := s.locate(ctx, schedule)
+
+	// The payload names the field, and that is the whole point of it. Water
+	// application is an input an organic or GAP audit asks about, and
+	// traceability's handler keys the batch off `field_id` — so an event
+	// without one is logged as unrecordable and dropped. This used to carry
+	// `{event_id, schedule_id, tenant_id}` and nothing else, so every
+	// irrigation on every field took that branch.
+	//
+	// The water figure is `planned_`, not `actual_`, because nothing here has
+	// measured anything. This RPC writes the schedule's quantity into the
+	// event's ActualWaterLiters at start time — before water could have
+	// flowed — and no completion path ever revises it: UpdateEvent has no
+	// caller. Publishing it as an actual would put a plan into a compliance
+	// record as a measurement, which is a worse failure than the silence it
+	// replaces.
+	s.emitEvent(ctx, string(eventsdomain.EventTypeIrrigationTriggered), createdEvent.ID, map[string]interface{}{
+		"event_id":                 createdEvent.ID,
+		"schedule_id":              scheduleID,
+		"tenant_id":                tenantID,
+		"zone_id":                  schedule.ZoneID,
+		"field_id":                 fieldID,
+		"farm_id":                  farmID,
+		"controller_id":            schedule.ControllerID,
+		"started_at":               now.UTC().Format(time.RFC3339),
+		"planned_water_liters":     schedule.WaterQuantityLiters,
+		"planned_duration_minutes": schedule.DurationMinutes,
 	})
 	return createdEvent, nil
+}
+
+// locate resolves the field and farm a scheduled run applies to.
+//
+// The schedule's own field_id and farm_id are nullable — CreateSchedule
+// requires neither — while its zone_id is required and validated to exist, and
+// CreateZone rejects a zone without a field and a farm. So the zone is the
+// reliable answer and the schedule's columns are the override, used when set
+// because a schedule naming a field is the more specific statement.
+//
+// A failed zone lookup is logged and skipped rather than returned: the run has
+// already started and the event row is already written, so refusing to publish
+// would lose the record of a run that happened.
+func (s *irrigationService) locate(ctx context.Context, schedule *domain.IrrigationSchedule) (fieldID, farmID string) {
+	fieldID, farmID = schedule.FieldID, schedule.FarmID
+	if fieldID != "" && farmID != "" {
+		return fieldID, farmID
+	}
+	if schedule.ZoneID == "" {
+		return fieldID, farmID
+	}
+
+	zone, err := s.repo.GetZoneByUUID(ctx, schedule.ZoneID)
+	if err != nil || zone == nil {
+		s.log.Warnw("msg", "could not resolve the zone's field; the run will not reach traceability",
+			"schedule_id", schedule.ID, "zone_id", schedule.ZoneID, "error", err)
+		return fieldID, farmID
+	}
+	if fieldID == "" {
+		fieldID = zone.FieldID
+	}
+	if farmID == "" {
+		farmID = zone.FarmID
+	}
+	return fieldID, farmID
 }
 
 func (s *irrigationService) GetEvent(ctx context.Context, uuid string) (*domain.IrrigationEvent, error) {

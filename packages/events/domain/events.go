@@ -186,9 +186,15 @@ const (
 	EventTypeWeatherBackfillCompleted  EventType = "agriculture.weather.backfill.completed"
 
 	// Agriculture - Irrigation Events
-	EventTypeIrrigationCreated EventType = "agriculture.irrigation.created"
-	EventTypeIrrigationUpdated EventType = "agriculture.irrigation.updated"
-	EventTypeIrrigationDeleted EventType = "agriculture.irrigation.deleted"
+	//
+	// Created/Updated/Deleted are the lifecycle of an *Irrigation* record — a
+	// named plan with a status, carrying no field and no water. Triggered is
+	// the one that means a run started on a particular field, and it is the
+	// only one a consumer recording water application should listen for.
+	EventTypeIrrigationCreated   EventType = "agriculture.irrigation.created"
+	EventTypeIrrigationUpdated   EventType = "agriculture.irrigation.updated"
+	EventTypeIrrigationDeleted   EventType = "agriculture.irrigation.deleted"
+	EventTypeIrrigationTriggered EventType = "agriculture.irrigation.triggered"
 
 	// Agriculture - Yield Events
 	EventTypeYieldCreated EventType = "agriculture.yield.created"
@@ -347,7 +353,7 @@ func (e *DomainEvent) GetTopic() string {
 		return "samavaya.agriculture.soil.events"
 	case EventTypeWeatherLocationRegistered, EventTypeWeatherObservation, EventTypeWeatherForecast, EventTypeWeatherAlertTriggered, EventTypeWeatherBackfillCompleted:
 		return "samavaya.agriculture.weather.events"
-	case EventTypeIrrigationCreated, EventTypeIrrigationUpdated, EventTypeIrrigationDeleted:
+	case EventTypeIrrigationCreated, EventTypeIrrigationUpdated, EventTypeIrrigationDeleted, EventTypeIrrigationTriggered:
 		return "samavaya.agriculture.irrigation.events"
 	case EventTypeYieldCreated, EventTypeYieldUpdated, EventTypeYieldDeleted:
 		return "samavaya.agriculture.yield.events"
